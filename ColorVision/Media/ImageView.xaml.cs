@@ -636,6 +636,7 @@ namespace ColorVision.Media
             ImageShow.Source = null;
         }
 
+
         public void OpenImage(string? filePath)
         {
             if (filePath != null && File.Exists(filePath))

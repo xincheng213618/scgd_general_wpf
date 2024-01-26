@@ -19,6 +19,7 @@ using log4net;
 using ColorVision.Services.Flow;
 using ColorVision.SettingUp;
 using System.Security.Cryptography.X509Certificates;
+using ColorVision.Common.Util;
 
 namespace ColorVision
 {
@@ -51,6 +52,15 @@ namespace ColorVision
                 this.Height = SoftwareSetting.Height;
                 this.Width = SoftwareSetting.Width;
                 this.WindowState = (WindowState)SoftwareSetting.WindowState;
+
+                if (this.Width > SystemParameters.WorkArea.Width)
+                {
+                    this.Width = SystemParameters.WorkArea.Width;
+                }
+                if (this.Height > SystemParameters.WorkArea.Height)
+                {
+                    this.Height = SystemParameters.WorkArea.Height;
+                }
             }
             this.SizeChanged +=(s, e) =>
             {
@@ -63,6 +73,8 @@ namespace ColorVision
                     SoftwareSetting.WindowState = (int)this.WindowState;
                 }
             };
+            var IsAdministrator = Utils.IsAdministrator();
+            this.Title = Title + $"- {(IsAdministrator ? Properties.Resource.RunAsAdmin : Properties.Resource.NotRunAsAdmin)}";
         }
 
         private  void Window_Initialized(object sender, EventArgs e)
@@ -95,19 +107,19 @@ namespace ColorVision
 
             ViewGridManager.GetInstance().SetViewNum(1);
             this.Closed += (s, e) => { Environment.Exit(-1); };
-            Debug.WriteLine("启动成功");
+            Debug.WriteLine(ColorVision.Properties.Resource.LaunchSuccess);
 
-            MenuItem menulogs = new MenuItem() { Header = "日志" };
+            MenuItem menulogs = new MenuItem() { Header = ColorVision.Properties.Resource.Log };
             MenuHelp.Items.Insert(0, menulogs);
 
-            MenuItem menulog = new MenuItem() { Header = "x64服务日志" };
+            MenuItem menulog = new MenuItem() { Header = Properties.Resource.x64ServiceLog };
             menulog.Click += (s, e) =>
             {
                 Process.Start("explorer.exe", "http://localhost:8064/system/log");
             };
             menulogs.Items.Insert(0, menulog);
 
-            MenuItem menulog1 = new MenuItem() { Header = "相机日志" };
+            MenuItem menulog1 = new MenuItem() { Header = ColorVision.Properties.Resource.CameraLog };
             menulog1.Click += (s, e) =>
             {
                 Process.Start("explorer.exe", "http://localhost:8064/system/device/camera/log");
@@ -121,7 +133,7 @@ namespace ColorVision
             };
             menulogs.Items.Insert(2, menulog2);
 
-            MenuItem menulog3 = new MenuItem() { Header = "光谱仪日志" };
+            MenuItem menulog3 = new MenuItem() { Header = ColorVision.Properties.Resource.SpectrometerLog };
             menulog3.Click += (s, e) =>
             {
                 Process.Start("explorer.exe", "http://localhost:8086/system/device/Spectrum/log");
@@ -129,14 +141,14 @@ namespace ColorVision
             menulogs.Items.Insert(3, menulog3);
 
 #if (DEBUG == true)
-            MenuItem menuItem = new MenuItem() { Header = "实验性功能" };
+            MenuItem menuItem = new MenuItem() { Header = ColorVision.Properties.Resource.ExperimentalFeature };
             MenuItem menuItem1 = new MenuItem() { Header = "折线图" };
             menuItem1.Click += Test_Click;
             menuItem.Items.Add(menuItem1);
             Menu1.Items.Add(menuItem);
 
 
-            MenuItem menuItem3 = new MenuItem() { Header = "重启服务", Tag = "CalibrationUpload" };
+            MenuItem menuItem3 = new MenuItem() { Header = ColorVision.Properties.Resource.RestartService, Tag = "CalibrationUpload" };
             menuItem3.Click += (s,e) =>
             {
                 Util.Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&net stop CVMainService_x64&net start RegistrationCenterService&net start CVMainService_x64");
@@ -171,7 +183,7 @@ namespace ColorVision
                 X509Certificate2 x509Certificate2 = GetCertificateFromSignedFile(Process.GetCurrentProcess()?.MainModule?.FileName);
                 if (x509Certificate2 != null)
                 {
-                    MenuItem menuItem = new MenuItem() { Header = "安装证书" };
+                    MenuItem menuItem = new MenuItem() { Header = ColorVision.Properties.Resource.InstallCertificate };
                     menuItem.Click += (s,e) =>
                     {
                         InstallCertificate(x509Certificate2);
@@ -239,12 +251,12 @@ namespace ColorVision
                             // 如果找到匹配项，提取变更日志
                             string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
                             // 显示变更日志
-                            MessageBox.Show($"{currentVersion} 的变更日志：{Environment.NewLine}{changeLogForCurrentVersion}");
+                            MessageBox.Show(Application.Current.MainWindow, $"{changeLogForCurrentVersion.ReplaceLineEndings()}",$"{currentVersion} 的变更日志：");
                         }
                         else
                         {
                             // 如果未找到匹配项，说明没有为当前版本列出变更日志
-                            MessageBox.Show($"($\"{currentVersion}变更： {Environment.NewLine}1.修复了一些已知的BUG");
+                            MessageBox.Show(Application.Current.MainWindow,"1.修复了一些已知的BUG", $"{currentVersion} 的变更日志：");
                         }
 
                     }
@@ -428,8 +440,13 @@ namespace ColorVision
 
         }
 
-
-
-
+        private void ChangeLog_Clik(object sender, RoutedEventArgs e)
+        {
+            ChangelogWindow changelogWindow = new ChangelogWindow();
+            string changelogPath = "CHANGELOG.md";
+            string changelogContent = File.ReadAllText(changelogPath);
+            changelogWindow.SetChangelogText(changelogContent);
+            changelogWindow.ShowDialog();
+        }
     }
 }

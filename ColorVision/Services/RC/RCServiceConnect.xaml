@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.RC"
         xmlns:setting="clr-namespace:ColorVision.SettingUp"
-        xmlns:resx="clr-namespace:ColorVision.Properties"
+        xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         Title="注册中心连接配置" Background="{DynamicResource RegionBrush}" Height="500" Width="400" Initialized="Window_Initialized">
     <Window.Resources>
@@ -33,7 +33,7 @@
                         <ListView x:Name="ListViewRC" FocusVisualStyle="{x:Null}"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
                             <ListView.Resources >
                                 <ContextMenu x:Key="ContextMenuItem">
-                                    <MenuItem Header="{x:Static resx:Resource.Delete}"  Click="MenuItem_Click_Delete" Tag="{Binding .}" />
+                                    <MenuItem Header="{x:Static properties:Resource.Delete}"  Click="MenuItem_Click_Delete" Tag="{Binding .}" />
                                 </ContextMenu>
                             </ListView.Resources>
                             <ListView.ItemContainerStyle>
@@ -50,8 +50,8 @@
                             </ListView.ItemTemplate>
                         </ListView>
                         <StackPanel Margin="0,0,0,-1"  VerticalAlignment="Bottom">
-                            <Button Content="新建配置文件" Click="Button_Click_New"   />
-                            <Button Content="复制配置文件" Click="Button_Click_Copy" />
+                            <Button Content="{x:Static properties:Resource.CreateNewConfigurationFile}" Click="Button_Click_New"   />
+                            <Button Content="{x:Static properties:Resource.CopyConfigurationFile}" Click="Button_Click_Copy" />
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -60,7 +60,7 @@
                         <StackPanel>
                             <TextBlock Text="注册中心配置" HorizontalAlignment="Center" Margin="15" FontSize="17"/>
                             <DockPanel Margin="5">
-                                <TextBlock Text="连接名:" VerticalAlignment="Center" Width="120"/>
+                                <TextBlock Text="连接名" VerticalAlignment="Center" Width="120"/>
                                 <TextBox  ToolTip="连接名"  VerticalAlignment="Center" TextWrapping="Wrap" Text="{Binding Name}"  BorderThickness="0,0,0,1" />
                             </DockPanel>
                             <DockPanel Margin="5,2">
@@ -68,17 +68,17 @@
                             </DockPanel>
 
                             <DockPanel Margin="5,2">
-                                <TextBlock Text="注册中心:" VerticalAlignment="Center" Width="120"/>
+                                <TextBlock Text="注册中心" VerticalAlignment="Center" Width="120"/>
                                 <TextBox ToolTip="注册中心名称"  VerticalAlignment="Center"  Text="{Binding RCName}" BorderThickness="0,0,0,1" />
                             </DockPanel>
                             
                             <DockPanel Margin="5,2">
-                                <TextBlock Text="AppId:" VerticalAlignment="Center" Width="120"/>
-                                <TextBox  ToolTip="App Id"  VerticalAlignment="Center" Text="{Binding AppId}" BorderThickness="0,0,0,1" />
+                                <TextBlock Text="AppId" VerticalAlignment="Center" Width="120"/>
+                                <TextBox  ToolTip="AppId"  VerticalAlignment="Center" Text="{Binding AppId}" BorderThickness="0,0,0,1" />
                             </DockPanel>
 
                             <DockPanel Margin="5,2">
-                                <TextBlock Text="AppSecret:" VerticalAlignment="Center" Width="120"/>
+                                <TextBlock Text="AppSecret" VerticalAlignment="Center" Width="120"/>
                                 <PasswordBox x:Name="PasswordBox1" ToolTip="App密钥"  VerticalAlignment="Center" Password="" BorderThickness="0,0,0,1" />
                             </DockPanel>
 
@@ -93,12 +93,12 @@
                 <Button  Width="30" Height="22" Click="Button_Click_ListShow" Margin="0,0,5,0">
                     <Image Source="/Assets/Image/connect.png" Stretch="Uniform" Margin="-5"/>
                 </Button>
-                <Button Content="{x:Static resx:Resource.TesConnection}" MinWidth="80" Click="Button_Click_Test"/>
+                <Button Content="{x:Static properties:Resource.TesConnection}" MinWidth="80" Click="Button_Click_Test"/>
             </StackPanel>
             <StackPanel Grid.Row="1" Margin="0,5"   HorizontalAlignment="Right" VerticalAlignment="Bottom">
                 <UniformGrid x:Name="FunctionGrid" Columns="2" Width="180"   HorizontalAlignment="Center">
-                    <Button Content="{x:Static resx:Resource.OK}" Width="80"  Click="Button_Click_Ok"/>
-                    <Button Content="{x:Static resx:Resource.Cancel}" Width="80" Click="Button_Click_Cancel"/>
+                    <Button Content="{x:Static properties:Resource.OK}" Width="80"  Click="Button_Click_Ok"/>
+                    <Button Content="{x:Static properties:Resource.Cancel}" Width="80" Click="Button_Click_Cancel"/>
                 </UniformGrid>
             </StackPanel>
 

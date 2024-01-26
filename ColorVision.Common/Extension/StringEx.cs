@@ -3,19 +3,30 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace ColorVision.Common.Extension
 {
     public static class StringExtensions
     {
-        public static bool IsNullOrEmpty([NotNullWhen(false)] this string? value)
+        public static bool IsNullOrEmpty([NotNullWhen(false)] this string? input)
         {
-            return string.IsNullOrEmpty(value);
+            return string.IsNullOrEmpty(input);
         }
 
-        public static bool IsNullOrWhiteSpace([NotNullWhen(false)] this string? value)
+        public static bool IsNullOrWhiteSpace([NotNullWhen(false)] this string? input)
         {
-            return string.IsNullOrWhiteSpace(value);
+            return string.IsNullOrWhiteSpace(input);
+        }
+
+        public static string RemoveEmptyLines(this string input)
+        {
+            // 正则表达式匹配空白行
+            string pattern = @"^\s*$\n|\r";
+            string replacement = "";
+            string result = Regex.Replace(input, pattern, replacement, RegexOptions.Multiline);
+
+            return result;
         }
 
         public static bool BeginWithAny(this string s, IEnumerable<char> chars)
@@ -24,9 +35,9 @@ namespace ColorVision.Common.Extension
             return chars.Contains(s[0]);
         }
 
-        public static bool IsWhiteSpace(this string value)
+        public static bool IsWhiteSpace(this string input)
         {
-            foreach (char c in value)
+            foreach (char c in input)
             {
                 if (char.IsWhiteSpace(c)) continue;
 
@@ -45,25 +56,25 @@ namespace ColorVision.Common.Extension
             }
         }
 
-        public static string RemovePrefix(this string value, char prefix)
+        public static string RemovePrefix(this string input, char prefix)
         {
-            if (value.StartsWith(prefix))
+            if (input.StartsWith(prefix))
             {
-                return value.Substring(1);
+                return input.Substring(1);
             }
             else
             {
-                return value;
+                return input;
             }
         }
 
-        public static string UpperFirstChar(this string value)
+        public static string UpperFirstChar(this string input)
         {
-            if (string.IsNullOrEmpty(value))
+            if (string.IsNullOrEmpty(input))
             {
                 return string.Empty;
             }
-            return char.ToUpper(value[0],System.Globalization.CultureInfo.CurrentCulture) + value.Substring(1);
+            return char.ToUpper(input[0],System.Globalization.CultureInfo.CurrentCulture) + input.Substring(1);
         }
 
     }

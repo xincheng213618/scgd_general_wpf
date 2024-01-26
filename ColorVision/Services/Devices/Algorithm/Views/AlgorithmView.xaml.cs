@@ -30,7 +30,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
     /// </summary>
     public partial class AlgorithmView : UserControl,IView
     {
-        private static readonly ILog logger = LogManager.GetLogger(typeof(AlgorithmView));
+        private static readonly ILog logg = LogManager.GetLogger(typeof(AlgorithmView));
         public View View { get; set; }
         public event CurSelectionChanged OnCurSelectionChanged;
         public DeviceAlgorithm Device { get; set; }
@@ -101,38 +101,9 @@ namespace ColorVision.Services.Devices.Algorithm.Views
         }
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
-            if (sender is ContextMenu contextMenu)
+            if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && listView1.View is GridView gridView)
             {
-                if (contextMenu.Items.Count == 0)
-                {
-                    MenuItem menuItemAuto = new MenuItem();
-                    menuItemAuto.Header = "自动调整列宽";
-                    menuItemAuto.Click += (s, e) =>
-                    {
-                        if (listView1.View is GridView gridView)
-                            GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
-                    };
-                    contextMenu.Items.Add(menuItemAuto);
-                    contextMenu.Items.Add(new Separator());
-                    foreach (var item in GridViewColumnVisibilitys)
-                    {
-                        MenuItem menuItem = new MenuItem();
-                        menuItem.Header = item.ColumnName;
-                        Binding binding = new Binding("IsVisible")
-                        {
-                            Source = item,
-                            Mode = BindingMode.TwoWay // 双向绑定
-                        };
-                        menuItem.SetBinding(MenuItem.IsCheckedProperty, binding);
-                        menuItem.Click += (s, e) =>
-                        {
-                            item.IsVisible = !item.IsVisible;
-                            if (listView1.View is GridView gridView)
-                                GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-                        };
-                        contextMenu.Items.Add(menuItem);
-                    }
-                }
+                GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
             }
         }
 
@@ -321,12 +292,15 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
                         List<string> bdheadersFOV = new List<string> { "Pattern", "Type", "Degrees" };
                         List<string> headersFOV = new List<string> { "Pattern", "Type", "Degrees" };
-                        GridView gridViewFOV = new GridView();
-                        for (int i = 0; i < headersFOV.Count; i++)
+
+                        if (listViewSide.View is GridView gridViewFOV)
                         {
-                            gridViewFOV.Columns.Add(new GridViewColumn() { Header = headersFOV[i], DisplayMemberBinding = new Binding(bdheadersFOV[i]) });
+                            LeftGridViewColumnVisibilitys.Clear();
+                            gridViewFOV.Columns.Clear();
+                            for (int i = 0; i < headersFOV.Count; i++)
+                                gridViewFOV.Columns.Add(new GridViewColumn() { Header = headersFOV[i], DisplayMemberBinding = new Binding(bdheadersFOV[i]) });
                         }
-                        listViewSide.View = gridViewFOV;
+
                         listViewSide.Visibility =Visibility.Visible;
                         listViewSide.ItemsSource = result.FOVData;
                         break;
@@ -352,12 +326,15 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
                         List<string> bdheadersSFR = new List<string> { "pdfrequency", "pdomainSamplingData" };
                         List<string> headersSFR = new List<string> { "pdfrequency", "pdomainSamplingData" };
-                        GridView gridViewSFR = new GridView();
-                        for (int i = 0; i < headersSFR.Count; i++)
+
+                        if (listViewSide.View is GridView gridViewSFR)
                         {
-                            gridViewSFR.Columns.Add(new GridViewColumn() { Header = headersSFR[i], DisplayMemberBinding = new Binding(bdheadersSFR[i]) });
+                            LeftGridViewColumnVisibilitys.Clear();
+                            gridViewSFR.Columns.Clear();
+                            for (int i = 0; i < headersSFR.Count; i++)
+                                gridViewSFR.Columns.Add(new GridViewColumn() { Header = headersSFR[i], DisplayMemberBinding = new Binding(bdheadersSFR[i]) });
                         }
-                        listViewSide.View = gridViewSFR;
+
                         listViewSide.ItemsSource = result.SFRData;
                         if (result.SFRData.Count > 0)
                         {
@@ -379,15 +356,17 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                             }
                         }
 
-
                         List<string> bdheadersMTF = new List<string> { "PixelPos", "PixelSize", "Shapes", "Articulation" };
                         List<string> headersMTF = new List<string> { "位置", "大小", "形状", "MTF" };
-                        GridView gridViewMTF = new GridView();
-                        for (int i = 0; i < headersMTF.Count; i++)
+
+                        if (listViewSide.View is GridView gridViewMTF)
                         {
-                            gridViewMTF.Columns.Add(new GridViewColumn() { Header = headersMTF[i], DisplayMemberBinding = new Binding(bdheadersMTF[i]) });
+                            LeftGridViewColumnVisibilitys.Clear();
+                            gridViewMTF.Columns.Clear();
+                            for (int i = 0; i < headersMTF.Count; i++)
+                                gridViewMTF.Columns.Add(new GridViewColumn() { Header = headersMTF[i], DisplayMemberBinding = new Binding(bdheadersMTF[i]) });
                         }
-                        listViewSide.View = gridViewMTF;
+
                         listViewSide.ItemsSource = result.MTFData;
                         foreach (var item in result.MTFData)
                         {
@@ -475,12 +454,15 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         listViewSide.Visibility = Visibility.Visible;
                         List<string> bdheadersGhost = new List<string> { "LedCenters", "LedBlobGray", "GhostAvrGray" };
                         List<string> headersGhost = new List<string> { "质心坐标", "光斑灰度", "鬼影灰度" };
-                        GridView gridViewGhost = new GridView();
-                        for (int i = 0; i < headersGhost.Count; i++)
+
+                        if (listViewSide.View is GridView gridViewGhost)
                         {
-                            gridViewGhost.Columns.Add(new GridViewColumn() { Header = headersGhost[i], DisplayMemberBinding = new Binding(bdheadersGhost[i]) });
+                            LeftGridViewColumnVisibilitys.Clear();
+                            gridViewGhost.Columns.Clear();
+                            for (int i = 0; i < headersGhost.Count; i++)
+                                gridViewGhost.Columns.Add(new GridViewColumn() { Header = headersGhost[i], DisplayMemberBinding = new Binding(bdheadersGhost[i]) });
                         }
-                        listViewSide.View = gridViewGhost;
+
                         listViewSide.ItemsSource = result.GhostData;
                         break;
                     case AlgorithmResultType.Distortion:
@@ -499,12 +481,14 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         }
                         List<string> bdheadersDis = new List<string> { "DisTypeDesc", "SlopeTypeDesc", "LayoutTypeDesc", "CornerTypeDesc", "MaxRatio" };
                         List<string> headersDis = new List<string> { "类型", "斜率", "布点", "角点", "畸变率" };
-                        GridView gridViewDis = new GridView();
-                        for (int i = 0; i < headersDis.Count; i++)
+
+                        if (listViewSide.View is GridView gridViewDis)
                         {
-                            gridViewDis.Columns.Add(new GridViewColumn() { Header = headersDis[i], DisplayMemberBinding = new Binding(bdheadersDis[i]) });
+                            LeftGridViewColumnVisibilitys.Clear();
+                            gridViewDis.Columns.Clear();
+                            for (int i = 0; i < headersDis.Count; i++)
+                                gridViewDis.Columns.Add(new GridViewColumn() { Header = headersDis[i], DisplayMemberBinding = new Binding(bdheadersDis[i]) });
                         }
-                        listViewSide.View = gridViewDis;
                         listViewSide.ItemsSource = result.DistortionData;
                         if (result.DistortionData.Count > 0)
                         {
@@ -535,12 +519,13 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
                         bdheadersDis = new List<string> { "Point", "Radius" };
                         headersDis = new List<string> { "坐标", "半径"};
-                        gridViewDis = new GridView();
-                        for (int i = 0; i < headersDis.Count; i++)
+                        if (listViewSide.View is GridView gridView)
                         {
-                            gridViewDis.Columns.Add(new GridViewColumn() { Header = headersDis[i], DisplayMemberBinding = new Binding(bdheadersDis[i]) });
+                            LeftGridViewColumnVisibilitys.Clear();
+                            gridView.Columns.Clear();
+                            for (int i = 0; i < headersDis.Count; i++)
+                                gridView.Columns.Add(new GridViewColumn() { Header = headersDis[i], DisplayMemberBinding = new Binding(bdheadersDis[i]) });
                         }
-                        listViewSide.View = gridViewDis;
                         listViewSide.ItemsSource = result.LedResultDatas;
                         if (result.LedResultDatas.Count > 0)
                         {
@@ -678,6 +663,39 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             }
 
             OrderPopup.IsOpen = false;
+        }
+        public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+
+        private void ContextMenu1_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is ContextMenu contextMenu && listViewSide.View is GridView gridView && LeftGridViewColumnVisibilitys.Count ==0)
+                GridViewColumnVisibility.GenContentMenuGridViewColumnZero(contextMenu, gridView.Columns, LeftGridViewColumnVisibilitys);
+        }
+
+        private void Exchange_Click(object sender, RoutedEventArgs e)
+        {
+            if (listView1.Parent is Grid parent1 &&listViewSide.Parent is Grid parent2 )
+            {
+                var tempCol = Grid.GetColumn(listView1);
+                var tempRow = Grid.GetRow(listView1);
+
+                var tempCol1 = Grid.GetColumn(listViewSide);
+                var tempRow1 = Grid.GetRow(listViewSide);
+
+                parent1.Children.Remove(listView1);
+                parent2.Children.Remove(listViewSide);
+
+
+                parent1.Children.Add(listViewSide);
+                parent2.Children.Add(listView1);
+
+                Grid.SetColumn(listView1, tempCol1);
+                Grid.SetRow(listView1, tempRow1);
+
+                Grid.SetColumn(listViewSide, tempCol);
+                Grid.SetRow(listViewSide, tempRow);
+
+            }
         }
     }
 }

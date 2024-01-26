@@ -28,8 +28,21 @@ namespace ColorVision.SettingUp
         public SettingWindow()
         {
             InitializeComponent();
-            IsBlurEnabled = ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.TransparentWindow && IsBlurEnabled;
-            this.Background = IsBlurEnabled ? this.Background : Brushes.Gray;
+
+            if (IsWin10)
+            {
+                IsBlurEnabled = false;
+                ThemeManager.Current.CurrentUIThemeChanged += (e) =>
+                {
+                    this.Background = IsBlurEnabled ? this.Background : e == Theme.Light ? Brushes.White : Brushes.Black;
+                };
+            }
+            else
+            {
+                IsBlurEnabled = ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.TransparentWindow && IsBlurEnabled;
+            }
+            this.Background = IsBlurEnabled ? this.Background :ThemeManager.Current.CurrentUITheme == Theme.Light?Brushes.White:Brushes.Black;
+
         }
         private void Window_Initialized(object sender, EventArgs e)
         {

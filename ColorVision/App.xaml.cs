@@ -72,7 +72,7 @@ namespace ColorVision
         /// </summary>
         private void Application_Exit(object sender, ExitEventArgs e)
         {
-            log.Info("程序关闭");
+            log.Info(ColorVision.Properties.Resource.ApplicationExit);
 
             Environment.Exit(0);
         }

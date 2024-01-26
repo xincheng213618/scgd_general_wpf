@@ -4,9 +4,9 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Services.Msg"
-        xmlns:resx="clr-namespace:ColorVision.Properties"
+        xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
-        Title="Msg记录测试窗口(仅供测试)" Height="450" Background="{StaticResource GlobalBackground}" Width="1280" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resource.MsgLogWindow}" Height="450" Background="{StaticResource GlobalBackground}" Width="1280" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -18,16 +18,16 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <DockPanel>
-            <Button Content="清空数据"  Click="Button_Click"/>
+            <Button Content="{x:Static properties:Resource.ClearData}"  Click="Button_Click"/>
         </DockPanel>
         <ListView x:Name="ListView1" Grid.Row="1"   ScrollViewer.HorizontalScrollBarVisibility="Auto"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback">
             <ListView.Resources >
                 <ContextMenu x:Key="ContextMenuItem">
-                    <MenuItem Header="模拟发送"  Click="MenuItem_Click" Tag="{Binding .}" />
-                    <MenuItem Header="模拟接受"  Click="MenuItem_Click1" Tag="{Binding .}"  />
-                    <MenuItem Header="查看发送数据"  Click="MenuItem_Click2" Tag="{Binding .}"  />
-                    <MenuItem Header="查看接受数据"  Click="MenuItem_Click3" Tag="{Binding .}"  />
-                    <MenuItem Header="{x:Static resx:Resource.Delete}"  Click="MenuItem_Click4" Tag="{Binding .}"  />
+                    <MenuItem Header="{x:Static properties:Resource.SimulateSend}"  Click="MenuItem_Click" Tag="{Binding .}" />
+                    <MenuItem Header="{x:Static properties:Resource.SimulateReceive}"  Click="MenuItem_Click1" Tag="{Binding .}"  />
+                    <MenuItem Header="{x:Static properties:Resource.ViewSentData}"  Click="MenuItem_Click2" Tag="{Binding .}"  />
+                    <MenuItem Header="{x:Static properties:Resource.ViewReceivedData}"  Click="MenuItem_Click3" Tag="{Binding .}"  />
+                    <MenuItem Header="{x:Static properties:Resource.Delete}"  Click="MenuItem_Click4" Tag="{Binding .}"  />
                 </ContextMenu>
             </ListView.Resources>
             <ListView.ItemContainerStyle>

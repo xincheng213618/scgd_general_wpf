@@ -4,6 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Services.Devices.SMU"
+             xmlns:properties="clr-namespace:ColorVision.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceSMU}"
              d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized">
@@ -33,20 +34,20 @@
         </DockPanel>
         <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel  x:Name="StackPanelVI" Margin="5"  Initialized="StackPanelVI_Initialized" >
-                <DockPanel Margin="2">
+                <DockPanel Margin="0,3">
                     <CheckBox IsChecked="{Binding Config.IsNet}" VerticalAlignment="Center" Content="网络" DockPanel.Dock="Right" IsEnabled="False"/>
                     <Button x:Name="ButtonSourceMeter1" Margin="10,0" DockPanel.Dock="Right" Content="打开"  Click="ButtonSourceMeter1_Click"/>
                     <TextBox x:Name="TextSourceMeterIP" Text="{Binding Config.Id}" BorderThickness="0,0,0,1" IsEnabled="False" />
                 </DockPanel>
                 
-                <GroupBox Header="源选择" Margin="0,5">
+                <GroupBox Header="源选择" Margin="0,3">
                     <DockPanel Margin="2" >
                         <RadioButton Content="电压" Width="100" IsChecked="{Binding Config.IsSourceV}" />
                         <RadioButton Content="电流" IsChecked="{Binding Config.IsSourceV,Converter={StaticResource inverseBooleanConverter}}"/>
                     </DockPanel>
                 </GroupBox>
 
-                <GroupBox Header="操作" Margin="0,5">
+                <GroupBox Header="操作" Margin="0,3">
 
                     <StackPanel>
                         <UniformGrid Columns="2" Margin="2">
@@ -86,7 +87,7 @@
                 </GroupBox>
 
 
-                <GroupBox Margin="0,5" Header="扫描" >
+                <GroupBox Margin="0,3" Header="扫描" >
                     <StackPanel  x:Name="StackPanelVITemplate">
                         <UniformGrid Columns="2" Margin="2">
                             <DockPanel Margin="2" >
@@ -133,7 +134,7 @@
                 </GroupBox>
 
                 <DockPanel>
-                    <TextBlock Text="输出视图：" VerticalAlignment="Center" Width="60"/>
+                    <TextBlock Text="{x:Static properties:Resource.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0" />
                     <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"   />
                 </DockPanel>
             </StackPanel>

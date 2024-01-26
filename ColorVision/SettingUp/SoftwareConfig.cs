@@ -2,6 +2,7 @@
 using ColorVision.MVVM;
 using ColorVision.MySql;
 using ColorVision.RC;
+using ColorVision.Services;
 using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.SettingUp;
 using ColorVision.Solution;
@@ -51,6 +52,9 @@ namespace ColorVision.SettingUp
             VideoConfig = new LocalVideoConfig();
             ViewConfig = new ViewConfig();
         }
+
+        public ServicesSetting ServicesSetting { get; set; } = new ServicesSetting();
+
         [JsonIgnore]
         public AutoUpdater AutoUpdater { get;} = AutoUpdater.GetInstance();
 

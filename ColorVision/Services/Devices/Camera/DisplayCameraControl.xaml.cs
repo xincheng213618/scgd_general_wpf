@@ -36,7 +36,7 @@ namespace ColorVision.Services.Devices.Camera
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(CameraDisplayControl));
         public DeviceCamera Device { get; set; }
-        public MQTTCamera DService { get => Device.DService; }
+        public MQTTCamera DService { get => Device.DeviceService; }
 
         public ViewCamera View { get; set; }
 
@@ -344,7 +344,6 @@ namespace ColorVision.Services.Devices.Camera
                 ButtonOpen.Visibility = Visibility.Visible;
                 ButtonInit.Visibility = Visibility.Collapsed;
             }
-
             DService.DeviceStatusChanged += (e) =>
             {
                 switch (e)
@@ -364,6 +363,7 @@ namespace ColorVision.Services.Devices.Camera
                         break;
                     case DeviceStatusType.LiveOpened:
                     case DeviceStatusType.Opened:
+                        ButtonInit.Visibility = Visibility.Collapsed;
                         ButtonOpen.Visibility = Visibility.Collapsed;
                         ButtonClose.Visibility = Visibility.Visible;
                         if (!DService.IsVideoOpen)
@@ -495,7 +495,7 @@ namespace ColorVision.Services.Devices.Camera
             {
                 //if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
                 //{
-                //    MsgRecord msgRecord = DService.CalibrationControl(param);
+                //    MsgRecord msgRecord = DeviceService.CalibrationControl(param);
                 //    Helpers.SendCommand(button, msgRecord);
 
                 //}

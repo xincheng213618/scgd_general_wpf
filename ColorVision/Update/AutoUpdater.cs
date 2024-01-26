@@ -78,7 +78,7 @@ namespace ColorVision.Update
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        if (MessageBox.Show($"发现新版本{LatestVersion},是否更新", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                        if (MessageBox.Show($"{ColorVision.Properties.Resource.NewVersionFound}{LatestVersion},{ColorVision.Properties.Resource.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                         {
                             WindowUpdate windowUpdate = new WindowUpdate() {  Owner =Application.Current.MainWindow ,WindowStartupLocation = WindowStartupLocation.CenterOwner};
                             windowUpdate.Show();
@@ -91,7 +91,7 @@ namespace ColorVision.Update
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         if (detection)
-                            MessageBox.Show("当前版本已经是最新版本", "ColorVision", MessageBoxButton.OK);
+                            MessageBox.Show(ColorVision.Properties.Resource.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
                     });
 
                 }
@@ -143,11 +143,11 @@ namespace ColorVision.Update
                     // 检查是否出错或者操作被取消
                     if (e.Cancelled)
                     {
-                        MessageBox.Show("Download cancelled.");
+                        MessageBox.Show(ColorVision.Properties.Resource.DownloadCancelled);
                     }
                     else if (e.Error != null)
                     {
-                        MessageBox.Show($"An error occurred: {e.Error.Message}");
+                        MessageBox.Show($"{ColorVision.Properties.Resource.ErrorOccurred}: {e.Error.Message}");
                     }
                     else
                     {

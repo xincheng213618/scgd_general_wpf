@@ -22,7 +22,7 @@ namespace ColorVision.Services.Devices.Camera
     {
         public DeviceCamera Device { get; set; }
 
-        public MQTTCamera DService { get => Device.DService; }
+        public MQTTCamera DService { get => Device.DeviceService; }
 
         public bool IsCanEdit { get; set; }
         public DeviceCameraControl(DeviceCamera mQTTDeviceCamera,bool isCanEdit =true)

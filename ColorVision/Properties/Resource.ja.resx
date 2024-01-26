@@ -447,4 +447,172 @@
   <data name="Acquire" xml:space="preserve">
     <value>コレクション</value>
   </data>
+  <data name="RunAsAdmin" xml:space="preserve">
+    <value>管理者として実行</value>
+  </data>
+  <data name="NotRunAsAdmin" xml:space="preserve">
+    <value>非管理者として実行する</value>
+  </data>
+  <data name="Log" xml:space="preserve">
+    <value>ログ</value>
+  </data>
+  <data name="x64ServiceLog" xml:space="preserve">
+    <value>x64サービスログ</value>
+  </data>
+  <data name="LaunchSuccess" xml:space="preserve">
+    <value>正常に開始されました</value>
+  </data>
+  <data name="ExperimentalFeature" xml:space="preserve">
+    <value>実験的な機能</value>
+  </data>
+  <data name="SpectrometerLog" xml:space="preserve">
+    <value>分光計のログ</value>
+  </data>
+  <data name="CameraLog" xml:space="preserve">
+    <value>カメラログ</value>
+  </data>
+  <data name="RestartService" xml:space="preserve">
+    <value>サービスを再起動する</value>
+  </data>
+  <data name="InstallCertificate" xml:space="preserve">
+    <value>証明書のインストール</value>
+  </data>
+  <data name="ApplicationExit" xml:space="preserve">
+    <value>プログラムは終了します</value>
+  </data>
+  <data name="EnterAcquisitionWindow" xml:space="preserve">
+    <value>コレクションウィンドウに入る</value>
+  </data>
+  <data name="SelectResourceToLoad" xml:space="preserve">
+    <value>ロードするリソースを選択してください:</value>
+  </data>
+  <data name="AdvancedSettings" xml:space="preserve">
+    <value>高度な設定</value>
+  </data>
+  <data name="BasicInformation" xml:space="preserve">
+    <value>基本情報</value>
+  </data>
+  <data name="DeviceIdentification" xml:space="preserve">
+    <value>機器のアイデンティティ</value>
+  </data>
+  <data name="DeviceName" xml:space="preserve">
+    <value>装置名</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>状態</value>
+  </data>
+  <data name="ServiceIdentifier" xml:space="preserve">
+    <value>サービス識別子</value>
+  </data>
+  <data name="ServiceName" xml:space="preserve">
+    <value>サービス名</value>
+  </data>
+  <data name="TransmitChannel" xml:space="preserve">
+    <value>送信チャンネル</value>
+  </data>
+  <data name="ReceiveChannel" xml:space="preserve">
+    <value>受信チャンネル</value>
+  </data>
+  <data name="CreateNewConfigurationFile" xml:space="preserve">
+    <value>新しい設定ファイルを作成する</value>
+  </data>
+  <data name="CopyConfigurationFile" xml:space="preserve">
+    <value>設定ファイルをコピーする</value>
+  </data>
+  <data name="ClearData" xml:space="preserve">
+    <value>データのクリア</value>
+  </data>
+  <data name="SimulateSend" xml:space="preserve">
+    <value>アナログ送信</value>
+  </data>
+  <data name="SimulateReceive" xml:space="preserve">
+    <value>模擬合格</value>
+  </data>
+  <data name="ViewSentData" xml:space="preserve">
+    <value>送信データの表示</value>
+  </data>
+  <data name="ViewReceivedData" xml:space="preserve">
+    <value>受け入れデータの表示</value>
+  </data>
+  <data name="MsgLogWindow" xml:space="preserve">
+    <value>メッセージ記録ウィンドウ</value>
+  </data>
+  <data name="ImportLicense" xml:space="preserve">
+    <value>輸入ライセンス</value>
+  </data>
+  <data name="LicenseManagement" xml:space="preserve">
+    <value>ライセンス管理</value>
+  </data>
+  <data name="CopySerialNumber" xml:space="preserve">
+    <value>シリアル番号をコピーする</value>
+  </data>
+  <data name="SerialNumber" xml:space="preserve">
+    <value>シリアルナンバー</value>
+  </data>
+  <data name="CurrentVersionIsUpToDate" xml:space="preserve">
+    <value>現在のバージョンはすでに最新バージョンです</value>
+  </data>
+  <data name="ConfirmUpdate" xml:space="preserve">
+    <value>アップデートするかしないか</value>
+  </data>
+  <data name="NewVersionFound" xml:space="preserve">
+    <value>新しいバージョンが見つかりました</value>
+  </data>
+  <data name="DownloadCancelled" xml:space="preserve">
+    <value>ダウンロードがキャンセルされました</value>
+  </data>
+  <data name="ErrorOccurred" xml:space="preserve">
+    <value>エラーが発生しました</value>
+  </data>
+  <data name="TemplateManagementWindow" xml:space="preserve">
+    <value>テンプレート管理画面</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>新しい</value>
+  </data>
+  <data name="TemplateName" xml:space="preserve">
+    <value>テンプレート名</value>
+  </data>
+  <data name="OutputView" xml:space="preserve">
+    <value>出力ビュー</value>
+  </data>
+  <data name="MqttConnectionConfiguration" xml:space="preserve">
+    <value>MQTT接続の設定</value>
+  </data>
+  <data name="MqttConnection" xml:space="preserve">
+    <value>MQTT接続</value>
+  </data>
+  <data name="ConnectionName" xml:space="preserve">
+    <value>接続名</value>
+  </data>
+  <data name="MysqlConnectionConfiguration" xml:space="preserve">
+    <value>MySQL接続設定</value>
+  </data>
+  <data name="MysqlConnection" xml:space="preserve">
+    <value>MySQL接続</value>
+  </data>
+  <data name="ExecutionProcess" xml:space="preserve">
+    <value>実装プロセス</value>
+  </data>
+  <data name="StopProcess" xml:space="preserve">
+    <value>プロセスの停止</value>
+  </data>
+  <data name="Calculate" xml:space="preserve">
+    <value>計算する</value>
+  </data>
+  <data name="RecentUsedContent" xml:space="preserve">
+    <value>最近使用したコンテンツ</value>
+  </data>
+  <data name="NoRelatedItemsFound" xml:space="preserve">
+    <value>関連商品は見つかりませんでした</value>
+  </data>
+  <data name="OpenItem" xml:space="preserve">
+    <value>プロジェクトを開く</value>
+  </data>
+  <data name="OpenLocalProjectOrFile" xml:space="preserve">
+    <value>ローカルプロジェクトまたはファイルを開きます</value>
+  </data>
+  <data name="CreateNewProjectOrFile" xml:space="preserve">
+    <value>新しいプロジェクトまたはファイルを作成する</value>
+  </data>
 </root>

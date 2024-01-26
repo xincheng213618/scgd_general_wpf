@@ -1,7 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.SMU.Dao;
+using ColorVision.Sorts;
 using ColorVision.Templates;
 using ColorVision.Util;
+using Org.BouncyCastle.Asn1.Crmf;
 using ScottPlot;
 using ScottPlot.Plottable;
 using System;
@@ -65,41 +67,16 @@ namespace ColorVision.Services.Devices.SMU.Views
             if (listView1.View is GridView gridView)
                 GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
         }
+        private void ContextMenu1_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is ContextMenu contextMenu && listView2.View is GridView gridView && contextMenu.Items.Count ==0)
+                GridViewColumnVisibility.GenContentMenuGridViewColumnZero(contextMenu, gridView.Columns);
+        }
+
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
-            if (sender is ContextMenu contextMenu)
-            {
-                if (contextMenu.Items.Count == 0)
-                {
-                    MenuItem menuItemAuto = new MenuItem();
-                    menuItemAuto.Header = "自动调整列宽";
-                    menuItemAuto.Click += (s, e) =>
-                    {
-                        if (listView1.View is GridView gridView)
-                            GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
-                    };
-                    contextMenu.Items.Add(menuItemAuto);
-                    contextMenu.Items.Add(new Separator());
-                    foreach (var item in GridViewColumnVisibilitys)
-                    {
-                        MenuItem menuItem = new MenuItem();
-                        menuItem.Header = item.ColumnName;
-                        Binding binding = new Binding("IsVisible")
-                        {
-                            Source = item,
-                            Mode = BindingMode.TwoWay // 双向绑定
-                        };
-                        menuItem.SetBinding(MenuItem.IsCheckedProperty, binding);
-                        menuItem.Click += (s, e) =>
-                        {
-                            item.IsVisible = !item.IsVisible;
-                            if (listView1.View is GridView gridView)
-                                GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-                        };
-                        contextMenu.Items.Add(menuItem);
-                    }
-                }
-            }
+            if (sender is ContextMenu contextMenu && listView2.View is GridView gridView && contextMenu.Items.Count == 0)
+                GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -482,6 +459,71 @@ namespace ColorVision.Services.Devices.SMU.Views
             SerchPopup.IsOpen = true;
             TextBoxId.Text = string.Empty;
             TextBoxBatch.Text = string.Empty;
+        }
+
+        private void Exchange_Click(object sender, RoutedEventArgs e)
+        {
+            if (listView1.Parent is Grid parent1 && listView2.Parent is Grid parent2)
+            {
+                var tempCol = Grid.GetColumn(listView1);
+                var tempRow = Grid.GetRow(listView1);
+
+                var tempCol1 = Grid.GetColumn(listView2);
+                var tempRow1 = Grid.GetRow(listView2);
+
+                parent1.Children.Remove(listView1);
+                parent2.Children.Remove(listView2);
+
+                var tempwidth = listView1.ActualWidth;
+                var tempheight = listView1.ActualHeight;
+
+                listView1.Width = listView2.ActualWidth;
+                listView1.Height = listView2.ActualHeight;
+
+                listView2.Width = tempwidth;
+                listView2.Height = tempheight;
+
+                parent1.Children.Add(listView2);
+                parent2.Children.Add(listView1);
+
+                Grid.SetColumn(listView1, tempCol1);
+                Grid.SetRow(listView1, tempRow1);
+
+                Grid.SetColumn(listView2, tempCol);
+                Grid.SetRow(listView2, tempRow);
+
+            }
+        }
+
+        private void GridViewColumnSort(object sender, RoutedEventArgs e)
+        {
+            if (sender is GridViewColumnHeader gridViewColumnHeader)
+            {
+                foreach (var item in GridViewColumnVisibilitys)
+                {
+                    if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
+                    {
+                        switch (item.ColumnName)
+                        {
+                            case "序号":
+                                item.IsSortD = !item.IsSortD;
+                                ViewResultSMUs.SortByID(item.IsSortD);
+                                break;
+                            case "测量时间":
+                                item.IsSortD = !item.IsSortD;
+                                ViewResultSMUs.SortByCreateTime(item.IsSortD);
+                                break;
+                            case "批次号":
+                                item.IsSortD = !item.IsSortD;
+                                ViewResultSMUs.SortByBatchID(item.IsSortD);
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    }
+                }
+            }
         }
     }
 }

@@ -8,7 +8,7 @@
              xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:ViewSpectrum}"
-             d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized" >
+             d:DesignHeight="450" Background="{DynamicResource  BackgroundBrush}"  d:DesignWidth="800" Initialized="UserControl_Initialized" >
 
     <Grid x:Name="MainGrid">
         <Grid.ColumnDefinitions>
@@ -26,89 +26,94 @@
                     <RowDefinition Height="38"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <ToolBar Grid.Row="0"  Background ="#EEF4F9" Loaded="ToolBar1_Loaded" ToolBarTray.IsLocked="True">
-                    <ToggleButton Click="Button1_Click"  IsChecked="True" Margin="2,0,0,0" >
-                        <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSwitch}" />
-                    </ToggleButton>
-                    <ToggleButton x:Name="toggle1" Click="Button_Click_1" Margin="2,0,0,0" IsChecked="True" >
-                        <Image Stretch="Uniform" Source="{DynamicResource DrawingImageList}" >
-                            <Image.RenderTransform>
-                                <RotateTransform Angle="90" CenterX="8" CenterY="8"/>
-                            </Image.RenderTransform>
-                        </Image>
-                    </ToggleButton>
-                    <ToggleButton  x:Name="toggle2" Click="Button_Click_2" Margin="2,0,0,0" IsChecked="True">
-                        <Image Stretch="Uniform"  Source="{DynamicResource DrawingImageList}"/>
-                    </ToggleButton>
-                    <Button Click="Button_Click" Margin="2,0,0,0" >
-                        <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
-                    </Button>
-                    <Button Click="Button2_Click" Margin="2,0,0,0" ToolTip="您可以全选后删除" >
-                        <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
-                    </Button>
-                    <Button x:Name="Order" Content="排序" Click="Order_Click" Margin="2,0,0,0"/>
-                    <Popup  x:Name="OrderPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Order}">
-                        <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="80">
-                            <StackPanel Margin="5">
-                                <StackPanel Margin="0,5">
-                                    <RadioButton x:Name="RadioID"  Content="名称"  IsChecked="True"  Checked="Radio_Checked"/>
-                                </StackPanel>
-                                <StackPanel Margin="0,5">
-                                    <RadioButton x:Name="RadioUp"  Content="递增" IsChecked="True" Checked="Radio_Checked"/>
-                                    <RadioButton x:Name="RadioDown"  Content="递减" Checked="Radio_Checked"/>
-                                </StackPanel>
-                            </StackPanel>
-                        </Border>
-                    </Popup>
+                <ToolBarTray  >
+                    <ToolBar Grid.Row="0"  >
+                        <ToggleButton Click="Button1_Click"  IsChecked="True" Margin="2,0,0,0" >
+                            <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSwitch}" />
+                        </ToggleButton>
+                        <ToggleButton x:Name="toggle1" Click="Button_Click_1" Margin="2,0,0,0" IsChecked="True" >
+                            <Image Stretch="Uniform" Source="{DynamicResource DrawingImageList}" >
+                                <Image.RenderTransform>
+                                    <RotateTransform Angle="90" CenterX="8" CenterY="8"/>
+                                </Image.RenderTransform>
+                            </Image>
+                        </ToggleButton>
+                        <ToggleButton  x:Name="toggle2" Click="Button_Click_2" Margin="2,0,0,0" IsChecked="True">
+                            <Image Stretch="Uniform"  Source="{DynamicResource DrawingImageList}"/>
+                        </ToggleButton>
+                        <Button Click="Button_Click" Margin="2,0,0,0" >
+                            <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
+                        </Button>
+                        <Button Click="Button2_Click" Margin="2,0,0,0" ToolTip="您可以全选后删除" >
+                            <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
+                        </Button>
+                    </ToolBar>
+                    <ToolBar>
 
-                    <Button Content="搜索" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
-                    <Button x:Name="Search" Content="查询" Click="Search1_Click" Margin="2,0,0,0"/>
-                    <Popup  x:Name="SerchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Search}">
-                        <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="200">
-                            <StackPanel Margin="5">
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="序号" Width="60"/>
-                                    <TextBox  x:Name="TextBoxId" Style="{StaticResource TextBox.Small}" Text=""/>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="批次号" Width="60"/>
-                                    <TextBox x:Name="TextBoxBatch"  Style="{StaticResource TextBox.Small}" Text=""/>
-                                </DockPanel>
-                                <Button Content="查询" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
-                            </StackPanel>
-                        </Border>
-                    </Popup>
-                    <Button x:Name="OpenColumnVisibilityPopupButton" Content="列显示" Click="OpenColumnVisibilityPopupButton_Click"/>
-                    <Popup  x:Name="ColumnVisibilityPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=OpenColumnVisibilityPopupButton}">
-                        <Border  Style="{StaticResource BorderModuleArea}" Background="{DynamicResource SecondaryRegionBrush}" Width="145" CornerRadius="5">
-                            <ListView x:Name="GridViewColumnVisibilityListView" BorderThickness="0" Background="Transparent" Margin="-3,-2,-3,-5"  Style="{StaticResource ListView.Small}">
-                                <ListView.View >
-                                    <GridView >
-                                        <GridView.ColumnHeaderContainerStyle>
-                                            <Style TargetType="{x:Type GridViewColumnHeader}">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </Style>
-                                        </GridView.ColumnHeaderContainerStyle>
-                                        <GridViewColumn>
-                                            <GridViewColumn.CellTemplate>
-                                                <DataTemplate  DataType="{x:Type vm:GridViewColumnVisibility}">
-                                                    <StackPanel Orientation="Horizontal">
-                                                        <CheckBox IsChecked="{Binding IsVisible}" Margin="-5,0,5,0" Click="CheckBox_Click"/>
-                                                        <TextBlock Text="{Binding ColumnName}"/>
-                                                    </StackPanel>
-                                                </DataTemplate>
-                                            </GridViewColumn.CellTemplate>
-                                        </GridViewColumn>
-                                    </GridView>
-                                </ListView.View>
-                            </ListView>
-                        </Border>
-                    </Popup>
-                </ToolBar>
-                <ListView  Height="250" Grid.Row="1"  d:DataContext="{d:DesignInstance local:SpectralData}" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                        <Popup  x:Name="OrderPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Order}">
+                            <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="80">
+                                <StackPanel Margin="5">
+                                    <StackPanel Margin="0,5">
+                                        <RadioButton x:Name="RadioID"  Content="名称"  IsChecked="True"  Checked="Radio_Checked"/>
+                                    </StackPanel>
+                                    <StackPanel Margin="0,5">
+                                        <RadioButton x:Name="RadioUp"  Content="递增" IsChecked="True" Checked="Radio_Checked"/>
+                                        <RadioButton x:Name="RadioDown"  Content="递减" Checked="Radio_Checked"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+
+                        <Button Content="搜索" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
+                        <Button x:Name="Search" Content="查询" Click="Search1_Click" Margin="2,0,0,0"/>
+                        <Popup  x:Name="SerchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Search}">
+                            <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="200">
+                                <StackPanel Margin="5">
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="序号" Width="60"/>
+                                        <TextBox  x:Name="TextBoxId" Style="{StaticResource TextBox.Small}" Text=""/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="批次号" Width="60"/>
+                                        <TextBox x:Name="TextBoxBatch"  Style="{StaticResource TextBox.Small}" Text=""/>
+                                    </DockPanel>
+                                    <Button Content="查询" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                        <Button  Content="交换" Click="Exchange_Click" Margin="2,0,0,0"/>
+                        <Button x:Name="Order" Content="排序" Click="Order_Click" Margin="2,0,0,0"/>
+                        <Button x:Name="OpenColumnVisibilityPopupButton" Content="列显示" Click="OpenColumnVisibilityPopupButton_Click"/>
+                        <Popup  x:Name="ColumnVisibilityPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=OpenColumnVisibilityPopupButton}">
+                            <Border  Style="{StaticResource BorderModuleArea}" Background="{DynamicResource SecondaryRegionBrush}" Width="145" CornerRadius="5">
+                                <ListView x:Name="GridViewColumnVisibilityListView" BorderThickness="0" Background="Transparent" Margin="-3,-2,-3,-5"  Style="{StaticResource ListView.Small}">
+                                    <ListView.View >
+                                        <GridView >
+                                            <GridView.ColumnHeaderContainerStyle>
+                                                <Style TargetType="{x:Type GridViewColumnHeader}">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                </Style>
+                                            </GridView.ColumnHeaderContainerStyle>
+                                            <GridViewColumn>
+                                                <GridViewColumn.CellTemplate>
+                                                    <DataTemplate  DataType="{x:Type vm:GridViewColumnVisibility}">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <CheckBox IsChecked="{Binding IsVisible}" Margin="-5,0,5,0" Click="CheckBox_Click"/>
+                                                            <TextBlock Text="{Binding ColumnName}"/>
+                                                        </StackPanel>
+                                                    </DataTemplate>
+                                                </GridViewColumn.CellTemplate>
+                                            </GridViewColumn>
+                                        </GridView>
+                                    </ListView.View>
+                                </ListView>
+                            </Border>
+                        </Popup>
+                    </ToolBar>
+                </ToolBarTray>
+                <ListView  Height="250" Grid.Row="1"  d:DataContext="{d:DesignInstance local:SpectralData}"  BorderThickness="0" Background="Transparent" x:Name="listView1" Margin="-5" SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.Resources>
-                        <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
-                        </ContextMenu>
+                        <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
                     </ListView.Resources>
                     <ListView.View >
                         <GridView >
@@ -118,6 +123,7 @@
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="BorderThickness" Value="0"/>
                                     <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                                    <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
                             <GridViewColumn   Header="序号" >
@@ -131,6 +137,13 @@
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
                                         <TextBlock Text="{Binding BatchID}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="测量时间">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
+                                        <TextBlock Text="{Binding CreateTime}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
@@ -243,11 +256,23 @@
                     </ListView.View>
                 </ListView>
             </Grid>
-            <GridSplitter  Grid.Row="1" IsEnabled="{Binding ElementName=toggle1,Path=IsChecked}" Background="#EEF4F9"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
+            <GridSplitter  Grid.Row="1" Background="#EEF4F9"  Height="2" Panel.ZIndex="999" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
         </Grid>
-        <ListView x:Name="listView2"  Grid.Column="1" SelectionChanged="listView2_SelectionChanged">
+        <ListView x:Name="listView2"  Grid.Column="1" Margin="-5" Background="Transparent" BorderThickness="0" SelectionChanged="listView2_SelectionChanged">
+            <ListView.Resources>
+                <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" >
+                </ContextMenu>
+            </ListView.Resources>
             <ListView.View >
-                <GridView>
+                <GridView >
+                    <GridView.ColumnHeaderContainerStyle>
+                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                        </Style>
+                    </GridView.ColumnHeaderContainerStyle>
                     <GridViewColumn  Header="波长" >
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SpectralData}">
@@ -272,7 +297,7 @@
                 </GridView>
             </ListView.View>
         </ListView>
-        <GridSplitter  Grid.Column="1" IsEnabled="{Binding ElementName=toggle2,Path=IsChecked}" Background="LightGray"  Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted1"  />
+        <GridSplitter  Grid.Column="1"  Background="LightGray" Panel.ZIndex="999" Width="2" HorizontalAlignment="Left"   DragCompleted="GridSplitter_DragCompleted1"  />
 
     </Grid>
 </UserControl>

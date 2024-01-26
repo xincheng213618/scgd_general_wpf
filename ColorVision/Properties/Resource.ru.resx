@@ -447,4 +447,172 @@
   <data name="Acquire" xml:space="preserve">
     <value>коллекция</value>
   </data>
+  <data name="RunAsAdmin" xml:space="preserve">
+    <value>Запустить от имени администратора</value>
+  </data>
+  <data name="NotRunAsAdmin" xml:space="preserve">
+    <value>Запуск от имени администратора</value>
+  </data>
+  <data name="Log" xml:space="preserve">
+    <value>бревно</value>
+  </data>
+  <data name="x64ServiceLog" xml:space="preserve">
+    <value>журнал обслуживания x64</value>
+  </data>
+  <data name="LaunchSuccess" xml:space="preserve">
+    <value>Началось успешно</value>
+  </data>
+  <data name="ExperimentalFeature" xml:space="preserve">
+    <value>Экспериментальные возможности</value>
+  </data>
+  <data name="SpectrometerLog" xml:space="preserve">
+    <value>Журнал спектрометра</value>
+  </data>
+  <data name="CameraLog" xml:space="preserve">
+    <value>Журнал камеры</value>
+  </data>
+  <data name="RestartService" xml:space="preserve">
+    <value>Перезапустить службу</value>
+  </data>
+  <data name="InstallCertificate" xml:space="preserve">
+    <value>Установить сертификат</value>
+  </data>
+  <data name="ApplicationExit" xml:space="preserve">
+    <value>Программа закрывается</value>
+  </data>
+  <data name="EnterAcquisitionWindow" xml:space="preserve">
+    <value>Войдите в окно сбора</value>
+  </data>
+  <data name="SelectResourceToLoad" xml:space="preserve">
+    <value>Пожалуйста, выберите ресурс, который вы хотите загрузить:</value>
+  </data>
+  <data name="AdvancedSettings" xml:space="preserve">
+    <value>расширенные настройки</value>
+  </data>
+  <data name="BasicInformation" xml:space="preserve">
+    <value>Основная информация</value>
+  </data>
+  <data name="DeviceIdentification" xml:space="preserve">
+    <value>Идентификация оборудования</value>
+  </data>
+  <data name="DeviceName" xml:space="preserve">
+    <value>Имя устройства</value>
+  </data>
+  <data name="Status" xml:space="preserve">
+    <value>состояние</value>
+  </data>
+  <data name="ServiceIdentifier" xml:space="preserve">
+    <value>Идентификатор услуги</value>
+  </data>
+  <data name="ServiceName" xml:space="preserve">
+    <value>наименование услуги</value>
+  </data>
+  <data name="TransmitChannel" xml:space="preserve">
+    <value>отправить канал</value>
+  </data>
+  <data name="ReceiveChannel" xml:space="preserve">
+    <value>канал приема</value>
+  </data>
+  <data name="CreateNewConfigurationFile" xml:space="preserve">
+    <value>Создать новый файл конфигурации</value>
+  </data>
+  <data name="CopyConfigurationFile" xml:space="preserve">
+    <value>Скопировать файл конфигурации</value>
+  </data>
+  <data name="ClearData" xml:space="preserve">
+    <value>Очистить данные</value>
+  </data>
+  <data name="SimulateSend" xml:space="preserve">
+    <value>Аналоговая отправка</value>
+  </data>
+  <data name="SimulateReceive" xml:space="preserve">
+    <value>Ложное принятие</value>
+  </data>
+  <data name="ViewSentData" xml:space="preserve">
+    <value>Просмотр данных об отправке</value>
+  </data>
+  <data name="ViewReceivedData" xml:space="preserve">
+    <value>Посмотреть данные о приемке</value>
+  </data>
+  <data name="MsgLogWindow" xml:space="preserve">
+    <value>Окно записи сообщения</value>
+  </data>
+  <data name="ImportLicense" xml:space="preserve">
+    <value>Лицензия на импорт</value>
+  </data>
+  <data name="LicenseManagement" xml:space="preserve">
+    <value>Управление лицензиями</value>
+  </data>
+  <data name="CopySerialNumber" xml:space="preserve">
+    <value>Скопировать серийный номер</value>
+  </data>
+  <data name="SerialNumber" xml:space="preserve">
+    <value>серийный номер</value>
+  </data>
+  <data name="CurrentVersionIsUpToDate" xml:space="preserve">
+    <value>Текущая версия уже является последней версией</value>
+  </data>
+  <data name="ConfirmUpdate" xml:space="preserve">
+    <value>Обновить или нет</value>
+  </data>
+  <data name="NewVersionFound" xml:space="preserve">
+    <value>найдена новая версия</value>
+  </data>
+  <data name="DownloadCancelled" xml:space="preserve">
+    <value>Загрузка отменена</value>
+  </data>
+  <data name="ErrorOccurred" xml:space="preserve">
+    <value>Произошла ошибка</value>
+  </data>
+  <data name="TemplateManagementWindow" xml:space="preserve">
+    <value>Окно управления шаблонами</value>
+  </data>
+  <data name="New" xml:space="preserve">
+    <value>Новый</value>
+  </data>
+  <data name="TemplateName" xml:space="preserve">
+    <value>Имя Шаблона</value>
+  </data>
+  <data name="OutputView" xml:space="preserve">
+    <value>Выходной вид</value>
+  </data>
+  <data name="MqttConnectionConfiguration" xml:space="preserve">
+    <value>Конфигурация соединения MQTT</value>
+  </data>
+  <data name="MqttConnection" xml:space="preserve">
+    <value>MQTT-соединение</value>
+  </data>
+  <data name="ConnectionName" xml:space="preserve">
+    <value>название соединения</value>
+  </data>
+  <data name="MysqlConnectionConfiguration" xml:space="preserve">
+    <value>Конфигурация соединения MySQL</value>
+  </data>
+  <data name="MysqlConnection" xml:space="preserve">
+    <value>MySQL-соединение</value>
+  </data>
+  <data name="ExecutionProcess" xml:space="preserve">
+    <value>Процесс реализации</value>
+  </data>
+  <data name="StopProcess" xml:space="preserve">
+    <value>Остановить процесс</value>
+  </data>
+  <data name="Calculate" xml:space="preserve">
+    <value>вычислить</value>
+  </data>
+  <data name="RecentUsedContent" xml:space="preserve">
+    <value>Недавно использованный контент</value>
+  </data>
+  <data name="NoRelatedItemsFound" xml:space="preserve">
+    <value>Похожие товары не найдены</value>
+  </data>
+  <data name="OpenItem" xml:space="preserve">
+    <value>Открыть проект</value>
+  </data>
+  <data name="OpenLocalProjectOrFile" xml:space="preserve">
+    <value>Откройте локальный проект или файл</value>
+  </data>
+  <data name="CreateNewProjectOrFile" xml:space="preserve">
+    <value>Создать новый проект или файл</value>
+  </data>
 </root>

@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Services"
         xmlns:mqtt="clr-namespace:ColorVision.Services.Devices"
-        xmlns:resx="clr-namespace:ColorVision.Properties"
+        xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         Title="WindowService" Height="700" Width="900" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" >
     <Grid>
@@ -21,6 +21,7 @@
             <Grid Grid.Row="0" Grid.Column="0">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <TreeView x:Name="TreeView1" Loaded="TreeView1_Loaded"  ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5">
@@ -51,6 +52,7 @@
                     </TreeView.ItemContainerStyle>
                 </TreeView>
                 <Button Grid.Row="1" Content="重启WindowsService" Margin="5" Click="Button_Click_1" />
+                <Button Grid.Row="2" Content="切换" Margin="5" Click="Button_Click_2" />
             </Grid>
             <Border CornerRadius="5" Grid.Column="1" Margin="2,5,5,5">
                 <Grid x:Name="StackPanelShow"/>
@@ -58,7 +60,7 @@
         </Grid>
 
         <Border   Margin="5" Grid.Row="1">
-            <Button x:Name="ButtonOK"  Height="40"   Content="进入采集窗口" Background="{StaticResource PrimaryBrush}" Foreground="White"  FontSize="22"   Click="Button_Click"/>
+            <Button x:Name="ButtonOK"  Height="40"   Content="{x:Static properties:Resource.EnterAcquisitionWindow}" Background="{StaticResource PrimaryBrush}" Foreground="White"  FontSize="22"   Click="Button_Click"/>
         </Border>
     </Grid>
 

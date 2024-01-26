@@ -72,7 +72,7 @@
                             </MenuItem.Icon>
                         </MenuItem>
                     </MenuItem>
-                    <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance local:SoftwareConfig}"  Header="{ x:Static properties:Resource.MenuView}">
+                    <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance SettingUp:ConfigHandler}"  Header="{ x:Static properties:Resource.MenuView}">
                         <MenuItem Header="{x:Static properties:Resource.MenuViewStatusBar}" IsChecked="{Binding SoftwareSetting.IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
                         <Separator/>
                         <MenuItem Header="{x:Static properties:Resource.SaveWindowLayout}"  Click="MenuStatusBar_Click" />
@@ -83,7 +83,9 @@
                         <MenuItem Header="打开日志文件夹(_F)"  Click="LogF_Click"/>
                         <MenuItem Header="打开配置文件(_S)"  Click="Setting_Click"/>
                         <MenuItem Header="打开配置文件夹(_F)" Click="SettingF_Click"/>
+
                         <Separator/>
+                        <MenuItem Header="变更日志"  Click="ChangeLog_Clik"/>
                         <MenuItem Header="{x:Static properties:Resource.MenuUpdate}" Click="Update_Click"/>
                         <MenuItem Header="{x:Static properties:Resource.MyLicense_R}"  Click="License_Click"/>
                         <MenuItem Header="{x:Static properties:Resource.MenuAbout}" Click="About_Click"/>
@@ -105,7 +107,7 @@
                 <Grid x:Name="SolutionGrid" Background="LightGray" Visibility="{Binding ElementName=SolutionTab,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter}}"/>
 
             </Grid>
-            <Grid Grid.Row="0" Panel.ZIndex="101" Background="{DynamicResource GlobalBackground}" Margin="-1,0,0,0" x:Name="LeftMainContent" d:DataContext="{d:DesignInstance local:SoftwareConfig}"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
+            <Grid Grid.Row="0" Panel.ZIndex="101" Background="{DynamicResource GlobalBackground}" Margin="-1,0,0,0" x:Name="LeftMainContent" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
                 <UIElement.RenderTransform>
                     <TranslateTransform />
                 </UIElement.RenderTransform>
@@ -127,7 +129,7 @@
             <GridSplitter Panel.ZIndex="102" x:Name="GridSplitter" Margin="0,26,0,26" Grid.Column="0" HorizontalAlignment="Right" Width="4" Background="Transparent"/>
             <Button Grid.Column="0" x:Name="ButtonShiftIn" Visibility="Collapsed" Click="OnLeftMainContentShiftIn" hc:IconElement.Geometry="{StaticResource RightGeometry}" Padding="8 8 0 8" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-12 0 0 0" Style="{StaticResource ButtonIconCircular}" />
         </Grid>
-        <Grid Grid.Row="2" Height="35" x:Name="StatusBarGrid" d:DataContext="{d:DesignInstance local:ConfigHandler}" Visibility="{Binding SoftwareConfig.SoftwareSetting.IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}" >
+        <Grid Grid.Row="2" Height="35" x:Name="StatusBarGrid" d:DataContext="{d:DesignInstance SettingUp:ConfigHandler}" Visibility="{Binding SoftwareConfig.SoftwareSetting.IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}" >
             <StatusBar BorderThickness="0,1,0,0" >
                 <StatusBar.ItemsPanel>
                     <ItemsPanelTemplate>
