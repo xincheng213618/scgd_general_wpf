@@ -1,4 +1,5 @@
-﻿using MQTTMessageLib;
+﻿using ColorVision.Services.Devices.Camera.Configs;
+using MQTTMessageLib;
 using Newtonsoft.Json;
 
 namespace ColorVision.Services.Devices.Spectrum.Configs
@@ -23,6 +24,8 @@ namespace ColorVision.Services.Devices.Spectrum.Configs
 
         public ShutterConfig ShutterCfg { get => _ShutterCfg; set { _ShutterCfg = value; NotifyPropertyChanged(); } }
         private ShutterConfig _ShutterCfg;
+
+        public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 
         [JsonIgnore]
         public string BtnDeviceStatus

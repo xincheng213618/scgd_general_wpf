@@ -3,14 +3,12 @@ using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
 using NetMQ;
 using NetMQ.Sockets;
-using OpenCvSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using log4net;
-using static System.Net.WebRequestMethods;
 
 namespace ColorVision.Net
 {
@@ -124,7 +122,7 @@ namespace ColorVision.Net
                     code = CVFileUtils.ReadCVFile_channel(channel, fileInfo, ref fileInfo);
                 }
             }
-            handler?.Invoke(this, new NetFileEvent(code, fileName, fileInfo));
+            handler?.Invoke(this, new NetFileEvent(FileEvent.FileDownload, code, fileName, fileInfo));
         }
 
 
@@ -136,7 +134,9 @@ namespace ColorVision.Net
             try
             {
                 client = new DealerSocket(serverEndpoint);
-                List<byte[]> data = client?.ReceiveMultipartBytes(1);
+                client?.SendFrame(fileName);
+                List<byte[]> data = new List<byte[]>();
+                bool? ret = client?.TryReceiveMultipartBytes(TimeSpan.FromSeconds(5),ref data,1);
                 if (data != null && data.Count == 1)
                 {
                     bytes = data[0];
@@ -179,7 +179,7 @@ namespace ColorVision.Net
         {
             CVCIEFileInfo fileInfo = new CVCIEFileInfo();
             int code = DoDownloadFile(serverEndpoint, fileName, extType, ref fileInfo);
-            handler?.Invoke(this, new NetFileEvent(code, fileName, fileInfo));
+            handler?.Invoke(this, new NetFileEvent(FileEvent.FileDownload, code, fileName, fileInfo));
         }
 
         private void UploadFile(string serverEndpoint, string fileName)
@@ -212,12 +212,12 @@ namespace ColorVision.Net
                 }
                 finally
                 {
-                    handler?.Invoke(this, new NetFileEvent(code, fileName));
+                    handler?.Invoke(this, new NetFileEvent(FileEvent.FileUpload, code, fileName));
                 }
             }
             else
             {
-                handler?.Invoke(this, new NetFileEvent(code, fileName));
+                handler?.Invoke(this, new NetFileEvent(FileEvent.FileUpload, code, fileName));
             }
         }
 
@@ -332,7 +332,7 @@ namespace ColorVision.Net
                 }
             }
 
-            handler?.Invoke(this, new NetFileEvent(code, fileName, data));
+            handler?.Invoke(this, new NetFileEvent(FileEvent.FileDownload, code, fileName, data));
         }
 
         public void OpenLocalFile(string fileName, FileExtType extType)
@@ -343,7 +343,7 @@ namespace ColorVision.Net
             else if (extType == FileExtType.Raw) code = ReadLocalBinaryRawFile(fileName, ref fileInfo);
             else if (extType == FileExtType.Tif) code = ReadTIFImage(fileName,ref fileInfo);
             else code = ReadLocalBinaryFile(fileName, ref fileInfo);
-            handler?.Invoke(this, new NetFileEvent(code, fileName, fileInfo));
+            handler?.Invoke(this, new NetFileEvent(FileEvent.FileDownload, code, fileName, fileInfo));
         }
 
         public CVCIEFileInfo OpenLocalCVCIEFile(string? fileName, FileExtType extType)
@@ -367,7 +367,7 @@ namespace ColorVision.Net
         {
             CVCIEFileInfo data = new CVCIEFileInfo();
             int code = ReadLocalBinaryCIEFile(fileName, ref data);
-            handler?.Invoke(this, new NetFileEvent(code, fileName, data));
+            handler?.Invoke(this, new NetFileEvent(FileEvent.FileDownload, code, fileName, data));
         }
 
         private int ReadLocalBinaryCIEFile(string fileName, ref CVCIEFileInfo fileInfo)
@@ -563,7 +563,7 @@ namespace ColorVision.Net
 
         private int ReadTIFImage(string fileName,ref CVCIEFileInfo result)
         {
-            Mat src = Cv2.ImRead(fileName, ImreadModes.Unchanged);
+            OpenCvSharp.Mat src = OpenCvSharp.Cv2.ImRead(fileName, OpenCvSharp.ImreadModes.Unchanged);
             int bpp = GetBpp(src.Depth());
             int code = -1;
             if (bpp == 32)
@@ -583,20 +583,26 @@ namespace ColorVision.Net
             return code;
         }
     }
-
+    public enum FileEvent
+    {
+        FileDownload,
+        FileUpload,
+    }
     public class NetFileEvent
     {
         public int Code { get; set; }
+        public FileEvent EventName { get; set; }
         public string FileName { get; set; }
         public CVCIEFileInfo FileData { get; set; }
-        public NetFileEvent(int code, string fileName, CVCIEFileInfo fileData)
+        public NetFileEvent(FileEvent eventName, int code, string fileName, CVCIEFileInfo fileData)
         {
+            this.EventName = eventName;
             this.Code = code;
             this.FileName = fileName;
             this.FileData = fileData;
         }
 
-        public NetFileEvent(int code, string fileName) : this(code, fileName, default)
+        public NetFileEvent(FileEvent eventName, int code, string fileName) : this(eventName, code, fileName, default)
         {
         }
     }

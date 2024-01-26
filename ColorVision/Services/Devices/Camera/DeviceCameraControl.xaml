@@ -148,6 +148,10 @@
                                                 <TextBlock Text="增益:" Width="120"/>
                                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CameraCfg.Gain}"/>
                                             </DockPanel>
+                                            <DockPanel>
+                                                <TextBlock Text="定时查询:" Width="120"/>
+                                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CameraCfg.TempSpanTime}"/>
+                                            </DockPanel>
                                         </StackPanel>
                                     </GroupBox>
                                 </StackPanel>
@@ -384,6 +388,10 @@
                                             <DockPanel Margin="0,5">
                                                 <TextBlock  Text="端口地址:" Width="120"/>
                                                 <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.Endpoint}"/>
+                                            </DockPanel>
+                                            <DockPanel Margin="0,5">
+                                                <TextBlock  Text="端口范围:" Width="120"/>
+                                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.PortRange}"/>
                                             </DockPanel>
                                             <DockPanel>
                                                 <Button DockPanel.Dock="Right" Content="清理" Click="ServiceCache_Click"/>

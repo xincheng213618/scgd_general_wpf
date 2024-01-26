@@ -27,7 +27,7 @@ namespace ColorVision.Services.Devices.SMU
             this.DataContext = this.MQTTDeviceSMU;
             List<string> Serials = new List<string> { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8" };
             TextSerial.ItemsSource = Serials;
-            List<string> devTypes = new List<string> { "Keithley_2400", "Keithley_2600", "Precase_S100" };
+            List<string> devTypes = new List<string> { "Keithley_2400", "Keithley_2600", "Precise_S100" };
             SMUType.ItemsSource = devTypes;
         }
 
