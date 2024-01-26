@@ -157,7 +157,7 @@ namespace ColorVision.Services.Devices.Spectrum
             string btnTitle = btn_connect.Content.ToString();
             if (!string.IsNullOrWhiteSpace(btnTitle))
             {
-                if (btnTitle.Equals(DeviceStatusType.OffLine.ToString(), StringComparison.Ordinal))
+                if (btnTitle.Equals("打开", StringComparison.Ordinal))
                 {
                     btn_connect.Content = "打开中";
                     SpectrumService.Open();

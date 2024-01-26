@@ -134,11 +134,11 @@ namespace ColorVision.Net
             try
             {
                 client = new DealerSocket(serverEndpoint);
-                client?.SendFrame(fileName);
                 List<byte[]> data = new List<byte[]>();
                 bool? ret = client?.TryReceiveMultipartBytes(TimeSpan.FromSeconds(5),ref data,1);
                 if (data != null && data.Count == 1)
                 {
+                    client?.SendFrame(fileName);
                     bytes = data[0];
                     if (!string.IsNullOrEmpty(FileCachePath))
                     {
