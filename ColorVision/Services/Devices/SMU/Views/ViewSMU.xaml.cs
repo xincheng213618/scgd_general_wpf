@@ -497,7 +497,7 @@ namespace ColorVision.Services.Devices.SMU.Views
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
-            if (sender is GridViewColumnHeader gridViewColumnHeader)
+            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content !=null)
             {
                 foreach (var item in GridViewColumnVisibilitys)
                 {
