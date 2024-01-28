@@ -1,26 +1,29 @@
-﻿using System.Data;
+﻿using System.Collections.Generic;
+using System.Data;
 using ColorVision.MySql;
 
 namespace ColorVision.Services.Dao
 {
-    public class ResourceGroupAssociation:PKModel
+    public class SysResourceGroupModel : PKModel
     {
         public int ResourceId { get; set; }
         public int GroupId { get; set; }
     }
 
 
-    public class ResourceGroupEqo : BaseDaoMaster<ResourceGroupAssociation>
+    public class ResourceGroupDao : BaseDaoMaster<SysResourceGroupModel>
     {
 
-        public ResourceGroupEqo() : base("t_scgd_sys_resource_group", "id", true)
+        public ResourceGroupDao() : base("t_scgd_sys_resource_group", "id", true)
         {
 
         }
 
-        public override ResourceGroupAssociation GetModelFromDataRow(DataRow item)
+
+
+        public override SysResourceGroupModel GetModelFromDataRow(DataRow item)
         {
-            ResourceGroupAssociation model = new ResourceGroupAssociation
+            SysResourceGroupModel model = new SysResourceGroupModel
             {
                 Id = item.Field<int>("id"),
                 GroupId = item.Field<int>("group_id"),
@@ -29,7 +32,7 @@ namespace ColorVision.Services.Dao
             return model;
         }
 
-        public override DataRow Model2Row(ResourceGroupAssociation item, DataRow row)
+        public override DataRow Model2Row(SysResourceGroupModel item, DataRow row)
         {
             if (item != null)
             {
@@ -39,5 +42,14 @@ namespace ColorVision.Services.Dao
             }
             return row;
         }
+
+
+
+        public List<SysResourceModel> GetResourceItems(int pid, int tenantId = -1)
+        {
+            List<SysResourceModel> list = new List<SysResourceModel>();
+
+        }
+
     }
 }
