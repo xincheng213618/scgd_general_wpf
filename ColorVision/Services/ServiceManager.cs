@@ -289,6 +289,7 @@ namespace ColorVision.Services
 
         public void LoadGroupService(GroupService groupService)
         {
+            sysResourceDao1.CreatResourceGroup();
             List<SysResourceModel> sysResourceModels = sysResourceDao1.GetGroupResourceItems(groupService.SysResourceModel.Id);
             foreach (var sysResourceModel in sysResourceModels)
             {
