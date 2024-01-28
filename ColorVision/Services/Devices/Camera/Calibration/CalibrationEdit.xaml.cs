@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.Services.Dao;
+using System;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -21,15 +22,16 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
             InitializeComponent();
         }
 
-        public ObservableCollection<CalibrationRsourcesGroup> CalibrationRsourcesGroups { get; set; } = new ObservableCollection<CalibrationRsourcesGroup>();
+        public ObservableCollection<GroupService> GroupServices { get; set; } = new ObservableCollection<GroupService>();
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            foreach (var item in DeviceCamera.Config.CalibrationRsourcesGroups)
+            foreach (var item in DeviceCamera.VisualChildren)
             {
-                CalibrationRsourcesGroups.Add(item.Value);
+                if (item is GroupService groupService)
+                    GroupServices.Add(groupService);
             }
-            ListView1.ItemsSource = CalibrationRsourcesGroups;
+            ListView1.ItemsSource = GroupServices;
             ListView1.SelectedIndex = 0;
         }
 
@@ -37,7 +39,7 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
         {
             if (ListView1.SelectedIndex > -1)
             {
-                StackPanelCab.DataContext = CalibrationRsourcesGroups[ListView1.SelectedIndex];
+                StackPanelCab.DataContext = GroupServices[ListView1.SelectedIndex];
             }
         }
 
@@ -45,9 +47,15 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
         private void Button_Add_Click(object sender, RoutedEventArgs e)
         {
             string calue = NewCreateFileName("title");
-            CalibrationRsourcesGroup calibrationRsourcesGroup = new CalibrationRsourcesGroup() { Title = calue };
-            DeviceCamera.Config.CalibrationRsourcesGroups.Add(calue, calibrationRsourcesGroup);
-            CalibrationRsourcesGroups.Add(calibrationRsourcesGroup);
+            var group = GroupService.AddGroupService(DeviceCamera, calue);
+            if (group != null)
+            {
+                GroupServices.Add(group);
+            }
+            else
+            {
+                MessageBox.Show("创建失败");
+            }
         }
 
         public string NewCreateFileName(string FileName)
@@ -59,21 +67,24 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
             }
             return FileName;
         }
-
+        SysResourceDao SysResourceDao = new SysResourceDao();
 
         private void Button_Delete_Click(object sender, RoutedEventArgs e)
         {
             if (ListView1.SelectedIndex > -1)
             {
-                CalibrationRsourcesGroup ss = CalibrationRsourcesGroups[ListView1.SelectedIndex];
-                CalibrationRsourcesGroups.Remove(ss);
-                DeviceCamera.Config.CalibrationRsourcesGroups.Remove(ss.Title);
+                SysResourceDao.DeleteById(GroupServices[ListView1.SelectedIndex].SysResourceModel.Id);
+                GroupServices.RemoveAt(ListView1.SelectedIndex);
+                MessageBox.Show("删除成功");
             }
         }
 
         private void Window_Closed(object sender, EventArgs e)
         {
-            DeviceCamera.Save();
+            foreach (var item in GroupServices)
+            {
+                item.Save();
+            }
         }
     }
 }

@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:local="clr-namespace:ColorVision.Services.Devices.Camera.Calibrations"
+        xmlns:group="clr-namespace:ColorVision.Services.Devices"
         mc:Ignorable="d"
         Title="CalibrationEdit"  Background="{DynamicResource GlobalBackground}"  Closed="Window_Closed" Height="400" Width="600" Initialized="Window_Initialized" >
     <Window.Resources>
@@ -33,8 +34,8 @@
                     <GridView>
                         <GridViewColumn Header="名称">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate DataType="{x:Type local:CalibrationRsourcesGroup}">
-                                    <TextBlock   Width="100"  Text="{Binding Title}" Tag="{Binding .}" />
+                                <DataTemplate DataType="{x:Type group:GroupService}">
+                                    <TextBox  Text="{Binding Name}" Tag="{Binding .}"  Width="100"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
