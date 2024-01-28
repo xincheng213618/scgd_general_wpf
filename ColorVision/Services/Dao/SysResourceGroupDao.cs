@@ -45,11 +45,5 @@ namespace ColorVision.Services.Dao
 
 
 
-        public List<SysResourceModel> GetResourceItems(int pid, int tenantId = -1)
-        {
-            List<SysResourceModel> list = new List<SysResourceModel>();
-
-        }
-
     }
 }

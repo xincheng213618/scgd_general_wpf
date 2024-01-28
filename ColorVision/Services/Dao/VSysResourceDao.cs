@@ -79,6 +79,35 @@ namespace ColorVision.Services.Dao
             return row;
         }
 
+        public void ADDGroup(int groupId ,int resourceId)
+        {
+            string sql = "INSERT INTO t_scgd_sys_resource_group (resource_id, group_id) VALUES (@resource_id, @groupId)";
+            var parameters = new Dictionary<string, object>();
+            parameters.Add("@groupId", groupId);
+            parameters.Add("@resourceId", resourceId);
+            ExecuteNonQuery(sql, parameters);
+        }
+
+        public List<SysResourceModel> GetGroupResourceItems(int groupId)
+        {
+            List<SysResourceModel> list = new List<SysResourceModel>();
+
+            string sql = "SELECT rg.group_id, r.id, r.name, r.code, r.type , r.pid, r.txt_value, r.create_date, r.tenant_id FROM t_scgd_sys_resource_group rg JOIN t_scgd_sys_resource r ON rg.resource_id = r.id WHERE  rg.group_id =@groupId";
+            var parameters = new Dictionary<string, object>();
+            parameters.Add("@groupId", groupId);
+            var dInfo = GetData(sql, parameters);
+            foreach (DataRow item in dInfo.Rows)
+            {
+                SysResourceModel? model = GetModelFromDataRow(item);
+                if (model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
+        }
+
+
 
         public List<SysResourceModel> GetAllResources(int tenantId = -1)
         {
@@ -285,24 +314,7 @@ namespace ColorVision.Services.Dao
 
 
 
-        public List<SysResourceModel> GetGroupResourceItems(int groupId)
-        {
-            List<SysResourceModel> list = new List<SysResourceModel>();
 
-            string sql = "SELECT rg.group_id, r.id, r.name, r.code, r.type , r.pid, r.txt_value, r.create_date, r.tenant_id FROM t_scgd_sys_resource_group rg JOIN t_scgd_sys_resource r ON rg.resource_id = r.id WHERE  rg.group_id =@groupId";
-            var parameters = new Dictionary<string, object>();
-            parameters.Add("@groupId", groupId);
-            var dInfo = GetData(sql, parameters);
-            foreach (DataRow item in dInfo.Rows)
-            {
-                SysResourceModel? model = GetModelFromDataRow(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
 
 
         public List<SysResourceModel> GetResourceItems(int pid, int tenantId=-1)
