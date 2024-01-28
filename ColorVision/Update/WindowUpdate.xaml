@@ -6,12 +6,10 @@
         xmlns:local="clr-namespace:ColorVision.Update"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:AutoUpdater}"
-        Title="WindowUpdate" Background="{DynamicResource GlobalBackground}" Height="60" Width="300" Initialized="Window_Initialized">
+        Title="ColorVision 更新程序" Background="{DynamicResource GlobalBackground}" Height="60" Width="300" Initialized="Window_Initialized">
     <Grid>
         <StackPanel>
             <ProgressBar Height="15"  Foreground="#B41515" Maximum="100" Minimum="0" Value="{Binding ProgressValue}" Background="#373B41" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
-
         </StackPanel>
-    
     </Grid>
 </Window>

@@ -5,12 +5,7 @@ namespace ColorVision.MySql.Service
 {
     public class SysResourceService
     {
-        private SysResourceDao resourceDao;
-
-        public SysResourceService()
-        {
-            this.resourceDao = new SysResourceDao();
-        }
+        private SysResourceDao resourceDao = new SysResourceDao();
 
         internal int DeleteById(int id)
         {
@@ -26,6 +21,7 @@ namespace ColorVision.MySql.Service
         {
             return resourceDao.GetPidIsNotNull(tenantId);
         }
+
 
         internal List<SysResourceModel> GetAllServices(int tenantId)
         {

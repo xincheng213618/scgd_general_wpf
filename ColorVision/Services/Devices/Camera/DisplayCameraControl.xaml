@@ -84,7 +84,7 @@
                             </DockPanel>
                         </StackPanel>
 
-                        <StackPanel Margin="0,2" Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter1}}">
+                        <StackPanel Margin="0,2" Visibility="{Binding DeviceService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter1}}">
                             <Button Content="自动曝光" Margin="0,2" Click="AutoExplose_Click" />
 
                             <DockPanel Margin="0,2">

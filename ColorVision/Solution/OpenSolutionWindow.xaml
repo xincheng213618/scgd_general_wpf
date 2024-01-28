@@ -8,7 +8,7 @@
         xmlns:hc ="https://handyorg.github.io/handycontrol"
         xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
-        Height="550" Width="800"  MinWidth="500" MinHeight="500" Background="{DynamicResource GlobalBackground}" WindowStyle="ToolWindow" WindowStartupLocation="CenterScreen" Initialized="BaseWindow_Initialized">
+        Height="550" Width="850"  MinWidth="500" MinHeight="500" Background="{DynamicResource GlobalBackground}" WindowStyle="ToolWindow" WindowStartupLocation="CenterScreen" Initialized="BaseWindow_Initialized">
     <base:BaseWindow.Resources>
         <Style TargetType="TextBlock" >
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
@@ -19,7 +19,7 @@
         <Grid Margin="20,40,0,0" >
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"  MinWidth="300" />
-                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="300"/>
             </Grid.ColumnDefinitions>
             <Grid>
                 <Grid.RowDefinitions>

@@ -16,8 +16,17 @@ namespace ColorVision.Services
         CfwPort = 8,
         Calibration = 9,
         Motor = 10,
-        Flowtime = 101
+        Flowtime = 101,
     }
+
+    public enum ResourceType
+    {
+        Group = 1000
+    }
+
+
+
+
 
     public class TypeService : TerminalServiceBase
     {

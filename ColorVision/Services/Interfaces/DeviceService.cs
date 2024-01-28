@@ -13,7 +13,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Services.Devices
 {
-    public class DeviceService : BaseObject, IDisposable
+    public class DeviceService : BaseResourceObject, IDisposable
     {
         public virtual string Code { get; set; }
 

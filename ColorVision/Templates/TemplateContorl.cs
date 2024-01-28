@@ -51,8 +51,6 @@ namespace ColorVision.Templates
         private static string FileNameLedJudgeParams = "LedJudgeSetup";
         private static string FileNameFlowParms = "FlowParmSetup";
 
-
-
         private PoiService poiService = new PoiService();
         private ModService modService = new ModService();
         private SysModMasterService sysModService = new SysModMasterService();

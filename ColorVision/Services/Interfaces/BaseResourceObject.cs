@@ -6,42 +6,31 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices
 {
-    public static class BaseObjectExtensions
-    {
-        /// <summary>
-        /// 得到指定数据类型的祖先节点。
-        /// </summary>
-        public static T? GetAncestor<T>(this BaseObject This) where T : BaseObject
-        {
-            if (This is T t)
-                return t;
-
-            if (This.Parent == null)
-                return null;
-
-            return This.Parent.GetAncestor<T>();
-        }
-    }
 
     public interface ITreeViewItem
     {
         public bool IsExpanded { get; set; }
+        public ContextMenu ContextMenu { get; set; }
+
+
     }
 
-    public class BaseObject : ViewModelBase,ITreeViewItem
+
+    public class BaseResourceObject : ViewModelBase,ITreeViewItem
     {
-        public RelayCommand SaveCommand { get; set; }
         public RelayCommand DeleteCommand { get; set; }
+        public RelayCommand SaveCommand { get; set; }
         public ContextMenu ContextMenu { get; set; }
-        public ObservableCollection<BaseObject> VisualChildren { get; set; }
+        public ObservableCollection<BaseResourceObject> VisualChildren { get; set; }
         public ServiceManager ServiceControl { get; set; }
-        public BaseObject()
+
+        public BaseResourceObject()
         {
-            VisualChildren = new ObservableCollection<BaseObject>();
+            VisualChildren = new ObservableCollection<BaseResourceObject>();
             SaveCommand = new RelayCommand(a => Save());
             DeleteCommand = new RelayCommand(a => Delete());
         }
-        public BaseObject Parent
+        public BaseResourceObject Parent
         {
             get { return _Parent; }
             set
@@ -50,15 +39,15 @@ namespace ColorVision.Services.Devices
                 NotifyPropertyChanged();
             }
         }
-        private BaseObject _Parent;
+        private BaseResourceObject _Parent;
 
-        public virtual void AddChild(BaseObject baseObject)
+        public virtual void AddChild(BaseResourceObject baseObject)
         {
             if (baseObject == null) return;
             baseObject.Parent = this;
             VisualChildren.SortedAdd(baseObject);
         }
-        public virtual void RemoveChild(BaseObject baseObject)
+        public virtual void RemoveChild(BaseResourceObject baseObject)
         {
             if (baseObject == null) return;
             baseObject.Parent = null;
@@ -76,8 +65,8 @@ namespace ColorVision.Services.Devices
         {
         }
 
-        public virtual void Delete() { }
-
-
+        public virtual void Delete()
+        { 
+        }
     }
 }

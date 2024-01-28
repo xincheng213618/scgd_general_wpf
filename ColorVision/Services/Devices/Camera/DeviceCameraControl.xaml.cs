@@ -7,6 +7,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using ColorVision.Common.Extension;
 using ColorVision.Services.Devices.Camera.Calibrations;
+using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
 using ColorVision.SettingUp;
 using ColorVision.Sorts;
@@ -70,7 +71,7 @@ namespace ColorVision.Services.Devices.Camera
                 stackPanel.Children.Add(listView);
 
 
-                ObservableCollection<CalibrationRsource> CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, Device.MySqlId);
+                ObservableCollection<CalibrationResource> CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, Device.MySqlId);
 
                 listView.ItemsSource = CalibrationRsources;
 
@@ -110,10 +111,6 @@ namespace ColorVision.Services.Devices.Camera
                         CalibrationRsources.SortByID(radioUp.IsChecked== false);
                     }
 
-                    if (radioName.IsChecked == true)
-                    {
-                        CalibrationRsources.SortByName(radioUp.IsChecked == false);
-                    }
 
                     if (radioFile.IsChecked == true)
                     {
@@ -181,7 +178,7 @@ namespace ColorVision.Services.Devices.Camera
                 {
                     if (listView.SelectedIndex > -1)
                     {
-                        CalibrationRsource calibrationRsource = CalibrationRsources[listView.SelectedIndex];
+                        var calibrationRsource = CalibrationRsources[listView.SelectedIndex];
                         CalibrationRsourceService.GetInstance().Delete(calibrationRsource.Id);
                         CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, Device.MySqlId);
                         listView.ItemsSource = CalibrationRsources;

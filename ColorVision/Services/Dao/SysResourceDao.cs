@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using ColorVision.MySql;
+using Mysqlx.Crud;
+using ScottPlot.Drawing.Colormaps;
 
 namespace ColorVision.Services.Dao
 {
@@ -37,6 +39,7 @@ namespace ColorVision.Services.Dao
         public DateTime CreateDate { get; set; }
         public int TenantId { get; set; }
     }
+
     public class SysResourceDao : BaseDaoMaster<SysResourceModel>
     {
         public SysResourceDao() : base("v_scgd_sys_resource", "t_scgd_sys_resource", "id", true)
@@ -77,6 +80,34 @@ namespace ColorVision.Services.Dao
             return row;
         }
 
+
+        public List<SysResourceModel> GetAllResources(int tenantId =-1)
+        {
+            List<SysResourceModel> list = new List<SysResourceModel>();
+
+            DataTable dInfo;
+            string sql;
+
+            sql = $"SELECT id, name, code,pid,txt_value,type,tenant_id,create_date FROM {GetTableName()} where 1=1 {(tenantId!=1?"and tenantId=@tenantId":"")} and is_delete = 0 and is_enable = 1";
+            var parameters = new Dictionary<string, object>();
+            if (tenantId != -1)
+                parameters.Add("@tenantId", tenantId);
+
+
+            dInfo = GetData(sql, parameters);
+            foreach (DataRow item in dInfo.Rows)
+            {
+                SysResourceModel? model = GetModelFromDataRow(item);
+                if (model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
+        }
+
+
+
         internal SysResourceModel? GetByCode(string code)
         {
             string sql = $"select * from {GetTableName()} where code=@code" + GetDelSQL(true);
@@ -87,6 +118,9 @@ namespace ColorVision.Services.Dao
             DataTable d_info = GetData(sql, param);
             return d_info.Rows.Count == 1 ? GetModelFromDataRow(d_info.Rows[0]) : default;
         }
+
+
+
 
         internal List<SysResourceModel> GetServices(int tenantId)
         {
@@ -103,17 +137,18 @@ namespace ColorVision.Services.Dao
             return list;
         }
 
-        public DataTable GetTableAllByTypeAndCamera(int type, int cameraId)
-        {
-            string sql = $"select * from {GetTableName()} where type={type} &&pid ={cameraId} " + GetDelSQL(true);
-            DataTable d_info = GetData(sql);
-            return d_info;
-        }
-        internal List<SysResourceModel> GetAllTypeCamera(int type, int cameraId)
+
+        public List<SysResourceModel> GetResourceItems(int pid, int tenantId=-1)
         {
             List<SysResourceModel> list = new List<SysResourceModel>();
-            DataTable d_info = GetTableAllByTypeAndCamera(type, cameraId);
-            foreach (var item in d_info.AsEnumerable())
+
+            string sql = $"SELECT id, name, code,pid,txt_value,type,tenant_id,create_date FROM {GetTableName()} where 1=1 {(tenantId != 1 ? "and tenantId=@tenantId" : "")} and pid=@pid and is_delete = 0 and is_enable = 1";
+            var parameters = new Dictionary<string, object>();
+            if (tenantId != -1)
+                parameters.Add("@tenantId", tenantId);
+            parameters.Add("@pid", pid);
+            var dInfo = GetData(sql, parameters);
+            foreach (DataRow item in dInfo.Rows)
             {
                 SysResourceModel? model = GetModelFromDataRow(item);
                 if (model != null)

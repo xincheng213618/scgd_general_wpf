@@ -11,7 +11,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Services
 {
-    public class TerminalServiceBase : BaseObject
+    public class TerminalServiceBase : BaseResourceObject
     {
         public virtual UserControl GenDeviceControl()
         {
@@ -56,11 +56,9 @@ namespace ColorVision.Services
             }
             Config.Code = SysResourceModel.Code ?? string.Empty;
             Config.Name = Name;
+
             Config.SubscribeTopic = SysResourceModel.TypeCode + "/STATUS/" + SysResourceModel.Code;
             Config.SendTopic = SysResourceModel.TypeCode + "/CMD/" + SysResourceModel.Code;
-
-            Config.IsAlive = false;
-
 
             switch (ServiceType)
             {

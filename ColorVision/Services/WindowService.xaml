@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Services"
-        xmlns:mqtt="clr-namespace:ColorVision.Services.Devices"
+        xmlns:service="clr-namespace:ColorVision.Services.Devices"
         xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         Title="WindowService" Height="700" Width="900" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized" >
@@ -37,9 +37,14 @@
                                 <TextBlock Text="{Binding Name}"/>
                             </DockPanel>
                         </HierarchicalDataTemplate>
-                        <HierarchicalDataTemplate DataType="{x:Type mqtt:DeviceService}" ItemsSource="{Binding VisualChildren}" >
+                        <HierarchicalDataTemplate DataType="{x:Type service:DeviceService}" ItemsSource="{Binding VisualChildren}" >
                             <DockPanel>
                                 <Image Source="{Binding Icon}" Height="18" HorizontalAlignment="Left"  Margin="0,0,4,0"/>
+                                <TextBlock Text="{Binding Name}"/>
+                            </DockPanel>
+                        </HierarchicalDataTemplate>
+                        <HierarchicalDataTemplate DataType="{x:Type service:GroupService}" ItemsSource="{Binding VisualChildren}" >
+                            <DockPanel>
                                 <TextBlock Text="{Binding Name}"/>
                             </DockPanel>
                         </HierarchicalDataTemplate>

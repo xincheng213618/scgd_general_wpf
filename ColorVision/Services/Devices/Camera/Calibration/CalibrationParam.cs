@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8603,CS0649
 using ColorVision.MVVM;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Interfaces;
 using ColorVision.Templates;
 using cvColorVision;
 using System.Collections.Generic;
@@ -31,13 +32,13 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
             LumMultiColorList = new List<string>();
         }
 
-        public ObservableCollection<CalibrationRsource> GetAllCalibrationRsources(ResouceType resouceType, int CameraId)
+        public ObservableCollection<CalibrationResource> GetAllCalibrationRsources(ResouceType resouceType, int CameraId)
         {
-            ObservableCollection<CalibrationRsource> ObservableCollections = new ObservableCollection<CalibrationRsource>();
-            var resouces = resourceDao.GetAllTypeCamera((int)resouceType, CameraId);
+            ObservableCollection<CalibrationResource> ObservableCollections = new ObservableCollection<CalibrationResource>();
+            var resouces = resourceDao.GetResourceItems((int)resouceType, CameraId);
             foreach (var item in resouces)
             {
-                ObservableCollections.Add(new CalibrationRsource(item));
+                ObservableCollections.Add(new CalibrationResource(item));
             }
             return ObservableCollections;
         }
