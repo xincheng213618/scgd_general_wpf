@@ -35,7 +35,7 @@ namespace ColorVision.MySql.Service
 
         private SysDictionaryModDetailDao sysDao;
         private SysDictionaryModDao sysDicDao;
-        private SysResourceDao resourceDao;
+        private VSysResourceDao resourceDao;
         public ModService()
         {
             this.masterFlowDao = new ModMasterDao(ModMasterType.Flow);
@@ -47,7 +47,7 @@ namespace ColorVision.MySql.Service
             this.detailDao = new ModDetailDao();
             this.sysDao = new SysDictionaryModDetailDao();
             this.sysDicDao = new SysDictionaryModDao();
-            this.resourceDao = new SysResourceDao();
+            this.resourceDao = new VSysResourceDao();
         }
 
         internal List<ModDetailModel> GetDetailByPid(int pkId)

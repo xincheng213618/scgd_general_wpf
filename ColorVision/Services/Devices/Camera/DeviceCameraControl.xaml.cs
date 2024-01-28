@@ -69,9 +69,15 @@ namespace ColorVision.Services.Devices.Camera
                 gridView.Columns.Add(new GridViewColumn() { Header = "路径", DisplayMemberBinding = new Binding("FilePath") });
                 listView.View = gridView;
                 stackPanel.Children.Add(listView);
+                ObservableCollection<CalibrationResource> CalibrationRsources = new ObservableCollection<CalibrationResource>();
 
-
-                ObservableCollection<CalibrationResource> CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, Device.MySqlId);
+                foreach (var resourceObject in Device.VisualChildren)
+                {
+                    if (resourceObject is CalibrationResource calibrationResource && calibrationResource.SysResourceModel.Type ==(int)item)
+                    {
+                        CalibrationRsources.Add(calibrationResource);
+                    }
+                }
 
                 listView.ItemsSource = CalibrationRsources;
 
@@ -155,8 +161,7 @@ namespace ColorVision.Services.Devices.Camera
                                 MsgRecord msgRecord = DService.UploadCalibrationFile(upload.UploadFileName, upload.UploadFilePath, (int)item);
                                 msgRecord.MsgRecordStateChanged += (s) =>
                                 {
-                                    CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, Device.MySqlId);
-                                    listView.ItemsSource = CalibrationRsources;
+
                                 };
                             }
                         }
@@ -180,8 +185,6 @@ namespace ColorVision.Services.Devices.Camera
                     {
                         var calibrationRsource = CalibrationRsources[listView.SelectedIndex];
                         CalibrationRsourceService.GetInstance().Delete(calibrationRsource.Id);
-                        CalibrationRsources = CalibrationRsourceService.GetInstance().GetAllCalibrationRsources(item, Device.MySqlId);
-                        listView.ItemsSource = CalibrationRsources;
                     }
                     else
                     {

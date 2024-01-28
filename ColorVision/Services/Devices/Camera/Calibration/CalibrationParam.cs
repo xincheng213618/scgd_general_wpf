@@ -16,7 +16,7 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
         private static readonly object _locker = new();
         public static CalibrationRsourceService GetInstance() { lock (_locker) { return _instance ??= new CalibrationRsourceService(); } }
 
-        private SysResourceDao resourceDao = new SysResourceDao();
+        private VSysResourceDao resourceDao = new VSysResourceDao();
 
         public CalibrationRsourceService()
         {

@@ -113,7 +113,7 @@ namespace ColorVision.Services
             }
             LastGenControl = DeviceServices;
         }
-        public SysResourceDao SysResourceDao { get; set; } = new SysResourceDao();
+        public VSysResourceDao SysResourceDao { get; set; } = new VSysResourceDao();
         SysDictionaryService sysDictionaryService = new SysDictionaryService();
         private Dictionary<string, List<MQTTServiceBase>> svrDevices = new Dictionary<string, List<MQTTServiceBase>>();
 
@@ -260,11 +260,10 @@ namespace ColorVision.Services
                 }
             }
 
-
             GroupServices.Clear();
             foreach (var deviceService in DeviceServices)
             {
-                List<SysResourceModel> sysResourceModels = SysResourceDao.GetResourceItems(deviceService.SysResourceModel.Id, UserConfig.TenantId);
+                List<SysResourceModel> sysResourceModels = sysResourceDao1.GetResourceItems(deviceService.SysResourceModel.Id, UserConfig.TenantId);
                 foreach (var sysResourceModel in sysResourceModels)
                 {
                     if (sysResourceModel.Type == (int)ResourceType.Group)
@@ -286,10 +285,11 @@ namespace ColorVision.Services
                 LoadGroupService(groupService);
             }
         }
+        SysResourceDao sysResourceDao1 = new SysResourceDao();
 
         public void LoadGroupService(GroupService groupService)
         {
-            List<SysResourceModel> sysResourceModels = SysResourceDao.GetResourceItems(groupService.SysResourceModel.Id, UserConfig.TenantId);
+            List<SysResourceModel> sysResourceModels = sysResourceDao1.GetResourceItems(groupService.SysResourceModel.Id, UserConfig.TenantId);
             foreach (var sysResourceModel in sysResourceModels)
             {
                 if (sysResourceModel.Type == (int)ResourceType.Group)

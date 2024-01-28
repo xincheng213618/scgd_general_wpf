@@ -5,7 +5,7 @@ namespace ColorVision.MySql.Service
 {
     public class SysResourceService
     {
-        private SysResourceDao resourceDao = new SysResourceDao();
+        private VSysResourceDao resourceDao = new VSysResourceDao();
 
         internal int DeleteById(int id)
         {

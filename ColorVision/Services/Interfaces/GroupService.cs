@@ -13,7 +13,7 @@ namespace ColorVision.Services.Devices
             sysResourceModel.Pid = deviceService.SysResourceModel.Id;
             sysResourceModel.TenantId = deviceService.SysResourceModel.TenantId;
 
-            SysResourceDao sysResourceDao = new SysResourceDao();
+            VSysResourceDao sysResourceDao = new VSysResourceDao();
             sysResourceDao.Save(sysResourceModel);
 
             int pkId = sysResourceModel.GetPK();
@@ -27,6 +27,7 @@ namespace ColorVision.Services.Devices
 
         public GroupService(SysResourceModel sysResourceModel)
         {
+            SysResourceModel = sysResourceModel;
             Name = sysResourceModel.Name ?? sysResourceModel.Id.ToString();
         }
 

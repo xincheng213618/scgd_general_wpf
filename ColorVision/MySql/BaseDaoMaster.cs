@@ -165,7 +165,7 @@ namespace ColorVision.MySql
 
     public class BaseDaoMaster<T>: BaseDao where T : IPKModel
     {
-        protected string ViewName { get; set; }
+        public string ViewName { get; set; }
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseDaoMaster<T>));
         public BaseDaoMaster(string viewName, string tableName, string pkField, bool isLogicDel) :base(tableName, pkField, isLogicDel)
         {
