@@ -78,7 +78,8 @@ namespace ColorVision.Templates
             DistortionParams = new ObservableCollection<TemplateModel<DistortionParam>>();
             LedCheckParams = new ObservableCollection<TemplateModel<LedCheckParam>>();
             FocusPointsParams = new ObservableCollection<TemplateModel<FocusPointsParam>>();
-            
+
+            BuildPOIParams = new ObservableCollection<TemplateModel<BuildPOIParam>>();
 
             ConfigHandler.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
             {
@@ -139,6 +140,7 @@ namespace ColorVision.Templates
             LoadParams(DistortionParams);
             LoadParams(FocusPointsParams);
             LoadParams(LedCheckParams);
+            LoadParams(BuildPOIParams);
         }
         public void LoadParams<T>(ObservableCollection<TemplateModel<T>> TemplateModels) where T : ParamBase, new()
         {
@@ -190,6 +192,9 @@ namespace ColorVision.Templates
                     break;
                 case Type t when t == typeof(MeasureParam):
                     LoadMeasureParams();
+                    break;
+                case Type t when t == typeof(BuildPOIParam):
+                    LoadModParam(BuildPOIParams, ModMasterType.BuildPOI);
                     break;
                 default:
                     break;
@@ -327,6 +332,9 @@ namespace ColorVision.Templates
                     break;
                 case TemplateType.LedCheckParam:
                     Save(LedCheckParams, ModMasterType.LedCheck);
+                    break;
+                case TemplateType.BuildPOIParmam:
+                    Save(BuildPOIParams, ModMasterType.BuildPOI);
                     break;
                 default:
                     break;
@@ -690,6 +698,8 @@ namespace ColorVision.Templates
 
         public ObservableCollection<TemplateModel<LedCheckParam>> LedCheckParams { get; set; }
         public ObservableCollection<TemplateModel<FocusPointsParam>> FocusPointsParams { get; set; }
+
+        public ObservableCollection<TemplateModel<BuildPOIParam>> BuildPOIParams { get; set; }
 
         public static ObservableCollection<TemplateModelBase> GetTemplateModelBases<T>(ObservableCollection<TemplateModel<T>> templateModels) where T:ParamBase
         {

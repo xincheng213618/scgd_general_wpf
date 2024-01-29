@@ -208,19 +208,21 @@ namespace ColorVision.Templates.POI
         private double _LedLen4;
     }
 
+    public enum BorderType
+    {
+        [Description("绝对值")]
+        Absolute,
+        [Description("相对值")]
+        Relative
+    }
+
     /// <summary>
     /// WindowFocusPoint.xaml 的交互逻辑
     /// </summary>
     public partial class WindowFocusPoint : Window, INotifyPropertyChanged
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(WindowFocusPoint));
-        public enum BorderType
-        {
-            [Description("绝对值")]
-            Absolute,
-            [Description("相对值")]
-            Relative
-        }
+
 
         private string pre_name = "P_";
 

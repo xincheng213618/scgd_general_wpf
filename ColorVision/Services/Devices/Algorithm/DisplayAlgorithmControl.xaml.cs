@@ -295,6 +295,9 @@ namespace ColorVision.Services.Devices.Algorithm
             ComboxFocusPointsTemplate.ItemsSource = TemplateControl.GetInstance().FocusPointsParams;
             ComboxFocusPointsTemplate.SelectedIndex = 0;
 
+            ComboxBuildPoiTemplate.ItemsSource = TemplateControl.GetInstance().BuildPOIParams;
+            ComboxBuildPoiTemplate.SelectedIndex = 0;
+
 
             ViewGridManager.GetInstance().AddView(Device.View);
             ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
@@ -428,7 +431,27 @@ namespace ColorVision.Services.Devices.Algorithm
                 var msg = Service.SFR(imgFileName, fileExtType, pm.Id, ComboxSFRTemplate.Text, sn);
                 Helpers.SendCommand(msg, "SFR");
             }
+        }
 
+
+        private void BuildPoi_Click(object sender, RoutedEventArgs e)
+        {
+            if (ComboxBuildPoiTemplate.SelectedIndex == -1)
+            {
+                MessageBox.Show(Application.Current.MainWindow, "请先选择BuildPoi模板", "ColorVision");
+                return;
+            }
+
+            string sn = string.Empty;
+            string imgFileName = ImageFile.Text;
+            FileExtType fileExtType = FileExtType.Tif;
+
+            if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
+            {
+                var pm = TemplateControl.GetInstance().BuildPOIParams[ComboxBuildPoiTemplate.SelectedIndex].Value;
+                var msg = Service.SFR(imgFileName, fileExtType, pm.Id, ComboxBuildPoiTemplate.Text, sn);
+                Helpers.SendCommand(msg, "BuildPoi");
+            }
         }
 
         private void Ghost_Click(object sender, RoutedEventArgs e)
@@ -521,6 +544,7 @@ namespace ColorVision.Services.Devices.Algorithm
                 Helpers.SendCommand(msg, "FOV");
             }
         }
+
 
 
         private void Open_File(object sender, RoutedEventArgs e)
@@ -632,13 +656,13 @@ namespace ColorVision.Services.Devices.Algorithm
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;
-                    case "CalibrationUpload":
-                        UploadWindow calibrationUpload = new UploadWindow();
-                        calibrationUpload.Owner = Window.GetWindow(this);
-                        calibrationUpload.ShowDialog();
-                        break;
                     case "FocusParm":
                         windowTemplate = new WindowTemplate(TemplateType.PoiParam);
+                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate.ShowDialog();
+                        break;
+                    case "BuildPOIParmam":
+                        windowTemplate = new WindowTemplate(TemplateType.BuildPOIParmam, false);
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;
@@ -714,5 +738,7 @@ namespace ColorVision.Services.Devices.Algorithm
             };
             doOpen(CB_RawImageFiles.Text, FileExtType.Raw);
         }
+
+
     }
 }

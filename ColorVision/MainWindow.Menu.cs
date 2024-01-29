@@ -128,6 +128,11 @@ namespace ColorVision
                         UploadWindow calibrationUpload = new UploadWindow();
                         calibrationUpload.ShowDialog();
                         break;
+                    case "BuildPOIParmam":
+                        windowTemplate = new WindowTemplate(TemplateType.BuildPOIParmam);
+                        windowTemplate.Owner = GetWindow(this);
+                        windowTemplate.ShowDialog();
+                        break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
                         break;

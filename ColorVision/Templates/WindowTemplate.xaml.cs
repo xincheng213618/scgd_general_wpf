@@ -153,6 +153,12 @@ namespace ColorVision.Templates
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.FocusPointsParams);
                     Title = "FocusPoints算法设置";
                     break;
+                case TemplateType.BuildPOIParmam:
+                    if (IsReLoad)
+                        TemplateControl.LoadParams(TemplateControl.BuildPOIParams);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.BuildPOIParams);
+                    Title = "BuildPOI算法设置";
+                    break;
                 default:
                     break;
             }
@@ -362,6 +368,11 @@ namespace ColorVision.Templates
                     if (measureParam != null) CreateNewTemplate(TemplateControl.MeasureParams, TextBox1.Text, measureParam);
                     else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
+                case TemplateType.BuildPOIParmam:
+                    BuildPOIParam? buildPOIParam = TemplateControl.AddParamMode<BuildPOIParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text);
+                    if (buildPOIParam != null) CreateNewTemplate(TemplateControl.BuildPOIParams, TextBox1.Text, buildPOIParam);
+                    else MessageBox.Show("数据库创建BuildPOI模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    break;
             }
         }
 
@@ -410,6 +421,9 @@ namespace ColorVision.Templates
                     break;
                 case TemplateType.FlowParam:
                     CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, new FlowParam() { Name = TextBox1.Text });
+                    break;
+                    case TemplateType.MeasureParam:
+                    CreateNewTemplate(TemplateControl.MeasureParams, TextBox1.Text, new MeasureParam() { Name = TextBox1.Text });
                     break;
             }
         }
@@ -534,6 +548,9 @@ namespace ColorVision.Templates
                             break;
                         case TemplateType.MeasureParam:
                             TemplateDel(TemplateControl.MeasureParams);
+                            break;
+                        case TemplateType.BuildPOIParmam:
+                            TemplateDel(TemplateControl.BuildPOIParams);
                             break;
                     }
 
@@ -910,6 +927,9 @@ namespace ColorVision.Templates
                         }
                         else MessageBox.Show("数据库创建FocusPoints模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     }
+                    break;
+                case TemplateType.BuildPOIParmam:
+
                     break;
                 default:
                     break;
