@@ -89,8 +89,11 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
             }
 
             ListView1.ItemsSource = GroupServices;
-            ListView1.SelectedIndex = 0;
-            StackPanelCab.DataContext = GroupServices[0];
+            if (GroupServices.Count > 0)
+            {
+                ListView1.SelectedIndex = 0;
+                StackPanelCab.DataContext = GroupServices[0];
+            }
 
             ComboBoxDarkNoise.ItemsSource = DarkNoiseList;
             ComboBoxDefectPoint.ItemsSource = DefectPointList;

@@ -11,31 +11,8 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
 
         public CalibrationRsourcesGroup()
         {
-            DarkNoiseList = CalibrationRsourceService.GetInstance().DarkNoiseList;
-            DefectPointList = CalibrationRsourceService.GetInstance().DefectPointList;
-            DSNUList = CalibrationRsourceService.GetInstance().DSNUList;
-            UniformityList = CalibrationRsourceService.GetInstance().UniformityList;
-            DistortionList = CalibrationRsourceService.GetInstance().DistortionList;
-            ColorShiftList = CalibrationRsourceService.GetInstance().ColorShiftList;
 
-            LuminanceList = CalibrationRsourceService.GetInstance().LuminanceList;
-            LumOneColorList = CalibrationRsourceService.GetInstance().LumOneColorList;
-            LumFourColorList = CalibrationRsourceService.GetInstance().LumFourColorList;
-            LumMultiColorList = CalibrationRsourceService.GetInstance().LumMultiColorList;
         }
-
-
-        public List<string> DarkNoiseList { get; set; }
-        public List<string> DefectPointList { get; set; }
-        public List<string> DSNUList { get; set; }
-        public List<string> UniformityList { get; set; }
-        public List<string> DistortionList { get; set; }
-        public List<string> ColorShiftList { get; set; }
-        public List<string> LuminanceList { get; set; }
-        public List<string> LumOneColorList { get; set; }
-        public List<string> LumFourColorList { get; set; }
-        public List<string> LumMultiColorList { get; set; }
-
 
         public string Luminance { get => _Luminance; set { _Luminance = value; NotifyPropertyChanged(); } }
         private string _Luminance;

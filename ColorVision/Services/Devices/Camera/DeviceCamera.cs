@@ -171,7 +171,6 @@ namespace ColorVision.Services.Devices.Camera
                 string Calibrationcfg = path + "\\Calibration.cfg";
                 Dictionary<string, List<ColorVisionVCalibratioItem>> keyValuePairs1 = JsonConvert.DeserializeObject<Dictionary<string, List<ColorVisionVCalibratioItem>>>(File.ReadAllText(Calibrationcfg, Encoding.GetEncoding("gbk")));
 
-
                 if (keyValuePairs1 != null)
                     foreach (var item in keyValuePairs1)
                     {
@@ -287,6 +286,7 @@ namespace ColorVision.Services.Devices.Camera
                                             break;
                                     }
                                 }
+
                                 Config.CalibrationRsourcesGroups.Add(Path.GetFileName(item2.FullName), calibrationRsourcesGroup);
                             }
                     }

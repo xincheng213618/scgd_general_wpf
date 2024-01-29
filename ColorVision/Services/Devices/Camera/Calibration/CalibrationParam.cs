@@ -20,16 +20,6 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
 
         public CalibrationRsourceService()
         {
-            DarkNoiseList = new List<string>();
-            DefectPointList = new List<string>();
-            DSNUList = new List<string>();
-            UniformityList = new List<string>();
-            DistortionList = new List<string>();
-            ColorShiftList = new List<string>();
-            LuminanceList = new List<string>();
-            LumOneColorList = new List<string>();
-            LumFourColorList = new List<string>();
-            LumMultiColorList = new List<string>();
         }
 
         public ObservableCollection<CalibrationResource> GetAllCalibrationRsources(ResouceType resouceType, int CameraId)
@@ -43,45 +33,11 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
             return ObservableCollections;
         }
 
-        private void GetCalibrationRsourceList(List<string> strings, ResouceType resouceType)
-        {
-            strings.Clear();
-            var resouces = resourceDao.GetAllType((int)resouceType);
-            foreach (var item in resouces)
-            {
-                strings.Add(item.Name ?? string.Empty);
-            }
-        }
-
         public int Delete(int id) => resourceDao.DeleteById(id);
-
-        public int Save(SysResourceModel value) => resourceDao.Save(value);
 
         public void Refresh()
         {
-            GetCalibrationRsourceList(DarkNoiseList, ResouceType.DarkNoise);
-            GetCalibrationRsourceList(DefectPointList, ResouceType.DefectPoint);
-            GetCalibrationRsourceList(DSNUList, ResouceType.DSNU);
-            GetCalibrationRsourceList(UniformityList, ResouceType.Uniformity);
-            GetCalibrationRsourceList(DistortionList, ResouceType.Distortion);
-            GetCalibrationRsourceList(ColorShiftList, ResouceType.ColorShift);
-            GetCalibrationRsourceList(LuminanceList, ResouceType.Luminance);
-            GetCalibrationRsourceList(LumOneColorList, ResouceType.LumOneColor);
-            GetCalibrationRsourceList(LumFourColorList, ResouceType.LumFourColor);
-            GetCalibrationRsourceList(LumMultiColorList, ResouceType.LumMultiColor);
         }
-
-        public List<string> DarkNoiseList { get; set; }
-        public List<string> DefectPointList { get; set; }
-        public List<string> DSNUList { get; set; }
-        public List<string> UniformityList { get; set; }
-        public List<string> DistortionList { get; set; }
-        public List<string> ColorShiftList { get; set; }
-        public List<string> LuminanceList { get; set; }
-        public List<string> LumOneColorList { get; set; }
-        public List<string> LumFourColorList { get; set; }
-        public List<string> LumMultiColorList { get; set; }
-
     }
 
 
@@ -119,12 +75,6 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
 
         public CalibrationNormal(List<ModDetailModel> detail, string Type)
         {
-            DarkNoiseList = CalibrationRsourceService.GetInstance().DarkNoiseList;
-            DefectPointList = CalibrationRsourceService.GetInstance().DefectPointList;
-            DSNUList = CalibrationRsourceService.GetInstance().DSNUList;
-            UniformityList = CalibrationRsourceService.GetInstance().UniformityList;
-            DistortionList = CalibrationRsourceService.GetInstance().DistortionList;
-            ColorShiftList = CalibrationRsourceService.GetInstance().ColorShiftList;
 
             DarkNoise = new CalibrationBase(detail, nameof(DarkNoise) + Type);
             DefectPoint = new CalibrationBase(detail, nameof(DefectPoint) + Type);
@@ -133,18 +83,11 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
             Distortion = new CalibrationBase(detail, nameof(Distortion) + Type);
             ColorShift = new CalibrationBase(detail, nameof(ColorShift) + Type);
         }
-
-        public List<string> DarkNoiseList { get; set; }
         public CalibrationBase DarkNoise { get; set; }
-        public List<string> DefectPointList { get; set; }
         public CalibrationBase DefectPoint { get; set; }
-        public List<string> DSNUList { get; set; }
         public CalibrationBase DSNU { get; set; }
-        public List<string> UniformityList { get; set; }
         public CalibrationBase Uniformity { get; set; }
-        public List<string> DistortionList { get; set; }
         public CalibrationBase Distortion { get; set; }
-        public List<string> ColorShiftList { get; set; }
         public CalibrationBase ColorShift { get; set; }
 
         public Dictionary<string, object> ToDictionary()
@@ -211,11 +154,6 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
                     LumOneColor.IsSelected = false;
                 }
             };
-
-            LuminanceList = CalibrationRsourceService.GetInstance().LuminanceList;
-            LumOneColorList = CalibrationRsourceService.GetInstance().LumOneColorList;
-            LumFourColorList = CalibrationRsourceService.GetInstance().LumFourColorList;
-            LumMultiColorList = CalibrationRsourceService.GetInstance().LumMultiColorList;
         }
         public CalibrationType CalibrationType
         {
