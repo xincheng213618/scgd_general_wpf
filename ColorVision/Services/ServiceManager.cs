@@ -295,7 +295,6 @@ namespace ColorVision.Services
                 if (sysResourceModel.Type == (int)ResourceType.Group)
                 {
                     GroupService groupService1 = new GroupService(sysResourceModel);
-
                     LoadGroupService(groupService1);
                     groupService.AddChild(groupService);
                     GroupServices.Add(groupService);

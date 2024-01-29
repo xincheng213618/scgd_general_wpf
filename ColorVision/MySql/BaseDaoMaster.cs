@@ -556,7 +556,7 @@ namespace ColorVision.MySql
             }
             return ExecuteNonQuery(sql);
         }
-        public int DeleteById(int id)
+        public int DeleteById(int id,bool IsLogicDel = true)
         {
             string sql = $"update {TableName} set is_delete=1 where id=@id";
             if (!IsLogicDel)

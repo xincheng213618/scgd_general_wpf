@@ -43,8 +43,11 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
             foreach (var item in DeviceCamera.VisualChildren)
             {
                 if (item is GroupService groupService)
+                {
+                    groupService.SetCalibrationResource(DeviceCamera);
                     GroupServices.Add(groupService);
-                if(item is CalibrationResource calibrationResource)
+                }
+                if (item is CalibrationResource calibrationResource)
                 {
                     switch ((ResouceType)calibrationResource.SysResourceModel.Type)
                     {
@@ -83,17 +86,28 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
                     }
                 }
             }
-            this.DataContext = this;
 
             ListView1.ItemsSource = GroupServices;
             ListView1.SelectedIndex = 0;
+            StackPanelCab.DataContext = GroupServices[0];
+
+            ComboBoxDarkNoise.ItemsSource = DarkNoiseList;
+            ComboBoxDefectPoint.ItemsSource = DefectPointList;
+            ComboBoxDSNU.ItemsSource = DSNUList;
+            ComboBoxUniformity.ItemsSource = UniformityList;
+            ComboBoxDistortion.ItemsSource = DistortionList;
+            ComboBoxColorShift.ItemsSource = ColorShiftList;
+            ComboBoxLuminance.ItemsSource = LuminanceList;
+            ComboBoxLumOneColor.ItemsSource = LumOneColorList;
+            ComboBoxLumFourColor.ItemsSource = LumFourColorList;
+            ComboBoxLumMultiColor.ItemsSource = LumMultiColorList;
         }
 
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (ListView1.SelectedIndex > -1)
             {
-                //StackPanelCab.DataContext = GroupServices[ListView1.SelectedIndex];
+                StackPanelCab.DataContext = GroupServices[ListView1.SelectedIndex];
             }
         }
 
@@ -127,7 +141,7 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
             if (ListView1.SelectedIndex > -1)
             {
                 GroupService groupService = GroupServices[ListView1.SelectedIndex];
-                SysResourceDao.DeleteById(groupService.SysResourceModel.Id);
+                SysResourceDao.DeleteById(groupService.SysResourceModel.Id,false);
                 GroupServices.Remove(groupService);
                 DeviceCamera.VisualChildren.Remove(groupService);
                 MessageBox.Show("删除成功");

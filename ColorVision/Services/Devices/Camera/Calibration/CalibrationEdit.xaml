@@ -50,32 +50,32 @@
                 </ListView.View>
             </ListView>
         </Grid>
-        <StackPanel x:Name="StackPanelCab" Grid.Column="1" d:DataContext="{d:DesignInstance local:CalibrationEdit}">
+        <StackPanel x:Name="StackPanelCab" Grid.Column="1" d:DataContext="{d:DesignInstance group:GroupService}">
             <Border  BorderThickness="1" BorderBrush="{DynamicResource  BorderBrush}" CornerRadius="5" Margin="5">
                 <StackPanel Margin="5">
                     <DockPanel  Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
-                        <hc:ComboBox x:Name="ComboBoxDarkNoise" Text="{Binding DarkNoise}"  DisplayMemberPath="Name"  ItemsSource="{Binding DarkNoiseList}" />
+                        <hc:ComboBox x:Name="ComboBoxDarkNoise" SelectedValue="{Binding DarkNoise}"  DisplayMemberPath="Name"  />
                     </DockPanel>
                     <DockPanel  Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="DSNU" Width="80"  />
-                        <hc:ComboBox x:Name="ComboBoxDSNU"  Text="{Binding DSNU}" DisplayMemberPath="Name" ItemsSource="{Binding DSNUList}" />
+                        <hc:ComboBox x:Name="ComboBoxDSNU" SelectedValue="{Binding DSNU}"  DisplayMemberPath="Name" />
                     </DockPanel>
                     <DockPanel  Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="缺陷点" Width="80"  />
-                        <hc:ComboBox x:Name="ComboBoxDefectPoint"  Text="{Binding DefectPoint}"  DisplayMemberPath="Name" ItemsSource="{Binding DefectPointList}" />
+                        <hc:ComboBox x:Name="ComboBoxDefectPoint"  SelectedValue="{Binding DefectPoint}"  DisplayMemberPath="Name" />
                     </DockPanel>
                     <DockPanel  Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="色偏" Width="80"  />
-                        <hc:ComboBox x:Name="ComboBoxColorShift" Text="{Binding ColorShift}"  DisplayMemberPath="Name" ItemsSource="{Binding ColorShiftList}" />
+                        <hc:ComboBox x:Name="ComboBoxColorShift" SelectedValue="{Binding ColorShift}"  DisplayMemberPath="Name" />
                     </DockPanel>
                     <DockPanel  Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="畸变" Width="80"  />
-                        <hc:ComboBox x:Name="ComboBoxDistortion" Text="{Binding Distortion}"  DisplayMemberPath="Name" ItemsSource="{Binding DistortionList}" />
+                        <hc:ComboBox x:Name="ComboBoxDistortion" SelectedValue="{Binding Distortion}"  DisplayMemberPath="Name"  />
                     </DockPanel>
                     <DockPanel Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="均匀场" Width="80"  />
-                        <hc:ComboBox  x:Name="ComboBoxUniformity" Text="{Binding Uniformity}" DisplayMemberPath="Name" ItemsSource="{Binding UniformityList}" />
+                        <hc:ComboBox  x:Name="ComboBoxUniformity" SelectedValue="{Binding Uniformity}" DisplayMemberPath="Name"/>
                     </DockPanel>
                 </StackPanel>
             </Border>
@@ -84,19 +84,19 @@
                 <StackPanel>
                     <DockPanel  Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="亮度" Width="80"  />
-                        <hc:ComboBox x:Name="ComboBoxLuminance" Text="{Binding Luminance}" DisplayMemberPath="Name" ItemsSource="{Binding LuminanceList}"/>
+                        <hc:ComboBox x:Name="ComboBoxLuminance" SelectedValue="{Binding Luminance}" DisplayMemberPath="Name" />
                     </DockPanel>
                     <DockPanel  Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="单色" Width="80"/>
-                        <hc:ComboBox x:Name="ComboBoxLumOneColor" Text="{Binding LumOneColor}"  DisplayMemberPath="Name" ItemsSource="{Binding LumOneColorList}"/>
+                        <hc:ComboBox x:Name="ComboBoxLumOneColor" SelectedValue="{Binding LumOneColor}"  DisplayMemberPath="Name" />
                     </DockPanel>
                     <DockPanel  Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="四色" Width="80"  />
-                        <hc:ComboBox  x:Name="ComboBoxLumFourColor"  Text="{Binding LumFourColor}" DisplayMemberPath="Name"  ItemsSource="{Binding LumFourColorList}"/>
+                        <hc:ComboBox  x:Name="ComboBoxLumFourColor"  SelectedValue="{Binding LumFourColor}" DisplayMemberPath="Name" />
                     </DockPanel>
                     <DockPanel  Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="多色" Width="80"  />
-                        <hc:ComboBox x:Name="ComboBoxLumMultiColor" Text="{Binding LumMultiColor}" DisplayMemberPath="Name"  ItemsSource="{Binding LumMultiColorList}"/>
+                        <hc:ComboBox x:Name="ComboBoxLumMultiColor" SelectedValue="{Binding LumMultiColor}" DisplayMemberPath="Name" />
                     </DockPanel>
                 </StackPanel>
             </GroupBox>

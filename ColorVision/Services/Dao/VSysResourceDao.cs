@@ -81,7 +81,7 @@ namespace ColorVision.Services.Dao
 
         public void ADDGroup(int groupId ,int resourceId)
         {
-            string sql = "INSERT INTO t_scgd_sys_resource_group (resource_id, group_id) VALUES (@resource_id, @groupId)";
+            string sql = "INSERT INTO t_scgd_sys_resource_group (resource_id, group_id) VALUES (@resourceId, @groupId)";
             var parameters = new Dictionary<string, object>();
             parameters.Add("@groupId", groupId);
             parameters.Add("@resourceId", resourceId);
