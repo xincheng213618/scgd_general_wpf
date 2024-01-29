@@ -442,8 +442,8 @@ namespace ColorVision.Templates.POI
                             PointType = RiPointTypes.Circle,
                             PixX = circle.Center.X,
                             PixY = circle.Center.Y,
-                            PixWidth = circle.Radius/2,
-                            PixHeight = circle.Radius/2,
+                            PixWidth = circle.Radius*2,
+                            PixHeight = circle.Radius*2
                         };
                         PoiParam.PoiPoints.Add(poiParamData);
                     }
@@ -1511,8 +1511,8 @@ namespace ColorVision.Templates.POI
                                 PointType = RiPointTypes.Circle,
                                 PixX = circle.Center.X,
                                 PixY = circle.Center.Y,
-                                PixWidth = circle.Radius,
-                                PixHeight = circle.Radius,
+                                PixWidth = circle.Radius*2,
+                                PixHeight = circle.Radius*2,
                             };
                             PoiParam.PoiPoints.Add(poiParamData);
                         }
