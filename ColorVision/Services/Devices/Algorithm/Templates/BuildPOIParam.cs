@@ -41,8 +41,8 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
         private int _LayoutCols = 3;
 
         [Category("BuildPOI"), Description("POI点类型")]
-        public int PointType { get => GetValue(_PointType); set { SetProperty(ref _PointType, value); } }
-        private int _PointType = 4;
+        public RiPointTypes PointType { get => GetValue(_PointType); set { SetProperty(ref _PointType, value); } }
+        private RiPointTypes _PointType = RiPointTypes.Circle;
 
         [Category("BuildPOI"), Description("POI点宽度")]
         public int PointWidth { get => GetValue(_PointWidth); set { SetProperty(ref _PointWidth, value); } }
