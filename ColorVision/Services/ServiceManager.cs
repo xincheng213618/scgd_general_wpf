@@ -148,7 +148,6 @@ namespace ColorVision.Services
                 foreach (var sysResourceModel in sysResourceModels)
                 {
                     TerminalService terminalService = new TerminalService(sysResourceModel);
-
                     string svrKey = GetServiceKey(sysResourceModel.TypeCode ?? string.Empty, sysResourceModel.Code ?? string.Empty);
                    
                     if (svrDevices.TryGetValue(svrKey, out var list ))

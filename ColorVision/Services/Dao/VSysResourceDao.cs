@@ -107,6 +107,14 @@ namespace ColorVision.Services.Dao
             return list;
         }
 
+        public void DeleteGroupRelate(int groupId)
+        {
+            string sql = "DELETE FROM t_scgd_sys_resource_group WHERE group_id = @groupId";
+            var parameters = new Dictionary<string, object>();
+                parameters.Add("@groupId", groupId);
+            ExecuteNonQuery(sql, parameters);
+        }
+
 
 
         public List<SysResourceModel> GetAllResources(int tenantId = -1)
@@ -220,6 +228,9 @@ namespace ColorVision.Services.Dao
             return ExecuteNonQuery(sql);
         }
     }
+
+
+
 
     public class VSysResourceDao : BaseDaoMaster<SysResourceModel>
     {

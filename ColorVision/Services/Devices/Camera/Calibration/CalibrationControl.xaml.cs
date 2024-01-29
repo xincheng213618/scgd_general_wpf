@@ -32,7 +32,7 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
             this.CalibrationParam = calibrationParam;
             this.DataContext = CalibrationParam;
         }
-        public ObservableCollection<KeyValuePair<string, CalibrationRsourcesGroup>> CalibrationRsourcesGroups { get; set; } = new ObservableCollection<KeyValuePair<string, CalibrationRsourcesGroup>>();
+        public ObservableCollection<GroupService> GroupServices { get; set; } = new ObservableCollection<GroupService>();
 
 
         public void Initializedsss(DeviceCamera DeviceCamera, CalibrationParam calibrationParam)
@@ -42,10 +42,11 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
             this.DataContext = CalibrationParam;
             string CalibrationMode = calibrationParam.CalibrationMode;
             ComboBoxList.SelectionChanged -= ComboBox_SelectionChanged;
-            CalibrationRsourcesGroups.Clear();
-            foreach (var item in DeviceCamera.Config.CalibrationRsourcesGroups)
+            GroupServices.Clear();
+            foreach (var item in DeviceCamera.VisualChildren)
             {
-                CalibrationRsourcesGroups.Add(item);
+                if (item is GroupService groupService)
+                    GroupServices.Add(groupService);
             }
             ComboBoxList.Text = CalibrationMode;
             ComboBoxList.SelectionChanged += ComboBox_SelectionChanged;
@@ -54,9 +55,7 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
 
         private void UserControl_Initialized(object sender, System.EventArgs e)
         {
-            ComboBoxList.ItemsSource = CalibrationRsourcesGroups;
-            ComboBoxList.DisplayMemberPath = "Key";
-            ComboBoxList.SelectedValuePath = "Value";
+            ComboBoxList.ItemsSource = GroupServices;
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -117,10 +116,11 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
             CalibrationEdit CalibrationEdit = new CalibrationEdit(DeviceCamera);
             CalibrationEdit.Closed += (s, e) =>
             {
-                CalibrationRsourcesGroups.Clear();
-                foreach (var item in DeviceCamera.Config.CalibrationRsourcesGroups)
+                GroupServices.Clear();
+                foreach (var item in DeviceCamera.VisualChildren)
                 {
-                    CalibrationRsourcesGroups.Add(item);
+                    if (item is GroupService groupService)
+                        GroupServices.Add(groupService);
                 }
             };
             CalibrationEdit.Show();

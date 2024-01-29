@@ -1,6 +1,8 @@
 ﻿#pragma warning disable  CS8604,CS8631
 using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Interfaces;
+using System.Collections.Generic;
 using System.Windows.Xps.Packaging;
 
 namespace ColorVision.Services.Devices
@@ -38,8 +40,30 @@ namespace ColorVision.Services.Devices
         {
             SysResourceModel.Name = Name;
             SysResourceDao.Save(SysResourceModel);
+
+            ///这里后面再优化，先全部删除在添加
+            SysResourceDao.DeleteGroupRelate(SysResourceModel.Id);
+            foreach (var item in VisualChildren)
+            {
+                if (item is CalibrationResource calibrationResource)
+                {
+                    SysResourceDao.ADDGroup(SysResourceModel.Id, calibrationResource.SysResourceModel.Id);
+                }
+            }
             base.Save();
         }
+
+
+        public CalibrationResource DarkNoiseList { get; set; }
+        public CalibrationResource DefectPointList { get; set; }
+        public CalibrationResource DSNUList { get; set; }
+        public CalibrationResource UniformityList { get; set; }
+        public CalibrationResource DistortionList { get; set; }
+        public CalibrationResource ColorShiftList { get; set; }
+        public CalibrationResource LuminanceList { get; set; }
+        public CalibrationResource LumOneColorList { get; set; }
+        public CalibrationResource LumFourColorList { get; set; }
+        public CalibrationResource LumMultiColorList { get; set; }
 
 
         public SysResourceModel SysResourceModel { get; set; }
