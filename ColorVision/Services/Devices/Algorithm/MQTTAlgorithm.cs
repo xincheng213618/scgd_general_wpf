@@ -144,7 +144,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             MsgSend msg = new MsgSend
             {
-                EventName = "GetData",
+                EventName = "POI",
                 SerialNumber = sn,
                 Params = Params
             };
