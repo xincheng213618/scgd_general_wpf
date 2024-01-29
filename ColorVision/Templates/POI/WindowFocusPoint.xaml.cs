@@ -440,10 +440,10 @@ namespace ColorVision.Templates.POI
                             ID =circle.ID,
                             Name = circle.Name,
                             PointType = RiPointTypes.Circle,
-                            PixX = circle.Center.X*2,
-                            PixY = circle.Center.Y*2,
-                            PixWidth = circle.Radius,
-                            PixHeight = circle.Radius,
+                            PixX = circle.Center.X,
+                            PixY = circle.Center.Y,
+                            PixWidth = circle.Radius/2,
+                            PixHeight = circle.Radius/2,
                         };
                         PoiParam.PoiPoints.Add(poiParamData);
                     }
@@ -656,8 +656,8 @@ namespace ColorVision.Templates.POI
                     {
                         case RiPointTypes.Circle:
                             DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
-                            Circle.Attribute.Center = new Point(item.PixX/2, item.PixY/2);
-                            Circle.Attribute.Radius = item.PixWidth;
+                            Circle.Attribute.Center = new Point(item.PixX, item.PixY);
+                            Circle.Attribute.Radius = item.PixWidth/2;
                             Circle.Attribute.Brush = Brushes.Transparent;
                             Circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
                             Circle.Attribute.ID = item.ID;
