@@ -4,6 +4,7 @@ using ColorVision.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -127,13 +128,16 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
 
         public string NewCreateFileName(string FileName)
         {
+            var list = GroupServices.Select(g => g.Name).Distinct().ToList();
             for (int i = 1; i < 9999; i++)
             {
-                if (!DeviceCamera.Config.CalibrationRsourcesGroups.ContainsKey($"{FileName}{i}"))
+                if (!list.Contains($"{FileName}{i}"))
                     return $"{FileName}{i}";
             }
             return FileName;
         }
+
+
         SysResourceDao SysResourceDao = new SysResourceDao();
 
         private void Button_Delete_Click(object sender, RoutedEventArgs e)
