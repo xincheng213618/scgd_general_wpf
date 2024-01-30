@@ -6,11 +6,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.IO;
 using Panuon.WPF.UI;
-using ColorVision.Services;
 using ColorVision.Themes;
 using System.Windows.Media;
 using ColorVision.Solution;
-using ColorVision.Services.Flow;
 using ColorVision.Services.Flow.Templates;
 using ColorVision.SettingUp;
 

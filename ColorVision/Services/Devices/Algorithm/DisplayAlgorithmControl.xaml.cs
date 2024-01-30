@@ -4,7 +4,6 @@ using ColorVision.Net;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;
-using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Msg;
 using ColorVision.SettingUp;
 using ColorVision.Solution;

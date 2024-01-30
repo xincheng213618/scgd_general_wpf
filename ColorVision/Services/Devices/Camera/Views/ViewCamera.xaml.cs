@@ -4,8 +4,6 @@ using ColorVision.Draw;
 using ColorVision.Media;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera.Calibrations;
-using ColorVision.SettingUp;
 using ColorVision.Sorts;
 using ColorVision.Templates;
 using ColorVision.Templates.POI;
@@ -20,7 +18,6 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 

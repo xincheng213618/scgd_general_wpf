@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS8603,CS0649
-using ColorVision.MVVM;
 using ColorVision.Services.Dao;
 using ColorVision.Sorts;
 

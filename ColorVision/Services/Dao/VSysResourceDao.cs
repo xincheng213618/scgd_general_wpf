@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using ColorVision.MySql;
-using Mysqlx.Crud;
-using ScottPlot.Drawing.Colormaps;
 
 namespace ColorVision.Services.Dao
 {

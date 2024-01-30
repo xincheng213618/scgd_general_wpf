@@ -4,7 +4,6 @@ using ColorVision.MySql;
 using ColorVision.RC;
 using ColorVision.Services;
 using ColorVision.Services.Devices.Camera.Video;
-using ColorVision.SettingUp;
 using ColorVision.Solution;
 using ColorVision.Templates;
 using ColorVision.Update;

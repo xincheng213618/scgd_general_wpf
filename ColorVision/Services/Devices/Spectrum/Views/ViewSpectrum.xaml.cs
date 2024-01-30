@@ -17,8 +17,6 @@ using System.Runtime.CompilerServices;
 using System.ComponentModel;
 using ColorVision.Services.Devices.Spectrum.Dao;
 using ColorVision.Common.MVVM;
-using System.Windows.Data;
-using ColorVision.Services.Devices.SMU.Views;
 
 namespace ColorVision.Services.Devices.Spectrum.Views
 {
