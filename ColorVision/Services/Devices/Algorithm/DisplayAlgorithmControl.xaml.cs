@@ -476,7 +476,7 @@ namespace ColorVision.Services.Devices.Algorithm
                     Params.Add("LayoutPolygonX4", Mask_X4.Text);
                     Params.Add("LayoutPolygonY4", Mask_Y4.Text);
                 }
-                MsgRecord msg = Service.BuildPoi(Params, pm.Id, ComboxBuildPoiTemplate.Text, sn);
+                MsgRecord msg = Service.BuildPoi(Params, imgFileName, pm.Id, ComboxBuildPoiTemplate.Text, sn);
                 Helpers.SendCommand(msg, "BuildPoi");
             }
         }

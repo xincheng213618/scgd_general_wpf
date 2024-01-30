@@ -167,13 +167,13 @@ namespace ColorVision.Services.Devices.Algorithm
             };
             return PublishAsyncClient(msg);
         }
-        public MsgRecord BuildPoi(Dictionary<string, object> @params, int pid, string tempName, string serialNumber)
+        public MsgRecord BuildPoi(Dictionary<string, object> @params, string fileName, int pid, string tempName, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
-            var Params = new Dictionary<string, object>();
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
             foreach (var param in @params)
             {
