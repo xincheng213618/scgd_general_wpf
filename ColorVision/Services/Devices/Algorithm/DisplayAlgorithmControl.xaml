@@ -7,7 +7,7 @@
              xmlns:properties="clr-namespace:ColorVision.Properties"
              d:DataContext="{d:DesignInstance local:DeviceAlgorithm}"
              mc:Ignorable="d" 
-             d:DesignHeight="700" d:DesignWidth="300" Initialized="UserControl_Initialized">
+             d:DesignHeight="1000" d:DesignWidth="300" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -166,14 +166,72 @@
                             </DockPanel>
                         </GroupBox>
                         <GroupBox  Header="BuildPoi">
-                            <DockPanel Margin="0,2">
-                                <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="BuildPoi_Click" />
-                                <ComboBox  x:Name="ComboxBuildPoiTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="BuildPOIParmam" Click="MenuItem_Template"/>
-                                </Grid>
-                            </DockPanel>
+                            <StackPanel Margin="5">
+                                <DockPanel Margin="0,2">
+                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="BuildPoi_Click" />
+                                    <ComboBox  x:Name="ComboxBuildPoiTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                    <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="BuildPOIParmam" Click="MenuItem_Template"/>
+                                    </Grid>
+                                </DockPanel>
+                                <StackPanel Margin="0,2">
+                                    <DockPanel Margin="0,2">
+                                        <RadioButton x:Name="CircleChecked"  Content="圆形" IsChecked="True" GroupName="POILayoutType" HorizontalAlignment="Left"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="中心X"/>
+                                        <TextBox x:Name="centerX" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500" />
+                                        <TextBlock Text="中心Y"/>
+                                        <TextBox x:Name="centerY" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                                        <TextBlock Text="半径"/>
+                                        <TextBox x:Name="radius" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                                    </DockPanel>
+                                </StackPanel>
+                                <StackPanel Margin="0,2">
+                                    <DockPanel Margin="0,2">
+                                        <RadioButton  x:Name="RectChecked" Content="矩形" GroupName="POILayoutType" HorizontalAlignment="Left"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="中心X"/>
+                                        <TextBox x:Name="rect_centerX" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="30" Text="500" />
+                                        <TextBlock Text="中心Y"/>
+                                        <TextBox x:Name="rect_centerY" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="30" Text="500"/>
+                                        <TextBlock Text="宽度"/>
+                                        <TextBox x:Name="width" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="40" Text="500"/>
+                                        <TextBlock Text="高度"/>
+                                        <TextBox x:Name="height" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="40" Text="500"/>
+                                    </DockPanel>
+                                </StackPanel>
+
+                                <StackPanel Margin="0,2">
+                                    <DockPanel Margin="0,2">
+                                        <RadioButton  x:Name="MaskChecked" Content="四边形" GroupName="POILayoutType" HorizontalAlignment="Left"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="X1"/>
+                                        <TextBox x:Name="Mask_X1" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500" />
+                                        <TextBlock Text="Y1"/>
+                                        <TextBox x:Name="Mask_Y1" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                                        <TextBlock Text="X2"/>
+                                        <TextBox x:Name="Mask_X2" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                                        <TextBlock Text="Y2"/>
+                                        <TextBox x:Name="Mask_Y2" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                                    </DockPanel>
+
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="X3"/>
+                                        <TextBox x:Name="Mask_X3" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                                        <TextBlock Text="Y3"/>
+                                        <TextBox x:Name="Mask_Y3" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                                        <TextBlock Text="X4"/>
+                                        <TextBox x:Name="Mask_X4" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                                        <TextBlock Text="Y4"/>
+                                        <TextBox x:Name="Mask_Y4" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                                    </DockPanel>
+                                </StackPanel>
+
+                            </StackPanel>
                         </GroupBox>
                     </StackPanel>
                 </GroupBox>

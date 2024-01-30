@@ -5,6 +5,7 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;
 using ColorVision.Services.Devices.Camera.Calibrations;
+using ColorVision.Services.Msg;
 using ColorVision.SettingUp;
 using ColorVision.Solution;
 using ColorVision.Templates;
@@ -449,7 +450,33 @@ namespace ColorVision.Services.Devices.Algorithm
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().BuildPOIParams[ComboxBuildPoiTemplate.SelectedIndex].Value;
-                var msg = Service.SFR(imgFileName, fileExtType, pm.Id, ComboxBuildPoiTemplate.Text, sn);
+                var Params = new Dictionary<string, object>();
+                if ((bool)CircleChecked.IsChecked)
+                {
+                    Params.Add("LayoutCenterX", centerX.Text);
+                    Params.Add("LayoutCenterY", centerY.Text);
+                    Params.Add("LayoutWidth", int.Parse(radius.Text) * 2);
+                    Params.Add("LayoutHeight", int.Parse(radius.Text) * 2);
+                }
+                else if ((bool)RectChecked.IsChecked)
+                {
+                    Params.Add("LayoutCenterX", rect_centerX.Text);
+                    Params.Add("LayoutCenterY", rect_centerY.Text);
+                    Params.Add("LayoutWidth", width);
+                    Params.Add("LayoutHeight", height);
+                }
+                else//四边形
+                {
+                    Params.Add("LayoutPolygonX1", Mask_X1.Text);
+                    Params.Add("LayoutPolygonY1", Mask_Y1.Text);
+                    Params.Add("LayoutPolygonX2", Mask_X2.Text);
+                    Params.Add("LayoutPolygonY2", Mask_Y2.Text);
+                    Params.Add("LayoutPolygonX3", Mask_X3.Text);
+                    Params.Add("LayoutPolygonY3", Mask_Y3.Text);
+                    Params.Add("LayoutPolygonX4", Mask_X4.Text);
+                    Params.Add("LayoutPolygonY4", Mask_Y4.Text);
+                }
+                MsgRecord msg = Service.BuildPoi(Params, pm.Id, ComboxBuildPoiTemplate.Text, sn);
                 Helpers.SendCommand(msg, "BuildPoi");
             }
         }

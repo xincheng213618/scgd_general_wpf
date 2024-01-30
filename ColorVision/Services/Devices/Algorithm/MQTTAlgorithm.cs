@@ -144,7 +144,45 @@ namespace ColorVision.Services.Devices.Algorithm
 
             MsgSend msg = new MsgSend
             {
-                EventName = "POI",
+                EventName = MQTTAlgorithmEventEnum.Event_POI_GetData,
+                SerialNumber = sn,
+                Params = Params
+            };
+            return PublishAsyncClient(msg);
+        }
+        public MsgRecord BuildPoi(string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
+        {
+            string sn = null;
+            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            else sn = serialNumber;
+
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
+
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTAlgorithmEventEnum.Event_Build_POI,
+                SerialNumber = sn,
+                Params = Params
+            };
+            return PublishAsyncClient(msg);
+        }
+        public MsgRecord BuildPoi(Dictionary<string, object> @params, int pid, string tempName, string serialNumber)
+        {
+            string sn = null;
+            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            else sn = serialNumber;
+
+            var Params = new Dictionary<string, object>();
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
+            foreach (var param in @params)
+            {
+                Params.Add(param.Key, param.Value);
+            }
+
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTAlgorithmEventEnum.Event_Build_POI,
                 SerialNumber = sn,
                 Params = Params
             };
@@ -162,7 +200,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             MsgSend msg = new MsgSend
             {
-                EventName = "FOV",
+                EventName = MQTTAlgorithmEventEnum.Event_FOV_GetData,
                 SerialNumber = sn,
                 Params = Params
             };
@@ -193,7 +231,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             MsgSend msg = new MsgSend
             {
-                EventName = "MTF",
+                EventName = MQTTAlgorithmEventEnum.Event_MTF_GetData,
                 SerialNumber = sn,
                 Params = Params
             };
@@ -233,7 +271,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             MsgSend msg = new MsgSend
             {
-                EventName = "SFR",
+                EventName = MQTTAlgorithmEventEnum.Event_SFR_GetData,
                 SerialNumber = sn,
                 Params = Params
             };
@@ -253,7 +291,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             MsgSend msg = new MsgSend
             {
-                EventName = "Ghost",
+                EventName = MQTTAlgorithmEventEnum.Event_Ghost_GetData,
                 SerialNumber = sn,
                 Params = Params
             };
@@ -272,7 +310,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             MsgSend msg = new MsgSend
             {
-                EventName = "Distortion",
+                EventName = MQTTAlgorithmEventEnum.Event_Distortion_GetData,
                 SerialNumber = sn,
                 Params = Params
             };
@@ -293,7 +331,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             MsgSend msg = new MsgSend
             {
-                EventName = "FocusPoints",
+                EventName = MQTTAlgorithmEventEnum.Event_LightArea_GetData,
                 SerialNumber = sn,
                 Params = Params
             };
@@ -312,7 +350,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             MsgSend msg = new MsgSend
             {
-                EventName = "LedCheck",
+                EventName = MQTTAlgorithmEventEnum.Event_LedCheck_GetData,
                 SerialNumber = sn,
                 Params = Params
             };
@@ -362,5 +400,7 @@ namespace ColorVision.Services.Devices.Algorithm
         {
             PublishAsyncClient(new MsgSend { EventName = "" });
         }
+
+
     }
 }
