@@ -22,9 +22,9 @@ using System.Security.Cryptography.X509Certificates;
 using ColorVision.Common.Util;
 using Microsoft.Xaml.Behaviors.Layout;
 using Microsoft.Xaml.Behaviors;
-using StackPanelDragAndDrop;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.Adorners;
 
 namespace ColorVision
 {
@@ -363,19 +363,19 @@ namespace ColorVision
             }
         }
 
-        private UserControl _draggedItem = null;
+        private UserControl _draggedItem;
         /// <summary>ドラッグアイテムインデックス</summary>
-        private int? _draggedItemIndex = null;
+        private int? _draggedItemIndex;
 
         /// <summary>初期位置</summary>
-        private Point? _initialPosition = null;
+        private Point? _initialPosition ;
         /// <summary>マウス位置とアイテム位置のオフセット</summary>
         private Point _mouseOffsetFromItem;
 
         /// <summary>ドラッグコンテンツ装飾オブジェクト</summary>
-        private DragUserControlAdorner _dragContentAdorner = null;
+        private DragUserControlAdorner? _dragContentAdorner;
         /// <summary>挿入カーソル装飾オブジェクト</summary>
-        private InsertionAdorner _insertionAdorner = null;
+        private InsertionAdorner? _insertionAdorner;
 
 
         #region イベントハンドラー

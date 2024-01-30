@@ -30,7 +30,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
 
         [Category("BuildPOI"), Description("POI极坐标布点起始角度")]
         public int LayoutCircleAngle { get => GetValue(_LayoutCircleAngle); set { SetProperty(ref _LayoutCircleAngle, value); } }
-        private int _LayoutCircleAngle = 0;
+        private int _LayoutCircleAngle;
 
         [Category("BuildPOI"), Description("POI布点行数")]
         public int LayoutRows { get => GetValue(_LayoutRows); set { SetProperty(ref _LayoutRows, value); } }

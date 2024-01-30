@@ -2,7 +2,7 @@
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace StackPanelDragAndDrop
+namespace ColorVision.Adorners
 {
     ///++++++++++++++++++++++++++++++++++++++++++++++++++++
     /// <summary>
