@@ -167,7 +167,7 @@ namespace ColorVision.Services.Devices.Algorithm
             };
             return PublishAsyncClient(msg);
         }
-        public MsgRecord BuildPoi(Dictionary<string, object> @params, string fileName, int pid, string tempName, string serialNumber)
+        public MsgRecord BuildPoi(POILayoutTypes POILayoutReq, Dictionary<string, object> @params, string fileName, int pid, string tempName, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
@@ -175,6 +175,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
+            Params.Add("POILayoutReq", POILayoutReq.ToString());
             foreach (var param in @params)
             {
                 Params.Add(param.Key, param.Value);

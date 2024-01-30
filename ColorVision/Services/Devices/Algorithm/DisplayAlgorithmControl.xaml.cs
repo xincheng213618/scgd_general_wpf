@@ -451,19 +451,22 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 var pm = TemplateControl.GetInstance().BuildPOIParams[ComboxBuildPoiTemplate.SelectedIndex].Value;
                 var Params = new Dictionary<string, object>();
+                POILayoutTypes POILayoutReq;
                 if ((bool)CircleChecked.IsChecked)
                 {
                     Params.Add("LayoutCenterX", centerX.Text);
                     Params.Add("LayoutCenterY", centerY.Text);
                     Params.Add("LayoutWidth", int.Parse(radius.Text) * 2);
                     Params.Add("LayoutHeight", int.Parse(radius.Text) * 2);
+                    POILayoutReq = POILayoutTypes.Circle;
                 }
                 else if ((bool)RectChecked.IsChecked)
                 {
                     Params.Add("LayoutCenterX", rect_centerX.Text);
                     Params.Add("LayoutCenterY", rect_centerY.Text);
-                    Params.Add("LayoutWidth", width);
-                    Params.Add("LayoutHeight", height);
+                    Params.Add("LayoutWidth", width.Text);
+                    Params.Add("LayoutHeight", height.Text);
+                    POILayoutReq = POILayoutTypes.Rect;
                 }
                 else//四边形
                 {
@@ -475,8 +478,9 @@ namespace ColorVision.Services.Devices.Algorithm
                     Params.Add("LayoutPolygonY3", Mask_Y3.Text);
                     Params.Add("LayoutPolygonX4", Mask_X4.Text);
                     Params.Add("LayoutPolygonY4", Mask_Y4.Text);
+                    POILayoutReq = POILayoutTypes.Mask;
                 }
-                MsgRecord msg = Service.BuildPoi(Params, imgFileName, pm.Id, ComboxBuildPoiTemplate.Text, sn);
+                MsgRecord msg = Service.BuildPoi(POILayoutReq, Params, imgFileName, pm.Id, ComboxBuildPoiTemplate.Text, sn);
                 Helpers.SendCommand(msg, "BuildPoi");
             }
         }

@@ -1265,7 +1265,7 @@ namespace ColorVision.Templates.POI
                         double columnStep = 1.0 / (cols - 1);
                         for (int i = 0; i < rows; i++)
                         {
-                            for (int j = 0; j < rows; j++)
+                            for (int j = 0; j < cols; j++)
                             {
                                 // Calculate the position of the point within the quadrilateral
                                 double x = (1 - i * rowStep) * (1 - j * columnStep) * points[0].X +
