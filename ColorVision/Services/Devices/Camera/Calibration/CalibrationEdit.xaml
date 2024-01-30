@@ -7,7 +7,7 @@
         xmlns:local="clr-namespace:ColorVision.Services.Devices.Camera.Calibrations"
         xmlns:group="clr-namespace:ColorVision.Services.Devices"
         mc:Ignorable="d"
-        Title="CalibrationEdit"  Background="{DynamicResource GlobalBackground}"  Closed="Window_Closed" Height="400" Width="600" Initialized="Window_Initialized" >
+        Title="CalibrationEdit"  Background="{DynamicResource GlobalBackground}"  Closed="Window_Closed" Height="350" Width="1200" Initialized="Window_Initialized" >
     <Window.Resources>
         <Style  TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}"/>
         <Style TargetType="hc:ComboBox" BasedOn="{StaticResource ComboBox.Small}">

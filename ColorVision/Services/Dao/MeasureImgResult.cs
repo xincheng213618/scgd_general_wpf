@@ -57,30 +57,9 @@ namespace ColorVision.Services.Dao
             return model;
         }
 
-        public MeasureImgResultModel? GetLatestMeasureImgResult()
-        {
-            return GetMeasureImgResultByCreateDate(limit: 1).FirstOrDefault();
-        }
 
-        public List<MeasureImgResultModel> GetMeasureImgResultByCreateDate(int limit = 1)
-        {
-            List<MeasureImgResultModel> list = new List<MeasureImgResultModel>();
-            string sql = $"select * from {GetTableName()} ORDER BY create_date DESC LIMIT @Limit";
-            var parameters = new Dictionary<string, object>
-            {
-                {"@Limit", limit}
-            };
-            DataTable d_info = GetData(sql, parameters);
-            foreach (var item in d_info.AsEnumerable())
-            {
-                MeasureImgResultModel? model = GetModelFromDataRow(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
+
+
 
 
         public List<MeasureImgResultModel> ConditionalQuery(string id, string batch_code, string file_url, string device_code)

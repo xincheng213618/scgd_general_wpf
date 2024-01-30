@@ -1873,7 +1873,7 @@ namespace ColorVision.Templates.POI
         MeasureImgResultDao MeasureImgResultDao = new MeasureImgResultDao();
         private void Service_Click(object sender, RoutedEventArgs e)
         {
-            if (MeasureImgResultDao.GetLatestMeasureImgResult() is MeasureImgResultModel measureImgResultModel)
+            if (MeasureImgResultDao.GetLatestResult() is MeasureImgResultModel measureImgResultModel)
             {
                 try
                 {
