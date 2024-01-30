@@ -210,13 +210,13 @@
                                     </DockPanel>
                                     <DockPanel Margin="0,2">
                                         <TextBlock Text="X1"/>
-                                        <TextBox x:Name="Mask_X1" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500" />
+                                        <TextBox x:Name="Mask_X1" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0" />
                                         <TextBlock Text="Y1"/>
-                                        <TextBox x:Name="Mask_Y1" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                                        <TextBox x:Name="Mask_Y1" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0"/>
                                         <TextBlock Text="X2"/>
                                         <TextBox x:Name="Mask_X2" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
                                         <TextBlock Text="Y2"/>
-                                        <TextBox x:Name="Mask_Y2" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                                        <TextBox x:Name="Mask_Y2" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0"/>
                                     </DockPanel>
 
                                     <DockPanel Margin="0,2">
@@ -225,7 +225,7 @@
                                         <TextBlock Text="Y3"/>
                                         <TextBox x:Name="Mask_Y3" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
                                         <TextBlock Text="X4"/>
-                                        <TextBox x:Name="Mask_X4" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                                        <TextBox x:Name="Mask_X4" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0"/>
                                         <TextBlock Text="Y4"/>
                                         <TextBox x:Name="Mask_Y4" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
                                     </DockPanel>

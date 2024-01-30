@@ -64,6 +64,8 @@ namespace ColorVision.Solution
             Application.Current.MainWindow.AddHotKeys(new HotKeys("打开工程", new Hotkey(Key.O, ModifierKeys.Control), OpenSolutionWindow));
             Application.Current.MainWindow.AddHotKeys(new HotKeys("新建工程", new Hotkey(Key.N, ModifierKeys.Control), NewCreateWindow));
 
+            ClearCache();
+
             OpenSolutionDirectory(CurrentSolution.FullName);
 
         }
@@ -155,5 +157,12 @@ namespace ColorVision.Solution
             newCreatWindow.ShowDialog();
         }
 
+        public void ClearCache()
+        {
+            Directory.Delete(CurrentSolution.FullName+ "\\Flow",true);
+            Directory.Delete(CurrentSolution.FullName+ "\\Cache", true);
+            Tool.CreateDirectoryMax(CurrentSolution.FullName+ "\\Cache");
+            Tool.CreateDirectoryMax(CurrentSolution.FullName+ "\\Flow");
+        }
     }
 }
