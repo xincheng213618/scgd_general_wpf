@@ -36,7 +36,6 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-
                         <GridViewColumn Header="{x:Static properties:Resource.Name}" Width="130">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type local:TemplateModelBase}">
@@ -61,7 +60,6 @@
                         </GridViewColumn>
                     </GridView>
                 </ListView.View>
-
             </ListView>
 
         </Grid>

@@ -20,6 +20,8 @@ using ColorVision.Services.Flow;
 using ColorVision.SettingUp;
 using System.Security.Cryptography.X509Certificates;
 using ColorVision.Common.Util;
+using Microsoft.Xaml.Behaviors.Layout;
+using Microsoft.Xaml.Behaviors;
 
 namespace ColorVision
 {
@@ -366,6 +368,14 @@ namespace ColorVision
             {
                 var stackPanel = ServiceManager.GetInstance().StackPanel;
                 stackPanel1.Children.Add(stackPanel);
+
+                FluidMoveBehavior fluidMoveBehavior = new FluidMoveBehavior
+                {
+                    AppliesTo = FluidMoveScope.Children,
+                    Duration = TimeSpan.FromSeconds(0.5)
+                };
+
+                Interaction.GetBehaviors(ServiceManager.GetInstance().StackPanel).Add(fluidMoveBehavior);
                 //bool isDown = false;
                 //AdornerLayer adornerLayer = AdornerLayer.GetAdornerLayer(Root);
                 //DragDropAdorner adorner = null;
@@ -447,6 +457,16 @@ namespace ColorVision
             string changelogContent = File.ReadAllText(changelogPath);
             changelogWindow.SetChangelogText(changelogContent);
             changelogWindow.ShowDialog();
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+
+            if (ServiceManager.GetInstance().StackPanel.Children[0] is UserControl userControl1)
+            {
+                ServiceManager.GetInstance().StackPanel.Children.RemoveAt(0);
+                ServiceManager.GetInstance().StackPanel.Children.Add(userControl1);
+            }
         }
     }
 }
