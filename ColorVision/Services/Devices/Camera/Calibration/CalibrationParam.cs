@@ -171,15 +171,11 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
                     return CalibrationType.Empty_Num;
             }
         }
-        public List<string> LuminanceList { get; set; }
         public CalibrationBase Luminance { get; set; }
-        public List<string> LumOneColorList { get; set; }
         public CalibrationBase LumOneColor { get; set; }
 
-        public List<string> LumFourColorList { get; set; }
         public CalibrationBase LumFourColor { get; set; }
 
-        public List<string> LumMultiColorList { get; set; }
         public CalibrationBase LumMultiColor { get; set; }
     }
 

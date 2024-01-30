@@ -11,6 +11,8 @@ using MQTTMessageLib.Camera;
 using MQTTMessageLib;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Devices.Camera.Calibrations;
+using System.Threading.Tasks;
+using System.Diagnostics;
 
 namespace ColorVision.Services.Devices.Camera
 {
@@ -582,6 +584,55 @@ namespace ColorVision.Services.Devices.Camera
             };
              return PublishAsyncClient(msg);
         }
+
+        public async Task<MsgRecord> UploadCalibrationFileAsync(string name, string fileName, int fileType, int timeout =50000)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start(); // 开始计时
+
+            TaskCompletionSource<MsgRecord> tcs = new TaskCompletionSource<MsgRecord>();
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTCameraEventEnum.Event_Calibration_UploadFile,
+                Params = new Dictionary<string, object> { { "name", name }, { "fileName", fileName }, { "fileType", fileType } }
+            };
+            MsgRecord msgRecord = PublishAsyncClient(msg);
+
+            MsgRecordStateChangedHandler handler = (sender) =>
+            {
+                log.Info($"UploadCalibrationFileAsync:{fileName}  状态{sender}  Operation time: {stopwatch.ElapsedMilliseconds} ms");
+                tcs.TrySetResult(msgRecord); 
+            };
+            msgRecord.MsgRecordStateChanged += handler;
+            var timeoutTask = Task.Delay(timeout);
+            try
+            {
+
+                var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
+                if (completedTask == timeoutTask)
+                {
+                    log.Info($"UploadCalibrationFileAsync:{fileName}  超时  Operation time: {stopwatch.ElapsedMilliseconds} ms");
+                    tcs.TrySetException(new TimeoutException("The operation has timed out."));
+                }
+
+                return await tcs.Task; // 如果超时，这里将会抛出异常
+            }
+            catch (Exception ex)
+            {
+                log.Info($"UploadCalibrationFileAsync:{fileName}  异常 {ex.Message} Operation time: {stopwatch.ElapsedMilliseconds} ms");
+                tcs.TrySetException(ex);
+                return await tcs.Task; // 
+            }
+            finally
+            {
+                msgRecord.MsgRecordStateChanged -= handler;
+            }
+
+        }
+
+
+
+
 
 
         public MsgRecord CacheClear()

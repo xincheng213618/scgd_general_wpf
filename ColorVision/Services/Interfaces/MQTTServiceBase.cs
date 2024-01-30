@@ -50,6 +50,11 @@ namespace ColorVision.Services
                     if (json == null)
                         return Task.CompletedTask;
 
+                    if (json.Code !=0 &&json.Code != 1)
+                    {
+                        return Task.CompletedTask;
+                    }
+
                     if (json.EventName == "Heartbeat")
                     {
                         LastAliveTime = DateTime.Now;
@@ -60,7 +65,6 @@ namespace ColorVision.Services
                         IsAlive = true;
                         return Task.CompletedTask;
                     }
-
 
                     bool msgee = false;
                     lock (_locker)
@@ -124,8 +128,6 @@ namespace ColorVision.Services
 
         public virtual bool IsAlive { get => _IsAlive; set { _IsAlive = value; NotifyPropertyChanged(); } }
         private bool _IsAlive;
-
-
 
         private  Dictionary<string, Timer> timers = new Dictionary<string, Timer>();
 
