@@ -2,7 +2,6 @@
 using ColorVision.Services.Devices;
 using ColorVision.SettingUp;
 using System;
-using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;

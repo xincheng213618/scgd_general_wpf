@@ -1,12 +1,8 @@
 ﻿using ColorVision.Services.Dao;
 using ColorVision.Templates;
 using ColorVision.Templates.POI;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {

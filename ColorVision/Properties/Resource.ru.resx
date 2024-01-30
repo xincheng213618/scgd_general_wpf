@@ -616,7 +616,7 @@
     <value>Создать новый проект или файл</value>
   </data>
   <data name="DatabaseConnectionFailed" xml:space="preserve">
-    <value>Не удалось подключиться к базе данных. Перед началом работы подключитесь к базе данных.</value>
+    <value>Не удалось подключиться к базе данных. Перед началом работы подключитесь к базе данных</value>
   </data>
   <data name="UnderDevelopment" xml:space="preserve">
     <value>В развитие</value>
