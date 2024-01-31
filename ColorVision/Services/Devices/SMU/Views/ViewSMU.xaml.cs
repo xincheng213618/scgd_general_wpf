@@ -3,7 +3,6 @@ using ColorVision.Services.Devices.SMU.Dao;
 using ColorVision.Sorts;
 using ColorVision.Templates;
 using ColorVision.Common.Utilities;
-using Org.BouncyCastle.Asn1.Crmf;
 using ScottPlot;
 using ScottPlot.Plottable;
 using System;
@@ -13,7 +12,6 @@ using System.Drawing;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using System.Windows.Data;
 using System.Windows.Input;
 
 namespace ColorVision.Services.Devices.SMU.Views
@@ -75,7 +73,7 @@ namespace ColorVision.Services.Devices.SMU.Views
 
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
-            if (sender is ContextMenu contextMenu && listView2.View is GridView gridView && contextMenu.Items.Count == 0)
+            if (sender is ContextMenu contextMenu && listView1.View is GridView gridView && contextMenu.Items.Count == 0)
                 GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
         }
 

@@ -31,7 +31,6 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using MQTTMessageLib.FileServer;
 using ColorVision.Services.Dao;
-using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
 using ColorVision.SettingUp;
 
 namespace ColorVision.Templates.POI
@@ -1873,7 +1872,7 @@ namespace ColorVision.Templates.POI
         MeasureImgResultDao MeasureImgResultDao = new MeasureImgResultDao();
         private void Service_Click(object sender, RoutedEventArgs e)
         {
-            if (MeasureImgResultDao.GetLatestMeasureImgResult() is MeasureImgResultModel measureImgResultModel)
+            if (MeasureImgResultDao.GetLatestResult() is MeasureImgResultModel measureImgResultModel)
             {
                 try
                 {

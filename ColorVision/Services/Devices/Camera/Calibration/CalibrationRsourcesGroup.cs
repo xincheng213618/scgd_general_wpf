@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8603,CS0649
 using ColorVision.MVVM;
-using System.Collections.Generic;
 
 namespace ColorVision.Services.Devices.Camera.Calibrations
 {

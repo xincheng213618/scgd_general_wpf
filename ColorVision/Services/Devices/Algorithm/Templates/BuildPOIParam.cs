@@ -1,12 +1,8 @@
 ﻿using ColorVision.Services.Dao;
 using ColorVision.Templates;
 using ColorVision.Templates.POI;
-using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {
@@ -30,7 +26,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
 
         [Category("BuildPOI"), Description("POI极坐标布点起始角度")]
         public int LayoutCircleAngle { get => GetValue(_LayoutCircleAngle); set { SetProperty(ref _LayoutCircleAngle, value); } }
-        private int _LayoutCircleAngle = 0;
+        private int _LayoutCircleAngle;
 
         [Category("BuildPOI"), Description("POI布点行数")]
         public int LayoutRows { get => GetValue(_LayoutRows); set { SetProperty(ref _LayoutRows, value); } }

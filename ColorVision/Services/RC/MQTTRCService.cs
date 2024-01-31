@@ -251,7 +251,7 @@ namespace ColorVision.RC
                                         var ns = DateNodeServices[sortedDates.LastOrDefault()];
                                         serviceTerminal.Config.LastAliveTime = DateTime.Now;
                                         serviceTerminal.Config.IsAlive = true;
-                                        serviceTerminal.Config.HeartbeatTime = DateNodeServices[sortedDates.LastOrDefault()].OverTime;
+                                        serviceTerminal.Config.HeartbeatTime = DateNodeServices[sortedDates.LastOrDefault()].OverTime * 2;
                                         if (serviceTerminal.MQTTServiceTerminalBase.ServiceToken != DateNodeServices[sortedDates.LastOrDefault()].ServiceToken)
                                             serviceTerminal.MQTTServiceTerminalBase.ServiceToken = DateNodeServices[sortedDates.LastOrDefault()].ServiceToken;
 
@@ -261,7 +261,7 @@ namespace ColorVision.RC
                                             {
                                                 //baseDeviceConfig.IsAlive = true;
                                                 if (!string.IsNullOrEmpty(ns.LiveTime)) baseDeviceConfig.LastAliveTime = DateTime.Parse(ns.LiveTime);
-                                                baseDeviceConfig.HeartbeatTime = ns.OverTime;
+                                                baseDeviceConfig.HeartbeatTime = ns.OverTime * 2;
                                                 baseDeviceConfig.ServiceToken = ns.ServiceToken;
                                                 foreach(var devNew in ns.Devices)
                                                 {

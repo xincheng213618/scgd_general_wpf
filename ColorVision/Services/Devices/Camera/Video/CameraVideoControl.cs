@@ -4,7 +4,6 @@ using System.Windows;
 using CVImageChannelLib;
 using log4net;
 using OpenCvSharp.Extensions;
-using ScottPlot.Drawing.Colormaps;
 
 namespace ColorVision.Services.Devices.Camera.Video
 {

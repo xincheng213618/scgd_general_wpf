@@ -20,6 +20,11 @@ using ColorVision.Services.Flow;
 using ColorVision.SettingUp;
 using System.Security.Cryptography.X509Certificates;
 using ColorVision.Common.Util;
+using Microsoft.Xaml.Behaviors.Layout;
+using Microsoft.Xaml.Behaviors;
+using System.Windows.Input;
+using System.Windows.Media;
+using ColorVision.Adorners;
 
 namespace ColorVision
 {
@@ -358,14 +363,169 @@ namespace ColorVision
             }
         }
 
+        private UserControl _draggedItem;
+        /// <summary>ドラッグアイテムインデックス</summary>
+        private int? _draggedItemIndex;
+
+        /// <summary>初期位置</summary>
+        private Point? _initialPosition ;
+        /// <summary>マウス位置とアイテム位置のオフセット</summary>
+        private Point _mouseOffsetFromItem;
+
+        /// <summary>ドラッグコンテンツ装飾オブジェクト</summary>
+        private DragUserControlAdorner? _dragContentAdorner;
+        /// <summary>挿入カーソル装飾オブジェクト</summary>
+        private InsertionAdorner? _insertionAdorner;
 
 
+        #region イベントハンドラー
+        /// <summary>マウス左ボタンダウンイベント</summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void OnMainPanelMouseLeftButtonDown(object sender, MouseButtonEventArgs args)
+        {
+            // マウス左ボタンダウン位置のアイテムがドラッグ対象外なら何もしない
+            UserControl draggedItem = args.Source as UserControl;
+            if (draggedItem == null) return;
+
+            // マウスキャプチャーに成功した場合にドラッグを開始する
+            if (xMainPanel.CaptureMouse())
+            {
+                // ドラッグアイテムとそのインデックスの保存
+                _draggedItem = draggedItem;
+                _draggedItemIndex = xMainPanel.Children.IndexOf(draggedItem);
+
+                // 初期位置とマウス位置とアイテム位置のオフセットの保存
+                _initialPosition = PointToScreen(args.GetPosition(this));
+                _mouseOffsetFromItem = draggedItem.PointFromScreen(_initialPosition.Value);
+            }
+        }
+
+        /// <summary>マウス移動イベント</summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void OnMainPanelMouseMove(object sender, MouseEventArgs args)
+        {
+            // マウス左ボタンダウン前のマウス移動では何もしない
+            if (_draggedItem == null || _initialPosition == null) return;
+
+            // ドラッグ装飾が未生成の場合はドラッグ装飾を生成する
+            if (_dragContentAdorner == null)
+            {
+                _dragContentAdorner = new DragUserControlAdorner(xMainPanel, _draggedItem, _mouseOffsetFromItem);
+            }
+
+            // マウス移動中のパネル上のポイントとスクリーン座標位置を取得
+            Point ptMovePanel = args.GetPosition(xMainPanel);
+            Point ptMoveScreen = PointToScreen(args.GetPosition(this));
+
+            // ドロップターゲットアイテムを取得
+            UserControl dropTargetItem = xMainPanel.GetChildElement(ptMovePanel) as UserControl;
+
+            // ドラッグ装飾を移動
+            _dragContentAdorner.SetScreenPosition(ptMoveScreen);
+
+            // ドロップターゲットアイテムがなければ挿入カーソル装飾を破棄する
+            if (dropTargetItem == null)
+            {
+                _insertionAdorner?.Detach();
+                _insertionAdorner = null;
+            }
+            // ドロップターゲットアイテムと挿入カーソル装飾のアイテムが違う場合は挿入カーソル装飾を再生成する
+            else if (!dropTargetItem.Equals(_insertionAdorner?.AdornedElement))
+            {
+                _insertionAdorner?.Detach();
+
+                // ドラッグアイテムとドロップターゲットアイテムの位置を取得
+                int indexDraggedItem = xMainPanel.Children.IndexOf(_draggedItem);
+                int indexDropTargetItem = xMainPanel.Children.IndexOf(dropTargetItem);
+                // 挿入カーソル装飾を生成
+                _insertionAdorner =
+                    // ドラッグアイテムとドロップターゲットアイテム同じの場合は挿入カーソル装飾を表示しない
+                    (indexDraggedItem == indexDropTargetItem) ? null :
+                        // 後にドラッグする場合は右側、前にドラッグする場合は左側に挿入カーソル装飾を表示する
+                        (indexDraggedItem < indexDropTargetItem) ?
+                            new InsertionAdorner(dropTargetItem, true) :
+                            new InsertionAdorner(dropTargetItem, false);
+            }
+            // ドロップターゲットアイテムと挿入カーソル装飾のアイテムが同じ場合は挿入カーソル装飾は変更しない
+            else
+            {
+            }
+        }
+
+        /// <summary>マウス左ボタンアップイベント</summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void OnMainPanelMouseLeftButtonUp(object sender, MouseButtonEventArgs args)
+        {
+            // 左ボタンアップのポイントのアイテムを取得
+            Point ptUp = args.GetPosition(xMainPanel);
+
+            //UserControl dropTargetItem = xMainPanel.GetChildElement(ptUp) as UserControl;
+
+            HitTestResult result = VisualTreeHelper.HitTest(xMainPanel, ptUp);
+            if (result != null)
+            {
+                UserControl dropTargetItem = ViewHelper.FindVisualParent<UserControl>(result.VisualHit);
+
+                // ドラッグ中、かつ、ドロップ位置のアイテムがドロップ対象ならアイテムを移動する
+                if (_draggedItem != null && dropTargetItem != null)
+                {
+                    // アイテムの移動
+                    int dropTargetItemIndex = xMainPanel.Children.IndexOf(dropTargetItem);
+                    UserControl draggedItem = xMainPanel.Children[_draggedItemIndex.Value] as UserControl;
+                    xMainPanel.Children.RemoveAt(_draggedItemIndex.Value);
+                    xMainPanel.Children.Insert(dropTargetItemIndex, draggedItem);
+                }
+            }
+
+            // マウスキャプチャーのリリース
+            xMainPanel.ReleaseMouseCapture();
+        }
+
+        /// <summary>マウスキャプチャーロストイベント</summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
+        private void OnMainPanelLostMouseCapture(object sender, MouseEventArgs args)
+        {
+            // 装飾のデタッチ
+            _dragContentAdorner?.Detach();
+            _dragContentAdorner = null;
+            _insertionAdorner?.Detach();
+            _insertionAdorner = null;
+
+            // フィールドの初期化
+            _draggedItem = null;
+            _draggedItemIndex = null;
+            _initialPosition = null;
+        }
+        #endregion
+        public StackPanel xMainPanel { get; set; }
         private void StackPanelSPD_Initialized(object sender, EventArgs e)
         {
             if (sender is StackPanel stackPanel1)
             {
-                var stackPanel = ServiceManager.GetInstance().StackPanel;
-                stackPanel1.Children.Add(stackPanel);
+                xMainPanel = ServiceManager.GetInstance().StackPanel;
+                stackPanel1.Children.Add(xMainPanel);
+
+                FluidMoveBehavior fluidMoveBehavior = new FluidMoveBehavior
+                {
+                    AppliesTo = FluidMoveScope.Children,
+                    Duration = TimeSpan.FromSeconds(0.2)
+                };
+
+                Interaction.GetBehaviors(xMainPanel).Add(fluidMoveBehavior);
+
+                xMainPanel.MouseLeftButtonDown += OnMainPanelMouseLeftButtonDown;
+                xMainPanel.MouseMove += OnMainPanelMouseMove;
+                xMainPanel.MouseLeftButtonUp += OnMainPanelMouseLeftButtonUp;
+                xMainPanel.LostMouseCapture += OnMainPanelLostMouseCapture;
+
+
+
+
+
                 //bool isDown = false;
                 //AdornerLayer adornerLayer = AdornerLayer.GetAdornerLayer(Root);
                 //DragDropAdorner adorner = null;
@@ -447,6 +607,16 @@ namespace ColorVision
             string changelogContent = File.ReadAllText(changelogPath);
             changelogWindow.SetChangelogText(changelogContent);
             changelogWindow.ShowDialog();
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+
+            if (ServiceManager.GetInstance().StackPanel.Children[0] is UserControl userControl1)
+            {
+                ServiceManager.GetInstance().StackPanel.Children.RemoveAt(0);
+                ServiceManager.GetInstance().StackPanel.Children.Add(userControl1);
+            }
         }
     }
 }

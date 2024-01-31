@@ -8,7 +8,8 @@
         xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:properties="clr-namespace:ColorVision.Properties"
-        xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
+        xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util" 
+        xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindow}"
         Title="ColorVision" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
@@ -118,6 +119,9 @@
                         <ScrollViewer x:Name="ScrollViewerDisplay" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
                             <StackPanel x:Name="SPDisplay" >
                                 <StackPanel x:Name="StackPanelSPD" Initialized="StackPanelSPD_Initialized" >
+                                    <behaviors:Interaction.Behaviors>
+                                        <behaviors:FluidMoveBehavior AppliesTo="Children" Duration="0:0:0.5"/>
+                                    </behaviors:Interaction.Behaviors>
                                 </StackPanel>
                             </StackPanel>
                         </ScrollViewer>

@@ -616,7 +616,7 @@
     <value>Create a new project or file</value>
   </data>
   <data name="DatabaseConnectionFailed" xml:space="preserve">
-    <value>Database connection failed, please connect to the database first before operating.</value>
+    <value>Database connection failed, please connect to the database first before operating</value>
   </data>
   <data name="UnderDevelopment" xml:space="preserve">
     <value>In development</value>

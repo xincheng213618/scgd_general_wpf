@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿using ColorVision.Services.Dao;
+using log4net;
 using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
@@ -483,6 +484,31 @@ namespace ColorVision.MySql
         {
             List<T> list = new List<T>();
             DataTable d_info = GetTableAllByBatchCode(code);
+            foreach (var item in d_info.AsEnumerable())
+            {
+                T? model = GetModelFromDataRow(item);
+                if (model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
+        }
+
+        public T? GetLatestResult()
+        {
+            return GetByCreateDate(limit: 1).FirstOrDefault();
+        }
+
+        public List<T> GetByCreateDate(int limit = 1)
+        {
+            List<T> list = new List<T>();
+            string sql = $"select * from {GetTableName()} ORDER BY create_date DESC LIMIT @Limit";
+            var parameters = new Dictionary<string, object>
+            {
+                {"@Limit", limit}
+            };
+            DataTable d_info = GetData(sql, parameters);
             foreach (var item in d_info.AsEnumerable())
             {
                 T? model = GetModelFromDataRow(item);
