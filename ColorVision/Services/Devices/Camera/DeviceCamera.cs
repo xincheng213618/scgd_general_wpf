@@ -236,7 +236,7 @@ namespace ColorVision.Services.Devices.Camera
                             if (msgRecord != null)
                             {
                                 SysResourceDao sysResourceDao = new SysResourceDao();
-                                SysResourceModel sysResourceModel = sysResourceDao.GetById(msgRecord.MsgReturn.Data.Mis);
+                                SysResourceModel sysResourceModel = sysResourceDao.GetLatestResult();
                                 if (sysResourceModel != null)
                                 {
                                     CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);

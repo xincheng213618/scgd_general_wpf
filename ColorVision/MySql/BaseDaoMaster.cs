@@ -382,13 +382,13 @@ namespace ColorVision.MySql
             return list;
         }
 
-        public List<T> ConditionalQuery(Dictionary<string,object> keyValuePairs)
+        public List<T> ConditionalQuery(Dictionary<string,object> param)
         {
             List<T> list = new List<T>();
             string sql = $"select * from {GetTableName()} where 1=1";
 
             // 遍历字典，为每个键值对构建查询条件
-            foreach (var pair in keyValuePairs)
+            foreach (var pair in param)
             {
                 // 这假设字典的键是数据库列的名称
                 // 并且值是你想要匹配的模式
@@ -398,7 +398,8 @@ namespace ColorVision.MySql
                     sql += $" AND `{pair.Key}` LIKE '%{pair.Value}%'";
                 }
             }
-            DataTable d_info = GetData(sql);
+
+            DataTable d_info = GetData(sql, param);
             foreach (var item in d_info.AsEnumerable())
             {
                 T? model = GetModelFromDataRow(item);
@@ -409,8 +410,6 @@ namespace ColorVision.MySql
             }
             return list;
         }
-
-
 
 
         public List<T> GetAll(int tenantId)
