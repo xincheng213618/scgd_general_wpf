@@ -264,7 +264,7 @@ namespace ColorVision.Services.Devices.Spectrum.Views
 
         bool First;
 
-        public void SpectrumDrawPlot(SpectumData data)
+        public void SpectrumDrawPlot(SpectrumData data)
         {
             if (!First)
             {

@@ -119,7 +119,7 @@ namespace ColorVision.Services.Devices.Spectrum
         {
             if (resultCode == 0)
             {
-                View.SpectrumDrawPlot(new SpectumData(-1,data));
+                View.SpectrumDrawPlot(new SpectrumData(-1,data));
             }
             else
             {

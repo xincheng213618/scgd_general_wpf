@@ -2,14 +2,14 @@
 
 namespace ColorVision.Services.Devices.Spectrum.Configs
 {
-    public class SpectumData
+    public class SpectrumData
     {
         public int ID { get; set; }
         public float V { get; set; }
         public float I { get; set; }
         public ColorParam Data { get; set; }
 
-        public SpectumData(int id, ColorParam data)
+        public SpectrumData(int id, ColorParam data)
         {
             ID = id;
             Data = data;
@@ -17,7 +17,7 @@ namespace ColorVision.Services.Devices.Spectrum.Configs
             I = float.NaN;
         }
 
-        public SpectumData()
+        public SpectrumData()
         {
             V = float.NaN;
             I = float.NaN;
