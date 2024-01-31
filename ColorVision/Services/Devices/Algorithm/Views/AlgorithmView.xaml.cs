@@ -199,9 +199,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             RefreshResultListView();
         }
 
-
-        AlgResultLedcheckDao algResultLedcheckDao = new AlgResultLedcheckDao();
-
         public void AlgResultMasterModelDataDraw(AlgResultMasterModel result)
         {
             AlgorithmResult algorithmResult = new AlgorithmResult(result);
@@ -509,10 +506,10 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         if (result.LedResultDatas == null)
                         {
                             result.LedResultDatas = new ObservableCollection<LedResultData>();
-                            List<AlgResultLedcheckModel> AlgResultLedcheckModels = algResultLedcheckDao.GetAllByPid(result.Id);
+                            List<AlgResultMTFModel> AlgResultLedcheckModels = resultService.GetMTFByPid(result.Id);
                             foreach (var item in AlgResultLedcheckModels)
                             {
-                                LedResultData ledResultData = new LedResultData(new Point((double)item.PosX, (double)item.PosY), (double)item.Radius);
+                                LedResultData ledResultData = new LedResultData(new Point((double)item.PoiX, (double)item.PoiY), (double)item.PoiWidth/2);
                                 result.LedResultDatas.Add(ledResultData);
                             };
                         }

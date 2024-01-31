@@ -166,7 +166,7 @@
                             </DockPanel>
                         </GroupBox>
                         <GroupBox  Header="BuildPoi">
-                            <StackPanel Margin="5">
+                            <StackPanel>
                                 <DockPanel Margin="0,2">
                                     <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="BuildPoi_Click" />
                                     <ComboBox  x:Name="ComboxBuildPoiTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
