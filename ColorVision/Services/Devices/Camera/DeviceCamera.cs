@@ -230,7 +230,6 @@ namespace ColorVision.Services.Devices.Camera
                             {
                                 SysResourceDao sysResourceDao = new SysResourceDao();
                                 SysResourceModel sysResourceModel = sysResourceDao.GetLatestResult();
-
                                 CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
                                 this.AddChild(calibrationResource);
                                 keyValuePairs2.Add(item1.Title, calibrationResource);
