@@ -13,6 +13,7 @@ using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using ColorVision.Common.Utilities;
 
 namespace ColorVision.Services.Devices.Camera
 {
@@ -591,10 +592,11 @@ namespace ColorVision.Services.Devices.Camera
             stopwatch.Start(); // 开始计时
 
             TaskCompletionSource<MsgRecord> tcs = new TaskCompletionSource<MsgRecord>();
+            string md5 = Tool.CalculateMD5(fileName);
             MsgSend msg = new MsgSend
             {
                 EventName = MQTTCameraEventEnum.Event_Calibration_UploadFile,
-                Params = new Dictionary<string, object> { { "name", name }, { "fileName", fileName }, { "fileType", fileType } }
+                Params = new Dictionary<string, object> { { "name", name }, { "fileName", fileName }, { "fileType", fileType } ,{"md5", md5 } }
             };
             MsgRecord msgRecord = PublishAsyncClient(msg);
 
@@ -614,7 +616,6 @@ namespace ColorVision.Services.Devices.Camera
                     log.Info($"UploadCalibrationFileAsync:{fileName}  超时  Operation time: {stopwatch.ElapsedMilliseconds} ms");
                     tcs.TrySetException(new TimeoutException("The operation has timed out."));
                 }
-
                 return await tcs.Task; // 如果超时，这里将会抛出异常
             }
             catch (Exception ex)
@@ -627,13 +628,7 @@ namespace ColorVision.Services.Devices.Camera
             {
                 msgRecord.MsgRecordStateChanged -= handler;
             }
-
         }
-
-
-
-
-
 
         public MsgRecord CacheClear()
         {
