@@ -98,7 +98,7 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
 
                 if (comboBox.SelectedValue is GroupService calibrationRsourcesGroup)
                 {
-                    CalibrationParam.Normal.DarkNoise.FilePath = calibrationRsourcesGroup.DarkNoise?.Name;
+                    CalibrationParam.Normal.DarkNoise.FilePath = calibrationRsourcesGroup.DarkNoise?.Name ?? string.Empty;
                     CalibrationParam.Normal.DefectPoint.FilePath = calibrationRsourcesGroup.DefectPoint?.Name ?? string.Empty;
                     CalibrationParam.Normal.DSNU.FilePath = calibrationRsourcesGroup.DSNU?.Name ?? string.Empty;
                     CalibrationParam.Normal.Distortion.FilePath = calibrationRsourcesGroup.Distortion?.Name ?? string.Empty;
