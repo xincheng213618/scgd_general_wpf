@@ -586,7 +586,7 @@ namespace ColorVision.Services.Devices.Camera
              return PublishAsyncClient(msg);
         }
 
-        public async Task<MsgRecord> UploadCalibrationFileAsync(string name, string fileName, int fileType, int timeout =50000)
+        public async Task<MsgRecord> UploadCalibrationFileAsync(string name, string fileName, int fileType, int timeout = 50000)
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start(); // 开始计时
