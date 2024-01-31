@@ -317,7 +317,7 @@ namespace ColorVision.Services
 
         public void SpectrumDrawPlotFromDB(string bid)
         {
-            List<SpectumData> datas = new List<SpectumData>();
+            List<SpectrumData> datas = new List<SpectrumData>();
             List<SpectumResultModel> resultSpec = resultService.SpectumSelectBySN(bid);
             List<SMUResultModel> resultSMU = resultService.SMUSelectBySN(bid);
             for (int i = 0; i < resultSpec.Count; i++)
@@ -350,7 +350,7 @@ namespace ColorVision.Services
                     fPL = JsonConvert.DeserializeObject<float[]>(item.fPL ?? string.Empty) ?? Array.Empty<float>(),
                     fRi = JsonConvert.DeserializeObject<float[]>(item.fRi ?? string.Empty) ?? Array.Empty<float>(),
                 };
-                SpectumData data = new SpectumData(item.Id, param);
+                SpectrumData data = new SpectrumData(item.Id, param);
                 if (i < resultSMU.Count)
                 {
                     data.V = resultSMU[i].VResult;
@@ -370,7 +370,7 @@ namespace ColorVision.Services
                 if (ctl is DisplaySpectrumControl spectrum)
                 {
                     spectrum.SpectrumClear();
-                    foreach (SpectumData data in datas)
+                    foreach (SpectrumData data in datas)
                     {
                         spectrum.SpectrumDrawPlot(data);
                     }
