@@ -349,8 +349,13 @@ namespace ColorVision.Services.Devices.Camera.Views
         {
             if (ComboxPOITemplate.SelectedValue is PoiParam poiParams)
             {
-                TemplateControl.GetInstance().LoadPoiDetailFromDB(poiParams);
+                if (poiParams.Id == -1)
+                {
+                    ImageView.ImageShow.Clear();
+                    return;
+                }
                 ImageView.ImageShow.Clear();
+                TemplateControl.GetInstance().LoadPoiDetailFromDB(poiParams);
                 foreach (var item in poiParams.PoiPoints)
                 {
                     switch (item.PointType)
