@@ -2,6 +2,7 @@
 using ColorVision.MQTT;
 using ColorVision.Services.Msg;
 using MQTTMessageLib;
+using MQTTMessageLib.Spectum;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -13,9 +14,9 @@ using System.Windows;
 
 namespace ColorVision.Services.Devices.Spectrum
 {
-    public delegate void MQTTSpectrumDataHandler(SpectrumData? colorPara);
+    public delegate void MQTTSpectrumDataHandler(SpectumData? colorPara);
     public delegate void MQTTAutoParamHandler(AutoIntTimeParam colorPara);
-    public delegate void MQTTSpectrumHeartbeatHandler(SpectumHeartbeatParam heartbeat);
+    public delegate void MQTTSpectrumHeartbeatHandler(SpectrumHeartbeatParam heartbeat);
 
     public class MQTTSpectrum : MQTTDeviceService<ConfigSpectrum>
     {
@@ -69,7 +70,7 @@ namespace ColorVision.Services.Devices.Spectrum
                         else if (json.EventName == "GetData")
                         {
                             JObject data = json.Data;
-                            SpectrumData? colorParam = JsonConvert.DeserializeObject<SpectrumData>(JsonConvert.SerializeObject(data));
+                            SpectumData? colorParam = JsonConvert.DeserializeObject<SpectumData>(JsonConvert.SerializeObject(data));
                             if (cmdMap.ContainsKey(json.MsgID))
                             {
                                 Application.Current.Dispatcher.Invoke(() => DataHandlerEvent?.Invoke(colorParam));
@@ -79,7 +80,7 @@ namespace ColorVision.Services.Devices.Spectrum
                         else if (json.EventName == "GetDataAuto")
                         {
                             JObject data = json.Data;
-                            SpectrumData? colorParam = JsonConvert.DeserializeObject<SpectrumData>(JsonConvert.SerializeObject(data));
+                            SpectumData? colorParam = JsonConvert.DeserializeObject<SpectumData>(JsonConvert.SerializeObject(data));
                             if (cmdMap.ContainsKey(json.MsgID))
                             {
                                 Application.Current.Dispatcher.Invoke(() => DataHandlerEvent?.Invoke(colorParam));
@@ -88,7 +89,7 @@ namespace ColorVision.Services.Devices.Spectrum
                         }
                         else if (json.EventName == "Heartbeat" && json.ServiceName.Equals(this.ServiceName, StringComparison.Ordinal))
                         {
-                            List<SpectumDeviceHeartbeatParam> devs_heartbeat = JsonConvert.DeserializeObject<List<SpectumDeviceHeartbeatParam>>(JsonConvert.SerializeObject(json.Data));
+                            List<SpectrumDeviceHeartbeatParam> devs_heartbeat = JsonConvert.DeserializeObject<List<SpectrumDeviceHeartbeatParam>>(JsonConvert.SerializeObject(json.Data));
                             if (devs_heartbeat != null && devs_heartbeat.Count > 0) DoSpectumHeartbeat(devs_heartbeat);
                         }
                         else if (json.EventName == "Close")
@@ -109,13 +110,13 @@ namespace ColorVision.Services.Devices.Spectrum
             return Task.CompletedTask;
         }
 
-        public void DoSpectumHeartbeat(List<SpectumDeviceHeartbeatParam> devsheartbeat)
+        public void DoSpectumHeartbeat(List<SpectrumDeviceHeartbeatParam> devsheartbeat)
         {
-            foreach (SpectumDeviceHeartbeatParam devheartbeat in devsheartbeat)
+            foreach (SpectrumDeviceHeartbeatParam devheartbeat in devsheartbeat)
             {
                 if (devheartbeat.DeviceName.Equals(Config.Code, StringComparison.Ordinal))
                 {
-                    SpectumHeartbeatParam heartbeat = new SpectumHeartbeatParam();
+                    SpectrumHeartbeatParam heartbeat = new SpectrumHeartbeatParam();
                     heartbeat.DeviceStatus = devheartbeat.DeviceStatus;
                     heartbeat.IsAutoGetData = devheartbeat.IsAutoGetData;
                     DoSpectumHeartbeat(heartbeat);
@@ -123,7 +124,7 @@ namespace ColorVision.Services.Devices.Spectrum
             }
         }
 
-        public void DoSpectumHeartbeat(SpectumHeartbeatParam heartbeat)
+        public void DoSpectumHeartbeat(SpectrumHeartbeatParam heartbeat)
         {
             Application.Current.Dispatcher.Invoke(() => HeartbeatHandlerEvent?.Invoke(heartbeat));
         }
@@ -302,7 +303,7 @@ namespace ColorVision.Services.Devices.Spectrum
         {
             MsgSend msg = new MsgSend
             {
-                EventName = MQTTMessageLib.Spectrum.MQTTSpectrumEventEnum.Event_Shutter_Connect,
+                EventName = MQTTSpectumEventEnum.Event_Shutter_Connect,
                 ServiceName = Config.Code,
             };
             PublishAsyncClient(msg);
@@ -312,7 +313,7 @@ namespace ColorVision.Services.Devices.Spectrum
         {
             MsgSend msg = new MsgSend
             {
-                EventName = MQTTMessageLib.Spectrum.MQTTSpectrumEventEnum.Event_Shutter_Disconnect,
+                EventName = MQTTSpectumEventEnum.Event_Shutter_Disconnect,
                 ServiceName = Config.Code,
             };
             PublishAsyncClient(msg);
@@ -322,7 +323,7 @@ namespace ColorVision.Services.Devices.Spectrum
         {
             MsgSend msg = new MsgSend
             {
-                EventName = MQTTMessageLib.Spectrum.MQTTSpectrumEventEnum.Event_Shutter_Doopen,
+                EventName = MQTTSpectumEventEnum.Event_Shutter_Doopen,
                 ServiceName = Config.Code,
             };
             PublishAsyncClient(msg);
@@ -332,7 +333,7 @@ namespace ColorVision.Services.Devices.Spectrum
         {
             MsgSend msg = new MsgSend
             {
-                EventName = MQTTMessageLib.Spectrum.MQTTSpectrumEventEnum.Event_Shutter_Doclose,
+                EventName = MQTTSpectumEventEnum.Event_Shutter_Doclose,
                 ServiceName = Config.Code,
             };
             PublishAsyncClient(msg);

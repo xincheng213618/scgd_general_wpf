@@ -118,7 +118,7 @@ namespace ColorVision.Services.Devices.Spectrum
                 enableBtn(true);
             }
         }
-        private void doSpectrumHeartbeat(SpectumHeartbeatParam e)
+        private void doSpectrumHeartbeat(SpectrumHeartbeatParam e)
         {
             doHeartbeat(e);
             if (e.IsAutoGetData)
@@ -144,7 +144,7 @@ namespace ColorVision.Services.Devices.Spectrum
         {
             View.Clear();
         }
-        public void SpectrumDrawPlot(SpectrumData data)
+        public void SpectrumDrawPlot(SpectumData data)
         {
             View.SpectrumDrawPlot(data);
         }
@@ -278,7 +278,7 @@ namespace ColorVision.Services.Devices.Spectrum
         {
             if (resultCode == 0)
             {
-                View.SpectrumDrawPlot(new SpectrumData(-1,data));
+                View.SpectrumDrawPlot(new SpectumData(-1,data));
             }
             else
             {
