@@ -850,7 +850,7 @@ namespace ColorVision.Media
                         Circle.Attribute.Radius = item.Radius;
                         Circle.Attribute.Brush = Brushes.Transparent;
                         Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                        Circle.Attribute.ID = item.Id;
+                        Circle.Attribute.ID = (int)item.Id;
                         Circle.Attribute.Text = item.Name;
                         Circle.Render();
                         ImageShow.AddVisual(Circle);
@@ -860,7 +860,7 @@ namespace ColorVision.Media
                         Rectangle.Attribute.Rect = new Rect(item.PixelX, item.PixelY, item.Width, item.Height);
                         Rectangle.Attribute.Brush = Brushes.Transparent;
                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                        Rectangle.Attribute.ID = item.Id;
+                        Rectangle.Attribute.ID = (int)item.Id;
                         Rectangle.Attribute.Name = item.Name;
                         Rectangle.Render();
                         ImageShow.AddVisual(Rectangle);

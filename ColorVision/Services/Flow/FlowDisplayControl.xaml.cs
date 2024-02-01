@@ -93,19 +93,15 @@ namespace ColorVision.Services.Flow
             {
                 if (FlowTemplate.SelectedValue is FlowParam flowParam)
                 {
-                    string fileName = SolutionManager.GetInstance().CurrentSolution.FullName + "\\Flow\\" + flowParam.FileName;
-                    if (File.Exists(fileName))
+                    if (View != null)
                     {
-                        if (View != null)
+                        try
                         {
-                            try
-                            {
-                                View.FlowEngineControl.Load(fileName);
-                            }
-                            catch
-                            {
+                            View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64);
+                        }
+                        catch
+                        {
 
-                            }
                         }
                     }
                 }
@@ -198,6 +194,12 @@ namespace ColorVision.Services.Flow
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ToggleButton0.IsChecked =!ToggleButton0.IsChecked;
+        }
+
+        private void Button_Click_Refresh(object sender, RoutedEventArgs e)
+        {
+            TemplateControl.GetInstance().LoadFlowParam();
+            FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
         }
     }
 }

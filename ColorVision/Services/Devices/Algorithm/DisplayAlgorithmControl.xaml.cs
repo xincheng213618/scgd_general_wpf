@@ -238,12 +238,12 @@ namespace ColorVision.Services.Devices.Algorithm
             }
         }
 
-        private List<POIResultCIExyuv> BuildPOIResultCIExyuv(List<POIPointResultModel> details)
+        private List<POIResultCIE<POIDataCIExyuv>> BuildPOIResultCIExyuv(List<POIPointResultModel> details)
         {
-            List<POIResultCIExyuv> results = new List<POIResultCIExyuv>();
+            List<POIResultCIE<POIDataCIExyuv>> results = new List<POIResultCIE<POIDataCIExyuv>>();
             foreach (POIPointResultModel detail in details)
             {
-                POIResultCIExyuv result = new POIResultCIExyuv(
+                POIResultCIE<POIDataCIExyuv> result = new POIResultCIE<POIDataCIExyuv>(
                                             new POIPoint((int)detail.PoiId, -1, detail.PoiName, (POIPointTypes)detail.PoiType, (int)detail.PoiX, (int)detail.PoiY, (int)detail.PoiWidth, (int)detail.PoiHeight),
                                             JsonConvert.DeserializeObject<POIDataCIExyuv>(detail.Value));
 
@@ -252,12 +252,12 @@ namespace ColorVision.Services.Devices.Algorithm
             return results;
         }
 
-        private List<MQTTMessageLib.Algorithm.POIResultCIEY> BuildPOIResultCIEY(List<POIPointResultModel> details)
+        private List<MQTTMessageLib.Algorithm.POIResultCIE<POIDataCIEY>> BuildPOIResultCIEY(List<POIPointResultModel> details)
         {
-            List<POIResultCIEY> results = new List<POIResultCIEY>();
+            List<POIResultCIE<POIDataCIEY>> results = new List<POIResultCIE<POIDataCIEY>>();
             foreach (POIPointResultModel detail in details)
             {
-                POIResultCIEY result = new POIResultCIEY(
+                POIResultCIE<POIDataCIEY> result = new POIResultCIE<POIDataCIEY>(
                                         new POIPoint((int)detail.PoiId, -1, detail.PoiName, (POIPointTypes)detail.PoiType, (int)detail.PoiX, (int)detail.PoiY, (int)detail.PoiWidth, (int)detail.PoiHeight),
                                         JsonConvert.DeserializeObject<POIDataCIEY>(detail.Value));
 

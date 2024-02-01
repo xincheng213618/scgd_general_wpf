@@ -22,11 +22,18 @@ namespace ColorVision.Services.Flow.Templates
 
         public const string propertyName = "filename";
 
-        public string? FileName
+        public string? FileName { get; set; }
+        //{
+        //    set { SetProperty(ref _FileName, value?.ToString(), propertyName); }
+        //    get => GetValue(_FileName, propertyName);
+        //}
+        //private string? _FileName;
+
+        public string? ResId
         {
-            set { SetProperty(ref _FileName, value?.ToString(), propertyName); }
-            get => GetValue(_FileName, propertyName);
+            set { SetProperty(ref _ResId, value?.ToString(), propertyName); }
+            get => GetValue(_ResId, propertyName);
         }
-        private string? _FileName;
+        private string? _ResId;
     }
 }
