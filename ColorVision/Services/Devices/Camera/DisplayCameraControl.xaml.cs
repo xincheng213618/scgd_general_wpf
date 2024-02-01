@@ -114,10 +114,6 @@ namespace ColorVision.Services.Devices.Camera
                         DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
                         FileDownload(pm_dl_ch);
                         break;
-                    case MQTTCameraEventEnum.Event_Calibration_UploadFile:
-                        DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                        //FileUpload(pm_up);
-                        break;
                     case MQTTCameraEventEnum.Event_OpenLive:
                         DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(arg.Data));
                         string mapName = Device.Code;
@@ -125,7 +121,8 @@ namespace ColorVision.Services.Devices.Camera
                         CameraVideoControl.Start(pm_live.IsLocal, mapName, pm_live.FrameInfo.width, pm_live.FrameInfo.height);
                         break;
                 }
-            }else if (arg.ResultCode == 102)
+            }
+            else if (arg.ResultCode == 102)
             {
                 switch (arg.EventName)
                 {
@@ -136,10 +133,6 @@ namespace ColorVision.Services.Devices.Camera
                     case MQTTCameraEventEnum.Event_GetData_Channel:
                         DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
                         FileDownload(pm_dl_ch);
-                        break;
-                    case MQTTCameraEventEnum.Event_Calibration_UploadFile:
-                        DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                        FileUpload(pm_up);
                         break;
                 }
             }
@@ -157,8 +150,6 @@ namespace ColorVision.Services.Devices.Camera
                         });
                         break;
                     case MQTTCameraEventEnum.Event_GetData_Channel:
-                        break;
-                    case MQTTCameraEventEnum.Event_Calibration_UploadFile:
                         break;
                     case MQTTCameraEventEnum.Event_OpenLive:
                         break;
