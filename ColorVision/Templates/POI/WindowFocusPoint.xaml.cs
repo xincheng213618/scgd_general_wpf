@@ -314,6 +314,10 @@ namespace ColorVision.Templates.POI
                                              select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
 
+            ComboBoxBorderType11.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()
+                                              select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
+            ComboBoxBorderType11.SelectedIndex = 0;
+
             ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingPOIPosition)).Cast<DrawingPOIPosition>()
                                                select new KeyValuePair<DrawingPOIPosition, string>(e1, e1.ToDescription());
             ComboBoxBorderType2.SelectedIndex = 0;
@@ -1998,6 +2002,42 @@ namespace ColorVision.Templates.POI
             }
             ImportMarinPopup.IsOpen =  false;
 
+        }
+
+        private void ButtonImportMarinSetting2(object sender, RoutedEventArgs e)
+        {
+            if (ImageShow.Source is BitmapSource bitmapImage)
+            {
+                if (!double.TryParse(TextBoxUp2.Text, out double startU))
+                    startU = 0;
+
+                if (!double.TryParse(TextBoxDown2.Text, out double startD))
+                    startD = 0;
+
+                if (!double.TryParse(TextBoxLeft2.Text, out double startL))
+                    startL = 0;
+                if (!double.TryParse(TextBoxRight2.Text, out double startR))
+                    startR = 0;
+
+                if (ComboBoxBorderType11.SelectedItem is KeyValuePair<BorderType, string> KeyValue && KeyValue.Key == BorderType.Relative)
+                {
+                    startU = bitmapImage.PixelHeight * startU / 100;
+                    startD = bitmapImage.PixelHeight * startD / 100;
+
+                    startL = bitmapImage.PixelWidth * startL / 100;
+                    startR = bitmapImage.PixelWidth * startR / 100;
+                }
+
+                PoiParam.DatumArea.AreaRectWidth = bitmapImage.PixelWidth - (int)startR - (int)startL;
+                PoiParam.DatumArea.AreaRectHeight = bitmapImage.PixelHeight - (int)startD - (int)startD;
+
+            }
+            ImportMarinPopup1.IsOpen = false;
+        }
+
+        private void ButtonImportMarin1_Click(object sender, RoutedEventArgs e)
+        {
+            ImportMarinPopup1.IsOpen = true;
         }
     }
 
