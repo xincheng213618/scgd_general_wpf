@@ -44,8 +44,6 @@ namespace ColorVision.Services.Devices.Camera
         /// </summary>
         public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
 
-
-
         public ViewCamera View { get; set; }
 
         public MQTTTerminalCamera Service { get; set; }
@@ -138,6 +136,8 @@ namespace ColorVision.Services.Devices.Camera
             }
         }
 
+        public event EventHandler UploadCalibrationClosed;
+
         public void UploadCalibration(object sender)
         {
             UploadWindow uploadwindow = new UploadWindow("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
@@ -147,6 +147,10 @@ namespace ColorVision.Services.Devices.Camera
                 if (s is Upload upload)
                 {
                     UploadMsg uploadMsg = new UploadMsg(this);
+                    UploadCalibrationClosed += (s, e) =>
+                    {
+                        uploadMsg.Close();
+                    };
                     uploadMsg.Show();
                     string path = upload.UploadFilePath;
                     Task.Run(()=> UploadData(path));
@@ -160,8 +164,6 @@ namespace ColorVision.Services.Devices.Camera
 
         public async void UploadData(string UploadFilePath)
         {
-
-
             Msg = "正在解压文件：" + " 请稍后...";
             await Task.Delay(10);
             if (File.Exists(UploadFilePath))
@@ -239,7 +241,6 @@ namespace ColorVision.Services.Devices.Camera
                                     break;
                             }
 
-
                             if (msgRecord != null)
                             {
                                 SysResourceDao sysResourceDao = new SysResourceDao();
@@ -286,11 +287,10 @@ namespace ColorVision.Services.Devices.Camera
                     {
                         MessageBox.Show(ex.Message);
                     }
-
                 }
-                Save();
-                await Task.Delay(10);
-                Msg = "上传成功：";
+                Msg = "上传结束";
+                await Task.Delay(100);
+                Application.Current.Dispatcher.Invoke(() => UploadCalibrationClosed.Invoke(this, new EventArgs()));
             }
 
         }
