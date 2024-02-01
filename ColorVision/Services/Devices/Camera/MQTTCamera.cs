@@ -581,8 +581,8 @@ namespace ColorVision.Services.Devices.Camera
         {
             MsgSend msg = new MsgSend
             {
-                EventName = MQTTCameraEventEnum.Event_Calibration_UploadFile,
-                Params = new Dictionary<string, object> { { "Name", name }, { "FileName", fileName }, { "FileType", fileType } }
+                EventName = MQTTFileServerEventEnum.Event_File_Upload,
+                Params = new Dictionary<string, object> { { "Name", name }, { "FileName", fileName }, { "FileExtType", FileExtType.Calibration } }
             };
              return PublishAsyncClient(msg);
         }
@@ -597,7 +597,7 @@ namespace ColorVision.Services.Devices.Camera
             MsgSend msg = new MsgSend
             {
                 EventName = MQTTFileServerEventEnum.Event_File_Upload,
-                Params = new Dictionary<string, object> { { "Name", name },{ "FileName", fileName }, { "FileExtType", FileExtType.Calibration },{"MD5",md5 } }
+                Params = new Dictionary<string, object> { { "Name", name }, { "FileName", fileName }, { "FileExtType", FileExtType.Calibration } ,{"MD5", md5 } }
             };
             MsgRecord msgRecord = PublishAsyncClient(msg);
 
