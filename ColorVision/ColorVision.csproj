@@ -16,12 +16,16 @@
   <ItemGroup>
     <Compile Remove="Commands\**" />
     <Compile Remove="Extension\**" />
+    <Compile Remove="Services\Flow\Dao\**" />
     <EmbeddedResource Remove="Commands\**" />
     <EmbeddedResource Remove="Extension\**" />
+    <EmbeddedResource Remove="Services\Flow\Dao\**" />
     <None Remove="Commands\**" />
     <None Remove="Extension\**" />
+    <None Remove="Services\Flow\Dao\**" />
     <Page Remove="Commands\**" />
     <Page Remove="Extension\**" />
+    <Page Remove="Services\Flow\Dao\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -151,10 +155,6 @@
     <Resource Include="Assets\Image\pictureBox1.Image.png" />
     <Resource Include="Assets\Image\uploadbg.avif" />
     <Resource Include="Assets\png\PowerToy.png" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Services\Flow\Dao\" />
   </ItemGroup>
 
   <ItemGroup>

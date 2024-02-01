@@ -576,21 +576,22 @@ namespace ColorVision.Templates
             FlowParams.Clear();
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                SolutionManager.GetInstance().ClearCache();
                 List<ModMasterModel> flows = modService.GetFlowAll(UserCenter.GetInstance().TenantId);
                 foreach (var dbModel in flows)
                 {
                     List<ModDetailModel> flowDetails = modService.GetDetailByPid(dbModel.Id);
                     var item = new TemplateModel<FlowParam>(dbModel.Name ?? "default", new FlowParam(dbModel, flowDetails));
                     ModDetailModel fn = item.Value.GetParameter(FlowParam.propertyName);
-                    if (fn != null)
+                    if (fn != null && !string.IsNullOrEmpty(fn.ValueA))
                     {
-                        string code = fn.GetValueMD5();
-                        SysResourceModel res = resourceService.GetByCode(code);
-                        if (res != null)
+                        int id = -1;
+                        if(int.TryParse(fn.ValueA, out id))
                         {
-                            item.Value.DataBase64 = res.Value ?? string.Empty;
-                            Tool.Base64ToFile(item.Value.DataBase64, SolutionManager.GetInstance().CurrentSolution.FullName + "\\Flow\\", item.Value.FileName ?? string.Empty);
+                            SysResourceModel res = resourceService.GetMasterById(id);
+                            if (res != null)
+                            {
+                                item.Value.DataBase64 = res.Value ?? string.Empty;
+                            }
                         }
                     }
                     FlowParams.Add(item);
@@ -606,13 +607,10 @@ namespace ColorVision.Templates
             return FlowParams;
         }
 
-
-
         internal List<SysResourceModel> LoadAllServices()
         {
             return resourceService.GetAllServices(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
         }
-
 
         internal ObservableCollection<TemplateModel<MeasureParam>> LoadMeasureParams()
         {
@@ -637,7 +635,6 @@ namespace ColorVision.Templates
         {
            return modService.MasterDeleteById(id);
         }
-
 
         internal void Save2DB(FlowParam flowParam)
         {
