@@ -185,9 +185,6 @@ namespace ColorVision.Services.Devices.Camera
 
                             string md5 = Tool.CalculateMD5(path + "\\Calibration\\" + "DarkNoise\\" + item1.FileName);
 
-
-
-
                             switch (item1.CalibrationType)
                             {
                                 case CalibrationType.DarkNoise:
@@ -233,6 +230,8 @@ namespace ColorVision.Services.Devices.Camera
                                 default:
                                     break;
                             }
+
+
                             if (msgRecord != null)
                             {
                                 SysResourceDao sysResourceDao = new SysResourceDao();

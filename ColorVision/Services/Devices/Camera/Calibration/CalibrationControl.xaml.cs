@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using ColorVision.Services.Dao;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -99,15 +100,25 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
                 if (comboBox.SelectedValue is GroupService calibrationRsourcesGroup)
                 {
                     CalibrationParam.Normal.DarkNoise.FilePath = calibrationRsourcesGroup.DarkNoise?.Name ?? string.Empty;
+                    CalibrationParam.Normal.DarkNoise.Id = calibrationRsourcesGroup.DarkNoise?.Id;
                     CalibrationParam.Normal.DefectPoint.FilePath = calibrationRsourcesGroup.DefectPoint?.Name ?? string.Empty;
+                    CalibrationParam.Normal.DefectPoint.Id = calibrationRsourcesGroup.DefectPoint?.Id;
                     CalibrationParam.Normal.DSNU.FilePath = calibrationRsourcesGroup.DSNU?.Name ?? string.Empty;
+                    CalibrationParam.Normal.DSNU.Id = calibrationRsourcesGroup.DSNU?.Id;
                     CalibrationParam.Normal.Distortion.FilePath = calibrationRsourcesGroup.Distortion?.Name ?? string.Empty;
+                    CalibrationParam.Normal.Distortion.Id = calibrationRsourcesGroup.Distortion?.Id;
                     CalibrationParam.Normal.ColorShift.FilePath = calibrationRsourcesGroup.ColorShift?.Name ?? string.Empty;
+                    CalibrationParam.Normal.ColorShift.Id = calibrationRsourcesGroup.ColorShift?.Id;
                     CalibrationParam.Normal.Uniformity.FilePath = calibrationRsourcesGroup.Uniformity?.Name ?? string.Empty;
+                    CalibrationParam.Normal.Uniformity.Id = calibrationRsourcesGroup.Uniformity?.Id;
                     CalibrationParam.Color.Luminance.FilePath = calibrationRsourcesGroup.Luminance?.Name ?? string.Empty;
+                    CalibrationParam.Color.Luminance.Id = calibrationRsourcesGroup.Luminance?.Id;
                     CalibrationParam.Color.LumFourColor.FilePath = calibrationRsourcesGroup.LumFourColor?.Name ?? string.Empty;
+                    CalibrationParam.Color.LumFourColor.Id = calibrationRsourcesGroup.LumFourColor?.Id;
                     CalibrationParam.Color.LumMultiColor.FilePath = calibrationRsourcesGroup.LumMultiColor?.Name ?? string.Empty;
+                    CalibrationParam.Color.LumMultiColor.Id = calibrationRsourcesGroup.LumMultiColor?.Id;
                     CalibrationParam.Color.LumOneColor.FilePath = calibrationRsourcesGroup.LumOneColor?.Name ?? string.Empty;
+                    CalibrationParam.Color.LumOneColor.Id = calibrationRsourcesGroup.LumOneColor?.Id;
                 }
 
             }

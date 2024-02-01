@@ -2,6 +2,7 @@
 using ColorVision.MVVM;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Sorts;
+using FlowEngineLib;
 using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.ObjectModel;
@@ -15,6 +16,8 @@ namespace ColorVision.Services.Devices.Algorithm.Views
         public ObservableCollection<PoiResultData> PoiData { get; set; }
         public ObservableCollection<FOVResultData> FOVData { get; set; }
         public ObservableCollection<MTFResultData> MTFData { get; set; }
+        public ObservableCollection<BuildPoiResultData> BuildPoiResultData { get; set; }
+
         public ObservableCollection<SFRResultData> SFRData { get; set; }
         public ObservableCollection<GhostResultData> GhostData { get; set; }
         public ObservableCollection<DistortionResultData> DistortionData { get; set; }

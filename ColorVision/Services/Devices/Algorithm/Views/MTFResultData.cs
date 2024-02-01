@@ -2,6 +2,7 @@
 using ColorVision.Services.Devices.Algorithm.Dao;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace ColorVision.Services.Devices.Algorithm.Views
 {
@@ -19,7 +20,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
         public MTFResultData(AlgResultMTFModel detail)
         {
-            Point = new POIPoint((int)detail.PoiId, -1, detail.PoiName, (POIPointTypes)detail.PoiType, (int)detail.PoiX, (int)detail.PoiY, (int)detail.PoiWidth, (int)detail.PoiHeight);
+            Point = new POIPoint(detail.PoiId??-1, -1, detail.PoiName, (POIPointTypes)detail.PoiType, (int)detail.PoiX, (int)detail.PoiY, (int)detail.PoiWidth, (int)detail.PoiHeight);
             var temp = JsonConvert.DeserializeObject<MQTTMessageLib.Algorithm.MTFResultData>(detail.Value);
             Articulation = temp.Articulation;
         }
