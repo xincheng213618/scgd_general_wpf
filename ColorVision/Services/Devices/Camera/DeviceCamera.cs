@@ -149,6 +149,8 @@ namespace ColorVision.Services.Devices.Camera
 
                 if (s is Upload upload)
                 {
+                    UploadMsg uploadMsg = new UploadMsg(this);
+                    uploadMsg.Show();
                     string path = upload.UploadFilePath;
                     Task.Run(()=> UploadData(path));
                 }
@@ -156,16 +158,24 @@ namespace ColorVision.Services.Devices.Camera
             uploadwindow.ShowDialog();
         }
 
+        public string Msg { get => _Msg; set {  _Msg = value;  Application.Current.Dispatcher.Invoke(() => NotifyPropertyChanged()); } }
+        private string _Msg;
+
         public async void UploadData(string UploadFilePath)
         {
-            await Task.Delay(100);
+
+
+            Msg = "正在解压文件：" + " 请稍后...";
+            await Task.Delay(10);
             if (File.Exists(UploadFilePath))
             {
+                Msg ="正在解压文件：" +" 请稍后...";
                 string path = SolutionManager.GetInstance().CurrentSolution.FullName + "\\Cache\\Cal";
                 if (Directory.Exists(path))
                     Directory.Delete(path, true);
                 Directory.CreateDirectory(path);
-
+                await Task.Delay(10);
+                Msg = "正在解析校正文件：" + " 请稍后...";
                 ExtractToDirectoryWithOverwrite(UploadFilePath, path);
 
                 string Cameracfg = path + "\\Camera.cfg";
@@ -184,7 +194,8 @@ namespace ColorVision.Services.Devices.Camera
                             MsgRecord msgRecord = null;
 
                             string md5 = Tool.CalculateMD5(path + "\\Calibration\\" + "DarkNoise\\" + item1.FileName);
-
+                            Msg ="正在上传校正文件：" + item1.Title + " 请稍后...";
+                            await Task.Delay(10);
                             switch (item1.CalibrationType)
                             {
                                 case CalibrationType.DarkNoise:
@@ -279,16 +290,15 @@ namespace ColorVision.Services.Devices.Camera
                         MessageBox.Show(ex.Message);
                     }
 
-
                 }
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MessageBox.Show("上传成功");
-                    Save();
-                });
+                Save();
+                await Task.Delay(10);
+                Msg = "上传成功：";
             }
 
         }
+
+
 
 
 
