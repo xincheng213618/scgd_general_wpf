@@ -32,9 +32,9 @@ namespace ColorVision.Services.Devices.Camera
     /// <summary>
     /// 根据服务的MQTT相机
     /// </summary>
-    public partial class CameraDisplayControl : UserControl
+    public partial class DisplayCameraControl : UserControl
     {
-        private static readonly ILog logger = LogManager.GetLogger(typeof(CameraDisplayControl));
+        private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayCameraControl));
         public DeviceCamera Device { get; set; }
         public MQTTCamera DService { get => Device.DeviceService; }
 
@@ -45,7 +45,7 @@ namespace ColorVision.Services.Devices.Camera
 
         private ResultService resultService { get; set; }
 
-        public CameraDisplayControl(DeviceCamera device)
+        public DisplayCameraControl(DeviceCamera device)
         {
             Device = device;
             View = Device.View;

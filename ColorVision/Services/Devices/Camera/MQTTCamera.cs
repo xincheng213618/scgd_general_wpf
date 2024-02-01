@@ -55,6 +55,7 @@ namespace ColorVision.Services.Devices.Camera
             {
                 return;
             }
+
             if (msg.Code == 0)
             {
 
@@ -595,8 +596,8 @@ namespace ColorVision.Services.Devices.Camera
             string md5 = Tool.CalculateMD5(fileName);
             MsgSend msg = new MsgSend
             {
-                EventName = MQTTCameraEventEnum.Event_Calibration_UploadFile,
-                Params = new Dictionary<string, object> { { "Name", name }, { "FileName", fileName }, { "FileType", fileType } ,{"MD5", md5 } }
+                EventName = MQTTFileServerEventEnum.Event_File_Upload,
+                Params = new Dictionary<string, object> { { "Name", name },{ "FileName", fileName }, { "FileExtType", FileExtType.Calibration },{"MD5",md5 } }
             };
             MsgRecord msgRecord = PublishAsyncClient(msg);
 

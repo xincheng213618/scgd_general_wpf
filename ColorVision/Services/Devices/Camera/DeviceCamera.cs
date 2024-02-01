@@ -2,6 +2,7 @@
 using ColorVision.MVVM;
 using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Algorithm;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Devices.Camera.Views;
@@ -43,12 +44,7 @@ namespace ColorVision.Services.Devices.Camera
         /// </summary>
         public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
 
-        readonly Lazy<CameraDisplayControl> CameraDisplayControlLazy;  
-        readonly Lazy<EditCamera> EditCameraLazy;
 
-        public CameraDisplayControl CameraDisplayControl { get; set; }
-
-        public EditCamera EditCamera { get; set; }
 
         public ViewCamera View { get; set; }
 
@@ -79,8 +75,9 @@ namespace ColorVision.Services.Devices.Camera
             View.View.Title = "相机视图";
             View.View.Icon = Icon;
 
-            CameraDisplayControlLazy = new Lazy<CameraDisplayControl>(() => CameraDisplayControl ?? new CameraDisplayControl(this));
-            EditCameraLazy = new Lazy<EditCamera>(() => EditCamera ?? new EditCamera(this));
+            DisplayLazy = new Lazy<DisplayCameraControl>(() => DisplayCameraControl ?? new DisplayCameraControl(this));
+            EditCameraLazy = new Lazy<EditCamera>(() => { EditCamera ??= new EditCamera(this); return EditCamera; });
+
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
 
 
@@ -301,6 +298,19 @@ namespace ColorVision.Services.Devices.Camera
 
 
 
+        public override UserControl GetDeviceControl() => new DeviceCameraControl(this);
+        public override UserControl GetDeviceInfo() => new DeviceCameraControl(this, false);
+
+
+        readonly Lazy<DisplayCameraControl> DisplayLazy;
+        public DisplayCameraControl DisplayCameraControl { get; set; }
+        public override UserControl GetDisplayControl() => DisplayLazy.Value;
+
+
+        readonly Lazy<EditCamera> EditCameraLazy;
+        public EditCamera EditCamera { get; set; }
+        public override UserControl GetEditControl() => EditCameraLazy.Value;
+
 
         public override void Dispose()
         {
@@ -309,12 +319,5 @@ namespace ColorVision.Services.Devices.Camera
             base.Dispose();
             GC.SuppressFinalize(this);
         }
-
-        public override UserControl GetDeviceControl() => new DeviceCameraControl(this);
-        public override UserControl GetDeviceInfo() => new DeviceCameraControl(this, false);
-
-        public override UserControl GetDisplayControl() => CameraDisplayControlLazy.Value;
-        public override UserControl GetEditControl() => EditCameraLazy.Value;
-
     }
 }
