@@ -22,6 +22,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using FlowEngineLib;
 
 namespace ColorVision.Services.Devices.Algorithm.Views
 {
@@ -539,7 +540,26 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                             }
                         }
                         break;
-
+                    case AlgorithmResultType.BuildPOI:
+                        ImageView.OpenImage(result.FilePath);
+                        listViewSide.Visibility = Visibility.Collapsed;
+                        if (result.BuildPoiResultData == null)
+                        {
+                            result.BuildPoiResultData = new ObservableCollection<BuildPoiResultData>();
+                            List<AlgResultMTFModel> AlgResultMTFModels = resultService.GetMTFByPid(result.Id);
+                            foreach (var item in AlgResultMTFModels)
+                            {
+                                BuildPoiResultData mTFResultData = new BuildPoiResultData(item);
+                                result.BuildPoiResultData.Add(mTFResultData);
+                            }
+                        }
+                        listViewSide.ItemsSource = result.BuildPoiResultData;
+                        foreach (var item in result.BuildPoiResultData)
+                        {
+                            DrawPoiPoint.Add(item.Point);
+                        }
+                        ImageView.AddPOIPoint(DrawPoiPoint); 
+                        break;
                     default:
                         break;
                 }

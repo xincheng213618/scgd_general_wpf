@@ -137,16 +137,6 @@ namespace ColorVision.Services.Devices.Algorithm
                     DeviceListAllFilesParam data = JsonConvert.DeserializeObject<DeviceListAllFilesParam>(JsonConvert.SerializeObject(arg.Data));
                     DoShowFileList(data);
                     break;
-
-                case MQTTAlgorithmEventEnum.Event_POI_GetData:
-                case MQTTAlgorithmEventEnum.Event_FOV_GetData:
-                case MQTTAlgorithmEventEnum.Event_MTF_GetData:
-                case MQTTAlgorithmEventEnum.Event_SFR_GetData:
-                case MQTTAlgorithmEventEnum.Event_Ghost_GetData:
-                case MQTTAlgorithmEventEnum.Event_LedCheck_GetData:
-                case MQTTAlgorithmEventEnum.Event_Distortion_GetData:
-                    ShowResultFromDB(arg.SerialNumber, Convert.ToInt32(arg.Data.MasterId));
-                    break;
                 case MQTTFileServerEventEnum.Event_File_Upload:
                     DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
                     FileUpload(pm_up);
@@ -154,6 +144,9 @@ namespace ColorVision.Services.Devices.Algorithm
                 case MQTTFileServerEventEnum.Event_File_Download:
                     DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
                     FileDownload(pm_dl);
+                    break;
+                default:
+                    ShowResultFromDB(arg.SerialNumber, Convert.ToInt32(arg.Data.MasterId));
                     break;
             }
         }
@@ -196,12 +189,7 @@ namespace ColorVision.Services.Devices.Algorithm
                 case AlgorithmResultType.POI:
                     LoadResultPOIFromDB(result);
                     break;
-                case AlgorithmResultType.Distortion:
-                case AlgorithmResultType.Ghost:
-                case AlgorithmResultType.LedCheck:
-                case AlgorithmResultType.FOV:
-                case AlgorithmResultType.MTF:
-                case AlgorithmResultType.SFR:
+                default:
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         Device.View.AlgResultMasterModelDataDraw(result);

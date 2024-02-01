@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Windows.Documents;
 
 namespace ColorVision.MySql
 {
@@ -284,21 +285,24 @@ namespace ColorVision.MySql
             return colMappings;
         }
 
-        protected string GetTableName()
-        {
-            if (string.IsNullOrEmpty(ViewName)) return TableName;
-            else return ViewName;
-        }
 
-        public T? GetById(int id)
+        protected string GetTableName()  => string.IsNullOrWhiteSpace(ViewName)? TableName: ViewName;
+
+        public T? GetById(int id) => GetByParam(new Dictionary<string, object> { { "id", id } });
+
+        public T? GetByParam(Dictionary<string, object> param)
         {
-            string sql = $"select * from {GetTableName()} where id=@id" + GetDelSQL(true);
-            Dictionary<string, object> param = new Dictionary<string, object>
+            string whereClause = string.Empty;
+            if (param != null && param.Count > 0)
+                whereClause = "WHERE " + string.Join(" AND ", param.Select(p => $"{p.Key} = @{p.Key}"));
+            string sql = $"SELECT * FROM {GetTableName()} {whereClause}";
+
+            DataTable dataTable = GetData(sql, param);
+            if (dataTable.Rows.Count == 1)
             {
-                { "id", id }
-            };
-            DataTable d_info = GetData(sql, param);
-            return d_info.Rows.Count == 1 ? GetModelFromDataRow(d_info.Rows[0]) : default;
+                return GetModelFromDataRow(dataTable.Rows[0]) ;
+            }
+            return default;
         }
 
         public virtual DataTable GetTableAllByTenantId(int tenantId)
@@ -356,11 +360,17 @@ namespace ColorVision.MySql
             DataTable d_info = GetData(sql);
             return d_info;
         }
-        public List<T> GetAll()
+
+        public List<T> GetAll()  => GetAllByParam(new Dictionary<string, object>());
+        public List<T> GetAllByParam(Dictionary<string, object> param)
         {
+            string whereClause = string.Empty;
+            if (param != null && param.Count > 0)
+                whereClause = "WHERE " + string.Join(" AND ", param.Select(p => $"{p.Key} = @{p.Key}"));
+            string sql = $"SELECT * FROM {GetTableName()} {whereClause}";
+            DataTable d_info = GetData(sql, param);
+
             List<T> list = new List<T>();
-            string sql = $"select * from {GetTableName()} where 1=1";
-            DataTable d_info = GetData(sql);
             foreach (var item in d_info.AsEnumerable())
             {
                 T? model = GetModelFromDataRow(item);
@@ -372,13 +382,13 @@ namespace ColorVision.MySql
             return list;
         }
 
-        public List<T> ConditionalQuery(Dictionary<string,object> keyValuePairs)
+        public List<T> ConditionalQuery(Dictionary<string,object> param)
         {
             List<T> list = new List<T>();
             string sql = $"select * from {GetTableName()} where 1=1";
 
             // 遍历字典，为每个键值对构建查询条件
-            foreach (var pair in keyValuePairs)
+            foreach (var pair in param)
             {
                 // 这假设字典的键是数据库列的名称
                 // 并且值是你想要匹配的模式
@@ -388,7 +398,8 @@ namespace ColorVision.MySql
                     sql += $" AND `{pair.Key}` LIKE '%{pair.Value}%'";
                 }
             }
-            DataTable d_info = GetData(sql);
+
+            DataTable d_info = GetData(sql, param);
             foreach (var item in d_info.AsEnumerable())
             {
                 T? model = GetModelFromDataRow(item);
@@ -399,8 +410,6 @@ namespace ColorVision.MySql
             }
             return list;
         }
-
-
 
 
         public List<T> GetAll(int tenantId)

@@ -118,7 +118,7 @@ namespace ColorVision.Services.Devices.Spectrum
                 enableBtn(true);
             }
         }
-        private void doSpectrumHeartbeat(SpectumHeartbeatParam e)
+        private void doSpectrumHeartbeat(SpectrumHeartbeatParam e)
         {
             doHeartbeat(e);
             if (e.IsAutoGetData)
