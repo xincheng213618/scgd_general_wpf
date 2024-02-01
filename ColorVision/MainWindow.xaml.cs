@@ -25,6 +25,7 @@ using Microsoft.Xaml.Behaviors;
 using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Adorners;
+using ColorVision.MySql;
 
 namespace ColorVision
 {
@@ -86,6 +87,9 @@ namespace ColorVision
         {
             ConfigHandler = ConfigHandler.GetInstance();
             SolutionManager.GetInstance();
+
+            string sql = "INSERT INTO `cv`.`t_scgd_sys_dictionary_mod_item` (`id`, `symbol`, `address_code`, `name`, `val_type` , `value_range`, `default_val`, `pid`, `create_date`, `is_enable` , `is_delete`, `remark`) VALUES (240, 'CalibrationMode', 240, 'CalibrationMode', 0 , NULL, NULL, 2, '2024-02-01 17:30:49', 1 , 0, NULL) ON DUPLICATE KEY UPDATE `symbol` = VALUES(`symbol`), `address_code` = VALUES(`address_code`), `name` = VALUES(`name`), `val_type` = VALUES(`val_type`), `value_range` = VALUES(`value_range`) , `default_val` = VALUES(`default_val`), `pid` = VALUES(`pid`), `create_date` = VALUES(`create_date`), `is_enable` = VALUES(`is_enable`), `is_delete` = VALUES(`is_delete`) , `remark` = VALUES(`remark`);";
+            MySqlControl.GetInstance().ExecuteNonQuery(sql);
 
             if (!WindowConfig.IsExist||(WindowConfig.IsExist&& WindowConfig.Icon == null)) {
                 ThemeManager.Current.SystemThemeChanged += (e) => {
