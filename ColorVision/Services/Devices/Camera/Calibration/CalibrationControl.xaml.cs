@@ -73,6 +73,8 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
         {
             if (sender is ComboBox comboBox)
             {
+
+
                 CalibrationParam.Normal.DarkNoise.FilePath = string.Empty;
                 CalibrationParam.Normal.DefectPoint.FilePath = string.Empty;
                 CalibrationParam.Normal.DSNU.FilePath = string.Empty;
