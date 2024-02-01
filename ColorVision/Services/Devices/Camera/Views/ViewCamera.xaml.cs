@@ -50,7 +50,7 @@ namespace ColorVision.Services.Devices.Camera.Views
             listView1.ItemsSource = ViewResultCameras;
 
             ComboxPOITemplates = new ObservableCollection<TemplateModel<PoiParam>>();
-            ComboxPOITemplates.Insert(0, new TemplateModel<PoiParam>("Empty", new PoiParam()));
+            ComboxPOITemplates.Insert(0, new TemplateModel<PoiParam>("Empty", new PoiParam() { Id=-1}));
 
             foreach (var item in TemplateControl.GetInstance().PoiParams)
                 ComboxPOITemplates.Add(item);

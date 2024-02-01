@@ -186,7 +186,7 @@ namespace ColorVision.Common.Utilities
 #pragma warning disable CA5351
             using MD5 md5 = MD5.Create();
             byte[] inputBytes = Encoding.UTF8.GetBytes(input);
-            byte[] hashBytes = SHA256.HashData(inputBytes);
+            byte[] hashBytes = MD5.HashData(inputBytes);
 #pragma warning restore CA5351
 
             StringBuilder sb = new StringBuilder();

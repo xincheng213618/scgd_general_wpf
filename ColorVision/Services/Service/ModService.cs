@@ -142,7 +142,7 @@ namespace ColorVision.MySql.Service
                 }
                 else
                 {
-                    res = resourceDao.GetById(int.Parse(model.ValueA));
+                    res = resourceDao.GetById(model.Id);
                     if (res != null)
                     {
                         res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
