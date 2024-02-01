@@ -195,26 +195,33 @@ namespace ColorVision.Services.Devices.Camera
                             string md5 = Tool.CalculateMD5(path + "\\Calibration\\" + "DarkNoise\\" + item1.FileName);
                             Msg ="正在上传校正文件：" + item1.Title + " 请稍后...";
                             await Task.Delay(10);
+                            ResouceType type ;
                             switch (item1.CalibrationType)
                             {
                                 case CalibrationType.DarkNoise:
                                     msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, path + "\\Calibration\\" + "DarkNoise\\" + item1.FileName, (int)ResouceType.DarkNoise);
+                                    type = ResouceType.DarkNoise;
                                     break;
                                 case CalibrationType.DefectWPoint:
                                     msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName, (int)ResouceType.DefectPoint);
+                                    type = ResouceType.DefectPoint;
                                     break;
                                 case CalibrationType.DefectBPoint:
                                     msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName, (int)ResouceType.DefectPoint);
+                                    type = ResouceType.DefectPoint;
                                     break;
                                 case CalibrationType.DefectPoint:
                                     msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName, (int)ResouceType.DefectPoint);
+                                    type = ResouceType.DefectPoint;
                                     break;
                                 case CalibrationType.DSNU:
                                     msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, path + "\\Calibration\\" + "DSNU\\" + item1.FileName, (int)ResouceType.DSNU);
+                                    type = ResouceType.DSNU;
                                     break;
                                 case CalibrationType.Uniformity:
                                     msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, path + "\\Calibration\\" + "Uniformity\\" + item1.FileName, (int)ResouceType.Uniformity);
-                                    break;
+                                    type = ResouceType.Uniformity;
+                                     break;
                                 case CalibrationType.Luminance:
                                     msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, path + "\\Calibration\\" + "Luminance\\" + item1.FileName, (int)ResouceType.Luminance);
                                     break;
@@ -240,10 +247,16 @@ namespace ColorVision.Services.Devices.Camera
                                 default:
                                     break;
                             }
-
                             if (msgRecord != null)
                             {
+                                string FileName = msgRecord.MsgReturn.Data.FileName;
                                 SysResourceDao sysResourceDao = new SysResourceDao();
+
+                                SysResourceModel sysResourceModel1 = new SysResourceModel();
+                                sysResourceModel1.Name =item1.Title;
+                                //sysResourceModel1.Type = (int)ResouceType.Calibration;
+                                sysResourceModel1.Pid = this.SysResourceModel.Id;
+                                sysResourceDao.Save(sysResourceModel1);
                                 SysResourceModel sysResourceModel = sysResourceDao.GetLatestResult();
                                 if (sysResourceModel != null)
                                 {
@@ -251,7 +264,6 @@ namespace ColorVision.Services.Devices.Camera
                                     this.AddChild(calibrationResource);
                                     keyValuePairs2.Add(item1.Title, calibrationResource);
                                 }
-
                             }
 
                         }
