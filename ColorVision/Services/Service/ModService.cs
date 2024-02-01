@@ -124,25 +124,15 @@ namespace ColorVision.MySql.Service
             return ret;
         }
 
-        internal void Save(FlowParam flowParam)
+        public void Save(FlowParam flowParam)
         {
             List<ModDetailModel> list = new List<ModDetailModel>();
             flowParam.GetDetail(list);
-            if(list.Count > 0)
+            if(list.Count > 0 && list[0] is ModDetailModel model)
             {
-                SysResourceModel res = null;
-                var model = list[0];
-                if (string.IsNullOrEmpty(model.ValueA)){
-                    res = new SysResourceModel();
-                    res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
-                    res.Name = flowParam.Name;
-                    res.Type = 101;
-                    res.Value = flowParam.DataBase64;
-                    resourceDao.Save(res);
-                }
-                else
+                if (int.TryParse(model.ValueA,out int id))
                 {
-                    res = resourceDao.GetById(model.Id);
+                    SysResourceModel res = resourceDao.GetById(id);
                     if (res != null)
                     {
                         res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
@@ -151,32 +141,18 @@ namespace ColorVision.MySql.Service
                         resourceDao.Save(res);
                     }
                 }
-                model.ValueA = res.Id.ToString();
+                else
+                {
+                    SysResourceModel res = new SysResourceModel();
+                    res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
+                    res.Name = flowParam.Name;
+                    res.Type = 101;
+                    res.Value = flowParam.DataBase64;
+                    resourceDao.Save(res);
+                    model.ValueA = res.Id.ToString();
+                }
                 detailDao.UpdateByPid(flowParam.Id, list);
             }
-            //ModDetailModel fn = flowParam.GetParameter(FlowParam.propertyName);
-            //if (fn == null)
-            //{
-            //    return;
-            //}
-            //string code = fn.GetValueMD5();
-            //SysResourceModel res = resourceDao.GetByCode(code);
-            //if(res != null)
-            //{
-            //    res.Code = code;
-            //    res.Name = flowParam.Name;
-            //    res.Value = flowParam.DataBase64;
-            //    resourceDao.Save(res);
-            //}
-            //else
-            //{
-            //    res = new SysResourceModel();
-            //    res.Code = code;
-            //    res.Name = flowParam.Name;
-            //    res.Type = 101;
-            //    res.Value = flowParam.DataBase64;
-            //    resourceDao.Save(res);
-            //}
         }
 
         internal List<ModMasterModel> GetMasterByPid(int pid)

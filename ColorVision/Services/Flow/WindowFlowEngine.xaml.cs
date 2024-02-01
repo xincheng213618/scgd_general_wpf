@@ -173,7 +173,7 @@ namespace ColorVision.Services.Flow
             this.Title = "流程编辑器 - " + new FileInfo(flowName).Name;
         }
 
-        private void SaveFlow(string flowName,bool IsForceSave =false)
+        private void SaveFlow(string flowName)
         {
             STNodeEditorMain.SaveCanvas(flowName);
 

@@ -591,8 +591,24 @@ namespace ColorVision.Templates
                             if (res != null)
                             {
                                 item.Value.DataBase64 = res.Value ?? string.Empty;
+                                Tool.Base64ToFile(item.Value.DataBase64, SolutionManager.GetInstance().CurrentSolution.FullName + "\\Flow\\", item.Value.FileName ?? string.Empty);
                             }
                         }
+                        else
+                        {
+                            SysResourceModel res = resourceService.GetByCode(fn.ValueA);
+                            if (res != null)
+                            {
+                                item.Value.DataBase64 = res.Value ?? string.Empty;
+                                Tool.Base64ToFile(item.Value.DataBase64, SolutionManager.GetInstance().CurrentSolution.FullName + "\\Flow\\", item.Value.FileName ?? string.Empty);
+                            }
+                        }
+
+
+
+
+
+
                     }
                     FlowParams.Add(item);
                 }
