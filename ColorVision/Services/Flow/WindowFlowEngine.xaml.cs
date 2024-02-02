@@ -163,7 +163,10 @@ namespace ColorVision.Services.Flow
         {
             FileName = flowParam.Name;
             STNodeEditorMain.Nodes.Clear();
-            STNodeEditorMain.LoadCanvas(Convert.FromBase64String(flowParam.DataBase64));
+            if (!string.IsNullOrEmpty(flowParam.DataBase64))
+            {
+                STNodeEditorMain.LoadCanvas(Convert.FromBase64String(flowParam.DataBase64));
+            }
             svrName = "";
 
             flowControl = new FlowControl(MQTTControl.GetInstance(), startNodeName);
