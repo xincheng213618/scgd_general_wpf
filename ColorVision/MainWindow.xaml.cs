@@ -188,7 +188,7 @@ namespace ColorVision
 
         public async Task EnsureLocalInfile()
         {
-            await Task.Delay(4000);
+            await Task.Delay(3000);
             log.Info($"{DateTime.Now}:EnsureLocalInfile ");
             try
             {
@@ -360,7 +360,6 @@ namespace ColorVision
         public void ReadTest(object sender, RoutedEventArgs e)
         {
             var lines = File.ReadAllLines("C:\\Users\\17917\\Desktop\\三刺激值曲线CIE2015 的副本.csv");
-
             foreach (var line in lines)
             {
                 var values = line.Split(',');
