@@ -222,7 +222,41 @@
                                                     <TextBox x:Name="tbY" Width="55" Text="{Binding DatumArea.AreaRectCol}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                             </UniformGrid>
-                                            <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowDatumArea_Click"/>
+
+                                            <Grid>
+                                                <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowDatumArea_Click"/>
+                                                <StackPanel  HorizontalAlignment="Right">
+                                                    <Button x:Name="ButtonImportMarin1" Content="边距计算" Margin="3" Height="25" Click="ButtonImportMarin1_Click"/>
+                                                    <Popup  x:Name="ImportMarinPopup1" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=ButtonImportMarin1}">
+                                                        <Border  Style="{StaticResource BorderModuleArea}" Background="{DynamicResource SecondaryRegionBrush}" Width="150" CornerRadius="5">
+                                                            <StackPanel Margin="5">
+                                                                <UniformGrid Columns="2" >
+                                                                    <DockPanel Margin="2" HorizontalAlignment="Left">
+                                                                        <TextBlock VerticalAlignment="Center"  Text="上:" Width="20"/>
+                                                                        <TextBox  x:Name="TextBoxUp2" Text="10" Margin="5,0" MinWidth="55" PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                                                                    </DockPanel>
+                                                                    <DockPanel Margin="2" HorizontalAlignment="Left">
+                                                                        <TextBlock  VerticalAlignment="Center"  Text="左:" Width="20"/>
+                                                                        <TextBox   x:Name="TextBoxLeft2" Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                                                                    </DockPanel>
+                                                                    <DockPanel Margin="2" HorizontalAlignment="Left">
+                                                                        <TextBlock  VerticalAlignment="Center"  Text="下:" Width="20"/>
+                                                                        <TextBox  x:Name="TextBoxDown2"  Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                                                                    </DockPanel>
+                                                                    <DockPanel Margin="2" HorizontalAlignment="Left">
+                                                                        <TextBlock VerticalAlignment="Center"  Text="右:" Width="20"/>
+                                                                        <TextBox  x:Name="TextBoxRight2"  Text="10" Margin="5,0" MinWidth="55"  PreviewTextInput="TextBox_PreviewTextInput" BorderThickness="0,0,0,1"/>
+                                                                    </DockPanel>
+                                                                </UniformGrid>
+                                                                <StackPanel Orientation="Horizontal">
+                                                                    <ComboBox x:Name="ComboBoxBorderType11" HorizontalAlignment="Left"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="0,0,6,0"/>
+                                                                    <Button Content="设置" Click="ButtonImportMarinSetting2"/>
+                                                                </StackPanel>
+                                                            </StackPanel>
+                                                        </Border>
+                                                    </Popup>
+                                                </StackPanel>
+                                            </Grid>
                                         </StackPanel>
 
                                         <StackPanel  Margin="5" Visibility="{Binding DatumArea.IsAreaMask,Converter={StaticResource bool2VisibilityConverter}}">

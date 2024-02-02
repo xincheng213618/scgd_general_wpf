@@ -97,11 +97,18 @@ namespace ColorVision.Services.Flow
                     {
                         try
                         {
-                            View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64);
+                            if (string.IsNullOrEmpty(flowParam.DataBase64))
+                            {
+                                MessageBox.Show("再选择之前请先创建对映的模板");
+                            }
+                            else
+                            {
+                                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64);
+                            }
                         }
-                        catch
+                        catch (Exception ex)
                         {
-
+                            MessageBox.Show(ex.Message);
                         }
                     }
                 }

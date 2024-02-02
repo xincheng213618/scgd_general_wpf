@@ -184,9 +184,8 @@ namespace ColorVision.Common.Utilities
         public static string GetMd5Hash(string input)
         {
 #pragma warning disable CA5351
-            using MD5 md5 = MD5.Create();
             byte[] inputBytes = Encoding.UTF8.GetBytes(input);
-            byte[] hashBytes = SHA256.HashData(inputBytes);
+            byte[] hashBytes = MD5.HashData(inputBytes);
 #pragma warning restore CA5351
 
             StringBuilder sb = new StringBuilder();
@@ -194,13 +193,11 @@ namespace ColorVision.Common.Utilities
             {
                 sb.Append(hashBytes[i].ToString("x2"));
             }
-
             return sb.ToString();
         }
 
         public static string GetSha256Hash(string input)
         {
-            using SHA256 sha256 = SHA256.Create();
             byte[] inputBytes = Encoding.UTF8.GetBytes(input);
             byte[] hashBytes = SHA256.HashData(inputBytes);
 

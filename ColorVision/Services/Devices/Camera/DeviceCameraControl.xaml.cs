@@ -26,9 +26,10 @@ namespace ColorVision.Services.Devices.Camera
         public MQTTCamera DService { get => Device.DeviceService; }
 
         public bool IsCanEdit { get; set; }
-        public DeviceCameraControl(DeviceCamera mQTTDeviceCamera,bool isCanEdit =true)
+
+        public DeviceCameraControl(DeviceCamera deviceCamera,bool isCanEdit =true)
         {
-            Device = mQTTDeviceCamera;
+            Device = deviceCamera;
             IsCanEdit = isCanEdit;
             InitializeComponent();
             this.Loaded += DeviceCameraControl_Loaded;

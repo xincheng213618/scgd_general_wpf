@@ -55,6 +55,7 @@ namespace ColorVision.Services.Devices.Camera
             {
                 return;
             }
+
             if (msg.Code == 0)
             {
 

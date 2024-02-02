@@ -124,25 +124,15 @@ namespace ColorVision.MySql.Service
             return ret;
         }
 
-        internal void Save(FlowParam flowParam)
+        public void Save(FlowParam flowParam)
         {
             List<ModDetailModel> list = new List<ModDetailModel>();
             flowParam.GetDetail(list);
-            if(list.Count > 0)
+            if(list.Count > 0 && list[0] is ModDetailModel model)
             {
-                SysResourceModel res = null;
-                var model = list[0];
-                if (string.IsNullOrEmpty(model.ValueA)){
-                    res = new SysResourceModel();
-                    res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
-                    res.Name = flowParam.Name;
-                    res.Type = 101;
-                    res.Value = flowParam.DataBase64;
-                    resourceDao.Save(res);
-                }
-                else
+                if (int.TryParse(model.ValueA,out int id))
                 {
-                    res = resourceDao.GetById(int.Parse(model.ValueA));
+                    SysResourceModel res = resourceDao.GetById(id);
                     if (res != null)
                     {
                         res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
@@ -151,7 +141,16 @@ namespace ColorVision.MySql.Service
                         resourceDao.Save(res);
                     }
                 }
-                model.ValueA = res.Id.ToString();
+                else
+                {
+                    SysResourceModel res = new SysResourceModel();
+                    res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
+                    res.Name = flowParam.Name;
+                    res.Type = 101;
+                    res.Value = flowParam.DataBase64;
+                    resourceDao.Save(res);
+                    model.ValueA = res.Id.ToString();
+                }
                 detailDao.UpdateByPid(flowParam.Id, list);
             }
         }

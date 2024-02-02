@@ -5,6 +5,7 @@ using log4net;
 using System.Windows;
 using System.Threading.Tasks;
 using ColorVision.SettingUp;
+using System.Collections.Generic;
 
 namespace ColorVision.MySql
 {
@@ -79,6 +80,28 @@ namespace ColorVision.MySql
         public void Close()
         {
             MySqlConnection.Close();
+        }
+
+        public int ExecuteNonQuery(string sql, Dictionary<string, object> param = null)
+        {
+            int count = -1;
+            try
+            {
+                MySqlCommand command = new MySqlCommand(sql, MySqlConnection);
+                if (param != null)
+                {
+                    foreach (var item in param)
+                    {
+                        command.Parameters.AddWithValue(item.Key, item.Value);
+                    }
+                }
+                count = command.ExecuteNonQuery();
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+            return count;
         }
 
         public void Dispose()
