@@ -182,7 +182,28 @@ namespace ColorVision
             Task.Run(CheckVersion);
 
             Task.Run(CheckCertificate);
+
+            Task.Run(EnsureLocalInfile);
         }
+
+        public async Task EnsureLocalInfile()
+        {
+            await Task.Delay(4000);
+            log.Info($"{DateTime.Now}:EnsureLocalInfile ");
+            try
+            {
+                if (MySqlControl.GetInstance().IsConnect)
+                    MySqlControl.GetInstance().EnsureLocalInfile();
+            }
+            catch(Exception ex)
+            {
+                log.Info($"{DateTime.Now}:EnsureLocalInfile {ex.Message} ");
+
+            }
+
+        }
+
+
         public async Task CheckCertificate()
         {
             await Task.Delay(100);
