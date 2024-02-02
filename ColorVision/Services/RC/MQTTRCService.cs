@@ -179,7 +179,7 @@ namespace ColorVision.RC
                                         {
                                             if (devNew.Code == baseDeviceConfig.Code)
                                             {
-                                                //baseDeviceConfig.IsAlive = true;
+                                                baseDeviceConfig.IsAlive = true;
                                                 baseDeviceConfig.LastAliveTime = DateTime.Parse(ss.LiveTime);
                                                 baseDeviceConfig.DeviceStatus = (DeviceStatusType)Enum.Parse(typeof(DeviceStatusType), devNew.Status);
                                                 if (dev is DeviceCamera deviceCamera)

@@ -29,8 +29,8 @@
             <ToggleButton x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding IsDisplayOpen}" />
         </DockPanel>
         <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
-            <StackPanel Margin="3">
-                <DockPanel Margin="0,5">
+            <StackPanel Margin="5">
+                <DockPanel Margin="0,0,0,5">
                     <TextBlock  Text="平均次数" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                     <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=SpectrumSliderAveNum,Path=Value}"  Width="50"/>
                     <hc:PreviewSlider x:Name="SpectrumSliderAveNum"  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="1"  Value="1" Maximum="100">
@@ -39,7 +39,7 @@
                         </hc:PreviewSlider.PreviewContent>
                     </hc:PreviewSlider>
                 </DockPanel>
-                <DockPanel Margin="0,5">
+                <DockPanel Margin="0,0,0,5">
                     <TextBlock  Text="积分时间" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                     <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=SpectrumSliderIntTime,Path=Value}"  Width="50"/>
                     <hc:PreviewSlider x:Name="SpectrumSliderIntTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000">
@@ -48,7 +48,7 @@
                         </hc:PreviewSlider.PreviewContent>
                     </hc:PreviewSlider>
                 </DockPanel>
-                <StackPanel Margin="0,5" Visibility="Visible">
+                <StackPanel Margin="0,0,0,5" Visibility="Visible">
                     <UniformGrid Columns="3">
                         <CheckBox Content="自动积分" x:Name="AutoIntTime"/>
                         <CheckBox Content="自动校零"  IsChecked="{Binding Config.IsShutterEnable}" x:Name="AutoShutterDark"/>
@@ -56,7 +56,7 @@
                     </UniformGrid>
                 </StackPanel>
 
-                <StackPanel Margin="0,5" Visibility="Visible">
+                <StackPanel Margin="0,0,0,5" Visibility="Visible">
                     <UniformGrid Columns="2">
                         <Button x:Name="btn_connect" Content="{Binding Config.BtnDeviceStatus}" Click="Button_Click_Open"/>
                         <!--<Button x:Name="btn_getPatam" Content="获取参数"  Click="Button_Click_GetParam"/>-->
@@ -65,21 +65,20 @@
                         <Button x:Name="btn_oneInitDark" Content="单次校零"  Click="Button_Click_Init_Dark"/>
                     </UniformGrid>
                 </StackPanel>
-
-                <GroupBox Header="Shutter" Margin="0,5" Visibility="{Binding Config.IsShutterEnable,Converter={StaticResource bool2VisibilityConverter}}">
-                    <StackPanel>
+                <GroupBox Header="Shutter" Margin="0,0,0,5" Visibility="{Binding Config.IsShutterEnable,Converter={StaticResource bool2VisibilityConverter}}">
+                    <StackPanel Margin="5">
                         <DockPanel  Margin="0,2">
-                            <TextBlock Text="{Binding Config.ShutterCfg.Addr}"/>
+                            <TextBlock Text="{Binding Config.ShutterCfg.Addr}" MinWidth="40"/>
                             <TextBlock Text=":"/>
-                            <TextBlock Text="{Binding Config.ShutterCfg.BaudRate}"/>
+                            <TextBlock Text="{Binding Config.ShutterCfg.BaudRate}" MinWidth="40"/>
                             <Button Content="连接" Click="Button_Click_Shutter_Connect" Visibility="Collapsed"/>
                         </DockPanel>
                         <DockPanel  Margin="0,2">
-                            <TextBlock Text="{Binding Config.ShutterCfg.OpenCmd}"/>
+                            <TextBlock Text="{Binding Config.ShutterCfg.OpenCmd}" MinWidth="40"/>
                             <Button Content="打开" Click="Button_Click_Shutter_Doopen"/>
                         </DockPanel>
                         <DockPanel  Margin="0,2">
-                            <TextBlock Text="{Binding Config.ShutterCfg.CloseCmd}"/>
+                            <TextBlock Text="{Binding Config.ShutterCfg.CloseCmd}" MinWidth="40"/>
                             <Button Content="关闭" Click="Button_Click_Shutter_Doclose"/>
                         </DockPanel>
                     </StackPanel>
