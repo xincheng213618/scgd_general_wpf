@@ -175,12 +175,12 @@ namespace ColorVision.Services.Flow
 
         private void SaveFlow(string flowName,bool IsForceSave =false)
         {
-            STNodeEditorMain.SaveCanvas(flowName);
+            var data = STNodeEditorMain.GetCanvasData();
 
             if (FlowParam != null)
             {
                 FlowParam.FileName = Path.GetFileName(flowName);
-                FlowParam.DataBase64 = Tool.FileToBase64(flowName);
+                FlowParam.DataBase64 = Convert.ToBase64String(data);
                 TemplateControl.GetInstance().Save2DB(FlowParam);
             }
 

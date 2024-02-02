@@ -582,16 +582,31 @@ namespace ColorVision.Templates
                     List<ModDetailModel> flowDetails = modService.GetDetailByPid(dbModel.Id);
                     var item = new TemplateModel<FlowParam>(dbModel.Name ?? "default", new FlowParam(dbModel, flowDetails));
                     ModDetailModel fn = item.Value.GetParameter(FlowParam.propertyName);
-                    if (fn != null && !string.IsNullOrEmpty(fn.ValueA))
+                    if (fn != null)
                     {
-                        int id = -1;
-                        if(int.TryParse(fn.ValueA, out id))
+                        if (!string.IsNullOrEmpty(fn.ValueA))
                         {
-                            SysResourceModel res = resourceService.GetMasterById(id);
-                            if (res != null)
+                            int id = -1;
+                            if (int.TryParse(fn.ValueA, out id))
                             {
-                                item.Value.DataBase64 = res.Value ?? string.Empty;
+                                SysResourceModel res = resourceService.GetMasterById(id);
+                                if (res != null)
+                                {
+                                    item.Value.DataBase64 = res.Value ?? string.Empty;
+                                }
+                                else
+                                {
+                                    fn.ValueA = string.Empty;
+                                }
                             }
+                            else
+                            {
+                                fn.ValueA = string.Empty;
+                            }
+                        }
+                        else
+                        {
+                            fn.ValueA = string.Empty;
                         }
                     }
                     FlowParams.Add(item);

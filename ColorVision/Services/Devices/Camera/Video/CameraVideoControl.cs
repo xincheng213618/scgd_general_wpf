@@ -16,6 +16,7 @@ namespace ColorVision.Services.Devices.Camera.Video
         private VideoReader reader;
         private int width;
         private int height;
+        public bool IsEnableResize { get; set; }
         public event CameraVideoFrameHandler CameraVideoFrameReceived;
         public int Open(string Host, int Port)
         {
@@ -48,7 +49,8 @@ namespace ColorVision.Services.Devices.Camera.Video
         }
         private bool IsResize(int width,int height)
         {
-            return (this.width != width || this.height != height);
+            if(IsEnableResize) return (this.width != width || this.height != height);
+            else return false;
         }
         private System.Drawing.Bitmap ReSize(System.Drawing.Bitmap bmp)
         {
@@ -63,6 +65,7 @@ namespace ColorVision.Services.Devices.Camera.Video
         {
             this.width = (int)width;
             this.height = (int)height;
+            this.IsEnableResize = true;
             //this.width = 5544;
             //this.height = 3684;
             if (reader != null) reader.Startup(mapName, isLocal);

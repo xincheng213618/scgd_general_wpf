@@ -105,6 +105,10 @@ namespace ColorVision.Services.Flow
                         }
                     }
                 }
+                else
+                {
+                    View.FlowEngineControl.LoadFromBase64(string.Empty);
+                }
             };
             FlowTemplate.SelectedIndex = 0;
 

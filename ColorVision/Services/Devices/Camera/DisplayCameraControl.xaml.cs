@@ -108,15 +108,11 @@ namespace ColorVision.Services.Devices.Camera
                         break;
                     case MQTTFileServerEventEnum.Event_File_Download:
                         DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                        FileDownload(pm_dl);
+                        //FileDownload(pm_dl);
                         break;
                     case MQTTCameraEventEnum.Event_GetData_Channel:
                         DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
-                        FileDownload(pm_dl_ch);
-                        break;
-                    case MQTTCameraEventEnum.Event_Calibration_UploadFile:
-                        DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                        //FileUpload(pm_up);
+                        //FileDownload(pm_dl_ch);
                         break;
                     case MQTTCameraEventEnum.Event_OpenLive:
                         DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(arg.Data));
@@ -129,6 +125,10 @@ namespace ColorVision.Services.Devices.Camera
             {
                 switch (arg.EventName)
                 {
+                    case MQTTFileServerEventEnum.Event_File_Upload:
+                        DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                        FileUpload(pm_up);
+                        break;
                     case MQTTFileServerEventEnum.Event_File_Download:
                         DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
                         FileDownload(pm_dl);
@@ -136,10 +136,6 @@ namespace ColorVision.Services.Devices.Camera
                     case MQTTCameraEventEnum.Event_GetData_Channel:
                         DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
                         FileDownload(pm_dl_ch);
-                        break;
-                    case MQTTCameraEventEnum.Event_Calibration_UploadFile:
-                        DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                        FileUpload(pm_up);
                         break;
                 }
             }
@@ -157,8 +153,6 @@ namespace ColorVision.Services.Devices.Camera
                         });
                         break;
                     case MQTTCameraEventEnum.Event_GetData_Channel:
-                        break;
-                    case MQTTCameraEventEnum.Event_Calibration_UploadFile:
                         break;
                     case MQTTCameraEventEnum.Event_OpenLive:
                         break;

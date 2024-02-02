@@ -154,29 +154,6 @@ namespace ColorVision.MySql.Service
                 model.ValueA = res.Id.ToString();
                 detailDao.UpdateByPid(flowParam.Id, list);
             }
-            //ModDetailModel fn = flowParam.GetParameter(FlowParam.propertyName);
-            //if (fn == null)
-            //{
-            //    return;
-            //}
-            //string code = fn.GetValueMD5();
-            //SysResourceModel res = resourceDao.GetByCode(code);
-            //if(res != null)
-            //{
-            //    res.Code = code;
-            //    res.Name = flowParam.Name;
-            //    res.Value = flowParam.DataBase64;
-            //    resourceDao.Save(res);
-            //}
-            //else
-            //{
-            //    res = new SysResourceModel();
-            //    res.Code = code;
-            //    res.Name = flowParam.Name;
-            //    res.Type = 101;
-            //    res.Value = flowParam.DataBase64;
-            //    resourceDao.Save(res);
-            //}
         }
 
         internal List<ModMasterModel> GetMasterByPid(int pid)
