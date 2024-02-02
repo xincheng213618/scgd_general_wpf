@@ -50,11 +50,6 @@ namespace ColorVision.Services
                     if (json == null)
                         return Task.CompletedTask;
 
-                    if (json.Code !=0 &&json.Code != 1)
-                    {
-                        return Task.CompletedTask;
-                    }
-
                     if (json.EventName == "Heartbeat")
                     {
                         LastAliveTime = DateTime.Now;
@@ -63,6 +58,12 @@ namespace ColorVision.Services
                             Connected?.Invoke(this, new EventArgs());
                         }
                         IsAlive = true;
+                        return Task.CompletedTask;
+                    }
+
+                    if (json.Code != 0 && json.Code != 1)
+                    {
+                        MsgReturnReceived?.Invoke(json);
                         return Task.CompletedTask;
                     }
 
