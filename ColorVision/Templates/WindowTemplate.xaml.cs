@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ColorVision.Templates.POI.Dao;
 
 namespace ColorVision.Templates
 {
@@ -520,7 +521,9 @@ namespace ColorVision.Templates
                             TemplateDel(TemplateControl.SMUParams);
                             break;
                         case TemplateType.PoiParam:
-                            TemplateDel(TemplateControl.PoiParams);
+                            PoiMasterDao poiMasterDao = new PoiMasterDao();
+                            poiMasterDao.DeleteById(TemplateControl.PoiParams[ListView1.SelectedIndex].Value.Id);
+                            TemplateControl.PoiParams.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case TemplateType.MTFParam:
                             TemplateDel(TemplateControl.MTFParams);
