@@ -41,11 +41,11 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Orientation="Horizontal" Grid.Column="2">
                     <Button x:Name="ButtonFlowPause" Content="暂停流程" Visibility="Collapsed" Click="Button_Click_5"/>
-                    <Button x:Name="ButtonFlowOpen" Content="开始流程" Click="Button_Click_4" />
+                    <Button x:Name="ButtonFlowOpen" Content="开始流程" Visibility="Collapsed" Click="Button_Click_4" />
                 </StackPanel>
                 <StackPanel Grid.Column="0"  Orientation="Horizontal" HorizontalAlignment="Left">
-                    <Button Content="生成流水号" Click="Button_Click_3"  />
-                    <TextBox  x:Name="TextBoxsn"  Text="1" Width="250" VerticalAlignment="Center"  />
+                    <Button Content="生成流水号" Click="Button_Click_3" Visibility="Collapsed" />
+                    <TextBox  x:Name="TextBoxsn"  Text="1" Width="250" Visibility="Collapsed" VerticalAlignment="Center"  />
                 </StackPanel>
             </Grid>
         </Grid>

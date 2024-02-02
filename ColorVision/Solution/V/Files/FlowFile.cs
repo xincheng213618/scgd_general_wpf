@@ -50,7 +50,7 @@ namespace ColorVision.Solution.V.Files
                 }
             }
             if (!IsOpen)
-                new WindowFlowEngine(FullName) { Owner = null }.Show();
+                new WindowFlowEngine() { Owner = null }.Show();
         }
 
 
