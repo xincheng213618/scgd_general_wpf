@@ -187,6 +187,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 变更日志 的本地化字符串。
+        /// </summary>
+        public static string ChangeLog {
+            get {
+                return ResourceManager.GetString("ChangeLog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 检查更新 的本地化字符串。
         /// </summary>
         public static string CheckForUpdates {

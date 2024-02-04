@@ -289,12 +289,12 @@ namespace ColorVision
                             // 如果找到匹配项，提取变更日志
                             string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
                             // 显示变更日志
-                            MessageBox.Show(Application.Current.MainWindow, $"{changeLogForCurrentVersion.ReplaceLineEndings()}",$"{currentVersion} 的变更日志：");
+                            MessageBox.Show(Application.Current.MainWindow, $"{changeLogForCurrentVersion.ReplaceLineEndings()}",$"{currentVersion} {ColorVision.Properties.Resource.ChangeLog}：");
                         }
                         else
                         {
                             // 如果未找到匹配项，说明没有为当前版本列出变更日志
-                            MessageBox.Show(Application.Current.MainWindow,"1.修复了一些已知的BUG", $"{currentVersion} 的变更日志：");
+                            MessageBox.Show(Application.Current.MainWindow,"1.修复了一些已知的BUG", $"{currentVersion} {ColorVision.Properties.Resource.ChangeLog}：");
                         }
 
                     }

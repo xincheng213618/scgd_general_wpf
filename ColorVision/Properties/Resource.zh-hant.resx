@@ -621,4 +621,7 @@
   <data name="UnderDevelopment" xml:space="preserve">
     <value>開發中</value>
   </data>
+  <data name="ChangeLog" xml:space="preserve">
+    <value>變更日誌</value>
+  </data>
 </root>

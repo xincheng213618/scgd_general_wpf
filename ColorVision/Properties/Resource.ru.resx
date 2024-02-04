@@ -621,4 +621,7 @@
   <data name="UnderDevelopment" xml:space="preserve">
     <value>В развитие</value>
   </data>
+  <data name="ChangeLog" xml:space="preserve">
+    <value>Журнал изменений</value>
+  </data>
 </root>
