@@ -7,7 +7,7 @@
              xmlns:vm ="clr-namespace:ColorVision.Common.MVVM;assembly=ColorVision.Common"
              xmlns:media="clr-namespace:ColorVision.Media"
              mc:Ignorable="d" 
-             d:DesignHeight="600" d:DesignWidth="1280" Background="{DynamicResource  BackgroundBrush}"  Initialized="UserControl_Initialized" >
+             d:DesignHeight="600" d:DesignWidth="1280" Background="{DynamicResource  BackgroundBrush}" Initialized="UserControl_Initialized" >
 
     <Grid x:Name="MainGrid">
         <Grid.ColumnDefinitions>
@@ -183,8 +183,6 @@
             </Grid>
             <GridSplitter  Grid.Row="1"  Panel.ZIndex="999" Background="#EEF4F9"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
         </Grid>
-        <ListView x:Name="listView2"  Grid.Column="1" SelectionChanged="listView2_SelectionChanged" Visibility="Collapsed"/>
-        <ListView x:Name="listViewY"  Grid.Column="1" SelectionChanged="listViewY_SelectionChanged" Visibility="Collapsed"/>
         <ListView x:Name="listViewSide" Background="Transparent" BorderThickness="0"  Margin="-5" Grid.Column="1" Visibility="Collapsed">
             <ListView.Resources >
                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" />

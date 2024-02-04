@@ -57,30 +57,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
             listView1.ItemsSource = AlgResults;
 
-
-            //色度
-            List<string> cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
-            List<string> cieHeader = new List<string> { "名称", "位置", "大小", "形状", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
-
-            GridView gridView2 = new GridView();
-            for (int i = 0; i < cieHeader.Count; i++)
-            {
-                gridView2.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
-            }
-            listView2.View = gridView2;
-            listView2.ItemsSource = PoiResultDatas;
-            //亮度
-            List<string> bdheadersY = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "Y" };
-            List<string> headersY = new List<string> { "名称", "位置", "大小", "形状", "Y" };
-            GridView gridViewY = new GridView();
-            for (int i = 0; i < headersY.Count; i++)
-            {
-                gridViewY.Columns.Add(new GridViewColumn() { Header = headersY[i], DisplayMemberBinding = new Binding(bdheadersY[i]) });
-            }
-            listViewY.View = gridViewY;
-            listViewY.ItemsSource = PoiYResultDatas;
-
-
             var keyValuePairs = Enum.GetValues(typeof(AlgorithmResultType))
                 .Cast<AlgorithmResultType>()
                 .Select(e1 => new KeyValuePair<AlgorithmResultType, string>(e1, e1.ToString()))
@@ -252,25 +228,45 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         break;
                     case AlgorithmResultType.POI_XY_UV:
                         OnCurSelectionChanged?.Invoke(result);
-                        listViewY.Hide();
-                        listView2.Show();
+
+                        List<string> cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
+                        List<string> cieHeader = new List<string> { "名称", "位置", "大小", "形状", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
+
+                        GridView gridView2 = new GridView();
+                        for (int i = 0; i < cieHeader.Count; i++)
+                        {
+                            gridView2.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
+                        }
+                        listViewSide.View = gridView2;
+                        listViewSide.Visibility = Visibility.Visible;
 
                         foreach (var item in result.PoiData)
                         {
                             PoiResultDatas.Add(item);
                             DrawPoiPoint.Add(item.Point);
                         }
+                        listViewSide.ItemsSource = PoiResultDatas;
                         ImageView.AddPOIPoint(DrawPoiPoint);
                         break;
                     case AlgorithmResultType.POI_Y:
                         OnCurSelectionChanged?.Invoke(result);
-                        listView2.Hide();
-                        listViewY.Show();
+
+                        //亮度
+                        List<string> bdheadersY = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "Y" };
+                        List<string> headersY = new List<string> { "名称", "位置", "大小", "形状", "Y" };
+                        GridView gridViewY = new GridView();
+                        for (int i = 0; i < headersY.Count; i++)
+                        {
+                            gridViewY.Columns.Add(new GridViewColumn() { Header = headersY[i], DisplayMemberBinding = new Binding(bdheadersY[i]) });
+                        }
+
+                        listViewSide.View = gridViewY;
                         foreach (var item in result.PoiData)
                         {
                             PoiYResultDatas.Add(item);
                             DrawPoiPoint.Add(item.Point);
                         }
+                        listViewSide.ItemsSource = PoiYResultDatas;
                         ImageView.AddPOIPoint(DrawPoiPoint);
                         break;
                     case AlgorithmResultType.FOV:
@@ -585,7 +581,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
         private void GridSplitter_DragCompleted1(object sender, DragCompletedEventArgs e)
         {
-            listView2.Width = ListCol2.ActualWidth;
+            listViewSide.Width = ListCol2.ActualWidth;
             ListCol1.Width = new GridLength(1, GridUnitType.Star);
             ListCol2.Width = GridLength.Auto;
         }
