@@ -210,7 +210,7 @@ namespace ColorVision.Services.Devices.Spectrum
                 {
                      if (ComboxResourceTemplate.SelectedValue is SpectrumResourceParam param)
                     {
-                        SpectrumService.Open();
+                        SpectrumService.Open(param);
                     }
                     else
                     {
