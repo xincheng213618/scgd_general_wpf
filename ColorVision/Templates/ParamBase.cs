@@ -15,9 +15,18 @@ namespace ColorVision.Templates
     {
         private Dictionary<string, ModDetailModel> parameters;
 
-        public ModelBase(List<ModDetailModel> detail)
+        public ModelBase()
         {
             parameters = new Dictionary<string, ModDetailModel>();
+        }
+
+        public ModelBase(List<ModDetailModel> detail) : this()
+        {
+            AddDetail(detail);
+        }
+
+        public void AddDetail(List<ModDetailModel> detail)
+        {
             if (detail != null)
             {
                 foreach (var flowDetailModel in detail)
@@ -152,7 +161,7 @@ namespace ColorVision.Templates
                 return null;
             }
         }
-        internal void GetDetail(List<ModDetailModel> list)
+        public void GetDetail(List<ModDetailModel> list)
         {
             list.AddRange(parameters.Values.ToList());
         }

@@ -741,7 +741,7 @@ namespace ColorVision.Templates
                         FlowParam? flowParam = TemplateControl.AddFlowParam(name);
                         if (flowParam != null)
                         {
-                            flowParam.FileName = Path.GetFileName(ofd.FileName); ;
+                            flowParam.DataBase64 = Tool.FileToBase64(ofd.FileName); ;
                             CreateNewTemplate(TemplateControl.FlowParams, name, flowParam);
 
                             TemplateControl.GetInstance().Save2DB(flowParam);

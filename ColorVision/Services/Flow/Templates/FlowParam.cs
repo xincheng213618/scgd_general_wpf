@@ -16,22 +16,25 @@ namespace ColorVision.Services.Flow.Templates
         {
 
         }
+        public FlowParam(ModMasterModel dbModel, List<ModFlowDetailModel> flowDetail) : base()
+        {
+            this.Id = dbModel.Id;
+            this.Name = dbModel.Name ?? string.Empty;
+            List<ModDetailModel> modDetailModels = new List<ModDetailModel>();
+            foreach (var model in flowDetail)
+            {
+                ModDetailModel mod = new ModDetailModel() { Id = model.Id, Pid = model.Pid, IsDelete = model.IsDelete, IsEnable = model.IsEnable, Symbol = model.Symbol, SysPid = model.SysPid, ValueA = model.ValueA, ValueB = model.ValueB };
+                modDetailModels.Add(mod);
+                dataBase64 = model.Value;
+            }
+            AddDetail(modDetailModels);
+        }
 
         private string dataBase64;
         public string DataBase64 { get => dataBase64; set { dataBase64 = value; } }
 
         public const string propertyName = "filename";
 
-        public string? FileName
-        {
-            set
-            {
-                SetProperty(ref _FileName, value?.ToString(), propertyName);
-            }
-            get => GetValue(_FileName, propertyName);
-        }
-        private string? _FileName;
-        
         public string? ResId
         {
             set { SetProperty(ref _ResId, value?.ToString(), propertyName); }
