@@ -24,30 +24,16 @@ namespace ColorVision.Services.Flow
         public WindowFlowEngine()
         {
             InitializeComponent();
-            ButtonSave.Visibility = Visibility.Collapsed;
-            ButtonClear.Visibility = Visibility.Collapsed;
-        }
-
-        public WindowFlowEngine(string FileName)
-        {
-            InitializeComponent();
-            if (File.Exists(FileName))
-            {
-                OpenFlow(FileName);
-                ButtonOpen.Visibility = Visibility.Collapsed;   
-                ButtonNew.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                this.FileName = FileName;
-                ButtonOpen.Visibility = Visibility.Collapsed;
-                ButtonNew.Visibility = Visibility.Collapsed;
-            }
+            //ButtonSave.Visibility = Visibility.Collapsed;
+            //ButtonClear.Visibility = Visibility.Collapsed;
+            ButtonOpen.Visibility = Visibility.Collapsed;
+            ButtonNew.Visibility = Visibility.Collapsed;
         }
         FlowParam FlowParam { get; set; }
-        public WindowFlowEngine(FlowParam flowParam) : this(SolutionManager.GetInstance().CurrentSolution.FullName + "\\Flow\\" + flowParam.Name +".stn")
+        public WindowFlowEngine(FlowParam flowParam) : this()
         {
             FlowParam = flowParam;
+            OpenFlowBase64(flowParam);
         }
 
         private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -171,6 +157,27 @@ namespace ColorVision.Services.Flow
             };
             OperateGrid.Visibility = Visibility.Visible;
             this.Title = "流程编辑器 - " + new FileInfo(flowName).Name;
+        }
+
+        public void OpenFlowBase64(FlowParam flowParam)
+        {
+            FileName = flowParam.Name;
+            STNodeEditorMain.Nodes.Clear();
+            if (!string.IsNullOrEmpty(flowParam.DataBase64))
+            {
+                STNodeEditorMain.LoadCanvas(Convert.FromBase64String(flowParam.DataBase64));
+            }
+            svrName = "";
+
+            flowControl = new FlowControl(MQTTControl.GetInstance(), startNodeName);
+            flowControl.FlowCompleted += (s, e) =>
+            {
+                ButtonFlowOpen.Content = "开始流程";
+                ButtonFlowPause.IsEnabled = false;
+                ButtonFlowPause.Visibility = Visibility.Collapsed;
+            };
+            OperateGrid.Visibility = Visibility.Visible;
+            this.Title = "流程编辑器 - " + new FileInfo(flowParam.Name).Name;
         }
 
         private void SaveFlow(string flowName)

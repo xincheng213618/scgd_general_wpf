@@ -107,12 +107,12 @@ namespace ColorVision.Services.Devices.Camera
                         ShowResultFromDB(arg.SerialNumber, Convert.ToInt32(arg.Data.MasterId));
                         break;
                     case MQTTFileServerEventEnum.Event_File_Download:
-                        DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                        //DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
                         //FileDownload(pm_dl);
                         break;
                     case MQTTCameraEventEnum.Event_GetData_Channel:
                         DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
-                        //FileDownload(pm_dl_ch);
+                        FileDownload(pm_dl_ch);
                         break;
                     case MQTTCameraEventEnum.Event_OpenLive:
                         DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(arg.Data));
