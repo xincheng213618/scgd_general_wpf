@@ -453,7 +453,7 @@ namespace ColorVision.Templates
             int pkId = flowMaster.GetPK();
             if (pkId > 0)
             {
-                List<ModDetailModel> flowDetail = modService.GetDetailByPid(pkId);
+                List<ModFlowDetailModel> flowDetail = modService.GetFlowDetailByPid(pkId);
                 if (flowMaster != null) return new FlowParam(flowMaster, flowDetail);
                 else return null;
             }
@@ -579,36 +579,36 @@ namespace ColorVision.Templates
                 List<ModMasterModel> flows = modService.GetFlowAll(UserCenter.GetInstance().TenantId);
                 foreach (var dbModel in flows)
                 {
-                    List<ModDetailModel> flowDetails = modService.GetDetailByPid(dbModel.Id);
+                    List<ModFlowDetailModel> flowDetails = modService.GetFlowDetailByPid(dbModel.Id);
                     var item = new TemplateModel<FlowParam>(dbModel.Name ?? "default", new FlowParam(dbModel, flowDetails));
-                    ModDetailModel fn = item.Value.GetParameter(FlowParam.propertyName);
-                    if (fn != null)
-                    {
-                        if (!string.IsNullOrEmpty(fn.ValueA))
-                        {
-                            int id = -1;
-                            if (int.TryParse(fn.ValueA, out id))
-                            {
-                                SysResourceModel res = resourceService.GetMasterById(id);
-                                if (res != null)
-                                {
-                                    item.Value.DataBase64 = res.Value ?? string.Empty;
-                                }
-                                else
-                                {
-                                    fn.ValueA = string.Empty;
-                                }
-                            }
-                            else
-                            {
-                                fn.ValueA = string.Empty;
-                            }
-                        }
-                        else
-                        {
-                            fn.ValueA = string.Empty;
-                        }
-                    }
+                    //ModDetailModel fn = item.Value.GetParameter(FlowParam.propertyName);
+                    //if (fn != null)
+                    //{
+                    //    if (!string.IsNullOrEmpty(fn.ValueA))
+                    //    {
+                    //        int id = -1;
+                    //        if (int.TryParse(fn.ValueA, out id))
+                    //        {
+                    //            SysResourceModel res = resourceService.GetMasterById(id);
+                    //            if (res != null)
+                    //            {
+                    //                item.Value.DataBase64 = res.Value ?? string.Empty;
+                    //            }
+                    //            else
+                    //            {
+                    //                fn.ValueA = string.Empty;
+                    //            }
+                    //        }
+                    //        else
+                    //        {
+                    //            fn.ValueA = string.Empty;
+                    //        }
+                    //    }
+                    //    else
+                    //    {
+                    //        fn.ValueA = string.Empty;
+                    //    }
+                    //}
                     FlowParams.Add(item);
                 }
             }

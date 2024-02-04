@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Flow.Templates;
@@ -34,6 +35,7 @@ namespace ColorVision.MySql.Service
         private ModMasterDao masterMTFDao;
 
         private ModDetailDao detailDao;
+        private ModFlowDetailDao detailFlowDao;
 
         private SysDictionaryModDetailDao sysDao;
         private SysDictionaryModDao sysDicDao;
@@ -47,6 +49,7 @@ namespace ColorVision.MySql.Service
             this.masterMTFDao = new ModMasterDao(ModMasterType.MTF);
             this.masterModDao = new ModMasterDao();
             this.detailDao = new ModDetailDao();
+            this.detailFlowDao = new ModFlowDetailDao();
             this.sysDao = new SysDictionaryModDetailDao();
             this.sysDicDao = new SysDictionaryModDao();
             this.resourceDao = new VSysResourceDao();
@@ -55,6 +58,11 @@ namespace ColorVision.MySql.Service
         internal List<ModDetailModel> GetDetailByPid(int pkId)
         {
             return detailDao.GetAllByPid(pkId);
+        }
+
+        internal List<ModFlowDetailModel> GetFlowDetailByPid(int pkId)
+        {
+            return detailFlowDao.GetAllByPid(pkId);
         }
 
         internal List<ModMasterModel> GetMTFAll(int tenantId)
@@ -144,10 +152,13 @@ namespace ColorVision.MySql.Service
                 else
                 {
                     SysResourceModel res = new SysResourceModel();
-                    res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
                     res.Name = flowParam.Name;
                     res.Type = 101;
-                    res.Value = flowParam.DataBase64;
+                    if(!string.IsNullOrEmpty(flowParam.DataBase64))
+                    {
+                        res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
+                        res.Value = flowParam.DataBase64;
+                    }
                     resourceDao.Save(res);
                     model.ValueA = res.Id.ToString();
                 }

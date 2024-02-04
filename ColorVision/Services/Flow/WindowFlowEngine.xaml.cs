@@ -186,7 +186,7 @@ namespace ColorVision.Services.Flow
 
             if (FlowParam != null)
             {
-                FlowParam.FileName = Path.GetFileName(flowName);
+                //FlowParam.FileName = Path.GetFileName(flowName);
                 FlowParam.DataBase64 = Convert.ToBase64String(data);
                 TemplateControl.GetInstance().Save2DB(FlowParam);
             }
