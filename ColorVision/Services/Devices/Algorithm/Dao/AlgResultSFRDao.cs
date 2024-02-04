@@ -14,9 +14,9 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
         public string? Pdfrequency { get; set; }
         public string? PdomainSamplingData { get; set; }
     }
-    public class AlgResultSFRDao : BaseDaoMaster<AlgResultSFRModel>
+    public class AlgResultSFRDao : BaseTableDao<AlgResultSFRModel>
     {
-        public AlgResultSFRDao() : base(string.Empty, "t_scgd_algorithm_result_detail_sfr", "id", false)
+        public AlgResultSFRDao() : base("t_scgd_algorithm_result_detail_sfr", "id")
         {
         }
 

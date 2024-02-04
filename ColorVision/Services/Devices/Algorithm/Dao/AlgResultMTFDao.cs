@@ -17,9 +17,9 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
         public int? PoiWidth { get; set; }
         public int? PoiHeight { get; set; }
     }
-    public class AlgResultMTFDao : BaseDaoMaster<AlgResultMTFModel>
+    public class AlgResultMTFDao : BaseTableDao<AlgResultMTFModel>
     {
-        public AlgResultMTFDao() : base(string.Empty, "t_scgd_algorithm_result_detail_poi_mtf", "id", false)
+        public AlgResultMTFDao() : base("t_scgd_algorithm_result_detail_poi_mtf", "id")
         {
         }
 

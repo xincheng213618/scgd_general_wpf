@@ -201,6 +201,7 @@ namespace ColorVision.Templates
             GridProperty.Children.Clear();
             GridProperty.Margin = new Thickness(5, 5, 5, 5);
             GridProperty.Children.Add(UserControl);
+            Width = Width + 200;
         }
 
 

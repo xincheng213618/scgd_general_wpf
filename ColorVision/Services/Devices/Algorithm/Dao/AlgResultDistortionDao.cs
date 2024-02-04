@@ -18,9 +18,9 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
         public double RotationAngle { get; set; }
         public string? FinalPoints { get; set; }
     }
-    public class AlgResultDistortionDao : BaseDaoMaster<AlgResultDistortionModel>
+    public class AlgResultDistortionDao : BaseTableDao<AlgResultDistortionModel>
     {
-        public AlgResultDistortionDao() : base(string.Empty, "t_scgd_algorithm_result_detail_distortion", "id", false)
+        public AlgResultDistortionDao() : base("t_scgd_algorithm_result_detail_distortion", "id")
         {
         }
 

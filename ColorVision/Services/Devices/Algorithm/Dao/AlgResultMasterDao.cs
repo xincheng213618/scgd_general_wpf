@@ -71,6 +71,7 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
             return ConditionalQuery(keyValuePairs);
         }
 
+
         public override DataRow Model2Row(AlgResultMasterModel item, DataRow row)
         {
             if (item != null)

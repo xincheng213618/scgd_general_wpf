@@ -377,7 +377,9 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         if (result.GhostData == null)
                         {
                             result.GhostData = new ObservableCollection<GhostResultData>();
-                            List<AlgResultGhostModel> AlgResultGhostModels = resultService.GetGhostByPid(result.Id);
+                            AlgResultGhostDao algResultGhostDao = new AlgResultGhostDao();
+
+                            List<AlgResultGhostModel> AlgResultGhostModels = algResultGhostDao.GetAllByPid(result.Id);
                             foreach (var item in AlgResultGhostModels)
                             {
                                 GhostResultData ghostResultData = new GhostResultData(item);

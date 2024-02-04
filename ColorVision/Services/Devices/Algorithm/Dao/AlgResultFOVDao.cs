@@ -14,9 +14,11 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
         public int? Threshold { get; set; }
         public double? Degrees { get; set; }
     }
-    public class AlgResultFOVDao : BaseDaoMaster<AlgResultFOVModel>
+
+
+    public class AlgResultFOVDao : BaseTableDao<AlgResultFOVModel>
     {
-        public AlgResultFOVDao() : base(string.Empty, "t_scgd_algorithm_result_detail_fov", "id", false)
+        public AlgResultFOVDao() : base("t_scgd_algorithm_result_detail_fov", "id")
         {
         }
 

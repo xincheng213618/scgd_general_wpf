@@ -10,24 +10,56 @@ using System.Windows.Documents;
 namespace ColorVision.MySql
 {
 
+    public class BaseDao1 : BaseDao
+    {
+
+        public bool IsLogicDel { get { return _IsLogicDel; } set { _IsLogicDel = value; } }
+        private bool _IsLogicDel;
+
+        public BaseDao1(string tableName, string pkField, bool isLogicDel) : base(tableName,pkField)
+        {
+
+            this._IsLogicDel = isLogicDel;
+        }
+
+        protected string GetDelSQL(bool hasAnd)
+        {
+            string andSQL = " ";
+            string isDelSQL = " ";
+            if (_IsLogicDel)
+            {
+                if (hasAnd) andSQL = " and ";
+                isDelSQL = "is_delete=0";
+            }
+            return andSQL + isDelSQL;
+        }
+
+        public DataTable selectById(int id)
+        {
+            string sql = $"select * from {TableName} where id=@id" + GetDelSQL(true);
+            Dictionary<string, object> param = new Dictionary<string, object>
+            {
+                { "id",  id}
+            };
+            DataTable d_info = GetData(sql, param);
+            return d_info;
+        }
+    }
+
     public class BaseDao
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseDao));
-
         public MySqlControl MySqlControl { get; set; }
         public string TableName { get { return _TableName; } set { _TableName = value; } }
         private string _TableName;
         public string PKField { get { return _PKField; } set { _PKField = value; } }
         private string _PKField;
-        public bool IsLogicDel { get { return _IsLogicDel; } set { _IsLogicDel = value; } }
-        private bool _IsLogicDel;
 
-        public BaseDao(string tableName, string pkField, bool isLogicDel)
+        public BaseDao(string tableName, string pkField)
         {
             this.MySqlControl = MySqlControl.GetInstance();
             this._TableName = tableName;
             this._PKField = pkField;
-            this._IsLogicDel = isLogicDel;
         }
 
         public int ExecuteNonQuery(string sql)
@@ -125,18 +157,6 @@ namespace ColorVision.MySql
             return count;
         }
 
-        protected string GetDelSQL(bool hasAnd)
-        {
-            string andSQL = " ";
-            string isDelSQL = " ";
-            if (_IsLogicDel)
-            {
-                if (hasAnd) andSQL = " and ";
-                isDelSQL = "is_delete=0";
-            }
-            return andSQL + isDelSQL;
-        }
-
         private void DataAdapter_RowUpdated(object sender, MySqlRowUpdatedEventArgs e)
         {
             if(e.Row[_PKField] == DBNull.Value)
@@ -145,18 +165,7 @@ namespace ColorVision.MySql
             }
         }
 
-        public DataTable selectById(int id)
-        {
-            string sql = $"select * from {TableName} where id=@id" + GetDelSQL(true);
-            Dictionary<string, object> param = new Dictionary<string, object>
-            {
-                { "id",  id}
-            };
-            DataTable d_info = GetData(sql, param);
-            return d_info;
-        }
-
-        public static DataRow? selectRow(int id, DataTable dInfo)
+        public static DataRow? SelectRow(int id, DataTable dInfo)
         {
             DataRow[] rows = dInfo.Select($"id={id}");
 
@@ -169,13 +178,42 @@ namespace ColorVision.MySql
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseTableDao<T>));
 
-        public BaseTableDao(string tableName, string pkField, bool isLogicDel) : base(tableName, pkField, isLogicDel)
+        public BaseTableDao(string tableName, string pkField) : base(tableName, pkField)
         {
 
         }
+        public virtual T? GetModelFromDataRow(DataRow item) => default;
+        public virtual DataRow Model2Row(T item, DataRow row) => row;
+
+
+        public List<T> GetAll() => GetAllByParam(new Dictionary<string, object>());
+
+        public List<T> GetAllById(int id) => GetAllByParam(new Dictionary<string, object>() { { "id", id } });
+        public List<T> GetAllByPid (int pid) => GetAllByParam(new Dictionary<string, object>() { { "pid", pid } });
+        public List<T> GetAllByTenantId(int tenantId) => GetAllByParam(new Dictionary<string, object>() { { "tenantId", tenantId } });
+
+        public List<T> GetAllByParam(Dictionary<string, object> param)
+        {
+            string whereClause = string.Empty;
+            if (param != null && param.Count > 0)
+                whereClause = "WHERE " + string.Join(" AND ", param.Select(p => $"{p.Key} = @{p.Key}"));
+            string sql = $"SELECT * FROM {TableName} {whereClause}";
+            DataTable d_info = GetData(sql, param);
+
+            List<T> list = new List<T>();
+            foreach (var item in d_info.AsEnumerable())
+            {
+                T? model = GetModelFromDataRow(item);
+                if (model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
+        }
     }
 
-    public class BaseViewDao<T> : BaseDao where T : IPKModel
+    public class BaseViewDao<T> : BaseDao1 where T : IPKModel
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseTableDao<T>));
 
@@ -183,15 +221,13 @@ namespace ColorVision.MySql
         {
 
         }
-
-
     }
 
 
 
 
 
-    public class BaseDaoMaster<T>: BaseDao where T : IPKModel
+    public class BaseDaoMaster<T>: BaseDao1 where T : IPKModel
     {
         public string ViewName { get; set; }
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseDaoMaster<T>));
@@ -204,10 +240,7 @@ namespace ColorVision.MySql
 
         }
 
-        public virtual DataRow Model2Row(T item, DataRow row)
-        {
-            return row;
-        }
+        public virtual DataRow Model2Row(T item, DataRow row) => row;
 
         public virtual DataTable CreateColumns(DataTable dInfo) => dInfo;
 
@@ -500,6 +533,9 @@ namespace ColorVision.MySql
             return list;
         }
 
+
+
+
         public List<T> GetAllByBatchid(int pid)
         {
             List<T> list = new List<T>();
@@ -581,7 +617,7 @@ namespace ColorVision.MySql
 
         public DataRow GetRow(T item, DataTable dataTable)
         {
-            DataRow row = selectRow(item.GetPK(), dataTable);
+            DataRow row = SelectRow(item.GetPK(), dataTable);
             if (row == null)
             {
                 row = dataTable.NewRow();

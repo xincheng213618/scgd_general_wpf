@@ -20,9 +20,9 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
         public string SingleGhostPixelNum { get; set; }
         public string GhostPixels { get; set; }
     }
-    public class AlgResultGhostDao : BaseDaoMaster<AlgResultGhostModel>
+    public class AlgResultGhostDao : BaseTableDao<AlgResultGhostModel>
     {
-        public AlgResultGhostDao() : base(string.Empty, "t_scgd_algorithm_result_detail_ghost", "id", false)
+        public AlgResultGhostDao() : base("t_scgd_algorithm_result_detail_ghost", "id")
         {
         }
 
