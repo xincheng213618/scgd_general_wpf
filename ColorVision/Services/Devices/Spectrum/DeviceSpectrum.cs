@@ -52,7 +52,7 @@ namespace ColorVision.Services.Devices.Spectrum
                     SysResourceModel sysResourceModel = new SysResourceModel();
                     sysResourceModel.Name = upload.UploadFileName;
                     sysResourceModel.Code = md5;
-                    sysResourceModel.Type = 50;
+                    sysResourceModel.Type = 201;
                     sysResourceModel.Pid = this.SysResourceModel.Id;
                     sysResourceModel.Value = FileName;
                     sysResourceDao.Save(sysResourceModel);
