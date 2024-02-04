@@ -169,15 +169,25 @@ namespace ColorVision.Services.Devices.Spectrum
             return true;
         }
 
-        public bool Open()
+        public MsgRecord Open(SpectrumResourceParam spectrumResourceParam)
         {
+            var Params = new Dictionary<string, object>() { };
+
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
-                ServiceName = Config.Code
+                ServiceName = Config.Code,
+                Params = Params
             };
-            PublishAsyncClient(msg);
-            return true;
+            if (spectrumResourceParam.Id == -1)
+            {
+                Params.Add("Calibration", new CVTemplateParam() { ID = spectrumResourceParam.Id, Name = string.Empty });
+            }
+            else
+            {
+                Params.Add("Calibration", new CVTemplateParam() { ID = spectrumResourceParam.Id, Name = spectrumResourceParam.Name });
+            }
+            return PublishAsyncClient(msg);
         }
 
         public bool GetData(float IntTime, int AveNum, bool bUseAutoIntTime = false, bool bUseAutoDark = false, bool bUseAutoShutterDark = false)
