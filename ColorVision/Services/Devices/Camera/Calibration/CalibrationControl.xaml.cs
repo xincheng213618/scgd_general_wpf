@@ -41,6 +41,7 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
             this.DeviceCamera = DeviceCamera;
             this.CalibrationParam = calibrationParam;
             this.DataContext = CalibrationParam;
+
             string CalibrationMode = calibrationParam.CalibrationMode;
             ComboBoxList.SelectionChanged -= ComboBox_SelectionChanged;
             GroupServices.Clear();
@@ -73,8 +74,6 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
         {
             if (sender is ComboBox comboBox)
             {
-
-
                 CalibrationParam.Normal.DarkNoise.FilePath = string.Empty;
                 CalibrationParam.Normal.DefectPoint.FilePath = string.Empty;
                 CalibrationParam.Normal.DSNU.FilePath = string.Empty;

@@ -120,12 +120,14 @@
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <Button  Grid.Column="1"  Click="Button_New_Click" Margin="5" Content="添加" />
+                    <Button Grid.Column="2" Command="{Binding CreateCommand}" Margin="5" Content="导入设备"/>
+                    <Button  Grid.Column="1" Click="Button_New_Click" Margin="5" Content="添加"/>
                     <StackPanel x:Name="MQTTCreateStackPanel"  Margin="0,5" >
                         <DockPanel Margin="2" Visibility="Collapsed" >
                             <TextBlock Text="类型" MinWidth="30"/>
-                            <ComboBox x:Name="TextBox_Type" SelectedValuePath="Name"  DisplayMemberPath="Name" />
+                            <ComboBox x:Name="TextBox_Type" SelectedValuePath="Name" DisplayMemberPath="Name" />
                         </DockPanel>
                         <DockPanel Margin="2" >
                             <TextBlock Text="标识" MinWidth="30"/>

@@ -21,6 +21,9 @@ namespace ColorVision.Services.Devices.Camera
                 Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged();
             } 
         }
+
+
+
         private DeviceStatusType _DeviceStatus;
 
         public List<MQTTCamera> Devices { get; set; }

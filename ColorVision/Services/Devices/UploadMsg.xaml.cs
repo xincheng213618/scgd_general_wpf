@@ -12,23 +12,30 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace ColorVision.Services.Devices.Camera
+namespace ColorVision.Services.Devices
 {
+
+    public interface IUploadMsg
+    {
+        public string Msg { get; }
+    }
+
+
     /// <summary>
     /// UploadMsg.xaml 的交互逻辑
     /// </summary>
     public partial class UploadMsg : Window
     {
-        public DeviceCamera DeviceCamera { get; set; }
-        public UploadMsg(DeviceCamera deviceCamera)
+        public IUploadMsg IUploadMsg { get; set; }
+        public UploadMsg(IUploadMsg iUploadMsg)
         {
-            DeviceCamera = deviceCamera;
+            IUploadMsg = iUploadMsg;
             InitializeComponent();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = DeviceCamera;
+            this.DataContext = IUploadMsg;
         }
     }
 }

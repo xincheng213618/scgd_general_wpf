@@ -243,7 +243,7 @@ namespace ColorVision.Services.Devices.Camera
             this.DataContext = Device;
 
             CalibrationParams = new ObservableCollection<TemplateModel<CalibrationParam>>();
-            CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()));
+            CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam() { Id = -1}));
 
             foreach (var item in Device.CalibrationParams)
                 CalibrationParams.Add(item);
@@ -257,7 +257,6 @@ namespace ColorVision.Services.Devices.Camera
                         if(e.NewItems!=null)
                             foreach (TemplateModel<CalibrationParam> newItem in e.NewItems)
                                 CalibrationParams.Add(newItem);
-
                         break;
                     case NotifyCollectionChangedAction.Remove:
                         // 处理移除项

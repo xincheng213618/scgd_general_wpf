@@ -43,13 +43,13 @@
 
         <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="3">
-                <Button x:Name="ButtonInit" Margin="0,0,0,2"  Content="连接" Click="CameraInit_Click"/>
-                <StackPanel x:Name="StackPanelOpen" Margin="0,2">
+                <Button x:Name="ButtonInit" Margin="0,0,0,3"  Content="连接" Click="CameraInit_Click"/>
+                <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,3">
                     <DockPanel x:Name="ButtonOpen">
                         <Button  DockPanel.Dock="Right" Grid.Column="1" Margin="5,0,0,0" Content="视频模式"  Click="Video_Click"/>
                         <Button  Grid.Column="0" Content="打开"  Click="Open_Click" />
                     </DockPanel>
-                    <Button x:Name="ButtonClose" Margin="0,2" Grid.Column="0" Content="关闭"  Visibility="Collapsed" Click="Close_Click" />
+                    <Button x:Name="ButtonClose" Margin="0,0,0,3" Grid.Column="0" Content="关闭"  Visibility="Collapsed" Click="Close_Click" />
 
 
                     <DockPanel Margin="0,2" Visibility="{Binding DeviceService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">
@@ -85,17 +85,21 @@
                         </StackPanel>
 
                         <StackPanel Margin="0,2" Visibility="{Binding DeviceService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter1}}">
-                            <Button Content="自动曝光" Margin="0,2" Click="AutoExplose_Click" />
 
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="校正：" />
-                                <ComboBox x:Name="ComboxCalibrationTemplate" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
-                                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="Calibration"  Click="MenuItem_Template"/>
-                                </Grid>
-                            </DockPanel>
-                            <Button Content="取图" Click="GetData_Click" Margin="0,2"/>
+                            <Grid>
+                                <StackPanel>
+                                    <Button Content="自动曝光" Margin="0,2" Click="AutoExplose_Click"  HorizontalAlignment="Left"/>
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="校正：" />
+                                        <ComboBox x:Name="ComboxCalibrationTemplate" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="Calibration"  Click="MenuItem_Template"/>
+                                        </Grid>
+                                    </DockPanel>
+                                </StackPanel>
+                                <Button Content="取图" FontSize="15" FontWeight="Bold" Click="GetData_Click" HorizontalAlignment="Right" Margin="0,2"/>
+                            </Grid>
                         </StackPanel>
                         <GroupBox Header="电机操作" Visibility="{Binding Config.IsHaveMotor,Converter={StaticResource bool2VisibilityConverter}}">
                             <StackPanel Margin="2">

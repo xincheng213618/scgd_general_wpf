@@ -23,7 +23,7 @@ namespace ColorVision.MySql.Service
         public const string FocusPoints = "focusPoints";
         public const string Calibration = "Calibration";
         public const string BuildPOI = "BuildPOI";
-
+        public const string SpectrumResource = "SpectrumResource";
     }
     public class ModService
     {
@@ -113,7 +113,7 @@ namespace ColorVision.MySql.Service
             return ret;
         }
 
-        internal int Save(ModMasterModel modMaster)
+        public int Save(ModMasterModel modMaster)
         {
             int ret = -1;
             SysDictionaryModModel mod = sysDicDao.GetByCode(modMaster.Pcode, modMaster.TenantId);
@@ -121,6 +121,30 @@ namespace ColorVision.MySql.Service
             {
                 modMaster.Pid = mod.Id;
                 ret = masterFlowDao.Save(modMaster);
+                List<ModDetailModel> list = new List<ModDetailModel>();
+                List<SysDictionaryModDetaiModel> sysDic = sysDao.GetAllByPid(modMaster.Pid);
+                foreach (var item in sysDic)
+                {
+                    list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
+                }
+                detailDao.SaveByPid(modMaster.Id, list);
+            }
+            return ret;
+        }
+
+
+        public static int Save1(ModMasterModel modMaster)
+        {
+            ModMasterDao modMasterDao = new ModMasterDao();
+            SysDictionaryModDao sysDicDao = new SysDictionaryModDao();
+            SysDictionaryModDetailDao sysDao = new SysDictionaryModDetailDao();
+            ModDetailDao detailDao = new ModDetailDao();
+            int ret = -1;
+            SysDictionaryModModel mod = sysDicDao.GetByCode(modMaster.Pcode, modMaster.TenantId);
+            if (mod != null)
+            {
+                modMaster.Pid = mod.Id;
+                ret = modMasterDao.Save(modMaster);
                 List<ModDetailModel> list = new List<ModDetailModel>();
                 List<SysDictionaryModDetaiModel> sysDic = sysDao.GetAllByPid(modMaster.Pid);
                 foreach (var item in sysDic)

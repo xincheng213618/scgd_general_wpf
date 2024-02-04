@@ -214,17 +214,16 @@ namespace ColorVision.Services.Devices.Camera
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
-            if (sender is Control menuItem)
+            if (sender is Control control)
             {
                 SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
-                TemplateControl TemplateControl = TemplateControl.GetInstance();
                 if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
                 {
                     MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision");
                     return;
                 }
-                switch (menuItem.Tag?.ToString() ?? string.Empty)
+                switch (control.Tag?.ToString() ?? string.Empty)
                 {
                     case "Calibration":
                         CalibrationControl calibration = Device.CalibrationParams.Count == 0 ? new CalibrationControl(Device) : new CalibrationControl(Device, Device.CalibrationParams[0].Value);

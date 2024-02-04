@@ -21,6 +21,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Templates.POI.Dao;
+using ColorVision.Services.Devices.Spectrum;
 
 namespace ColorVision.Templates
 {
@@ -80,6 +81,15 @@ namespace ColorVision.Templates
                         TemplateControl.LoadModCabParam(DeviceCamera.CalibrationParams, DeviceCamera.SysResourceModel.Id, ModMasterType.Calibration);
                     }
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(DeviceCamera.CalibrationParams);
+                    Title = "校正参数设置";
+                    break;
+                case TemplateType.SpectrumResourceParam:
+                    if (IsReLoad)
+                    {
+                        CalibrationRsourceService.GetInstance().Refresh();
+                        TemplateControl.LoadModCabParam(DeviceSpectrum.SpectrumResourceParams, DeviceSpectrum.SysResourceModel.Id, ModMasterType.SpectrumResource);
+                    }
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(DeviceSpectrum.SpectrumResourceParams);
                     Title = "校正参数设置";
                     break;
                 case TemplateType.LedResult:
@@ -193,6 +203,23 @@ namespace ColorVision.Templates
             GridProperty.Children.Add(UserControl);
         }
 
+
+
+        public DeviceSpectrum DeviceSpectrum { get; set; }
+        public WindowTemplate(TemplateType windowTemplateType, UserControl userControl, DeviceSpectrum deviceSpectrum, bool IsReLoad = true)
+        {
+            DeviceSpectrum = deviceSpectrum;
+            TemplateType = windowTemplateType;
+            TemplateControl = TemplateControl.GetInstance();
+            UserControl = userControl;
+            Load(windowTemplateType, IsReLoad);
+            InitializeComponent();
+            GridProperty.Children.Clear();
+            GridProperty.Margin = new Thickness(5, 5, 5, 5);
+            GridProperty.Children.Add(UserControl);
+        }
+
+
         private void Window_Initialized(object sender, EventArgs e)
         {
             ListView1.ItemsSource = TemplateModelBases;
@@ -259,6 +286,12 @@ namespace ColorVision.Templates
                             calibration.Initializedsss(DeviceCamera, calibrationParam);
                         }
                         break;
+                    case TemplateType.SpectrumResourceParam:
+                        if (UserControl is SpectrumResourceControl spectrumResourceControl && TemplateModelBases[listView.SelectedIndex].GetValue() is SpectrumResourceParam spectrumResourceParam)
+                        {
+                            spectrumResourceControl.Initializedsss(DeviceSpectrum, spectrumResourceParam);
+                        }
+                        break;
                     case TemplateType.MeasureParam:
                         if (UserControl is MeasureParamControl mpc && TemplateModelBases[listView.SelectedIndex].GetValue() is MeasureParam mp)
                         {
@@ -300,9 +333,14 @@ namespace ColorVision.Templates
             switch (TemplateType)
             {
                 case TemplateType.Calibration:
-                    CalibrationParam? CalibrationParam = TemplateControl.AddCalibrationParam(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text,DeviceCamera.SysResourceModel.Id);
+                    CalibrationParam? CalibrationParam = TemplateControl.AddCalibrationParam<CalibrationParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text,DeviceCamera.SysResourceModel.Id);
                     if (CalibrationParam != null) CreateNewTemplate(DeviceCamera.CalibrationParams, TextBox1.Text, CalibrationParam);
                     else MessageBox.Show("数据库创建CalibrationParam模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    break;
+                case TemplateType.SpectrumResourceParam:
+                    SpectrumResourceParam? SpectrumResourceParam = TemplateControl.AddCalibrationParam<SpectrumResourceParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), TextBox1.Text, DeviceSpectrum.SysResourceModel.Id);
+                    if (SpectrumResourceParam != null) CreateNewTemplate(DeviceSpectrum.SpectrumResourceParams, TextBox1.Text, SpectrumResourceParam);
+                    else MessageBox.Show("数据库创建SpectrumResourceParams模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
                 case TemplateType.LedResult:
                     CreateNewTemplate(TemplateControl.LedReusltParams, TextBox1.Text, new LedReusltParam());
@@ -423,9 +461,13 @@ namespace ColorVision.Templates
                 case TemplateType.FlowParam:
                     CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, new FlowParam() { Name = TextBox1.Text });
                     break;
-                    case TemplateType.MeasureParam:
+                case TemplateType.MeasureParam:
                     CreateNewTemplate(TemplateControl.MeasureParams, TextBox1.Text, new MeasureParam() { Name = TextBox1.Text });
                     break;
+                case TemplateType.BuildPOIParmam:
+                    CreateNewTemplate(TemplateControl.BuildPOIParams, TextBox1.Text, new BuildPOIParam() { });
+                    break;
+
             }
         }
 
@@ -450,6 +492,10 @@ namespace ColorVision.Templates
             if (TemplateType == TemplateType.Calibration)
             {
                 TemplateControl.Save(DeviceCamera.CalibrationParams, ModMasterType.Calibration);
+            }
+            if (TemplateType == TemplateType.SpectrumResourceParam)
+            {
+                TemplateControl.Save(DeviceSpectrum.SpectrumResourceParams, ModMasterType.SpectrumResource);
             }
             else
             {
@@ -510,6 +556,9 @@ namespace ColorVision.Templates
                             break;
                         case TemplateType.Calibration:
                             TemplateDel(DeviceCamera.CalibrationParams);
+                            break;
+                        case TemplateType.SpectrumResourceParam:
+                            TemplateDel(DeviceSpectrum.SpectrumResourceParams);
                             break;
                         case TemplateType.PGParam:
                             TemplateDel(TemplateControl.PGParams);

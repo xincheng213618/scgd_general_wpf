@@ -88,8 +88,16 @@ namespace ColorVision
             ConfigHandler = ConfigHandler.GetInstance();
             SolutionManager.GetInstance();
 
-            string sql = "INSERT INTO `cv`.`t_scgd_sys_dictionary_mod_item` (`id`, `symbol`, `address_code`, `name`, `val_type` , `value_range`, `default_val`, `pid`, `create_date`, `is_enable` , `is_delete`, `remark`) VALUES (240, 'CalibrationMode', 240, 'CalibrationMode', 0 , NULL, NULL, 2, '2024-02-01 17:30:49', 1 , 0, NULL) ON DUPLICATE KEY UPDATE `symbol` = VALUES(`symbol`), `address_code` = VALUES(`address_code`), `name` = VALUES(`name`), `val_type` = VALUES(`val_type`), `value_range` = VALUES(`value_range`) , `default_val` = VALUES(`default_val`), `pid` = VALUES(`pid`), `create_date` = VALUES(`create_date`), `is_enable` = VALUES(`is_enable`), `is_delete` = VALUES(`is_delete`) , `remark` = VALUES(`remark`);";
-            MySqlControl.GetInstance().ExecuteNonQuery(sql);
+            if (MySqlControl.GetInstance().IsConnect)
+            {
+                string sql = "INSERT INTO `cv`.`t_scgd_sys_dictionary_mod_item` (`id`, `symbol`, `address_code`, `name`, `val_type` , `value_range`, `default_val`, `pid`, `create_date`, `is_enable` , `is_delete`, `remark`) VALUES (240, 'CalibrationMode', 240, 'CalibrationMode', 0 , NULL, NULL, 2, '2024-02-01 17:30:49', 1 , 0, NULL) ON DUPLICATE KEY UPDATE `symbol` = VALUES(`symbol`), `address_code` = VALUES(`address_code`), `name` = VALUES(`name`), `val_type` = VALUES(`val_type`), `value_range` = VALUES(`value_range`) , `default_val` = VALUES(`default_val`), `pid` = VALUES(`pid`), `create_date` = VALUES(`create_date`), `is_enable` = VALUES(`is_enable`), `is_delete` = VALUES(`is_delete`) , `remark` = VALUES(`remark`);";
+                MySqlControl.GetInstance().ExecuteNonQuery(sql);
+
+                string sql1 = "INSERT INTO cv.t_scgd_sys_dictionary_mod_master (id, code, name, pid, create_date, is_enable, is_delete, remark, tenant_id) VALUES (17, 'SpectrumResource', 'SpectrumResource', NULL, '2024-02-04 13:33:04', 1, 0, NULL, 0) ON DUPLICATE KEY UPDATE code = VALUES(code), name = VALUES(name), pid = VALUES(pid), create_date = VALUES(create_date), is_enable = VALUES(is_enable), is_delete = VALUES(is_delete), remark = VALUES(remark), tenant_id = VALUES(tenant_id);\r\nINSERT INTO cv.t_scgd_sys_dictionary_mod_item (id, symbol, address_code, name, val_type, value_range, default_val, pid, create_date, is_enable, is_delete, remark) VALUES (4000, 'ResourceMode', 4000, NULL, 3, NULL, ' ', 17, '2024-02-04 14:03:58', 1, 0, NULL)ON DUPLICATE KEY UPDATE symbol = VALUES(symbol), address_code = VALUES(address_code), name = VALUES(name), val_type = VALUES(val_type), value_range = VALUES(value_range), default_val = VALUES(default_val), pid = VALUES(pid), create_date = VALUES(create_date), is_enable = VALUES(is_enable), is_delete = VALUES(is_delete), remark = VALUES(remark);\r\nINSERT INTO cv.t_scgd_sys_dictionary_mod_item (id, symbol, address_code, name, val_type, value_range, default_val, pid, create_date, is_enable, is_delete, remark) VALUES (4001, 'ResourceName', 4001, NULL, 3, NULL, ' ', 17, '2024-02-04 14:03:57', 1, 0, NULL)ON DUPLICATE KEY UPDATE symbol = VALUES(symbol), address_code = VALUES(address_code), name = VALUES(name), val_type = VALUES(val_type), value_range = VALUES(value_range), default_val = VALUES(default_val), pid = VALUES(pid), create_date = VALUES(create_date), is_enable = VALUES(is_enable), is_delete = VALUES(is_delete), remark = VALUES(remark);\r\nINSERT INTO cv.t_scgd_sys_dictionary_mod_item (id, symbol, address_code, name, val_type, value_range, default_val, pid, create_date, is_enable, is_delete, remark) VALUES (4002, 'ResourceId', 4002, NULL, 1, NULL, '-1', 17, '2024-02-04 14:03:55', 1, 0, NULL)ON DUPLICATE KEY UPDATE symbol = VALUES(symbol), address_code = VALUES(address_code), name = VALUES(name), val_type = VALUES(val_type), value_range = VALUES(value_range), default_val = VALUES(default_val), pid = VALUES(pid), create_date = VALUES(create_date), is_enable = VALUES(is_enable), is_delete = VALUES(is_delete), remark = VALUES(remark);\r\nINSERT INTO cv.t_scgd_sys_dictionary_mod_item (id, symbol, address_code, name, val_type, value_range, default_val, pid, create_date, is_enable, is_delete, remark) VALUES (4003, 'IsSelected', 4003, NULL, 2, NULL, 'false', 17, '2024-02-04 14:03:55', 1, 0, NULL)ON DUPLICATE KEY UPDATE symbol = VALUES(symbol), address_code = VALUES(address_code), name = VALUES(name), val_type = VALUES(val_type), value_range = VALUES(value_range), default_val = VALUES(default_val), pid = VALUES(pid), create_date = VALUES(create_date), is_enable = VALUES(is_enable), is_delete = VALUES(is_delete), remark = VALUES(remark);";
+                MySqlControl.GetInstance().ExecuteNonQuery(sql1);
+
+            }
+
 
             if (!WindowConfig.IsExist||(WindowConfig.IsExist&& WindowConfig.Icon == null)) {
                 ThemeManager.Current.SystemThemeChanged += (e) => {
@@ -182,7 +190,28 @@ namespace ColorVision
             Task.Run(CheckVersion);
 
             Task.Run(CheckCertificate);
+
+            Task.Run(EnsureLocalInfile);
         }
+
+        public async Task EnsureLocalInfile()
+        {
+            await Task.Delay(3000);
+            log.Info($"{DateTime.Now}:EnsureLocalInfile ");
+            try
+            {
+                if (MySqlControl.GetInstance().IsConnect)
+                    MySqlControl.GetInstance().EnsureLocalInfile();
+            }
+            catch(Exception ex)
+            {
+                log.Info($"{DateTime.Now}:EnsureLocalInfile {ex.Message} ");
+
+            }
+
+        }
+
+
         public async Task CheckCertificate()
         {
             await Task.Delay(100);
@@ -339,7 +368,6 @@ namespace ColorVision
         public void ReadTest(object sender, RoutedEventArgs e)
         {
             var lines = File.ReadAllLines("C:\\Users\\17917\\Desktop\\三刺激值曲线CIE2015 的副本.csv");
-
             foreach (var line in lines)
             {
                 var values = line.Split(',');

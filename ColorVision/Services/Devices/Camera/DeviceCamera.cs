@@ -37,7 +37,7 @@ namespace ColorVision.Services.Devices.Camera
         public string Title { get; set; }
     }
 
-    public class DeviceCamera : DeviceService<ConfigCamera>
+    public class DeviceCamera : DeviceService<ConfigCamera>, IUploadMsg
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MySqlControl));
 

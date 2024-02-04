@@ -1,9 +1,13 @@
-﻿using ColorVision.Services.Devices.Spectrum.Configs;
+﻿using ColorVision.Services.Devices.Camera.Calibrations;
+using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
 using ColorVision.SettingUp;
+using ColorVision.Templates;
 using MQTTMessageLib;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -89,7 +93,52 @@ namespace ColorVision.Services.Devices.Spectrum
             {
                 doSpectrumHeartbeat(e);
             };
+
+
+            SpectrumResourceParams = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
+            SpectrumResourceParams.Insert(0, new TemplateModel<SpectrumResourceParam>("Empty", new SpectrumResourceParam() { Id = -1 }));
+
+            foreach (var item in DeviceSpectrum.SpectrumResourceParams)
+                SpectrumResourceParams.Add(item);
+
+            DeviceSpectrum.SpectrumResourceParams.CollectionChanged += (s, e) =>
+            {
+                switch (e.Action)
+                {
+                    case NotifyCollectionChangedAction.Add:
+                        // 处理添加项
+                        if (e.NewItems != null)
+                            foreach (TemplateModel<SpectrumResourceParam> newItem in e.NewItems)
+                                SpectrumResourceParams.Add(newItem);
+                        break;
+                    case NotifyCollectionChangedAction.Remove:
+                        // 处理移除项
+                        if (e.OldItems != null)
+                            foreach (TemplateModel<SpectrumResourceParam> newItem in e.OldItems)
+                                SpectrumResourceParams.Remove(newItem);
+                        break;
+                    case NotifyCollectionChangedAction.Replace:
+                        // 处理替换项
+                        // ...
+                        break;
+                    case NotifyCollectionChangedAction.Move:
+                        // 处理移动项
+                        // ...
+                        break;
+                    case NotifyCollectionChangedAction.Reset:
+                        // 处理清空集合
+                        SpectrumResourceParams.Clear();
+                        SpectrumResourceParams.Insert(0, new TemplateModel<SpectrumResourceParam>("Empty", new SpectrumResourceParam()) { ID = -1 });
+                        break;
+                }
+            };
+
+            ComboxResourceTemplate.ItemsSource = SpectrumResourceParams;
+            ComboxResourceTemplate.SelectedIndex = 0;
         }
+
+        public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; }
+
         private void doHeartbeat(HeartbeatParam e)
         {
             SpectrumService.Config.DeviceStatus = e.DeviceStatus;
@@ -159,8 +208,14 @@ namespace ColorVision.Services.Devices.Spectrum
             {
                 if (btnTitle.Equals("打开", StringComparison.Ordinal))
                 {
-                    btn_connect.Content = "打开中";
-                    SpectrumService.Open();
+                     if (ComboxResourceTemplate.SelectedValue is SpectrumResourceParam param)
+                    {
+                        SpectrumService.Open();
+                    }
+                    else
+                    {
+                        MessageBox.Show("请先选择校正文件");
+                    }
                 }
                 else
                 {
@@ -303,5 +358,27 @@ namespace ColorVision.Services.Devices.Spectrum
             SpectrumService.ShutterDoclose();
         }
 
+        private void MenuItem_Template(object sender, RoutedEventArgs e)
+        {
+            if (sender is Control menuItem)
+            {
+                SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
+                WindowTemplate windowTemplate;
+                if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+                {
+                    MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision");
+                    return;
+                }
+                switch (menuItem.Tag?.ToString() ?? string.Empty)
+                {
+                    case "SpectrumResourceParam":
+                        SpectrumResourceControl calibration = DeviceSpectrum.SpectrumResourceParams.Count == 0 ? new SpectrumResourceControl(DeviceSpectrum) : new SpectrumResourceControl(DeviceSpectrum, DeviceSpectrum.SpectrumResourceParams[0].Value);
+                        windowTemplate = new WindowTemplate(TemplateType.SpectrumResourceParam, calibration, DeviceSpectrum,false);
+                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate.ShowDialog();
+                        break;
+                }
+            }
+        }
     }
 }

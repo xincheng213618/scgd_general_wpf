@@ -19,7 +19,8 @@ namespace ColorVision.Templates
         DistortionParam,
         LedCheckParam,
         FocusPointsParam,
-        BuildPOIParmam
+        BuildPOIParmam,
+        SpectrumResourceParam
     }
 
     public class TemplateTypeFactory 
@@ -40,6 +41,7 @@ namespace ColorVision.Templates
                 TemplateType.FocusPointsParam => ModMasterType.FocusPoints,
                 TemplateType.Calibration => ModMasterType.Calibration,
                 TemplateType.BuildPOIParmam => ModMasterType.BuildPOI,
+                TemplateType.SpectrumResourceParam => ModMasterType.SpectrumResource,
                 _ => string.Empty,
             };
         }

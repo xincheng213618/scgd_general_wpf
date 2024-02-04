@@ -104,6 +104,30 @@ namespace ColorVision.MySql
             return count;
         }
 
+
+        public void EnsureLocalInfile()
+        {
+            string checkLocalInfile = "SHOW GLOBAL VARIABLES LIKE 'local_infile';";
+            using var cmdCheck = new MySqlCommand(checkLocalInfile, MySqlConnection);
+            using var reader = cmdCheck.ExecuteReader();
+            if (reader.Read())
+            {
+                string localInfileValue = reader["Value"].ToString();
+                log.Info($"Current local_infile Value: {localInfileValue}");
+
+                // 如果local_infile的值为OFF或0，设置为1
+                if (localInfileValue == "OFF" || localInfileValue == "0")
+                {
+                    reader.Close(); // 关闭reader，因为我们要执行另一个命令
+
+                    string setLocalInfile = "SET GLOBAL local_infile = 1;";
+                    using var cmdSet = new MySqlCommand(setLocalInfile, MySqlConnection);
+                    cmdSet.ExecuteNonQuery();
+                    log.Info("local_infile has been set to 1.");
+                }
+            }
+        }
+
         public void Dispose()
         {
             MySqlConnection.Dispose();

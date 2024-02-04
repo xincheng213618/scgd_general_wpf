@@ -11,6 +11,9 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using ColorVision.Common.Utilities;
+using MQTTMessageLib.FileServer;
+using System.Diagnostics;
 
 namespace ColorVision.Services.Devices.Spectrum
 {
@@ -166,15 +169,25 @@ namespace ColorVision.Services.Devices.Spectrum
             return true;
         }
 
-        public bool Open()
+        public MsgRecord Open(SpectrumResourceParam spectrumResourceParam)
         {
+            var Params = new Dictionary<string, object>() { };
+
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
-                ServiceName = Config.Code
+                ServiceName = Config.Code,
+                Params = Params
             };
-            PublishAsyncClient(msg);
-            return true;
+            if (spectrumResourceParam.Id == -1)
+            {
+                Params.Add("Calibration", new CVTemplateParam() { ID = spectrumResourceParam.Id, Name = string.Empty });
+            }
+            else
+            {
+                Params.Add("Calibration", new CVTemplateParam() { ID = spectrumResourceParam.Id, Name = spectrumResourceParam.Name });
+            }
+            return PublishAsyncClient(msg);
         }
 
         public bool GetData(float IntTime, int AveNum, bool bUseAutoIntTime = false, bool bUseAutoDark = false, bool bUseAutoShutterDark = false)
@@ -337,6 +350,51 @@ namespace ColorVision.Services.Devices.Spectrum
                 ServiceName = Config.Code,
             };
             PublishAsyncClient(msg);
+        }
+
+
+        public async Task<MsgRecord> UploadFileAsync(string name, string fileName, int fileType, int timeout = 50000)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start(); // 开始计时
+
+            TaskCompletionSource<MsgRecord> tcs = new TaskCompletionSource<MsgRecord>();
+            string md5 = Tool.CalculateMD5(fileName);
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTFileServerEventEnum.Event_File_Upload,
+                Params = new Dictionary<string, object> { { "Name", name }, { "FileName", fileName }, { "FileExtType", FileExtType.Calibration }, { "MD5", md5 } }
+            };
+            MsgRecord msgRecord = PublishAsyncClient(msg);
+
+            MsgRecordStateChangedHandler handler = (sender) =>
+            {
+                log.Info($"{fileName}  状态{sender}  Operation time: {stopwatch.ElapsedMilliseconds} ms");
+                tcs.TrySetResult(msgRecord);
+            };
+            msgRecord.MsgRecordStateChanged += handler;
+            var timeoutTask = Task.Delay(timeout);
+            try
+            {
+
+                var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
+                if (completedTask == timeoutTask)
+                {
+                    log.Info($"{fileName}  超时  Operation time: {stopwatch.ElapsedMilliseconds} ms");
+                    tcs.TrySetException(new TimeoutException("The operation has timed out."));
+                }
+                return await tcs.Task; // 如果超时，这里将会抛出异常
+            }
+            catch (Exception ex)
+            {
+                log.Info($"{fileName}  异常 {ex.Message} Operation time: {stopwatch.ElapsedMilliseconds} ms");
+                tcs.TrySetException(ex);
+                return await tcs.Task; // 
+            }
+            finally
+            {
+                msgRecord.MsgRecordStateChanged -= handler;
+            }
         }
     }
 }

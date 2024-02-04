@@ -35,6 +35,13 @@ namespace ColorVision.Services
         public ImageSource Icon { get; set; }
 
         public RelayCommand RefreshCommand { get; set; }
+        public RelayCommand CreateCommand { get; set; }
+
+        public virtual void Create()
+        {
+            MessageBox.Show("Create");
+        }
+
 
         public TerminalService(SysResourceModel sysResourceModel) : base()
         {
@@ -59,6 +66,8 @@ namespace ColorVision.Services
 
             Config.SubscribeTopic = SysResourceModel.TypeCode + "/STATUS/" + SysResourceModel.Code;
             Config.SendTopic = SysResourceModel.TypeCode + "/CMD/" + SysResourceModel.Code;
+
+            CreateCommand = new RelayCommand(a => Create());
 
             switch (ServiceType)
             {

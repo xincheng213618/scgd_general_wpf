@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.Spectrum.Configs;
+using ColorVision.SettingUp;
+using ColorVision.Templates;
 
 namespace ColorVision.Services.Devices.Spectrum
 {
@@ -11,7 +14,7 @@ namespace ColorVision.Services.Devices.Spectrum
     /// </summary>
     public partial class DeviceSpectrumControl : UserControl, IDisposable
     {
-        public DeviceSpectrum MQTTDeviceSp { get; set; }
+        public DeviceSpectrum Device { get; set; }
 
         private MQTTSpectrum? SpectrumService;
         private bool disposedValue;
@@ -21,7 +24,7 @@ namespace ColorVision.Services.Devices.Spectrum
         public DeviceSpectrumControl(DeviceSpectrum mqttDeviceSp, bool isCanEdit = true)
         {
             this.disposedObj = false;
-            this.MQTTDeviceSp = mqttDeviceSp;
+            this.Device = mqttDeviceSp;
             SpectrumService = mqttDeviceSp.DeviceService;
             SpectrumService.AutoParamHandlerEvent += Spectrum_AutoParamHandlerEvent;
             IsCanEdit = isCanEdit;
@@ -30,24 +33,22 @@ namespace ColorVision.Services.Devices.Spectrum
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
-            this.DataContext = this.MQTTDeviceSp;
+            this.DataContext = this.Device;
 
-            List<string> Serials = new List<string> { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8" };
-            TextSerial.ItemsSource = Serials;
-            List<int> BaudRates = new List<int> { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
-            TextBaudRate.ItemsSource = BaudRates;
-
+            if (IsCanEdit)
+            {
+                UserControl userControl = Device.GetEditControl();
+                if (userControl.Parent is Panel grid)
+                    grid.Children.Remove(userControl);
+                MQTTEditContent.Children.Add(userControl);
+            }
         }
 
         private void Spectrum_AutoParamHandlerEvent(AutoIntTimeParam colorPara)
         {
-            MQTTDeviceSp.Config.BeginIntegralTime = colorPara.fTimeB;
-            MQTTDeviceSp.Config.MaxIntegralTime = colorPara.iLimitTime;
+            Device.Config.BeginIntegralTime = colorPara.fTimeB;
+            Device.Config.MaxIntegralTime = colorPara.iLimitTime;
         }
-
-
-
-
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
@@ -79,9 +80,27 @@ namespace ColorVision.Services.Devices.Spectrum
             GC.SuppressFinalize(this);
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
-            SpectrumService?.SetParam(MQTTDeviceSp.Config.MaxIntegralTime, MQTTDeviceSp.Config.BeginIntegralTime);
+            if (sender is Control menuItem)
+            {
+                SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
+                WindowTemplate windowTemplate;
+                if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+                {
+                    MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision");
+                    return;
+                }
+                switch (menuItem.Tag?.ToString() ?? string.Empty)
+                {
+                    case "SpectrumResourceParam":
+                        SpectrumResourceControl calibration = Device.SpectrumResourceParams.Count == 0 ? new SpectrumResourceControl(Device) : new SpectrumResourceControl(Device, Device.SpectrumResourceParams[0].Value);
+                        windowTemplate = new WindowTemplate(TemplateType.SpectrumResourceParam, calibration, Device);
+                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate.ShowDialog();
+                        break;
+                }
+            }
         }
     }
 }
