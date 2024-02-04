@@ -20,6 +20,7 @@ using System.IO;
 using System.Threading;
 using System.Windows;
 
+
 namespace ColorVision.Templates
 {
 
@@ -535,7 +536,7 @@ namespace ColorVision.Templates
             }
         }
 
-        public void LoadModCabParam(ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParamModes ,int resourceId , string ModeType)
+        public void LoadModCabParam<T>(ObservableCollection<TemplateModel<T>> CalibrationParamModes ,int resourceId , string ModeType) where T : ParamBase, new()
         {
             DicTemplate.TryAdd(ModeType, CalibrationParamModes);
             CalibrationParamModes.Clear();
@@ -550,11 +551,12 @@ namespace ColorVision.Templates
                     {
                         dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
                     }
-                    CalibrationParamModes.Add(new TemplateModel<CalibrationParam>(dbModel.Name ?? "default", new CalibrationParam( dbModel, smuDetails)));
+                    CalibrationParamModes.Add(new TemplateModel<T>(dbModel.Name ?? "default", (T)Activator.CreateInstance(typeof(T), new object[] { dbModel, smuDetails })));
                 }
             }
         }
-        public CalibrationParam? AddCalibrationParam(string code, string Name, int resourceId)
+
+        public T? AddCalibrationParam<T>(string code, string Name, int resourceId) where T : ParamBase, new()
         {
             ModMasterModel modMaster = new ModMasterModel(code, Name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             modMaster.ResourceId = resourceId;
@@ -564,7 +566,7 @@ namespace ColorVision.Templates
             {
                 ModMasterModel modMasterModel = modService.GetMasterById(pkId);
                 List<ModDetailModel> modDetailModels = modService.GetDetailByPid(pkId);
-                if (modMasterModel != null) return new CalibrationParam(modMasterModel, modDetailModels);
+                if (modMasterModel != null) return (T)Activator.CreateInstance(typeof(T), new object[] { modMasterModel, modDetailModels });
                 else return null;
             }
             return null;

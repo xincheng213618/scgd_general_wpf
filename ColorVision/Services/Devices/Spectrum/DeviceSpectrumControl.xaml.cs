@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.Spectrum.Configs;
+using ColorVision.SettingUp;
+using ColorVision.Templates;
 
 namespace ColorVision.Services.Devices.Spectrum
 {
@@ -77,6 +80,27 @@ namespace ColorVision.Services.Devices.Spectrum
             GC.SuppressFinalize(this);
         }
 
-
+        private void MenuItem_Template(object sender, RoutedEventArgs e)
+        {
+            if (sender is Control menuItem)
+            {
+                SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
+                WindowTemplate windowTemplate;
+                if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+                {
+                    MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision");
+                    return;
+                }
+                switch (menuItem.Tag?.ToString() ?? string.Empty)
+                {
+                    case "SpectrumResourceParam":
+                        SpectrumResourceControl calibration = Device.SpectrumResourceParams.Count == 0 ? new SpectrumResourceControl(Device) : new SpectrumResourceControl(Device, Device.SpectrumResourceParams[0].Value);
+                        windowTemplate = new WindowTemplate(TemplateType.SpectrumResourceParam, calibration, Device);
+                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate.ShowDialog();
+                        break;
+                }
+            }
+        }
     }
 }

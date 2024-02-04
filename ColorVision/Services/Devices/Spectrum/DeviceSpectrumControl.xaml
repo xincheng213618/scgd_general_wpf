@@ -57,6 +57,8 @@
                 <Grid x:Name="MQTTShow" Margin="5">
                     <Grid  x:Name="MQTTShowContent" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}">
                         <StackPanel Margin="5,0">
+                            <Button Content="上传光谱仪文件"/>
+                            <Button Content="管理光谱仪文件" Click="MenuItem_Template" Tag="SpectrumResourceParam"/>
                             <GroupBox Header="基本信息" Margin="0,5">
                                 <StackPanel Margin="5">
                                     <DockPanel>

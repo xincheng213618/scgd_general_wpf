@@ -40,8 +40,6 @@ namespace ColorVision.Services.Devices
 
 
         public virtual ImageSource Icon { get; set; }
-
-
         public SysResourceModel SysResourceModel { get; set; }
 
         public virtual UserControl GetDeviceControl()

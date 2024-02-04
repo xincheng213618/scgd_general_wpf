@@ -307,9 +307,14 @@ namespace ColorVision.Services
                     groupService.AddChild(groupService);
                     GroupServices.Add(groupService);
                 }
-                else
+                else if (30<=sysResourceModel.Type && sysResourceModel.Type <= 40)
                 {
                     CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
+                    groupService.AddChild(calibrationResource);
+                }
+                else
+                {
+                    BaseResource calibrationResource = new BaseResource(sysResourceModel);
                     groupService.AddChild(calibrationResource);
                 }
             }
