@@ -121,11 +121,11 @@ namespace ColorVision.Services
             ServiceTokens.Clear();
 
 
-            var ServiceTypes = Enum.GetValues(typeof(ServiceTypes)).Cast<ServiceTypes>();
+            var ServiceTypess = Enum.GetValues(typeof(ServiceTypes)).Cast<ServiceTypes>();
             List<SysDictionaryModel> SysDictionaryModels = sysDictionaryService.GetAllServiceType();
 
             TypeServices.Clear();
-            foreach (var type in ServiceTypes)
+            foreach (var type in ServiceTypess)
             {
                 TypeService typeService = new TypeService();
                 var sysDictionaryModel = SysDictionaryModels.Find((x)=>x.Value ==(int)type);
@@ -144,7 +144,18 @@ namespace ColorVision.Services
                 var sysResourceModels = sysResourceModelServices.FindAll((x) => x.Type == (int)typeService1.ServiceTypes);
                 foreach (var sysResourceModel in sysResourceModels)
                 {
-                    TerminalService terminalService = new TerminalService(sysResourceModel);
+                    
+                    TerminalService terminalService;
+                    switch (typeService1.ServiceTypes)
+                    {   
+                        case ServiceTypes.camera:
+                            terminalService = new TerminalCamera(sysResourceModel);
+                            break;
+                        default:
+                            terminalService = new TerminalService(sysResourceModel);
+                            break;
+                    }
+
                     string svrKey = GetServiceKey(sysResourceModel.TypeCode ?? string.Empty, sysResourceModel.Code ?? string.Empty);
                    
                     if (svrDevices.TryGetValue(svrKey, out var list ))
