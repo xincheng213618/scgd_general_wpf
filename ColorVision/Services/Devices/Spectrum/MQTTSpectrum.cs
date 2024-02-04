@@ -181,11 +181,11 @@ namespace ColorVision.Services.Devices.Spectrum
             };
             if (spectrumResourceParam.Id == -1)
             {
-                Params.Add("Calibration", new CVTemplateParam() { ID = spectrumResourceParam.Id, Name = string.Empty });
+                Params.Add("TemplateParam", new CVTemplateParam() { ID = spectrumResourceParam.Id, Name = string.Empty });
             }
             else
             {
-                Params.Add("Calibration", new CVTemplateParam() { ID = spectrumResourceParam.Id, Name = spectrumResourceParam.Name });
+                Params.Add("TemplateParam", new CVTemplateParam() { ID = spectrumResourceParam.Id, Name = spectrumResourceParam.Name });
             }
             return PublishAsyncClient(msg);
         }

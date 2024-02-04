@@ -206,7 +206,7 @@ namespace ColorVision.Services.Devices.Spectrum
             string btnTitle = btn_connect.Content.ToString();
             if (!string.IsNullOrWhiteSpace(btnTitle))
             {
-                if (btnTitle.Equals("打开", StringComparison.Ordinal))
+                if (!btnTitle.Equals("关闭", StringComparison.Ordinal))
                 {
                      if (ComboxResourceTemplate.SelectedValue is SpectrumResourceParam param)
                     {
