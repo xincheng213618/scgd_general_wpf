@@ -279,9 +279,14 @@ namespace ColorVision.Services
                         deviceService.AddChild(groupService);
                         GroupServices.Add(groupService);
                     }
-                    else
+                   else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
                     {
                         CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
+                        deviceService.AddChild(calibrationResource);
+                    }
+                    else
+                    {
+                        BaseResource calibrationResource = new BaseResource(sysResourceModel);
                         deviceService.AddChild(calibrationResource);
                     }
                 }
