@@ -21,6 +21,7 @@ namespace ColorVision.Services.Dao
     {
         public LicenseDao() : base("t_scgd_license", "id", true)
         {
+
         }
         public override DataTable CreateColumns(DataTable dInfo)
         {

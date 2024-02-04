@@ -165,6 +165,32 @@ namespace ColorVision.MySql
         }
     }
 
+    public class BaseTableDao<T>:BaseDao where T : IPKModel
+    {
+        private static readonly ILog log = LogManager.GetLogger(typeof(BaseTableDao<T>));
+
+        public BaseTableDao(string tableName, string pkField, bool isLogicDel) : base(tableName, pkField, isLogicDel)
+        {
+
+        }
+    }
+
+    public class BaseViewDao<T> : BaseDao where T : IPKModel
+    {
+        private static readonly ILog log = LogManager.GetLogger(typeof(BaseTableDao<T>));
+
+        public BaseViewDao(string viewName, string pkField, bool isLogicDel) : base(viewName, pkField, isLogicDel)
+        {
+
+        }
+
+
+    }
+
+
+
+
+
     public class BaseDaoMaster<T>: BaseDao where T : IPKModel
     {
         public string ViewName { get; set; }
