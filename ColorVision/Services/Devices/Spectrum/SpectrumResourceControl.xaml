@@ -17,7 +17,6 @@
     </UserControl.Resources>
     <StackPanel Margin="0">
         <DockPanel  Margin="3,2">
-            <Button DockPanel.Dock="Right" Content="配置" Click="Button_Click"  Margin="5,0"/>
             <TextBlock DockPanel.Dock="Left" Text="校正文件"  Width="80" />
             <hc:ComboBox x:Name="ComboBoxList" Text="{Binding ResourceMode}" DisplayMemberPath="Name" SelectionChanged="ComboBox_SelectionChanged" />
         </DockPanel>
