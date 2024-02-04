@@ -15,6 +15,9 @@ using ColorVision.Common.Utilities;
 using ColorVision.Templates;
 using System.Collections.ObjectModel;
 using ColorVision.MySql.Service;
+using System.Threading.Tasks;
+using System;
+using System.IO;
 
 namespace ColorVision.Services.Devices.Spectrum
 {
@@ -36,6 +39,9 @@ namespace ColorVision.Services.Devices.Spectrum
 
         public string Msg { get => _Msg; set { _Msg = value; Application.Current.Dispatcher.Invoke(() => NotifyPropertyChanged()); } }
         private string _Msg;
+
+        public event EventHandler UploadClosed;
+
         public void UploadResource(object sender)
         {
             UploadWindow uploadwindow = new UploadWindow() { WindowStartupLocation = WindowStartupLocation.CenterScreen };
@@ -43,40 +49,40 @@ namespace ColorVision.Services.Devices.Spectrum
             {
                 if (s is Upload upload)
                 {
-
-                    string FileName = upload.UploadFilePath;
-                    string md5 = Tool.CalculateMD5(FileName);
-
-
-                    SysResourceDao sysResourceDao = new SysResourceDao();
-                    SysResourceModel sysResourceModel = new SysResourceModel();
-                    sysResourceModel.Name = upload.UploadFileName;
-                    sysResourceModel.Code = md5;
-                    sysResourceModel.Type = 201;
-                    sysResourceModel.Pid = this.SysResourceModel.Id;
-                    sysResourceModel.Value = FileName;
-                    sysResourceDao.Save(sysResourceModel);
-                    if (sysResourceModel != null)
-                    {
-                        BaseResource calibrationResource = new BaseResource(sysResourceModel);
-                        this.AddChild(calibrationResource);   
-                    }
-
-                    //UploadMsg uploadMsg = new UploadMsg(this);
-                    //UploadCalibrationClosed += (s, e) =>
-                    //{
-                    //    uploadMsg.Close();
-                    //};
-                    //uploadMsg.Show();
-                    //string path = upload.UploadFilePath;
-                    //Task.Run(() => UploadData(path));
+                    UploadMsg uploadMsg = new UploadMsg(this);
+                    uploadMsg.Show();
+                    string name = upload.UploadFileName;
+                    string path = upload.UploadFilePath;
+                    Task.Run(() => UploadData(name, path));
 
 
                 }
             };
             uploadwindow.ShowDialog();
         }
+        public async void UploadData(string UploadFileName, string UploadFilePath)
+        {
+            Msg = "正在解压文件：" + " 请稍后...";
+            await Task.Delay(10);
 
+            string md5 = Tool.CalculateMD5(UploadFilePath);
+            var msgRecord = await DeviceService.UploadFileAsync(UploadFileName, UploadFilePath,201);
+            SysResourceDao sysResourceDao = new SysResourceDao();
+            SysResourceModel sysResourceModel = new SysResourceModel();
+            sysResourceModel.Name = UploadFileName;
+            sysResourceModel.Code = md5;
+            sysResourceModel.Type = 201;
+            sysResourceModel.Pid = this.SysResourceModel.Id;
+            sysResourceModel.Value = Path.GetFileName(UploadFilePath);
+            sysResourceDao.Save(sysResourceModel);
+            if (sysResourceModel != null)
+            {
+                BaseResource calibrationResource = new BaseResource(sysResourceModel);
+                this.AddChild(calibrationResource);
+            }
+
+            Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
+        }
 
 
         public override UserControl GetDeviceControl() => new DeviceSpectrumControl(this);

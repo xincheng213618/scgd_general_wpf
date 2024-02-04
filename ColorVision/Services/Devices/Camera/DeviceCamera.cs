@@ -141,7 +141,6 @@ namespace ColorVision.Services.Devices.Camera
             }
         }
 
-        public event EventHandler UploadCalibrationClosed;
 
         public void UploadCalibration(object sender)
         {
@@ -152,10 +151,6 @@ namespace ColorVision.Services.Devices.Camera
                 if (s is Upload upload)
                 {
                     UploadMsg uploadMsg = new UploadMsg(this);
-                    UploadCalibrationClosed += (s, e) =>
-                    {
-                        uploadMsg.Close();
-                    };
                     uploadMsg.Show();
                     string path = upload.UploadFilePath;
                     Task.Run(()=> UploadData(path));
@@ -166,6 +161,8 @@ namespace ColorVision.Services.Devices.Camera
 
         public string Msg { get => _Msg; set {  _Msg = value;  Application.Current.Dispatcher.Invoke(() => NotifyPropertyChanged()); } }
         private string _Msg;
+
+        public event EventHandler UploadClosed;
 
         public async void UploadData(string UploadFilePath)
         {
@@ -383,7 +380,7 @@ namespace ColorVision.Services.Devices.Camera
                 }
                 Msg = "上传结束";
                 await Task.Delay(100);
-                Application.Current.Dispatcher.Invoke(() => UploadCalibrationClosed.Invoke(this, new EventArgs()));
+                Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
             }
 
         }

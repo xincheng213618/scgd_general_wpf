@@ -18,6 +18,8 @@ namespace ColorVision.Services.Devices
     public interface IUploadMsg
     {
         public string Msg { get; }
+
+        public event EventHandler UploadClosed;
     }
 
 
@@ -36,6 +38,7 @@ namespace ColorVision.Services.Devices
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = IUploadMsg;
+            IUploadMsg.UploadClosed += (s, e) => this.Close();
         }
     }
 }
