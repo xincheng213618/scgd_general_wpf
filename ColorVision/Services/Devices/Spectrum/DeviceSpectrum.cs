@@ -38,7 +38,7 @@ namespace ColorVision.Services.Devices.Spectrum
         private string _Msg;
         public void UploadResource(object sender)
         {
-            UploadWindow uploadwindow = new UploadWindow("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
+            UploadWindow uploadwindow = new UploadWindow() { WindowStartupLocation = WindowStartupLocation.CenterScreen };
             uploadwindow.OnUpload += (s, e) =>
             {
                 if (s is Upload upload)
