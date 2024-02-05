@@ -59,7 +59,7 @@ namespace ColorVision.MySql
             return connStr;
         }
 
-        public static bool TestConnect(MySqlConfig MySqlConfig)
+        public static bool TestConnect(MySqlConfig MySqlConfig)  
         {
             MySqlConnection MySqlConnection;
             string connStr = GetConnectionString(MySqlConfig,1);

@@ -64,7 +64,7 @@ namespace ColorVision.Solution
             Application.Current.MainWindow.AddHotKeys(new HotKeys("打开工程", new Hotkey(Key.O, ModifierKeys.Control), OpenSolutionWindow));
             Application.Current.MainWindow.AddHotKeys(new HotKeys("新建工程", new Hotkey(Key.N, ModifierKeys.Control), NewCreateWindow));
 
-            ClearCache();
+            //ClearCache();
 
             OpenSolutionDirectory(CurrentSolution.FullName);
 
