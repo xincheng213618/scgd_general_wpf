@@ -26,17 +26,6 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <ToolBar  Grid.Row="0" Margin="0,3,0,0"  Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True">
-                    <ToggleButton x:Name="toggle1" Click="Button_Click_1" IsChecked="True" Margin="2,0,0,0" >
-                        <Image Stretch="Uniform" Source="{DynamicResource DrawingImageList}" >
-                            <Image.RenderTransform>
-                                <RotateTransform Angle="90" CenterX="8" CenterY="8"/>
-                            </Image.RenderTransform>
-                        </Image>
-                    </ToggleButton>
-                    <ToggleButton  x:Name="toggle2" Click="Button_Click_2" IsChecked="True"  Margin="2,0,0,0" >
-                        <Image Stretch="Uniform"  Source="{DynamicResource DrawingImageList}" >
-                        </Image>
-                    </ToggleButton>
                     <Button Click="Button_Click" Margin="2,0,0,0" >
                         <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
                     </Button>
