@@ -219,7 +219,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                 PoiResultDatas.Clear();
                 PoiYResultDatas.Clear();
                 ImageView.ResetPOIPoint();
-                listViewSide.Visibility = Visibility.Collapsed;
                 List<POIPoint> DrawPoiPoint = new List<POIPoint>();
                 switch (result.ResultType)
                 {   
