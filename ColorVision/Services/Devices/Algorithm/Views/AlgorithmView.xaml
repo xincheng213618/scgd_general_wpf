@@ -12,7 +12,7 @@
     <Grid x:Name="MainGrid">
         <Grid.ColumnDefinitions>
             <ColumnDefinition x:Name="ListCol1" Width="70*"/>
-            <ColumnDefinition x:Name="ListCol2" Width="30*" MaxWidth="300"/>
+            <ColumnDefinition x:Name="ListCol2" Width="30*" />
         </Grid.ColumnDefinitions>
         <Grid x:Name="Grid1" Grid.Row="1">
             <Grid.RowDefinitions>
@@ -112,6 +112,7 @@
                             </ListView>
                         </Border>
                     </Popup>
+                    <Button x:Name="Button222" Content="保存数据列"  Click="SideSave_Click"/>
                 </ToolBar>
                 <ListView Grid.Row="1" x:Name="listView1"  Background="Transparent" BorderThickness="0"  Margin="-3" ScrollViewer.VerticalScrollBarVisibility="Visible" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.Resources >

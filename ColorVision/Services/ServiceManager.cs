@@ -332,7 +332,6 @@ namespace ColorVision.Services
         {
             int totalTime = flowControlData.Params.TTL;
             resultService.BatchUpdateEnd(flowControlData.SerialNumber, totalTime, flowControlData.EventName);
-
             SpectrumDrawPlotFromDB(flowControlData.SerialNumber);
         }
 
