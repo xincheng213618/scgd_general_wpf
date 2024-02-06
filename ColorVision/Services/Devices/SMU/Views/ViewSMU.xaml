@@ -87,7 +87,7 @@
                             </StackPanel>
                         </Border>
                     </Popup>
-                    <Button x:Name="OpenColumnVisibilityPopupButton" Content="列显示" Click="OpenColumnVisibilityPopupButton_Click"/>
+                    <Button x:Name="OpenColumnVisibilityPopupButton" Content="列显示" Visibility="Collapsed"  Click="OpenColumnVisibilityPopupButton_Click"/>
                     <Popup  x:Name="ColumnVisibilityPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=OpenColumnVisibilityPopupButton}">
                         <Border  Style="{StaticResource BorderModuleArea}" Background="{DynamicResource SecondaryRegionBrush}" Width="145" CornerRadius="5">
                             <ListView x:Name="GridViewColumnVisibilityListView" BorderThickness="0" Background="Transparent" Margin="-3,-2,-3,-5"  Style="{StaticResource ListView.Small}">
