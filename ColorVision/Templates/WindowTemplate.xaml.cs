@@ -230,6 +230,8 @@ namespace ColorVision.Templates
         {
             ListView1.ItemsSource = TemplateModelBases;
             ListView1.SelectedIndex = 0;
+            if (ListView1.View is GridView gridView1)
+                GridViewColumnVisibility.AddGridViewColumn(gridView1.Columns, GridViewColumnVisibilitys);
             this.Closed += WindowTemplate_Closed;
 
             switch (TemplateType)
@@ -1029,7 +1031,7 @@ namespace ColorVision.Templates
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
             if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && ListView1.View is GridView gridView)
-                GridViewColumnVisibility.GenContentMenuGridViewColumnZero(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
+                GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
         }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
