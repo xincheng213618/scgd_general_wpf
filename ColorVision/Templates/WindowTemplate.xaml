@@ -49,7 +49,7 @@
                                 <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                             </Style>
                         </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn  Header="序号" >
+                        <GridViewColumn  Header="{x:Static properties:Resource.SerialNumber1}" >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type local:TemplateModelBase}">
                                     <TextBlock Text="{Binding Id}" />

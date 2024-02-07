@@ -26,6 +26,7 @@ using ColorVision.Solution;
 using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.Spectrum.Views;
 using ColorVision.Sorts;
+using ColorVision.Properties;
 
 namespace ColorVision.Templates
 {
@@ -1040,14 +1041,11 @@ namespace ColorVision.Templates
                 {
                     if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
                     {
-                        switch (item.ColumnName)
+                        if (item.ColumnName.ToString() == Resource.SerialNumber1)
                         {
-                            case "序号":
-                                item.IsSortD = !item.IsSortD;
-                                results.SortByID(item.IsSortD);
-                                break;
+                            item.IsSortD = !item.IsSortD;
+                            results.SortByID(item.IsSortD);
                         }
-                        break;
                     }
                 }
             }
