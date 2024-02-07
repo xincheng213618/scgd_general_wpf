@@ -52,12 +52,13 @@ namespace ColorVision.Services.Devices.Spectrum
 
         public void Initializedsss(DeviceSpectrum deviceSpectrum, SpectrumResourceParam spectrumResourceParam)
         {
+            ComboBoxList.SelectionChanged -= ComboBox_SelectionChanged;
             DeviceSpectrum = deviceSpectrum;
             SpectrumResourceParam = spectrumResourceParam;
             this.DataContext = SpectrumResourceParam;
 
             string CalibrationMode = SpectrumResourceParam.ResourceMode;
-            ComboBoxList.SelectionChanged -= ComboBox_SelectionChanged;
+
             BaseResources.Clear();
             foreach (var item in deviceSpectrum.VisualChildren)
             {

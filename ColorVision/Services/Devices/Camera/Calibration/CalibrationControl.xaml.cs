@@ -38,12 +38,13 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
 
         public void Initializedsss(DeviceCamera DeviceCamera, CalibrationParam calibrationParam)
         {
+            ComboBoxList.SelectionChanged -= ComboBox_SelectionChanged;
+
             this.DeviceCamera = DeviceCamera;
             this.CalibrationParam = calibrationParam;
             this.DataContext = CalibrationParam;
 
             string CalibrationMode = calibrationParam.CalibrationMode;
-            ComboBoxList.SelectionChanged -= ComboBox_SelectionChanged;
             GroupServices.Clear();
             foreach (var item in DeviceCamera.VisualChildren)
             {
