@@ -188,7 +188,7 @@ namespace ColorVision.Services.Devices.Camera.Views
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && string.IsNullOrWhiteSpace(TbDeviceCode.Text))
+            if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && string.IsNullOrWhiteSpace(TbDeviceCode.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
             {
                 ViewResultCameras.Clear();
                 foreach (var item in MeasureImgResultDao.GetAll())
@@ -201,7 +201,7 @@ namespace ColorVision.Services.Devices.Camera.Views
             else
             {
                 ViewResultCameras.Clear();
-                List<MeasureImgResultModel> algResults = MeasureImgResultDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, TextBoxFile.Text, TbDeviceCode.Text);
+                List<MeasureImgResultModel> algResults = MeasureImgResultDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, TextBoxFile.Text, TbDeviceCode.Text, SearchTimeSart.DisplayDateTime,SearchTimeEnd.DisplayDateTime);
                 foreach (var item in algResults)
                 {
                     ViewResultCamera algorithmResult = new ViewResultCamera(item);
@@ -213,6 +213,9 @@ namespace ColorVision.Services.Devices.Camera.Views
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
+            SearchTimeSart.SelectedDateTime = DateTime.MinValue;
+            SearchTimeEnd.SelectedDateTime = DateTime.Now;
+
             SerchPopup.IsOpen = true;
             TextBoxId.Text = string.Empty;
             TextBoxBatch.Text = string.Empty;

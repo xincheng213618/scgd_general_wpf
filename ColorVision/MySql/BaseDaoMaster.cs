@@ -1,6 +1,8 @@
 ﻿using ColorVision.Services.Dao;
+using ColorVision.Templates;
 using log4net;
 using MySql.Data.MySqlClient;
+using Org.BouncyCastle.Pqc.Crypto.Hqc;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -445,7 +447,6 @@ namespace ColorVision.MySql
         {
             List<T> list = new List<T>();
             string sql = $"select * from {GetTableName()} where 1=1";
-
             // 遍历字典，为每个键值对构建查询条件
             foreach (var pair in param)
             {
@@ -454,7 +455,21 @@ namespace ColorVision.MySql
                 if (pair.Value != null && !string.IsNullOrEmpty(pair.Value.ToString()))
                 {
                     // 对于安全起见，应该使用参数化查询来避免SQL注入
-                    sql += $" AND `{pair.Key}` LIKE '%{pair.Value}%'";
+
+                    if (pair.Key.StartsWith(">"))
+                    {
+                        sql += $" AND `{pair.Key[1..]}` > '{pair.Value.ToString()}'";
+                    }
+                    else if (pair.Key.StartsWith("<"))
+                    {
+                        sql += $" AND `{pair.Key.Substring(1)}` < '{pair.Value.ToString()}'";
+                    }
+                    else
+                    {
+                        sql += $" AND `{pair.Key}` LIKE '%{pair.Value}%'";
+                    }
+
+
                 }
             }
 
