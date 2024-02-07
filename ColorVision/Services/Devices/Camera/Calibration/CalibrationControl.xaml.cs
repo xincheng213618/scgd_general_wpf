@@ -39,14 +39,20 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
         public void Initializedsss(DeviceCamera DeviceCamera, CalibrationParam calibrationParam)
         {
             ComboBoxList.SelectionChanged -= ComboBox_SelectionChanged;
-            ComboBoxList.SelectionChanged -= ComboBox_SelectionChanged;
 
             this.DeviceCamera = DeviceCamera;
             this.CalibrationParam = calibrationParam;
             this.DataContext = CalibrationParam;
 
             string CalibrationMode = calibrationParam.CalibrationMode;
-            GroupServices.Clear();
+
+            ComboBoxList.Text = CalibrationMode;
+            ComboBoxList.SelectionChanged += ComboBox_SelectionChanged;
+        }
+
+        private void UserControl_Initialized(object sender, System.EventArgs e)
+        {
+            ComboBoxList.ItemsSource = GroupServices;
             foreach (var item in DeviceCamera.VisualChildren)
             {
                 if (item is GroupService groupService)
@@ -55,13 +61,6 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
                     GroupServices.Add(groupService);
                 }
             }
-            ComboBoxList.Text = CalibrationMode;
-            ComboBoxList.SelectionChanged += ComboBox_SelectionChanged;
-        }
-
-        private void UserControl_Initialized(object sender, System.EventArgs e)
-        {
-            ComboBoxList.ItemsSource = GroupServices;
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
