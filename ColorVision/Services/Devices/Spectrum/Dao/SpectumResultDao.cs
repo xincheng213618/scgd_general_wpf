@@ -5,6 +5,7 @@ using System.Data;
 using System.Linq;
 using ColorVision;
 using ColorVision.MySql;
+using Xceed.Wpf.Toolkit;
 
 namespace ColorVision.Services.Devices.Spectrum.Dao
 {
@@ -37,11 +38,13 @@ namespace ColorVision.Services.Devices.Spectrum.Dao
             return d_info;
         }
 
-        public List<SpectumResultModel> ConditionalQuery(string id, string batchid)
+        public List<SpectumResultModel> ConditionalQuery(string id, string batchid,DateTime? dateTimeSTART,DateTime? dateTimeEnd)
         {
             Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
             keyValuePairs.Add("id", id);
             keyValuePairs.Add("batch_id", batchid);
+            keyValuePairs.Add(">create_date", dateTimeSTART);
+            keyValuePairs.Add("<create_date", dateTimeEnd);
             return ConditionalQuery(keyValuePairs);
         }
 

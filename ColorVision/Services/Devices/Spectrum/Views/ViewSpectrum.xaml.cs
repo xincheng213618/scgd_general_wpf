@@ -473,7 +473,7 @@ namespace ColorVision.Services.Devices.Spectrum.Views
         {
             ViewResultSpectrums.Clear();
             ScatterPlots.Clear();
-            if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text))
+            if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text)&& SearchTimeSart.SelectedDateTime !=DateTime.MinValue)
             {
                 var list = spectumResultDao.GetAll();
                 foreach (var item in list)
@@ -488,7 +488,7 @@ namespace ColorVision.Services.Devices.Spectrum.Views
             else
             {
 
-                var list = spectumResultDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text);
+                var list = spectumResultDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, SearchTimeSart.SelectedDateTime, SearchTimeEnd.SelectedDateTime);
                 foreach (var item in list)
                 {
                     ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(item);
@@ -510,6 +510,9 @@ namespace ColorVision.Services.Devices.Spectrum.Views
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
+            SearchTimeSart.SelectedDateTime = null;
+            SearchTimeEnd.SelectedDateTime = DateTime.Now;
+
             SerchPopup.IsOpen = true;
             TextBoxId.Text = string.Empty;
         }
