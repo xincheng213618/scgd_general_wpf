@@ -57,8 +57,6 @@ namespace ColorVision.Services.Flow
             View.View.Title = "流程窗口";
             if (View is UserControl control)
             {
-                ViewGridManager.GetInstance().AddView(0, control);
-
                 ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
                 ViewGridManager.GetInstance().ViewMaxChangedEvent += ViewMaxChangedEvent;
 

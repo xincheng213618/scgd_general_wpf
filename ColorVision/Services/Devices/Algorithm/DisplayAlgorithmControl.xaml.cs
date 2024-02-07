@@ -287,7 +287,6 @@ namespace ColorVision.Services.Devices.Algorithm
             ComboxBuildPoiTemplate.SelectedIndex = 0;
 
 
-            ViewGridManager.GetInstance().AddView(Device.View);
             ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
             ViewGridManager.GetInstance().ViewMaxChangedEvent += ViewMaxChangedEvent;
 

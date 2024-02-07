@@ -117,7 +117,6 @@ namespace ColorVision.Device.FileServer
             };
             View.View.ViewIndex = -1;
 
-            ViewGridManager.GetInstance().AddView(View);
             if (ViewGridManager.GetInstance().ViewMax > 4 || ViewGridManager.GetInstance().ViewMax == 3)
             {
                 ViewGridManager.GetInstance().SetViewNum(-1);

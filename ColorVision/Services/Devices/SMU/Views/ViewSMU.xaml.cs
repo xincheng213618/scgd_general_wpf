@@ -35,6 +35,7 @@ namespace ColorVision.Services.Devices.SMU.Views
             MainGrid.Children.Insert(0, TextBox1);
             this.MouseDown += (s, e) =>  {TextBox1.Focus();};
             View = new View();
+            ViewGridManager.GetInstance().AddView(this);
 
             listView1.ItemsSource = ViewResultSMUs;
 

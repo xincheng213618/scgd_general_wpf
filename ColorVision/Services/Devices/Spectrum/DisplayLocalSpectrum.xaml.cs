@@ -22,8 +22,6 @@ namespace ColorVision.Services.Devices.Spectrum
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ViewGridManager.GetInstance().AddView(View);
-
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {
                 List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();

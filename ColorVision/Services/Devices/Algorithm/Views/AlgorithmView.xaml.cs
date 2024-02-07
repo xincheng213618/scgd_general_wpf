@@ -53,7 +53,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             };
 
             View = new View();
-
+            ViewGridManager.GetInstance().AddView(this);
 
             listView1.ItemsSource = AlgResults;
 

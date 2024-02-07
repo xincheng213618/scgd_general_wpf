@@ -47,6 +47,8 @@ namespace ColorVision.Services.Devices.Camera.Views
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             View= new View();
+            ViewGridManager.GetInstance().AddView(this);
+
             listView1.ItemsSource = ViewResultCameras;
 
             ComboxPOITemplates = new ObservableCollection<TemplateModel<PoiParam>>();
