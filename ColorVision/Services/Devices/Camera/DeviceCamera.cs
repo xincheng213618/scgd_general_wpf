@@ -111,7 +111,7 @@ namespace ColorVision.Services.Devices.Camera
             Directory.CreateDirectory(extractPath);
 
             // 打开ZIP文件
-            using (ZipArchive archive = ZipFile.Open(zipPath,ZipArchiveMode.Read, Encoding.GetEncoding("gbk")))
+            using (ZipArchive archive = ZipFile.Open(zipPath,ZipArchiveMode.Read))
             {
                 foreach (ZipArchiveEntry entry in archive.Entries)
                 {
@@ -134,9 +134,11 @@ namespace ColorVision.Services.Devices.Camera
                         if (Path.GetDirectoryName(destinationPath) is string die)
                             Directory.CreateDirectory(die);
                     }
-
                     // 解压缩文件
-                    entry.ExtractToFile(destinationPath);
+                    if (entry.Length != 0)
+                    {
+                        entry.ExtractToFile(destinationPath);
+                    }
                 }
             }
         }
