@@ -473,7 +473,7 @@ namespace ColorVision.Services.Devices.Spectrum.Views
         {
             ViewResultSpectrums.Clear();
             ScatterPlots.Clear();
-            if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text)&& SearchTimeSart.SelectedDateTime !=DateTime.MinValue)
+            if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text)&& SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
             {
                 var list = spectumResultDao.GetAll();
                 foreach (var item in list)
@@ -505,7 +505,7 @@ namespace ColorVision.Services.Devices.Spectrum.Views
                 First = true;
                 listView1.SelectedIndex = 0;
             }
-
+            SerchPopup.IsOpen = false;
         }
 
         private void Search1_Click(object sender, RoutedEventArgs e)

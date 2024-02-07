@@ -6,6 +6,8 @@
              xmlns:local="clr-namespace:ColorVision.Services.Devices.Algorithm.Views"
              xmlns:vm ="clr-namespace:ColorVision.Common.MVVM;assembly=ColorVision.Common"
              xmlns:media="clr-namespace:ColorVision.Media"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:hc="https://handyorg.github.io/handycontrol" 
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="1280" Background="{DynamicResource  BackgroundBrush}" Initialized="UserControl_Initialized" >
 
@@ -53,7 +55,7 @@
 
                     <Button x:Name="Search" Content="查询" Click="Search1_Click" Margin="2,0,0,0"/>
                     <Popup  x:Name="SerchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Search}">
-                        <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="200">
+                        <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="227">
                             <StackPanel Margin="5">
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="序号" Width="60"/>
@@ -70,6 +72,14 @@
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="文件" Width="60"/>
                                     <TextBox  x:Name="TextBoxFile" Style="{StaticResource TextBox.Small}"  Text=""/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="开始时间" Width="60"/>
+                                    <hc:DateTimePicker x:Name="SearchTimeSart" SelectedDateTime="{x:Static sys:DateTime.MinValue}" Style="{StaticResource DateTimePicker.Small}" />
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="截至时间" Width="60"/>
+                                    <hc:DateTimePicker x:Name="SearchTimeEnd" SelectedDateTime="{x:Static sys:DateTime.Now}" Style="{StaticResource DateTimePicker.Small}"  />
                                 </DockPanel>
                                 <Button Content="查询" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
                             </StackPanel>

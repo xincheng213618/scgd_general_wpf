@@ -625,7 +625,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(TextBoxId.Text)&& string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxType.Text) && string.IsNullOrEmpty(TextBoxFile.Text))
+            if (string.IsNullOrEmpty(TextBoxId.Text)&& string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxType.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
             {
                 AlgResults.Clear();
                 List<AlgResultMasterModel> algResults = algResultMasterDao.GetAll();
@@ -643,13 +643,14 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                     altype = ((int)algorithmResultType).ToString();
 
                 AlgResults.Clear();
-                List<AlgResultMasterModel> algResults = algResultMasterDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, altype.ToString(), TextBoxFile.Text);
+                List<AlgResultMasterModel> algResults = algResultMasterDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, altype.ToString(), TextBoxFile.Text ,SearchTimeSart.SelectedDateTime,SearchTimeEnd.SelectedDateTime);
                 foreach (var item in algResults)
                 {
                     AlgorithmResult algorithmResult = new AlgorithmResult(item);
                     AlgResults.Add(algorithmResult);
                 }
             }
+            SerchPopup.IsOpen = false;
         }
 
         private void Order_Click(object sender, RoutedEventArgs e)
