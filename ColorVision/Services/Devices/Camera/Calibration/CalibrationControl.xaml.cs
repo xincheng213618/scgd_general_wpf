@@ -39,6 +39,7 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
         public void Initializedsss(DeviceCamera DeviceCamera, CalibrationParam calibrationParam)
         {
             ComboBoxList.SelectionChanged -= ComboBox_SelectionChanged;
+            ComboBoxList.SelectionChanged -= ComboBox_SelectionChanged;
 
             this.DeviceCamera = DeviceCamera;
             this.CalibrationParam = calibrationParam;
