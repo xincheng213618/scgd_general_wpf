@@ -128,7 +128,7 @@ namespace ColorVision.Services.Devices.Spectrum
                     case NotifyCollectionChangedAction.Reset:
                         // 处理清空集合
                         SpectrumResourceParams.Clear();
-                        SpectrumResourceParams.Insert(0, new TemplateModel<SpectrumResourceParam>("Empty", new SpectrumResourceParam()) { ID = -1 });
+                        SpectrumResourceParams.Insert(0, new TemplateModel<SpectrumResourceParam>("Empty", new SpectrumResourceParam()) { Id = -1 });
                         break;
                 }
             };

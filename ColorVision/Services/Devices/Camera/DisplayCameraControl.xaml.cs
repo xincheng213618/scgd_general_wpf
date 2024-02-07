@@ -275,7 +275,7 @@ namespace ColorVision.Services.Devices.Camera
                     case NotifyCollectionChangedAction.Reset:
                         // 处理清空集合
                         CalibrationParams.Clear();
-                        CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()) { ID = -1 });
+                        CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()) { Id = -1 });
                         break;
                 }
             };

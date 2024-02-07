@@ -1,13 +1,14 @@
 ﻿using ColorVision.MVVM;
+using ColorVision.Sorts;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 
 namespace ColorVision.Templates
 {
-    public class TemplateModelBase : ViewModelBase
+    public class TemplateModelBase : ViewModelBase,ISortID
     {
-        public virtual int ID { get; set; }
+        public virtual int Id { get; set; }
 
         public virtual string Key { get; set; }
         public string Tag { get => _Tag; set { _Tag = value; NotifyPropertyChanged(); } }
@@ -39,7 +40,7 @@ namespace ColorVision.Templates
         }
 
         [JsonIgnore]
-        public override int ID { get => Value.Id;}
+        public override int Id { get => Value.Id;}
 
         [JsonIgnore]
         public override string Key

@@ -73,7 +73,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                         break;
                     case NotifyCollectionChangedAction.Reset:
                         ComboxPOITemplates.Clear();
-                        ComboxPOITemplates.Insert(0, new TemplateModel<PoiParam>("Empty", new PoiParam()) { ID = -1 });
+                        ComboxPOITemplates.Insert(0, new TemplateModel<PoiParam>("Empty", new PoiParam()) { Id = -1 });
                         break;
                 }
             };

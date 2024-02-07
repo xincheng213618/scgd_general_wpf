@@ -289,7 +289,7 @@ namespace ColorVision.Templates
                         foreach (var item in PoiParams)
                         {
 
-                            var modMasterModel = poiService.GetMasterById(item.ID);
+                            var modMasterModel = poiService.GetMasterById(item.Id);
                             if (modMasterModel != null)
                             {
                                 modMasterModel.Name = item.Key;
