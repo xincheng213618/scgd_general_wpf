@@ -11,6 +11,8 @@
 - 支持主题模式：深色，浅色，跟随系统
 - I18n：English, 简体中文，繁体中文，日本語,한국어
 
+[更新日志](CHANGELOG.md)
+
 ## 翻译API：
 
 Google apikey  AIzaSyBElxN8V59CXS0ML-Q5YC7Do-Rza8FGawE
