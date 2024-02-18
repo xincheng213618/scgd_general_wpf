@@ -10,7 +10,7 @@ using ColorVision.Extension;
 using ColorVision.Solution.V;
 using System.Collections.ObjectModel;
 using ColorVision.MVVM;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 
 namespace ColorVision.Solution
 {

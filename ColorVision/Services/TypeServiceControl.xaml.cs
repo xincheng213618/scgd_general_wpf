@@ -1,6 +1,6 @@
 ﻿using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using Newtonsoft.Json;
 using System;
 using System.Windows;

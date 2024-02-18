@@ -26,7 +26,7 @@ using static cvColorVision.GCSDLL;
 using ColorVision.Services.Dao;
 using ColorVision.Services.DAO;
 using ColorVision.Services.Flow;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using ColorVision.Services.Interfaces;
 
 namespace ColorVision.Services

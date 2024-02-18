@@ -17,7 +17,7 @@ using ColorVision.Users;
 using System.Text.RegularExpressions;
 using log4net;
 using ColorVision.Services.Flow;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using System.Security.Cryptography.X509Certificates;
 using ColorVision.Common.Util;
 using Microsoft.Xaml.Behaviors.Layout;

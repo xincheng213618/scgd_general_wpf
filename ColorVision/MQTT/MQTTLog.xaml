@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
         mc:Ignorable="d"
-        xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
+        xmlns:SettingUp ="clr-namespace:ColorVision.Settings"
         d:DataContext="{d:DesignInstance local:ConfigHandler}"
         Title="MQTT日志" Height="550" Width="800" Background="{StaticResource GlobalBackground}" >
     <Window.Resources>

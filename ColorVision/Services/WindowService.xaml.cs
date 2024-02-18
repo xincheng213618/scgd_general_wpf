@@ -1,6 +1,6 @@
 ﻿using ColorVision.RC;
 using ColorVision.Services.Devices;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using System;
 using System.Threading.Tasks;
 using System.Windows;

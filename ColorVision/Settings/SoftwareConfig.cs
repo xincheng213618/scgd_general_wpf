@@ -12,7 +12,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 
-namespace ColorVision.SettingUp
+namespace ColorVision.Settings
 {
     public delegate void UseMySqlHandler(bool IsUseMySql);
     public delegate void UseMQTTHandler(bool IsUseMQTT);

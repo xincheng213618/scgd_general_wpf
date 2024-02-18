@@ -1,6 +1,6 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.RecentFile;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;

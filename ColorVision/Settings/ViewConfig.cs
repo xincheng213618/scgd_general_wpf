@@ -1,6 +1,6 @@
 ﻿using ColorVision.MVVM;
 
-namespace ColorVision.SettingUp
+namespace ColorVision.Settings
 {
     public class ViewConfig : ViewModelBase
     {

@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows;
 using ColorVision.MVVM;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using log4net;
 
 namespace ColorVision.Update

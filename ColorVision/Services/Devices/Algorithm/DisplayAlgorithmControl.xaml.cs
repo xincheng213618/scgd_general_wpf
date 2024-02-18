@@ -5,7 +5,7 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;
 using ColorVision.Services.Msg;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.Templates;
 using log4net;

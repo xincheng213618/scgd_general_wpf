@@ -1,6 +1,6 @@
 ﻿using ColorVision.Services.Devices.SMU.Configs;
 using ColorVision.Services.Devices.SMU.Views;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using ColorVision.Templates;
 using MQTTMessageLib;
 using System;

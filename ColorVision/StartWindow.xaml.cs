@@ -13,7 +13,7 @@ using System.Threading;
 using ColorVision.Themes;
 using System.Windows.Media.Imaging;
 using System.Runtime.Versioning;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 
 namespace ColorVision
 {

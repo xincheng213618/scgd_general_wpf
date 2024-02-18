@@ -1,7 +1,7 @@
 ﻿using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using ColorVision.Templates;
 using MQTTMessageLib;
 using System;

@@ -4,7 +4,7 @@ using System;
 using log4net;
 using System.Windows;
 using System.Threading.Tasks;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using System.Collections.Generic;
 
 namespace ColorVision.MySql

@@ -1,7 +1,7 @@
 ﻿using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera.Calibrations;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using ColorVision.Templates;
 using System;
 using System.Collections.Generic;

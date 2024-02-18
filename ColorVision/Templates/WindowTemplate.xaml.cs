@@ -8,7 +8,7 @@ using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.PG.Templates;
 using ColorVision.Services.Flow;
 using ColorVision.Services.Flow.Templates;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using ColorVision.Templates.POI;
 using ColorVision.Common.Utilities;
 using Newtonsoft.Json;

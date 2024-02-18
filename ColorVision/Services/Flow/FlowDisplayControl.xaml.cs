@@ -10,7 +10,7 @@ using ColorVision.Themes;
 using System.Windows.Media;
 using ColorVision.Solution;
 using ColorVision.Services.Flow.Templates;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 
 namespace ColorVision.Services.Flow
 {

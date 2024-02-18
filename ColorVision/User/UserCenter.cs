@@ -1,4 +1,4 @@
-﻿using ColorVision.SettingUp;
+﻿using ColorVision.Settings;
 
 namespace ColorVision.Users
 {

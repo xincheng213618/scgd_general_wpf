@@ -6,7 +6,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ColorVision.SettingUp
+namespace ColorVision.Settings
 {
 
     public class SystemMonitorSetting: ViewModelBase

@@ -1,6 +1,6 @@
 ﻿using ColorVision.HotKey;
 using ColorVision.Solution;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using ColorVision.Templates;
 using System;
 using System.IO;

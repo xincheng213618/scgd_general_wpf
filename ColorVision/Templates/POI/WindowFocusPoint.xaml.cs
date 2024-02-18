@@ -31,7 +31,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using MQTTMessageLib.FileServer;
 using ColorVision.Services.Dao;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 
 namespace ColorVision.Templates.POI
 {

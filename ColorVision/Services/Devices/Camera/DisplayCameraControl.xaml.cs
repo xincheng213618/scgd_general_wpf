@@ -21,7 +21,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Windows.Input;
 using ColorVision.Services.Devices.Camera.Views;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using MQTTMessageLib;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.Camera.Video;
