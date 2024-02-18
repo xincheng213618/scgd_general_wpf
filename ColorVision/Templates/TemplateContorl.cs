@@ -10,7 +10,7 @@ using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.Templates.POI;
 using ColorVision.Templates.POI.Dao;
-using ColorVision.Users;
+using ColorVision.UserSpace;
 using ColorVision.Common.Utilities;
 using cvColorVision.Util;
 using System;

@@ -1,8 +1,8 @@
-﻿using ColorVision.Users.Dao;
+﻿using ColorVision.UserSpace.Dao;
 using System;
 using System.Windows;
 
-namespace ColorVision.Users
+namespace ColorVision.UserSpace
 {
     /// <summary>
     /// LoginWindow.xaml 的交互逻辑

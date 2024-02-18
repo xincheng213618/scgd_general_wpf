@@ -1,6 +1,6 @@
 ﻿using ColorVision.Settings;
 
-namespace ColorVision.Users
+namespace ColorVision.UserSpace
 {
     public class UserCenter
     {

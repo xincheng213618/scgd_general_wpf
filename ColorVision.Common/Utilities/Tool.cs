@@ -13,6 +13,8 @@ namespace ColorVision.Common.Utilities
 {
     public static partial class Tool
     {
+
+
         public static string getMD5ByHashAlgorithm(string path)
         {
             if (!File.Exists(path))

@@ -3,7 +3,7 @@ using ColorVision.MySql;
 using log4net;
 using MySql.Data.MySqlClient;
 
-namespace ColorVision.Users.Dao
+namespace ColorVision.UserSpace.Dao
 {
     public class UserDao
     {

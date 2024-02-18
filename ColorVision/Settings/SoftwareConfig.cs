@@ -7,7 +7,7 @@ using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Solution;
 using ColorVision.Templates;
 using ColorVision.Update;
-using ColorVision.Users;
+using ColorVision.UserSpace;
 using System;
 using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
