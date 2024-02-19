@@ -27,6 +27,7 @@ using System.Windows.Media;
 using ColorVision.Adorners;
 using ColorVision.MySql;
 using ColorVision.Utils;
+using ColorVision.Solution.View;
 
 namespace ColorVision
 {
@@ -114,6 +115,9 @@ namespace ColorVision
                     this.Icon = WindowConfig.Icon;
                 this.Title = WindowConfig.Title ?? this.Title;
             }
+
+            SolutionGrid.Children.Add(new SolutionView());
+
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;
 
@@ -194,6 +198,7 @@ namespace ColorVision
             Task.Run(CheckCertificate);
 
             Task.Run(EnsureLocalInfile);
+            SolutionTab.Content = new TreeViewControl();
         }
 
         public async Task EnsureLocalInfile()
