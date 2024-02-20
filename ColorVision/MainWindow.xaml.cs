@@ -386,10 +386,6 @@ namespace ColorVision
 
         }
 
-        private void StackPanel_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-        }
-
         private void ViewGrid_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button && int.TryParse(button.Tag.ToString(), out int nums))

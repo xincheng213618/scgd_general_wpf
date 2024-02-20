@@ -71,7 +71,7 @@
                                         <TextBlock Text="{Binding Name}"/>
                                     </StackPanel>
                                 </HierarchicalDataTemplate>
-                                <HierarchicalDataTemplate DataType="{x:Type mqtt:DeviceService}" ItemsSource="{Binding VisualChildren}" >
+                                <HierarchicalDataTemplate DataType="{x:Type mqtt:DeviceService}" >
                                     <StackPanel>
                                         <TextBlock Text="{Binding Name}"/>
                                     </StackPanel>
