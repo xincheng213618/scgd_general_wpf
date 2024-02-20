@@ -1,6 +1,8 @@
 ﻿using ColorVision.Services.Dao;
+using ColorVision.Templates;
 using log4net;
 using MySql.Data.MySqlClient;
+using Org.BouncyCastle.Pqc.Crypto.Hqc;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -22,19 +24,9 @@ namespace ColorVision.MySql
             this._IsLogicDel = isLogicDel;
         }
 
-        protected string GetDelSQL(bool hasAnd)
-        {
-            string andSQL = " ";
-            string isDelSQL = " ";
-            if (_IsLogicDel)
-            {
-                if (hasAnd) andSQL = " and ";
-                isDelSQL = "is_delete=0";
-            }
-            return andSQL + isDelSQL;
-        }
+        protected string GetDelSQL(bool hasAnd) => _IsLogicDel ? string.Empty : hasAnd ? " and is_delete=0" : "is_delete=0";
 
-        public DataTable selectById(int id)
+        public DataTable SelectById(int id)
         {
             string sql = $"select * from {TableName} where id=@id" + GetDelSQL(true);
             Dictionary<string, object> param = new Dictionary<string, object>
@@ -98,12 +90,12 @@ namespace ColorVision.MySql
 
         public DataTable GetData(string sql) => GetData(sql, new Dictionary<string, object>());
 
-        public DataTable GetData(string sql, Dictionary<string, object> param)
+        public DataTable GetData(string sql, Dictionary<string, object>? param)
         {
             DataTable dt = new DataTable();
             try
             {
-                if (param.Count ==0)
+                if (param == null || param.Count ==0)
                 {
                     using MySqlDataAdapter adapter = new MySqlDataAdapter(sql, MySqlControl.MySqlConnection);
                     int count = adapter.Fill(dt);
@@ -246,7 +238,7 @@ namespace ColorVision.MySql
 
         public virtual int Save(T item)
         {
-            DataTable d_info = selectById(item.GetPK());
+            DataTable d_info = SelectById(item.GetPK());
             ConvertRow(item, d_info);
             int ret = Save(d_info);
             item.SetPK(d_info.Rows[0].Field<int>(PKField));
@@ -445,7 +437,6 @@ namespace ColorVision.MySql
         {
             List<T> list = new List<T>();
             string sql = $"select * from {GetTableName()} where 1=1";
-
             // 遍历字典，为每个键值对构建查询条件
             foreach (var pair in param)
             {
@@ -454,7 +445,21 @@ namespace ColorVision.MySql
                 if (pair.Value != null && !string.IsNullOrEmpty(pair.Value.ToString()))
                 {
                     // 对于安全起见，应该使用参数化查询来避免SQL注入
-                    sql += $" AND `{pair.Key}` LIKE '%{pair.Value}%'";
+
+                    if (pair.Key.StartsWith(">",StringComparison.CurrentCulture))
+                    {
+                        sql += $" AND `{pair.Key[1..]}` > '{pair.Value.ToString()}'";
+                    }
+                    else if (pair.Key.StartsWith("<", StringComparison.CurrentCulture))
+                    {
+                        sql += $" AND `{pair.Key.Substring(1)}` < '{pair.Value.ToString()}'";
+                    }
+                    else
+                    {
+                        sql += $" AND `{pair.Key}` LIKE '%{pair.Value}%'";
+                    }
+
+
                 }
             }
 

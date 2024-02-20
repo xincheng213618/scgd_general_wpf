@@ -22,10 +22,11 @@ namespace ColorVision
     {
         public event ViewIndexChangedHandler ViewIndexChangedEvent;
 
-        public int ViewIndex { get => _ViewIndex; set {
+        public int ViewIndex { get => 
+                _ViewIndex; set {
                 if (_ViewIndex == value)
                     return;
-                PreViewIndex = ViewIndex;
+                PreViewIndex = _ViewIndex;
                 ViewIndexChangedEvent?.Invoke(_ViewIndex, value); _ViewIndex = value; NotifyPropertyChanged(); } }
 
         private int _ViewIndex = -1;

@@ -11,6 +11,8 @@
 - 支持主题模式：深色，浅色，跟随系统
 - I18n：English, 简体中文，繁体中文，日本語,한국어
 
+[更新日志](CHANGELOG.md)
+
 ## 翻译API：
 
 Google apikey  AIzaSyBElxN8V59CXS0ML-Q5YC7Do-Rza8FGawE
@@ -39,8 +41,8 @@ Baidu  AppID：20180402000142443
 
 ```
  "MQTTConfig": {
-    "Name": "192.168.3.225_1883",
-    "Host": "192.168.3.225",
+    "Name": "127.0.0.1_1883",
+    "Host": "127.0.0.1",
     "Port": 1883,
     "UserName": "",
     "UserPwd": ""
@@ -51,8 +53,8 @@ Baidu  AppID：20180402000142443
 
 ```
  "MySqlConfig": {
-    "Name": "192.168.3.250_3306",
-    "Host": "192.168.3.250",
+    "Name": "127.0.0.1_3306",
+    "Host": "127.0.0.1",
     "Port": 3306,
     "UserName": "root",
     "UserPwd": "123456@cv",
@@ -97,270 +99,7 @@ Baidu  AppID：20180402000142443
 
 
 
-## MQTT协议
 
-## 心跳协议
-
-```
-{
-	"Code" : 0,
-	"EventName" : "Heartbeat",
-	"MsgID" : 0,
-	"ServiceID" : 0,
-	"ServiceName" : "Camera",
-	"data" : ""
-}
-```
-
-```
-{
-	"Code" : 0,
-	"EventName" : "Heartbeat",
-	"MsgID" : 0,
-	"ServiceID" : 0,
-	"ServiceName" : "PG",
-	"data" : ""
-}
-```
-
-```
-{
-	"Code" : 0,
-	"EventName" : "Heartbeat",
-	"MsgID" : 0,
-	"ServiceID" : 0,
-	"ServiceName" : "SMU",
-	"data" : ""
-}
-```
-
-```
-{
-	"Code" : 0,
-	"EventName" : "Heartbeat",
-	"MsgID" : 0,
-	"ServiceID" : 0,
-	"ServiceName" : "Camera",
-	"data" : ""
-}
-```
-
-```
-{
-	"Code" : 0,
-	"EventName" : "Heartbeat",
-	"MsgID" : 0,
-	"ServiceID" : 0,
-	"ServiceName" : "Spectrum",
-	"data" : ""
-}
-```
-
-```
-{
-	"Code" : 0,
-	"EventName" : "Heartbeat",
-	"MsgID" : 0,
-	"ServiceID" : 0,
-	"ServiceName" : "Sensor",
-	"data" : ""
-}
-```
-
-### 相机协议
-
-#### Init
-
-```
- "MsgSend": {
-      "Version": "1.0",
-      "EventName": "Init",
-      "ServiceName": "Camera",
-      "ServiceID": 2311455622160,
-      "SnID": "e29b14429bc375b1",
-      "MsgID": "1f794554-ca41-4edc-aa84-5119925b0771",
-      "params": {
-        "CameraType": 1
-      }
-    },
-    "MsgReturn": {
-      "Version": null,
-      "EventName": "Init",
-      "ServiceName": "Camera",
-      "ServiceID": 2311456371280,
-      "SnID": "e29b14429bc375b1",
-      "Code": 0,
-      "MsgID": "1f794554-ca41-4edc-aa84-5119925b0771",
-      "data": {
-        "SnID": "{\n\t\"ID\" : \n\t[\n\t\t\"e29b14429bc375b1\"\n\t],\n\t\"number\" : 1\n}\n"
-      }
-    }
-```
-
-#### UnInit
-
-```
- "MsgSend": {
-      "Version": "1.0",
-      "EventName": "UnInit",
-      "ServiceName": "Camera",
-      "ServiceID": 2311455622160,
-      "SnID": "e29b14429bc375b1",
-      "MsgID": "5d45d13a-6673-4036-85d8-4633914217b0",
-      "params": null
-    },
-    "MsgReturn": {
-      "Version": null,
-      "EventName": "UnInit",
-      "ServiceName": "Camera",
-      "ServiceID": 2311455622160,
-      "SnID": "e29b14429bc375b1",
-      "Code": 1,
-      "MsgID": "5d45d13a-6673-4036-85d8-4633914217b0",
-      "data": ""
-    }
-```
-
-#### Open
-
-```
- "MsgSend": {
-      "Version": "1.0",
-      "EventName": "Open",
-      "ServiceName": "Camera",
-      "ServiceID": 2311456371280,
-      "SnID": "e29b14429bc375b1",
-      "MsgID": "1665662a-859c-423d-b156-e8bbf1a540ae",
-      "params": {
-        "TakeImageMode": 0,
-        "SnID": "e29b14429bc375b1",
-        "Bpp": 8
-      }
-    },
-    "MsgReturn": {
-      "Version": null,
-      "EventName": "Open",
-      "ServiceName": "Camera",
-      "ServiceID": 2311456371280,
-      "SnID": "e29b14429bc375b1",
-      "Code": 1,
-      "MsgID": "1665662a-859c-423d-b156-e8bbf1a540ae",
-      "data": ""
-    },
-```
-
-#### Close
-
-```
- "MsgSend": {
-      "Version": "1.0",
-      "EventName": "Close",
-      "ServiceName": "Camera",
-      "ServiceID": 2091665652640,
-      "SnID": "e29b14429bc375b1",
-      "MsgID": "d27b6a89-b21f-452a-9941-af96721ec1bc",
-      "params": null
-    },
-    "MsgReturn": {
-      "Version": null,
-      "EventName": "Close",
-      "ServiceName": "Camera",
-      "ServiceID": 2091665652640,
-      "SnID": "e29b14429bc375b1",
-      "Code": 0,
-      "MsgID": "d27b6a89-b21f-452a-9941-af96721ec1bc",
-      "data": ""
-    }
-```
-
-#### GetAutoExptime
-
-```
-    "MsgSend": {
-      "Version": "1.0",
-      "EventName": "GetAutoExpTime",
-      "ServiceName": "Camera",
-      "ServiceID": 2227923805216,
-      "SnID": "e29b14429bc375b1",
-      "MsgID": "23891bc0-86fe-469f-ac75-c487d13dd424",
-      "params": {
-        "SetCfwport": [
-          {
-            "nIndex": 0,
-            "nPort": 2,
-            "eImgChlType": 0
-          },
-          {
-            "nIndex": 1,
-            "nPort": 2,
-            "eImgChlType": 0
-          },
-          {
-            "nIndex": 2,
-            "nPort": 2,
-            "eImgChlType": 0
-          }
-        ]
-      }
-    },
-    "MsgReturn": {
-      "Version": null,
-      "EventName": "GetAutoExpTime",
-      "ServiceName": "Camera",
-      "ServiceID": 2227923805216,
-      "SnID": "e29b14429bc375b1",
-      "Code": 0,
-      "MsgID": "23891bc0-86fe-469f-ac75-c487d13dd424",
-      "data": {
-        "result": [
-          {
-            "result": 60000.0,
-            "resultSaturation": 0.0
-          },
-          {
-            "result": 0.0,
-            "resultSaturation": 0.0
-          },
-          {
-            "result": 0.0,
-            "resultSaturation": 0.0
-          }
-        ]
-      }
-    }
-```
-
-#### GetData
-
-```
-"MsgSend": {
-      "Version": "1.0",
-      "EventName": "GetData",
-      "ServiceName": "Camera",
-      "ServiceID": 2890885791520,
-      "SnID": "e29b14429bc375b1",
-      "MsgID": "4f5c214a-68ef-48f3-a353-9cd6dc1d6b26",
-      "params": {
-        "expTime": 100.0,
-        "gain": 1.0,
-        "savefilename": "1.tif"
-      }
-    },
-    "MsgReturn": {
-      "Version": null,
-      "EventName": "GetData",
-      "ServiceName": "Camera",
-      "ServiceID": 2890885791520,
-      "SnID": "e29b14429bc375b1",
-      "Code": 1,
-      "MsgID": "4f5c214a-68ef-48f3-a353-9cd6dc1d6b26",
-      "data": {
-        "SaveFileName": "C:\\Users\\17917\\Desktop\\scgd_general_wpf\\ColorVision\\bin\\x64\\Debug\\net6.0-windows\\TIF\\1.tif"
-      }
-    }
-```
-
-### PG协议
 
 
 

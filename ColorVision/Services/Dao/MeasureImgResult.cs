@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1707 // 标识符不应包含下划线
 
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -57,18 +58,16 @@ namespace ColorVision.Services.Dao
             return model;
         }
 
-
-
-
-
-
-        public List<MeasureImgResultModel> ConditionalQuery(string id, string batch_code, string file_url, string device_code)
+        public List<MeasureImgResultModel> ConditionalQuery(string id, string batch_code, string file_url, string device_code,DateTime dateTimeSTART, DateTime dateTimeEnd)
         {
             Dictionary<string, object> keyValuePairs = new Dictionary<string, object>(0);
             keyValuePairs.Add("id", id);
             keyValuePairs.Add("batch_code", batch_code);
             keyValuePairs.Add("raw_file", file_url);
             keyValuePairs.Add("device_code", device_code);
+
+            keyValuePairs.Add(">create_date", dateTimeSTART);
+            keyValuePairs.Add("<create_date", dateTimeEnd);
             return ConditionalQuery(keyValuePairs);
         }
     }

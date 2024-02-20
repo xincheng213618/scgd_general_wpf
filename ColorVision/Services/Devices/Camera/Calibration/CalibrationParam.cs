@@ -3,7 +3,7 @@ using ColorVision.MVVM;
 using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Interfaces;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using ColorVision.Templates;
 using cvColorVision;
 using NPOI.XWPF.UserModel;
@@ -37,10 +37,6 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
         }
 
         public int Delete(int id) => resourceDao.DeleteById(id);
-
-        public void Refresh()
-        {
-        }
     }
 
 

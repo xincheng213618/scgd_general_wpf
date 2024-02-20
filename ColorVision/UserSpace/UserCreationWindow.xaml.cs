@@ -1,6 +1,6 @@
 ﻿using System.Windows;
 
-namespace ColorVision.Users
+namespace ColorVision.UserSpace
 {
     /// <summary>
     /// UserCreationWindow.xaml 的交互逻辑

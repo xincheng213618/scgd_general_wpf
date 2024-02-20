@@ -1,6 +1,6 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.Services.Msg;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;

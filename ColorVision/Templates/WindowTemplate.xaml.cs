@@ -8,7 +8,7 @@ using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.PG.Templates;
 using ColorVision.Services.Flow;
 using ColorVision.Services.Flow.Templates;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using ColorVision.Templates.POI;
 using ColorVision.Common.Utilities;
 using Newtonsoft.Json;
@@ -22,6 +22,11 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Templates.POI.Dao;
 using ColorVision.Services.Devices.Spectrum;
+using ColorVision.Solution;
+using ColorVision.Common.MVVM;
+using ColorVision.Services.Devices.Spectrum.Views;
+using ColorVision.Sorts;
+using ColorVision.Properties;
 
 namespace ColorVision.Templates
 {
@@ -77,7 +82,6 @@ namespace ColorVision.Templates
                 case TemplateType.Calibration:
                     if (IsReLoad)
                     {
-                        CalibrationRsourceService.GetInstance().Refresh();
                         TemplateControl.LoadModCabParam(DeviceCamera.CalibrationParams, DeviceCamera.SysResourceModel.Id, ModMasterType.Calibration);
                     }
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(DeviceCamera.CalibrationParams);
@@ -86,7 +90,6 @@ namespace ColorVision.Templates
                 case TemplateType.SpectrumResourceParam:
                     if (IsReLoad)
                     {
-                        CalibrationRsourceService.GetInstance().Refresh();
                         TemplateControl.LoadModCabParam(DeviceSpectrum.SpectrumResourceParams, DeviceSpectrum.SysResourceModel.Id, ModMasterType.SpectrumResource);
                     }
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(DeviceSpectrum.SpectrumResourceParams);
@@ -225,6 +228,8 @@ namespace ColorVision.Templates
         {
             ListView1.ItemsSource = TemplateModelBases;
             ListView1.SelectedIndex = 0;
+            if (ListView1.View is GridView gridView1)
+                GridViewColumnVisibility.AddGridViewColumn(gridView1.Columns, GridViewColumnVisibilitys);
             this.Closed += WindowTemplate_Closed;
 
             switch (TemplateType)
@@ -986,6 +991,63 @@ namespace ColorVision.Templates
                     break;
                 default:
                     break;
+            }
+        }
+
+        public ObservableCollection<TemplateModelBase> TemplateModelBaseResults { get; set; } = new ObservableCollection<TemplateModelBase>();
+
+
+        private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            if (sender is TextBox textBox)
+            {
+                if (SearchNoneText.Visibility == Visibility.Visible)
+                    SearchNoneText.Visibility = Visibility.Hidden;
+                if (string.IsNullOrEmpty(textBox.Text))
+                {
+                    ListView1.ItemsSource = TemplateModelBases;
+
+                }
+                else
+                {
+                    TemplateModelBaseResults = new ObservableCollection<TemplateModelBase>();
+                    foreach (var item in TemplateModelBases)
+                    {
+                        if (item.Key.Contains(textBox.Text))
+                            TemplateModelBaseResults.Add(item);
+                    }
+                    ListView1.ItemsSource = TemplateModelBaseResults;
+                    if (TemplateModelBaseResults.Count == 0)
+                    {
+                        SearchNoneText.Visibility = Visibility.Visible;
+                        SearchNoneText.Text = "未找到" + textBox.Text + "相关模板";
+                    }
+                }
+            }
+        }
+
+        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && ListView1.View is GridView gridView)
+                GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
+        }
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+
+        private void GridViewColumnSort(object sender, RoutedEventArgs e)
+        {
+            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null && ListView1.ItemsSource is ObservableCollection<TemplateModelBase> results)
+            {
+                foreach (var item in GridViewColumnVisibilitys)
+                {
+                    if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
+                    {
+                        if (item.ColumnName.ToString() == Resource.SerialNumber1)
+                        {
+                            item.IsSortD = !item.IsSortD;
+                            results.SortByID(item.IsSortD);
+                        }
+                    }
+                }
             }
         }
     }

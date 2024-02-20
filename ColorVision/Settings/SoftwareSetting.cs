@@ -5,7 +5,7 @@ using log4net.Core;
 using log4net.Repository.Hierarchy;
 using System.Globalization;
 
-namespace ColorVision.SettingUp
+namespace ColorVision.Settings
 {
 
     public partial class SoftwareSetting

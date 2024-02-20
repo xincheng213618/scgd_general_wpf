@@ -1,7 +1,7 @@
 ﻿using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using ColorVision.Templates;
 using MQTTMessageLib;
 using System;
@@ -128,7 +128,7 @@ namespace ColorVision.Services.Devices.Spectrum
                     case NotifyCollectionChangedAction.Reset:
                         // 处理清空集合
                         SpectrumResourceParams.Clear();
-                        SpectrumResourceParams.Insert(0, new TemplateModel<SpectrumResourceParam>("Empty", new SpectrumResourceParam()) { ID = -1 });
+                        SpectrumResourceParams.Insert(0, new TemplateModel<SpectrumResourceParam>("Empty", new SpectrumResourceParam()) { Id = -1 });
                         break;
                 }
             };

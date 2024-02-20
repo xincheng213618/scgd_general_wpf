@@ -25,10 +25,6 @@
                 <StackPanel Margin="5,0">
                     <GroupBox Header="资源信息" Margin="0,5">
                         <StackPanel Margin="5">
-                            <DockPanel Margin="0,2" >
-                                <TextBlock Text="Code" Width="120"/>
-                                <TextBox Text="{Binding Config.Code}"/>
-                            </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="界面展示名称" Width="120"/>
                                 <TextBox Text="{Binding Config.Name}"/>

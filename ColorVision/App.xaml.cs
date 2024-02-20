@@ -2,7 +2,7 @@
 using ColorVision.MySql;
 using ColorVision.RC;
 using ColorVision.Services;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using ColorVision.Themes;
 using ColorVision.Wizards;
 using log4net;

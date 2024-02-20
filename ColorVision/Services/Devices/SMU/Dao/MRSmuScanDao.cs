@@ -51,11 +51,16 @@ namespace ColorVision.Services.Devices.SMU.Dao
 
         }
 
-        public List<SmuScanModel> ConditionalQuery(string id, string batchid)
+        public List<SmuScanModel> ConditionalQuery(string id, string batchid, DateTime? dateTimeSTART, DateTime? dateTimeEnd)
         {
             Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
             keyValuePairs.Add("id", id);
             keyValuePairs.Add("batch_id", batchid);
+
+#pragma warning disable CS8604 // 引用类型参数可能为 null。
+            keyValuePairs.Add(">create_date", dateTimeSTART);
+            keyValuePairs.Add("<create_date", dateTimeEnd);
+#pragma warning restore CS8604 // 引用类型参数可能为 null。
             return ConditionalQuery(keyValuePairs);
         }
 

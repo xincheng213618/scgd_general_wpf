@@ -1,6 +1,6 @@
 ﻿using ColorVision.Media;
 using ColorVision.Net;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
@@ -117,7 +117,6 @@ namespace ColorVision.Device.FileServer
             };
             View.View.ViewIndex = -1;
 
-            ViewGridManager.GetInstance().AddView(View);
             if (ViewGridManager.GetInstance().ViewMax > 4 || ViewGridManager.GetInstance().ViewMax == 3)
             {
                 ViewGridManager.GetInstance().SetViewNum(-1);

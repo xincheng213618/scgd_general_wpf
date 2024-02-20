@@ -5,7 +5,7 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;
 using ColorVision.Services.Msg;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.Templates;
 using log4net;
@@ -287,7 +287,6 @@ namespace ColorVision.Services.Devices.Algorithm
             ComboxBuildPoiTemplate.SelectedIndex = 0;
 
 
-            ViewGridManager.GetInstance().AddView(Device.View);
             ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
             ViewGridManager.GetInstance().ViewMaxChangedEvent += ViewMaxChangedEvent;
 

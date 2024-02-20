@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.MQTT"
-        xmlns:setting="clr-namespace:ColorVision.SettingUp"
+        xmlns:setting="clr-namespace:ColorVision.Settings"
         xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         Title="{x:Static properties:Resource.MqttConnectionConfiguration}" Background="{DynamicResource RegionBrush}" Height="500" Width="400" Initialized="Window_Initialized">

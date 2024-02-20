@@ -84,7 +84,6 @@ namespace ColorVision.Services.Devices.Camera
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
 
 
-            CalibrationRsourceService.GetInstance().Refresh();
             TemplateControl.GetInstance().LoadModCabParam(CalibrationParams, SysResourceModel.Id, ModMasterType.Calibration);
 
             FetchLatestTemperatureCommand =  new RelayCommand(a => FetchLatestTemperature(a));
@@ -111,7 +110,7 @@ namespace ColorVision.Services.Devices.Camera
             Directory.CreateDirectory(extractPath);
 
             // 打开ZIP文件
-            using (ZipArchive archive = ZipFile.Open(zipPath,ZipArchiveMode.Read, Encoding.GetEncoding("gbk")))
+            using (ZipArchive archive = ZipFile.Open(zipPath,ZipArchiveMode.Read))
             {
                 foreach (ZipArchiveEntry entry in archive.Entries)
                 {
@@ -134,9 +133,11 @@ namespace ColorVision.Services.Devices.Camera
                         if (Path.GetDirectoryName(destinationPath) is string die)
                             Directory.CreateDirectory(die);
                     }
-
                     // 解压缩文件
-                    entry.ExtractToFile(destinationPath);
+                    if (entry.Length != 0)
+                    {
+                        entry.ExtractToFile(destinationPath);
+                    }
                 }
             }
         }
@@ -362,15 +363,17 @@ namespace ColorVision.Services.Devices.Camera
                                 continue;
                             }
                             GroupService groupService = GroupService.AddGroupService(this, filePath);
-
-                            foreach (var item1 in keyValuePairs)
+                            if (groupService != null)
                             {
-                                if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
+                                foreach (var item1 in keyValuePairs)
                                 {
-                                    groupService.AddChild(colorVisionVCalibratioItems);
+                                    if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
+                                    {
+                                        groupService.AddChild(colorVisionVCalibratioItems);
+                                    }
                                 }
+                                groupService.SetCalibrationResource(this);
                             }
-                            groupService.SetCalibrationResource(this);
                         }
                     }
                     catch (Exception ex)

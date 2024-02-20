@@ -34,6 +34,7 @@ namespace ColorVision.Services.Flow
             };
             flowEngine.AttachLoader(STNodeEditorMain);
             View = new View();
+            ViewGridManager.GetInstance().AddView(0, this);
 
             View.ViewIndexChangedEvent += (s, e) =>
             {

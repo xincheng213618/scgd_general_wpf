@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Linq;
 using ColorVision.Solution.V;
+using ColorVision.Common.Utilities;
 
 namespace ColorVision.Solution
 {

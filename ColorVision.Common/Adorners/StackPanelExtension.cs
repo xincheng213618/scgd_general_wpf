@@ -15,7 +15,7 @@ namespace ColorVision.Adorners
         /// <param name="stackpanel">拡張対象のオブジェクト</param>
         /// <param name="pt">位置</param>
         /// <returns></returns>
-        public static UIElement GetChildElement(this StackPanel stackpanel, Point pt)
+        public static UIElement? GetChildElement(this StackPanel stackpanel, Point pt)
         {
             UIElement hit = null;
             VisualTreeHelper.HitTest(
@@ -35,7 +35,6 @@ namespace ColorVision.Adorners
                 },
                 new PointHitTestParameters(pt));
 
-            // ヒットした子要素を返す
             return hit;
         }
     }

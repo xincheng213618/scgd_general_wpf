@@ -5,7 +5,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
-        xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
+        xmlns:SettingUp ="clr-namespace:ColorVision.Settings"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:properties="clr-namespace:ColorVision.Properties"
         xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util" 
@@ -106,32 +106,32 @@
             </Grid.ColumnDefinitions>
             <Button x:Name="ButtonShiftOut" Panel.ZIndex="100" Click="OnLeftMainContentShiftOut" Opacity="0.3" hc:IconElement.Geometry="{StaticResource LeftGeometry}" Padding="8 8 0 8" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0 0 -16 0" Style="{StaticResource ButtonIconCircular}" />
             <Grid Grid.Column="1" x:Name="MainContent">
-                <Grid x:Name="ViewGrid" Background="LightGray"/>
+                <Grid x:Name="ViewGrid" Background="LightGray"  Visibility="{Binding ElementName=SolutionTab,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter1}}"/>
                 <Grid x:Name="SolutionGrid" Background="LightGray" Visibility="{Binding ElementName=SolutionTab,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter}}"/>
-
             </Grid>
-            <Grid Grid.Row="0" Panel.ZIndex="101" Background="{DynamicResource GlobalBackground}" Margin="-1,0,0,0" x:Name="LeftMainContent" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
-                <UIElement.RenderTransform>
-                    <TranslateTransform />
-                </UIElement.RenderTransform>
-                <TabControl Style="{StaticResource TabControlBaseStyle}" TabStripPlacement="Bottom" >
-                    <TabItem x:Name="ViewTab" Header="{x:Static properties:Resource.Acquire}" Width="150" >
-                        <ScrollViewer x:Name="ScrollViewerDisplay" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
-                            <StackPanel x:Name="SPDisplay" >
-                                <StackPanel x:Name="StackPanelSPD" Initialized="StackPanelSPD_Initialized" >
-                                    <behaviors:Interaction.Behaviors>
-                                        <behaviors:FluidMoveBehavior AppliesTo="Children" Duration="0:0:0.5"/>
-                                    </behaviors:Interaction.Behaviors>
+            <Border  Grid.Row="0" Panel.ZIndex="101"  Background="{DynamicResource GlobalBackground}" BorderThickness="0,0,1,1"  BorderBrush="{DynamicResource BorderBrush}" Margin="-1,0,0,0">
+                <Grid  x:Name="LeftMainContent" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
+                    <UIElement.RenderTransform>
+                        <TranslateTransform />
+                    </UIElement.RenderTransform>
+                    <TabControl Style="{StaticResource TabControlBaseStyle}" TabStripPlacement="Bottom" >
+                        <TabItem x:Name="ViewTab" Header="{x:Static properties:Resource.Acquire}" Width="150" >
+                            <ScrollViewer x:Name="ScrollViewerDisplay" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
+                                <StackPanel x:Name="SPDisplay" >
+                                    <StackPanel x:Name="StackPanelSPD" Initialized="StackPanelSPD_Initialized" >
+                                        <behaviors:Interaction.Behaviors>
+                                            <behaviors:FluidMoveBehavior AppliesTo="Children" Duration="0:0:0.5"/>
+                                        </behaviors:Interaction.Behaviors>
+                                    </StackPanel>
                                 </StackPanel>
-                            </StackPanel>
-                        </ScrollViewer>
+                            </ScrollViewer>
 
-                    </TabItem>
-                    <TabItem x:Name="SolutionTab" Header="{x:Static properties:Resource.Project}" Width="150" >
-                        <Solution:TreeViewControl  />
-                    </TabItem>
-                </TabControl>
-            </Grid>
+                        </TabItem>
+                        <TabItem x:Name="SolutionTab" Header="{x:Static properties:Resource.Project}" Width="150" >
+                        </TabItem>
+                    </TabControl>
+                </Grid>
+            </Border>
             <GridSplitter Panel.ZIndex="102" x:Name="GridSplitter" Margin="0,26,0,26" Grid.Column="0" HorizontalAlignment="Right" Width="4" Background="Transparent"/>
             <Button Grid.Column="0" x:Name="ButtonShiftIn" Visibility="Collapsed" Click="OnLeftMainContentShiftIn" hc:IconElement.Geometry="{StaticResource RightGeometry}" Padding="8 8 0 8" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-12 0 0 0" Style="{StaticResource ButtonIconCircular}" />
         </Grid>
@@ -154,7 +154,7 @@
                 
                 <StatusBarItem Grid.Column="1" >
                     <DockPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0" >
+                        <StackPanel Orientation="Horizontal" Margin="0" Visibility="{Binding ElementName=SolutionTab,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter1}}" >
                             <Button  Height="15" BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="1">
                                 <Image Source="{DynamicResource DrawingImageSingleWindow}" Margin="-5" />
                             </Button>

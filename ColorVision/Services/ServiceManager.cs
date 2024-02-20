@@ -14,7 +14,7 @@ using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Devices.SMU.Dao;
 using ColorVision.Services.Devices.Spectrum;
 using ColorVision.Services.Devices.Spectrum.Dao;
-using ColorVision.Users;
+using ColorVision.UserSpace;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -25,7 +25,7 @@ using System.Windows.Controls;
 using ColorVision.Services.Dao;
 using ColorVision.Services.DAO;
 using ColorVision.Services.Flow;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using ColorVision.Services.Interfaces;
 
 namespace ColorVision.Services
@@ -328,7 +328,6 @@ namespace ColorVision.Services
         {
             int totalTime = flowControlData.Params.TTL;
             resultService.BatchUpdateEnd(flowControlData.SerialNumber, totalTime, flowControlData.EventName);
-
             SpectrumDrawPlotFromDB(flowControlData.SerialNumber);
         }
 

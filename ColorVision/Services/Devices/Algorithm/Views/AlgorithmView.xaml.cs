@@ -53,7 +53,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             };
 
             View = new View();
-
+            ViewGridManager.GetInstance().AddView(this);
 
             listView1.ItemsSource = AlgResults;
 
@@ -219,7 +219,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                 PoiResultDatas.Clear();
                 PoiYResultDatas.Clear();
                 ImageView.ResetPOIPoint();
-                listViewSide.Visibility = Visibility.Collapsed;
                 List<POIPoint> DrawPoiPoint = new List<POIPoint>();
                 switch (result.ResultType)
                 {   
@@ -232,13 +231,13 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         List<string> cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
                         List<string> cieHeader = new List<string> { "名称", "位置", "大小", "形状", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
 
-                        GridView gridView2 = new GridView();
-                        for (int i = 0; i < cieHeader.Count; i++)
+                        if (listViewSide.View is GridView gridView2)
                         {
-                            gridView2.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
+                            LeftGridViewColumnVisibilitys.Clear();
+                            gridView2.Columns.Clear();
+                            for (int i = 0; i < cieHeader.Count; i++)
+                                gridView2.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
                         }
-                        listViewSide.View = gridView2;
-                        listViewSide.Visibility = Visibility.Visible;
 
                         foreach (var item in result.PoiData)
                         {
@@ -254,13 +253,18 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         //亮度
                         List<string> bdheadersY = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "Y" };
                         List<string> headersY = new List<string> { "名称", "位置", "大小", "形状", "Y" };
-                        GridView gridViewY = new GridView();
-                        for (int i = 0; i < headersY.Count; i++)
+                        
+                        if (listViewSide.View is GridView gridViewY)
                         {
-                            gridViewY.Columns.Add(new GridViewColumn() { Header = headersY[i], DisplayMemberBinding = new Binding(bdheadersY[i]) });
+                            LeftGridViewColumnVisibilitys.Clear();
+                            gridViewY.Columns.Clear();
+                            for (int i = 0; i < headersY.Count; i++)
+                                gridViewY.Columns.Add(new GridViewColumn() { Header = headersY[i], DisplayMemberBinding = new Binding(bdheadersY[i]) });
                         }
 
-                        listViewSide.View = gridViewY;
+                        listViewSide.ItemsSource = result.MTFData;
+
+
                         foreach (var item in result.PoiData)
                         {
                             PoiYResultDatas.Add(item);
@@ -438,8 +442,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                             {
                                 ImageView.OpenGhostImage(result.FilePath, LED_pixel_X, LED_pixel_Y, Ghost_pixel_X, Ghost_pixel_Y);
                             });
-
-
                         }
                         catch (Exception ex)
                         {
@@ -623,7 +625,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(TextBoxId.Text)&& string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxType.Text) && string.IsNullOrEmpty(TextBoxFile.Text))
+            if (string.IsNullOrEmpty(TextBoxId.Text)&& string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxType.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
             {
                 AlgResults.Clear();
                 List<AlgResultMasterModel> algResults = algResultMasterDao.GetAll();
@@ -641,13 +643,14 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                     altype = ((int)algorithmResultType).ToString();
 
                 AlgResults.Clear();
-                List<AlgResultMasterModel> algResults = algResultMasterDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, altype.ToString(), TextBoxFile.Text);
+                List<AlgResultMasterModel> algResults = algResultMasterDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, altype.ToString(), TextBoxFile.Text ,SearchTimeSart.SelectedDateTime,SearchTimeEnd.SelectedDateTime);
                 foreach (var item in algResults)
                 {
                     AlgorithmResult algorithmResult = new AlgorithmResult(item);
                     AlgResults.Add(algorithmResult);
                 }
             }
+            SerchPopup.IsOpen = false;
         }
 
         private void Order_Click(object sender, RoutedEventArgs e)
@@ -700,7 +703,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                 parent1.Children.Remove(listView1);
                 parent2.Children.Remove(listViewSide);
 
-
                 parent1.Children.Add(listViewSide);
                 parent2.Children.Add(listView1);
 
@@ -709,8 +711,13 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
                 Grid.SetColumn(listViewSide, tempCol);
                 Grid.SetRow(listViewSide, tempRow);
-
             }
+        }
+
+
+        private void SideSave_Click(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

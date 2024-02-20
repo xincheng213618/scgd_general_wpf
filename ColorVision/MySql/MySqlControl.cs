@@ -4,7 +4,7 @@ using System;
 using log4net;
 using System.Windows;
 using System.Threading.Tasks;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using System.Collections.Generic;
 
 namespace ColorVision.MySql
@@ -59,7 +59,7 @@ namespace ColorVision.MySql
             return connStr;
         }
 
-        public static bool TestConnect(MySqlConfig MySqlConfig)
+        public static bool TestConnect(MySqlConfig MySqlConfig)  
         {
             MySqlConnection MySqlConnection;
             string connStr = GetConnectionString(MySqlConfig,1);
@@ -82,7 +82,7 @@ namespace ColorVision.MySql
             MySqlConnection.Close();
         }
 
-        public int ExecuteNonQuery(string sql, Dictionary<string, object> param = null)
+        public int ExecuteNonQuery(string sql, Dictionary<string, object>? param = null)
         {
             int count = -1;
             try

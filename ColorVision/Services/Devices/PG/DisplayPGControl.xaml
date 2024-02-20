@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:ColorVision.Device.PG"
              xmlns:mqtt ="clr-namespace:ColorVision.MQTT"
              xmlns:Template ="clr-namespace:ColorVision.Templates"
-             xmlns:SettingUp ="clr-namespace:ColorVision.SettingUp"
+             xmlns:SettingUp ="clr-namespace:ColorVision.Settings"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DevicePG}"

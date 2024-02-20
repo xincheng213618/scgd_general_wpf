@@ -1249,6 +1249,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 序号 的本地化字符串。
+        /// </summary>
+        public static string SerialNumber1 {
+            get {
+                return ResourceManager.GetString("SerialNumber1", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 服务协议 的本地化字符串。
         /// </summary>
         public static string ServiceAgreement {

@@ -3,7 +3,7 @@ using ColorVision.MQTT;
 using ColorVision.Services;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Camera;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using MQTTMessageLib;
 using MQTTMessageLib.RC;
 using MQTTMessageLib.Util;

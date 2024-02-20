@@ -17,7 +17,7 @@ using ColorVision.RC;
 using System.Threading;
 using System.Windows.Media;
 
-namespace ColorVision.SettingUp
+namespace ColorVision.Settings
 {
     /// <summary>
     /// SettingWindow.xaml 的交互逻辑

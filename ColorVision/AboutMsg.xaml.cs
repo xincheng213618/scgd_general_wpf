@@ -1,5 +1,5 @@
 ﻿
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using ColorVision.Themes.Controls;
 using System;
 using System.Diagnostics;

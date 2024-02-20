@@ -9,7 +9,7 @@ using ColorVision.Common.Extension;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using ColorVision.Sorts;
 using ColorVision.Templates;
 using ColorVision.Themes.Controls;

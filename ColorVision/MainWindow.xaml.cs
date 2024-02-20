@@ -13,19 +13,21 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.ServiceProcess;
-using ColorVision.Users;
+using ColorVision.UserSpace;
 using System.Text.RegularExpressions;
 using log4net;
 using ColorVision.Services.Flow;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 using System.Security.Cryptography.X509Certificates;
-using ColorVision.Common.Util;
+using ColorVision.Common.Utilities;
 using Microsoft.Xaml.Behaviors.Layout;
 using Microsoft.Xaml.Behaviors;
 using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Adorners;
 using ColorVision.MySql;
+using ColorVision.Utils;
+using ColorVision.Solution.View;
 
 namespace ColorVision
 {
@@ -79,7 +81,7 @@ namespace ColorVision
                     SoftwareSetting.WindowState = (int)this.WindowState;
                 }
             };
-            var IsAdministrator = Utils.IsAdministrator();
+            var IsAdministrator = Tool.IsAdministrator();
             this.Title = Title + $"- {(IsAdministrator ? Properties.Resource.RunAsAdmin : Properties.Resource.NotRunAsAdmin)}";
         }
 
@@ -113,6 +115,9 @@ namespace ColorVision
                     this.Icon = WindowConfig.Icon;
                 this.Title = WindowConfig.Title ?? this.Title;
             }
+
+            SolutionGrid.Children.Add(new SolutionView());
+
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;
 
@@ -132,28 +137,29 @@ namespace ColorVision
             MenuItem menulog = new MenuItem() { Header = Properties.Resource.x64ServiceLog };
             menulog.Click += (s, e) =>
             {
-                Process.Start("explorer.exe", "http://localhost:8064/system/log");
+                PlatformHelper.OpenFolder("http://localhost:8064/system/log");
             };
             menulogs.Items.Insert(0, menulog);
 
             MenuItem menulog1 = new MenuItem() { Header = ColorVision.Properties.Resource.CameraLog };
             menulog1.Click += (s, e) =>
             {
-                Process.Start("explorer.exe", "http://localhost:8064/system/device/camera/log");
+                PlatformHelper.OpenFolder("http://localhost:8064/system/device/camera/log");
             };
             menulogs.Items.Insert(1, menulog1);
 
             MenuItem menulog2 = new MenuItem() { Header = "x86服务相机日志" };
             menulog2.Click += (s, e) =>
             {
-                Process.Start("explorer.exe", "http://localhost:8086/system/log");
+                PlatformHelper.OpenFolder("http://localhost:8086/system/log");
+
             };
             menulogs.Items.Insert(2, menulog2);
 
             MenuItem menulog3 = new MenuItem() { Header = ColorVision.Properties.Resource.SpectrometerLog };
             menulog3.Click += (s, e) =>
             {
-                Process.Start("explorer.exe", "http://localhost:8086/system/device/Spectrum/log");
+                PlatformHelper.OpenFolder("http://localhost:8086/system/device/Spectrum/log");
             };
             menulogs.Items.Insert(3, menulog3);
 
@@ -165,10 +171,10 @@ namespace ColorVision
             Menu1.Items.Add(menuItem);
 
 
-            MenuItem menuItem3 = new MenuItem() { Header = ColorVision.Properties.Resource.RestartService, Tag = "CalibrationUpload" };
+            MenuItem menuItem3 = new MenuItem() { Header = Properties.Resource.RestartService, Tag = "CalibrationUpload" };
             menuItem3.Click += (s,e) =>
             {
-                Common.Utilities.Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&net stop CVMainService_x64&net start RegistrationCenterService&net start CVMainService_x64");
+                Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&net stop CVMainService_x64&net start RegistrationCenterService&net start CVMainService_x64");
             };
             menuItem.Items.Add(menuItem3);
 
@@ -192,9 +198,10 @@ namespace ColorVision
             Task.Run(CheckCertificate);
 
             Task.Run(EnsureLocalInfile);
+            SolutionTab.Content = new TreeViewControl();
         }
 
-        public async Task EnsureLocalInfile()
+        public async static Task EnsureLocalInfile()
         {
             await Task.Delay(3000);
             log.Info($"{DateTime.Now}:EnsureLocalInfile ");
@@ -395,7 +402,7 @@ namespace ColorVision
             }
         }
 
-        private UserControl _draggedItem;
+        private UserControl? _draggedItem;
         /// <summary>ドラッグアイテムインデックス</summary>
         private int? _draggedItemIndex;
 
@@ -502,7 +509,7 @@ namespace ColorVision
                 UserControl dropTargetItem = ViewHelper.FindVisualParent<UserControl>(result.VisualHit);
 
                 // ドラッグ中、かつ、ドロップ位置のアイテムがドロップ対象ならアイテムを移動する
-                if (_draggedItem != null && dropTargetItem != null)
+                if (_draggedItem != null && dropTargetItem != null && _draggedItemIndex!=null)
                 {
                     // アイテムの移動
                     int dropTargetItemIndex = xMainPanel.Children.IndexOf(dropTargetItem);

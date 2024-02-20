@@ -61,13 +61,17 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
             return dInfo;
         }
 
-        public List<AlgResultMasterModel> ConditionalQuery(string id, string batchid, string ImageType, string fileName)
+        public List<AlgResultMasterModel> ConditionalQuery(string id, string batchid, string ImageType, string fileName ,DateTime? dateTimeStart,DateTime? dateTimeEnd)
         {
             Dictionary<string, object> keyValuePairs = new Dictionary<string, object>(0);
             keyValuePairs.Add("id", id);
             keyValuePairs.Add("batch_id", batchid);
             keyValuePairs.Add("img_file_type", ImageType);
             keyValuePairs.Add("img_file", fileName);
+#pragma warning disable CS8604 // 引用类型参数可能为 null。
+            keyValuePairs.Add(">create_date", dateTimeStart);
+            keyValuePairs.Add("<create_date", dateTimeEnd);
+#pragma warning restore CS8604 // 引用类型参数可能为 null。
             return ConditionalQuery(keyValuePairs);
         }
 

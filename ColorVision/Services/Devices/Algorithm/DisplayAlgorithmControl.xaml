@@ -63,178 +63,195 @@
                         </GroupBox>
                     </StackPanel>
                 </GroupBox>
-                <GroupBox  Header="算法服务">
-                    <StackPanel  >
-                        <GroupBox  Header="图片文件">
-                            <StackPanel  Margin="5" >
+                <StackPanel >
+                    <GroupBox  Header="图片文件">
+                        <StackPanel  Margin="5" >
+                            <DockPanel Margin="0,2">
+                                <RadioButton Content="本地" IsChecked="True" GroupName="alg_src"/>
+                                <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
+                                <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" HorizontalAlignment="Left" Width="130" />
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <RadioButton x:Name="AlgRawSelect" GroupName="alg_src"/>
+                                <Button Content="刷新" Click="Button_Click_RawRefresh" />
+                                <Button DockPanel.Dock="Right" Content="上传" Click="Button_Click_RawUpload" Visibility="Hidden" Width="0" />
+                                <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_RawOpen" />
+                                <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}" Width="120" />
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <RadioButton x:Name="AlgBatchSelect" Content="批次号" GroupName="alg_src"/>
+                                <TextBox x:Name="AlgBatchCode" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" />
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
+                    <TabControl>
+                        <TabItem Header="FOV">
+                            <GroupBox  Header="FOV" ToolTip="Field of view">
                                 <DockPanel Margin="0,2">
-                                    <RadioButton Content="本地" IsChecked="True" GroupName="alg_src"/>
-                                    <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
-                                    <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" HorizontalAlignment="Left" Width="130" />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <RadioButton x:Name="AlgRawSelect" GroupName="alg_src"/>
-                                    <Button Content="刷新" Click="Button_Click_RawRefresh" />
-                                    <Button DockPanel.Dock="Right" Content="上传" Click="Button_Click_RawUpload" Visibility="Hidden" Width="0" />
-                                    <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_RawOpen" />
-                                    <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}" Width="120" />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <RadioButton x:Name="AlgBatchSelect" Content="批次号" GroupName="alg_src"/>
-                                    <TextBox x:Name="AlgBatchCode" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" />
-                                </DockPanel>
-                            </StackPanel>
-                        </GroupBox>
-                        <GroupBox  Header="FOV" ToolTip="Field of view">
-                            <DockPanel Margin="0,2">
-                                <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FOV_Click" />
-                                <ComboBox  x:Name="ComboxFOVTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="视场角的大小决定了光学仪器的视野范围"/>
-                                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
-                                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FOVParam" Click="MenuItem_Template"/>
-                                </Grid>
-                            </DockPanel>
-                        </GroupBox>
-
-                        <GroupBox  Header="MTF" ToolTip="Modulation Transfer Function">
-                            <DockPanel Margin="0,2">
-                                <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="MTF_Click" />
-                                <ComboBox  x:Name="ComboxMTFTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="MTF的值表示成像系统对特定空间频率的细节进行调制或传递的效率"/>
-                                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="MTFParam" Click="MenuItem_Template"/>
-                                </Grid>
-                            </DockPanel>
-                        </GroupBox>
-
-                        <GroupBox  Header="SFR" ToolTip="计算空间频率响应">
-                            <DockPanel Margin="0,2">
-                                <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="SFR_Clik" />
-                                <ComboBox  x:Name="ComboxSFRTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="成像系统对输入图像中的空间频率成分的响应强度"/>
-                                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="SFRParam" Click="MenuItem_Template"/>
-                                </Grid>
-                            </DockPanel>
-                        </GroupBox>
-
-
-
-                        <GroupBox  Header="畸变">
-                            <DockPanel Margin="0,2">
-                                <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Distortion_Click" />
-                                <ComboBox  x:Name="ComboxDistortionTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="在成像过程中对物体形状的不准确再现"/>
-                                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="DistortionParam" Click="MenuItem_Template"/>
-                                </Grid>
-                            </DockPanel>
-                        </GroupBox>
-                        <GroupBox  Header="鬼影">
-                            <DockPanel Margin="0,2">
-                                <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Ghost_Click" />
-                                <ComboBox  x:Name="ComboxGhostTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="GhostParam" Click="MenuItem_Template"/>
-                                </Grid>
-                            </DockPanel>
-                        </GroupBox>
-
-                        <GroupBox  Header="灯珠检测">
-                            <DockPanel Margin="0,2">
-                                <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="LedCheck_Click" />
-                                <ComboBox  x:Name="ComboxLedCheckTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="LedCheckParam" Click="MenuItem_Template"/>
-                                </Grid>
-                            </DockPanel>
-                        </GroupBox>
-                        <GroupBox  Header="发光区检测">
-                            <DockPanel Margin="0,2">
-                                <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FocusPoints_Click" />
-                                <ComboBox  x:Name="ComboxFocusPointsTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusPointsParam" Click="MenuItem_Template"/>
-                                </Grid>
-                            </DockPanel>
-                        </GroupBox>
-                        <GroupBox  Header="BuildPoi">
-                            <StackPanel>
-                                <DockPanel Margin="0,2">
-                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="BuildPoi_Click" />
-                                    <ComboBox  x:Name="ComboxBuildPoiTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FOV_Click" />
+                                    <ComboBox  x:Name="ComboxFOVTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                    <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="视场角的大小决定了光学仪器的视野范围"/>
                                     <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="BuildPOIParmam" Click="MenuItem_Template"/>
+                                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FOVParam" Click="MenuItem_Template"/>
                                     </Grid>
                                 </DockPanel>
-                                <StackPanel Margin="0,2">
-                                    <DockPanel Margin="0,2">
-                                        <RadioButton x:Name="CircleChecked"  Content="圆形" IsChecked="True" GroupName="POILayoutType" HorizontalAlignment="Left"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="中心X"/>
-                                        <TextBox x:Name="centerX" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500" />
-                                        <TextBlock Text="中心Y"/>
-                                        <TextBox x:Name="centerY" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
-                                        <TextBlock Text="半径"/>
-                                        <TextBox x:Name="radius" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
-                                    </DockPanel>
-                                </StackPanel>
-                                <StackPanel Margin="0,2">
-                                    <DockPanel Margin="0,2">
-                                        <RadioButton  x:Name="RectChecked" Content="矩形" GroupName="POILayoutType" HorizontalAlignment="Left"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="中心X"/>
-                                        <TextBox x:Name="rect_centerX" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="30" Text="500" />
-                                        <TextBlock Text="中心Y"/>
-                                        <TextBox x:Name="rect_centerY" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="30" Text="500"/>
-                                        <TextBlock Text="宽度"/>
-                                        <TextBox x:Name="width" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="40" Text="500"/>
-                                        <TextBlock Text="高度"/>
-                                        <TextBox x:Name="height" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="40" Text="500"/>
-                                    </DockPanel>
-                                </StackPanel>
+                            </GroupBox>
+                        </TabItem>
+                        <TabItem Header="MTF">
+                            <GroupBox  Header="MTF" ToolTip="Modulation Transfer Function">
+                                <DockPanel Margin="0,2">
+                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="MTF_Click" />
+                                    <ComboBox  x:Name="ComboxMTFTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                    <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="MTF的值表示成像系统对特定空间频率的细节进行调制或传递的效率"/>
+                                    <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="MTFParam" Click="MenuItem_Template"/>
+                                    </Grid>
+                                </DockPanel>
+                            </GroupBox>
+                        </TabItem>
+                        <TabItem Header="SFR">
+                            <GroupBox  Header="SFR" ToolTip="计算空间频率响应">
+                                <DockPanel Margin="0,2">
+                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="SFR_Clik" />
+                                    <ComboBox  x:Name="ComboxSFRTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                    <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="成像系统对输入图像中的空间频率成分的响应强度"/>
+                                    <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="SFRParam" Click="MenuItem_Template"/>
+                                    </Grid>
+                                </DockPanel>
+                            </GroupBox>
+                        </TabItem>
+                        <TabItem Header="畸变">
+                            <GroupBox  Header="畸变">
+                                <DockPanel Margin="0,2">
+                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Distortion_Click" />
+                                    <ComboBox  x:Name="ComboxDistortionTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                    <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="在成像过程中对物体形状的不准确再现"/>
+                                    <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="DistortionParam" Click="MenuItem_Template"/>
+                                    </Grid>
+                                </DockPanel>
+                            </GroupBox>
 
-                                <StackPanel Margin="0,2">
+                        </TabItem>
+                        <TabItem Header="鬼影">
+                            <GroupBox  Header="鬼影">
+                                <DockPanel Margin="0,2">
+                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Ghost_Click" />
+                                    <ComboBox  x:Name="ComboxGhostTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                    <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="GhostParam" Click="MenuItem_Template"/>
+                                    </Grid>
+                                </DockPanel>
+                            </GroupBox>
+                        </TabItem>
+                        <TabItem Header="灯珠检测">
+                            <GroupBox  Header="灯珠检测">
+                                <DockPanel Margin="0,2">
+                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="LedCheck_Click" />
+                                    <ComboBox  x:Name="ComboxLedCheckTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                    <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="LedCheckParam" Click="MenuItem_Template"/>
+                                    </Grid>
+                                </DockPanel>
+                            </GroupBox>
+                        </TabItem>
+                        <TabItem Header="发光区检测">
+                            <GroupBox  Header="发光区检测">
+                                <DockPanel Margin="0,2">
+                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FocusPoints_Click" />
+                                    <ComboBox  x:Name="ComboxFocusPointsTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                    <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusPointsParam" Click="MenuItem_Template"/>
+                                    </Grid>
+                                </DockPanel>
+                            </GroupBox>
+                        </TabItem>
+                        <TabItem Header="BuildPoi">
+                            <GroupBox  Header="BuildPoi">
+                                <StackPanel>
                                     <DockPanel Margin="0,2">
-                                        <RadioButton  x:Name="MaskChecked" Content="四边形" GroupName="POILayoutType" HorizontalAlignment="Left"/>
+                                        <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="BuildPoi_Click" />
+                                        <ComboBox  x:Name="ComboxBuildPoiTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="BuildPOIParmam" Click="MenuItem_Template"/>
+                                        </Grid>
                                     </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="X1"/>
-                                        <TextBox x:Name="Mask_X1" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0" />
-                                        <TextBlock Text="Y1"/>
-                                        <TextBox x:Name="Mask_Y1" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0"/>
-                                        <TextBlock Text="X2"/>
-                                        <TextBox x:Name="Mask_X2" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
-                                        <TextBlock Text="Y2"/>
-                                        <TextBox x:Name="Mask_Y2" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0"/>
-                                    </DockPanel>
+                                    <StackPanel Margin="0,2">
+                                        <DockPanel Margin="0,2">
+                                            <RadioButton x:Name="CircleChecked"  Content="圆形" IsChecked="True" GroupName="POILayoutType" HorizontalAlignment="Left"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="中心X"/>
+                                            <TextBox x:Name="centerX" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500" />
+                                            <TextBlock Text="中心Y"/>
+                                            <TextBox x:Name="centerY" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                                            <TextBlock Text="半径"/>
+                                            <TextBox x:Name="radius" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                    <StackPanel Margin="0,2">
+                                        <DockPanel Margin="0,2">
+                                            <RadioButton  x:Name="RectChecked" Content="矩形" GroupName="POILayoutType" HorizontalAlignment="Left"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="中心X"/>
+                                            <TextBox x:Name="rect_centerX" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="30" Text="500" />
+                                            <TextBlock Text="中心Y"/>
+                                            <TextBox x:Name="rect_centerY" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="30" Text="500"/>
+                                            <TextBlock Text="宽度"/>
+                                            <TextBox x:Name="width" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="40" Text="500"/>
+                                            <TextBlock Text="高度"/>
+                                            <TextBox x:Name="height" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="40" Text="500"/>
+                                        </DockPanel>
+                                    </StackPanel>
 
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock Text="X3"/>
-                                        <TextBox x:Name="Mask_X3" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
-                                        <TextBlock Text="Y3"/>
-                                        <TextBox x:Name="Mask_Y3" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
-                                        <TextBlock Text="X4"/>
-                                        <TextBox x:Name="Mask_X4" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0"/>
-                                        <TextBlock Text="Y4"/>
-                                        <TextBox x:Name="Mask_Y4" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
-                                    </DockPanel>
+                                    <StackPanel Margin="0,2">
+                                        <DockPanel Margin="0,2">
+                                            <RadioButton  x:Name="MaskChecked" Content="四边形" GroupName="POILayoutType" HorizontalAlignment="Left"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="X1"/>
+                                            <TextBox x:Name="Mask_X1" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0" />
+                                            <TextBlock Text="Y1"/>
+                                            <TextBox x:Name="Mask_Y1" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0"/>
+                                            <TextBlock Text="X2"/>
+                                            <TextBox x:Name="Mask_X2" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                                            <TextBlock Text="Y2"/>
+                                            <TextBox x:Name="Mask_Y2" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0"/>
+                                        </DockPanel>
+
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="X3"/>
+                                            <TextBox x:Name="Mask_X3" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                                            <TextBlock Text="Y3"/>
+                                            <TextBox x:Name="Mask_Y3" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                                            <TextBlock Text="X4"/>
+                                            <TextBox x:Name="Mask_X4" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="0"/>
+                                            <TextBlock Text="Y4"/>
+                                            <TextBox x:Name="Mask_Y4" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="50" Text="500"/>
+                                        </DockPanel>
+                                    </StackPanel>
                                 </StackPanel>
+                            </GroupBox>
+                        </TabItem>
+                    </TabControl>
 
-                            </StackPanel>
-                        </GroupBox>
-                    </StackPanel>
-                </GroupBox>
+
+
+
+
+
+                </StackPanel>
+
                 <DockPanel Margin="0,2" >
                     <TextBlock Text="{x:Static properties:Resource.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0"/>
                     <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"   />

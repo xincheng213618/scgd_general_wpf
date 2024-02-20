@@ -10,7 +10,7 @@ using ColorVision.Themes;
 using System.Windows.Media;
 using ColorVision.Solution;
 using ColorVision.Services.Flow.Templates;
-using ColorVision.SettingUp;
+using ColorVision.Settings;
 
 namespace ColorVision.Services.Flow
 {
@@ -57,8 +57,6 @@ namespace ColorVision.Services.Flow
             View.View.Title = "流程窗口";
             if (View is UserControl control)
             {
-                ViewGridManager.GetInstance().AddView(0, control);
-
                 ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
                 ViewGridManager.GetInstance().ViewMaxChangedEvent += ViewMaxChangedEvent;
 
