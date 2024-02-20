@@ -24,7 +24,7 @@ namespace ColorVision.MySql
             this._IsLogicDel = isLogicDel;
         }
 
-        protected string GetDelSQL(bool hasAnd) => _IsLogicDel ? string.Empty : hasAnd ? " and is_delete=0" : "is_delete=0";
+        protected string GetDelSQL(bool hasAnd) => _IsLogicDel ?  hasAnd ? " and is_delete=0" : "is_delete=0" : string.Empty;
 
         public DataTable SelectById(int id)
         {
