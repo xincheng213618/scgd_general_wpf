@@ -402,6 +402,9 @@ namespace ColorVision
             }
         }
 
+
+
+
         private UserControl? _draggedItem;
         /// <summary>ドラッグアイテムインデックス</summary>
         private int? _draggedItemIndex;
@@ -560,31 +563,6 @@ namespace ColorVision
                 xMainPanel.MouseMove += OnMainPanelMouseMove;
                 xMainPanel.MouseLeftButtonUp += OnMainPanelMouseLeftButtonUp;
                 xMainPanel.LostMouseCapture += OnMainPanelLostMouseCapture;
-
-
-
-
-
-                //bool isDown = false;
-                //AdornerLayer adornerLayer = AdornerLayer.GetAdornerLayer(Root);
-                //DragDropAdorner adorner = null;
-                //stackPanel.PreviewMouseLeftButtonDown += (s, e) =>
-                //{
-                //    isDown = true;
-                //    var control = stackPanel.Children[0];
-                //    adorner = new DragDropAdorner(control);
-                //    adornerLayer.Add(adorner);
-
-                //};
-                //stackPanel.PreviewMouseUp += (s, e) =>
-                //{
-                //    if (isDown)
-                //    {
-                //        if (adorner != null)
-                //            adornerLayer.Remove(adorner);
-
-                //    }
-                //};
             }
 
         }

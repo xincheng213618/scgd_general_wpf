@@ -1,11 +1,11 @@
-﻿<Window xmlns:Solution="clr-namespace:ColorVision.Solution"  
-        x:Class="ColorVision.MainWindow"
+﻿<Window x:Class="ColorVision.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
         xmlns:SettingUp ="clr-namespace:ColorVision.Settings"
+        xmlns:Solution="clr-namespace:ColorVision.Solution"  
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:properties="clr-namespace:ColorVision.Properties"
         xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util" 
@@ -120,15 +120,15 @@
                                 <StackPanel x:Name="SPDisplay" >
                                     <StackPanel x:Name="StackPanelSPD" Initialized="StackPanelSPD_Initialized" >
                                         <behaviors:Interaction.Behaviors>
-                                            <behaviors:FluidMoveBehavior AppliesTo="Children" Duration="0:0:0.5"/>
+                                            <behaviors:FluidMoveBehavior AppliesTo="Children" Duration="0:0:0.8"/>
                                         </behaviors:Interaction.Behaviors>
                                     </StackPanel>
                                 </StackPanel>
                             </ScrollViewer>
 
                         </TabItem>
-                        <TabItem x:Name="SolutionTab" Header="{x:Static properties:Resource.Project}" Width="150" >
-                        </TabItem>
+                        <TabItem x:Name="SolutionTab" Header="{x:Static properties:Resource.Project}" Width="150" />
+
                     </TabControl>
                 </Grid>
             </Border>
