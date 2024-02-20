@@ -14,7 +14,6 @@ namespace ColorVision.MySql
 
     public class BaseDao1 : BaseDao
     {
-
         public bool IsLogicDel { get { return _IsLogicDel; } set { _IsLogicDel = value; } }
         private bool _IsLogicDel;
 
@@ -156,15 +155,9 @@ namespace ColorVision.MySql
                 e.Row[_PKField] = e.Command.LastInsertedId;
             }
         }
-
-        public static DataRow? SelectRow(int id, DataTable dInfo)
-        {
-            DataRow[] rows = dInfo.Select($"id={id}");
-
-            if (rows.Length == 1) return rows[0];
-            else return null;
-        }
     }
+
+
 
     public class BaseTableDao<T>:BaseDao where T : IPKModel
     {
@@ -177,9 +170,7 @@ namespace ColorVision.MySql
         public virtual T? GetModelFromDataRow(DataRow item) => default;
         public virtual DataRow Model2Row(T item, DataRow row) => row;
 
-
         public List<T> GetAll() => GetAllByParam(new Dictionary<string, object>());
-
         public List<T> GetAllById(int id) => GetAllByParam(new Dictionary<string, object>() { { "id", id } });
         public List<T> GetAllByPid (int pid) => GetAllByParam(new Dictionary<string, object>() { { "pid", pid } });
         public List<T> GetAllByTenantId(int tenantId) => GetAllByParam(new Dictionary<string, object>() { { "tenantId", tenantId } });
@@ -204,6 +195,7 @@ namespace ColorVision.MySql
             return list;
         }
     }
+
 
     public class BaseViewDao<T> : BaseDao1 where T : IPKModel
     {
@@ -301,8 +293,10 @@ namespace ColorVision.MySql
             dataTable.TableName = TableName;
             using (connection)
             {
-                var bulkCopy = new MySqlConnector.MySqlBulkCopy(connection);
-                bulkCopy.DestinationTableName = dataTable.TableName;
+                var bulkCopy = new MySqlConnector.MySqlBulkCopy(connection)
+                {
+                    DestinationTableName = dataTable.TableName
+                };
                 bulkCopy.ColumnMappings.AddRange(GetMySqlColumnMapping(dataTable));
                 try
                 {
@@ -622,15 +616,11 @@ namespace ColorVision.MySql
 
         public DataRow GetRow(T item, DataTable dataTable)
         {
-            DataRow row = SelectRow(item.GetPK(), dataTable);
+            DataRow row = dataTable.SelectRow(item.GetPK());
             if (row == null)
             {
                 row = dataTable.NewRow();
                 dataTable.Rows.Add(row);
-            }
-            else
-            {
-
             }
             return row;
         }
@@ -642,34 +632,18 @@ namespace ColorVision.MySql
         }
         public int DeleteAll(int tenantId)
         {
-            string sql = $"update {TableName} set is_delete=1 where tenant_id={tenantId}";
-            if (!IsLogicDel)
-            {
-                sql = $"delete from {TableName} where tenant_id={tenantId}";
-            }
-            return ExecuteNonQuery(sql);
+            string sql = IsLogicDel ? $"UPDATE {TableName} SET is_delete = 1 WHERE tenant_id = @tenant_id" : $"DELETE FROM {TableName} WHERE tenant_id = @tenant_id";
+            return ExecuteNonQuery(sql, new Dictionary<string, object> { { "tenant_id", tenantId } });
         }
         public int DeleteAllByPid(int pid)
         {
-            string sql = $"update {TableName} set is_delete=1 where pid={pid}";
-            if (!IsLogicDel)
-            {
-                sql = $"delete from {TableName} where pid={pid}";
-            }
-            return ExecuteNonQuery(sql);
+            string sql = IsLogicDel ? $"UPDATE {TableName} SET is_delete = 1 WHERE pid = @pid" : $"DELETE FROM {TableName} WHERE pid = @pid";
+            return ExecuteNonQuery(sql, new Dictionary<string, object> { { "pid", pid } });
         }
         public int DeleteById(int id,bool IsLogicDel = true)
         {
-            string sql = $"update {TableName} set is_delete=1 where id=@id";
-            if (!IsLogicDel)
-            {
-                sql = $"delete from {TableName} where id=@id";
-            }
-            Dictionary<string, object> param = new Dictionary<string, object>
-            {
-                { "id", id }
-            };
-            return ExecuteNonQuery(sql, param);
+            string sql = IsLogicDel? $"UPDATE {TableName} SET is_delete = 1 WHERE id = @id":$"DELETE FROM {TableName} WHERE id = @id";
+            return ExecuteNonQuery(sql, new Dictionary<string, object> { { "id", id } });
         }
     }
 }
