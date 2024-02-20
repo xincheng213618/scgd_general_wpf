@@ -13,14 +13,14 @@ namespace ColorVision.Services.Dao
         public DateTime? CreateDate { get; set; }
 
         public int? RescourceId { get; set; }
-
     }
 
-    public class CameraTempDao : BaseDaoMaster<CameraTempModel>
+    public class CameraTempDao : BaseTableDao<CameraTempModel>
     {
-        public CameraTempDao() : base(string.Empty, "t_scgd_camera_temp", "id", true)
+        public CameraTempDao() : base("t_scgd_camera_temp", "id")
         {
         }
+
         public override DataTable CreateColumns(DataTable dInfo)
         {
             dInfo.Columns.Add("id", typeof(int));
@@ -69,7 +69,7 @@ namespace ColorVision.Services.Dao
             string sql;
             if (resId.HasValue)
             {
-                sql = $"SELECT id, temp_value, pwm_value,create_date,res_id FROM {GetTableName()} WHERE res_id = @ResId ORDER BY create_date DESC LIMIT @Limit";
+                sql = $"SELECT id, temp_value, pwm_value,create_date,res_id FROM {TableName} WHERE res_id = @ResId ORDER BY create_date DESC LIMIT @Limit";
                 var parameters = new Dictionary<string, object>
                 {
                     {"@ResId", resId.Value},
@@ -80,7 +80,7 @@ namespace ColorVision.Services.Dao
             else
             {
 
-                sql = $"SELECT id, temp_value, pwm_value,create_date,res_id FROM {GetTableName()} ORDER BY create_date DESC LIMIT @Limit";
+                sql = $"SELECT id, temp_value, pwm_value,create_date,res_id FROM {TableName} ORDER BY create_date DESC LIMIT @Limit";
                 var parameters = new Dictionary<string, object>
                 {
                     {"@Limit", limit}
@@ -98,7 +98,6 @@ namespace ColorVision.Services.Dao
             }
             return list;
         }
-
 
     }
 

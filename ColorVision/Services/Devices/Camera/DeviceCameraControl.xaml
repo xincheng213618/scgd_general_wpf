@@ -9,6 +9,7 @@
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:resx="clr-namespace:ColorVision.Properties"
              xmlns:calib="clr-namespace:ColorVision.Templates"
+             xmlns:dao ="clr-namespace:ColorVision.Services.Devices.Camera.Dao"
              d:DataContext="{d:DesignInstance local:DeviceCamera}"
              d:DesignHeight="400" d:DesignWidth="600" Initialized="UserControl_Initialized">
     <UserControl.Resources>
@@ -92,8 +93,10 @@
                                                     <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ServiceToken}"/>
                                                 </DockPanel>
                                                 <Button Content="上传校正文件"  Command="{Binding UploadCalibrationCommand}" />
+
                                                 <Button Content="校正模板设置" Tag="Calibration"  Click="MenuItem_Template" />
                                                 <Button Content="校正模板管理" Click="Button_Click_1" />
+                                                <Button Content="上传许可文件"  Command="{Binding UploadLincenseCommand}" />
 
                                             </StackPanel>
                                             <Image Source="{Binding QRIcon}"  Height="100" Width="100"  HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0"/>
@@ -405,6 +408,69 @@
                                 <StackPanel Margin="5">
                                     <TabControl x:Name="TabControlCalib" >
                                     </TabControl>
+                                </StackPanel>
+                            </TabItem>
+                            <TabItem Header="许可证信息">
+                                <StackPanel Margin="5">
+                                    <Button Content="刷新" Click="Lincense_Refresh_Click" />
+                                    <ListView  Height="250" Grid.Row="1" BorderThickness="0" Background="Transparent" x:Name="ListViewLincense" Margin="-5"  Style="{StaticResource ListView.Small}"  >
+                                        <ListView.Resources>
+                                            <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
+                                        </ListView.Resources>
+                                        <ListView.View >
+                                            <GridView >
+                                                <GridView.ColumnHeaderContainerStyle>
+                                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                        <Setter Property="Background" Value="Transparent"/>
+                                                        <Setter Property="BorderThickness" Value="0"/>
+                                                        <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                                                        <EventSetter Event="Click" Handler="GridViewColumnSort"/>
+                                                    </Style>
+                                                </GridView.ColumnHeaderContainerStyle>
+                                                <GridViewColumn   Header="序号" >
+                                                    <GridViewColumn.CellTemplate>
+                                                        <DataTemplate  DataType="{x:Type dao:CameraLicenseModel}">
+                                                            <TextBlock Text="{Binding Id}"/>
+                                                        </DataTemplate>
+                                                    </GridViewColumn.CellTemplate>
+                                                </GridViewColumn>
+
+                                                <GridViewColumn   Header="DeviceMode" >
+                                                    <GridViewColumn.CellTemplate>
+                                                        <DataTemplate  DataType="{x:Type dao:CameraLicenseModel}">
+                                                            <TextBlock Text="{Binding ColorVisionLincense.DeviceMode}"/>
+                                                        </DataTemplate>
+                                                    </GridViewColumn.CellTemplate>
+                                                </GridViewColumn>
+
+
+                                                <GridViewColumn   Header="licensee" >
+                                                    <GridViewColumn.CellTemplate>
+                                                        <DataTemplate  DataType="{x:Type dao:CameraLicenseModel}">
+                                                            <TextBlock Text="{Binding ColorVisionLincense.Licensee}"/>
+                                                        </DataTemplate>
+                                                    </GridViewColumn.CellTemplate>
+                                                </GridViewColumn>
+
+                                                <GridViewColumn  Header="expiry_date" >
+                                                    <GridViewColumn.CellTemplate>
+                                                        <DataTemplate  DataType="{x:Type dao:CameraLicenseModel}">
+                                                            <TextBlock Text="{Binding ColorVisionLincense.ExpiryDate}"/>
+                                                        </DataTemplate>
+                                                    </GridViewColumn.CellTemplate>
+                                                </GridViewColumn>
+
+                                                <GridViewColumn  Header="许可证信息">
+                                                    <GridViewColumn.CellTemplate>
+                                                        <DataTemplate  DataType="{x:Type dao:CameraLicenseModel}">
+                                                            <TextBlock Text="{Binding  LicenseContent}" PreviewMouseLeftButtonUp="TextBlock_PreviewMouseLeftButtonUp" />
+                                                        </DataTemplate>
+                                                    </GridViewColumn.CellTemplate>
+                                                </GridViewColumn>
+                                            </GridView>
+                                        </ListView.View>
+                                    </ListView>
                                 </StackPanel>
                             </TabItem>
                         </TabControl>

@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace ColorVision.MySql
 {
-    public static class BaseDaoExtension
+    public static class DataTableExtension
     {
         public static DataRow? SelectRow(this DataTable dataTable, int id)
         {
@@ -15,6 +15,17 @@ namespace ColorVision.MySql
                 throw new ArgumentException("Column 'id' does not exist in the DataTable.");
             var rows = dataTable.AsEnumerable().Where(row => row.Field<int>("id") == id).ToList();
             return rows.Count == 1 ? rows[0] : null;
+        }
+
+        public static DataRow GetRow<T>(this DataTable dataTable, T item) where T : IPKModel
+        {
+            DataRow row = dataTable.SelectRow(item.GetPK());
+            if (row == null)
+            {
+                row = dataTable.NewRow();
+                dataTable.Rows.Add(row);
+            }
+            return row;
         }
     }
 }

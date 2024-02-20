@@ -6,7 +6,10 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using ColorVision.Common.Extension;
+using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.Camera.Calibrations;
+using ColorVision.Services.Devices.Camera.Dao;
+using ColorVision.Services.Devices.Spectrum.Views;
 using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
 using ColorVision.Settings;
@@ -40,6 +43,8 @@ namespace ColorVision.Services.Devices.Camera
             Device.IsEditMode = false;
         }
 
+        public ObservableCollection<CameraLicenseModel> LicenseModels { get; set; } = new ObservableCollection<CameraLicenseModel>();
+
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
@@ -51,6 +56,12 @@ namespace ColorVision.Services.Devices.Camera
                     grid.Children.Remove(userControl);
                 MQTTEditContent.Children.Add(userControl);
             }
+
+            foreach (var item in Device.CameraLicenseDao.GetAllByPid(Device.SysResourceModel.Id))
+            {
+                LicenseModels.Add(item);
+            } ;
+            ListViewLincense.ItemsSource = LicenseModels;
 
             var lists = Enum.GetValues(typeof(ResouceType)).Cast<ResouceType>();
             foreach (var item in lists)
@@ -244,6 +255,56 @@ namespace ColorVision.Services.Devices.Camera
         {
             CalibrationEdit CalibrationEdit = new CalibrationEdit(Device);
             CalibrationEdit.Show();
+        }
+
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+
+        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && ListViewLincense.View is GridView gridView)
+                GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
+        }
+
+        private void GridViewColumnSort(object sender, RoutedEventArgs e)
+        {
+            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
+            {
+                foreach (var item in GridViewColumnVisibilitys)
+                {
+                    if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
+                    {
+                        switch (item.ColumnName)
+                        {
+                            case "序号":
+                                item.IsSortD = !item.IsSortD;
+                                LicenseModels.SortByID(item.IsSortD);
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        private void Lincense_Refresh_Click(object sender, RoutedEventArgs e)
+        {
+            LicenseModels.Clear();
+            foreach (var item in Device.CameraLicenseDao.GetAllByPid(Device.SysResourceModel.Id))
+            {
+                LicenseModels.Add(item);
+            };
+            ListViewLincense.ItemsSource = LicenseModels;
+        }
+
+        private void TextBlock_PreviewMouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (sender is TextBlock textBlock)
+            {
+                ColorVision.NativeMethods.Clipboard.SetText(textBlock.Text);
+                MessageBox.Show(textBlock.Text);
+            }
         }
     }
 }

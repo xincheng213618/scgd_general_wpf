@@ -6,10 +6,12 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Algorithm;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.Camera.Configs;
+using ColorVision.Services.Devices.Camera.Dao;
 using ColorVision.Services.Devices.Camera.Views;
 using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
 using ColorVision.Solution;
+using ColorVision.Solution.V.Files;
 using ColorVision.Templates;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
@@ -54,6 +56,8 @@ namespace ColorVision.Services.Devices.Camera
         public MQTTTerminalCamera Service { get; set; }
 
         public RelayCommand UploadCalibrationCommand { get; set; }
+        public RelayCommand UploadLincenseCommand { get; set; }
+
         public RelayCommand FetchLatestTemperatureCommand { get; set; }
 
 
@@ -88,7 +92,35 @@ namespace ColorVision.Services.Devices.Camera
 
             FetchLatestTemperatureCommand =  new RelayCommand(a => FetchLatestTemperature(a));
 
+            UploadLincenseCommand = new RelayCommand(a => UploadLincense());
+
         }
+        public CameraLicenseDao CameraLicenseDao { get; set; } = new CameraLicenseDao();
+
+        private void UploadLincense()
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.RestoreDirectory = true;
+            openFileDialog.FilterIndex = 1;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                CameraLicenseModel cameraLicenseModel = new CameraLicenseModel();
+                cameraLicenseModel.RescourceId = SysResourceModel.Id;
+                cameraLicenseModel.CusTomerName = openFileDialog.FileName;
+                cameraLicenseModel.LicenseValue = File.ReadAllText(openFileDialog.FileName);
+                int ret = CameraLicenseDao.Save(cameraLicenseModel);
+                if (ret == -1)
+                {
+                    MessageBox.Show("添加失败");
+                }
+                else
+                {
+                    MessageBox.Show("添加成功");
+                }
+            }
+        }
+
+
         public CameraTempDao cameraTempDao { get; set; } = new CameraTempDao();   
 
         private void FetchLatestTemperature(object a)
