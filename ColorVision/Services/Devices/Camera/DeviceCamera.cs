@@ -84,7 +84,6 @@ namespace ColorVision.Services.Devices.Camera
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
 
 
-            CalibrationRsourceService.GetInstance().Refresh();
             TemplateControl.GetInstance().LoadModCabParam(CalibrationParams, SysResourceModel.Id, ModMasterType.Calibration);
 
             FetchLatestTemperatureCommand =  new RelayCommand(a => FetchLatestTemperature(a));
@@ -364,15 +363,17 @@ namespace ColorVision.Services.Devices.Camera
                                 continue;
                             }
                             GroupService groupService = GroupService.AddGroupService(this, filePath);
-
-                            foreach (var item1 in keyValuePairs)
+                            if (groupService != null)
                             {
-                                if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
+                                foreach (var item1 in keyValuePairs)
                                 {
-                                    groupService.AddChild(colorVisionVCalibratioItems);
+                                    if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
+                                    {
+                                        groupService.AddChild(colorVisionVCalibratioItems);
+                                    }
                                 }
+                                groupService.SetCalibrationResource(this);
                             }
-                            groupService.SetCalibrationResource(this);
                         }
                     }
                     catch (Exception ex)

@@ -1,4 +1,5 @@
-﻿using ColorVision.Draw;
+﻿#pragma warning disable CS8604 // 引用类型参数可能为 null。
+using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
 using ColorVision.MVVM;
 using ColorVision.Net;
@@ -850,7 +851,7 @@ namespace ColorVision.Media
                         Circle.Attribute.Radius = item.Radius;
                         Circle.Attribute.Brush = Brushes.Transparent;
                         Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                        Circle.Attribute.ID = (int)item.Id;
+                        Circle.Attribute.ID = item.Id ?? -1;
                         Circle.Attribute.Text = item.Name;
                         Circle.Render();
                         ImageShow.AddVisual(Circle);
@@ -860,7 +861,7 @@ namespace ColorVision.Media
                         Rectangle.Attribute.Rect = new Rect(item.PixelX, item.PixelY, item.Width, item.Height);
                         Rectangle.Attribute.Brush = Brushes.Transparent;
                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                        Rectangle.Attribute.ID = (int)item.Id;
+                        Rectangle.Attribute.ID = item.Id ?? -1;
                         Rectangle.Attribute.Name = item.Name;
                         Rectangle.Render();
                         ImageShow.AddVisual(Rectangle);

@@ -8,7 +8,7 @@ namespace ColorVision.Services.Devices
 {
     public class GroupService: BaseResourceObject
     {
-        public static GroupService AddGroupService(DeviceService deviceService , string Name)
+        public static GroupService? AddGroupService(DeviceService deviceService , string Name)
         {
             SysResourceModel sysResourceModel = new SysResourceModel() { Name = Name ,Type = (int)ResourceType.Group };
             sysResourceModel.Pid = deviceService.SysResourceModel.Id;

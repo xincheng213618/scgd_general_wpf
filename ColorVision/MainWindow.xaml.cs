@@ -201,7 +201,7 @@ namespace ColorVision
             SolutionTab.Content = new TreeViewControl();
         }
 
-        public async Task EnsureLocalInfile()
+        public async static Task EnsureLocalInfile()
         {
             await Task.Delay(3000);
             log.Info($"{DateTime.Now}:EnsureLocalInfile ");
@@ -402,7 +402,7 @@ namespace ColorVision
             }
         }
 
-        private UserControl _draggedItem;
+        private UserControl? _draggedItem;
         /// <summary>ドラッグアイテムインデックス</summary>
         private int? _draggedItemIndex;
 
@@ -509,7 +509,7 @@ namespace ColorVision
                 UserControl dropTargetItem = ViewHelper.FindVisualParent<UserControl>(result.VisualHit);
 
                 // ドラッグ中、かつ、ドロップ位置のアイテムがドロップ対象ならアイテムを移動する
-                if (_draggedItem != null && dropTargetItem != null)
+                if (_draggedItem != null && dropTargetItem != null && _draggedItemIndex!=null)
                 {
                     // アイテムの移動
                     int dropTargetItemIndex = xMainPanel.Children.IndexOf(dropTargetItem);

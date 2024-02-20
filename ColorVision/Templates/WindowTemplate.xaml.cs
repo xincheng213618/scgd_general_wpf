@@ -82,7 +82,6 @@ namespace ColorVision.Templates
                 case TemplateType.Calibration:
                     if (IsReLoad)
                     {
-                        CalibrationRsourceService.GetInstance().Refresh();
                         TemplateControl.LoadModCabParam(DeviceCamera.CalibrationParams, DeviceCamera.SysResourceModel.Id, ModMasterType.Calibration);
                     }
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(DeviceCamera.CalibrationParams);
@@ -91,7 +90,6 @@ namespace ColorVision.Templates
                 case TemplateType.SpectrumResourceParam:
                     if (IsReLoad)
                     {
-                        CalibrationRsourceService.GetInstance().Refresh();
                         TemplateControl.LoadModCabParam(DeviceSpectrum.SpectrumResourceParams, DeviceSpectrum.SysResourceModel.Id, ModMasterType.SpectrumResource);
                     }
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(DeviceSpectrum.SpectrumResourceParams);

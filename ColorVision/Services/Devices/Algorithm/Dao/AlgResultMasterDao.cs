@@ -68,8 +68,10 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
             keyValuePairs.Add("batch_id", batchid);
             keyValuePairs.Add("img_file_type", ImageType);
             keyValuePairs.Add("img_file", fileName);
+#pragma warning disable CS8604 // 引用类型参数可能为 null。
             keyValuePairs.Add(">create_date", dateTimeStart);
             keyValuePairs.Add("<create_date", dateTimeEnd);
+#pragma warning restore CS8604 // 引用类型参数可能为 null。
             return ConditionalQuery(keyValuePairs);
         }
 

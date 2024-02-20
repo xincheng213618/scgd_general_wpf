@@ -25,7 +25,7 @@ namespace ColorVision.Services.Flow.Templates
             {
                 ModDetailModel mod = new ModDetailModel() { Id = model.Id, Pid = model.Pid, IsDelete = model.IsDelete, IsEnable = model.IsEnable, Symbol = model.Symbol, SysPid = model.SysPid, ValueA = model.ValueA, ValueB = model.ValueB };
                 modDetailModels.Add(mod);
-                dataBase64 = model.Value;
+                dataBase64 = model.Value ??string.Empty;
             }
             AddDetail(modDetailModels);
         }

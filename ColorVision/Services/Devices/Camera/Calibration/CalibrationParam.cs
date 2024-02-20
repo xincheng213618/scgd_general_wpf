@@ -37,10 +37,6 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
         }
 
         public int Delete(int id) => resourceDao.DeleteById(id);
-
-        public void Refresh()
-        {
-        }
     }
 
 

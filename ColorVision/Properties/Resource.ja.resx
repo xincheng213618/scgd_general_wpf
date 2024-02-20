@@ -624,4 +624,7 @@
   <data name="ChangeLog" xml:space="preserve">
     <value>変更ログ</value>
   </data>
+  <data name="SerialNumber1" xml:space="preserve">
+    <value>シリアルナンバー</value>
+  </data>
 </root>

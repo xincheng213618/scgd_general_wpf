@@ -82,7 +82,7 @@ namespace ColorVision.MySql
             MySqlConnection.Close();
         }
 
-        public int ExecuteNonQuery(string sql, Dictionary<string, object> param = null)
+        public int ExecuteNonQuery(string sql, Dictionary<string, object>? param = null)
         {
             int count = -1;
             try
