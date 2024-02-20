@@ -23,6 +23,7 @@ namespace ColorVision.Services.Devices.Camera.Dao
 
         [JsonProperty("expiry_date")]
         public string ExpiryDate { get; set; }
+        public DateTime ExpiryDateTime { get => TimeZone.CurrentTimeZone.ToLocalTime(new System.DateTime(1970, 1, 1)).AddSeconds(int.Parse(ExpiryDate)); }
 
         [JsonProperty("issue_date")]
         public string IssueDate { get; set; }

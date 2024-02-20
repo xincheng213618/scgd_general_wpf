@@ -106,7 +106,7 @@ namespace ColorVision.Services.Devices.Camera
             {
                 CameraLicenseModel cameraLicenseModel = new CameraLicenseModel();
                 cameraLicenseModel.RescourceId = SysResourceModel.Id;
-                cameraLicenseModel.CusTomerName = openFileDialog.FileName;
+                cameraLicenseModel.CusTomerName = openFileDialog.SafeFileName;
                 cameraLicenseModel.LicenseValue = File.ReadAllText(openFileDialog.FileName);
                 int ret = CameraLicenseDao.Save(cameraLicenseModel);
                 if (ret == -1)

@@ -452,15 +452,13 @@
                                                         </DataTemplate>
                                                     </GridViewColumn.CellTemplate>
                                                 </GridViewColumn>
-
                                                 <GridViewColumn  Header="expiry_date" >
                                                     <GridViewColumn.CellTemplate>
                                                         <DataTemplate  DataType="{x:Type dao:CameraLicenseModel}">
-                                                            <TextBlock Text="{Binding ColorVisionLincense.ExpiryDate}"/>
+                                                            <TextBlock Text="{Binding ColorVisionLincense.ExpiryDateTime, StringFormat=yyyy-MM-dd}" />
                                                         </DataTemplate>
                                                     </GridViewColumn.CellTemplate>
                                                 </GridViewColumn>
-
                                                 <GridViewColumn  Header="许可证信息">
                                                     <GridViewColumn.CellTemplate>
                                                         <DataTemplate  DataType="{x:Type dao:CameraLicenseModel}">
