@@ -22,7 +22,6 @@ using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
 using System.Windows.Controls;
-using static cvColorVision.GCSDLL;
 using ColorVision.Services.Dao;
 using ColorVision.Services.DAO;
 using ColorVision.Services.Flow;
@@ -204,7 +203,7 @@ namespace ColorVision.Services
                             terminalService.AddChild(devicePG);
                             DeviceServices.Add(devicePG);
                             break;
-                        case ColorVision.Services.ServiceTypes.Spectum:
+                        case ColorVision.Services.ServiceTypes.Spectrum:
                             DeviceSpectrum deviceSpectrum = new DeviceSpectrum(sysResourceModel);
                             svrObj = deviceSpectrum.DeviceService;
                             terminalService.AddChild(deviceSpectrum);
@@ -325,9 +324,6 @@ namespace ColorVision.Services
             }
         }
 
-
-
-
         public void ProcResult(FlowControlData flowControlData)
         {
             int totalTime = flowControlData.Params.TTL;
@@ -344,9 +340,9 @@ namespace ColorVision.Services
             for (int i = 0; i < resultSpec.Count; i++)
             {
                 var item = resultSpec[i];
-                ColorParam param = new ColorParam()
+                cvColorVision.GCSDLL.ColorParam param = new cvColorVision.GCSDLL.ColorParam()
                 {
-                    fx = item.fx??0,
+                    fx = item.fx ?? 0,
                     fy = item.fy ?? 0,
                     fu = item.fu ?? 0,
                     fv = item.fv ?? 0,
@@ -398,7 +394,6 @@ namespace ColorVision.Services
                 }
             }
         }
-
 
         public BatchResultMasterModel BatchSave(string sn)
         {

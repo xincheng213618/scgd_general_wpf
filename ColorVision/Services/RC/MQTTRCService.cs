@@ -6,6 +6,7 @@ using ColorVision.Services.Devices.Camera;
 using ColorVision.SettingUp;
 using MQTTMessageLib;
 using MQTTMessageLib.RC;
+using MQTTMessageLib.Util;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
@@ -130,7 +131,7 @@ namespace ColorVision.RC
                             if (respQurey != null)
                             {
                                 Application.Current.Dispatcher.Invoke((Action)delegate {
-                                    UpdateServiceStatus(respQurey.Data);
+                                    UpdateServices(respQurey.Data);
                                 });
                             }
                             break;
@@ -155,7 +156,6 @@ namespace ColorVision.RC
             }
             return Task.CompletedTask;
         }
-
 
         public static void UpdateServiceStatus(List<MQTTNodeServiceStatus> data)
         {
@@ -203,8 +203,77 @@ namespace ColorVision.RC
 
             }
         }
+        public static void UpdateServices(Dictionary<CVServiceType, List<MQTTNodeService>> services)
+        {
+            DoUpdateServices(services);
+        }
 
-        public static void UpdateServiceStatus(Dictionary<string, List<MQTTNodeService>> data)
+        private static TypeService GetTypeService(List<TypeService> svrs, CVServiceType serviceTypes)
+        {
+            ServiceTypes cvSType = EnumTool.ParseEnum<ServiceTypes>(serviceTypes.ToString());
+            foreach (var serviceKind in svrs)
+            {
+                if(cvSType == serviceKind.ServiceTypes) return serviceKind;
+            }
+
+            return null;
+        }
+
+        private static MQTTNodeService GetNodeService(List<MQTTNodeService> svrs,string codeName)
+        {
+            foreach (var nodeService in svrs)
+            {
+                if (codeName == nodeService.ServiceName)
+                {
+                    return nodeService;
+                }
+            }
+            return null;
+        }
+
+        public static void DoUpdateServices(Dictionary<CVServiceType, List<MQTTNodeService>> data)
+        {
+            List<TypeService> svrs = new List<TypeService>(ServiceManager.GetInstance().TypeServices);
+            Dictionary<string, string> tokens = ServiceManager.GetInstance().ServiceTokens;
+
+            foreach (var itemService in data)
+            {
+                var serviceKind = GetTypeService(svrs, itemService.Key);
+                if (serviceKind == null) { continue; }
+                foreach (var baseObject in serviceKind.VisualChildren)
+                {
+                    if (baseObject is TerminalService serviceTerminal)
+                    {
+                        var nodeService = GetNodeService(itemService.Value, serviceTerminal.Code);
+                        if (nodeService == null) { continue; }
+                        tokens[nodeService.ServiceName] = nodeService.ServiceToken;
+                        DateTime dateTime;
+                        if (DateTime.TryParse(nodeService.LiveTime, out dateTime)) serviceTerminal.Config.LastAliveTime = dateTime;
+                        else serviceTerminal.Config.LastAliveTime = DateTime.Now;
+                        serviceTerminal.Config.IsAlive = true;
+                        serviceTerminal.Config.SendTopic = nodeService.UpChannel;
+                        serviceTerminal.Config.SubscribeTopic = nodeService.DownChannel;
+                        serviceTerminal.Config.HeartbeatTime = nodeService.OverTime * 2;
+                        serviceTerminal.MQTTServiceTerminalBase.ServiceToken = nodeService.ServiceToken;
+
+                        foreach (var deviceObj in serviceTerminal.VisualChildren)
+                        {
+                            if (deviceObj is DeviceService baseChannel && baseChannel.GetConfig() is DeviceServiceConfig baseDeviceConfig)
+                            {
+                                baseDeviceConfig.ServiceToken = nodeService.ServiceToken;
+                                baseDeviceConfig.SendTopic = nodeService.UpChannel;
+                                baseDeviceConfig.SubscribeTopic = nodeService.DownChannel;
+                                var devNew = nodeService.GetDeviceByCode(baseDeviceConfig.Code);
+                                if (devNew == null) { continue; }
+                                baseDeviceConfig.IsAlive = true;
+                                baseDeviceConfig.DeviceStatus = (DeviceStatusType)Enum.Parse(typeof(DeviceStatusType), devNew.Status.ToString());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        public static void DoUpdateServicesOld(Dictionary<string, List<MQTTNodeService>> data)
         {
             List<TypeService> svrs = new List<TypeService>(ServiceManager.GetInstance().TypeServices);
             Dictionary<string, string> tokens = ServiceManager.GetInstance().ServiceTokens;
@@ -290,8 +359,6 @@ namespace ColorVision.RC
 
         }
 
-
-
         public bool ReRegist()
         {
             LoadCfg();
@@ -319,7 +386,6 @@ namespace ColorVision.RC
             }
             return false;
         }
-
 
         public void QueryServices()
         {

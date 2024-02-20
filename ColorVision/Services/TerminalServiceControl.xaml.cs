@@ -141,7 +141,7 @@ namespace ColorVision.Services
                         if (sysResourceModel != null)
                             serviceTerminal.AddChild(new DevicePG(sysResourceModel));
                         break;
-                    case ServiceTypes.Spectum:
+                    case ServiceTypes.Spectrum:
                         fromPort = (Math.Abs(new Random().Next()) % 99 + 6700);
                         deviceConfig = new ConfigSpectrum
                         {

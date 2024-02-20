@@ -8,7 +8,7 @@ namespace ColorVision.Services
     {
         camera = 1,
         pg = 2,
-        Spectum = 3,
+        Spectrum = 3,
         SMU = 4,
         Sensor = 5,
         FileServer = 6,
