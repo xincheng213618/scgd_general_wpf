@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿#pragma warning disable CS0618
+using ColorVision.Common.Utilities;
 using ColorVision.MVVM;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
@@ -57,7 +58,7 @@ namespace ColorVision.Services.Devices.Camera.Dao
 
         public string? LicenseContent { get => Tool.Base64Decode(LicenseValue?? string.Empty); }
 
-        public ColorVisionLincense ColorVisionLincense { get => JsonConvert.DeserializeObject<ColorVisionLincense>(LicenseContent); }
+        public ColorVisionLincense ColorVisionLincense { get => JsonConvert.DeserializeObject<ColorVisionLincense>(LicenseContent??string.Empty)?? new ColorVisionLincense(); }
 
         public string? Model { get; set; }
 
