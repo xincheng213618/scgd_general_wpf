@@ -118,11 +118,7 @@
                         <TabItem x:Name="ViewTab" Header="{x:Static properties:Resource.Acquire}" Width="150" >
                             <ScrollViewer x:Name="ScrollViewerDisplay" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
                                 <StackPanel x:Name="SPDisplay" >
-                                    <StackPanel x:Name="StackPanelSPD" Initialized="StackPanelSPD_Initialized" >
-                                        <behaviors:Interaction.Behaviors>
-                                            <behaviors:FluidMoveBehavior AppliesTo="Children" Duration="0:0:0.8"/>
-                                        </behaviors:Interaction.Behaviors>
-                                    </StackPanel>
+                                    <StackPanel x:Name="StackPanelSPD" Initialized="StackPanelSPD_Initialized"/>
                                 </StackPanel>
                             </ScrollViewer>
 

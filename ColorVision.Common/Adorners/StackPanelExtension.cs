@@ -1,5 +1,7 @@
-﻿using System.Windows;
+﻿using ColorVision.Common.Utilities;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.Adorners
@@ -11,11 +13,113 @@ namespace ColorVision.Adorners
     ///++++++++++++++++++++++++++++++++++++++++++++++++++++
     public static class StackPanelExtension
     {
+
+        public static void AddAdorners(this Panel panel,Window window)
+        {
+            UserControl? _draggedItem = null;
+
+            int? _draggedItemIndex = null;
+            Point? _initialPosition = null;
+            Point _mouseOffsetFromItem = new Point();
+
+            DragUserControlAdorner? _dragContentAdorner = null;
+            InsertionAdorner? _insertionAdorner = null;
+
+
+            void OnMainPanelMouseLeftButtonDown(object sender, MouseButtonEventArgs args)
+            {
+                if (args.Source is not UserControl draggedItem) return;
+
+                if (panel.CaptureMouse())
+                {
+                    _draggedItem = draggedItem;
+                    _draggedItemIndex = panel.Children.IndexOf(draggedItem);
+
+                    _initialPosition = window.PointToScreen(args.GetPosition(window));
+                    _mouseOffsetFromItem = draggedItem.PointFromScreen(_initialPosition.Value);
+                }
+            }
+
+            void OnMainPanelMouseMove(object sender, MouseEventArgs args)
+            {
+                if (_draggedItem == null || _initialPosition == null) return;
+
+                _dragContentAdorner ??= new DragUserControlAdorner(panel, _draggedItem, _mouseOffsetFromItem);
+
+                Point ptMovePanel = args.GetPosition(panel);
+                Point ptMoveScreen = window.PointToScreen(args.GetPosition(window));
+
+                _dragContentAdorner.SetScreenPosition(ptMoveScreen);
+
+                if (panel.GetChildElement(ptMovePanel) is not UserControl dropTargetItem)
+                {
+                    _insertionAdorner?.Detach();
+                    _insertionAdorner = null;
+                }
+                else if (!dropTargetItem.Equals(_insertionAdorner?.AdornedElement))
+                {
+                    _insertionAdorner?.Detach();
+                    int indexDraggedItem = panel.Children.IndexOf(_draggedItem);
+                    int indexDropTargetItem = panel.Children.IndexOf(dropTargetItem);
+                    _insertionAdorner =
+                        (indexDraggedItem == indexDropTargetItem) ? null :
+                            (indexDraggedItem < indexDropTargetItem) ?
+                                new InsertionAdorner(dropTargetItem, true) :
+                                new InsertionAdorner(dropTargetItem, false);
+                }
+                else
+                {
+                }
+            }
+            void OnMainPanelMouseLeftButtonUp(object sender, MouseButtonEventArgs args)
+            {
+                Point ptUp = args.GetPosition(panel);
+                HitTestResult result = VisualTreeHelper.HitTest(panel, ptUp);
+                if (result != null)
+                {
+                    UserControl dropTargetItem = ViewHelper.FindVisualParent<UserControl>(result.VisualHit);
+
+                    if (_draggedItem != null && dropTargetItem != null && _draggedItemIndex != null)
+                    {
+                        int dropTargetItemIndex = panel.Children.IndexOf(dropTargetItem);
+                        UserControl draggedItem = panel.Children[_draggedItemIndex.Value] as UserControl;
+                        panel.Children.RemoveAt(_draggedItemIndex.Value);
+                        panel.Children.Insert(dropTargetItemIndex, draggedItem);
+                    }
+                }
+                panel.ReleaseMouseCapture();
+            }
+
+            void OnMainPanelLostMouseCapture(object sender, MouseEventArgs args)
+            {
+                _dragContentAdorner?.Detach();
+                _dragContentAdorner = null;
+                _insertionAdorner?.Detach();
+                _insertionAdorner = null;
+
+                // フィールドの初期化
+                _draggedItem = null;
+                _draggedItemIndex = null;
+                _initialPosition = null;
+            }
+
+
+            panel.MouseLeftButtonDown += OnMainPanelMouseLeftButtonDown;
+            panel.MouseMove += OnMainPanelMouseMove;
+            panel.MouseLeftButtonUp += OnMainPanelMouseLeftButtonUp;
+            panel.LostMouseCapture += OnMainPanelLostMouseCapture;
+
+        }
+
+
+
+
+
         /// <summary>スタックパネル子要素の取得</summary>
         /// <param name="stackpanel">拡張対象のオブジェクト</param>
         /// <param name="pt">位置</param>
         /// <returns></returns>
-        public static UIElement? GetChildElement(this StackPanel stackpanel, Point pt)
+        public static UIElement? GetChildElement(this UIElement stackpanel, Point pt)
         {
             UIElement hit = null;
             VisualTreeHelper.HitTest(
