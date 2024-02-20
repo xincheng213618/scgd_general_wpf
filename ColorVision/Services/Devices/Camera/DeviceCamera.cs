@@ -108,6 +108,8 @@ namespace ColorVision.Services.Devices.Camera
                 cameraLicenseModel.RescourceId = SysResourceModel.Id;
                 cameraLicenseModel.MacAddress = openFileDialog.SafeFileName;
                 cameraLicenseModel.LicenseValue = File.ReadAllText(openFileDialog.FileName);
+                cameraLicenseModel.CusTomerName = cameraLicenseModel.ColorVisionLincense.Licensee;
+                cameraLicenseModel.Model = cameraLicenseModel.ColorVisionLincense.DeviceMode;
                 int ret = CameraLicenseDao.Save(cameraLicenseModel);
                 if (ret == -1)
                 {
