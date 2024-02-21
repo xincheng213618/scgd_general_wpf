@@ -4,6 +4,7 @@ using ColorVision.Services;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Settings;
+using log4net;
 using MQTTMessageLib;
 using MQTTMessageLib.RC;
 using MQTTMessageLib.Util;
@@ -37,6 +38,7 @@ namespace ColorVision.RC
     /// </summary>
     public class MQTTRCService : MQTTServiceBase
     {
+        private static readonly log4net.ILog logger = LogManager.GetLogger(typeof(MQTTRCService));
         private static MQTTRCService _instance;
         private static readonly object _locker = new();
         public static MQTTRCService GetInstance() { lock (_locker) { return _instance ??= new MQTTRCService(); } }
@@ -156,8 +158,7 @@ namespace ColorVision.RC
             }
             return Task.CompletedTask;
         }
-
-        public static void UpdateServiceStatus(List<MQTTNodeServiceStatus> data)
+        public static void UpdateServiceStatus(List<MQTTNodeServiceStatus> services)
         {
             foreach (var serviceKind in ServiceManager.GetInstance().TypeServices.ToList())
             {
@@ -165,13 +166,13 @@ namespace ColorVision.RC
                 {
                     if (baseObject is TerminalService serviceTerminal)
                     {
-                        foreach (var ss in data)
+                        foreach (var svr in services)
                         {
-                            if (ss.ServiceType.ToLower(CultureInfo.CurrentCulture) == serviceKind.ServiceTypes.ToString().ToLower(CultureInfo.CurrentCulture) && ss.ServiceName == serviceTerminal.Code)
+                            if (svr.ServiceType.ToLower(CultureInfo.CurrentCulture) == serviceKind.ServiceTypes.ToString().ToLower(CultureInfo.CurrentCulture) && svr.ServiceName == serviceTerminal.Code)
                             {
                                 serviceTerminal.Config.IsAlive = true;
                                 serviceTerminal.Config.LastAliveTime = DateTime.Now;
-                                foreach (var devNew in ss.DeviceList)
+                                foreach (var devNew in svr.DeviceList)
                                 {
                                     foreach (var dev in serviceTerminal.VisualChildren)
                                     {
@@ -179,21 +180,26 @@ namespace ColorVision.RC
                                         {
                                             if (devNew.Code == baseDeviceConfig.Code)
                                             {
-                                                baseDeviceConfig.IsAlive = true;
-                                                baseDeviceConfig.LastAliveTime = DateTime.Parse(ss.LiveTime);
-                                                baseDeviceConfig.DeviceStatus = (DeviceStatusType)Enum.Parse(typeof(DeviceStatusType), devNew.Status);
-                                                if (dev is DeviceCamera deviceCamera)
+                                                if (!string.IsNullOrEmpty(svr.LiveTime))
                                                 {
-                                                    deviceCamera.DeviceService.DeviceStatus = baseDeviceConfig.DeviceStatus;
+                                                    DateTime lastLive;
+                                                    if(DateTime.TryParse(svr.LiveTime,out lastLive))
+                                                    {
+                                                        baseDeviceConfig.IsAlive = true;
+                                                        baseDeviceConfig.LastAliveTime = lastLive;
+                                                        baseDeviceConfig.DeviceStatus = (DeviceStatusType)Enum.Parse(typeof(DeviceStatusType), devNew.Status);
+                                                        if (dev is DeviceCamera deviceCamera)
+                                                        {
+                                                            deviceCamera.DeviceService.DeviceStatus = baseDeviceConfig.DeviceStatus;
+                                                        }
+                                                    }
                                                 }
+   
                                                 break;
                                             }
                                         }
                                     }
                                 }
-
-
-
                             }
                         }
 
@@ -247,10 +253,10 @@ namespace ColorVision.RC
                         var nodeService = GetNodeService(itemService.Value, serviceTerminal.Code);
                         if (nodeService == null) { continue; }
                         tokens[nodeService.ServiceName] = nodeService.ServiceToken;
-                        DateTime dateTime;
-                        if (DateTime.TryParse(nodeService.LiveTime, out dateTime)) serviceTerminal.Config.LastAliveTime = dateTime;
-                        else serviceTerminal.Config.LastAliveTime = DateTime.Now;
-                        serviceTerminal.Config.IsAlive = true;
+                        //DateTime dateTime;
+                        //if (DateTime.TryParse(nodeService.LiveTime, out dateTime)) serviceTerminal.Config.LastAliveTime = dateTime;
+                        //else serviceTerminal.Config.LastAliveTime = DateTime.Now;
+                        //serviceTerminal.Config.IsAlive = true;
                         serviceTerminal.Config.SendTopic = nodeService.UpChannel;
                         serviceTerminal.Config.SubscribeTopic = nodeService.DownChannel;
                         serviceTerminal.Config.HeartbeatTime = nodeService.OverTime * 2;
@@ -263,10 +269,10 @@ namespace ColorVision.RC
                                 baseDeviceConfig.ServiceToken = nodeService.ServiceToken;
                                 baseDeviceConfig.SendTopic = nodeService.UpChannel;
                                 baseDeviceConfig.SubscribeTopic = nodeService.DownChannel;
-                                var devNew = nodeService.GetDeviceByCode(baseDeviceConfig.Code);
-                                if (devNew == null) { continue; }
-                                baseDeviceConfig.IsAlive = true;
-                                baseDeviceConfig.DeviceStatus = (DeviceStatusType)Enum.Parse(typeof(DeviceStatusType), devNew.Status.ToString());
+                                //var devNew = nodeService.GetDeviceByCode(baseDeviceConfig.Code);
+                                //if (devNew == null) { continue; }
+                                //baseDeviceConfig.IsAlive = true;
+                                //baseDeviceConfig.DeviceStatus = (DeviceStatusType)Enum.Parse(typeof(DeviceStatusType), devNew.Status.ToString());
                             }
                         }
                     }
