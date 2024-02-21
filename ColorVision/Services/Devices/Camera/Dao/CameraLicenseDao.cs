@@ -128,6 +128,9 @@ namespace ColorVision.Services.Devices.Camera.Dao
             return row;
         }
 
+        public List<CameraLicenseModel> GetAllByMAC(string id ,int pid) => GetAllByParam(new Dictionary<string, object>() { { "mac_sn", id },{ "pid", pid } });
+
+
         public CameraLicenseModel? GetLatestCameraTemp(int? resId = null)
         {
             return GetCameraTempsByCreateDate(resId, limit: 1).FirstOrDefault();

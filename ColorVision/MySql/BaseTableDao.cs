@@ -35,6 +35,8 @@ namespace ColorVision.MySql
         }
 
 
+
+
         public List<T> GetAll() => GetAllByParam(new Dictionary<string, object>());
         public List<T> GetAllById(int id) => GetAllByParam(new Dictionary<string, object>() { { "id", id } });
         public List<T> GetAllByPid (int pid) => GetAllByParam(new Dictionary<string, object>() { { "pid", pid } });

@@ -412,7 +412,11 @@
                             </TabItem>
                             <TabItem Header="许可证信息">
                                 <StackPanel Margin="5">
-                                    <Button Content="刷新" Click="Lincense_Refresh_Click" />
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Content="上传" Command="{Binding UploadLincenseCommand}"/>
+                                        <Button Content="刷新" Command="{Binding RefreshLincenseCommand}"/>
+                                    </StackPanel>
+  
                                     <ListView  Height="250" Grid.Row="1" BorderThickness="0" Background="Transparent" x:Name="ListViewLincense" Margin="-5"  Style="{StaticResource ListView.Small}"  >
                                         <ListView.Resources>
                                             <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>

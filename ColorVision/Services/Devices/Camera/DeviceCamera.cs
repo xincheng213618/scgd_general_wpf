@@ -56,10 +56,8 @@ namespace ColorVision.Services.Devices.Camera
         public MQTTTerminalCamera Service { get; set; }
 
         public RelayCommand UploadCalibrationCommand { get; set; }
-        public RelayCommand UploadLincenseCommand { get; set; }
 
         public RelayCommand FetchLatestTemperatureCommand { get; set; }
-
 
         public DeviceCamera(SysResourceModel sysResourceModel, MQTTTerminalCamera cameraService) : base(sysResourceModel)
         {
@@ -93,9 +91,23 @@ namespace ColorVision.Services.Devices.Camera
             FetchLatestTemperatureCommand =  new RelayCommand(a => FetchLatestTemperature(a));
 
             UploadLincenseCommand = new RelayCommand(a => UploadLincense());
-
+            RefreshLincenseCommand = new RelayCommand(a => RefreshLincense());
         }
+        #region License
+        public RelayCommand UploadLincenseCommand { get; set; }
+        public RelayCommand RefreshLincenseCommand { get; set; }
+
         public CameraLicenseDao CameraLicenseDao { get; set; } = new CameraLicenseDao();
+        public ObservableCollection<CameraLicenseModel> LicenseModels { get; set; } = new ObservableCollection<CameraLicenseModel>();
+
+        public void RefreshLincense()
+        {
+            LicenseModels.Clear();
+            foreach (var item in CameraLicenseDao.GetAllByPid(SysResourceModel.Id))
+            {
+                LicenseModels.Add(item);
+            };
+        }
 
         private void UploadLincense()
         {
@@ -104,25 +116,35 @@ namespace ColorVision.Services.Devices.Camera
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
+
                 CameraLicenseModel cameraLicenseModel = new CameraLicenseModel();
                 cameraLicenseModel.RescourceId = SysResourceModel.Id;
-                cameraLicenseModel.MacAddress = openFileDialog.SafeFileName;
+                cameraLicenseModel.MacAddress =  Path.GetFileNameWithoutExtension(openFileDialog.SafeFileName);
                 cameraLicenseModel.LicenseValue = File.ReadAllText(openFileDialog.FileName);
                 cameraLicenseModel.CusTomerName = cameraLicenseModel.ColorVisionLincense.Licensee;
                 cameraLicenseModel.Model = cameraLicenseModel.ColorVisionLincense.DeviceMode;
                 cameraLicenseModel.ExpiryDate = cameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
-                int ret = CameraLicenseDao.Save(cameraLicenseModel);
-                if (ret == -1)
+
+                if (CameraLicenseDao.GetAllByMAC(cameraLicenseModel.MacAddress, SysResourceModel.Id).Count == 0)
                 {
-                    MessageBox.Show("添加失败");
+                    int ret = CameraLicenseDao.Save(cameraLicenseModel);
+                    if (ret == -1)
+                    {
+                        MessageBox.Show("添加失败");
+                    }
+                    else
+                    {
+                        MessageBox.Show("添加成功");
+                    }
                 }
                 else
                 {
-                    MessageBox.Show("添加成功");
+                    MessageBox.Show("重复添加许可证文件");
                 }
+                RefreshLincense();
             }
         }
-
+        #endregion
 
         public CameraTempDao cameraTempDao { get; set; } = new CameraTempDao();   
 

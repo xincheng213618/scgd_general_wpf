@@ -57,11 +57,8 @@ namespace ColorVision.Services.Devices.Camera
                 MQTTEditContent.Children.Add(userControl);
             }
 
-            foreach (var item in Device.CameraLicenseDao.GetAllByPid(Device.SysResourceModel.Id))
-            {
-                LicenseModels.Add(item);
-            } ;
-            ListViewLincense.ItemsSource = LicenseModels;
+            Device.RefreshLincense();
+            ListViewLincense.ItemsSource = Device.LicenseModels;
 
             var lists = Enum.GetValues(typeof(ResouceType)).Cast<ResouceType>();
             foreach (var item in lists)
@@ -288,15 +285,6 @@ namespace ColorVision.Services.Devices.Camera
             }
         }
 
-        private void Lincense_Refresh_Click(object sender, RoutedEventArgs e)
-        {
-            LicenseModels.Clear();
-            foreach (var item in Device.CameraLicenseDao.GetAllByPid(Device.SysResourceModel.Id))
-            {
-                LicenseModels.Add(item);
-            };
-            ListViewLincense.ItemsSource = LicenseModels;
-        }
 
         private void TextBlock_PreviewMouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
