@@ -109,7 +109,7 @@
                 <Grid x:Name="ViewGrid" Background="LightGray"  Visibility="{Binding ElementName=SolutionTab,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter1}}"/>
                 <Grid x:Name="SolutionGrid" Background="LightGray" Visibility="{Binding ElementName=SolutionTab,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter}}"/>
             </Grid>
-            <Border  Grid.Row="0" Panel.ZIndex="101"  Background="{DynamicResource GlobalBackground}" BorderThickness="0,0,1,1"  BorderBrush="{DynamicResource BorderBrush}" Margin="-1,0,0,0">
+            <Border  Grid.Row="0" Panel.ZIndex="101"  Background="{DynamicResource GlobalBackground}" BorderThickness="0,0,1,0"  BorderBrush="{DynamicResource BorderBrush}" Margin="-1,0,0,0">
                 <Grid  x:Name="LeftMainContent" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
                     <UIElement.RenderTransform>
                         <TranslateTransform />
