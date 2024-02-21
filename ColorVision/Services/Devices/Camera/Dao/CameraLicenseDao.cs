@@ -65,7 +65,7 @@ namespace ColorVision.Services.Devices.Camera.Dao
 
         public string? MacAddress { get; set; }
 
-        public DateTime ExpiryDate { get; set; }
+        public DateTime? ExpiryDate { get; set; }
 
         public string? CusTomerName { get; set; }
 
