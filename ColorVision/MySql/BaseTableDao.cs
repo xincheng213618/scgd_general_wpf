@@ -16,7 +16,7 @@ namespace ColorVision.MySql
 
         public virtual T? GetModelFromDataRow(DataRow item) => default;
         public virtual DataRow Model2Row(T item, DataRow row) => row;
-        public virtual DataTable CreateColumns(DataTable dInfo) => dInfo;
+        public virtual DataTable CreateColumns(DataTable dataTable) => dataTable;
 
         public DataTable SelectById(int id)
         {

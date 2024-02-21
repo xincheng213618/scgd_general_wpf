@@ -110,6 +110,7 @@ namespace ColorVision.Services.Devices.Camera
                 cameraLicenseModel.LicenseValue = File.ReadAllText(openFileDialog.FileName);
                 cameraLicenseModel.CusTomerName = cameraLicenseModel.ColorVisionLincense.Licensee;
                 cameraLicenseModel.Model = cameraLicenseModel.ColorVisionLincense.DeviceMode;
+                cameraLicenseModel.ExpiryDate = cameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
                 int ret = CameraLicenseDao.Save(cameraLicenseModel);
                 if (ret == -1)
                 {

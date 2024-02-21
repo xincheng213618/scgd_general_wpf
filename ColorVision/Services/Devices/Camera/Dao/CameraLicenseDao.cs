@@ -50,6 +50,7 @@ namespace ColorVision.Services.Devices.Camera.Dao
         public CameraLicenseModel()
         {
             CreateDate = DateTime.Now;
+            ExpiryDate = DateTime.Now;
         }
 
         public int? RescourceId { get; set; }
@@ -63,6 +64,8 @@ namespace ColorVision.Services.Devices.Camera.Dao
         public string? Model { get; set; }
 
         public string? MacAddress { get; set; }
+
+        public DateTime ExpiryDate { get; set; }
 
         public string? CusTomerName { get; set; }
 
@@ -80,16 +83,17 @@ namespace ColorVision.Services.Devices.Camera.Dao
 
         }
 
-        public override DataTable CreateColumns(DataTable dInfo)
+        public override DataTable CreateColumns(DataTable dataTable)
         {
-            dInfo.Columns.Add("id", typeof(int));
-            dInfo.Columns.Add("customer_name", typeof(string));
-            dInfo.Columns.Add("mac_sn", typeof(string));
-            dInfo.Columns.Add("model", typeof(string));
-            dInfo.Columns.Add("value", typeof(string));
-            dInfo.Columns.Add("pid", typeof(int));
-            dInfo.Columns.Add("create_date", typeof(DateTime));
-            return dInfo;
+            dataTable.Columns.Add("id", typeof(int));
+            dataTable.Columns.Add("customer_name", typeof(string));
+            dataTable.Columns.Add("mac_sn", typeof(string));
+            dataTable.Columns.Add("model", typeof(string));
+            dataTable.Columns.Add("value", typeof(string));
+            dataTable.Columns.Add("pid", typeof(int));
+            dataTable.Columns.Add("create_date", typeof(DateTime));
+            dataTable.Columns.Add("expired", typeof(DateTime));
+            return dataTable;
         }
 
         public override CameraLicenseModel GetModelFromDataRow(DataRow item)
@@ -103,6 +107,7 @@ namespace ColorVision.Services.Devices.Camera.Dao
                 MacAddress = item.Field<string>("mac_sn"),
                 CusTomerName = item.Field<string>("customer_name"),
                 CreateDate = item.Field<DateTime>("create_date"),
+                ExpiryDate = item.Field<DateTime>("expired")
             };
             return model;
         }
@@ -118,6 +123,7 @@ namespace ColorVision.Services.Devices.Camera.Dao
                 row["mac_sn"] = item.MacAddress;
                 row["customer_name"] = item.CusTomerName;
                 row["create_date"] = item.CreateDate;
+                row["expired"] = item.ExpiryDate;
             }
             return row;
         }
