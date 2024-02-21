@@ -43,13 +43,26 @@ namespace ColorVision.Update
             // 搜索所有匹配的更新文件
             string[] updateFiles = Directory.GetFiles(tempPath, "ColorVision-*.exe");
 
+            var localVersion = Assembly.GetExecutingAssembly().GetName().Version;
+
             foreach (string updateFile in updateFiles)
             {
                 try
                 {
-                    // 删除文件
-                    File.Delete(updateFile);
-                    log.Info($"Deleted update file: {updateFile}");
+                    FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(updateFile);
+                    if (localVersion < new Version(fileVersionInfo.FileVersion??string.Empty))
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            RestartApplication(updateFile);
+                        });
+                    }
+                    else
+                    {
+                        // 删除文件
+                        File.Delete(updateFile);
+                        log.Info($"Deleted update file: {updateFile}");
+                    }
                 }
                 catch (Exception ex)
                 {
