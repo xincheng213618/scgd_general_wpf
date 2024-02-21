@@ -33,7 +33,7 @@ namespace ColorVision.Services.Devices.Camera
             CameraService.Devices.Add(this);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatusType.OffLine;
-            GetAllCameraID();
+            //GetAllCameraID();
         }
 
         public override void Dispose()
