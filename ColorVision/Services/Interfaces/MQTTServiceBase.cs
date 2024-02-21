@@ -1,5 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MVVM;
+using ColorVision.RC;
 using ColorVision.Services.Msg;
 using log4net;
 using MQTTMessageLib;
@@ -58,6 +59,12 @@ namespace ColorVision.Services
                             Connected?.Invoke(this, new EventArgs());
                         }
                         IsAlive = true;
+                        return Task.CompletedTask;
+                    }
+                    //Token unavailable
+                    if (json.Code == -10)
+                    {
+                        MQTTRCService.GetInstance().QueryServices();
                         return Task.CompletedTask;
                     }
 
