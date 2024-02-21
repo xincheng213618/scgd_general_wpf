@@ -21,14 +21,14 @@ namespace ColorVision.Services.Dao
         {
         }
 
-        public override DataTable CreateColumns(DataTable dInfo)
+        public override DataTable CreateColumns(DataTable dataTable)
         {
-            dInfo.Columns.Add("id", typeof(int));
-            dInfo.Columns.Add("temp_value", typeof(float));
-            dInfo.Columns.Add("pwm_value", typeof(int));
-            dInfo.Columns.Add("create_date", typeof(DateTime));
-            dInfo.Columns.Add("res_id", typeof(int));
-            return dInfo;
+            dataTable.Columns.Add("id", typeof(int));
+            dataTable.Columns.Add("temp_value", typeof(float));
+            dataTable.Columns.Add("pwm_value", typeof(int));
+            dataTable.Columns.Add("create_date", typeof(DateTime));
+            dataTable.Columns.Add("res_id", typeof(int));
+            return dataTable;
         }
 
         public override CameraTempModel GetModelFromDataRow(DataRow item)
