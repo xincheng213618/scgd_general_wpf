@@ -11,6 +11,13 @@ namespace ColorVision.Common.Utilities
     /// </summary>
     public static class ImageUtil
     {
+        private static BrushConverter brushConverter = new BrushConverter();
+
+        public static Brush? ConvertFromString(string colorCode)
+        {
+            return (Brush)brushConverter.ConvertFromString(colorCode);
+        }
+
         private static BitmapImage BitmapToImageSource(System.Drawing.Bitmap bitmap)
         {
             using (MemoryStream memory = new MemoryStream())

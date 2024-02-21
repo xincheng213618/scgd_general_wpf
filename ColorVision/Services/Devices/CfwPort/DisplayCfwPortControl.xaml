@@ -30,7 +30,7 @@
                 </Grid>
             </Grid>     
         </DockPanel>
-        <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
+        <Border x:Name="DisPlayBorder"  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel   Margin="5" >
                 <Button Margin="0,2" Content="连接"  Click="Open_Click"/>
                 <DockPanel Margin="0,2">

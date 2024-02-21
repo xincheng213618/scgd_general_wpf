@@ -1,6 +1,9 @@
-﻿using ColorVision.Media;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Media;
 using ColorVision.Net;
+using ColorVision.Services.Interfaces;
 using ColorVision.Settings;
+using ColorVision.Themes;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
@@ -11,6 +14,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 
 namespace ColorVision.Device.FileServer
@@ -18,7 +22,7 @@ namespace ColorVision.Device.FileServer
     /// <summary>
     /// ImageDisplayControl.xaml 的交互逻辑
     /// </summary>
-    public partial class FileServerDisplayControl : UserControl
+    public partial class FileServerDisplayControl : UserControl,IDisPlayControl
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(FileServerDisplayControl));
         public DeviceFileServer DeviceImg { get; set; }
@@ -36,6 +40,22 @@ namespace ColorVision.Device.FileServer
             netFileUtil.handler += NetFileUtil_handler;
 
             DeviceImg.DeviceService.OnImageData += Service_OnImageData;
+
+            this.PreviewMouseDown += UserControl_PreviewMouseDown;
+        }
+
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");  } }
+        private bool _IsSelected;
+
+        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (this.Parent is StackPanel stackPanel)
+            {
+                if (stackPanel.Tag is IDisPlayControl disPlayControl)
+                    disPlayControl.IsSelected = false;
+                stackPanel.Tag = this;
+                IsSelected = true;
+            }
         }
 
         private void NetFileUtil_handler(object sender, NetFileEvent arg)

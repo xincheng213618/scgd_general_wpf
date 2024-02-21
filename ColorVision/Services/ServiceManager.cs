@@ -52,9 +52,7 @@ namespace ColorVision.Services
 
 
         private ResultService resultService;
-
-        public StackPanel StackPanel { get; set; } = new StackPanel();
-
+        public ObservableCollection<IDisPlayControl> DisPlayControls { get; set; } = new ObservableCollection<IDisPlayControl>();
 
 
         public ServiceManager()
@@ -66,9 +64,6 @@ namespace ColorVision.Services
 
             svrDevices = new Dictionary<string, List<MQTTServiceBase>>();
             ServiceTokens = new Dictionary<string,string>();
-
-            StackPanel = new StackPanel();
-
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadServices();
             LoadServices();
         }
@@ -76,12 +71,15 @@ namespace ColorVision.Services
         public void GenControl(ObservableCollection<DeviceService> MQTTDevices)
         {
             LastGenControl = MQTTDevices;
-            StackPanel.Children.Clear();
+            DisPlayControls.Clear();
             foreach (var item in MQTTDevices)
             {
                 if (item is DeviceService device)
                 {
-                    StackPanel.Children.Add(device.GetDisplayControl());
+                    if (device.GetDisplayControl() is IDisPlayControl disPlayControl)
+                    {
+                        DisPlayControls.Add(disPlayControl);
+                    }
                 }
             }
         }
@@ -92,7 +90,7 @@ namespace ColorVision.Services
         public void GenDeviceDisplayControl()
         {
             LastGenControl = new ObservableCollection<DeviceService>();
-            StackPanel.Children.Clear();
+            DisPlayControls.Clear();
             foreach (var serviceKind in TypeServices)
             {
                 foreach (var service in serviceKind.VisualChildren)
@@ -102,7 +100,10 @@ namespace ColorVision.Services
                         if (item is DeviceService device)
                         {
                             LastGenControl.Add(device);
-                            StackPanel.Children.Add(device.GetDisplayControl());
+                            if (device.GetDisplayControl() is IDisPlayControl disPlayControl)
+                            {
+                                DisPlayControls.Add(disPlayControl);
+                            }
                         }
                     }
                 }
@@ -381,7 +382,7 @@ namespace ColorVision.Services
                 datas.Add(data);
             }
 
-            foreach (UserControl ctl in StackPanel.Children)
+            foreach (var ctl in DisPlayControls)
             {
                 if (ctl is DisplaySpectrumControl spectrum)
                 {

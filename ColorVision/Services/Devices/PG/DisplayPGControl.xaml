@@ -34,7 +34,7 @@
                 <Run Text=")"/>
             </TextBlock>
         </DockPanel>
-        <Border  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
+        <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="0">
                 <GroupBox Header="通讯方式" Margin="5">
                     <StackPanel>

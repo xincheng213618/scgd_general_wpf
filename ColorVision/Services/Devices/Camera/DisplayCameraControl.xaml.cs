@@ -26,13 +26,16 @@ using MQTTMessageLib;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Calibration;
+using ColorVision.Services.Interfaces;
+using ColorVision.Themes;
 
 namespace ColorVision.Services.Devices.Camera
 {
     /// <summary>
     /// 根据服务的MQTT相机
     /// </summary>
-    public partial class DisplayCameraControl : UserControl
+    public partial class DisplayCameraControl : UserControl,IDisPlayControl
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayCameraControl));
         public DeviceCamera Device { get; set; }
@@ -61,7 +64,24 @@ namespace ColorVision.Services.Devices.Camera
             _timer = new DispatcherTimer();
             _timer.Interval = TimeSpan.FromMilliseconds(500); // 设置延时时间，这里是500毫秒
             _timer.Tick += Timer_Tick; // 设置Tick事件处理程序
+
+            this.PreviewMouseDown += UserControl_PreviewMouseDown;
         }
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; 
+                DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");    } }
+        private bool _IsSelected;
+
+        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (this.Parent is StackPanel stackPanel)
+            {
+                if (stackPanel.Tag is IDisPlayControl disPlayControl)
+                    disPlayControl.IsSelected = false;
+                stackPanel.Tag = this;
+                IsSelected = true;
+            }
+        }
+
 
         private void View_OnCurSelectionChanged(ViewResultCamera data)
         {
@@ -644,6 +664,8 @@ namespace ColorVision.Services.Devices.Camera
                 e.Handled = true;
             }
         }
+
+
     }
 }
 

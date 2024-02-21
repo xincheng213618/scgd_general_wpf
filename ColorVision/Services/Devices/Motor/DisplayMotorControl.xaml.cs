@@ -1,14 +1,18 @@
-﻿using MQTTMessageLib;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Services.Interfaces;
+using ColorVision.Themes;
+using MQTTMessageLib;
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.Services.Devices.Motor
 {
     /// <summary>
     /// DisplaySMUControl.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayMotorControl : UserControl
+    public partial class DisplayMotorControl : UserControl, IDisPlayControl
     {
 
         public DeviceMotor Device { get; set; }
@@ -18,12 +22,27 @@ namespace ColorVision.Services.Devices.Motor
         {
             this.Device = device;
             InitializeComponent();
+
+            this.PreviewMouseDown += UserControl_PreviewMouseDown;
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Device;
             DeviceService.DeviceStatusChanged += DeviceService_DeviceStatusChanged;
+        }
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");  } }
+        private bool _IsSelected;
+
+        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (this.Parent is StackPanel stackPanel)
+            {
+                if (stackPanel.Tag is IDisPlayControl disPlayControl)
+                    disPlayControl.IsSelected = false;
+                stackPanel.Tag = this;
+                IsSelected = true;
+            }
         }
 
         private void DeviceService_DeviceStatusChanged(DeviceStatusType deviceStatus)

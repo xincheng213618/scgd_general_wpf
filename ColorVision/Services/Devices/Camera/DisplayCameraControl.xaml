@@ -41,7 +41,7 @@
             </Grid>
         </DockPanel>
 
-        <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
+        <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="3">
                 <Button x:Name="ButtonInit" Margin="0,0,0,3"  Content="连接" Click="CameraInit_Click"/>
                 <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,3">

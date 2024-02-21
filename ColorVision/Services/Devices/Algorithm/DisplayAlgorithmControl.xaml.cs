@@ -1,13 +1,16 @@
 ﻿#pragma warning disable CS8604,CS0168,CS8629,CA1822,CS8602
+using ColorVision.Common.Utilities;
 using ColorVision.MySql.Service;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;
+using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
 using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.Templates;
+using ColorVision.Themes;
 using log4net;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
@@ -17,13 +20,14 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.Services.Devices.Algorithm
 {
     /// <summary>
     /// DisplayAlgorithmControl.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayAlgorithmControl : UserControl
+    public partial class DisplayAlgorithmControl : UserControl,IDisPlayControl
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayAlgorithmControl));
 
@@ -50,6 +54,21 @@ namespace ColorVision.Services.Devices.Algorithm
             Service.OnMessageRecved += Service_OnAlgorithmEvent;
             View.OnCurSelectionChanged += View_OnCurSelectionChanged;
 
+            this.PreviewMouseDown += UserControl_PreviewMouseDown;
+        }
+
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");  } }
+        private bool _IsSelected;
+
+        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (this.Parent is StackPanel stackPanel)
+            {
+                if (stackPanel.Tag is IDisPlayControl disPlayControl)
+                    disPlayControl.IsSelected = false;
+                stackPanel.Tag = this;
+                IsSelected = true;
+            }
         }
 
         private void NetFileUtil_handler(object sender, NetFileEvent arg)

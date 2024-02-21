@@ -28,6 +28,10 @@ using ColorVision.Adorners;
 using ColorVision.MySql;
 using ColorVision.Utils;
 using ColorVision.Solution.View;
+using ColorVision.Services.Interfaces;
+using System.Collections.ObjectModel;
+using ColorVision.Services.Devices.Spectrum;
+using ColorVision.Templates;
 
 namespace ColorVision
 {
@@ -122,9 +126,6 @@ namespace ColorVision
 
             StatusBarGrid.DataContext = ConfigHandler.GetInstance();
             MenuStatusBar.DataContext = ConfigHandler.GetInstance().SoftwareConfig;
-
-            FlowDisplayControl flowDisplayControl = new FlowDisplayControl();
-            SPDisplay.Children.Insert(0, flowDisplayControl);
 
             ViewGridManager.GetInstance().SetViewNum(1);
             this.Closed += (s, e) => { Environment.Exit(-1); };
@@ -366,12 +367,49 @@ namespace ColorVision
             }
         }
 
+        private FlowDisplayControl flowDisplayControl;
 
         private void StackPanelSPD_Initialized(object sender, EventArgs e)
         {
             if (sender is StackPanel stackPanel1)
             {
-                stackPanel1.Children.Add(ServiceManager.GetInstance().StackPanel);
+                flowDisplayControl ??= new FlowDisplayControl();
+                if (stackPanel1.Children.Contains(flowDisplayControl))
+                    stackPanel1.Children.Remove(flowDisplayControl);
+                stackPanel1.Children.Insert(0,flowDisplayControl);
+
+                ServiceManager.GetInstance().DisPlayControls.CollectionChanged += (s,e)=>
+                {
+                    if (s is ObservableCollection<IDisPlayControl> disPlayControls)
+                    {
+                        switch (e.Action)
+                        {
+                            case System.Collections.Specialized.NotifyCollectionChangedAction.Add:
+                                if (e.NewItems != null)
+                                    foreach (IDisPlayControl newItem in e.NewItems)
+                                        if (newItem is UserControl userControl)
+                                            stackPanel1.Children.Add(userControl);
+                                break;
+                            case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
+                                if (e.OldItems != null)
+                                    foreach (IDisPlayControl oldItem in e.OldItems)
+                                        if (oldItem is UserControl userControl)
+                                            stackPanel1.Children.Add(userControl);
+                                break;
+                            case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
+                                break;
+                            case System.Collections.Specialized.NotifyCollectionChangedAction.Move:
+                                break;
+                            case System.Collections.Specialized.NotifyCollectionChangedAction.Reset:
+                                stackPanel1.Children.Clear();
+                                stackPanel1.Children.Insert(0, flowDisplayControl);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                };
+
 
                 FluidMoveBehavior fluidMoveBehavior = new FluidMoveBehavior
                 {
@@ -379,11 +417,12 @@ namespace ColorVision
                     Duration = TimeSpan.FromSeconds(0.2)
                 };
 
-                Interaction.GetBehaviors(ServiceManager.GetInstance().StackPanel).Add(fluidMoveBehavior);
-                ServiceManager.GetInstance().StackPanel.AddAdorners(this);
+                Interaction.GetBehaviors(stackPanel1).Add(fluidMoveBehavior);
+                stackPanel1.AddAdorners(this);
             }
 
         }
+
 
         private void ViewGrid_Click(object sender, RoutedEventArgs e)
         {
@@ -438,16 +477,6 @@ namespace ColorVision
             string changelogContent = File.ReadAllText(changelogPath);
             changelogWindow.SetChangelogText(changelogContent);
             changelogWindow.ShowDialog();
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-
-            if (ServiceManager.GetInstance().StackPanel.Children[0] is UserControl userControl1)
-            {
-                ServiceManager.GetInstance().StackPanel.Children.RemoveAt(0);
-                ServiceManager.GetInstance().StackPanel.Children.Add(userControl1);
-            }
         }
     }
 }
