@@ -290,7 +290,7 @@ namespace ColorVision.Services.Devices.Camera
         {
             if (sender is TextBlock textBlock)
             {
-                ColorVision.NativeMethods.Clipboard.SetText(textBlock.Text);
+                NativeMethods.Clipboard.SetText(textBlock.Text);
                 MessageBox.Show(textBlock.Text);
             }
         }

@@ -627,4 +627,7 @@
   <data name="SerialNumber1" xml:space="preserve">
     <value>Serial Number</value>
   </data>
+  <data name="ColorVisionUpdater" xml:space="preserve">
+    <value>ColorVision Updater</value>
+  </data>
 </root>

@@ -259,6 +259,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 ColorVision 更新程序 的本地化字符串。
+        /// </summary>
+        public static string ColorVisionUpdater {
+            get {
+                return ResourceManager.GetString("ColorVisionUpdater", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 配置新工程 的本地化字符串。
         /// </summary>
         public static string ConfigureNewProject {

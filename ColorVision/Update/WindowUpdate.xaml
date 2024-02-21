@@ -4,12 +4,14 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Update"
+        xmlns:properties ="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:AutoUpdater}"
-        Title="ColorVision 更新程序" Background="{DynamicResource GlobalBackground}" Height="60" Width="300" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resource.ColorVisionUpdater}" Background="{DynamicResource GlobalBackground}" Height="60" Width="300" Initialized="Window_Initialized">
     <Grid>
         <StackPanel>
             <ProgressBar Height="15"  Foreground="#B41515" Maximum="100" Minimum="0" Value="{Binding ProgressValue}" Background="#373B41" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
+            <TextBlock Text="{Binding SpeedValue}"/>
         </StackPanel>
     </Grid>
 </Window>

@@ -118,7 +118,7 @@ namespace ColorVision.Net
         public static int ReadCVFile_CIE_src(string cieFileName, ref CVCIEFileInfo fileOut)
         {
             if (string.IsNullOrWhiteSpace(cieFileName)) return -1;
-            if (System.IO.File.Exists(cieFileName))
+            if (File.Exists(cieFileName))
             {
                 byte[] fileData = ReadBinaryFile(cieFileName);
                 if (fileData == null) return -1;
@@ -129,7 +129,7 @@ namespace ColorVision.Net
                 if (GetParamFromFile(fileData, out w, out h, out bpp, out channels, out exp, out imgData, out srcFileName))
                 {
                     int ret = -1;
-                    if (System.IO.File.Exists(srcFileName))
+                    if (File.Exists(srcFileName))
                     {
                         if (srcFileName.EndsWith(".cvraw", StringComparison.OrdinalIgnoreCase))
                         {
@@ -138,7 +138,7 @@ namespace ColorVision.Net
                         }
                         else
                         {
-                            fileOut.data = CVFileUtils.ReadBinaryFile(srcFileName);
+                            fileOut.data = ReadBinaryFile(srcFileName);
                             fileOut.fileType = FileExtType.Tif;
                         }
                     }
@@ -151,7 +151,7 @@ namespace ColorVision.Net
         public static int ReadCVFile_CIE_XYZ(string cieFileName, int channel, ref CVCIEFileInfo fileOut)
         {
             if (string.IsNullOrWhiteSpace(cieFileName)) return -1;
-            if (System.IO.File.Exists(cieFileName))
+            if (File.Exists(cieFileName))
             {
                 byte[] fileData = ReadBinaryFile(cieFileName);
                 if (fileData == null) return -1;

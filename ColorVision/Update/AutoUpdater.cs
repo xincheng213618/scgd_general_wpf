@@ -78,7 +78,7 @@ namespace ColorVision.Update
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        if (MessageBox.Show($"{ColorVision.Properties.Resource.NewVersionFound}{LatestVersion},{ColorVision.Properties.Resource.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                        if (MessageBox.Show($"{Properties.Resource.NewVersionFound}{LatestVersion},{Properties.Resource.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                         {
                             WindowUpdate windowUpdate = new WindowUpdate() {  Owner =Application.Current.MainWindow ,WindowStartupLocation = WindowStartupLocation.CenterOwner};
                             windowUpdate.Show();
@@ -91,7 +91,7 @@ namespace ColorVision.Update
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         if (detection)
-                            MessageBox.Show(ColorVision.Properties.Resource.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
+                            MessageBox.Show(Properties.Resource.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
                     });
 
                 }
@@ -112,6 +112,9 @@ namespace ColorVision.Update
         public int ProgressValue { get => _ProgressValue; set { _ProgressValue = value; NotifyPropertyChanged(); } }
         private int _ProgressValue;
 
+        public string SpeedValue { get => _SpeedValue; set { _SpeedValue = value; NotifyPropertyChanged(); } }
+        private string _SpeedValue;
+
 
         private async Task DownloadAndUpdate(Version latestVersion)
         {
@@ -125,17 +128,36 @@ namespace ColorVision.Update
 #pragma warning disable SYSLIB0014 // 类型或成员已过时
             using (var client = new WebClient())
             {
-                // 创建进度报告器并订阅进度更新事件
-                var progressIndicator = new Progress<int>(progress =>
-                {
-                    // 更新进度条
-                    _ProgressValue = progress;
-                });
+
+                Stopwatch stopwatch = new Stopwatch(); // 创建一个计时器来追踪下载时间
+
+                long previousBytesReceived = 0; // 之前接收的字节数
+                double speed = 0; // 下载速度
 
                 // 绑定下载进度事件
                 client.DownloadProgressChanged += (sender, e) =>
                 {
                     ProgressValue = e.ProgressPercentage;
+
+                    if (!stopwatch.IsRunning)
+                    {
+                        stopwatch.Start(); // 如果计时器未启动，则启动计时器
+                    }
+
+                    // 计算从上一次触发事件以来接收的字节数
+                    long bytesReceivedSinceLastTick = e.BytesReceived - previousBytesReceived;
+                    previousBytesReceived = e.BytesReceived; // 更新总接收字节数
+
+                    // 计算时间差
+                    double timeSpan = stopwatch.Elapsed.TotalSeconds;
+                    stopwatch.Restart(); // 重置并重新开始计时
+
+                    if (timeSpan > 0) // 防止除以0
+                    {
+                        speed = bytesReceivedSinceLastTick / timeSpan; // 计算速度
+                    }
+
+                    SpeedValue = Common.Utilities.MemorySize.MemorySizeText((long)speed);
                 };
                 // 绑定下载完成事件
                 client.DownloadFileCompleted += (sender, e) =>
@@ -143,11 +165,11 @@ namespace ColorVision.Update
                     // 检查是否出错或者操作被取消
                     if (e.Cancelled)
                     {
-                        MessageBox.Show(ColorVision.Properties.Resource.DownloadCancelled);
+                        MessageBox.Show(Properties.Resource.DownloadCancelled);
                     }
                     else if (e.Error != null)
                     {
-                        MessageBox.Show($"{ColorVision.Properties.Resource.ErrorOccurred}: {e.Error.Message}");
+                        MessageBox.Show($"{Properties.Resource.ErrorOccurred}: {e.Error.Message}");
                     }
                     else
                     {

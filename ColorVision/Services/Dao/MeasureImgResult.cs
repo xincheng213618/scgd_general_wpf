@@ -26,7 +26,7 @@ namespace ColorVision.Services.Dao
 
         public string? DeviceCode { get; set; }
 
-        public System.DateTime? CreateDate { get; set; } = System.DateTime.Now;
+        public System.DateTime? CreateDate { get; set; } = DateTime.Now;
     }
 
 

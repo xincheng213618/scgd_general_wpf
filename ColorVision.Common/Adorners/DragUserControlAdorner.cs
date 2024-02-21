@@ -61,7 +61,7 @@ namespace ColorVision.Adorners
                 Content = image,
                 Opacity = 0.7
             };
-            base.AdornerVisual.Children.Add(_contentPresenter);
+            AdornerVisual.Children.Add(_contentPresenter);
 
             // コンテンツプレゼンターに移動トランスフォームを設定
             _contentPresenter.RenderTransform = _translate;
@@ -85,12 +85,12 @@ namespace ColorVision.Adorners
         public void SetScreenPosition(Point screenPosition)
         {
             // コンテンツプレゼンターの表示位置を変更
-            var positionInControl = base.AdornedElement.PointFromScreen(screenPosition);
+            var positionInControl = AdornedElement.PointFromScreen(screenPosition);
             _translate.X = positionInControl.X - _offset.X;
             _translate.Y = positionInControl.Y - _offset.Y;
 
             // 装飾描画サーフェースのレイアウト更新と再描画
-            base.AdornerLayer.Update();
+            AdornerLayer.Update();
         }
         #endregion
     }

@@ -33,10 +33,10 @@ namespace ColorVision.Themes.Controls
             var handle = new WindowInteropHelper(window).Handle;
             keep |= window.Topmost;
 
-            SetWindowPos(handle, User32.HWNDTOPMOST, 0, 0, 0, 0, User32.SWPNOMOVE | User32.SWPNOSIZE | User32.SWPNOACTIVATE);
+            SetWindowPos(handle, HWNDTOPMOST, 0, 0, 0, 0, SWPNOMOVE | SWPNOSIZE | SWPNOACTIVATE);
 
             if (!keep)
-                SetWindowPos(handle, User32.HWNDNOTOPMOST, 0, 0, 0, 0, User32.SWPNOMOVE | User32.SWPNOSIZE | User32.SWPNOACTIVATE);
+                SetWindowPos(handle, HWNDNOTOPMOST, 0, 0, 0, 0, SWPNOMOVE | SWPNOSIZE | SWPNOACTIVATE);
         }
 
 
@@ -103,12 +103,12 @@ namespace ColorVision.Themes.Controls
         public static void SetNoactivate(this Window window)
         {
             var hwnd = new WindowInteropHelper(window).Handle;
-            SetWindowLong(hwnd, User32.GWLEXSTYLE, GetWindowLong(hwnd, User32.GWLEXSTYLE) |User32.WSEXNOACTIVATE);
+            SetWindowLong(hwnd, GWLEXSTYLE, GetWindowLong(hwnd, GWLEXSTYLE) | WSEXNOACTIVATE);
         }
         public static void RemoveWindowControls(this Window window)
         {
             var hwnd = new WindowInteropHelper(window).Handle;
-            SetWindowLong(hwnd, User32.GWLSTYLE,  GetWindowLong(hwnd, User32.GWLSTYLE) & ~User32.WSSYSMENU);
+            SetWindowLong(hwnd, GWLSTYLE,  GetWindowLong(hwnd, GWLSTYLE) & ~WSSYSMENU);
         }
 
         [DllImport("user32.dll")]

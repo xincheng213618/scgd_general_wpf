@@ -87,8 +87,8 @@ namespace ColorVision.Draw
         }
         public static double GetDistance(Point startPoint, Point endPoint)
         {
-            double x = System.Math.Abs(endPoint.X - startPoint.X);
-            double y = System.Math.Abs(endPoint.Y - startPoint.Y);
+            double x = Math.Abs(endPoint.X - startPoint.X);
+            double y = Math.Abs(endPoint.Y - startPoint.Y);
             return Math.Sqrt(x * x + y * y);
         }
 

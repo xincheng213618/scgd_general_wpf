@@ -81,7 +81,7 @@ namespace ColorVision.Settings
                 }
             });
 
-            App.Current.SessionEnding += (s, e) => 
+            System.Windows.Application.Current.SessionEnding += (s, e) => 
             {
                 SaveConfig();
             };

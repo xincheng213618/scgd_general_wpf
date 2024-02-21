@@ -84,6 +84,7 @@ namespace ColorVision.Common.Utilities
             }
             return len;
         }
+
   
         public static string MemorySizeText(long memorySize)
         {

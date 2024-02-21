@@ -518,7 +518,7 @@ namespace ColorVision.Templates.POI
                 if (ext == ".cvraw")
                 {
                     CVCIEFileInfo fileInfo = new CVCIEFileInfo();
-                    fileInfo.fileType = MQTTMessageLib.FileServer.FileExtType.Raw;
+                    fileInfo.fileType = FileExtType.Raw;
                     int ret = CVFileUtils.ReadCVFile_Raw(filePath, ref fileInfo);
                     if (ret == 0)
                     {
@@ -1896,8 +1896,8 @@ namespace ColorVision.Templates.POI
 
         public void OpenImage(CVCIEFileInfo fileInfo)
         {
-            if (fileInfo.fileType == MQTTMessageLib.FileServer.FileExtType.Src) OpenImage(fileInfo.data);
-            else if (fileInfo.fileType == MQTTMessageLib.FileServer.FileExtType.Raw)
+            if (fileInfo.fileType == FileExtType.Src) OpenImage(fileInfo.data);
+            else if (fileInfo.fileType == FileExtType.Raw)
             {
                 ShowImage(fileInfo);
             }

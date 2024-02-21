@@ -547,7 +547,7 @@ namespace ColorVision.Services.Devices.Camera
                 WindowTemplate windowTemplate;
                 if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
                 {
-                    MessageBox.Show(Application.Current.MainWindow, ColorVision.Properties.Resource.DatabaseConnectionFailed, "ColorVision");
+                    MessageBox.Show(Application.Current.MainWindow, Properties.Resource.DatabaseConnectionFailed, "ColorVision");
                     return;
                 }
                 switch (button.Tag?.ToString() ?? string.Empty)
@@ -567,7 +567,7 @@ namespace ColorVision.Services.Devices.Camera
                         windowTemplate.ShowDialog();
                         break;
                     default:
-                        HandyControl.Controls.Growl.Info(ColorVision.Properties.Resource.UnderDevelopment);
+                        HandyControl.Controls.Growl.Info(Properties.Resource.UnderDevelopment);
                         break;
                 }
             }

@@ -24,10 +24,10 @@ namespace ColorVision.Language
         public static List<string> GetDefaultLanguages(string DefalutProcessDllName = "ColorVision.resources.dll")
         {
             List<string> list = new List<string>() { };
-            string exeFolderPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            string exeFolderPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             foreach (var subDirectory in Directory.GetDirectories(exeFolderPath ?? string.Empty))
             {
-                string[] files = Directory.GetFiles(subDirectory, DefalutProcessDllName, System.IO.SearchOption.AllDirectories);
+                string[] files = Directory.GetFiles(subDirectory, DefalutProcessDllName, SearchOption.AllDirectories);
 
                 if (files.Length > 0 && new DirectoryInfo(subDirectory).Name is string Name && !list.Contains(Name))
                 {
@@ -58,11 +58,11 @@ namespace ColorVision.Language
             }
 
 
-            string exeFolderPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            string exeFolderPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
 
             foreach (var subDirectory in Directory.GetDirectories(exeFolderPath??string.Empty))
             {
-                string[] files = Directory.GetFiles(subDirectory, DefalutProcessDllName, System.IO.SearchOption.AllDirectories);
+                string[] files = Directory.GetFiles(subDirectory, DefalutProcessDllName, SearchOption.AllDirectories);
 
                 if (files.Length > 0  && new DirectoryInfo(subDirectory).Name is string Name && !list.Contains(Name))
                 {

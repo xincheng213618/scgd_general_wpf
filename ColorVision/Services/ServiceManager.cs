@@ -188,7 +188,7 @@ namespace ColorVision.Services
 
                     switch ((ServiceTypes)sysResourceModel.Type)
                     {
-                        case ColorVision.Services.ServiceTypes.camera:
+                        case ServiceTypes.camera:
 
                             if (terminalService.MQTTServiceTerminalBase is MQTTTerminalCamera cameraService)
                             {
@@ -198,55 +198,55 @@ namespace ColorVision.Services
                                 DeviceServices.Add(deviceCamera);
                             }
                             break;
-                        case ColorVision.Services.ServiceTypes.pg:
+                        case ServiceTypes.pg:
                             DevicePG devicePG = new DevicePG(sysResourceModel);
                             svrObj = devicePG.DeviceService;
                             terminalService.AddChild(devicePG);
                             DeviceServices.Add(devicePG);
                             break;
-                        case ColorVision.Services.ServiceTypes.Spectrum:
+                        case ServiceTypes.Spectrum:
                             DeviceSpectrum deviceSpectrum = new DeviceSpectrum(sysResourceModel);
                             svrObj = deviceSpectrum.DeviceService;
                             terminalService.AddChild(deviceSpectrum);
                             DeviceServices.Add(deviceSpectrum);
                             break;
-                        case ColorVision.Services.ServiceTypes.SMU:
+                        case ServiceTypes.SMU:
                             DeviceSMU deviceSMU = new DeviceSMU(sysResourceModel);
                             svrObj = deviceSMU.Service;
                             terminalService.AddChild(deviceSMU);
                             DeviceServices.Add(deviceSMU);
                             break;
-                        case ColorVision.Services.ServiceTypes.Sensor:
+                        case ServiceTypes.Sensor:
                             DeviceSensor device1 = new DeviceSensor(sysResourceModel);
                             svrObj = device1.DeviceService;
                             terminalService.AddChild(device1);
                             DeviceServices.Add(device1);
                             break;
-                        case ColorVision.Services.ServiceTypes.FileServer:
+                        case ServiceTypes.FileServer:
                             DeviceFileServer img = new DeviceFileServer(sysResourceModel);
                             svrObj = img.DeviceService;
                             terminalService.AddChild(img);
                             DeviceServices.Add(img);
                             break;
-                        case ColorVision.Services.ServiceTypes.Algorithm:
+                        case ServiceTypes.Algorithm:
                             DeviceAlgorithm alg = new DeviceAlgorithm(sysResourceModel);
                             svrObj = alg.MQTTService;
                             terminalService.AddChild(alg);
                             DeviceServices.Add(alg);
                             break;
-                        case ColorVision.Services.ServiceTypes.Calibration:
+                        case ServiceTypes.Calibration:
                             DeviceCalibration deviceCalibration = new DeviceCalibration(sysResourceModel);
                             svrObj = deviceCalibration.DeviceService;
                             terminalService.AddChild(deviceCalibration);
                             DeviceServices.Add(deviceCalibration);
                             break;
-                        case ColorVision.Services.ServiceTypes.CfwPort:
+                        case ServiceTypes.CfwPort:
                             DeviceCfwPort deviceCfwPort = new DeviceCfwPort(sysResourceModel);
                             svrObj = deviceCfwPort.DeviceService;
                             terminalService.AddChild(deviceCfwPort);
                             DeviceServices.Add(deviceCfwPort);
                             break;
-                        case ColorVision.Services.ServiceTypes.Motor:
+                        case ServiceTypes.Motor:
                             DeviceMotor deviceMotor = new DeviceMotor(sysResourceModel);
                             svrObj = deviceMotor.DeviceService;
                             terminalService.AddChild(deviceMotor);
