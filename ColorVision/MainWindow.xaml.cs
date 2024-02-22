@@ -194,7 +194,7 @@ namespace ColorVision
             Task.Run(CheckCertificate);
 
             Task.Run(EnsureLocalInfile);
-            SolutionTab.Content = new TreeViewControl();
+            SolutionTab1.Content = new TreeViewControl();
         }
 
         public async static Task EnsureLocalInfile()
