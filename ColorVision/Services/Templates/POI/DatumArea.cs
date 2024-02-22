@@ -2,9 +2,9 @@
 using Newtonsoft.Json;
 using System.Windows;
 
-namespace ColorVision.Templates.POI
+namespace ColorVision.Services.Templates.POI
 {
-    public class DatumArea:ViewModelBase
+    public class DatumArea : ViewModelBase
     {
 
         public bool IsShowDatum { get => _IsShowDatum; set { _IsShowDatum = value; NotifyPropertyChanged(); } }
@@ -43,7 +43,7 @@ namespace ColorVision.Templates.POI
 
         public RiPointTypes PointType { set; get; }
         [JsonIgnore]
-        public bool IsAreaCircle { get => PointType == RiPointTypes.Circle;set { if (value) PointType = RiPointTypes.Circle; NotifyPropertyChanged(); } }
+        public bool IsAreaCircle { get => PointType == RiPointTypes.Circle; set { if (value) PointType = RiPointTypes.Circle; NotifyPropertyChanged(); } }
         [JsonIgnore]
         public bool IsAreaRect { get => PointType == RiPointTypes.Rect; set { if (value) PointType = RiPointTypes.Rect; NotifyPropertyChanged(); } }
         [JsonIgnore]
@@ -51,24 +51,24 @@ namespace ColorVision.Templates.POI
 
 
         public int AreaCircleRadius { get => _AreaCircleRadius; set { _AreaCircleRadius = value; NotifyPropertyChanged(); } }
-        private int _AreaCircleRadius= 100;
+        private int _AreaCircleRadius = 100;
 
         public int AreaCircleNum { get => _AreaCircleNum; set { _AreaCircleNum = value; NotifyPropertyChanged(); } }
         private int _AreaCircleNum = 6;
 
-        public int AreaCircleAngle { get=>_AreaCircleAngle; set { _AreaCircleAngle = value; NotifyPropertyChanged(); } }
+        public int AreaCircleAngle { get => _AreaCircleAngle; set { _AreaCircleAngle = value; NotifyPropertyChanged(); } }
         private int _AreaCircleAngle;
 
-        public int AreaRectWidth { get=>_AreaRectWidth; set { _AreaRectWidth = value; NotifyPropertyChanged(); } }
+        public int AreaRectWidth { get => _AreaRectWidth; set { _AreaRectWidth = value; NotifyPropertyChanged(); } }
         private int _AreaRectWidth = 200;
 
-        public int AreaRectHeight { get=>_AreaRectHeight; set { _AreaRectHeight = value; NotifyPropertyChanged(); } }
+        public int AreaRectHeight { get => _AreaRectHeight; set { _AreaRectHeight = value; NotifyPropertyChanged(); } }
         private int _AreaRectHeight = 200;
 
-        public int AreaRectRow { get=>_AreaRectRow; set { _AreaRectRow = value; NotifyPropertyChanged(); } }
+        public int AreaRectRow { get => _AreaRectRow; set { _AreaRectRow = value; NotifyPropertyChanged(); } }
         private int _AreaRectRow = 3;
 
-        public int AreaRectCol { get=>_AreaRectCol; set { _AreaRectCol = value; NotifyPropertyChanged(); } }
+        public int AreaRectCol { get => _AreaRectCol; set { _AreaRectCol = value; NotifyPropertyChanged(); } }
         private int _AreaRectCol = 3;
 
 

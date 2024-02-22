@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Flow.Templates;
-using ColorVision.Templates;
+using ColorVision.Services.Templates;
 
 namespace ColorVision.MySql.Service
 {

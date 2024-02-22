@@ -3,6 +3,7 @@ using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
 using ColorVision.Services.Interfaces;
+using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Templates;
 using ColorVision.Themes;

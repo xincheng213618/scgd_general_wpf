@@ -1,6 +1,6 @@
 ﻿using ColorVision.MySql.Service;
 
-namespace ColorVision.Templates
+namespace ColorVision.Services.Templates
 {
     public enum TemplateType
     {
@@ -23,8 +23,8 @@ namespace ColorVision.Templates
         SpectrumResourceParam
     }
 
-    public class TemplateTypeFactory 
-    { 
+    public class TemplateTypeFactory
+    {
         public static string GetModeTemplateType(TemplateType windowTemplateType)
         {
             return windowTemplateType switch

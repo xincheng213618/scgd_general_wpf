@@ -20,15 +20,19 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using ColorVision.Templates.POI.Dao;
 using ColorVision.Services.Devices.Spectrum;
 using ColorVision.Solution;
 using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.Spectrum.Views;
 using ColorVision.Sorts;
 using ColorVision.Properties;
+using ColorVision.Services.Templates;
+using ColorVision.Services.Templates.Measure;
+using ColorVision.Services.Templates.POI;
+using ColorVision.Services.Templates.POI.Dao;
+using ColorVision.Templates;
 
-namespace ColorVision.Templates
+namespace ColorVision.Services.Templates
 {
     /// <summary>
     /// CalibrationTemplate.xaml 的交互逻辑

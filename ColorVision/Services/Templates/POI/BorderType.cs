@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace ColorVision.Templates.POI
+namespace ColorVision.Services.Templates.POI
 {
     public enum BorderType
     {

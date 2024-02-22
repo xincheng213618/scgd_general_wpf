@@ -1,14 +1,15 @@
 ﻿using ColorVision.Services.Dao;
+using ColorVision.Services.Templates;
 
-namespace ColorVision.Templates
+namespace ColorVision.Services.Templates.Measure
 {
     public class MeasureParam : ParamBase
     {
         public MeasureParam() { }
         public MeasureParam(MeasureMasterModel dbModel)
         {
-            this.Id = dbModel.Id;
-            this.IsEnable = dbModel.IsEnable;
+            Id = dbModel.Id;
+            IsEnable = dbModel.IsEnable;
         }
     }
 }

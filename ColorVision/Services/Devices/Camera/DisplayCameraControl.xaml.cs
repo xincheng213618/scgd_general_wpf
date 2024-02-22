@@ -29,6 +29,7 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Interfaces;
 using ColorVision.Themes;
+using ColorVision.Services.Templates;
 
 namespace ColorVision.Services.Devices.Camera
 {

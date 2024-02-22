@@ -1,5 +1,4 @@
 ﻿using ColorVision.MQTT;
-using ColorVision.Templates;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -14,6 +13,7 @@ using ColorVision.Settings;
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Interfaces;
 using System.Windows.Input;
+using ColorVision.Services.Templates;
 
 namespace ColorVision.Services.Flow
 {

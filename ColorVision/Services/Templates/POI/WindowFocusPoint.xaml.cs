@@ -2,7 +2,7 @@
 using ColorVision.Common.Extension;
 using ColorVision.Media;
 using ColorVision.Net;
-using ColorVision.Templates.POI.Dao;
+using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Common.Utilities;
 using cvColorVision;
 using cvColorVision.Util;
@@ -30,6 +30,8 @@ using System.Windows.Media.Imaging;
 using MQTTMessageLib.FileServer;
 using ColorVision.Services.Dao;
 using ColorVision.Settings;
+using ColorVision.Services.Templates;
+using ColorVision.Services.Templates.POI;
 
 namespace ColorVision.Templates.POI
 {

@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel;
 
-namespace ColorVision.Templates.POI
+namespace ColorVision.Services.Templates.POI
 {
-    public class LedPicData 
+    public class LedPicData
     {
         [Category("LED检测图片路径"), Browsable(false)]
         public string picUrl { set; get; }

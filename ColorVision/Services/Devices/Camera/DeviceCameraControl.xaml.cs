@@ -12,6 +12,7 @@ using ColorVision.Services.Devices.Camera.Dao;
 using ColorVision.Services.Devices.Spectrum.Views;
 using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
+using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Sorts;
 using ColorVision.Templates;

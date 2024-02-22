@@ -1,5 +1,4 @@
-﻿
-using ColorVision.MVVM;
+﻿using ColorVision.MVVM;
 using ColorVision.Services.Dao;
 using ColorVision.Settings;
 using System;
@@ -9,7 +8,7 @@ using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 
-namespace ColorVision.Templates
+namespace ColorVision.Services.Templates
 {
     public class ModelBase : ViewModelBase
     {
@@ -143,7 +142,7 @@ namespace ColorVision.Templates
                         return (T)(object)StringToDoubleArray(val ?? string.Empty);
                     }
                 }
-                return default(T);
+                return default;
 
             }
             return storage;
@@ -169,7 +168,7 @@ namespace ColorVision.Templates
 
     }
 
-    public class ParamBase: ModelBase
+    public class ParamBase : ModelBase
     {
         public static int No { get; set; }
 
@@ -193,18 +192,18 @@ namespace ColorVision.Templates
         private int _Id;
 
         [Browsable(false)]
-        public string Name { get => _Name; set { _Name = value ; NotifyPropertyChanged(); } }
+        public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string _Name;
 
         public ParamBase() : base(new List<ModDetailModel>())
         {
-            this.Id = No++;
+            Id = No++;
         }
 
-        public ParamBase(int id,string  name,List<ModDetailModel> detail):base (detail)
+        public ParamBase(int id, string name, List<ModDetailModel> detail) : base(detail)
         {
-            this.Id = id;
-            this.Name = name;
+            Id = id;
+            Name = name;
         }
 
 

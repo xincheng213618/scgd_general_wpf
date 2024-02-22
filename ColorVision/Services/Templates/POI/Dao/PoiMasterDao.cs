@@ -1,8 +1,9 @@
 ﻿using ColorVision.MySql;
+using ColorVision.Services.Templates.POI;
 using System;
 using System.Data;
 
-namespace ColorVision.Templates.POI.Dao
+namespace ColorVision.Services.Templates.POI.Dao
 {
     public class PoiMasterModel : PKModel
     {

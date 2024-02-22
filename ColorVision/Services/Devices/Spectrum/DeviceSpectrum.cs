@@ -12,12 +12,12 @@ using ColorVision.Services.Msg;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using ColorVision.Common.Utilities;
-using ColorVision.Templates;
 using System.Collections.ObjectModel;
 using ColorVision.MySql.Service;
 using System.Threading.Tasks;
 using System;
 using System.IO;
+using ColorVision.Services.Templates;
 
 namespace ColorVision.Services.Devices.Spectrum
 {

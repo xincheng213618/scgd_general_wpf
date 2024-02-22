@@ -1,6 +1,6 @@
 ﻿using ColorVision.Services.Dao;
-using ColorVision.Templates;
-using ColorVision.Templates.POI;
+using ColorVision.Services.Templates;
+using ColorVision.Services.Templates.POI;
 using System.Collections.Generic;
 using System.ComponentModel;
 

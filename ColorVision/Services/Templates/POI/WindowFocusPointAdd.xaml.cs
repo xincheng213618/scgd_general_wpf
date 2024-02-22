@@ -1,9 +1,11 @@
-﻿using ColorVision.Themes.Controls;
+﻿using ColorVision.Services.Templates;
+using ColorVision.Services.Templates.POI;
+using ColorVision.Themes.Controls;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Templates.POI
+namespace ColorVision.Services.Templates.POI
 {
     /// <summary>
     /// WindowFocusPointAdd.xaml 的交互逻辑

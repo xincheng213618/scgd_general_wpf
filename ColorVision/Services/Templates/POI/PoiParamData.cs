@@ -1,6 +1,6 @@
-﻿using ColorVision.Templates.POI.Dao;
+﻿using ColorVision.Services.Templates.POI.Dao;
 
-namespace ColorVision.Templates.POI
+namespace ColorVision.Services.Templates.POI
 {
     public class PoiParamData
     {

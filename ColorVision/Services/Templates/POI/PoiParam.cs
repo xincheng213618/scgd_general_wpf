@@ -1,9 +1,10 @@
-﻿using ColorVision.Templates.POI.Dao;
+﻿using ColorVision.Services.Templates;
+using ColorVision.Services.Templates.POI.Dao;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Templates.POI
+namespace ColorVision.Services.Templates.POI
 {
     /// <summary>
     /// 关注点模板
@@ -14,31 +15,32 @@ namespace ColorVision.Templates.POI
 
         public PoiParam()
         {
-            this.Id = No++;
+            Id = No++;
         }
 
         public PoiParam(PoiMasterModel dbModel)
         {
-            this.Id = dbModel.Id;
+            Id = dbModel.Id;
 
-            this.PoiName = dbModel.Name ?? string.Empty;
-            this.Width = dbModel.Width ?? 0;
-            this.Height = dbModel.Height ?? 0;
-            this.Type = dbModel.Type ?? 0;
-            this.DatumArea.X1X = dbModel.LeftTopX ?? 0;
-            this.DatumArea.X1Y = dbModel.LeftTopY ?? 0;
-            this.DatumArea.X2X = dbModel.RightTopX ?? 0;
-            this.DatumArea.X2Y = dbModel.RightTopY ?? 0;
-            this.DatumArea.X3X = dbModel.RightBottomX ?? 0;
-            this.DatumArea.X3Y = dbModel.RightBottomY ?? 0;
-            this.DatumArea.X4X = dbModel.LeftBottomX ?? 0;
-            this.DatumArea.X4Y = dbModel.LeftBottomY ?? 0;
-            this.DatumArea.CenterX = (this.DatumArea.X2X - this.DatumArea.X1X)/2;
-            this.DatumArea.CenterY = (this.DatumArea.X4Y - this.DatumArea.X1Y) /2;
-            this.CfgJson = dbModel.CfgJson ?? string.Empty;
+            PoiName = dbModel.Name ?? string.Empty;
+            Width = dbModel.Width ?? 0;
+            Height = dbModel.Height ?? 0;
+            Type = dbModel.Type ?? 0;
+            DatumArea.X1X = dbModel.LeftTopX ?? 0;
+            DatumArea.X1Y = dbModel.LeftTopY ?? 0;
+            DatumArea.X2X = dbModel.RightTopX ?? 0;
+            DatumArea.X2Y = dbModel.RightTopY ?? 0;
+            DatumArea.X3X = dbModel.RightBottomX ?? 0;
+            DatumArea.X3Y = dbModel.RightBottomY ?? 0;
+            DatumArea.X4X = dbModel.LeftBottomX ?? 0;
+            DatumArea.X4Y = dbModel.LeftBottomY ?? 0;
+            DatumArea.CenterX = (DatumArea.X2X - DatumArea.X1X) / 2;
+            DatumArea.CenterY = (DatumArea.X4Y - DatumArea.X1Y) / 2;
+            CfgJson = dbModel.CfgJson ?? string.Empty;
         }
 
-        public string CfgJson {
+        public string CfgJson
+        {
             get => JsonConvert.SerializeObject(DatumArea);
             set
             {

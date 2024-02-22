@@ -25,6 +25,7 @@ using ColorVision.Common.Extension;
 using ColorVision.Update;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Flow;
+using ColorVision.Services.Templates;
 
 namespace ColorVision
 {

@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CA1707,IDE1006
 
 using ColorVision.Services.Dao;
-using ColorVision.Templates;
+using ColorVision.Services.Templates;
 using System.Collections.Generic;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates

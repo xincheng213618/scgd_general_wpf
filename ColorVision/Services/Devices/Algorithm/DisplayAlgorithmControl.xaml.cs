@@ -7,6 +7,7 @@ using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;
 using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
+using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.Templates;

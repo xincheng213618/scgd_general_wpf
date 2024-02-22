@@ -1,4 +1,4 @@
-﻿namespace ColorVision.Templates.POI
+﻿namespace ColorVision.Services.Templates.POI
 {
     public enum RiPointTypes
     {
