@@ -87,6 +87,20 @@ namespace ColorVision.Services.Flow
                         ViewGridManager.GetInstance().SetViewIndex(control, KeyValue.Value);
                     }
                 };
+
+
+                this.PreviewMouseLeftButtonDown += (s, e) =>
+                {
+                    if (ViewConfig.GetInstance().IsAutoSelect)
+                    {
+                        if (ViewGridManager.GetInstance().ViewMax == 1)
+                        {
+                            View.View.ViewIndex = 0;
+                            ViewGridManager.GetInstance().SetViewIndex(control, 0);
+                        }
+                    }
+                };
+
             }
 
             FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
