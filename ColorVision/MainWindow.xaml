@@ -75,7 +75,7 @@
                             </MenuItem.Icon>
                         </MenuItem>
                     </MenuItem>
-                    <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance SettingUp:ConfigHandler}"  Header="{ x:Static properties:Resource.MenuView}">
+                    <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Header="{ x:Static properties:Resource.MenuView}">
                         <MenuItem Header="{x:Static properties:Resource.MenuViewStatusBar}" IsChecked="{Binding SoftwareSetting.IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
                         <Separator/>
                         <MenuItem Header="{x:Static properties:Resource.SaveWindowLayout}"  Click="MenuStatusBar_Click" />
@@ -105,10 +105,6 @@
                 <ColumnDefinition MinWidth="200"/>
             </Grid.ColumnDefinitions>
             <Button x:Name="ButtonShiftOut" Panel.ZIndex="100" Click="OnLeftMainContentShiftOut" Opacity="0.3" hc:IconElement.Geometry="{StaticResource LeftGeometry}" Padding="8 8 0 8" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0 0 -16 0" Style="{StaticResource ButtonIconCircular}" />
-            <Grid Grid.Column="1" x:Name="MainContent">
-                <Grid x:Name="ViewGrid" Background="LightGray"  Visibility="{Binding ElementName=SolutionTab,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter1}}"/>
-                <Grid x:Name="SolutionGrid" Background="LightGray" Visibility="{Binding ElementName=SolutionTab,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter}}"/>
-            </Grid>
             <Border  Grid.Row="0" Panel.ZIndex="101"  Background="{DynamicResource GlobalBackground}" BorderThickness="0,0,1,0"  BorderBrush="{DynamicResource BorderBrush}" Margin="-1,0,0,0">
                 <Grid  x:Name="LeftMainContent" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
                     <UIElement.RenderTransform>
@@ -125,10 +121,15 @@
                             </ScrollViewer>
 
                         </TabItem>
-                        <TabItem x:Name="SolutionTab" Header="{x:Static properties:Resource.Project}" Width="150" />
+                        <TabItem x:Name="SolutionTab1" Header="{x:Static properties:Resource.Project}" Width="150" />
                     </TabControl>
                 </Grid>
             </Border>
+            <Grid Grid.Column="1" x:Name="MainContent">
+                <Grid x:Name="ViewGrid" Background="LightGray"  Visibility="{Binding ElementName=SolutionTab1,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter1}}"/>
+                <Grid x:Name="SolutionGrid" Background="LightGray" Visibility="{Binding ElementName=SolutionTab1,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter}}"/>
+            </Grid>
+
             <GridSplitter Panel.ZIndex="102" x:Name="GridSplitter" Margin="0,26,0,26" Grid.Column="0" HorizontalAlignment="Right" Width="4" Background="Transparent"/>
             <Button Grid.Column="0" x:Name="ButtonShiftIn" Visibility="Collapsed" Click="OnLeftMainContentShiftIn" hc:IconElement.Geometry="{StaticResource RightGeometry}" Padding="8 8 0 8" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-12 0 0 0" Style="{StaticResource ButtonIconCircular}" />
         </Grid>
@@ -151,7 +152,7 @@
                 
                 <StatusBarItem Grid.Column="1" >
                     <DockPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0" Visibility="{Binding ElementName=SolutionTab,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter1}}" >
+                        <StackPanel Orientation="Horizontal" Margin="0" Visibility="{Binding ElementName=SolutionTab1,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter1}}" >
                             <Button  Height="15" BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="1">
                                 <Image Source="{DynamicResource DrawingImageSingleWindow}" Margin="-5" />
                             </Button>
