@@ -4,18 +4,18 @@ using System.Windows.Media;
 
 namespace ColorVision.Draw
 {
-    public class DrawingVisualPolygon : DrawingVisualBase, IDrawingVisual
+    public class DrawingVisualPolygon : DrawingVisualBase<PolygonAttribute>, IDrawingVisual
     {
-        public PolygonAttribute Attribute { get; set; }
-
-        public DrawBaseAttribute GetAttribute() => Attribute;
+        public DrawBaseAttribute BaseAttribute => Attribute;
 
         public bool AutoAttributeChanged { get; set; } = true;
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
         public bool IsDrawing { get; set; } = true;
 
+        
         public DrawingVisualPolygon()
         {
+            Version = "多边形";
             Attribute = new PolygonAttribute();
             Attribute.ID = No++;
             Attribute.Pen = new Pen(Brushes.Red, 2);

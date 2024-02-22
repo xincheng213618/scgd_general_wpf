@@ -4,11 +4,9 @@ using System.Windows.Media;
 
 namespace ColorVision.Draw
 {
-    public class DrawingVisualLine : DrawingVisualBase, IDrawingVisual
+    public class DrawingVisualLine : DrawingVisualBase<LineAttribute>, IDrawingVisual
     {
-        public LineAttribute Attribute { get; set; }
-
-        public DrawBaseAttribute GetAttribute() => Attribute;
+        public DrawBaseAttribute BaseAttribute => Attribute;
 
         public bool AutoAttributeChanged { get; set; } = true;
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }

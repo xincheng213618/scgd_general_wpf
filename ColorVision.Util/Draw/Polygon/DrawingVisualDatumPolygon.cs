@@ -4,11 +4,10 @@ using System.Windows.Media;
 
 namespace ColorVision.Draw
 {
-    public class DrawingVisualDatumPolygon : DrawingVisualBase, IDrawingVisualDatum
+    public class DrawingVisualDatumPolygon : DrawingVisualBase<PolygonAttribute>, IDrawingVisualDatum
     {
-        public PolygonAttribute Attribute { get; set; }
+        public DrawBaseAttribute BaseAttribute => Attribute;
 
-        public DrawBaseAttribute GetAttribute() => Attribute;
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
 
         public bool AutoAttributeChanged { get; set; } = true;
@@ -28,7 +27,6 @@ namespace ColorVision.Draw
                     Render();
             };
         }
-        public int ID { get => Attribute.ID; set => Attribute.ID = value; }
 
         public override void Render()
         {

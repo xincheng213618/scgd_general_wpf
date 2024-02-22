@@ -95,7 +95,7 @@
                     </StackPanel>
                 </StackPanel>
             </Border>
-            
+
             <ScrollViewer x:Name="ScrollViewer1" Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="0" Grid.Row="0" >
                     <ToggleButton x:Name="DatumAreaToggleButton" Margin="0,5" Content="基准点设置" Style="{StaticResource ButtonPageControl1}" IsChecked="False" HorizontalAlignment="Left"/>
@@ -361,23 +361,23 @@
                                 <StackPanel Margin="5">
                                     <GroupBox x:Name="GridMark" Header="灯珠像素边长" Margin="5" >
                                         <StackPanel>
-                                            <StackPanel  x:Name="StackPanelLedLen"   d:DataContext="{d:DesignInstance local:DatumArea}" Margin="5">
+                                            <StackPanel  x:Name="StackPanelLedLen"   d:DataContext="{d:DesignInstance local:PoiParam}" Margin="5">
                                                 <UniformGrid Columns="2">
                                                     <DockPanel  Margin="2">
                                                         <TextBlock Text="上边长:" />
-                                                        <TextBox  Text="{Binding LedLen1}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                        <TextBox  Text="{Binding DatumArea.LedLen1}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                     </DockPanel>
                                                     <DockPanel Margin="2" >
                                                         <TextBlock Text="下边长:" />
-                                                        <TextBox   Text="{Binding LedLen2}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                        <TextBox   Text="{Binding DatumArea.LedLen2}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                     </DockPanel>
                                                     <DockPanel  Margin="2">
                                                         <TextBlock Text="左边长:" />
-                                                        <TextBox  Text="{Binding LedLen3}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                        <TextBox  Text="{Binding DatumArea.LedLen3}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                     </DockPanel>
                                                     <DockPanel Margin="2" >
                                                         <TextBlock Text="右边长:" />
-                                                        <TextBox   Text="{Binding LedLen4}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                        <TextBox   Text="{Binding DatumArea.LedLen4}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                     </DockPanel>
                                                 </UniformGrid>
                                             </StackPanel>
@@ -401,9 +401,6 @@
 
                 </StackPanel>
             </ScrollViewer>
-            <WindowsFormsHost Grid.Row="2"  Height="300" x:Name="PropertyGrid21"  Visibility="Collapsed">
-                <winf:PropertyGrid   x:Name="PropertyGrid2" />
-            </WindowsFormsHost>
         </Grid>
 
         <Grid x:Name="ImageContentGrid" Grid.Column="0"  Background="#c3c3c3">
@@ -448,123 +445,134 @@
                     <ToggleButton IsChecked="{Binding DrawRect}" Margin="1,0">
                         <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageRect}"/>
                     </ToggleButton>
+                    <ToggleButton IsChecked="{Binding DrawPolygon}" Margin="1,0">
+                        <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagePolygon}"/>
+                    </ToggleButton>
                 </ToolBar>
             </StackPanel>
-            <Grid x:Name="FocusPointGrid" Visibility="Collapsed" Grid.Row="1" Height="200" >
-                <Grid DockPanel.Dock="Top">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="50*"/>
-                        <ColumnDefinition Width="50*"/>
-                        <ColumnDefinition Width="50*"/>
-                        <ColumnDefinition Width="100*"/>
-                        <ColumnDefinition Width="50*"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid x:Name="GridListHeader0" Grid.Column="0">
-                        <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="形状" Margin="10,0,0,0"/>
-                    </Grid>
-                    <Grid x:Name="GridListHeader1" Grid.Column="1">
-                        <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="序号" Margin="10,0,0,0"/>
-                    </Grid>
-                    <GridSplitter Grid.Column="0" Width="2"  Background="AliceBlue"/>
-                    <Grid x:Name="GridListHeader2" Grid.Column="2">
-                        <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="选中" Margin="10,0,0,0" />
-                    </Grid>
-                    <GridSplitter Grid.Column="1" Width="2"  Background="AliceBlue"/>
-                    <Grid x:Name="GridListHeader3" Grid.Column="3">
-                        <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="位置"  Margin="10,0,0,0"/>
-                    </Grid>
-                    <GridSplitter Grid.Column="2" Width="2"  Background="AliceBlue"/>
-                    <Grid x:Name="GridListHeader4" Grid.Column="4">
-                        <TextBlock  HorizontalAlignment="Left" VerticalAlignment="Center" Text="角度"  Margin="10,0,0,0" />
-                    </Grid>
-                </Grid>
-                <Grid>
-                    <Grid.Resources>
-                        <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type draw:DrawingVisualCircle}" >
-                            <StackPanel  Orientation="Horizontal">
-                                <StackPanel.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
-                                    </ContextMenu>
-                                </StackPanel.ContextMenu>
-                                <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="圆形" HorizontalAlignment="Center"/>
-                                <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.ID}" HorizontalAlignment="Center"/>
-                                <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}"  Tag="{Binding .}"/>
-                                <TextBlock Width="{Binding ElementName=GridListHeader3,Path=ActualWidth}" HorizontalAlignment="Center">
+            <Grid x:Name="FocusPointGrid" Visibility="Visible" Grid.Row="1" Height="300" >
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <WindowsFormsHost Grid.Column="0" Width="400" Height="300" x:Name="PropertyGrid21"  Visibility="Collapsed">
+                    <winf:PropertyGrid   x:Name="PropertyGrid2" />
+                </WindowsFormsHost>
+                <ListView  x:Name="ListView1" Grid.Column="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
+                        <ListView.Resources>
+                            <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
+                            </ContextMenu>
+                            <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type draw:DrawingVisualCircle}" >
+                                <StackPanel  Orientation="Horizontal">
+                                    <StackPanel.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
+                                        </ContextMenu>
+                                    </StackPanel.ContextMenu>
+                                    <TextBlock  HorizontalAlignment="Center">
                                                     <Run Text="{Binding Path = Attribute.Center.X,StringFormat={}{0:F0}}"/>
                                                     <Run Text=","/>
                                                     <Run Text="{Binding Path = Attribute.Center.Y,StringFormat={}{0:F0}}"/>
-                                </TextBlock>
-                                <TextBlock  Width="{Binding ElementName=GridListHeader4,Path=ActualWidth}" Text="{Binding Path=Attribute.Radius}" />
-                            </StackPanel>
-                        </DataTemplate>
-
-                        <DataTemplate x:Key="DrawingVisualCircleWordTemplate" DataType="{x:Type draw:DrawingVisualCircleWord}" >
-                            <StackPanel  Orientation="Horizontal">
-                                <StackPanel.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
-                                    </ContextMenu>
-                                </StackPanel.ContextMenu>
-                                <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="圆形" HorizontalAlignment="Center"/>
-                                <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.ID}" HorizontalAlignment="Center"/>
-                                <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}"  Tag="{Binding .}"/>
-                                <TextBlock Width="{Binding ElementName=GridListHeader3,Path=ActualWidth}" HorizontalAlignment="Center">
+                                    </TextBlock>
+                                    <TextBlock  Text="{Binding Path=Attribute.Radius}" />
+                                </StackPanel>
+                            </DataTemplate>
+                            <DataTemplate x:Key="DrawingVisualCircleWordTemplate" DataType="{x:Type draw:DrawingVisualCircleWord}" >
+                                <StackPanel  Orientation="Horizontal">
+                                    <StackPanel.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
+                                        </ContextMenu>
+                                    </StackPanel.ContextMenu>
+                                    <TextBlock HorizontalAlignment="Center">
                                                     <Run Text="{Binding Path = Attribute.Center.X,StringFormat={}{0:F0}}"/>
                                                     <Run Text=","/>
                                                     <Run Text="{Binding Path = Attribute.Center.Y,StringFormat={}{0:F0}}"/>
-                                </TextBlock>
-                                <TextBlock  Width="{Binding ElementName=GridListHeader4,Path=ActualWidth}" Text="{Binding Path=Attribute.Radius}" />
-                            </StackPanel>
-                        </DataTemplate>
+                                    </TextBlock>
+                                    <TextBlock  Text="{Binding Path=Attribute.Radius}" />
+                                </StackPanel>
+                            </DataTemplate>
 
-
-
-                        <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type draw:DrawingVisualRectangle}">
-                            <StackPanel  Orientation="Horizontal">
-                                <StackPanel.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
-                                    </ContextMenu>
-                                </StackPanel.ContextMenu>
-                                <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="矩形" HorizontalAlignment="Center"/>
-                                <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.ID}" HorizontalAlignment="Center"/>
-                                <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}" Tag="{Binding .}"/>
-                                <TextBlock>
+                            <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type draw:DrawingVisualRectangle}">
+                                <StackPanel  Orientation="Horizontal">
+                                    <StackPanel.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
+                                        </ContextMenu>
+                                    </StackPanel.ContextMenu>
+                                    <TextBlock>
                                             <Run Text="{Binding Attribute.Rect.X,StringFormat={}{0:F0}}"/>
                                             <Run Text="{Binding Attribute.Rect.Y,StringFormat={}{0:F0}}"/>
                                             <Run Text="{Binding Attribute.Rect.Width,StringFormat={}{0:F0}}"/>
                                             <Run Text="{Binding Attribute.Rect.Height,StringFormat={}{0:F0}}"/>
-                                </TextBlock>
-                            </StackPanel>
-                        </DataTemplate>
+                                    </TextBlock>
+                                </StackPanel>
+                            </DataTemplate>
 
-                        <DataTemplate x:Key="DrawingVisualRectangleWordTemplate"  DataType="{x:Type draw:DrawingVisualRectangleWord}">
-                            <StackPanel  Orientation="Horizontal">
-                                <StackPanel.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
-                                    </ContextMenu>
-                                </StackPanel.ContextMenu>
-                                <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="矩形" HorizontalAlignment="Center"/>
-                                <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.ID}" HorizontalAlignment="Center"/>
-                                <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}" Tag="{Binding .}"/>
-                                <TextBlock>
+                            <DataTemplate x:Key="DrawingVisualRectangleWordTemplate"  DataType="{x:Type draw:DrawingVisualRectangleWord}">
+                                <StackPanel  Orientation="Horizontal">
+                                    <StackPanel.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
+                                        </ContextMenu>
+                                    </StackPanel.ContextMenu>
+                                    <TextBlock>
                                             <Run Text="{Binding Attribute.Rect.X,StringFormat={}{0:F0}}"/>
                                             <Run Text="{Binding Attribute.Rect.Y,StringFormat={}{0:F0}}"/>
                                             <Run Text="{Binding Attribute.Rect.Width,StringFormat={}{0:F0}}"/>
                                             <Run Text="{Binding Attribute.Rect.Height,StringFormat={}{0:F0}}"/>
-                                </TextBlock>
-                            </StackPanel>
-                        </DataTemplate>
+                                    </TextBlock>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListView.Resources>
+                        <ListView.View >
+                            <GridView >
+                                <GridView.ColumnHeaderContainerStyle>
+                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                        <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                                        <EventSetter Event="Click" Handler="GridViewColumnSort"/>
+                                    </Style>
+                                </GridView.ColumnHeaderContainerStyle>
+                                <GridViewColumn  Header="显示">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type draw:IDrawingVisualDatum}">
+                                            <CheckBox IsChecked="{Binding BaseAttribute.IsShow}" Tag="{Binding .}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn  Header="序号">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type draw:IDrawingVisual}">
+                                            <TextBlock Text="{Binding BaseAttribute.ID}" HorizontalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn  Header="名称">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type draw:IDrawingVisual}">
+                                            <TextBlock Text="{Binding BaseAttribute.Name}" Tag="{Binding .}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn  Header="形状">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type draw:DrawingVisualBase}">
+                                            <TextBlock Text="{Binding Version}" Tag="{Binding .}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn  Header="名称">
+                                    <GridViewColumn.CellTemplateSelector>
+                                        <converter:DrawCanvasTemplateSelector  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}" DrawingVisualCircleWordTemplate="{StaticResource DrawingVisualCircleWordTemplate}"  DrawingVisualRectangleWordTemplate="{StaticResource DrawingVisualRectangleWordTemplate}" DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
+                                    </GridViewColumn.CellTemplateSelector>
+                                </GridViewColumn>
 
-                        <converter:DrawCanvasTemplateSelector x:Key="DrawCanvasTemplateSelector"  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}" DrawingVisualCircleWordTemplate="{StaticResource DrawingVisualCircleWordTemplate}"  DrawingVisualRectangleWordTemplate="{StaticResource DrawingVisualRectangleWordTemplate}" DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
-                    </Grid.Resources>
-                    <ListView  x:Name="ListView1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" ItemTemplateSelector="{StaticResource  DrawCanvasTemplateSelector}" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
-
+                            </GridView>
+                        </ListView.View>
                     </ListView>
-
-                </Grid>
             </Grid>
         </Grid>
 

@@ -5,10 +5,9 @@ namespace ColorVision.Draw
 {
 
 
-    public class DrawingVisualDatumCircle : DrawingVisualBase, IDrawingVisualDatum, ICircle
+    public class DrawingVisualDatumCircle : DrawingVisualBase<CircleAttribute>, IDrawingVisualDatum, ICircle
     {
-        public CircleAttribute Attribute { get; set; }
-        public DrawBaseAttribute GetAttribute() => Attribute;
+        public DrawBaseAttribute BaseAttribute => Attribute;
 
         public bool AutoAttributeChanged { get; set; } = true;
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
