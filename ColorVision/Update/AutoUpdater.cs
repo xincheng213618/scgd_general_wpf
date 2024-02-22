@@ -145,9 +145,8 @@ namespace ColorVision.Update
                 Stopwatch stopwatch = new Stopwatch(); // 创建一个计时器来追踪下载时间
 
                 long previousBytesReceived = 0; // 之前接收的字节数
-                double speed = 0; // 下载速度
+                double speed = 0; 
 
-                // 绑定下载进度事件
                 client.DownloadProgressChanged += (sender, e) =>
                 {
                     ProgressValue = e.ProgressPercentage;
@@ -167,10 +166,9 @@ namespace ColorVision.Update
 
                     if (timeSpan > 0) // 防止除以0
                     {
-                        speed = bytesReceivedSinceLastTick / timeSpan; // 计算速度
+                        SpeedValue = Common.Utilities.MemorySize.MemorySizeText(bytesReceivedSinceLastTick / (long)timeSpan);
                     }
 
-                    SpeedValue = Common.Utilities.MemorySize.MemorySizeText((long)speed);
                 };
                 // 绑定下载完成事件
                 client.DownloadFileCompleted += (sender, e) =>
