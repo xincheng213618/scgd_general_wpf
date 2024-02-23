@@ -7,7 +7,7 @@ namespace ColorVision.Services.Devices.Sensor
     {
         public MQTTSensor DeviceService { get; set; }
 
-        public DeviceSensor(SysResourceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceSensor(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
             DeviceService = new MQTTSensor(Config);
         }

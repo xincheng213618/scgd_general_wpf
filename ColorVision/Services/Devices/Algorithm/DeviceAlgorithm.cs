@@ -14,7 +14,7 @@ namespace ColorVision.Services.Devices.Algorithm
         public MQTTAlgorithm MQTTService { get; set; }
         public AlgorithmView View { get; set; }
 
-        public DeviceAlgorithm(SysResourceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceAlgorithm(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
             View ??= new AlgorithmView(this);
             MQTTService = new MQTTAlgorithm(this, Config);

@@ -62,7 +62,19 @@ namespace ColorVision.Services
                 }
             };
         }
+        private SysDeviceModel? saveDevConfigInfo(DeviceServiceConfig deviceConfig, SysResourceModel sysResource)
+        {
+            deviceConfig.Name = TextBox_Name.Text;
+            deviceConfig.Code = TextBox_Code.Text;
 
+            deviceConfig.SendTopic = ServiceTerminal.Config.SendTopic;
+            deviceConfig.SubscribeTopic = ServiceTerminal.Config.SubscribeTopic;
+            sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
+            ServiceControl.ResourceService.Save(sysResource);
+            int pkId = sysResource.GetPK();
+            if (pkId > 0 && ServiceControl.ResourceService.GetDeviceById(pkId) is SysDeviceModel model) return model;
+            else return null;
+        }
         private SysResourceModel? saveConfigInfo(DeviceServiceConfig deviceConfig, SysResourceModel sysResource)
         {
             deviceConfig.Name = TextBox_Name.Text;
@@ -94,7 +106,7 @@ namespace ColorVision.Services
 
 
                 SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, serviceTerminal.SysResourceModel.Type, serviceTerminal.SysResourceModel.Id, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                SysResourceModel sysResourceModel;
+                SysDeviceModel sysDevModel = null;
                 DeviceServiceConfig deviceConfig;
                 int fromPort;
                 switch (serviceTerminal.Type)
@@ -122,12 +134,12 @@ namespace ColorVision.Services
                             }
                         };
 
-                        sysResourceModel = saveConfigInfo(cameraConfig1, sysResource);
-                        if (sysResourceModel != null)
+                        sysDevModel = saveDevConfigInfo(cameraConfig1, sysResource);
+                        if (sysDevModel != null)
                         {
                             if (serviceTerminal.MQTTServiceTerminalBase is MQTTTerminalCamera cameraService)
                             {
-                                serviceTerminal.AddChild(new DeviceCamera(sysResourceModel, cameraService));
+                                serviceTerminal.AddChild(new DeviceCamera(sysDevModel, cameraService));
                             }
                         }
                         break;
@@ -137,9 +149,9 @@ namespace ColorVision.Services
                             Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text
                         };
-                        sysResourceModel = saveConfigInfo(pGConfig, sysResource);
-                        if (sysResourceModel != null)
-                            serviceTerminal.AddChild(new DevicePG(sysResourceModel));
+                        sysDevModel = saveDevConfigInfo(pGConfig, sysResource);
+                        if (sysDevModel != null)
+                            serviceTerminal.AddChild(new DevicePG(sysDevModel));
                         break;
                     case ServiceTypes.Spectrum:
                         fromPort = (Math.Abs(new Random().Next()) % 99 + 6700);
@@ -162,9 +174,9 @@ namespace ColorVision.Services
                                 DataBasePath = "D:\\CVTest",
                             }
                         };
-                        sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
-                        if (sysResourceModel != null)
-                            serviceTerminal.AddChild(new DeviceSpectrum(sysResourceModel));
+                        sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                        if (sysDevModel != null)
+                            serviceTerminal.AddChild(new DeviceSpectrum(sysDevModel));
                         break;
                     case ServiceTypes.SMU:
                         deviceConfig = new ConfigSMU
@@ -172,9 +184,9 @@ namespace ColorVision.Services
                             Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text
                         };
-                        SysResourceModel model = saveConfigInfo(deviceConfig, sysResource);
-                        if (model != null)
-                            serviceTerminal.AddChild(new DeviceSMU(model));
+                        sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                        if (sysDevModel != null)
+                            serviceTerminal.AddChild(new DeviceSMU(sysDevModel));
                         break;
                     case ServiceTypes.Sensor:
                         deviceConfig = new ConfigSensor
@@ -182,9 +194,9 @@ namespace ColorVision.Services
                             Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text
                         };
-                        sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
-                        if (sysResourceModel != null)
-                            serviceTerminal.AddChild(new DeviceSensor(sysResourceModel));
+                        sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                        if (sysDevModel != null)
+                            serviceTerminal.AddChild(new DeviceSensor(sysDevModel));
                         break;
                     case ServiceTypes.FileServer:
                         fromPort = (Math.Abs(new Random().Next()) % 99 + 6500);
@@ -196,9 +208,9 @@ namespace ColorVision.Services
                             PortRange = string.Format("{0}-{1}", fromPort, fromPort+5),
                             FileBasePath = "D:\\CVTest",
                         };
-                        sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
-                        if (sysResourceModel != null)
-                            serviceTerminal.AddChild(new DeviceFileServer(sysResourceModel));
+                        sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                        if (sysDevModel != null)
+                            serviceTerminal.AddChild(new DeviceFileServer(sysDevModel));
                         break;
                     case ServiceTypes.Algorithm:
                         fromPort = (Math.Abs(new Random().Next()) % 99 + 6600);
@@ -213,18 +225,18 @@ namespace ColorVision.Services
                                 DataBasePath = "D:\\CVTest",
                             }
                         };
-                        sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
-                        if (sysResourceModel != null)
-                            serviceTerminal.AddChild(new DeviceAlgorithm(sysResourceModel));
+                        sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                        if (sysDevModel != null)
+                            serviceTerminal.AddChild(new DeviceAlgorithm(sysDevModel));
                         break;
                     case ServiceTypes.CfwPort:
                         deviceConfig = new ConfigCfwPort { 
                             Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
                         };
-                        sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
-                        if (sysResourceModel != null)
-                            serviceTerminal.AddChild(new DeviceCfwPort(sysResourceModel));
+                        sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                        if (sysDevModel != null)
+                            serviceTerminal.AddChild(new DeviceCfwPort(sysDevModel));
                         break;
                     case ServiceTypes.Calibration:
                         deviceConfig = new ConfigCalibration
@@ -232,9 +244,9 @@ namespace ColorVision.Services
                             Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
                         };
-                        sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
-                        if (sysResourceModel != null)
-                            serviceTerminal.AddChild(new DeviceCalibration(sysResourceModel));
+                        sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                        if (sysDevModel != null)
+                            serviceTerminal.AddChild(new DeviceCalibration(sysDevModel));
                         break;
                     case ServiceTypes.Motor:
                         deviceConfig = new ConfigMotor
@@ -242,17 +254,17 @@ namespace ColorVision.Services
                             Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
                         };
-                        sysResourceModel = saveConfigInfo(deviceConfig, sysResource);
-                        if (sysResourceModel != null)
-                            serviceTerminal.AddChild(new DeviceMotor(sysResourceModel));
+                        sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                        if (sysDevModel != null)
+                            serviceTerminal.AddChild(new DeviceMotor(sysDevModel));
                         break;
                     default:
                         break;
                 };
+                if (sysDevModel != null) RC.MQTTRCService.GetInstance().RestartServices(sysDevModel.TypeCode, sysDevModel.PCode, sysDevModel.Code);
                 MessageBox.Show("添加资源成功");
                 MQTTCreate.Visibility = Visibility.Collapsed;
             }
-
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

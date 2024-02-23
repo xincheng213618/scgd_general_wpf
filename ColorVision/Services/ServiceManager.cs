@@ -175,7 +175,7 @@ namespace ColorVision.Services
                 }
             }
 
-            List<SysResourceModel> sysResourceModelDevices = ResourceService.GetAllDevices(UserConfig.TenantId);
+            List<SysDeviceModel> sysResourceModelDevices = ResourceService.GetAllDevices(UserConfig.TenantId);
             DeviceServices.Clear();
 
             foreach (var terminalService in TerminalServices)
