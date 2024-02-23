@@ -342,12 +342,12 @@
 
                                             <UniformGrid  Columns="2" >
                                                 <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                    <TextBlock Text="行数:"   MinWidth="50"/>
-                                                    <TextBox  Text="{Binding DatumArea.AreaPolygonRow}" Width="55" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput" />
+                                                    <TextBlock Text="分割数:"   MinWidth="50"/>
+                                                    <TextBox  Text="{Binding DatumArea.AreaPolygonLenNum}" Width="55" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput" />
                                                 </DockPanel>
                                                 <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                    <TextBlock Text="列数:"  MinWidth="50"/>
-                                                    <TextBox  Text="{Binding DatumArea.AreaPolygonCol}" Width="55" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                    <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding DatumArea.AreaPolygonUsNode}"/>
+                                                    <TextBox  Text="是否使用结点" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                             </UniformGrid>
                                             <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowDatumArea_Click"/>

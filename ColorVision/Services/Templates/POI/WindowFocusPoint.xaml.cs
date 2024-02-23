@@ -1260,6 +1260,89 @@ namespace ColorVision.Services.Templates.POI
                             }
                         }
                         break;
+
+                    case RiPointTypes.Polygon:
+
+                        for (int i = 0; i < PoiParam.DatumArea.Polygons.Count - 1; i++)
+                        {
+                            double dx = (PoiParam.DatumArea.Polygons[i+1].X - PoiParam.DatumArea.Polygons[i].X) / (PoiParam.DatumArea.AreaPolygonLenNum +1);
+                            double dy = (PoiParam.DatumArea.Polygons[i + 1].Y - PoiParam.DatumArea.Polygons[i].Y) / (PoiParam.DatumArea.AreaPolygonLenNum +1);
+
+                            for (int j = 1; j < PoiParam.DatumArea.AreaPolygonLenNum +1 ; j++)
+                            {
+
+                                switch (PoiParam.DefaultPointType)
+                                {
+                                    case RiPointTypes.Circle:
+
+                                        DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
+                                        Circle.Attribute.Center = new Point(PoiParam.DatumArea.Polygons[i].X + dx*j, PoiParam.DatumArea.Polygons[i].Y + dy * j);
+                                        Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
+                                        Circle.Attribute.Brush = Brushes.Transparent;
+                                        Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
+                                        Circle.Attribute.ID = start + i + 1;
+                                        Circle.Attribute.Text = string.Format("{0}{1}", pre_name, Circle.Attribute.ID);
+                                        Circle.Render();
+                                        ImageShow.AddVisual(Circle);
+                                        break;
+                                    case RiPointTypes.Rect:
+                                        DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
+                                        Rectangle.Attribute.Rect = new Rect(PoiParam.DatumArea.Polygons[i].X + dx * j - PoiParam.DatumArea.DefaultRectWidth / 2, PoiParam.DatumArea.Polygons[i].Y + dy * j - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
+                                        Rectangle.Attribute.Brush = Brushes.Transparent;
+                                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
+                                        Rectangle.Attribute.ID = start + i + 1;
+                                        Rectangle.Attribute.Name = string.Format("{0}{1}", pre_name, Rectangle.Attribute.ID);
+                                        Rectangle.Render();
+                                        ImageShow.AddVisual(Rectangle);
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+
+
+                        }
+
+                        for (int i = 0; i < PoiParam.DatumArea.Polygons.Count; i++)
+                        {
+                            if (PoiParam.DatumArea.AreaPolygonUsNode)
+                            {
+                                switch (PoiParam.DefaultPointType)
+                                {
+                                    case RiPointTypes.Circle:
+
+                                        DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
+                                        Circle.Attribute.Center = new Point(PoiParam.DatumArea.Polygons[i].X, PoiParam.DatumArea.Polygons[i].Y);
+                                        Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
+                                        Circle.Attribute.Brush = Brushes.Transparent;
+                                        Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
+                                        Circle.Attribute.ID = start + i + 1;
+                                        Circle.Attribute.Text = string.Format("{0}{1}", pre_name, Circle.Attribute.ID);
+                                        Circle.Render();
+                                        ImageShow.AddVisual(Circle);
+                                        break;
+                                    case RiPointTypes.Rect:
+                                        DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
+                                        Rectangle.Attribute.Rect = new Rect(PoiParam.DatumArea.Polygons[i].X - PoiParam.DatumArea.DefaultRectWidth / 2, PoiParam.DatumArea.Polygons[i].Y - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
+                                        Rectangle.Attribute.Brush = Brushes.Transparent;
+                                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
+                                        Rectangle.Attribute.ID = start + i + 1;
+                                        Rectangle.Attribute.Name = string.Format("{0}{1}", pre_name, Rectangle.Attribute.ID);
+                                        Rectangle.Render();
+                                        ImageShow.AddVisual(Rectangle);
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+
+                        }
+
+
+
+
+
+                        break;
                     default:
                         break;
                 }

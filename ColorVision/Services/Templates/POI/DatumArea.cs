@@ -88,6 +88,13 @@ namespace ColorVision.Services.Templates.POI
         private int _AreaPolygonCol = 3;
 
 
+        public int AreaPolygonLenNum { get => _AreaPolygonLenNum; set { _AreaPolygonLenNum = value; NotifyPropertyChanged(); } }
+        private int _AreaPolygonLenNum = 3;
+
+        public bool AreaPolygonUsNode { get => _AreaPolygonUsNode; set { _AreaPolygonUsNode = value; NotifyPropertyChanged(); } }
+        private bool _AreaPolygonUsNode = true;
+
+
         public Point Polygon1 { get; set; } = new Point() { X = 100, Y = 100 };
         public Point Polygon2 { get; set; } = new Point() { X = 300, Y = 100 };
         public Point Polygon3 { get; set; } = new Point() { X = 300, Y = 300 };
