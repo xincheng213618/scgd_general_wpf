@@ -10,7 +10,7 @@ namespace ColorVision.Services.Devices.Motor
     {
         public MQTTMotor DeviceService { get; set; }
 
-        public DeviceMotor(SysResourceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceMotor(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
             DeviceService = new MQTTMotor(Config);
 

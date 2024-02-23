@@ -110,9 +110,10 @@ namespace ColorVision.Services
         private void Timer_Elapsed(object? sender, ElapsedEventArgs e)
         {
             TimeSpan sp = DateTime.Now - LastAliveTime;
-            if (sp > TimeSpan.FromMilliseconds(HeartbeatTime))
+            long overTime = HeartbeatTime + HeartbeatTime / 2;
+            if (sp > TimeSpan.FromMilliseconds(overTime))
             {
-                DisConnected?.Invoke(sender ,new EventArgs());
+                DisConnected?.Invoke(sender, new EventArgs());
                 IsAlive = false;
             }
             else

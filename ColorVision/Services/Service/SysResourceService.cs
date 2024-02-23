@@ -6,6 +6,7 @@ namespace ColorVision.MySql.Service
     public class SysResourceService
     {
         private VSysResourceDao resourceDao = new VSysResourceDao();
+        private VSysDeviceDao deviceDao = new VSysDeviceDao();
 
         internal int DeleteById(int id)
         {
@@ -17,11 +18,14 @@ namespace ColorVision.MySql.Service
             return resourceDao.DeleteAllByPid(pid);
         }
 
-        internal List<SysResourceModel> GetAllDevices(int tenantId)
+        internal List<SysDeviceModel> GetAllDevices(int tenantId)
         {
-            return resourceDao.GetPidIsNotNull(tenantId);
+            return deviceDao.GetAll();
         }
-
+        internal SysDeviceModel? GetDeviceById(int pkId)
+        {
+            return deviceDao.GetById(pkId);
+        }
 
         internal List<SysResourceModel> GetAllServices(int tenantId)
         {
@@ -40,6 +44,12 @@ namespace ColorVision.MySql.Service
 
         internal void Save(SysResourceModel sysResource)
         {
+            resourceDao.Save(sysResource);
+        }
+        internal void Save(SysDeviceModel sysDev)
+        {
+            SysResourceModel sysResource = new SysResourceModel { CreateDate = sysDev.CreateDate, Code = sysDev.Code, Id= sysDev.Id,
+             Name = sysDev.Name, Pid = sysDev.Pid, Type = sysDev.Type, TenantId = sysDev.TenantId, TypeCode = sysDev.TypeCode, Value = sysDev.Value };
             resourceDao.Save(sysResource);
         }
     }

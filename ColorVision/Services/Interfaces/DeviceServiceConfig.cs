@@ -28,7 +28,7 @@ namespace ColorVision.Services.Devices
         /// 心跳时间
         /// </summary>
         public int HeartbeatTime { get => _HeartbeatTime; set { _HeartbeatTime = value; NotifyPropertyChanged(); } }
-        private int _HeartbeatTime = 10000;
+        private int _HeartbeatTime = 5000;
 
         /// <summary>
         /// 是否存活
@@ -36,7 +36,7 @@ namespace ColorVision.Services.Devices
         [JsonIgnore]
         public bool IsAlive { get => _IsAlive; set { _IsAlive = value; NotifyPropertyChanged(); } }
         private bool _IsAlive;
-
+        [JsonIgnore]
         public DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } }
         private DateTime _LastAliveTime = DateTime.MinValue;
 

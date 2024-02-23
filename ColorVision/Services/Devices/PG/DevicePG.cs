@@ -8,7 +8,7 @@ namespace ColorVision.Device.PG
     {
         public MQTTPG DeviceService { get; set; }
 
-        public DevicePG(SysResourceModel sysResourceModel) : base(sysResourceModel)
+        public DevicePG(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
             DeviceService = new MQTTPG(Config);
         }

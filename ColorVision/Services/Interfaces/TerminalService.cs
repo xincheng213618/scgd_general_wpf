@@ -1,4 +1,5 @@
 ﻿using ColorVision.MVVM;
+using ColorVision.RC;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Camera;
@@ -8,6 +9,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Xps.Packaging;
 
 namespace ColorVision.Services
 {
@@ -178,8 +180,12 @@ namespace ColorVision.Services
         public override void Save()
         {
             base.Save();
-            SysResourceModel.Value = JsonConvert.SerializeObject(Config);
+            DBTerminalServiceConfig dbCfg = new DBTerminalServiceConfig { HeartbeatTime = Config.HeartbeatTime, };
+            SysResourceModel.Value = JsonConvert.SerializeObject(dbCfg);
+            //SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             ServiceManager.GetInstance().ResourceService.Save(SysResourceModel);
+           
+            MQTTRCService.GetInstance().RestartServices(Config.ServiceType.ToString());
         }
     }
 }

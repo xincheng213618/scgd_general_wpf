@@ -11,7 +11,7 @@ namespace ColorVision.Device.FileServer
 
         public ImageView View { get; set; }
 
-        public DeviceFileServer(SysResourceModel sysResourceModel) : base(sysResourceModel)
+        public DeviceFileServer(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
             DeviceService = new MQTTService(Config);
             View = new ImageView();

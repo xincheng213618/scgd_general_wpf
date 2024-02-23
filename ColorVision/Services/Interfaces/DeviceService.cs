@@ -40,7 +40,7 @@ namespace ColorVision.Services.Devices
 
 
         public virtual ImageSource Icon { get; set; }
-        public SysResourceModel SysResourceModel { get; set; }
+        public SysDeviceModel SysResourceModel { get; set; }
 
         public virtual UserControl GetDeviceControl()
         {
@@ -100,7 +100,7 @@ namespace ColorVision.Services.Devices
 
         public int MySqlId { get => SysResourceModel.Id; }
 
-        public DeviceService(SysResourceModel sysResourceModel) : base()
+        public DeviceService(SysDeviceModel sysResourceModel) : base()
         {
             SysResourceModel = sysResourceModel;
             ContextMenu = new ContextMenu();
@@ -211,7 +211,7 @@ namespace ColorVision.Services.Devices
             IsEditMode = false;
 
             ///每次提交之后重启服务
-            MQTTRCService.GetInstance().RestartServices();
+            MQTTRCService.GetInstance().RestartServices(SysResourceModel.TypeCode, SysResourceModel.PCode, Config.Code);
             QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
         }
 
