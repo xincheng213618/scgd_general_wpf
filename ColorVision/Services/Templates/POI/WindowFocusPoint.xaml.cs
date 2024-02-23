@@ -33,7 +33,7 @@ using ColorVision.Settings;
 using ColorVision.Services.Templates;
 using ColorVision.Services.Templates.POI;
 
-namespace ColorVision.Templates.POI
+namespace ColorVision.Services.Templates.POI
 {
 
     /// <summary>

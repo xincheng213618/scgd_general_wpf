@@ -1,7 +1,7 @@
 ﻿using ColorVision.HotKey;
 using ColorVision.Solution;
 using ColorVision.Settings;
-using ColorVision.Templates;
+using ColorVision.Services.Templates;
 using System;
 using System.IO;
 using System.Linq;
@@ -25,7 +25,6 @@ using ColorVision.Common.Extension;
 using ColorVision.Update;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Flow;
-using ColorVision.Services.Templates;
 
 namespace ColorVision
 {

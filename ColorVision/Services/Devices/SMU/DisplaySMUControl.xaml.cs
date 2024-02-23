@@ -4,7 +4,6 @@ using ColorVision.Services.Devices.SMU.Views;
 using ColorVision.Services.Interfaces;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
-using ColorVision.Templates;
 using ColorVision.Themes;
 using MQTTMessageLib;
 using System;

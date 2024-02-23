@@ -15,7 +15,6 @@ using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Sorts;
-using ColorVision.Templates;
 using ColorVision.Themes.Controls;
 
 namespace ColorVision.Services.Devices.Camera

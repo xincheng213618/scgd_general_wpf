@@ -6,7 +6,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using cvColorVision;
-using ColorVision.Templates;
 using ColorVision.Services.Msg;
 using ColorVision.Net;
 using ColorVision.Solution;

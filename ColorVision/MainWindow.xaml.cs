@@ -31,7 +31,7 @@ using ColorVision.Solution.View;
 using ColorVision.Services.Interfaces;
 using System.Collections.ObjectModel;
 using ColorVision.Services.Devices.Spectrum;
-using ColorVision.Templates;
+using ColorVision.Services.Templates;
 
 namespace ColorVision
 {

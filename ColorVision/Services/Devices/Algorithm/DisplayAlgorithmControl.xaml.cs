@@ -10,7 +10,6 @@ using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Solution;
-using ColorVision.Templates;
 using ColorVision.Themes;
 using log4net;
 using MQTTMessageLib.Algorithm;
