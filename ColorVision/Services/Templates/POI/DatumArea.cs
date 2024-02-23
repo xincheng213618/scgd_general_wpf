@@ -1,6 +1,9 @@
 ﻿using ColorVision.MVVM;
 using Newtonsoft.Json;
+using SkiaSharp;
+using System.Collections.ObjectModel;
 using System.Windows;
+using System.Windows.Documents;
 
 namespace ColorVision.Services.Templates.POI
 {
@@ -52,6 +55,9 @@ namespace ColorVision.Services.Templates.POI
         [JsonIgnore]
         public bool IsAreaPolygon { get => PointType == RiPointTypes.Polygon; set { if (value) PointType = RiPointTypes.Polygon; NotifyPropertyChanged(); } }
 
+        [JsonIgnore]
+        public bool IsUserDraw { get => _IsUserDraw; set { _IsUserDraw = value; NotifyPropertyChanged(); } }
+        private bool _IsUserDraw;
 
         public int AreaCircleRadius { get => _AreaCircleRadius; set { _AreaCircleRadius = value; NotifyPropertyChanged(); } }
         private int _AreaCircleRadius = 100;
@@ -104,6 +110,9 @@ namespace ColorVision.Services.Templates.POI
         public int Polygon4X { get => (int)Polygon4.X; set { Polygon4 = new Point(value, Polygon4.Y); NotifyPropertyChanged(); } }
         [JsonIgnore]
         public int Polygon4Y { get => (int)Polygon4.Y; set { Polygon4 = new Point(Polygon4.X, value); NotifyPropertyChanged(); } }
+
+
+        public ObservableCollection<Point> Polygons { get; set; } = new ObservableCollection<Point>();
 
 
         public int DefaultCircleRadius { get => _DefaultCircleRadius; set { _DefaultCircleRadius = value; NotifyPropertyChanged(); } }

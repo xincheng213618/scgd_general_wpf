@@ -10,7 +10,7 @@ namespace ColorVision.Draw
 
         public bool AutoAttributeChanged { get; set; } = true;
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
-        public bool IsDrawing { get; set; } = true;
+        public bool IsComple { get; set; }
 
         
         public DrawingVisualPolygon()
@@ -45,6 +45,9 @@ namespace ColorVision.Draw
                 {
                     dc.DrawLine(new Pen(Brushes.Pink, Attribute.Pen.Thickness), Points[^1], (Point)MovePoints);
                 }
+
+                if (IsComple)
+                    dc.DrawLine(Attribute.Pen, Attribute.Points[Attribute.Points.Count - 1], Attribute.Points[0]);
             }
         }
 

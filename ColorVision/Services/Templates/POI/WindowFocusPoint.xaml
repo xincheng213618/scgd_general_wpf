@@ -167,7 +167,11 @@
                     <Border Margin="0" Style="{StaticResource BorderModuleArea}"  CornerRadius="0,0,5,5">
                         <TabControl Background="Transparent">
                             <TabItem Header="配置参数">
-                                <StackPanel Margin="5">
+                                <StackPanel >
+                                    <DockPanel>
+                                        <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding DatumArea.IsUserDraw}"/>
+                                        <TextBlock  HorizontalAlignment="Left" Text="使用绘图添加"/>
+                                    </DockPanel>
                                     <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
                                         <RadioButton x:Name="RadioButtonAreaCircle" GroupName="shapeArea" IsChecked="{Binding DatumArea.IsAreaCircle}" Width="60" Content="圆"/>
                                         <RadioButton x:Name="RadioButtonAreaRect"  GroupName="shapeArea" IsChecked="{Binding DatumArea.IsAreaRect}" Width="60" Content="矩形"/>
@@ -195,6 +199,7 @@
                                                     <TextBox x:Name="tbAngle" Width="55" Text="{Binding DatumArea.AreaCircleAngle}" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
                                                 </DockPanel>
                                             </UniformGrid>
+
                                             <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowDatumArea_Click"/>
                                         </StackPanel>
                                         <StackPanel  Margin="5" Visibility="{Binding DatumArea.IsAreaRect,Converter={StaticResource bool2VisibilityConverter}}">
@@ -259,7 +264,6 @@
                                                 </StackPanel>
                                             </Grid>
                                         </StackPanel>
-
                                         <StackPanel  Margin="5" Visibility="{Binding DatumArea.IsAreaMask,Converter={StaticResource bool2VisibilityConverter}}">
                                             <Grid>
                                                 <StackPanel>
@@ -348,7 +352,6 @@
                                             </UniformGrid>
                                             <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowDatumArea_Click"/>
                                         </StackPanel>
-
                                     </StackPanel>
 
                                     <StackPanel Orientation="Horizontal" Margin="0,5,0,0">

@@ -12,7 +12,7 @@ namespace ColorVision.Draw
 
         public bool AutoAttributeChanged { get; set; } = true;
 
-        public bool IsDrawing { get; set; } = true;
+        public bool IsComple { get; set; }
 
         public DrawingVisualDatumPolygon()
         {
@@ -27,6 +27,7 @@ namespace ColorVision.Draw
                     Render();
             };
         }
+        public Point? MovePoints { get; set; }
 
         public override void Render()
         {
@@ -38,7 +39,7 @@ namespace ColorVision.Draw
                 {
                     dc.DrawLine(Attribute.Pen, Attribute.Points[i], Attribute.Points[i + 1]);
                 }
-                if (!IsDrawing)
+                if (IsComple)
                     dc.DrawLine(Attribute.Pen, Attribute.Points[Attribute.Points.Count - 1], Attribute.Points[0]);
             }
         }
