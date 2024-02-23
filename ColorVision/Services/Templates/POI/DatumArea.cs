@@ -48,6 +48,9 @@ namespace ColorVision.Services.Templates.POI
         public bool IsAreaRect { get => PointType == RiPointTypes.Rect; set { if (value) PointType = RiPointTypes.Rect; NotifyPropertyChanged(); } }
         [JsonIgnore]
         public bool IsAreaMask { get => PointType == RiPointTypes.Mask; set { if (value) PointType = RiPointTypes.Mask; NotifyPropertyChanged(); } }
+        
+        [JsonIgnore]
+        public bool IsAreaPolygon { get => PointType == RiPointTypes.Polygon; set { if (value) PointType = RiPointTypes.Polygon; NotifyPropertyChanged(); } }
 
 
         public int AreaCircleRadius { get => _AreaCircleRadius; set { _AreaCircleRadius = value; NotifyPropertyChanged(); } }

@@ -171,7 +171,8 @@
                                     <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
                                         <RadioButton x:Name="RadioButtonAreaCircle" GroupName="shapeArea" IsChecked="{Binding DatumArea.IsAreaCircle}" Width="60" Content="圆"/>
                                         <RadioButton x:Name="RadioButtonAreaRect"  GroupName="shapeArea" IsChecked="{Binding DatumArea.IsAreaRect}" Width="60" Content="矩形"/>
-                                        <RadioButton x:Name="RadioButtonAreaMask"  GroupName="shapeArea" IsChecked="{Binding DatumArea.IsAreaMask}" Width="60" Content="四边形"/>
+                                        <RadioButton x:Name="RadioButtonAreaMask"  GroupName="shapeArea" IsChecked="{Binding DatumArea.IsAreaMask}" Width="70" Content="四边形"/>
+                                        <RadioButton x:Name="RadioButtonAreaPolygon"  GroupName="shapeArea" IsChecked="{Binding DatumArea.IsAreaPolygon}" Width="60" Content="折线"/>
                                     </StackPanel>
                                     <StackPanel>
                                         <StackPanel  Margin="5" Visibility="{Binding DatumArea.IsAreaCircle,Converter={StaticResource bool2VisibilityConverter}}">
@@ -330,6 +331,24 @@
                                             </UniformGrid>
                                             <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowDatumArea_Click"/>
                                         </StackPanel>
+                                        <StackPanel  Margin="5" Visibility="{Binding DatumArea.IsAreaPolygon,Converter={StaticResource bool2VisibilityConverter}}">
+                                            <Grid>
+
+                                            </Grid>
+
+                                            <UniformGrid  Columns="2" >
+                                                <DockPanel Margin="2" HorizontalAlignment="Left">
+                                                    <TextBlock Text="行数:"   MinWidth="50"/>
+                                                    <TextBox  Text="{Binding DatumArea.AreaPolygonRow}" Width="55" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput" />
+                                                </DockPanel>
+                                                <DockPanel Margin="2" HorizontalAlignment="Left">
+                                                    <TextBlock Text="列数:"  MinWidth="50"/>
+                                                    <TextBox  Text="{Binding DatumArea.AreaPolygonCol}" Width="55" BorderThickness="0,0,0,1" PreviewTextInput="TextBox_PreviewTextInput"/>
+                                                </DockPanel>
+                                            </UniformGrid>
+                                            <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowDatumArea_Click"/>
+                                        </StackPanel>
+
                                     </StackPanel>
 
                                     <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
@@ -410,7 +429,7 @@
             </Grid.RowDefinitions>
             <TextBox Grid.Column="0" x:Name="TextBox1" Background="Transparent" Width="5" BorderThickness="0" Foreground="Transparent"/>
             <draw:ZoomboxSub x:Name="Zoombox1" >
-                <draw:DrawCanvas x:Name="ImageShow" Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
+                <draw:DrawCanvas x:Name="ImageShow" Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseRightButtonDown ="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="NearestNeighbor" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </draw:ZoomboxSub>
             <StackPanel Grid.Row="0" Grid.RowSpan="2" >
                 <ToolBar x:Name="ToolBar1" d:DataContext="{d:DesignInstance draw:ToolBarTop}" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
