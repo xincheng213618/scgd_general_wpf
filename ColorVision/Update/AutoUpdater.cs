@@ -151,23 +151,23 @@ namespace ColorVision.Update
                 {
                     ProgressValue = e.ProgressPercentage;
 
-                    if (!stopwatch.IsRunning)
-                    {
-                        stopwatch.Start(); // 如果计时器未启动，则启动计时器
-                    }
+                    //if (!stopwatch.IsRunning)
+                    //{
+                    //    stopwatch.Start(); // 如果计时器未启动，则启动计时器
+                    //}
 
-                    // 计算从上一次触发事件以来接收的字节数
-                    long bytesReceivedSinceLastTick = e.BytesReceived - previousBytesReceived;
-                    previousBytesReceived = e.BytesReceived; // 更新总接收字节数
+                    //// 计算从上一次触发事件以来接收的字节数
+                    //long bytesReceivedSinceLastTick = e.BytesReceived - previousBytesReceived;
+                    //previousBytesReceived = e.BytesReceived; // 更新总接收字节数
 
-                    // 计算时间差
-                    double timeSpan = stopwatch.Elapsed.TotalSeconds;
-                    stopwatch.Restart(); // 重置并重新开始计时
+                    //// 计算时间差
+                    //double timeSpan = stopwatch.Elapsed.TotalSeconds;
+                    //stopwatch.Restart(); // 重置并重新开始计时
 
-                    if (timeSpan > 0) // 防止除以0
-                    {
-                        SpeedValue = Common.Utilities.MemorySize.MemorySizeText(bytesReceivedSinceLastTick / (long)timeSpan);
-                    }
+                    //if (timeSpan > 0) // 防止除以0
+                    //{
+                    //    SpeedValue = Common.Utilities.MemorySize.MemorySizeText(bytesReceivedSinceLastTick / (long)timeSpan);
+                    //}
 
                 };
                 // 绑定下载完成事件
