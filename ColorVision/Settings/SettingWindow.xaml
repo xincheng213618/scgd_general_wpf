@@ -10,7 +10,7 @@
         xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"     
         d:DataContext="{d:DesignInstance local:SoftwareConfig}"
-        Height="500" IsBlurEnabled="True" WindowStartupLocation="CenterScreen"  Background="Transparent" ResizeMode="NoResize" Width="600" Initialized="Window_Initialized">
+        Height="450" IsBlurEnabled="True" WindowStartupLocation="CenterScreen"  Background="Transparent" ResizeMode="NoResize" Width="600" Initialized="Window_Initialized">
     <Window.Resources>
        
         <ControlTemplate x:Key="GroupBoxHeader1" TargetType="{x:Type GroupBox}">

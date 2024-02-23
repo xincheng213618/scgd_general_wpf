@@ -627,4 +627,7 @@
   <data name="SerialNumber1" xml:space="preserve">
     <value>序号</value>
   </data>
+  <data name="ColorVisionUpdater" xml:space="preserve">
+    <value>ColorVision 更新程序</value>
+  </data>
 </root>

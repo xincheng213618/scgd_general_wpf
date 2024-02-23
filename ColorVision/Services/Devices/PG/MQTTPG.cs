@@ -2,7 +2,7 @@
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.PG.Templates;
 using ColorVision.Services.Msg;
-using ColorVision.Templates;
+using ColorVision.Services.Templates;
 using MQTTMessageLib;
 using MQTTnet.Client;
 using Newtonsoft.Json;

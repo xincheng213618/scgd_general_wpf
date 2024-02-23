@@ -1,7 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.Services.Flow.Templates;
 using ColorVision.Solution;
-using ColorVision.Templates;
 using ColorVision.Common.Utilities;
 using FlowEngineLib.Base;
 using FlowEngineLib.Start;
@@ -12,6 +11,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ColorVision.Services.Templates;
 
 namespace ColorVision.Services.Flow
 {

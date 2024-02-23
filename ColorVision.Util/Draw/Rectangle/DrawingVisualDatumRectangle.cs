@@ -3,10 +3,9 @@ using System.Windows.Media;
 
 namespace ColorVision.Draw
 {
-    public class DrawingVisualDatumRectangle : DrawingVisualBase, IDrawingVisualDatum, IRectangle
+    public class DrawingVisualDatumRectangle : DrawingVisualBase<RectangleAttribute>, IDrawingVisualDatum, IRectangle
     {
-        public RectangleAttribute Attribute { get; set; }
-        public DrawBaseAttribute GetAttribute() => Attribute;
+        public DrawBaseAttribute BaseAttribute => Attribute;
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
         public Rect Rect { get => Attribute.Rect; set => Attribute.Rect = value; }
 

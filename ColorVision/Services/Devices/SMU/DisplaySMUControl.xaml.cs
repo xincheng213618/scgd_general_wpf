@@ -1,20 +1,24 @@
-﻿using ColorVision.Services.Devices.SMU.Configs;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Services.Devices.SMU.Configs;
 using ColorVision.Services.Devices.SMU.Views;
+using ColorVision.Services.Interfaces;
+using ColorVision.Services.Templates;
 using ColorVision.Settings;
-using ColorVision.Templates;
+using ColorVision.Themes;
 using MQTTMessageLib;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.Services.Devices.SMU
 {
     /// <summary>
     /// DisplaySMUControl.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplaySMUControl : UserControl
+    public partial class DisplaySMUControl : UserControl, IDisPlayControl
     {
 
         public DeviceSMU Device { get; set; }
@@ -92,6 +96,22 @@ namespace ColorVision.Services.Devices.SMU
                     }
                 }
             };
+
+            this.PreviewMouseDown += UserControl_PreviewMouseDown;
+        }
+
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");  } }
+        private bool _IsSelected;
+
+        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (this.Parent is StackPanel stackPanel)
+            {
+                if (stackPanel.Tag is IDisPlayControl disPlayControl)
+                    disPlayControl.IsSelected = false;
+                stackPanel.Tag = this;
+                IsSelected = true;
+            }
         }
 
         private void SMUService_ResultHandler(SMUResultData data)

@@ -8,10 +8,7 @@ using ColorVision.Services.Devices.PG.Templates;
 using ColorVision.Services.Flow.Templates;
 using ColorVision.Settings;
 using ColorVision.Solution;
-using ColorVision.Templates.POI;
-using ColorVision.Templates.POI.Dao;
 using ColorVision.UserSpace;
-using ColorVision.Common.Utilities;
 using cvColorVision.Util;
 using System;
 using System.Collections.Generic;
@@ -19,26 +16,12 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Threading;
 using System.Windows;
+using ColorVision.Services.Templates.Measure;
+using ColorVision.Services.Templates.POI;
+using ColorVision.Services.Templates.POI.Dao;
 
-
-namespace ColorVision.Templates
+namespace ColorVision.Services.Templates
 {
-
-    public class PoiControl
-    {
-        private static PoiControl _instance;
-        private static readonly object _locker = new();
-        public static PoiControl GetInstance() { lock (_locker) { return _instance ??= new PoiControl(); } }
-        public ObservableCollection<TemplateModel<PoiParam>> PoiParams { get; set; }
-
-        public PoiControl()
-        {
-
-        }
-    }
-
-
-
     /// <summary>
     /// 模板管理
     /// </summary>
@@ -87,7 +70,7 @@ namespace ColorVision.Templates
                 if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
                     CSVSave();
 
-                Thread  thread  = new Thread(async () =>
+                Thread thread = new Thread(async () =>
                 {
                     if (!MySqlControl.GetInstance().IsConnect)
                         await MySqlControl.GetInstance().Connect();
@@ -205,7 +188,7 @@ namespace ColorVision.Templates
 
         public T? LoadCFG<T>(string cfgFile)
         {
-            return CfgFile.Load<T>(TemplatePath + "\\CFG\\"+ cfgFile + ".cfg");
+            return CfgFile.Load<T>(TemplatePath + "\\CFG\\" + cfgFile + ".cfg");
         }
 
 
@@ -213,9 +196,9 @@ namespace ColorVision.Templates
         /// 这里是初始化模板的封装，因为模板的代码高度统一，所以使用泛型T来设置具体的模板参数。
         /// 最后在给模板的每一个元素加上一个切换的效果，即当某一个模板启用时，关闭其他已经启用的模板；
         /// 同一类型，只能存在一个启用的模板
-        private  ObservableCollection<TemplateModel<T>> IDefault<T>(string FileName ,T Default) where T : ParamBase
+        private ObservableCollection<TemplateModel<T>> IDefault<T>(string FileName, T Default) where T : ParamBase
         {
-            ObservableCollection<TemplateModel<T >> Params = new ObservableCollection<TemplateModel<T>>();
+            ObservableCollection<TemplateModel<T>> Params = new ObservableCollection<TemplateModel<T>>();
 
             Params = LoadCFG<ObservableCollection<TemplateModel<T>>>(FileName) ?? new ObservableCollection<TemplateModel<T>>();
             if (Params.Count == 0)
@@ -261,7 +244,7 @@ namespace ColorVision.Templates
             {
                 if (Directory.Exists(SolutionManager.GetInstance().CurrentSolution.FullName))
                 {
-                    CfgFile.Save(SolutionManager.GetInstance().CurrentSolution.FullName + "\\CFG\\" + item.Key +".cfg", item.Value);
+                    CfgFile.Save(SolutionManager.GetInstance().CurrentSolution.FullName + "\\CFG\\" + item.Key + ".cfg", item.Value);
                 }
                 else
                 {
@@ -342,16 +325,16 @@ namespace ColorVision.Templates
             }
         }
 
-        public void Save<T>(ObservableCollection<TemplateModel<T>> t ,string code) where T: ParamBase
+        public void Save<T>(ObservableCollection<TemplateModel<T>> t, string code) where T : ParamBase
         {
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
                 Save2DB(t);
-            else 
+            else
                 SaveDefault(code, t);
         }
 
 
-        public void Save2DB<T>(ObservableCollection<TemplateModel<T>>  keyValuePairs) where T : ParamBase
+        public void Save2DB<T>(ObservableCollection<TemplateModel<T>> keyValuePairs) where T : ParamBase
         {
             foreach (var item in keyValuePairs)
             {
@@ -373,7 +356,7 @@ namespace ColorVision.Templates
         }
 
 
-        private  void SaveDefault<T>(string FileNameParams, ObservableCollection<TemplateModel<T>> t) where T :ParamBase
+        private void SaveDefault<T>(string FileNameParams, ObservableCollection<TemplateModel<T>> t) where T : ParamBase
         {
             CfgFile.Save(TemplatePath + "\\CFG\\" + FileNameParams + ".cfg", t);
         }
@@ -428,7 +411,7 @@ namespace ColorVision.Templates
         }
 
 
-        public T? AddParamMode<T>(string code,string Name) where T: ParamBase,new ()
+        public T? AddParamMode<T>(string code, string Name) where T : ParamBase, new()
         {
             ModMasterModel modMaster = new ModMasterModel(code, Name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             modService.Save(modMaster);
@@ -436,7 +419,7 @@ namespace ColorVision.Templates
             if (pkId > 0)
             {
                 ModMasterModel modMasterModel = modService.GetMasterById(pkId);
-                List<ModDetailModel>  modDetailModels = modService.GetDetailByPid(pkId);
+                List<ModDetailModel> modDetailModels = modService.GetDetailByPid(pkId);
                 if (modMasterModel != null) return (T)Activator.CreateInstance(typeof(T), new object[] { modMasterModel, modDetailModels });
                 else return null;
             }
@@ -463,7 +446,7 @@ namespace ColorVision.Templates
 
         internal ResourceParam? AddDeviceParam(string name, string code, int type, int pid)
         {
-            SysResourceModel sysResource = new SysResourceModel(name, code, type,pid, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            SysResourceModel sysResource = new SysResourceModel(name, code, type, pid, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             resourceService.Save(sysResource);
             int pkId = sysResource.GetPK();
             if (pkId > 0)
@@ -473,7 +456,7 @@ namespace ColorVision.Templates
             return null;
         }
 
-        internal ResourceParam? AddServiceParam(string name,string code,int type)
+        internal ResourceParam? AddServiceParam(string name, string code, int type)
         {
             SysResourceModel sysResource = new SysResourceModel(name, code, type, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             resourceService.Save(sysResource);
@@ -509,9 +492,9 @@ namespace ColorVision.Templates
             else return null;
         }
 
-        private void LoadModParam<T>(ObservableCollection<TemplateModel<T>> ParamModes, string ModeType) where T : ParamBase,new ()
+        private void LoadModParam<T>(ObservableCollection<TemplateModel<T>> ParamModes, string ModeType) where T : ParamBase, new()
         {
-                DicTemplate.TryAdd(ModeType, ParamModes);
+            DicTemplate.TryAdd(ModeType, ParamModes);
             ParamModes.Clear();
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
@@ -536,7 +519,7 @@ namespace ColorVision.Templates
             }
         }
 
-        public void LoadModCabParam<T>(ObservableCollection<TemplateModel<T>> CalibrationParamModes ,int resourceId , string ModeType) where T : ParamBase, new()
+        public void LoadModCabParam<T>(ObservableCollection<TemplateModel<T>> CalibrationParamModes, int resourceId, string ModeType) where T : ParamBase, new()
         {
             DicTemplate.TryAdd(ModeType, CalibrationParamModes);
             CalibrationParamModes.Clear();
@@ -650,7 +633,7 @@ namespace ColorVision.Templates
 
         internal int ModMasterDeleteById(int id)
         {
-           return modService.MasterDeleteById(id);
+            return modService.MasterDeleteById(id);
         }
 
         internal void Save2DB(FlowParam flowParam)
@@ -690,7 +673,7 @@ namespace ColorVision.Templates
 
         internal int ModMDetailDeleteById(int id)
         {
-           return measureService.DetailDeleteById(id);
+            return measureService.DetailDeleteById(id);
         }
 
         internal int MeasureMasterDeleteById(int id)
@@ -716,7 +699,7 @@ namespace ColorVision.Templates
 
         public ObservableCollection<TemplateModel<BuildPOIParam>> BuildPOIParams { get; set; }
 
-        public static ObservableCollection<TemplateModelBase> GetTemplateModelBases<T>(ObservableCollection<TemplateModel<T>> templateModels) where T:ParamBase
+        public static ObservableCollection<TemplateModelBase> GetTemplateModelBases<T>(ObservableCollection<TemplateModel<T>> templateModels) where T : ParamBase
         {
             ObservableCollection<TemplateModelBase> templateModelBases = new ObservableCollection<TemplateModelBase>();
             foreach (var item in templateModels)

@@ -1,8 +1,11 @@
-﻿using ColorVision.Services.Devices.Camera.Calibrations;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
+using ColorVision.Services.Interfaces;
+using ColorVision.Services.Templates;
 using ColorVision.Settings;
-using ColorVision.Templates;
+using ColorVision.Themes;
 using MQTTMessageLib;
 using System;
 using System.Collections.Generic;
@@ -11,6 +14,7 @@ using System.Collections.Specialized;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using static cvColorVision.GCSDLL;
 
 namespace ColorVision.Services.Devices.Spectrum
@@ -18,7 +22,7 @@ namespace ColorVision.Services.Devices.Spectrum
     /// <summary>
     /// DisplaySpectrumControl.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplaySpectrumControl : UserControl
+    public partial class DisplaySpectrumControl : UserControl, IDisPlayControl
     {
         public DeviceSpectrum DeviceSpectrum { get; set; }
         public MQTTSpectrum SpectrumService { get => DeviceSpectrum.DeviceService; }
@@ -135,7 +139,23 @@ namespace ColorVision.Services.Devices.Spectrum
 
             ComboxResourceTemplate.ItemsSource = SpectrumResourceParams;
             ComboxResourceTemplate.SelectedIndex = 0;
+
+            this.PreviewMouseDown += UserControl_PreviewMouseDown;
         }
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515"); } }
+        private bool _IsSelected;
+
+        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (this.Parent is StackPanel stackPanel)
+            {
+                if (stackPanel.Tag is IDisPlayControl disPlayControl)
+                    disPlayControl.IsSelected = false;
+                stackPanel.Tag = this;
+                IsSelected = true;
+            }
+        }
+
 
         public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; }
 

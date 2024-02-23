@@ -12,9 +12,9 @@ using ColorVision.Services.Devices.Camera.Dao;
 using ColorVision.Services.Devices.Spectrum.Views;
 using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
+using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Sorts;
-using ColorVision.Templates;
 using ColorVision.Themes.Controls;
 
 namespace ColorVision.Services.Devices.Camera
@@ -290,7 +290,7 @@ namespace ColorVision.Services.Devices.Camera
         {
             if (sender is TextBlock textBlock)
             {
-                ColorVision.NativeMethods.Clipboard.SetText(textBlock.Text);
+                NativeMethods.Clipboard.SetText(textBlock.Text);
                 MessageBox.Show(textBlock.Text);
             }
         }

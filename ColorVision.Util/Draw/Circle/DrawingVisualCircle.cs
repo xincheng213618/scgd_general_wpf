@@ -7,7 +7,7 @@ namespace ColorVision.Draw
     [CircleAttribute(ID =1)]
     public class DrawingVisualCircle : DrawingVisualBase<CircleAttribute>, IDrawingVisual,ICircle
     {
-        public DrawBaseAttribute GetAttribute() => Attribute;
+        public DrawBaseAttribute BaseAttribute => Attribute;
         public bool AutoAttributeChanged { get; set; }
         public Point Center { get => Attribute.Center; set => Attribute.Center = value; }
         public double Radius { get => Attribute.Radius; set => Attribute.Radius = value; }
@@ -15,6 +15,7 @@ namespace ColorVision.Draw
 
         public DrawingVisualCircle()
         {
+            Version = "圆形";
             Attribute = new CircleAttribute();
             Attribute.ID = No++;
             Attribute.Brush = Brushes.Transparent;

@@ -8,7 +8,6 @@
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:resx="clr-namespace:ColorVision.Properties"
-             xmlns:calib="clr-namespace:ColorVision.Templates"
              xmlns:dao ="clr-namespace:ColorVision.Services.Devices.Camera.Dao"
              d:DataContext="{d:DesignInstance local:DeviceCamera}"
              d:DesignHeight="400" d:DesignWidth="600" Initialized="UserControl_Initialized">

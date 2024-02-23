@@ -12,7 +12,7 @@ namespace ColorVision.HotKey
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return (value is bool boll) && (boll) ? ColorVision.Common.Utilities.Properties.Resource.HotkeyNormal : Common.Utilities.Properties.Resource.HotkeyNormal;
+            return (value is bool boll) && (boll) ? Common.Utilities.Properties.Resource.HotkeyNormal : Common.Utilities.Properties.Resource.HotkeyNormal;
 
         }
 

@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel;
 using Newtonsoft.Json;
-using ColorVision.Templates;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Templates;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {

@@ -224,9 +224,9 @@ namespace ColorVision.Net
         public static int ReadLocalBinaryFile(string path,ref CVCIEFileInfo fileInfo)
         {
             int code = -1;
-            if (System.IO.File.Exists(path))
+            if (File.Exists(path))
             {
-                System.IO.FileStream fileStream = new System.IO.FileStream(path, System.IO.FileMode.Open, System.IO.FileAccess.Read);
+                System.IO.FileStream fileStream = new System.IO.FileStream(path, FileMode.Open, FileAccess.Read);
                 System.IO.BinaryReader binaryReader = new System.IO.BinaryReader(fileStream);
                 //获取文件长度
                 long length = fileStream.Length;
@@ -253,7 +253,7 @@ namespace ColorVision.Net
 
         public static void WriteLocalBinaryFile(string fileName, byte[] data)
         {
-            using (System.IO.FileStream fileStream = new System.IO.FileStream(fileName, System.IO.FileMode.Create))
+            using (System.IO.FileStream fileStream = new System.IO.FileStream(fileName, FileMode.Create))
             using (System.IO.BinaryWriter writer = new System.IO.BinaryWriter(fileStream))
             {
                 writer.Write(data);
@@ -350,7 +350,7 @@ namespace ColorVision.Net
         {
             int code = 0;
             CVCIEFileInfo fileInfo = new CVCIEFileInfo();
-            if (!System.IO.File.Exists(fileName)) return fileInfo;
+            if (!File.Exists(fileName)) return fileInfo;
             if (extType == FileExtType.CIE) code = ReadLocalBinaryCIEFile(fileName, ref fileInfo);
             else if (extType == FileExtType.Raw) code = ReadLocalBinaryRawFile(fileName, ref fileInfo);
             else if (extType == FileExtType.Tif) code = ReadTIFImage(fileName, ref fileInfo);
@@ -460,7 +460,7 @@ namespace ColorVision.Net
             float[] exp;
             if (CVFileUtils.GetParamFromFile(fileName, out w, out h, out bpp, out channels, out exp, out imgData, out srcFileName))
             {
-                if (System.IO.File.Exists(srcFileName))
+                if (File.Exists(srcFileName))
                 {
                     if (srcFileName.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
                     {

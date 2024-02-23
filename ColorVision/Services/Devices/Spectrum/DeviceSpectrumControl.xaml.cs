@@ -4,8 +4,8 @@ using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.Spectrum.Configs;
+using ColorVision.Services.Templates;
 using ColorVision.Settings;
-using ColorVision.Templates;
 
 namespace ColorVision.Services.Devices.Spectrum
 {

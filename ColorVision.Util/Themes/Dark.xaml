@@ -6,7 +6,7 @@
 
 
     <Color x:Key="GlobalBackgroundColor">#262626</Color>
-    <Color x:Key="GlobalBroderBrushColor">#111111</Color>
+    <Color x:Key="GlobalBroderBrushColor">#282828</Color>
     <Color x:Key="GlobalTextColor">White</Color>
 
     <Color x:Key="SelectedBackgroundColor">#FFC5CBF9</Color>

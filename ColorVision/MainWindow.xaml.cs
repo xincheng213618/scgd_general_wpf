@@ -28,6 +28,10 @@ using ColorVision.Adorners;
 using ColorVision.MySql;
 using ColorVision.Utils;
 using ColorVision.Solution.View;
+using ColorVision.Services.Interfaces;
+using System.Collections.ObjectModel;
+using ColorVision.Services.Devices.Spectrum;
+using ColorVision.Services.Templates;
 
 namespace ColorVision
 {
@@ -123,14 +127,11 @@ namespace ColorVision
             StatusBarGrid.DataContext = ConfigHandler.GetInstance();
             MenuStatusBar.DataContext = ConfigHandler.GetInstance().SoftwareConfig;
 
-            FlowDisplayControl flowDisplayControl = new FlowDisplayControl();
-            SPDisplay.Children.Insert(0, flowDisplayControl);
-
             ViewGridManager.GetInstance().SetViewNum(1);
             this.Closed += (s, e) => { Environment.Exit(-1); };
-            Debug.WriteLine(ColorVision.Properties.Resource.LaunchSuccess);
+            Debug.WriteLine(Properties.Resource.LaunchSuccess);
 
-            MenuItem menulogs = new MenuItem() { Header = ColorVision.Properties.Resource.Log };
+            MenuItem menulogs = new MenuItem() { Header = Properties.Resource.Log };
             MenuHelp.Items.Insert(0, menulogs);
 
             MenuItem menulog = new MenuItem() { Header = Properties.Resource.x64ServiceLog };
@@ -140,7 +141,7 @@ namespace ColorVision
             };
             menulogs.Items.Insert(0, menulog);
 
-            MenuItem menulog1 = new MenuItem() { Header = ColorVision.Properties.Resource.CameraLog };
+            MenuItem menulog1 = new MenuItem() { Header = Properties.Resource.CameraLog };
             menulog1.Click += (s, e) =>
             {
                 PlatformHelper.OpenFolder("http://localhost:8064/system/device/camera/log");
@@ -155,7 +156,7 @@ namespace ColorVision
             };
             menulogs.Items.Insert(2, menulog2);
 
-            MenuItem menulog3 = new MenuItem() { Header = ColorVision.Properties.Resource.SpectrometerLog };
+            MenuItem menulog3 = new MenuItem() { Header = Properties.Resource.SpectrometerLog };
             menulog3.Click += (s, e) =>
             {
                 PlatformHelper.OpenFolder("http://localhost:8086/system/device/Spectrum/log");
@@ -163,7 +164,7 @@ namespace ColorVision
             menulogs.Items.Insert(3, menulog3);
 
 #if (DEBUG == true)
-            MenuItem menuItem = new MenuItem() { Header = ColorVision.Properties.Resource.ExperimentalFeature };
+            MenuItem menuItem = new MenuItem() { Header = Properties.Resource.ExperimentalFeature };
             MenuItem menuItem1 = new MenuItem() { Header = "折线图" };
             menuItem1.Click += Test_Click;
             menuItem.Items.Add(menuItem1);
@@ -193,7 +194,7 @@ namespace ColorVision
             Task.Run(CheckCertificate);
 
             Task.Run(EnsureLocalInfile);
-            SolutionTab.Content = new TreeViewControl();
+            SolutionTab1.Content = new TreeViewControl();
         }
 
         public async static Task EnsureLocalInfile()
@@ -223,7 +224,7 @@ namespace ColorVision
                 X509Certificate2 x509Certificate2 = GetCertificateFromSignedFile(Process.GetCurrentProcess()?.MainModule?.FileName);
                 if (x509Certificate2 != null)
                 {
-                    MenuItem menuItem = new MenuItem() { Header = ColorVision.Properties.Resource.InstallCertificate };
+                    MenuItem menuItem = new MenuItem() { Header = Properties.Resource.InstallCertificate };
                     menuItem.Click += (s,e) =>
                     {
                         InstallCertificate(x509Certificate2);
@@ -291,12 +292,12 @@ namespace ColorVision
                             // 如果找到匹配项，提取变更日志
                             string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
                             // 显示变更日志
-                            MessageBox.Show(Application.Current.MainWindow, $"{changeLogForCurrentVersion.ReplaceLineEndings()}",$"{currentVersion} {ColorVision.Properties.Resource.ChangeLog}：");
+                            MessageBox.Show(Application.Current.MainWindow, $"{changeLogForCurrentVersion.ReplaceLineEndings()}",$"{currentVersion} {Properties.Resource.ChangeLog}：");
                         }
                         else
                         {
                             // 如果未找到匹配项，说明没有为当前版本列出变更日志
-                            MessageBox.Show(Application.Current.MainWindow,"1.修复了一些已知的BUG", $"{currentVersion} {ColorVision.Properties.Resource.ChangeLog}：");
+                            MessageBox.Show(Application.Current.MainWindow,"1.修复了一些已知的BUG", $"{currentVersion} {Properties.Resource.ChangeLog}：");
                         }
 
                     }
@@ -337,7 +338,7 @@ namespace ColorVision
                 if (!string.IsNullOrEmpty(excmd))
                 {
                     excmd += "1";
-                    Common.Utilities.Tool.ExecuteCommandAsAdmin(excmd);
+                    Tool.ExecuteCommandAsAdmin(excmd);
                 }
                 ///非管理员模式无法直接通过sc启动程序
             }
@@ -366,12 +367,49 @@ namespace ColorVision
             }
         }
 
+        private FlowDisplayControl flowDisplayControl;
 
         private void StackPanelSPD_Initialized(object sender, EventArgs e)
         {
             if (sender is StackPanel stackPanel1)
             {
-                stackPanel1.Children.Add(ServiceManager.GetInstance().StackPanel);
+                flowDisplayControl ??= new FlowDisplayControl();
+                if (stackPanel1.Children.Contains(flowDisplayControl))
+                    stackPanel1.Children.Remove(flowDisplayControl);
+                stackPanel1.Children.Insert(0,flowDisplayControl);
+
+                ServiceManager.GetInstance().DisPlayControls.CollectionChanged += (s,e)=>
+                {
+                    if (s is ObservableCollection<IDisPlayControl> disPlayControls)
+                    {
+                        switch (e.Action)
+                        {
+                            case System.Collections.Specialized.NotifyCollectionChangedAction.Add:
+                                if (e.NewItems != null)
+                                    foreach (IDisPlayControl newItem in e.NewItems)
+                                        if (newItem is UserControl userControl)
+                                            stackPanel1.Children.Add(userControl);
+                                break;
+                            case System.Collections.Specialized.NotifyCollectionChangedAction.Remove:
+                                if (e.OldItems != null)
+                                    foreach (IDisPlayControl oldItem in e.OldItems)
+                                        if (oldItem is UserControl userControl)
+                                            stackPanel1.Children.Add(userControl);
+                                break;
+                            case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
+                                break;
+                            case System.Collections.Specialized.NotifyCollectionChangedAction.Move:
+                                break;
+                            case System.Collections.Specialized.NotifyCollectionChangedAction.Reset:
+                                stackPanel1.Children.Clear();
+                                stackPanel1.Children.Insert(0, flowDisplayControl);
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                };
+
 
                 FluidMoveBehavior fluidMoveBehavior = new FluidMoveBehavior
                 {
@@ -379,11 +417,12 @@ namespace ColorVision
                     Duration = TimeSpan.FromSeconds(0.2)
                 };
 
-                Interaction.GetBehaviors(ServiceManager.GetInstance().StackPanel).Add(fluidMoveBehavior);
-                ServiceManager.GetInstance().StackPanel.AddAdorners(this);
+                Interaction.GetBehaviors(stackPanel1).Add(fluidMoveBehavior);
+                stackPanel1.AddAdorners(this);
             }
 
         }
+
 
         private void ViewGrid_Click(object sender, RoutedEventArgs e)
         {
@@ -438,16 +477,6 @@ namespace ColorVision
             string changelogContent = File.ReadAllText(changelogPath);
             changelogWindow.SetChangelogText(changelogContent);
             changelogWindow.ShowDialog();
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-
-            if (ServiceManager.GetInstance().StackPanel.Children[0] is UserControl userControl1)
-            {
-                ServiceManager.GetInstance().StackPanel.Children.RemoveAt(0);
-                ServiceManager.GetInstance().StackPanel.Children.Add(userControl1);
-            }
         }
     }
 }

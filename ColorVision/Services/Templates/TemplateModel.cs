@@ -4,9 +4,9 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 
-namespace ColorVision.Templates
+namespace ColorVision.Services.Templates
 {
-    public class TemplateModelBase : ViewModelBase,ISortID
+    public class TemplateModelBase : ViewModelBase, ISortID
     {
         public virtual int Id { get; set; }
 
@@ -14,7 +14,7 @@ namespace ColorVision.Templates
         public string Tag { get => _Tag; set { _Tag = value; NotifyPropertyChanged(); } }
         private string _Tag;
 
-        public virtual bool IsEditMode { get => _IsEditMode;set { _IsEditMode =value; NotifyPropertyChanged(); }}
+        public virtual bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
         private bool _IsEditMode;
 
         public virtual object GetValue()
@@ -23,7 +23,7 @@ namespace ColorVision.Templates
         }
     }
 
-    public class TemplateModel<T>: TemplateModelBase where T : ParamBase
+    public class TemplateModel<T> : TemplateModelBase where T : ParamBase
     {
         public TemplateModel()
         {
@@ -40,14 +40,16 @@ namespace ColorVision.Templates
         }
 
         [JsonIgnore]
-        public override int Id { get => Value.Id;}
+        public override int Id { get => Value.Id; }
 
         [JsonIgnore]
         public override string Key
-        { 
-            get =>  Value.Name;
-            set { Value.Name = value;  NotifyPropertyChanged(); 
-            } 
+        {
+            get => Value.Name;
+            set
+            {
+                Value.Name = value; NotifyPropertyChanged();
+            }
         }
 
         public T Value { get; set; }

@@ -1,4 +1,4 @@
-﻿using ColorVision.Templates;
+﻿using ColorVision.Services.Templates;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

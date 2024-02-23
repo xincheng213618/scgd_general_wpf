@@ -82,13 +82,13 @@ namespace ColorVision.Media
                 if (s is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && s is Visual visual1)
                 {
                     DrawingVisualLists.Add(visual);
-                    visual.GetAttribute().PropertyChanged += (s1, e1) =>
+                    visual.BaseAttribute.PropertyChanged += (s1, e1) =>
                     {
                         if (e1.PropertyName == "IsShow")
                         {
                             ListView1.ScrollIntoView(visual);
                             ListView1.SelectedIndex = DrawingVisualLists.IndexOf(visual);
-                            if (visual.GetAttribute().IsShow == true)
+                            if (visual.BaseAttribute.IsShow == true)
                             {
                                 if (!ImageShow.ContainsVisual(visual1))
                                 {
@@ -113,7 +113,7 @@ namespace ColorVision.Media
             {
                 if (s is IDrawingVisual visual)
                 {
-                    if (visual.GetAttribute().IsShow)
+                    if (visual.BaseAttribute.IsShow)
                         DrawingVisualLists.Remove(visual);
                 }
             };
@@ -210,7 +210,7 @@ namespace ColorVision.Media
                 MenuItem menuItem = new MenuItem() { Header = "隐藏(_H)" };
                 menuItem.Click += (s, e) =>
                 {
-                    drawing.GetAttribute().IsShow = false;
+                    drawing.BaseAttribute.IsShow = false;
                 };
                 MenuItem menuIte2 = new MenuItem() { Header = "删除(_D)" };
                 menuIte2.Click += (s, e) =>
@@ -312,8 +312,8 @@ namespace ColorVision.Media
                                 PropertyGrid2.Refresh();
                             };
                         }
-                        PropertyGrid2.SelectedObject = drawingVisual.GetAttribute();
-                        drawingVisual.GetAttribute().PropertyChanged += (s, e) =>
+                        PropertyGrid2.SelectedObject = drawingVisual.BaseAttribute;
+                        drawingVisual.BaseAttribute.PropertyChanged += (s, e) =>
                         {
                             PropertyGrid2.Refresh();
                         };
@@ -792,8 +792,8 @@ namespace ColorVision.Media
                     };
                 }
 
-                PropertyGrid2.SelectedObject = drawingVisual.GetAttribute();
-                drawingVisual.GetAttribute().PropertyChanged += (s, e) =>
+                PropertyGrid2.SelectedObject = drawingVisual.BaseAttribute;
+                drawingVisual.BaseAttribute.PropertyChanged += (s, e) =>
                 {
                     PropertyGrid2.Refresh();
                 };

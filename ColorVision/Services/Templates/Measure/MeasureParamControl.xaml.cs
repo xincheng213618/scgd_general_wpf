@@ -1,13 +1,14 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.Services.Dao;
-using ColorVision.Templates.POI;
+using ColorVision.Services.Templates;
+using ColorVision.Services.Templates.POI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Templates
+namespace ColorVision.Services.Templates
 {
     public class MParamConfig : ViewModelBase
     {

@@ -5,10 +5,9 @@ namespace ColorVision.Draw
 {
 
 
-    public class DrawingVisualRectangle : DrawingVisualBase, IDrawingVisual, IRectangle
+    public class DrawingVisualRectangle : DrawingVisualBase<RectangleAttribute>, IDrawingVisual, IRectangle
     {
-        public RectangleAttribute Attribute { get; set; }
-        public DrawBaseAttribute GetAttribute() => Attribute;
+        public DrawBaseAttribute BaseAttribute => Attribute;
         public Rect Rect { get => Attribute.Rect; set => Attribute.Rect = value; }
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
 
@@ -17,6 +16,7 @@ namespace ColorVision.Draw
 
         public DrawingVisualRectangle()
         {
+            Version = "矩形";
             Attribute = new RectangleAttribute();
             Attribute.ID = No++;
             Attribute.Brush = Brushes.Transparent;
@@ -27,8 +27,6 @@ namespace ColorVision.Draw
                 if (AutoAttributeChanged) Render();
             };
         }
-        public int ID { get => Attribute.ID; set => Attribute.ID = value; }
-
         public override void Render()
         {
             using DrawingContext dc = RenderOpen();

@@ -197,7 +197,7 @@ namespace ColorVision.Themes
             
             // 这里也可能是LocalMachine(HKEY_LOCAL_MACHINE)
             // see "https://www.addictivetips.com/windows-tips/how-to-enable-the-dark-theme-in-windows-10/"
-            object registryValueObject = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(RegistryKeyPath)?.GetValue(RegistryValueName);
+            object registryValueObject = Registry.CurrentUser.OpenSubKey(RegistryKeyPath)?.GetValue(RegistryValueName);
             if (registryValueObject is null) return true;
             return (int)registryValueObject > 0;
         }
@@ -208,7 +208,7 @@ namespace ColorVision.Themes
             const string RegistryValueName = "SystemUsesLightTheme";
             // 这里也可能是LocalMachine(HKEY_LOCAL_MACHINE)
             // see "https://www.addictivetips.com/windows-tips/how-to-enable-the-dark-theme-in-windows-10/"
-            object registryValueObject = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(RegistryKeyPath)?.GetValue(RegistryValueName);
+            object registryValueObject = Registry.CurrentUser.OpenSubKey(RegistryKeyPath)?.GetValue(RegistryValueName);
             if (registryValueObject is null) return true;
             return (int)registryValueObject > 0;
         }

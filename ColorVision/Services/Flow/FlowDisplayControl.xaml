@@ -22,7 +22,7 @@
                 <Image Source="{DynamicResource DrawingImageFlow}"/>
             </Grid>
         </Grid>
-        <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
+        <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel Margin="5,2">
                 <DockPanel Margin="0,2">
                    

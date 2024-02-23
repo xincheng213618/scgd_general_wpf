@@ -1,5 +1,5 @@
 ﻿using ColorVision.Services.Dao;
-using ColorVision.Templates;
+using ColorVision.Services.Templates;
 using System.Collections.Generic;
 
 namespace ColorVision.Services.Flow.Templates

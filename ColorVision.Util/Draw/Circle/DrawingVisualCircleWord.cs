@@ -39,13 +39,14 @@ namespace ColorVision.Draw
         public TextAttribute TextAttribute { get => Attribute.TextAttribute; }
         public bool AutoAttributeChanged { get; set; } = true;
 
-        public DrawBaseAttribute GetAttribute() => Attribute;
+        public DrawBaseAttribute BaseAttribute => Attribute;
         public Point Center { get => Attribute.Center; set => Attribute.Center = value; }
         public double Radius { get => Attribute.Radius; set => Attribute.Radius = value; }
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
 
         public DrawingVisualCircleWord()
         {
+            Version = "圆形";
             Attribute = new CircleTextAttribute();
             Attribute.ID = No++;
             Attribute.Brush = Brushes.Transparent;

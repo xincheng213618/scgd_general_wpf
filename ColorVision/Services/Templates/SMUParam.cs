@@ -4,32 +4,36 @@ using cvColorVision;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ColorVision.Templates
+namespace ColorVision.Services.Templates
 {
     public class SMUParam : ParamBase
     {
         public SMUParam() { }
 
-        public SMUParam(ModMasterModel modMaster, List<ModDetailModel> sxDetail) : base(modMaster.Id, modMaster.Name ?? string.Empty, sxDetail) {}
+        public SMUParam(ModMasterModel modMaster, List<ModDetailModel> sxDetail) : base(modMaster.Id, modMaster.Name ?? string.Empty, sxDetail) { }
 
         public double StartMeasureVal
         {
             set { SetProperty(ref _StartMeasureVal, value, "BeginValue"); }
             get => GetValue(_StartMeasureVal, "BeginValue");
-        } 
-        public double StopMeasureVal {
+        }
+        public double StopMeasureVal
+        {
             set { SetProperty(ref _StopMeasureVal, value, "EndValue"); }
             get => GetValue(_StopMeasureVal, "EndValue");
         }
-        public int Number {
+        public int Number
+        {
             set { SetProperty(ref _Number, value, "Points"); }
             get => GetValue(_Number, "Points");
         }
-        public double LmtVal {
+        public double LmtVal
+        {
             set { SetProperty(ref _LmtVal, value, "LimitValue"); }
             get => GetValue(_LmtVal, "LimitValue");
         }
-        public bool IsSourceV {
+        public bool IsSourceV
+        {
             set { SetProperty(ref _IsSourceV, value); }
             get => GetValue(_IsSourceV);
         }
@@ -45,17 +49,19 @@ namespace ColorVision.Templates
     /// <summary>
     /// 源表
     /// </summary>
-    public class PassSxSource:ViewModelBase
+    public class PassSxSource : ViewModelBase
     {
         public bool IsOpen { get => DevID >= 0; }
 
         private int _DevID = -1;
-        public int DevID { get => _DevID;
-            private set 
+        public int DevID
+        {
+            get => _DevID;
+            private set
             {
                 _DevID = value;
                 NotifyPropertyChanged(nameof(IsOpen));
-            } 
+            }
         }
 
         private string _Version;
@@ -74,8 +80,8 @@ namespace ColorVision.Templates
         public string DevName { get => _DevName; set { _DevName = value; NotifyPropertyChanged(); } }
         private string _DevName;
 
-        public bool  IsNet { get => _IsNet; set { _IsNet = value; NotifyPropertyChanged(); } }
-        private bool _IsNet =true;
+        public bool IsNet { get => _IsNet; set { _IsNet = value; NotifyPropertyChanged(); } }
+        private bool _IsNet = true;
 
         public double StartMeasureVal { get => _startMeasureVal; set { _startMeasureVal = value; NotifyPropertyChanged(); } }
         private double _startMeasureVal;
@@ -99,7 +105,7 @@ namespace ColorVision.Templates
         private double? _I;
 
 
-        public bool Open(bool isNet,string devName)
+        public bool Open(bool isNet, string devName)
         {
             if (IsOpen) return true;
             if (string.IsNullOrWhiteSpace(devName)) return false;
@@ -163,7 +169,7 @@ namespace ColorVision.Templates
 
         private double[] pVList;
         private double[] pIList;
-        public void Scan(double startVal, double endVal, double lmtVal, int points )
+        public void Scan(double startVal, double endVal, double lmtVal, int points)
         {
             pVList = new double[points];
             pIList = new double[points];

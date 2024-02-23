@@ -5,8 +5,6 @@ using ColorVision.Media;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
 using ColorVision.Sorts;
-using ColorVision.Templates;
-using ColorVision.Templates.POI;
 using ColorVision.Common.Utilities;
 using log4net;
 using MQTTMessageLib.Camera;
@@ -20,6 +18,8 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.Services.Templates;
+using ColorVision.Services.Templates.POI;
 
 namespace ColorVision.Services.Devices.Camera.Views
 {

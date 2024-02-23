@@ -40,7 +40,7 @@ namespace cvColorVision
             float[] pdomainSamplingData = new float[(int)Math.Max(fRoi.width, fRoi.height)];
             int nLen = (int)Math.Max(tImg.nWidth, tImg.nHeight);
 
-            if (cvCameraCSLib.SFRCalculation(tImg, FindRoi2CRECT(fRoi), gamma, pdfrequency, pdomainSamplingData, nLen) < 1)
+            if (SFRCalculation(tImg, FindRoi2CRECT(fRoi), gamma, pdfrequency, pdomainSamplingData, nLen) < 1)
                 return false;
 
             saveCsv_SFR("Result", pdfrequency, pdomainSamplingData);

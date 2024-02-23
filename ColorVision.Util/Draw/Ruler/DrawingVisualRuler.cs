@@ -17,7 +17,7 @@ namespace ColorVision.Draw
             Attribute.Pen = new Pen(Brushes.Red,10);
         }
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
-        public DrawBaseAttribute GetAttribute() => Attribute;
+        public DrawBaseAttribute BaseAttribute => Attribute;
         public bool AutoAttributeChanged { get; set; }
 
         public double ActualLength { get; set; } = 1;
@@ -87,8 +87,8 @@ namespace ColorVision.Draw
         }
         public static double GetDistance(Point startPoint, Point endPoint)
         {
-            double x = System.Math.Abs(endPoint.X - startPoint.X);
-            double y = System.Math.Abs(endPoint.Y - startPoint.Y);
+            double x = Math.Abs(endPoint.X - startPoint.X);
+            double y = Math.Abs(endPoint.Y - startPoint.Y);
             return Math.Sqrt(x * x + y * y);
         }
 

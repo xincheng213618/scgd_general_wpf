@@ -5,7 +5,6 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Services.Devices.Camera"
              xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
-             xmlns:Template ="clr-namespace:ColorVision.Templates"
              xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
              xmlns:SettingUp ="clr-namespace:ColorVision.Settings"
              xmlns:cv="clr-namespace:ColorVision"
@@ -41,7 +40,7 @@
             </Grid>
         </DockPanel>
 
-        <Border Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
+        <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="3">
                 <Button x:Name="ButtonInit" Margin="0,0,0,3"  Content="连接" Click="CameraInit_Click"/>
                 <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,3">

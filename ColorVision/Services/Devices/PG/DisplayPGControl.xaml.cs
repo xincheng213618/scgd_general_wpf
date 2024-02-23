@@ -1,14 +1,18 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.Common.Utilities;
+using ColorVision.Services.Interfaces;
+using System.Windows.Input;
 using MQTTMessageLib;
+using ColorVision.Themes;
 
 namespace ColorVision.Device.PG
 {
     /// <summary>
     /// DisplayPGControl.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayPGControl : UserControl
+    public partial class DisplayPGControl : UserControl, IDisPlayControl
     {
         private MQTTPG PGService { get => DevicePG.DeviceService; }
         private DevicePG DevicePG { get; set; }
@@ -19,6 +23,8 @@ namespace ColorVision.Device.PG
             DevicePG = devicePG;
             InitializeComponent();
             this.DataContext = DevicePG;
+
+            this.PreviewMouseDown += UserControl_PreviewMouseDown;
         }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -33,6 +39,20 @@ namespace ColorVision.Device.PG
             {
                 TextBlockPGIP.Text = "串口";
                 TextBlockPGPort.Text = "波特率";
+            }
+        }
+
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");  } }
+        private bool _IsSelected;
+
+        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (this.Parent is StackPanel stackPanel)
+            {
+                if (stackPanel.Tag is IDisPlayControl disPlayControl)
+                    disPlayControl.IsSelected = false;
+                stackPanel.Tag = this;
+                IsSelected = true;
             }
         }
 

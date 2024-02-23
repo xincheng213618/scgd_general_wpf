@@ -1,5 +1,4 @@
 ﻿using ColorVision.MQTT;
-using ColorVision.Templates;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -11,13 +10,17 @@ using System.Windows.Media;
 using ColorVision.Solution;
 using ColorVision.Services.Flow.Templates;
 using ColorVision.Settings;
+using ColorVision.Common.Utilities;
+using ColorVision.Services.Interfaces;
+using System.Windows.Input;
+using ColorVision.Services.Templates;
 
 namespace ColorVision.Services.Flow
 {
     /// <summary>
     /// FlowDisplayControl.xaml 的交互逻辑
     /// </summary>
-    public partial class FlowDisplayControl : UserControl
+    public partial class FlowDisplayControl : UserControl, IDisPlayControl
     {
         public IFlowView View { get; set; }
 
@@ -84,6 +87,20 @@ namespace ColorVision.Services.Flow
                         ViewGridManager.GetInstance().SetViewIndex(control, KeyValue.Value);
                     }
                 };
+
+
+                this.PreviewMouseLeftButtonDown += (s, e) =>
+                {
+                    if (ViewConfig.GetInstance().IsAutoSelect)
+                    {
+                        if (ViewGridManager.GetInstance().ViewMax == 1)
+                        {
+                            View.View.ViewIndex = 0;
+                            ViewGridManager.GetInstance().SetViewIndex(control, 0);
+                        }
+                    }
+                };
+
             }
 
             FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
@@ -117,7 +134,23 @@ namespace ColorVision.Services.Flow
             };
             FlowTemplate.SelectedIndex = 0;
 
+            this.PreviewMouseDown += UserControl_PreviewMouseDown;
         }
+
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");  } }
+        private bool _IsSelected;
+
+        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (this.Parent is StackPanel stackPanel)
+            {
+                if (stackPanel.Tag is IDisPlayControl disPlayControl)
+                    disPlayControl.IsSelected = false;
+                stackPanel.Tag = this;
+                IsSelected = true;
+            }
+        }
+
 
 
         private FlowControl flowControl;

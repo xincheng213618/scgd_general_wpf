@@ -103,7 +103,7 @@ namespace ColorVision.Common.MVVM
             menuItemAuto.Header = "自动调整列宽";
             menuItemAuto.Click += (s, e) =>
             {
-                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridViewColumns, gridViewColumnVisibilitys);
+                AdjustGridViewColumnAuto(gridViewColumns, gridViewColumnVisibilitys);
             };
             contextMenu.Items.Add(menuItemAuto);
             contextMenu.Items.Add(new Separator());
@@ -120,7 +120,7 @@ namespace ColorVision.Common.MVVM
                 menuItem.Click += (s, e) =>
                 {
                     item.IsVisible = !item.IsVisible;
-                    GridViewColumnVisibility.AdjustGridViewColumn(gridViewColumns, gridViewColumnVisibilitys);
+                    AdjustGridViewColumn(gridViewColumns, gridViewColumnVisibilitys);
                 };
                 contextMenu.Items.Add(menuItem);
             }

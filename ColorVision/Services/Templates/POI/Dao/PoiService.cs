@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
+using ColorVision.Services.Templates.POI;
 
-namespace ColorVision.Templates.POI.Dao
+namespace ColorVision.Services.Templates.POI.Dao
 {
     public class PoiService
     {

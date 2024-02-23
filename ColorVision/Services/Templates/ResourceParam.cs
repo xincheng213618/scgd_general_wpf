@@ -1,6 +1,6 @@
 ﻿using ColorVision.Services.Dao;
 
-namespace ColorVision.Templates
+namespace ColorVision.Services.Templates
 {
     public class ResourceParam : ParamBase
     {
@@ -11,9 +11,9 @@ namespace ColorVision.Templates
 
         }
 
-        public ResourceParam(SysResourceModel dbModel) 
+        public ResourceParam(SysResourceModel dbModel)
         {
-            this.Id =dbModel.Id;
+            Id = dbModel.Id;
             JsonValue = dbModel.Value;
         }
 
