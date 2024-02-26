@@ -30,6 +30,7 @@ using System.Windows.Media.Imaging;
 using MQTTMessageLib.FileServer;
 using ColorVision.Services.Dao;
 using ColorVision.Settings;
+using ColorVision.Util.Draw.Rectangle;
 
 namespace ColorVision.Services.Templates.POI
 {
@@ -80,10 +81,13 @@ namespace ColorVision.Services.Templates.POI
 
         public bool IsLayoutUpdated { get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; NotifyPropertyChanged(); if (value) UpdateVisualLayout(value);  } }
         private bool _IsLayoutUpdated;
+
         private void Button_Click_UpdateVisualLayout(object sender, RoutedEventArgs e)
         {
             UpdateVisualLayout(true);
         }
+
+
         public ToolBarTop ToolBarTop { get; set; }
 
         private void UpdateVisualLayout(bool IsLayoutUpdated)
@@ -148,7 +152,7 @@ namespace ColorVision.Services.Templates.POI
             };
 
             ToolBarTop = new ToolBarTop(ImageContentGrid, Zoombox1, ImageShow);
-
+            ToolBarTop.Activate = true;
             ToolBar1.DataContext = ToolBarTop;
 
 
@@ -1213,7 +1217,7 @@ namespace ColorVision.Services.Templates.POI
                         pts_src.Add(PoiParam.DatumArea.Polygon4);
 
 
-                        List<Point> points = SortPolyPoints(pts_src);
+                        List<Point> points = Helpers.SortPolyPoints(pts_src);
 
                         cols = PoiParam.DatumArea.AreaPolygonCol;
                         rows = PoiParam.DatumArea.AreaPolygonRow;
@@ -1274,10 +1278,10 @@ namespace ColorVision.Services.Templates.POI
 
                         for (int i = 0; i < PoiParam.DatumArea.Polygons.Count - 1; i++)
                         {
-                            double dx = (PoiParam.DatumArea.Polygons[i+1].X - PoiParam.DatumArea.Polygons[i].X) / (PoiParam.DatumArea.AreaPolygonLenNum +1);
-                            double dy = (PoiParam.DatumArea.Polygons[i + 1].Y - PoiParam.DatumArea.Polygons[i].Y) / (PoiParam.DatumArea.AreaPolygonLenNum +1);
+                            double dx = (PoiParam.DatumArea.Polygons[i+1].X - PoiParam.DatumArea.Polygons[i].X) / (PoiParam.DatumArea.Polygons[i].SplitNumber + 1);
+                            double dy = (PoiParam.DatumArea.Polygons[i + 1].Y - PoiParam.DatumArea.Polygons[i].Y) / (PoiParam.DatumArea.Polygons[i].SplitNumber + 1);
 
-                            for (int j = 1; j < PoiParam.DatumArea.AreaPolygonLenNum +1 ; j++)
+                            for (int j = 1; j < PoiParam.DatumArea.Polygons[i].SplitNumber +1 ; j++)
                             {
 
                                 switch (PoiParam.DefaultPointType)
@@ -1469,7 +1473,7 @@ namespace ColorVision.Services.Templates.POI
                         pts_src.Add(PoiParam.DatumArea.Polygon4);
 
 
-                        List<Point> result = SortPolyPoints(pts_src);
+                        List<Point> result = Helpers.SortPolyPoints(pts_src);
                         DrawingVisualDatumPolygon Polygon = new DrawingVisualDatumPolygon() { IsComple = true };
                         Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                         Polygon.Attribute.Brush = Brushes.Transparent;
@@ -1499,52 +1503,8 @@ namespace ColorVision.Services.Templates.POI
                 }
 
             }
-
-
         }
 
-        public static List<Point> SortPolyPoints(List<Point> vPoints)
-        {
-            if (vPoints == null || vPoints.Count == 0) return new List<Point>();
-            //计算重心
-            double X = 0, Y = 0;
-            for (int i = 0; i < vPoints.Count; i++)
-            {
-                X += vPoints[i].X;
-                Y += vPoints[i].Y;
-            }
-            Point center = new Point((int)X / vPoints.Count, (int)Y / vPoints.Count);
-            //冒泡排序
-            for (int i = 0; i < vPoints.Count - 1; i++)
-            {
-                for (int j = 0; j < vPoints.Count - i - 1; j++)
-                {
-                    if (PointCmp(vPoints[j], vPoints[j + 1], center))
-                    {
-                        (vPoints[j + 1], vPoints[j]) = (vPoints[j], vPoints[j + 1]);
-                    }
-                }
-            }
-            return vPoints;
-        }
-
-        private static bool PointCmp(Point a, Point b, Point center)
-        {
-            if (a.X >= 0 && b.X < 0)
-                return true;
-            else if (a.X == 0 && b.X == 0)
-                return a.Y > b.Y;
-            //向量OA和向量OB的叉积
-            double det = (a.X - center.X) * (b.Y - center.Y) - (b.X - center.X) * (a.Y - center.Y);
-            if (det < 0)
-                return true;
-            if (det > 0)
-                return false;
-            //向量OA和向量OB共线，以距离判断大小
-            double d1 = (a.X - center.X) * (a.X - center.X) + (a.Y - center.Y) * (a.Y - center.Y);
-            double d2 = (b.X - center.X) * (b.X - center.X) + (b.Y - center.Y) * (b.Y - center.Y);
-            return d1 > d2;
-        }
 
         private void Button_save_Click(object sender, RoutedEventArgs e)
         {
@@ -1692,11 +1652,6 @@ namespace ColorVision.Services.Templates.POI
 
         }
 
-        private void Grid_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-
-        }
-
         private WindowStatus OldWindowStatus { get; set; }
 
         private void Button8_Click(object sender, RoutedEventArgs e)
@@ -1739,10 +1694,6 @@ namespace ColorVision.Services.Templates.POI
         }
 
 
-        private void Button_Click_4(object sender, RoutedEventArgs e)
-        {
-
-        }
 
         private void DatumAreaImport_Click(object sender, RoutedEventArgs e)
         {
@@ -1754,11 +1705,6 @@ namespace ColorVision.Services.Templates.POI
             PoiParam.DatumArea.Polygon3Y = PoiParam.DatumArea.X3Y;
             PoiParam.DatumArea.Polygon4X = PoiParam.DatumArea.X4X;
             PoiParam.DatumArea.Polygon4Y = PoiParam.DatumArea.X4Y;
-        }
-
-        private void Button_Click_5(object sender, RoutedEventArgs e)
-        {
-
         }
 
         private void Button_Setting_Click(object sender, RoutedEventArgs e)

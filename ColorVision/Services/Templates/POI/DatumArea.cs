@@ -86,9 +86,8 @@ namespace ColorVision.Services.Templates.POI
 
         public int AreaPolygonCol { get => _AreaPolygonCol; set { _AreaPolygonCol = value; NotifyPropertyChanged(); } }
         private int _AreaPolygonCol = 3;
-
-
-        public int AreaPolygonLenNum { get => _AreaPolygonLenNum; set { _AreaPolygonLenNum = value; NotifyPropertyChanged(); } }
+        public int AreaPolygonLenNum { get => _AreaPolygonLenNum; set { _AreaPolygonLenNum = value; NotifyPropertyChanged(); foreach (var item in Polygons) 
+                    item.SplitNumber = value; } }
         private int _AreaPolygonLenNum = 3;
 
         public bool AreaPolygonUsNode { get => _AreaPolygonUsNode; set { _AreaPolygonUsNode = value; NotifyPropertyChanged(); } }
@@ -146,7 +145,7 @@ namespace ColorVision.Services.Templates.POI
     }
 
 
-    public class PolygonPoint
+    public class PolygonPoint:ViewModelBase
     {
         public double X { get; set; }
         public double Y { get; set; }
@@ -156,6 +155,10 @@ namespace ColorVision.Services.Templates.POI
             X = x;
             Y = y;
         }
+
+        public int SplitNumber { get => _SplitNumber; set { _SplitNumber = value; NotifyPropertyChanged(); } }
+        private int _SplitNumber =1;
+
 
         public override string ToString()
         {
