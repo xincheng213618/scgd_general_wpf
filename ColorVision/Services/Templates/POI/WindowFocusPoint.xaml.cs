@@ -302,6 +302,15 @@ namespace ColorVision.Services.Templates.POI
                         DrawingPolygonCache = null;
                     }
                 }
+                if (e.Key == Key.Back)
+                {
+                    if (DrawingPolygonCache!=null && DrawingPolygonCache.Attribute.Points.Count > 0)
+                    {
+                        DrawingPolygonCache.Attribute.Points.Remove(DrawingPolygonCache.Attribute.Points.Last());
+                        DrawingPolygonCache.Render();
+                    }
+
+                }
             };
 
 
@@ -685,7 +694,7 @@ namespace ColorVision.Services.Templates.POI
                     PoiParam.DatumArea.Polygons.Clear();
                     foreach (var item in DrawingPolygonCache.Attribute.Points)
                     {
-                        PoiParam.DatumArea.Polygons.Add(item);
+                        PoiParam.DatumArea.Polygons.Add(new PolygonPoint(item.X, item.Y));
                     }
                     DrawingPolygonCache = null;
                     RenderDatumArea();
@@ -1478,7 +1487,7 @@ namespace ColorVision.Services.Templates.POI
                         Polygon1.Attribute.Brush = Brushes.Transparent;
                         foreach (var item in PoiParam.DatumArea.Polygons)
                         {
-                            Polygon1.Attribute.Points.Add(item);
+                            Polygon1.Attribute.Points.Add(new Point(item.X, item.Y));
                         }
                         Polygon1.Render();
                         drawingVisualDatum = Polygon1;
@@ -2092,7 +2101,14 @@ namespace ColorVision.Services.Templates.POI
 
         }
 
-
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is PolygonPoint polygonPoint)
+            {
+                PoiParam.DatumArea.Polygons.Remove(polygonPoint);
+                RenderDatumArea();
+            }
+        }
     }
 
 }

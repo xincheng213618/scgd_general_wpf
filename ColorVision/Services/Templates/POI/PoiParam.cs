@@ -50,7 +50,14 @@ namespace ColorVision.Services.Templates.POI
                 }
                 else
                 {
-                    DatumArea = JsonConvert.DeserializeObject<DatumArea>(value) ?? new DatumArea();
+                    try
+                    {
+                        DatumArea = JsonConvert.DeserializeObject<DatumArea>(value) ?? new DatumArea();
+                    }
+                    catch 
+                    {
+                        DatumArea = new DatumArea();
+                    }
                 }
             }
         }

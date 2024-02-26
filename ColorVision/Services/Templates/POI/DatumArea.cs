@@ -119,7 +119,7 @@ namespace ColorVision.Services.Templates.POI
         public int Polygon4Y { get => (int)Polygon4.Y; set { Polygon4 = new Point(Polygon4.X, value); NotifyPropertyChanged(); } }
 
 
-        public ObservableCollection<Point> Polygons { get; set; } = new ObservableCollection<Point>();
+        public ObservableCollection<PolygonPoint> Polygons { get; set; } = new ObservableCollection<PolygonPoint>();
 
 
         public int DefaultCircleRadius { get => _DefaultCircleRadius; set { _DefaultCircleRadius = value; NotifyPropertyChanged(); } }
@@ -143,6 +143,24 @@ namespace ColorVision.Services.Templates.POI
 
         public double LedLen4 { get => _LedLen4; set { _LedLen4 = value; NotifyPropertyChanged(); } }
         private double _LedLen4;
+    }
+
+
+    public class PolygonPoint
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+
+        public PolygonPoint(double x, double y)
+        {
+            X = x;
+            Y = y;
+        }
+
+        public override string ToString()
+        {
+            return $"X:{(int)X},Y:{(int)Y}";
+        }
     }
 
 }

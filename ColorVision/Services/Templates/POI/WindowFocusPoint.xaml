@@ -9,7 +9,7 @@
         xmlns:converter="clr-namespace:ColorVision.Draw.Converter;assembly=ColorVision.Util"
         xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
         xmlns:draw ="clr-namespace:ColorVision.Draw;assembly=ColorVision.Util"
-         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+        xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:resx="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Template:PoiParam}"
@@ -336,9 +336,43 @@
                                             <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowDatumArea_Click"/>
                                         </StackPanel>
                                         <StackPanel  Margin="5" Visibility="{Binding DatumArea.IsAreaPolygon,Converter={StaticResource bool2VisibilityConverter}}">
-                                            <Grid>
 
-                                            </Grid>
+                                            <ListView  x:Name="ListViewPolygon" ItemsSource="{Binding DatumArea.Polygons}" Grid.Column="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
+                                                <ListView.Resources>
+                                                    <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
+                                                    </ContextMenu>
+                                                </ListView.Resources>
+                                                <ListView.View >
+                                                    <GridView >
+                                                        <GridView.ColumnHeaderContainerStyle>
+                                                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                                                <Setter Property="Visibility" Value="Hidden"/>
+                                                                <Setter Property="Background" Value="Transparent"/>
+                                                                <Setter Property="BorderThickness" Value="0"/>
+                                                                <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                                                                <EventSetter Event="Click" Handler="GridViewColumnSort"/>
+                                                            </Style>
+                                                        </GridView.ColumnHeaderContainerStyle>
+                                                        <GridViewColumn Header="显示">
+                                                            <GridViewColumn.CellTemplate>
+                                                                <DataTemplate DataType="{x:Type local:PolygonPoint}">
+                                                                    <TextBlock Text="{Binding .}"/>
+                                                                </DataTemplate>
+                                                            </GridViewColumn.CellTemplate>
+                                                        </GridViewColumn>
+                                                        <GridViewColumn Header="显示">
+                                                            <GridViewColumn.CellTemplate>
+                                                                <DataTemplate DataType="{x:Type local:PolygonPoint}">
+                                                                    <Button Content="删除" Click="Button_Click" Tag="{Binding .}"/>
+                                                                </DataTemplate>
+                                                            </GridViewColumn.CellTemplate>
+                                                        </GridViewColumn>
+       
+                                                    </GridView>
+                                                </ListView.View>
+                                            </ListView>
+
+
 
                                             <UniformGrid  Columns="2" >
                                                 <DockPanel Margin="2" HorizontalAlignment="Left">
@@ -481,120 +515,120 @@
                     <winf:PropertyGrid   x:Name="PropertyGrid2" />
                 </WindowsFormsHost>
                 <ListView  x:Name="ListView1" Grid.Column="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
-                        <ListView.Resources>
-                            <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
-                            </ContextMenu>
-                            <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type draw:DrawingVisualCircle}" >
-                                <StackPanel  Orientation="Horizontal">
-                                    <StackPanel.ContextMenu>
-                                        <ContextMenu>
-                                            <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
-                                        </ContextMenu>
-                                    </StackPanel.ContextMenu>
-                                    <TextBlock  HorizontalAlignment="Center">
+                    <ListView.Resources>
+                        <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
+                        </ContextMenu>
+                        <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type draw:DrawingVisualCircle}" >
+                            <StackPanel  Orientation="Horizontal">
+                                <StackPanel.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
+                                    </ContextMenu>
+                                </StackPanel.ContextMenu>
+                                <TextBlock  HorizontalAlignment="Center">
                                                     <Run Text="{Binding Path = Attribute.Center.X,StringFormat={}{0:F0}}"/>
                                                     <Run Text=","/>
                                                     <Run Text="{Binding Path = Attribute.Center.Y,StringFormat={}{0:F0}}"/>
-                                    </TextBlock>
-                                    <TextBlock  Text="{Binding Path=Attribute.Radius}" />
-                                </StackPanel>
-                            </DataTemplate>
-                            <DataTemplate x:Key="DrawingVisualCircleWordTemplate" DataType="{x:Type draw:DrawingVisualCircleWord}" >
-                                <StackPanel  Orientation="Horizontal">
-                                    <StackPanel.ContextMenu>
-                                        <ContextMenu>
-                                            <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
-                                        </ContextMenu>
-                                    </StackPanel.ContextMenu>
-                                    <TextBlock HorizontalAlignment="Center">
+                                </TextBlock>
+                                <TextBlock  Text="{Binding Path=Attribute.Radius}" />
+                            </StackPanel>
+                        </DataTemplate>
+                        <DataTemplate x:Key="DrawingVisualCircleWordTemplate" DataType="{x:Type draw:DrawingVisualCircleWord}" >
+                            <StackPanel  Orientation="Horizontal">
+                                <StackPanel.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
+                                    </ContextMenu>
+                                </StackPanel.ContextMenu>
+                                <TextBlock HorizontalAlignment="Center">
                                                     <Run Text="{Binding Path = Attribute.Center.X,StringFormat={}{0:F0}}"/>
                                                     <Run Text=","/>
                                                     <Run Text="{Binding Path = Attribute.Center.Y,StringFormat={}{0:F0}}"/>
-                                    </TextBlock>
-                                    <TextBlock  Text="{Binding Path=Attribute.Radius}" />
-                                </StackPanel>
-                            </DataTemplate>
+                                </TextBlock>
+                                <TextBlock  Text="{Binding Path=Attribute.Radius}" />
+                            </StackPanel>
+                        </DataTemplate>
 
-                            <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type draw:DrawingVisualRectangle}">
-                                <StackPanel  Orientation="Horizontal">
-                                    <StackPanel.ContextMenu>
-                                        <ContextMenu>
-                                            <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
-                                        </ContextMenu>
-                                    </StackPanel.ContextMenu>
-                                    <TextBlock>
+                        <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type draw:DrawingVisualRectangle}">
+                            <StackPanel  Orientation="Horizontal">
+                                <StackPanel.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
+                                    </ContextMenu>
+                                </StackPanel.ContextMenu>
+                                <TextBlock>
                                             <Run Text="{Binding Attribute.Rect.X,StringFormat={}{0:F0}}"/>
                                             <Run Text="{Binding Attribute.Rect.Y,StringFormat={}{0:F0}}"/>
                                             <Run Text="{Binding Attribute.Rect.Width,StringFormat={}{0:F0}}"/>
                                             <Run Text="{Binding Attribute.Rect.Height,StringFormat={}{0:F0}}"/>
-                                    </TextBlock>
-                                </StackPanel>
-                            </DataTemplate>
+                                </TextBlock>
+                            </StackPanel>
+                        </DataTemplate>
 
-                            <DataTemplate x:Key="DrawingVisualRectangleWordTemplate"  DataType="{x:Type draw:DrawingVisualRectangleWord}">
-                                <StackPanel  Orientation="Horizontal">
-                                    <StackPanel.ContextMenu>
-                                        <ContextMenu>
-                                            <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
-                                        </ContextMenu>
-                                    </StackPanel.ContextMenu>
-                                    <TextBlock>
+                        <DataTemplate x:Key="DrawingVisualRectangleWordTemplate"  DataType="{x:Type draw:DrawingVisualRectangleWord}">
+                            <StackPanel  Orientation="Horizontal">
+                                <StackPanel.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
+                                    </ContextMenu>
+                                </StackPanel.ContextMenu>
+                                <TextBlock>
                                             <Run Text="{Binding Attribute.Rect.X,StringFormat={}{0:F0}}"/>
                                             <Run Text="{Binding Attribute.Rect.Y,StringFormat={}{0:F0}}"/>
                                             <Run Text="{Binding Attribute.Rect.Width,StringFormat={}{0:F0}}"/>
                                             <Run Text="{Binding Attribute.Rect.Height,StringFormat={}{0:F0}}"/>
-                                    </TextBlock>
-                                </StackPanel>
-                            </DataTemplate>
-                        </ListView.Resources>
-                        <ListView.View >
-                            <GridView >
-                                <GridView.ColumnHeaderContainerStyle>
-                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Setter Property="Background" Value="Transparent"/>
-                                        <Setter Property="BorderThickness" Value="0"/>
-                                        <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
-                                        <EventSetter Event="Click" Handler="GridViewColumnSort"/>
-                                    </Style>
-                                </GridView.ColumnHeaderContainerStyle>
-                                <GridViewColumn  Header="显示">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type draw:IDrawingVisualDatum}">
-                                            <CheckBox IsChecked="{Binding BaseAttribute.IsShow}" Tag="{Binding .}"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn  Header="序号">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type draw:IDrawingVisual}">
-                                            <TextBlock Text="{Binding BaseAttribute.ID}" HorizontalAlignment="Center"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn  Header="名称">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type draw:IDrawingVisual}">
-                                            <TextBlock Text="{Binding BaseAttribute.Name}" Tag="{Binding .}"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn  Header="形状">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate DataType="{x:Type draw:DrawingVisualBase}">
-                                            <TextBlock Text="{Binding Version}" Tag="{Binding .}"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn  Header="名称">
-                                    <GridViewColumn.CellTemplateSelector>
-                                        <converter:DrawCanvasTemplateSelector  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}" DrawingVisualCircleWordTemplate="{StaticResource DrawingVisualCircleWordTemplate}"  DrawingVisualRectangleWordTemplate="{StaticResource DrawingVisualRectangleWordTemplate}" DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
-                                    </GridViewColumn.CellTemplateSelector>
-                                </GridViewColumn>
+                                </TextBlock>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListView.Resources>
+                    <ListView.View >
+                        <GridView >
+                            <GridView.ColumnHeaderContainerStyle>
+                                <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                                    <EventSetter Event="Click" Handler="GridViewColumnSort"/>
+                                </Style>
+                            </GridView.ColumnHeaderContainerStyle>
+                            <GridViewColumn Header="显示">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type draw:IDrawingVisualDatum}">
+                                        <CheckBox IsChecked="{Binding BaseAttribute.IsShow}" Tag="{Binding .}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="序号">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type draw:IDrawingVisual}">
+                                        <TextBlock Text="{Binding BaseAttribute.ID}" HorizontalAlignment="Center"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="名称">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type draw:IDrawingVisual}">
+                                        <TextBlock Text="{Binding BaseAttribute.Name}" Tag="{Binding .}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="形状">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type draw:DrawingVisualBase}">
+                                        <TextBlock Text="{Binding Version}" Tag="{Binding .}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="名称">
+                                <GridViewColumn.CellTemplateSelector>
+                                    <converter:DrawCanvasTemplateSelector  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}" DrawingVisualCircleWordTemplate="{StaticResource DrawingVisualCircleWordTemplate}"  DrawingVisualRectangleWordTemplate="{StaticResource DrawingVisualRectangleWordTemplate}" DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
+                                </GridViewColumn.CellTemplateSelector>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
+                </ListView>
 
-                            </GridView>
-                        </ListView.View>
-                    </ListView>
             </Grid>
         </Grid>
 
