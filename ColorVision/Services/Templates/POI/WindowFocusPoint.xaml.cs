@@ -1275,7 +1275,8 @@ namespace ColorVision.Services.Templates.POI
                         break;
 
                     case RiPointTypes.Polygon:
-
+                        
+                        int No = 0;
                         for (int i = 0; i < PoiParam.DatumArea.Polygons.Count - 1; i++)
                         {
                             double dx = (PoiParam.DatumArea.Polygons[i+1].X - PoiParam.DatumArea.Polygons[i].X) / (PoiParam.DatumArea.Polygons[i].SplitNumber + 1);
@@ -1283,7 +1284,7 @@ namespace ColorVision.Services.Templates.POI
 
                             for (int j = 1; j < PoiParam.DatumArea.Polygons[i].SplitNumber +1 ; j++)
                             {
-
+                                No++;
                                 switch (PoiParam.DefaultPointType)
                                 {
                                     case RiPointTypes.Circle:
@@ -1293,7 +1294,7 @@ namespace ColorVision.Services.Templates.POI
                                         Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
                                         Circle.Attribute.Brush = Brushes.Transparent;
                                         Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
-                                        Circle.Attribute.ID = start + i + 1;
+                                        Circle.Attribute.ID = start + No;
                                         Circle.Attribute.Text = string.Format("{0}{1}", pre_name, Circle.Attribute.ID);
                                         Circle.Render();
                                         ImageShow.AddVisual(Circle);
@@ -1303,7 +1304,7 @@ namespace ColorVision.Services.Templates.POI
                                         Rectangle.Attribute.Rect = new Rect(PoiParam.DatumArea.Polygons[i].X + dx * j - PoiParam.DatumArea.DefaultRectWidth / 2, PoiParam.DatumArea.Polygons[i].Y + dy * j - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
-                                        Rectangle.Attribute.ID = start + i + 1;
+                                        Rectangle.Attribute.ID = start + No;
                                         Rectangle.Attribute.Name = string.Format("{0}{1}", pre_name, Rectangle.Attribute.ID);
                                         Rectangle.Render();
                                         ImageShow.AddVisual(Rectangle);
