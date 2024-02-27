@@ -40,7 +40,6 @@ namespace ColorVision.Services.Templates
         private ModService modService = new ModService();
         private SysModMasterService sysModService = new SysModMasterService();
         private SysResourceService resourceService = new SysResourceService();
-        private SysDictionaryService dictionaryService = new SysDictionaryService();
         private MeasureService measureService = new MeasureService();
 
         public string TemplatePath { get; set; }
@@ -640,16 +639,6 @@ namespace ColorVision.Services.Templates
         internal void Save2DB(FlowParam flowParam)
         {
             modService.Save(flowParam);
-        }
-
-        internal List<SysDictionaryModel> LoadServiceType()
-        {
-            return dictionaryService.GetAllServiceType();
-        }
-
-        internal int ResourceDeleteById(int id)
-        {
-            return resourceService.DeleteById(id);
         }
 
         internal List<MeasureDetailModel> LoadMeasureDetail(int pid)
