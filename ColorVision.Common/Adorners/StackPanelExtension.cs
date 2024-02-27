@@ -45,7 +45,7 @@ namespace ColorVision.Adorners
                 if (_draggedItem == null || _initialPosition == null) return;
 
                 _dragContentAdorner ??= new DragUserControlAdorner(panel, _draggedItem, _mouseOffsetFromItem);
-
+                _draggedItem.Opacity = 0;
                 Point ptMovePanel = args.GetPosition(panel);
                 Point ptMoveScreen = window.PointToScreen(args.GetPosition(window));
 
@@ -70,6 +70,24 @@ namespace ColorVision.Adorners
                 else
                 {
                 }
+
+                Point ptUp = args.GetPosition(panel);
+                HitTestResult result = VisualTreeHelper.HitTest(panel, ptUp);
+                if (result != null)
+                {
+                    UserControl dropTargetItem1 = ViewHelper.FindVisualParent<UserControl>(result.VisualHit);
+
+                    if (_draggedItem != null && dropTargetItem1 != null && _draggedItemIndex != null)
+                    {
+                        int dropTargetItemIndex = panel.Children.IndexOf(dropTargetItem1);
+                        UserControl draggedItem = panel.Children[_draggedItemIndex.Value] as UserControl;
+                        panel.Children.RemoveAt(_draggedItemIndex.Value);
+                        panel.Children.Insert(dropTargetItemIndex, draggedItem);
+
+                        _draggedItemIndex = dropTargetItemIndex;
+                    }
+                }
+
             }
             void OnMainPanelMouseLeftButtonUp(object sender, MouseButtonEventArgs args)
             {
@@ -81,6 +99,7 @@ namespace ColorVision.Adorners
 
                     if (_draggedItem != null && dropTargetItem != null && _draggedItemIndex != null)
                     {
+                        _draggedItem.Opacity = 1;
                         int dropTargetItemIndex = panel.Children.IndexOf(dropTargetItem);
                         UserControl draggedItem = panel.Children[_draggedItemIndex.Value] as UserControl;
                         panel.Children.RemoveAt(_draggedItemIndex.Value);
@@ -98,6 +117,8 @@ namespace ColorVision.Adorners
                 _insertionAdorner = null;
 
                 // フィールドの初期化
+                if (_draggedItem!=null)
+                    _draggedItem.Opacity = 1;
                 _draggedItem = null;
                 _draggedItemIndex = null;
                 _initialPosition = null;

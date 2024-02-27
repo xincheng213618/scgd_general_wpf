@@ -1,5 +1,6 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -45,21 +46,42 @@ namespace ColorVision.Adorners
             DrawingVisual dv = new DrawingVisual();
             using (DrawingContext ctx = dv.RenderOpen())
             {
-                VisualBrush vb = new VisualBrush(draggedControl);
+                VisualBrush vb = new VisualBrush(draggedControl)
+                {
+                    Stretch = Stretch.None // 防止VisualBrush缩放
+                };
                 ctx.DrawRectangle(vb, null, new Rect(bounds.Size));
             }
-            var renderBmp = new RenderTargetBitmap((int)draggedControl.ActualWidth,
-                                                   (int)draggedControl.ActualHeight,
-                                                   96.0, 96.0, PixelFormats.Pbgra32);
+
+            double dpiX = 96.0;
+            double dpiY = 96.0;
+
+            using (var source = new HwndSource(new HwndSourceParameters()))
+            {
+                dpiX = source.CompositionTarget.TransformToDevice.M11 * 96.0;
+                dpiY = source.CompositionTarget.TransformToDevice.M22 * 96.0;
+            }
+
+            var renderBmp = new RenderTargetBitmap(
+                (int)(draggedControl.ActualWidth * dpiX / 96.0),
+                (int)(draggedControl.ActualHeight * dpiY / 96.0),
+                dpiX, dpiY, PixelFormats.Pbgra32);
+
+
+            RenderOptions.SetEdgeMode(dv, EdgeMode.Aliased); // 设置抗锯齿模式
+
+            RenderOptions.SetBitmapScalingMode(renderBmp, BitmapScalingMode.HighQuality);
             renderBmp.Render(dv);
-            var image = new Image();
+            var image = new Image() { SnapsToDevicePixels = true};
+            RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+
             image.Source = renderBmp;
 
             // コンテンツプレゼンターを生成して装飾ビジュアルオブジェクトに追加
             _contentPresenter = new ContentPresenter
             {
                 Content = image,
-                Opacity = 0.7
+                Opacity = 1
             };
             AdornerVisual.Children.Add(_contentPresenter);
 

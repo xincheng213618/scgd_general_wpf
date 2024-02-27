@@ -408,10 +408,10 @@ namespace ColorVision
                 FluidMoveBehavior fluidMoveBehavior = new FluidMoveBehavior
                 {
                     AppliesTo = FluidMoveScope.Children,
-                    Duration = TimeSpan.FromSeconds(0.2)
+                    Duration = TimeSpan.FromSeconds(0.1)
                 };
 
-                Interaction.GetBehaviors(stackPanel1).Add(fluidMoveBehavior);
+                //Interaction.GetBehaviors(stackPanel1).Add(fluidMoveBehavior);
                 stackPanel1.AddAdorners(this);
             }
 

@@ -35,7 +35,6 @@ namespace ColorVision.MySql.Service
             else return smuDao.GetAllByPid(batch.Id);
         }
 
-
         public int BatchSave(BatchResultMasterModel model)
         {
             return batchDao.Save(model);
