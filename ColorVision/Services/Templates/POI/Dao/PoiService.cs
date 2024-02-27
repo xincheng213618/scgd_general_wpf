@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using ColorVision.Services.Templates.POI;
 
 namespace ColorVision.Services.Templates.POI.Dao
 {

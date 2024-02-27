@@ -6,7 +6,6 @@ using ColorVision.Net;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Sorts;
 using ColorVision.Common.Utilities;
-using HandyControl.Tools.Extension;
 using log4net;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
@@ -22,7 +21,6 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using FlowEngineLib;
 
 namespace ColorVision.Services.Devices.Algorithm.Views
 {

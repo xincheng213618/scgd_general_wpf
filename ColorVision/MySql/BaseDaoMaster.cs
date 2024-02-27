@@ -1,12 +1,8 @@
-﻿using ColorVision.Services.Dao;
-using ColorVision.Services.Templates;
-using log4net;
-using Org.BouncyCastle.Pqc.Crypto.Hqc;
+﻿using log4net;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Windows.Documents;
 
 namespace ColorVision.MySql
 {

@@ -25,7 +25,6 @@ using MQTTMessageLib;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Interfaces;
 using ColorVision.Themes;
 using ColorVision.Services.Templates;

@@ -9,8 +9,6 @@ using ColorVision.Solution;
 using ColorVision.Update;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.ServiceProcess;
 using ColorVision.UserSpace;
@@ -22,16 +20,12 @@ using System.Security.Cryptography.X509Certificates;
 using ColorVision.Common.Utilities;
 using Microsoft.Xaml.Behaviors.Layout;
 using Microsoft.Xaml.Behaviors;
-using System.Windows.Input;
-using System.Windows.Media;
 using ColorVision.Adorners;
 using ColorVision.MySql;
 using ColorVision.Utils;
 using ColorVision.Solution.View;
 using ColorVision.Services.Interfaces;
 using System.Collections.ObjectModel;
-using ColorVision.Services.Devices.Spectrum;
-using ColorVision.Services.Templates;
 
 namespace ColorVision
 {

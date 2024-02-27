@@ -2,14 +2,11 @@
 using ColorVision.Common.Utilities;
 using ColorVision.MVVM;
 using ColorVision.MySql;
-using ColorVision.Services.Dao;
 using ColorVision.Sorts;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 namespace ColorVision.Services.Devices.Camera.Dao

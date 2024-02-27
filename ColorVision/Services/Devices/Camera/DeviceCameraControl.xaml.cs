@@ -9,7 +9,6 @@ using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.Camera.Dao;
-using ColorVision.Services.Devices.Spectrum.Views;
 using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;

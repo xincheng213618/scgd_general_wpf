@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8603
 using ColorVision.MQTT;
-using ColorVision.MySql.Service;
 using ColorVision.Services;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Camera;

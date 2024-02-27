@@ -7,7 +7,6 @@ using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.PG.Templates;
 using ColorVision.Services.Flow;
-using ColorVision.Services.Flow;
 using ColorVision.Settings;
 using ColorVision.Common.Utilities;
 using Newtonsoft.Json;
@@ -20,15 +19,13 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Services.Devices.Spectrum;
-using ColorVision.Solution;
 using ColorVision.Common.MVVM;
-using ColorVision.Services.Devices.Spectrum.Views;
 using ColorVision.Sorts;
 using ColorVision.Properties;
-using ColorVision.Services.Templates;
 using ColorVision.Services.Templates.Measure;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Services.Templates.POI.Dao;
+using ColorVision.Services.Devices.SMU;
 
 namespace ColorVision.Services.Templates
 {

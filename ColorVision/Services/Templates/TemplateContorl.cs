@@ -20,6 +20,7 @@ using ColorVision.Services.Templates.Measure;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Services.Flow.Dao;
+using ColorVision.Services.Devices.SMU;
 
 namespace ColorVision.Services.Templates
 {

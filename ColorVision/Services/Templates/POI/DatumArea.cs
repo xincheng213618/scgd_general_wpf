@@ -1,9 +1,7 @@
 ﻿using ColorVision.MVVM;
 using Newtonsoft.Json;
-using SkiaSharp;
 using System.Collections.ObjectModel;
 using System.Windows;
-using System.Windows.Documents;
 
 namespace ColorVision.Services.Templates.POI
 {

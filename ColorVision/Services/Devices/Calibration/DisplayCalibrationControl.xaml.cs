@@ -4,8 +4,6 @@ using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
 using ColorVision.Themes;
 using System;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

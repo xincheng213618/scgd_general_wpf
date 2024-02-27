@@ -1,6 +1,5 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Templates;
 using ColorVision.Services.Templates.POI;
 using System;
 using System.Collections.Generic;

@@ -21,7 +21,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
-using System.Windows.Controls;
 using ColorVision.Services.Dao;
 using ColorVision.Services.DAO;
 using ColorVision.Services.Flow;

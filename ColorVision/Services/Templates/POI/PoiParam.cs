@@ -1,5 +1,4 @@
-﻿using ColorVision.Services.Templates;
-using ColorVision.Services.Templates.POI.Dao;
+﻿using ColorVision.Services.Templates.POI.Dao;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
