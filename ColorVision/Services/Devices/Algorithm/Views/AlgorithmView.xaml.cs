@@ -1,7 +1,6 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Common.MVVM;
 using ColorVision.Draw;
-using ColorVision.MySql.Service;
 using ColorVision.Net;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Sorts;
@@ -186,15 +185,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
             listView1.ScrollIntoView(listView1.SelectedItem);
         }
-        private void Button_Click_2(object sender, RoutedEventArgs e)
-        {
-            
-        }
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-
-        }
 
         /// <summary>
         /// 专门位鬼影设计的类
@@ -205,9 +195,11 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             public int Y { get; set; }
         }
 
-        ResultService resultService = new ResultService();
         private AlgResultFOVDao FOVResultDao = new AlgResultFOVDao();
         private AlgResultSFRDao SFRResultDao = new AlgResultSFRDao();
+        private AlgResultMTFDao MTFResultDao = new AlgResultMTFDao();
+        private AlgResultDistortionDao DisResultDao = new AlgResultDistortionDao();
+
 
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -347,7 +339,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         if (result.MTFData == null)
                         {
                             result.MTFData = new ObservableCollection<MTFResultData>();
-                            List<AlgResultMTFModel> AlgResultMTFModels = resultService.GetMTFByPid(result.Id);
+                            List<AlgResultMTFModel> AlgResultMTFModels = MTFResultDao.GetAllByPid(result.Id);
                             foreach (var item in AlgResultMTFModels)
                             {
                                 MTFResultData mTFResultData = new MTFResultData(item);
@@ -471,7 +463,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         if (result.DistortionData == null)
                         {
                             result.DistortionData = new ObservableCollection<DistortionResultData>();
-                            var Distortions = resultService.GetDistortionByPid(result.Id);
+                            var Distortions = DisResultDao.GetAllByPid(result.Id);
                             foreach (var item in Distortions)
                             {
                                 DistortionResultData distortionResultData = new DistortionResultData(item);
@@ -508,7 +500,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         if (result.LedResultDatas == null)
                         {
                             result.LedResultDatas = new ObservableCollection<LedResultData>();
-                            List<AlgResultMTFModel> AlgResultLedcheckModels = resultService.GetMTFByPid(result.Id);
+                            List<AlgResultMTFModel> AlgResultLedcheckModels = MTFResultDao.GetAllByPid(result.Id);
                             foreach (var item in AlgResultLedcheckModels)
                             {
                                 LedResultData ledResultData = new LedResultData(new Point((double)item.PoiX, (double)item.PoiY), (double)item.PoiWidth/2);
@@ -547,7 +539,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         if (result.BuildPoiResultData == null)
                         {
                             result.BuildPoiResultData = new ObservableCollection<BuildPoiResultData>();
-                            List<AlgResultMTFModel> AlgResultMTFModels = resultService.GetMTFByPid(result.Id);
+                            List<AlgResultMTFModel> AlgResultMTFModels = MTFResultDao.GetAllByPid(result.Id);
                             foreach (var item in AlgResultMTFModels)
                             {
                                 BuildPoiResultData mTFResultData = new BuildPoiResultData(item);
