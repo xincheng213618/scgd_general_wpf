@@ -20,6 +20,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Security.Cryptography.X509Certificates;
 
 namespace ColorVision.Services.Devices.Algorithm.Views
 {
@@ -711,6 +712,20 @@ namespace ColorVision.Services.Devices.Algorithm.Views
         private void SideSave_Click(object sender, RoutedEventArgs e)
         {
 
+        }
+
+        private void ButtonChart_Click(object sender, RoutedEventArgs e)
+        {
+            ObservableCollection<PoiResultCIExyuvData> pOIDataCIExyuvs = new ObservableCollection<PoiResultCIExyuvData>();
+            Random random = new Random();
+            for (int i = 0; i < 100; i++)
+            {
+
+                pOIDataCIExyuvs.Add(new PoiResultCIExyuvData() { X = (float)random.NextDouble() * 255, Y = (float)random.NextDouble() * 255, Z = (float)random.NextDouble() * 255 });
+            }
+
+            WindowChart windowChart = new WindowChart(pOIDataCIExyuvs);
+            windowChart.Show();
         }
     }
 }

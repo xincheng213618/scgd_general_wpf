@@ -25,6 +25,8 @@ namespace ColorVision.Services.Devices.Algorithm.Views
         private double _Wave;
         private double _CCT;
 
+        public PoiResultCIExyuvData() { }
+
         public PoiResultCIExyuvData(POIPoint point, POIDataCIExyuv data)
         {
             Point = point;
