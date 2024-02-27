@@ -5,7 +5,7 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Algorithm.Templates;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.PG.Templates;
-using ColorVision.Services.Flow.Templates;
+using ColorVision.Services.Flow;
 using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.UserSpace;
@@ -19,6 +19,7 @@ using System.Windows;
 using ColorVision.Services.Templates.Measure;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Services.Templates.POI.Dao;
+using ColorVision.Services.Flow.Dao;
 
 namespace ColorVision.Services.Templates
 {

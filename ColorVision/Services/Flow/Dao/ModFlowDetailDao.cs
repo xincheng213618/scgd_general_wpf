@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ColorVision.Services.Dao
+namespace ColorVision.Services.Flow.Dao
 {
     public class ModFlowDetailModel : PKModel
     {
@@ -26,10 +26,14 @@ namespace ColorVision.Services.Dao
         public bool? IsEnable { get; set; } = true;
         public bool? IsDelete { get; set; } = false;
     }
+
+
+
     public class ModFlowDetailDao : BaseDaoMaster<ModFlowDetailModel>
     {
         public ModFlowDetailDao() : base("v_scgd_mod_detail_flow", "t_scgd_mod_param_detail", "id", true)
         {
+
         }
 
         public override ModFlowDetailModel GetModelFromDataRow(DataRow item)

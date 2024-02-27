@@ -1,8 +1,9 @@
 ﻿using ColorVision.Services.Dao;
+using ColorVision.Services.Flow.Dao;
 using ColorVision.Services.Templates;
 using System.Collections.Generic;
 
-namespace ColorVision.Services.Flow.Templates
+namespace ColorVision.Services.Flow
 {
     /// <summary>
     /// 流程引擎模板
