@@ -71,22 +71,22 @@ namespace ColorVision.Adorners
                 {
                 }
 
-                Point ptUp = args.GetPosition(panel);
-                HitTestResult result = VisualTreeHelper.HitTest(panel, ptUp);
-                if (result != null)
-                {
-                    UserControl dropTargetItem1 = ViewHelper.FindVisualParent<UserControl>(result.VisualHit);
+                //Point ptUp = args.GetPosition(panel);
+                //HitTestResult result = VisualTreeHelper.HitTest(panel, ptUp);
+                //if (result != null)
+                //{
+                //    UserControl dropTargetItem1 = ViewHelper.FindVisualParent<UserControl>(result.VisualHit);
 
-                    if (_draggedItem != null && dropTargetItem1 != null && _draggedItemIndex != null)
-                    {
-                        int dropTargetItemIndex = panel.Children.IndexOf(dropTargetItem1);
-                        UserControl draggedItem = panel.Children[_draggedItemIndex.Value] as UserControl;
-                        panel.Children.RemoveAt(_draggedItemIndex.Value);
-                        panel.Children.Insert(dropTargetItemIndex, draggedItem);
+                //    if (_draggedItem != null && dropTargetItem1 != null && _draggedItemIndex != null)
+                //    {
+                //        int dropTargetItemIndex = panel.Children.IndexOf(dropTargetItem1);
+                //        UserControl draggedItem = panel.Children[_draggedItemIndex.Value] as UserControl;
+                //        panel.Children.RemoveAt(_draggedItemIndex.Value);
+                //        panel.Children.Insert(dropTargetItemIndex, draggedItem);
 
-                        _draggedItemIndex = dropTargetItemIndex;
-                    }
-                }
+                //        _draggedItemIndex = dropTargetItemIndex;
+                //    }
+                //}
 
             }
             void OnMainPanelMouseLeftButtonUp(object sender, MouseButtonEventArgs args)

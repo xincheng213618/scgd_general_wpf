@@ -116,7 +116,7 @@
                             <ScrollViewer x:Name="ScrollViewerDisplay" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
                                 <StackPanel x:Name="StackPanelSPD" Initialized="StackPanelSPD_Initialized" >
                                     <behaviors:Interaction.Behaviors>
-                                        <behaviors:FluidMoveBehavior AppliesTo="Children" Duration="0:0:0.1"/>
+                                        <behaviors:FluidMoveBehavior AppliesTo="Children" Duration="0:0:0.5"/>
                                     </behaviors:Interaction.Behaviors>
                                 </StackPanel>
                             </ScrollViewer>
