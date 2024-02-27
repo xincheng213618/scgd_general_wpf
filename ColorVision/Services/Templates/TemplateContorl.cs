@@ -37,7 +37,6 @@ namespace ColorVision.Services.Templates
         private static string FileNameLedJudgeParams = "LedJudgeSetup";
         private static string FileNameFlowParms = "FlowParmSetup";
 
-        private PoiService poiService = new PoiService();
         private ModService modService = new ModService();
         private SysResourceService resourceService = new SysResourceService();
         private MeasureService measureService = new MeasureService();
@@ -271,12 +270,11 @@ namespace ColorVision.Services.Templates
                     {
                         foreach (var item in PoiParams)
                         {
-
-                            var modMasterModel = poiService.GetMasterById(item.Id);
+                            var modMasterModel = poiMaster.GetById(item.Id);
                             if (modMasterModel != null)
                             {
                                 modMasterModel.Name = item.Key;
-                                poiService.Save(modMasterModel);
+                                poiMaster.Save(modMasterModel);
                             }
                         }
                     }
@@ -352,7 +350,16 @@ namespace ColorVision.Services.Templates
 
         public void Save2DB(PoiParam poiParam)
         {
-            poiService.Save(poiParam);
+            PoiMasterModel poiMasterModel = new PoiMasterModel(poiParam);
+            poiMaster.Save(poiMasterModel);
+
+            List<PoiDetailModel> poiDetails = new List<PoiDetailModel>();
+            foreach (PoiParamData pt in poiParam.PoiPoints)
+            {
+                PoiDetailModel poiDetail = new PoiDetailModel(poiParam.Id, pt);
+                poiDetails.Add(poiDetail);
+            }
+            poiDetail.SaveByPid(poiParam.Id, poiDetails);
         }
 
 
@@ -362,14 +369,16 @@ namespace ColorVision.Services.Templates
         }
 
 
+        private PoiMasterDao poiMaster = new PoiMasterDao();
+        private PoiDetailDao poiDetail = new PoiDetailDao();
 
         public ObservableCollection<TemplateModel<PoiParam>> LoadPoiParam()
         {
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
                 PoiParams.Clear();
-                List<PoiMasterModel> poiMaster = poiService.GetMasterAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                foreach (var dbModel in poiMaster)
+                List<PoiMasterModel> poiMasters = poiMaster.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                foreach (var dbModel in poiMasters)
                 {
                     PoiParams.Add(new TemplateModel<PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel)));
                 }
@@ -386,13 +395,13 @@ namespace ColorVision.Services.Templates
 
         public PoiParam? AddPoiParam(string TemplateName)
         {
-            PoiMasterModel poiMaster = new PoiMasterModel(TemplateName, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            poiService.Save(poiMaster);
+            PoiMasterModel poiMasterModel = new PoiMasterModel(TemplateName, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            poiMaster.Save(poiMasterModel);
 
-            int pkId =  poiMaster.PKId;
+            int pkId = poiMasterModel.PKId;
             if (pkId > 0)
             {
-                PoiMasterModel Service = poiService.GetMasterById(pkId);
+                PoiMasterModel Service = poiMaster.GetById(pkId);
                 if (Service != null) return new PoiParam(Service);
                 else return null;
             }
@@ -403,8 +412,8 @@ namespace ColorVision.Services.Templates
         internal void LoadPoiDetailFromDB(PoiParam poiParam)
         {
             poiParam.PoiPoints.Clear();
-            List<PoiDetailModel> poiDetail = poiService.GetDetailByPid(poiParam.Id);
-            foreach (var dbModel in poiDetail)
+            List<PoiDetailModel> poiDetails = poiDetail.GetAllByPid(poiParam.Id);
+            foreach (var dbModel in poiDetails)
             {
                 poiParam.PoiPoints.Add(new PoiParamData(dbModel));
             }
@@ -628,7 +637,7 @@ namespace ColorVision.Services.Templates
 
         internal int PoiMasterDeleteById(int id)
         {
-            return poiService.MasterDeleteById(id);
+            return poiMaster.DeleteById(id);
         }
 
         internal int ModMasterDeleteById(int id)
