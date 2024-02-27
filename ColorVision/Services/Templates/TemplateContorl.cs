@@ -38,7 +38,6 @@ namespace ColorVision.Services.Templates
 
         private PoiService poiService = new PoiService();
         private ModService modService = new ModService();
-        private SysModMasterService sysModService = new SysModMasterService();
         private SysResourceService resourceService = new SysResourceService();
         private MeasureService measureService = new MeasureService();
 
@@ -646,9 +645,11 @@ namespace ColorVision.Services.Templates
             return measureService.GetDetailByPid(pid);
         }
 
+        private SysModMasterDao masterDao;
+
         internal List<SysModMasterModel> LoadSysModMaster()
         {
-            return sysModService.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            return masterDao.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
         }
 
         internal List<ModMasterModel> LoadModMasterByPid(int pid)
