@@ -12,11 +12,13 @@ namespace ColorVision.Services.Flow
     {
         public FlowParam()
         {
+
         }
         public FlowParam(ModMasterModel dbModel, List<ModDetailModel> flowDetail) : base(dbModel.Id, dbModel.Name ?? string.Empty, flowDetail)
         {
 
         }
+
         public FlowParam(ModMasterModel dbModel, List<ModFlowDetailModel> flowDetail) : base()
         {
             this.Id = dbModel.Id;
@@ -34,7 +36,7 @@ namespace ColorVision.Services.Flow
         private string dataBase64;
         public string DataBase64 { get => dataBase64; set { dataBase64 = value; } }
 
-        public const string propertyName = "filename";
+        private const string propertyName = "filename";
 
         public string? ResId
         {

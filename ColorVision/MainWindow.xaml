@@ -13,6 +13,7 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindow}"
         Title="ColorVision" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+    
     <Grid x:Name="Root">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
