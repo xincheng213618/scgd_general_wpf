@@ -389,7 +389,7 @@ namespace ColorVision.Services.Templates
             PoiMasterModel poiMaster = new PoiMasterModel(TemplateName, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             poiService.Save(poiMaster);
 
-            int pkId = poiMaster.GetPK();
+            int pkId =  poiMaster.PKId;
             if (pkId > 0)
             {
                 PoiMasterModel Service = poiService.GetMasterById(pkId);
@@ -415,7 +415,7 @@ namespace ColorVision.Services.Templates
         {
             ModMasterModel modMaster = new ModMasterModel(code, Name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             modService.Save(modMaster);
-            int pkId = modMaster.GetPK();
+            int pkId = modMaster.PKId;
             if (pkId > 0)
             {
                 ModMasterModel modMasterModel = modService.GetMasterById(pkId);
@@ -434,7 +434,7 @@ namespace ColorVision.Services.Templates
         {
             ModMasterModel flowMaster = new ModMasterModel(ModMasterType.Flow, text, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             modService.Save(flowMaster);
-            int pkId = flowMaster.GetPK();
+            int pkId = flowMaster.PKId;
             if (pkId > 0)
             {
                 List<ModFlowDetailModel> flowDetail = modService.GetFlowDetailByPid(pkId);
@@ -448,7 +448,7 @@ namespace ColorVision.Services.Templates
         {
             SysResourceModel sysResource = new SysResourceModel(name, code, type, pid, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             resourceService.Save(sysResource);
-            int pkId = sysResource.GetPK();
+            int pkId = sysResource.PKId;
             if (pkId > 0)
             {
                 return LoadServiceParamById(pkId);
@@ -460,7 +460,7 @@ namespace ColorVision.Services.Templates
         {
             SysResourceModel sysResource = new SysResourceModel(name, code, type, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             resourceService.Save(sysResource);
-            int pkId = sysResource.GetPK();
+            int pkId = sysResource.PKId;
             if (pkId > 0)
             {
                 return LoadServiceParamById(pkId);
@@ -472,7 +472,7 @@ namespace ColorVision.Services.Templates
         {
             MeasureMasterModel model = new MeasureMasterModel(name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             measureService.Save(model);
-            int pkId = model.GetPK();
+            int pkId = model.PKId;
             if (pkId > 0)
             {
                 return LoadMeasureParamById(pkId);
@@ -544,7 +544,7 @@ namespace ColorVision.Services.Templates
             ModMasterModel modMaster = new ModMasterModel(code, Name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             modMaster.ResourceId = resourceId;
             modService.Save(modMaster);
-            int pkId = modMaster.GetPK();
+            int pkId = modMaster.PKId;
             if (pkId > 0)
             {
                 ModMasterModel modMasterModel = modService.GetMasterById(pkId);

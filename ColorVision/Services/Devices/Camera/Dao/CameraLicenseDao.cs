@@ -39,9 +39,7 @@ namespace ColorVision.Services.Devices.Camera.Dao
     public class CameraLicenseModel : ViewModelBase,IPKModel, ISortID
     {
         public int Id { get; set; }
-
-        public int GetPK() => Id;
-        public void SetPK(int id) => Id = id;
+        public int PKId { get => Id; set => Id = value; }
 
 
         public CameraLicenseModel()

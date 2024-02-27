@@ -2,15 +2,13 @@
 {
     public interface IPKModel
     {
-        int GetPK();
-        void SetPK(int id);
+        public int PKId { get; set; }
     }
 
     public class PKModel : IPKModel
     {
         public int Id { get; set; }
 
-        public int GetPK() => Id;
-        public void SetPK(int id) => Id = id;
+        public int PKId { get => Id; set => Id = value; }
     }
 }

@@ -35,6 +35,7 @@ namespace ColorVision.Services.Dao
         {
 
         }
+
         public override MeasureImgResultModel GetModelFromDataRow(DataRow item)
         {
             MeasureImgResultModel model = new MeasureImgResultModel

@@ -15,10 +15,7 @@ namespace ColorVision.MySql.Service
         private BatchResultMasterDao batchDao;
         private AlgResultMasterDao algResultMasterDao;
         private POIPointResultDao poiPointResultDao;
-        private MeasureImgResultDao measureImgResultDao;
 
-        private AlgResultFOVDao FOVResultDao;
-        private AlgResultSFRDao SFRResultDao;
         private AlgResultMTFDao MTFResultDao;
         private AlgResultGhostDao GhostResultDao;
         private AlgResultDistortionDao DisResultDao;
@@ -29,18 +26,10 @@ namespace ColorVision.MySql.Service
             batchDao = new BatchResultMasterDao();
             poiPointResultDao = new POIPointResultDao();
             algResultMasterDao = new AlgResultMasterDao();
-            measureImgResultDao = new MeasureImgResultDao();
 
-            FOVResultDao = new AlgResultFOVDao();
-            SFRResultDao = new AlgResultSFRDao();
             MTFResultDao = new AlgResultMTFDao();
             GhostResultDao = new AlgResultGhostDao();
             DisResultDao = new AlgResultDistortionDao();
-        }
-
-        internal int SpectumDeleteById(int id)
-        {
-            return spectumDao.DeleteById(id);
         }
 
         internal List<SpectumResultModel> SpectumSelectBySN(string sn)
@@ -86,19 +75,6 @@ namespace ColorVision.MySql.Service
         {
             return poiPointResultDao.GetAllByPid(pid);
         }
-        public MeasureImgResultModel GetCameraImgResultById(int id)
-        {
-            return measureImgResultDao.GetById(id);
-        }
-
-        public List<MeasureImgResultModel>? GetCameraImgResultBySN(string serialNumber)
-        {
-            return measureImgResultDao.GetAllByBatchCode(serialNumber);
-        }
-
-        public List<AlgResultFOVModel> GetFOVByPid(int pid) => FOVResultDao.GetAllByPid(pid);
-
-        public List<AlgResultSFRModel> GetSFRByPid(int pid) => SFRResultDao.GetAllByPid(pid);
 
         public List<AlgResultMTFModel> GetMTFByPid(int pid) => MTFResultDao.GetAllByPid(pid);
         public List<AlgResultGhostModel> GetGhostByPid(int pid) => GhostResultDao.GetAllByPid(pid);

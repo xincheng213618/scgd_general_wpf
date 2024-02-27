@@ -63,18 +63,13 @@ namespace ColorVision.Services
                 }
                 SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, serviceKind.SysDictionaryModel.Value, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
                
-                //TerminalServiceConfig serviceConfig = new TerminalServiceConfig
-                //{
-                //    SendTopic = serviceKind.SysDictionaryModel.Code + "/" + "CMD/" + sysResource.Code,
-                //    SubscribeTopic = serviceKind.SysDictionaryModel.Code + "/" + "STATUS/" + sysResource.Code
-                //};
                 DBTerminalServiceConfig dbCfg = new DBTerminalServiceConfig {  HeartbeatTime = 5000,};
                 sysResource.Value = JsonConvert.SerializeObject(dbCfg);
 
                 SysResourceService sysResourceService = new SysResourceService();
                 sysResourceService.Save(sysResource);
 
-                int pkId = sysResource.GetPK();
+                int pkId = sysResource.PKId;
                 if (pkId > 0 && sysResourceService.GetMasterById(pkId) is SysResourceModel model)
                     serviceKind.AddChild(new TerminalService(model));
                 MQTTRCService.GetInstance().RestartServices(serviceKind.ServiceTypes.ToString());

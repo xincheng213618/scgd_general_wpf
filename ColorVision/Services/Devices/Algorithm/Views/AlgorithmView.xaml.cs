@@ -206,6 +206,9 @@ namespace ColorVision.Services.Devices.Algorithm.Views
         }
 
         ResultService resultService = new ResultService();
+        private AlgResultFOVDao FOVResultDao = new AlgResultFOVDao();
+        private AlgResultSFRDao SFRResultDao = new AlgResultSFRDao();
+
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -278,7 +281,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         if (result.SFRData == null)
                         {
                             result.FOVData = new ObservableCollection<FOVResultData>();
-                            List<AlgResultFOVModel> AlgResultFOVModels = resultService.GetFOVByPid(result.Id);
+                            List<AlgResultFOVModel> AlgResultFOVModels = FOVResultDao.GetAllByPid(result.Id);
                             foreach (var item in AlgResultFOVModels)
                             {
                                 FOVResultData fOVResultData = new FOVResultData(item);
@@ -307,7 +310,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         if (result.SFRData == null)
                         {
                             result.SFRData = new ObservableCollection<SFRResultData>();
-                            List<AlgResultSFRModel> AlgResultSFRModels = resultService.GetSFRByPid(result.Id);
+                            List<AlgResultSFRModel> AlgResultSFRModels = SFRResultDao.GetAllByPid(result.Id);
                             foreach (var item in AlgResultSFRModels)
                             {
                                 var Pdfrequencys = JsonConvert.DeserializeObject<float[]>(item.Pdfrequency);

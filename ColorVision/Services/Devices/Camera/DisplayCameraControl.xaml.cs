@@ -198,6 +198,7 @@ namespace ColorVision.Services.Devices.Camera
                 netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, param.FileExtType);
             }
         }
+        private MeasureImgResultDao measureImgResultDao = new MeasureImgResultDao();
 
         private void ShowResultFromDB(string serialNumber, int masterId)
         {
@@ -205,12 +206,12 @@ namespace ColorVision.Services.Devices.Camera
             if (masterId > 0)
             {
                 resultMaster = new List<MeasureImgResultModel>();
-                MeasureImgResultModel model = resultService.GetCameraImgResultById(masterId);
+                MeasureImgResultModel model = measureImgResultDao.GetById(masterId);
                 resultMaster.Add(model);
             }
             else
             {
-                resultMaster = resultService.GetCameraImgResultBySN(serialNumber);
+                resultMaster = measureImgResultDao.GetAllByBatchCode(serialNumber);
             }
             if (resultMaster != null)
             {

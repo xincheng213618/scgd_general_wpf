@@ -19,7 +19,7 @@ namespace ColorVision.MySql
 
         public static DataRow GetRow<T>(this DataTable dataTable, T item) where T : IPKModel
         {
-            DataRow row = dataTable.SelectRow(item.GetPK());
+            DataRow row = dataTable.SelectRow(item.PKId);
             if (row == null)
             {
                 row = dataTable.NewRow();

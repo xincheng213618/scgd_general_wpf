@@ -71,7 +71,7 @@ namespace ColorVision.Services
             deviceConfig.SubscribeTopic = ServiceTerminal.Config.SubscribeTopic;
             sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
             ServiceControl.ResourceService.Save(sysResource);
-            int pkId = sysResource.GetPK();
+            int pkId = sysResource.PKId;
             if (pkId > 0 && ServiceControl.ResourceService.GetDeviceById(pkId) is SysDeviceModel model) return model;
             else return null;
         }
@@ -84,7 +84,7 @@ namespace ColorVision.Services
             deviceConfig.SubscribeTopic = ServiceTerminal.Config.SubscribeTopic;
             sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
             ServiceControl.ResourceService.Save(sysResource);
-            int pkId = sysResource.GetPK();
+            int pkId = sysResource.PKId;
             if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model) return model;
             else return null;
         }

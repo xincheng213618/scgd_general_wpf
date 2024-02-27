@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace ColorVision.MySql
 {
-    public class BaseTableDao<T>:BaseDao where T : IPKModel
+    public class BaseTableDao<T> : BaseDao where T : IPKModel
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseTableDao<T>));
 
@@ -26,11 +26,11 @@ namespace ColorVision.MySql
 
         public virtual int Save(T item)
         {
-            DataTable dataTable = SelectById(item.GetPK());
+            DataTable dataTable = SelectById(item.PKId);
             DataRow row = dataTable.GetRow(item);
             Model2Row(item, row);
             int ret = Save(dataTable);
-            item.SetPK(dataTable.Rows[0].Field<int>(PKField));
+            item.PKId = dataTable.Rows[0].Field<int>(PKField);
             return ret;
         }
 
