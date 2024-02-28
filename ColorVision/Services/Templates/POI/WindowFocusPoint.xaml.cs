@@ -53,8 +53,6 @@ namespace ColorVision.Services.Templates.POI
         private async void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = PoiParam;
-            SettingGroup.DataContext = this;
-
 
             ListView1.ItemsSource = DrawingVisualLists;
 
