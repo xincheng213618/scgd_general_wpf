@@ -15,11 +15,6 @@ namespace ColorVision.Solution.V.Folders
 
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Open, Command = OpenCommand });
-            //foreach (var item in folder.ContextMenu.Items)
-            //{
-            //    ContextMenu.Items.Add(item);
-            //}
-            //
         }
 
         public override ImageSource Icon {get => Folder.Icon; set { Folder.Icon = value; NotifyPropertyChanged(); } }

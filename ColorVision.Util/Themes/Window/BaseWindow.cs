@@ -88,7 +88,7 @@ namespace ColorVision.Themes.Controls
 
 
         public static readonly bool IsWin11 = Environment.OSVersion.Version >= new Version(10, 0, 21996);
-        public static readonly bool IsWin10 = !IsWin11 && Environment.OSVersion.Version >= new Version(10, 0);
+        public static readonly bool IsWin10 = !(Environment.OSVersion.Version >= new Version(10, 0, 21996)) && Environment.OSVersion.Version >= new Version(10, 0);
 
 
         public static float Dpi { get => DpiX; }

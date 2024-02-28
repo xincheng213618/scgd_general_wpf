@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Windows;
 
 namespace ColorVision.Utils;
 
@@ -26,6 +27,7 @@ public static class PlatformHelper
             Process.Start("xdg-open", $"\"{folder}\"");
         }
     }
+    public static readonly bool IsWin10 = !(Environment.OSVersion.Version >= new Version(10, 0, 21996)) && Environment.OSVersion.Version >= new Version(10, 0);
 
     /// <summary>
     /// 打开各种 (文件、url)
@@ -33,19 +35,33 @@ public static class PlatformHelper
     /// <param name="filename">文件名</param>
     public static void Open(string filename)
     {
-        if (OperatingSystem.IsWindows())
+        try
         {
-            Process.Start(filename);
+            if (OperatingSystem.IsWindows())
+            {
+                if (Environment.OSVersion.Version >= new Version(10, 0, 21996))
+                {
+                    Process.Start(new ProcessStartInfo(filename) { UseShellExecute = true });
+                }
+                else
+                {
+                    Process.Start("explorer.exe", $"{filename}");
+                }
+            }
+            if (OperatingSystem.IsMacOS())
+            {
+                Process.Start("open", $"\"{filename}\"");
+            }
+
+            if (OperatingSystem.IsLinux())
+            {
+                Process.Start("xdg-open", $"\"{filename}\"");
+            }
+        }
+        catch(Exception ex)
+        {
+            MessageBox.Show(ex.Message);
         }
 
-        if (OperatingSystem.IsMacOS())
-        {
-            Process.Start("open", $"\"{filename}\"");
-        }
-        
-        if (OperatingSystem.IsLinux())
-        {
-            Process.Start("xdg-open", $"\"{filename}\"");
-        }
     }
 }

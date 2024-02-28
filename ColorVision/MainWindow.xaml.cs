@@ -183,6 +183,20 @@ namespace ColorVision
             {
                 Task.Run(CheckLocalService);
             }
+
+            string? RegistrationCenterServicePath = Tool.GetServicePath("RegistrationCenterService");
+
+            if (RegistrationCenterServicePath != null)
+            {
+                string Dir = Path.GetDirectoryName(RegistrationCenterServicePath);
+                string FilePath = Dir + "//Log//" + DateTime.Now.ToString("yyyyMMdd") + ".log";
+                MenuItem menulogs1 = new MenuItem() { Header = "RegistrationCenterServiceLog" };
+                menulogs1.Click += (s, e) =>
+                {
+                    PlatformHelper.Open(FilePath);
+                };
+                menulogs.Items.Insert(0, menulogs1);
+            }
             Task.Run(CheckVersion);
 
             Task.Run(CheckCertificate);
@@ -307,8 +321,8 @@ namespace ColorVision
                 ConfigHandler.SaveConfig();
             }
         }
-
-        public static async Task CheckLocalService()
+        
+        public async Task CheckLocalService()
         {
             await Task.Delay(2000);
             try
@@ -319,6 +333,9 @@ namespace ColorVision
                 {
                     excmd += "net start RegistrationCenterService&&";
                 }
+
+
+
                 ServiceController sc1 = new ServiceController("CVMainService_x86");
                 if (sc1.Status == ServiceControllerStatus.Stopped)
                 {
