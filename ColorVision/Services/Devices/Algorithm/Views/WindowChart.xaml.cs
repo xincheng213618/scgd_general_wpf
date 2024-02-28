@@ -153,5 +153,10 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                 wpfplot1.Refresh();
             }
         }
+
+        private void ButtonSave_Click(object sender, RoutedEventArgs e)
+        {
+            wpfplot1.SaveAsImage();
+        }
     }
 }

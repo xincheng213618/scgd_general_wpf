@@ -24,6 +24,7 @@
                 <ComboBoxItem Content="Wave"/>
                 <ComboBoxItem Content="CCT"/>
             </ComboBox>
+            <Button x:Name="ButtonSave" Content="Save"  Click="ButtonSave_Click"/>
         </StackPanel>
         <ScottPlot:WpfPlot  x:Name="wpfplot1"  Grid.Row="1"/>
     </Grid>

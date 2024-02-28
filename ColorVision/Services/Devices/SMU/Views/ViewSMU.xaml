@@ -123,6 +123,8 @@
                             </ListView>
                         </Border>
                     </Popup>
+                    <Button x:Name="ButtonSave" Content="Save"   Click="ButtonSave_Click"/>
+
                 </ToolBar>
                 
                 <ListView  Height="250" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" BorderThickness="0" Background="Transparent" Margin="-5" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >

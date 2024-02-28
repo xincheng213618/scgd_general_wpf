@@ -191,6 +191,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             if (listView1.Items[listView1.SelectedIndex] is AlgorithmResult result)
             {
                 ImageView.ResetPOIPoint();
+                List<POIPoint> DrawPoiPoint = new List<POIPoint>();
                 switch (result.ResultType)
                 {
                     case AlgorithmResultType.POI:
@@ -211,7 +212,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         }
                         listViewSide.ItemsSource = result.PoiResultCIExyuvDatas;
 
-                        List<POIPoint> DrawPoiPoint = new List<POIPoint>();
                         foreach (var item in result.PoiResultCIExyuvDatas)
                             DrawPoiPoint.Add(item.Point);
                         ImageView.AddPOIPoint(DrawPoiPoint);
