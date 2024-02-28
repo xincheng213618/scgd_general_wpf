@@ -396,9 +396,9 @@ namespace ColorVision.Net
             {
                 log.ErrorFormat("Raw file({0}) is not exist.", fileName);
             }
-
             return code;
         }
+
         private int DecodeCVFileTo8U(byte[] fileData, string fileName, ref CVCIEFileInfo fileInfo)
         {
             UInt32 w = 0, h = 0, bpp = 0, channels = 0;
