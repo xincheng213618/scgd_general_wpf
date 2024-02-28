@@ -36,7 +36,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             wpfplot1.Plot.XLabel("点");
             wpfplot1.Plot.YLabel("U");
             wpfplot1.Plot.Clear();
-            wpfplot1.Plot.SetAxisLimitsX(0, 100);
+            wpfplot1.Plot.SetAxisLimitsX(0, PoiResultCIExyuvData.Count);
             wpfplot1.Plot.SetAxisLimitsY(0, 255);
             wpfplot1.Plot.XAxis.SetBoundary(0, 1000);
             wpfplot1.Plot.YAxis.SetBoundary(0, 255);

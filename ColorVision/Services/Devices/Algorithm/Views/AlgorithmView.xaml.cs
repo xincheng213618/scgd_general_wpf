@@ -684,7 +684,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
         private void SideSave_Click(object sender, RoutedEventArgs e)
         {
-
+            
         }
 
         private void ButtonChart_Click(object sender, RoutedEventArgs e)
@@ -693,7 +693,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             {
                 if (result.ResultType == AlgorithmResultType.POI_XY_UV)
                 {
-                    if(result.PoiResultCIExyuvDatas.Count == 0)
+                    if(result.PoiResultCIExyuvDatas.Count != 0)
                     {
                         WindowChart windowChart = new WindowChart(result.PoiResultCIExyuvDatas);
                         windowChart.Show();
@@ -709,5 +709,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                 }
             }
         }
+
+     
     }
 }
