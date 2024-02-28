@@ -3,11 +3,14 @@ using ColorVision.Services.Msg;
 using System.Windows;
 using MQTTMessageLib;
 using ColorVision.Services.Devices.Camera.Calibrations;
+using MQTTMessageLib.Calibration;
+using MQTTMessageLib.FileServer;
 
 namespace ColorVision.Services.Devices.Calibration
 {
     public class MQTTCalibration : MQTTDeviceService<ConfigCalibration>
     {
+        public event MessageRecvHandler OnMessageRecved;
         public MQTTCalibration(ConfigCalibration config) : base(config)
         {
             MsgReturnReceived += ProcessingReceived;
@@ -24,6 +27,9 @@ namespace ColorVision.Services.Devices.Calibration
 
                         object obj = msg.Data;
                         Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, obj.ToString()));
+                        break;
+                    default:
+                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         break;
                 }
             }
@@ -86,6 +92,35 @@ namespace ColorVision.Services.Devices.Calibration
             //Params.Add("SrcFileName", FilePath);
             //Params.Add("fname",DateTime.Now.ToString("yyyyMMddHHmmss") );
             return PublishAsyncClient(msg);
+        }
+        public void Open(string fileName, FileExtType extType)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTFileServerEventEnum.Event_File_Download,
+                ServiceName = Config.Code,
+                Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", extType } }
+            };
+            PublishAsyncClient(msg);
+        }
+        public MsgRecord CacheClear()
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTCalibrationEventEnum.Event_Delete_Data,
+                Params = new Dictionary<string, object> { }
+            };
+            return PublishAsyncClient(msg);
+        }
+
+        public void GetRawFiles()
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTFileServerEventEnum.Event_File_List_All,
+                Params = new Dictionary<string, object> { { "FileExtType", FileExtType.Raw } }
+            };
+            PublishAsyncClient(msg);
         }
     }
 }

@@ -64,10 +64,6 @@
                                             <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Code}"/>
                                         </DockPanel>
                                         <DockPanel>
-                                            <TextBlock Text="ID" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.Id}"/>
-                                        </DockPanel>
-                                        <DockPanel>
                                             <TextBlock Text="发送信道" Width="120"/>
                                             <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SendTopic}"/>
                                         </DockPanel>
@@ -85,6 +81,26 @@
                                         </DockPanel>
                                     </StackPanel>
                                 </GroupBox>
+                                <GroupBox Header="数据目录服务配置" >
+                                    <StackPanel Margin="5">
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock Text="数据目录:" Width="120"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.DataBasePath}" />
+                                        </DockPanel>
+                                        <DockPanel Margin="0,5">
+                                            <TextBlock  Text="端口地址:" Width="120"/>
+                                            <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.Endpoint}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,5">
+                                            <TextBlock  Text="端口范围:" Width="120"/>
+                                            <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.PortRange}"/>
+                                        </DockPanel>
+                                        <DockPanel>
+                                            <Button DockPanel.Dock="Right" Content="清理" Click="ServiceCache_Click"/>
+                                            <TextBlock Text="服务缓存"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </GroupBox>
                             </StackPanel>
                         </Border>
                     </Grid>
@@ -99,7 +115,7 @@
                                     <StackPanel Margin="5">
                                         <DockPanel Margin="0,2" >
                                             <TextBlock Text="Code" Width="120"/>
-                                            <TextBox Text="{Binding Name}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Code}"/>
                                         </DockPanel>
                                         <DockPanel Margin="0,2" >
                                             <TextBlock Text="界面展示名称" Width="120"/>
@@ -109,6 +125,27 @@
                                             <TextBlock Text="心跳时间(ms)"  Width="120"/>
                                             <TextBox Text="{Binding Config.HeartbeatTime}"/>
                                         </DockPanel>
+                                    </StackPanel>
+                                </GroupBox>
+                                <GroupBox Header="配置信息" Margin="0,5">
+                                    <StackPanel Margin="5">
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock  Text="绑定相机" Width="120"/>
+                                            <TextBox  x:Name="TextBox_BindDevice" Text="{Binding Config.BindDeviceCode}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock  Text="数据目录"  Width="120"/>
+                                            <TextBox  x:Name="TextBox_CIEImgPath" Text="{Binding Config.FileServerCfg.DataBasePath}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock  Text="端口地址" Width="120"/>
+                                            <TextBox  x:Name="TextBox_Endpoint" Text="{Binding Config.FileServerCfg.Endpoint}"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <TextBlock  Text="端口范围" Width="120"/>
+                                            <TextBox  x:Name="TextBox_PortRange" Text="{Binding Config.FileServerCfg.PortRange}"/>
+                                        </DockPanel>
+
                                     </StackPanel>
                                 </GroupBox>
                             </StackPanel>

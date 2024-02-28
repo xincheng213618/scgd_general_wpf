@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Services.Devices.Calibration
+﻿using ColorVision.Services.Devices.Camera.Configs;
+
+namespace ColorVision.Services.Devices.Calibration
 {
     public class ConfigCalibration: DeviceServiceConfig
     {
@@ -10,5 +12,9 @@
 
         public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; NotifyPropertyChanged(); } }
         private double _ExpTimeB = 10;
+
+        public string BindDeviceCode { get => _BindDeviceCode; set { _BindDeviceCode = value; NotifyPropertyChanged(); } }
+        private string _BindDeviceCode;
+        public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
     }
 }

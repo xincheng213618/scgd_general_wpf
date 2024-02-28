@@ -10,6 +10,8 @@ namespace ColorVision.Services.Devices.Calibration
     public partial class DeviceCalibrationControl : UserControl, IDisposable
     {
         public DeviceCalibration Device { get; set; }
+
+        public MQTTCalibration DService { get => Device.DeviceService; }
         public ServiceManager ServiceControl { get; set; }
 
         public bool IsCanEdit { get; set; }
@@ -31,5 +33,9 @@ namespace ColorVision.Services.Devices.Calibration
             GC.SuppressFinalize(this);
         }
 
+        private void ServiceCache_Click(object sender, RoutedEventArgs e)
+        {
+            DService.CacheClear();
+        }
     }
 }

@@ -239,10 +239,17 @@ namespace ColorVision.Services
                             serviceTerminal.AddChild(new DeviceCfwPort(sysDevModel));
                         break;
                     case ServiceTypes.Calibration:
+                        fromPort = (Math.Abs(new Random().Next()) % 99 + 6200);
                         deviceConfig = new ConfigCalibration
                         {
                             Id = TextBox_Code.Text,
                             Name = TextBox_Name.Text,
+                            FileServerCfg = new FileServerCfg()
+                            {
+                                Endpoint = "127.0.0.1",
+                                PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
+                                DataBasePath = "D:\\CVTest",
+                            }
                         };
                         sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
                         if (sysDevModel != null)

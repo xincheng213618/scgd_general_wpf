@@ -499,8 +499,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         }
                        
                         break;
-                    case AlgorithmResultType.Calibration:
-                        break;
                     case AlgorithmResultType.LedCheck:
                         ImageView.OpenImage(result.FilePath);
                         listViewSide.Visibility = Visibility.Visible;
