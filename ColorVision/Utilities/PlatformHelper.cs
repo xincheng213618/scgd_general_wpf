@@ -49,7 +49,7 @@ public static class PlatformHelper
                 }
             }
             if (OperatingSystem.IsMacOS())
-            {
+            {   
                 Process.Start("open", $"\"{filename}\"");
             }
 
