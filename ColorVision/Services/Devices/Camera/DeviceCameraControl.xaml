@@ -94,7 +94,7 @@
                                                 <Button Content="上传校正文件"  Command="{Binding UploadCalibrationCommand}" />
 
                                                 <Button Content="校正模板设置" Tag="Calibration"  Click="MenuItem_Template" />
-                                                <Button Content="校正模板管理" Click="Button_Click_1" />
+                                                <Button Content="校正模板管理" Click="Button_Click_1"/>
                                                 <Button Content="上传许可文件"  Command="{Binding UploadLincenseCommand}" />
 
                                             </StackPanel>

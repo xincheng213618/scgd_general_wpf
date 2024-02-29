@@ -242,11 +242,6 @@ namespace ColorVision.Services.Devices.Camera
             }
         }
 
-        private void Upload_Calibration_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             CalibrationEdit CalibrationEdit = new CalibrationEdit(Device);

@@ -29,7 +29,6 @@ namespace ColorVision.Services.Devices.Calibration
 
         public MQTTCalibration DeviceService { get; set; }
 
-        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
         public RelayCommand UploadCalibrationCommand { get; set; }
 
         public DeviceCalibration(SysDeviceModel sysResourceModel) : base(sysResourceModel)

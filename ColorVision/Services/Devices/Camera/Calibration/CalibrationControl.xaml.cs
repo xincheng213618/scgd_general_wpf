@@ -13,9 +13,9 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
         public CalibrationParam CalibrationParam { get => _CalibrationParam; set { _CalibrationParam = value;} }
         private CalibrationParam _CalibrationParam;
 
-        public DeviceCamera DeviceCamera { get; set; }
+        public DeviceService DeviceCamera { get; set; }
 
-        public CalibrationControl(DeviceCamera DeviceCamera)
+        public CalibrationControl(DeviceService DeviceCamera)
         {
             this.DeviceCamera = DeviceCamera;
             InitializeComponent();
@@ -25,7 +25,7 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
 
         public Dictionary<string, List<ColorVisionVCalibratioItem>> CalibrationModeList { get; set; }
 
-        public CalibrationControl(DeviceCamera DeviceCamera,CalibrationParam calibrationParam)
+        public CalibrationControl(DeviceService DeviceCamera,CalibrationParam calibrationParam)
         {
             this.DeviceCamera = DeviceCamera;
             InitializeComponent();
@@ -35,7 +35,7 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
         public ObservableCollection<GroupService> GroupServices { get; set; } = new ObservableCollection<GroupService>();
 
 
-        public void Initializedsss(DeviceCamera DeviceCamera, CalibrationParam calibrationParam)
+        public void Initializedsss(DeviceService DeviceCamera, CalibrationParam calibrationParam)
         {
             ComboBoxList.SelectionChanged -= ComboBox_SelectionChanged;
 

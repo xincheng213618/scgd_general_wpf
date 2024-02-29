@@ -26,6 +26,7 @@ using ColorVision.Services.Templates.Measure;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Services.Devices.SMU;
+using ColorVision.Services.Devices;
 
 namespace ColorVision.Services.Templates
 {
@@ -191,8 +192,8 @@ namespace ColorVision.Services.Templates
             GridProperty.Children.Add(UserControl);
         }
 
-        public DeviceCamera DeviceCamera { get; set; }
-        public WindowTemplate(TemplateType windowTemplateType, UserControl userControl,DeviceCamera deviceCamera ,bool IsReLoad = true)
+        public DeviceService DeviceCamera { get; set; }
+        public WindowTemplate(TemplateType windowTemplateType, UserControl userControl, DeviceService deviceCamera ,bool IsReLoad = true)
         {
             DeviceCamera = deviceCamera;
             TemplateType = windowTemplateType;
