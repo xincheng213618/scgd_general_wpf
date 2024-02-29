@@ -611,7 +611,7 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="形状">
+                            <GridViewColumn  Header="形状" Width="150">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type draw:DrawingVisualBase}">
                                         <TextBlock Text="{Binding Version}" Tag="{Binding .}"/>
