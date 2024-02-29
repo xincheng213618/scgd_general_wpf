@@ -337,25 +337,28 @@ namespace ColorVision.Net
 
         public void OpenLocalFile(string fileName, FileExtType extType)
         {
-            int code = 0;
             CVCIEFileInfo fileInfo = new CVCIEFileInfo();
-            if (extType == FileExtType.CIE) code = ReadLocalBinaryCIEFile(fileName, ref fileInfo);
-            else if (extType == FileExtType.Raw) code = ReadLocalBinaryRawFile(fileName, ref fileInfo);
-            else if (extType == FileExtType.Tif) code = ReadTIFImage(fileName,ref fileInfo);
-            else code = ReadLocalBinaryFile(fileName, ref fileInfo);
+            int code = ReadLocalFile(fileName, extType, ref fileInfo);
             handler?.Invoke(this, new NetFileEvent(FileEvent.FileDownload, code, fileName, fileInfo));
         }
 
-        public CVCIEFileInfo OpenLocalCVCIEFile(string? fileName, FileExtType extType)
+        public CVCIEFileInfo OpenLocalCVFile(string fileName, FileExtType extType)
         {
-            int code = 0;
             CVCIEFileInfo fileInfo = new CVCIEFileInfo();
-            if (!File.Exists(fileName)) return fileInfo;
+            int code = ReadLocalFile(fileName, extType, ref fileInfo);
+            return fileInfo;
+        }
+
+        private int ReadLocalFile(string fileName, FileExtType extType, ref CVCIEFileInfo fileInfo)
+        {
+            int code = -1;
+            if (!File.Exists(fileName)) return -1;
             if (extType == FileExtType.CIE) code = ReadLocalBinaryCIEFile(fileName, ref fileInfo);
             else if (extType == FileExtType.Raw) code = ReadLocalBinaryRawFile(fileName, ref fileInfo);
-            else if (extType == FileExtType.Tif) code = ReadTIFImage(fileName, ref fileInfo);
+            else if (extType == FileExtType.Src) code = ReadLocalBinaryRawFile(fileName, ref fileInfo);
+            else if (extType == FileExtType.Tif) code = ReadLocalTIFImage(fileName, ref fileInfo);
             else code = ReadLocalBinaryFile(fileName, ref fileInfo);
-            return fileInfo;
+            return code;
         }
 
         private int ReadLocalBinaryRawFile(string fileName, ref CVCIEFileInfo fileInfo)
@@ -486,6 +489,7 @@ namespace ColorVision.Net
                 }
                 else if (bpp == 32)
                 {
+                    srcFileName = srcFileName + ".tif";
                     int len = (int)(w * h * (bpp / 8));
                     if (channels == 3)
                     {
@@ -561,7 +565,7 @@ namespace ColorVision.Net
             return bpp;
         }
 
-        private int ReadTIFImage(string fileName,ref CVCIEFileInfo result)
+        private int ReadLocalTIFImage(string fileName,ref CVCIEFileInfo result)
         {
             OpenCvSharp.Mat src = OpenCvSharp.Cv2.ImRead(fileName, OpenCvSharp.ImreadModes.Unchanged);
             int bpp = GetBpp(src.Depth());

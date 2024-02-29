@@ -320,7 +320,7 @@ namespace ColorVision.Services.Templates.POI
                 {
                     try
                     {
-                        OpenImage(new NetFileUtil("1").OpenLocalCVCIEFile(filePath, FileExtType.Raw));
+                        OpenImage(new NetFileUtil("1").OpenLocalCVFile(filePath, FileExtType.Raw));
                     }
                     catch (Exception ex)
                     {
@@ -1839,7 +1839,7 @@ namespace ColorVision.Services.Templates.POI
             {
                 try
                 {
-                    OpenImage(new NetFileUtil("1").OpenLocalCVCIEFile(measureImgResultModel.FileUrl, FileExtType.Raw));
+                    OpenImage(new NetFileUtil("1").OpenLocalCVFile(measureImgResultModel.FileUrl, FileExtType.Raw));
                 }
                 catch(Exception ex)
                 {
@@ -1911,7 +1911,7 @@ namespace ColorVision.Services.Templates.POI
             {
                 try
                 {
-                    OpenImage(new NetFileUtil("1").OpenLocalCVCIEFile(MeasureImgResultModels[ComboBoxImg.SelectedIndex].FileUrl, FileExtType.Raw));
+                    OpenImage(new NetFileUtil("1").OpenLocalCVFile(MeasureImgResultModels[ComboBoxImg.SelectedIndex].FileUrl, FileExtType.Raw));
                 }
                 catch (Exception ex)
                 {
