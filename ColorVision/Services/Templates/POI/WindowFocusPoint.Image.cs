@@ -93,9 +93,9 @@ namespace ColorVision.Services.Templates.POI
         private Point MouseDownP;
 
         private DrawingVisual? SelectDrawingVisual;
-        private DrawingVisualPolygon DrawingPolygonCache;
-        private DrawingVisualCircle DrawCircleCache;
-        private DrawingVisualRectangle DrawingRectangleCache;
+        private DrawingVisualPolygon? DrawingPolygonCache;
+        private DrawingVisualCircle? DrawCircleCache;
+        private DrawingVisualRectangle? DrawingRectangleCache;
 
 
         private void ImageShow_MouseLeave(object sender, MouseEventArgs e)
@@ -111,8 +111,8 @@ namespace ColorVision.Services.Templates.POI
         {
             if (PoiParam.DatumArea.IsUserDraw)
             {
-                if (PoiParam.DatumArea.IsAreaPolygon && ToolBarTop.DrawPolygon)
-                {
+                if (PoiParam.DatumArea.IsAreaPolygon && ToolBarTop.DrawPolygon && DrawingPolygonCache != null) 
+                { 
                     ImageShow.RemoveVisual(DrawingPolygonCache);
                     PoiParam.DatumArea.Polygons.Clear();
                     foreach (var item in DrawingPolygonCache.Attribute.Points)

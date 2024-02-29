@@ -527,15 +527,13 @@
                 </WindowsFormsHost>
                 <ListView  x:Name="ListView1" Grid.Column="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
                     <ListView.Resources>
+                        <ContextMenu x:Key="ContextMenuItem">
+                            <MenuItem Header="{x:Static resx:Resource.Delete}"  Click="MenuItem_DrawingVisual_Delete" Tag="{Binding .}"  />
+                        </ContextMenu>
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
                         </ContextMenu>
                         <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type draw:DrawingVisualCircle}" >
                             <StackPanel  Orientation="Horizontal">
-                                <StackPanel.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
-                                    </ContextMenu>
-                                </StackPanel.ContextMenu>
                                 <TextBlock  HorizontalAlignment="Center">
                                                     <Run Text="{Binding Path = Attribute.Center.X,StringFormat={}{0:F0}}"/>
                                                     <Run Text=","/>
@@ -546,11 +544,6 @@
                         </DataTemplate>
                         <DataTemplate x:Key="DrawingVisualCircleWordTemplate" DataType="{x:Type draw:DrawingVisualCircleWord}" >
                             <StackPanel  Orientation="Horizontal">
-                                <StackPanel.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
-                                    </ContextMenu>
-                                </StackPanel.ContextMenu>
                                 <TextBlock HorizontalAlignment="Center">
                                                     <Run Text="{Binding Path = Attribute.Center.X,StringFormat={}{0:F0}}"/>
                                                     <Run Text=","/>
@@ -563,11 +556,6 @@
 
                         <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type draw:DrawingVisualRectangle}">
                             <StackPanel  Orientation="Horizontal">
-                                <StackPanel.ContextMenu>
-                                    <ContextMenu>
-                                        <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
-                                    </ContextMenu>
-                                </StackPanel.ContextMenu>
                                 <TextBlock>
                                             <Run Text="{Binding Attribute.Rect.X,StringFormat={}{0:F0}}"/>
                                             <Run Text="{Binding Attribute.Rect.Y,StringFormat={}{0:F0}}"/>
@@ -593,7 +581,12 @@
                             </StackPanel>
                         </DataTemplate>
                     </ListView.Resources>
-                    <ListView.View >
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
+                            <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                    <ListView.View>
                         <GridView >
                             <GridView.ColumnHeaderContainerStyle>
                                 <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">

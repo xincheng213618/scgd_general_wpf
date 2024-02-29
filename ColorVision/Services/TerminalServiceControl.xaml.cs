@@ -29,7 +29,7 @@ namespace ColorVision.Services
     /// </summary>
     public partial class TerminalServiceControl : UserControl
     {
-        public TerminalService ServiceTerminal { get; set; }
+        public TerminalService ServiceTerminal { get; set; }  
         public ServiceManager ServiceControl { get; set; }
 
         public TerminalServiceControl(TerminalService mQTTService)
