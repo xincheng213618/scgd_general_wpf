@@ -66,7 +66,7 @@ namespace ColorVision.Services.Devices
             base.Save();
         }
 
-        public void SetCalibrationResource(DeviceCamera deviceCamera)
+        public void SetCalibrationResource(DeviceService deviceCamera)
         {
             foreach (var item in VisualChildren)
             {

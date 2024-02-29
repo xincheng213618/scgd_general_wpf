@@ -39,16 +39,13 @@ namespace ColorVision.Services.Devices.Camera
 
     public class DeviceCamera : DeviceService<ConfigCamera>, IUploadMsg
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(MySqlControl));
+        private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCamera));
 
 
         public MQTTCamera DeviceService { get; set; }
 
-        /// <summary>
-        /// 矫正参数
-        /// </summary>
-        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
 
+        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
         public ViewCamera View { get; set; }
 
         public MQTTTerminalCamera Service { get; set; }
