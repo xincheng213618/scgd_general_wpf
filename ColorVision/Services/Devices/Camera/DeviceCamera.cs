@@ -44,8 +44,6 @@ namespace ColorVision.Services.Devices.Camera
 
         public MQTTCamera DeviceService { get; set; }
 
-
-        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
         public ViewCamera View { get; set; }
 
         public MQTTTerminalCamera Service { get; set; }
