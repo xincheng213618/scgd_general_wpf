@@ -33,6 +33,11 @@
                                 <TextBlock Text="心跳时间"  Width="120"/>
                                 <TextBox Text="{Binding Config.HeartbeatTime}"/>
                             </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock Text="绑定设备"  Width="120"/>
+                                <TextBox  x:Name="TextBox_BindDevice" Text="{Binding Config.BindDeviceCode}"/>
+                            </DockPanel>
+
                         </StackPanel>
                     </GroupBox>
                     <GroupBox Header="配置信息" Margin="0,5">

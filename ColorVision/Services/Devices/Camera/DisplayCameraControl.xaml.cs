@@ -263,40 +263,43 @@ namespace ColorVision.Services.Devices.Camera
             CalibrationParams = new ObservableCollection<TemplateModel<CalibrationParam>>();
             CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam() { Id = -1}));
 
-            foreach (var item in Device.CalibrationParams)
-                CalibrationParams.Add(item);
-
-            Device.CalibrationParams.CollectionChanged += (s, e) =>
+            if (Device.DeviceCalibration != null)
             {
-                switch (e.Action)
+                foreach (var item in Device.DeviceCalibration.CalibrationParams)
+                    CalibrationParams.Add(item);
+
+                Device.CalibrationParams.CollectionChanged += (s, e) =>
                 {
-                    case NotifyCollectionChangedAction.Add:
-                        // 处理添加项
-                        if(e.NewItems!=null)
-                            foreach (TemplateModel<CalibrationParam> newItem in e.NewItems)
-                                CalibrationParams.Add(newItem);
-                        break;
-                    case NotifyCollectionChangedAction.Remove:
-                        // 处理移除项
-                        if (e.OldItems != null)
-                            foreach (TemplateModel<CalibrationParam> newItem in e.OldItems)
-                                CalibrationParams.Remove(newItem);
-                        break;
-                    case NotifyCollectionChangedAction.Replace:
-                        // 处理替换项
-                        // ...
-                        break;
-                    case NotifyCollectionChangedAction.Move:
-                        // 处理移动项
-                        // ...
-                        break;
-                    case NotifyCollectionChangedAction.Reset:
-                        // 处理清空集合
-                        CalibrationParams.Clear();
-                        CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()) { Id = -1 });
-                        break;
-                }
-            };
+                    switch (e.Action)
+                    {
+                        case NotifyCollectionChangedAction.Add:
+                            // 处理添加项
+                            if (e.NewItems != null)
+                                foreach (TemplateModel<CalibrationParam> newItem in e.NewItems)
+                                    CalibrationParams.Add(newItem);
+                            break;
+                        case NotifyCollectionChangedAction.Remove:
+                            // 处理移除项
+                            if (e.OldItems != null)
+                                foreach (TemplateModel<CalibrationParam> newItem in e.OldItems)
+                                    CalibrationParams.Remove(newItem);
+                            break;
+                        case NotifyCollectionChangedAction.Replace:
+                            // 处理替换项
+                            // ...
+                            break;
+                        case NotifyCollectionChangedAction.Move:
+                            // 处理移动项
+                            // ...
+                            break;
+                        case NotifyCollectionChangedAction.Reset:
+                            // 处理清空集合
+                            CalibrationParams.Clear();
+                            CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()) { Id = -1 });
+                            break;
+                    }
+                };
+            }
 
 
             ComboxCalibrationTemplate.ItemsSource = CalibrationParams;
