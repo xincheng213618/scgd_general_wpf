@@ -38,6 +38,7 @@
   </ItemGroup>
 	
   <ItemGroup>
+    <None Remove="Assets\Image\CIE1931xy.png" />
     <None Remove="Assets\Image\ColorVision.ico" />
     <None Remove="Assets\Image\ColorVision.png" />
     <None Remove="Assets\Image\ColorVision1.ico" />
@@ -136,6 +137,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\Image\CIE1931xy.png" />
     <Resource Include="Assets\Image\ColorVision.ico" />
   </ItemGroup>
   <ItemGroup>

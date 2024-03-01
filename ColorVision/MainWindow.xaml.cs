@@ -26,6 +26,7 @@ using ColorVision.Utils;
 using ColorVision.Solution.View;
 using ColorVision.Services.Interfaces;
 using System.Collections.ObjectModel;
+using ColorVision.Media;
 
 namespace ColorVision
 {
@@ -163,6 +164,16 @@ namespace ColorVision
             menuItem1.Click += Test_Click;
             menuItem.Items.Add(menuItem1);
             Menu1.Items.Add(menuItem);
+
+            MenuItem menuItem2 = new MenuItem() { Header = "WindowCIE" };
+            menuItem2.Click += (s,e)=>
+            {
+                WindowCIE windowCIE = new WindowCIE();
+                windowCIE.Show();
+            };
+            menuItem.Items.Add(menuItem2);
+
+            
 
 
             MenuItem menuItem3 = new MenuItem() { Header = Properties.Resource.RestartService, Tag = "CalibrationUpload" };
