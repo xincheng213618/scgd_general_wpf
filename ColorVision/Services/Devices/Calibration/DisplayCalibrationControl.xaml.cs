@@ -1,8 +1,13 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Net;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
+using ColorVision.Solution;
 using ColorVision.Themes;
+using MQTTMessageLib.FileServer;
+using Newtonsoft.Json;
+using Panuon.WPF.UI;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -20,13 +25,75 @@ namespace ColorVision.Services.Devices.Calibration
 
         public DeviceCalibration Device { get; set; }
         private MQTTCalibration DeviceService { get => Device.DeviceService;  }
-
+        private IPendingHandler? handler { get; set; }
+        private NetFileUtil netFileUtil;
         public DisplayCalibrationControl(DeviceCalibration device)
         {
             this.Device = device;
             InitializeComponent();
+            netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.FullName + "\\Cache");
+            netFileUtil.handler += NetFileUtil_handler;
+            DeviceService.OnMessageRecved += Service_OnCalibrationEvent;
             this.PreviewMouseDown += UserControl_PreviewMouseDown;
 
+        }
+
+        private void Service_OnCalibrationEvent(object sender, MessageRecvArgs arg)
+        {
+            switch (arg.EventName)
+            {
+                case MQTTFileServerEventEnum.Event_File_List_All:
+                    DeviceListAllFilesParam data = JsonConvert.DeserializeObject<DeviceListAllFilesParam>(JsonConvert.SerializeObject(arg.Data));
+                    DoShowFileList(data);
+                    break;
+            }
+        }
+        private void DoShowFileList(DeviceListAllFilesParam data)
+        {
+            switch (data.FileExtType)
+            {
+                case FileExtType.Raw:
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        CB_RawImageFiles.ItemsSource = data.Files;
+                        CB_RawImageFiles.SelectedIndex = 0;
+                    });
+                    break;
+                case FileExtType.Src:
+                    break;
+                case FileExtType.CIE:
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        //CB_CIEImageFiles.ItemsSource = data.Files;
+                        //CB_CIEImageFiles.SelectedIndex = 0;
+                    });
+                    break;
+                case FileExtType.Calibration:
+                    break;
+                case FileExtType.Tif:
+                    break;
+                default:
+                    break;
+            }
+        }
+        private void NetFileUtil_handler(object sender, NetFileEvent arg)
+        {
+            if (arg.Code == 0 && arg.FileData.data != null)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    //View.OpenImage(arg.FileData);
+                });
+                handler?.Close();
+            }
+            else
+            {
+                handler?.Close();
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    //MessageBox.IsShow(Application.Current.MainWindow, "文件打开失败", "ColorVision");
+                });
+            }
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -71,6 +138,32 @@ namespace ColorVision.Services.Devices.Calibration
             {
                 ImageFile.Text = openFileDialog.FileName;
             }
+        }
+        private void doOpen(string fileName, FileExtType extType)
+        {
+            string localName = netFileUtil.GetCacheFileFullName(fileName);
+            if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
+            {
+                DeviceService.Open(fileName, extType);
+            }
+            else
+            {
+                netFileUtil.OpenLocalFile(localName, extType);
+            }
+        }
+        private void Button_Click_RawOpen(object sender, RoutedEventArgs e)
+        {
+            handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
+            handler.Cancelling += delegate
+            {
+                handler?.Close();
+            };
+            doOpen(CB_RawImageFiles.Text, FileExtType.Raw);
+        }
+
+        private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
+        {
+            DeviceService.GetRawFiles();
         }
     }
 }

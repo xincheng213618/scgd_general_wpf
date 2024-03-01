@@ -154,10 +154,6 @@ namespace ColorVision.Services.Devices.Camera.Views
             }
         }
 
-        public void OpenImage(byte[] bytes)
-        {
-            ImageView.OpenImage(bytes);
-        }
         public void OpenImage(CVCIEFileInfo fileData)
         {
             ImageView.OpenImage(fileData);

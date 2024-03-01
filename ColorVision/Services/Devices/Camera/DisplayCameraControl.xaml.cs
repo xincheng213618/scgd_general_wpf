@@ -87,30 +87,28 @@ namespace ColorVision.Services.Devices.Camera
             if (data.ResultCode == 0 && data.FilePath!=null)
             {
                 string localName = netFileUtil.GetCacheFileFullName(data.FilePath);
+                FileExtType fileExt = FileExtType.Src;
                 switch (data.FileType)
                 {
                     case CameraFileType.SrcFile:
-                        if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
-                        {
-                            DService.DownloadFile(data.FilePath, FileExtType.Raw);
-                        }
-                        else
-                        {
-                            netFileUtil.OpenLocalFile(localName, FileExtType.Raw);
-                        }
+                        fileExt = FileExtType.Src;
+                        break;
+                    case CameraFileType.RawFile:
+                        fileExt = FileExtType.Raw;
                         break;
                     case CameraFileType.CIEFile:
-                        if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
-                        {
-                            DService.DownloadFile(data.FilePath, FileExtType.CIE);
-                        }
-                        else
-                        {
-                            netFileUtil.OpenLocalFile(localName, FileExtType.CIE);
-                        }
+                        fileExt = FileExtType.CIE;
                         break;
                     default:
                         break;
+                }
+                if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
+                {
+                    DService.DownloadFile(data.FilePath, fileExt);
+                }
+                else
+                {
+                    netFileUtil.OpenLocalFile(localName, fileExt);
                 }
             }
         }

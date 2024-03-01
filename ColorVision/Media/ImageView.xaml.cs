@@ -9,6 +9,7 @@ using OpenCvSharp.WpfExtensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -596,8 +597,8 @@ namespace ColorVision.Media
 
         public void OpenImage(CVCIEFileInfo fileInfo)
         {
-            if (fileInfo.fileType == MQTTMessageLib.FileServer.FileExtType.Src) OpenImage(fileInfo.data);
-            else if(fileInfo.fileType == MQTTMessageLib.FileServer.FileExtType.Raw)
+            if (fileInfo.fileType == MQTTMessageLib.FileServer.FileExtType.Tif) OpenTifImage(fileInfo.data);
+            else if(fileInfo.fileType == MQTTMessageLib.FileServer.FileExtType.Raw || fileInfo.fileType == MQTTMessageLib.FileServer.FileExtType.Src)
             {
                 ShowImage(fileInfo);
             }
@@ -622,7 +623,7 @@ namespace ColorVision.Media
             SetImageSource(dst.ToBitmapSource());
         }
 
-        public void OpenImage(byte[] data)
+        public void OpenTifImage(byte[] data)
         {
             if (data != null)
             {
@@ -643,12 +644,12 @@ namespace ColorVision.Media
             if (filePath != null && File.Exists(filePath))
             {
                 string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
-                if (ext == ".tif")
+                if (ext.Contains(".tif"))
                 {
                     BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
                     SetImageSource(bitmapImage);
                 }
-                else if (ext == ".cvraw")
+                else if (ext.Contains(".cvraw") || ext.Contains(".cvsrc"))
                 {
                     CVCIEFileInfo fileInfo = new CVCIEFileInfo();
                     fileInfo.fileType = MQTTMessageLib.FileServer.FileExtType.Raw;

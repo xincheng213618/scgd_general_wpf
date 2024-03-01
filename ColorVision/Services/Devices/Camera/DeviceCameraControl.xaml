@@ -404,7 +404,12 @@
                                 </StackPanel>
                             </TabItem>
                             <TabItem Header="校正文件">
+                                
                                 <StackPanel Margin="5">
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock  Text="绑定设备"  Width="120"/>
+                                        <TextBox  x:Name="TextBox_BindDevice" Text="{Binding Config.BindDeviceCode}"/>
+                                    </DockPanel>
                                     <TabControl x:Name="TabControlCalib" >
                                     </TabControl>
                                 </StackPanel>

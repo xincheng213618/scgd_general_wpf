@@ -2,8 +2,6 @@
 using cvColorVision;
 using ColorVision.Services.Devices.Camera.Video;
 using System;
-using ColorVision.Services.Devices.Camera.Calibrations;
-using System.Collections.Generic;
 
 namespace ColorVision.Services.Devices.Camera.Configs
 {
@@ -14,6 +12,9 @@ namespace ColorVision.Services.Devices.Camera.Configs
     {
         public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged(); } }
         private string _CameraID;
+
+        public string BindDeviceCode { get => _BindDeviceCode; set { _BindDeviceCode = value; NotifyPropertyChanged(); } }
+        private string _BindDeviceCode;
 
         public CameraType CameraType { get => _CameraType; set { _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
         private CameraType _CameraType;
@@ -89,7 +90,5 @@ namespace ColorVision.Services.Devices.Camera.Configs
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 
         public bool IsSaveSrcPic { get; set; }
-
-        public Dictionary<string,CalibrationRsourcesGroup> CalibrationRsourcesGroups { get; set; } = new Dictionary<string,CalibrationRsourcesGroup>();
     }
 }
