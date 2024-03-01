@@ -16,16 +16,16 @@
   <ItemGroup>
     <Compile Remove="Commands\**" />
     <Compile Remove="Extension\**" />
-    <Compile Remove="Services\Flow\Dao\**" />
+    <Compile Remove="Services\Flow\新文件夹\**" />
     <EmbeddedResource Remove="Commands\**" />
     <EmbeddedResource Remove="Extension\**" />
-    <EmbeddedResource Remove="Services\Flow\Dao\**" />
+    <EmbeddedResource Remove="Services\Flow\新文件夹\**" />
     <None Remove="Commands\**" />
     <None Remove="Extension\**" />
-    <None Remove="Services\Flow\Dao\**" />
+    <None Remove="Services\Flow\新文件夹\**" />
     <Page Remove="Commands\**" />
     <Page Remove="Extension\**" />
-    <Page Remove="Services\Flow\Dao\**" />
+    <Page Remove="Services\Flow\新文件夹\**" />
   </ItemGroup>
 
   <ItemGroup>

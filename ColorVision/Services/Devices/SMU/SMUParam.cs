@@ -1,10 +1,11 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Templates;
 using cvColorVision;
 using System.Collections.Generic;
 using System.Text;
 
-namespace ColorVision.Services.Templates
+namespace ColorVision.Services.Devices.SMU
 {
     public class SMUParam : ParamBase
     {

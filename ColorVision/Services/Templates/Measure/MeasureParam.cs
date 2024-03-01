@@ -1,5 +1,4 @@
 ﻿using ColorVision.Services.Dao;
-using ColorVision.Services.Templates;
 
 namespace ColorVision.Services.Templates.Measure
 {

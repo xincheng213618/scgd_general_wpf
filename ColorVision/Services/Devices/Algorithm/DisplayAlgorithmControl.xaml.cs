@@ -177,6 +177,7 @@ namespace ColorVision.Services.Devices.Algorithm
         {
             if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, FileExtType.CIE);
         }
+        private AlgResultMasterDao algResultMasterDao = new AlgResultMasterDao();
 
         private void ShowResultFromDB(string serialNumber, int masterId)
         {
@@ -184,12 +185,12 @@ namespace ColorVision.Services.Devices.Algorithm
             if (masterId > 0)
             {
                 resultMaster = new List<AlgResultMasterModel>();
-                AlgResultMasterModel model = resultService.GetAlgResultById(masterId);
+                AlgResultMasterModel model = algResultMasterDao.GetById(masterId);
                 resultMaster.Add(model);
             }
             else
             {
-                resultMaster = resultService.GetAlgResultBySN(serialNumber);
+                resultMaster = algResultMasterDao.GetAllByBatchCode(serialNumber);
             }
            
             foreach (AlgResultMasterModel result in resultMaster)
@@ -217,9 +218,12 @@ namespace ColorVision.Services.Devices.Algorithm
             }
         }
 
+        private POIPointResultDao poiPointResultDao = new POIPointResultDao();
+
+
         private void LoadResultPOIFromDB(AlgResultMasterModel result)
         {
-            var details = resultService.GetPOIByPid(result.Id);
+            var details = poiPointResultDao.GetAllByPid(result.Id);
             switch (result.ImgFileType)
             {
                 case AlgorithmResultType.POI_XY_UV:

@@ -1,9 +1,7 @@
 ﻿using ColorVision.MVVM;
 using Newtonsoft.Json;
-using SkiaSharp;
 using System.Collections.ObjectModel;
 using System.Windows;
-using System.Windows.Documents;
 
 namespace ColorVision.Services.Templates.POI
 {
@@ -16,35 +14,43 @@ namespace ColorVision.Services.Templates.POI
         public bool IsShowDatumArea { get => _IsShowDatumArea; set { _IsShowDatumArea = value; NotifyPropertyChanged(); } }
         private bool _IsShowDatumArea;
 
+        public bool IsLayoutUpdated { get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; NotifyPropertyChanged(); } }
+        private bool _IsLayoutUpdated;
 
-
-        public Point X1 { get; set; } = new Point() { X = 100, Y = 100 };
-        public Point X2 { get; set; } = new Point() { X = 300, Y = 100 };
         public Point X3 { get; set; } = new Point() { X = 300, Y = 300 };
         public Point X4 { get; set; } = new Point() { X = 100, Y = 300 };
         public Point Center { get; set; } = new Point() { X = 200, Y = 200 };
-        [JsonIgnore()]
-        public int X1X { get => (int)X1.X; set { X1 = new Point(value, X1.Y); NotifyPropertyChanged(); } }
-        [JsonIgnore]
-        public int X1Y { get => (int)X1.Y; set { X1 = new Point(X1.X, value); NotifyPropertyChanged(); } }
-        [JsonIgnore]
-        public int X2X { get => (int)X2.X; set { X2 = new Point(value, X2.Y); NotifyPropertyChanged(); } }
-        [JsonIgnore]
-        public int X2Y { get => (int)X2.Y; set { X2 = new Point(X2.X, value); NotifyPropertyChanged(); } }
-        [JsonIgnore]
-        public int X3X { get => (int)X3.X; set { X3 = new Point(value, X3.Y); NotifyPropertyChanged(); } }
-        [JsonIgnore]
-        public int X3Y { get => (int)X3.Y; set { X3 = new Point(X3.X, value); NotifyPropertyChanged(); } }
-        [JsonIgnore]
-        public int X4X { get => (int)X4.X; set { X4 = new Point(value, X4.Y); NotifyPropertyChanged(); } }
-        [JsonIgnore]
-        public int X4Y { get => (int)X4.Y; set { X4 = new Point(X4.X, value); NotifyPropertyChanged(); } }
+
+        public int X1X { get => _X1X; set { _X1X = value; NotifyPropertyChanged(); } }
+        private int _X1X = 100;
+        public int X1Y { get => _X1Y; set { _X1Y = value; NotifyPropertyChanged(); } }
+        private int _X1Y = 100;
+
+        public int X2X { get => _X2X; set { _X2X = value; NotifyPropertyChanged(); } }
+        private int _X2X = 300;
+
+        public int X2Y { get => _X2Y; set { _X2Y = value; NotifyPropertyChanged(); } }
+        private int _X2Y = 100;
+
+        public int X3X { get => _X3X; set { _X3X = value; NotifyPropertyChanged(); } }
+        private int _X3X = 300;
+
+        public int X3Y { get => _X3Y; set { _X3Y = value; NotifyPropertyChanged(); } }
+        private int _X3Y = 300;
+
+        public int X4X { get => _X4X; set { _X4X = value; NotifyPropertyChanged(); } }
+        private int _X4X = 100;
+
+        public int X4Y { get => _X4Y; set { _X4Y = value; NotifyPropertyChanged(); } }
+        private int _X4Y = 300;
+
         [JsonIgnore]
         public int CenterX { get => (int)Center.X; set { Center = new Point(value, Center.Y); NotifyPropertyChanged(); } }
         [JsonIgnore]
         public int CenterY { get => (int)Center.Y; set { Center = new Point(Center.X, value); NotifyPropertyChanged(); } }
 
         public RiPointTypes PointType { set; get; }
+
         [JsonIgnore]
         public bool IsAreaCircle { get => PointType == RiPointTypes.Circle; set { if (value) PointType = RiPointTypes.Circle; NotifyPropertyChanged(); } }
         [JsonIgnore]
@@ -53,9 +59,8 @@ namespace ColorVision.Services.Templates.POI
         public bool IsAreaMask { get => PointType == RiPointTypes.Mask; set { if (value) PointType = RiPointTypes.Mask; NotifyPropertyChanged(); } }
         
         [JsonIgnore]
-        public bool IsAreaPolygon { get => PointType == RiPointTypes.Polygon; set { if (value) PointType = RiPointTypes.Polygon; NotifyPropertyChanged(); } }
+        public bool IsAreaPolygon { get => PointType == RiPointTypes.Polygon; set { if (value) PointType = RiPointTypes.Polygon; NotifyPropertyChanged(); if (value) IsUserDraw = true; } }
 
-        [JsonIgnore]
         public bool IsUserDraw { get => _IsUserDraw; set { _IsUserDraw = value; NotifyPropertyChanged(); } }
         private bool _IsUserDraw;
 
@@ -87,6 +92,12 @@ namespace ColorVision.Services.Templates.POI
         public int AreaPolygonCol { get => _AreaPolygonCol; set { _AreaPolygonCol = value; NotifyPropertyChanged(); } }
         private int _AreaPolygonCol = 3;
 
+        public int AreaPolygonLenNum { get => _AreaPolygonLenNum; set { _AreaPolygonLenNum = value; NotifyPropertyChanged(); foreach (var item in Polygons)  item.SplitNumber = value; } }
+        private int _AreaPolygonLenNum ;
+
+        public bool AreaPolygonUsNode { get => _AreaPolygonUsNode; set { _AreaPolygonUsNode = value; NotifyPropertyChanged(); } }
+        private bool _AreaPolygonUsNode = true;
+
 
         public Point Polygon1 { get; set; } = new Point() { X = 100, Y = 100 };
         public Point Polygon2 { get; set; } = new Point() { X = 300, Y = 100 };
@@ -112,7 +123,7 @@ namespace ColorVision.Services.Templates.POI
         public int Polygon4Y { get => (int)Polygon4.Y; set { Polygon4 = new Point(Polygon4.X, value); NotifyPropertyChanged(); } }
 
 
-        public ObservableCollection<Point> Polygons { get; set; } = new ObservableCollection<Point>();
+        public ObservableCollection<PolygonPoint> Polygons { get; set; } = new ObservableCollection<PolygonPoint>();
 
 
         public int DefaultCircleRadius { get => _DefaultCircleRadius; set { _DefaultCircleRadius = value; NotifyPropertyChanged(); } }
@@ -136,6 +147,28 @@ namespace ColorVision.Services.Templates.POI
 
         public double LedLen4 { get => _LedLen4; set { _LedLen4 = value; NotifyPropertyChanged(); } }
         private double _LedLen4;
+    }
+
+
+    public class PolygonPoint:ViewModelBase
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+
+        public PolygonPoint(double x, double y)
+        {
+            X = x;
+            Y = y;
+        }
+
+        public int SplitNumber { get => _SplitNumber; set { _SplitNumber = value; NotifyPropertyChanged(); } }
+        private int _SplitNumber =1;
+
+
+        public override string ToString()
+        {
+            return $"X:{(int)X},Y:{(int)Y}";
+        }
     }
 
 }

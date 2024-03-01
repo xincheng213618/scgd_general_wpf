@@ -5,7 +5,7 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Algorithm.Templates;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.PG.Templates;
-using ColorVision.Services.Flow.Templates;
+using ColorVision.Services.Flow;
 using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.UserSpace;
@@ -19,6 +19,8 @@ using System.Windows;
 using ColorVision.Services.Templates.Measure;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Services.Templates.POI.Dao;
+using ColorVision.Services.Flow.Dao;
+using ColorVision.Services.Devices.SMU;
 
 namespace ColorVision.Services.Templates
 {
@@ -35,11 +37,8 @@ namespace ColorVision.Services.Templates
         private static string FileNameLedJudgeParams = "LedJudgeSetup";
         private static string FileNameFlowParms = "FlowParmSetup";
 
-        private PoiService poiService = new PoiService();
         private ModService modService = new ModService();
-        private SysModMasterService sysModService = new SysModMasterService();
         private SysResourceService resourceService = new SysResourceService();
-        private SysDictionaryService dictionaryService = new SysDictionaryService();
         private MeasureService measureService = new MeasureService();
 
         public string TemplatePath { get; set; }
@@ -271,12 +270,11 @@ namespace ColorVision.Services.Templates
                     {
                         foreach (var item in PoiParams)
                         {
-
-                            var modMasterModel = poiService.GetMasterById(item.Id);
+                            var modMasterModel = poiMaster.GetById(item.Id);
                             if (modMasterModel != null)
                             {
                                 modMasterModel.Name = item.Key;
-                                poiService.Save(modMasterModel);
+                                poiMaster.Save(modMasterModel);
                             }
                         }
                     }
@@ -352,7 +350,16 @@ namespace ColorVision.Services.Templates
 
         public void Save2DB(PoiParam poiParam)
         {
-            poiService.Save(poiParam);
+            PoiMasterModel poiMasterModel = new PoiMasterModel(poiParam);
+            poiMaster.Save(poiMasterModel);
+
+            List<PoiDetailModel> poiDetails = new List<PoiDetailModel>();
+            foreach (PoiParamData pt in poiParam.PoiPoints)
+            {
+                PoiDetailModel poiDetail = new PoiDetailModel(poiParam.Id, pt);
+                poiDetails.Add(poiDetail);
+            }
+            poiDetail.SaveByPid(poiParam.Id, poiDetails);
         }
 
 
@@ -362,14 +369,16 @@ namespace ColorVision.Services.Templates
         }
 
 
+        private PoiMasterDao poiMaster = new PoiMasterDao();
+        private PoiDetailDao poiDetail = new PoiDetailDao();
 
         public ObservableCollection<TemplateModel<PoiParam>> LoadPoiParam()
         {
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
                 PoiParams.Clear();
-                List<PoiMasterModel> poiMaster = poiService.GetMasterAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                foreach (var dbModel in poiMaster)
+                List<PoiMasterModel> poiMasters = poiMaster.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                foreach (var dbModel in poiMasters)
                 {
                     PoiParams.Add(new TemplateModel<PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel)));
                 }
@@ -386,13 +395,13 @@ namespace ColorVision.Services.Templates
 
         public PoiParam? AddPoiParam(string TemplateName)
         {
-            PoiMasterModel poiMaster = new PoiMasterModel(TemplateName, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            poiService.Save(poiMaster);
+            PoiMasterModel poiMasterModel = new PoiMasterModel(TemplateName, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            poiMaster.Save(poiMasterModel);
 
-            int pkId = poiMaster.GetPK();
+            int pkId = poiMasterModel.PKId;
             if (pkId > 0)
             {
-                PoiMasterModel Service = poiService.GetMasterById(pkId);
+                PoiMasterModel Service = poiMaster.GetById(pkId);
                 if (Service != null) return new PoiParam(Service);
                 else return null;
             }
@@ -403,8 +412,8 @@ namespace ColorVision.Services.Templates
         internal void LoadPoiDetailFromDB(PoiParam poiParam)
         {
             poiParam.PoiPoints.Clear();
-            List<PoiDetailModel> poiDetail = poiService.GetDetailByPid(poiParam.Id);
-            foreach (var dbModel in poiDetail)
+            List<PoiDetailModel> poiDetails = poiDetail.GetAllByPid(poiParam.Id);
+            foreach (var dbModel in poiDetails)
             {
                 poiParam.PoiPoints.Add(new PoiParamData(dbModel));
             }
@@ -415,7 +424,7 @@ namespace ColorVision.Services.Templates
         {
             ModMasterModel modMaster = new ModMasterModel(code, Name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             modService.Save(modMaster);
-            int pkId = modMaster.GetPK();
+            int pkId = modMaster.PKId;
             if (pkId > 0)
             {
                 ModMasterModel modMasterModel = modService.GetMasterById(pkId);
@@ -434,7 +443,7 @@ namespace ColorVision.Services.Templates
         {
             ModMasterModel flowMaster = new ModMasterModel(ModMasterType.Flow, text, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             modService.Save(flowMaster);
-            int pkId = flowMaster.GetPK();
+            int pkId = flowMaster.PKId;
             if (pkId > 0)
             {
                 List<ModFlowDetailModel> flowDetail = modService.GetFlowDetailByPid(pkId);
@@ -448,7 +457,7 @@ namespace ColorVision.Services.Templates
         {
             SysResourceModel sysResource = new SysResourceModel(name, code, type, pid, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             resourceService.Save(sysResource);
-            int pkId = sysResource.GetPK();
+            int pkId = sysResource.PKId;
             if (pkId > 0)
             {
                 return LoadServiceParamById(pkId);
@@ -460,7 +469,7 @@ namespace ColorVision.Services.Templates
         {
             SysResourceModel sysResource = new SysResourceModel(name, code, type, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             resourceService.Save(sysResource);
-            int pkId = sysResource.GetPK();
+            int pkId = sysResource.PKId;
             if (pkId > 0)
             {
                 return LoadServiceParamById(pkId);
@@ -472,7 +481,7 @@ namespace ColorVision.Services.Templates
         {
             MeasureMasterModel model = new MeasureMasterModel(name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             measureService.Save(model);
-            int pkId = model.GetPK();
+            int pkId = model.PKId;
             if (pkId > 0)
             {
                 return LoadMeasureParamById(pkId);
@@ -544,7 +553,7 @@ namespace ColorVision.Services.Templates
             ModMasterModel modMaster = new ModMasterModel(code, Name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             modMaster.ResourceId = resourceId;
             modService.Save(modMaster);
-            int pkId = modMaster.GetPK();
+            int pkId = modMaster.PKId;
             if (pkId > 0)
             {
                 ModMasterModel modMasterModel = modService.GetMasterById(pkId);
@@ -628,7 +637,7 @@ namespace ColorVision.Services.Templates
 
         internal int PoiMasterDeleteById(int id)
         {
-            return poiService.MasterDeleteById(id);
+            return poiMaster.DeleteById(id);
         }
 
         internal int ModMasterDeleteById(int id)
@@ -641,24 +650,16 @@ namespace ColorVision.Services.Templates
             modService.Save(flowParam);
         }
 
-        internal List<SysDictionaryModel> LoadServiceType()
-        {
-            return dictionaryService.GetAllServiceType();
-        }
-
-        internal int ResourceDeleteById(int id)
-        {
-            return resourceService.DeleteById(id);
-        }
-
         internal List<MeasureDetailModel> LoadMeasureDetail(int pid)
         {
             return measureService.GetDetailByPid(pid);
         }
 
+        private SysModMasterDao masterDao;
+
         internal List<SysModMasterModel> LoadSysModMaster()
         {
-            return sysModService.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            return masterDao.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
         }
 
         internal List<ModMasterModel> LoadModMasterByPid(int pid)

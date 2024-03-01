@@ -117,6 +117,7 @@
                                 </ListView>
                             </Border>
                         </Popup>
+                        <Button x:Name="ButtonSave" Content="Save"   Click="ButtonSave_Click"/>
                     </ToolBar>
                 </ToolBarTray>
                 <ListView  Height="250" Grid.Row="1"  d:DataContext="{d:DesignInstance local:SpectralData}"  BorderThickness="0" Background="Transparent" x:Name="listView1" Margin="-5" SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >

@@ -9,8 +9,6 @@ using ColorVision.Solution;
 using ColorVision.Update;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.ServiceProcess;
 using ColorVision.UserSpace;
@@ -22,16 +20,12 @@ using System.Security.Cryptography.X509Certificates;
 using ColorVision.Common.Utilities;
 using Microsoft.Xaml.Behaviors.Layout;
 using Microsoft.Xaml.Behaviors;
-using System.Windows.Input;
-using System.Windows.Media;
 using ColorVision.Adorners;
 using ColorVision.MySql;
 using ColorVision.Utils;
 using ColorVision.Solution.View;
 using ColorVision.Services.Interfaces;
 using System.Collections.ObjectModel;
-using ColorVision.Services.Devices.Spectrum;
-using ColorVision.Services.Templates;
 
 namespace ColorVision
 {
@@ -189,6 +183,20 @@ namespace ColorVision
             {
                 Task.Run(CheckLocalService);
             }
+
+            string? RegistrationCenterServicePath = Tool.GetServicePath("RegistrationCenterService");
+
+            if (RegistrationCenterServicePath != null)
+            {
+                string Dir = Path.GetDirectoryName(RegistrationCenterServicePath);
+                string FilePath = Dir + "//Log//" + DateTime.Now.ToString("yyyyMMdd") + ".log";
+                MenuItem menulogs1 = new MenuItem() { Header = "RegistrationCenterServiceLog" };
+                menulogs1.Click += (s, e) =>
+                {
+                    PlatformHelper.Open(FilePath);
+                };
+                menulogs.Items.Insert(0, menulogs1);
+            }
             Task.Run(CheckVersion);
 
             Task.Run(CheckCertificate);
@@ -313,8 +321,8 @@ namespace ColorVision
                 ConfigHandler.SaveConfig();
             }
         }
-
-        public static async Task CheckLocalService()
+        
+        public async Task CheckLocalService()
         {
             await Task.Delay(2000);
             try
@@ -325,6 +333,9 @@ namespace ColorVision
                 {
                     excmd += "net start RegistrationCenterService&&";
                 }
+
+
+
                 ServiceController sc1 = new ServiceController("CVMainService_x86");
                 if (sc1.Status == ServiceControllerStatus.Stopped)
                 {
@@ -414,7 +425,7 @@ namespace ColorVision
                 FluidMoveBehavior fluidMoveBehavior = new FluidMoveBehavior
                 {
                     AppliesTo = FluidMoveScope.Children,
-                    Duration = TimeSpan.FromSeconds(0.2)
+                    Duration = TimeSpan.FromSeconds(0.1)
                 };
 
                 Interaction.GetBehaviors(stackPanel1).Add(fluidMoveBehavior);

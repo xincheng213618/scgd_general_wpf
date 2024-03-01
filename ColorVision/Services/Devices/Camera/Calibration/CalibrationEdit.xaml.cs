@@ -16,8 +16,8 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
     /// </summary>
     public partial class CalibrationEdit : Window
     {
-        public DeviceCamera DeviceCamera { get; set; }
-        public CalibrationEdit(DeviceCamera deviceCamera)
+        public DeviceService DeviceCamera { get; set; }
+        public CalibrationEdit(DeviceService deviceCamera)
         {
             DeviceCamera = deviceCamera;
             InitializeComponent();

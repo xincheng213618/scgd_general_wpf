@@ -1,14 +1,8 @@
-﻿using ColorVision.MySql.Service;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera.Calibrations;
+﻿using ColorVision.Services.Dao;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ColorVision.Services.Devices.Spectrum
 {

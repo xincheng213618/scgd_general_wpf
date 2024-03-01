@@ -9,7 +9,6 @@ using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.Camera.Dao;
-using ColorVision.Services.Devices.Spectrum.Views;
 using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
@@ -241,11 +240,6 @@ namespace ColorVision.Services.Devices.Camera
                         break;
                 }
             }
-        }
-
-        private void Upload_Calibration_Click(object sender, RoutedEventArgs e)
-        {
-
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)

@@ -2,7 +2,6 @@
 using ColorVision.Services.Devices.Algorithm.Dao;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace ColorVision.Services.Devices.Algorithm.Views
 {

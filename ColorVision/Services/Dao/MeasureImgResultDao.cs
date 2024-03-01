@@ -3,7 +3,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using ColorVision.MySql;
 
 namespace ColorVision.Services.Dao
@@ -36,6 +35,7 @@ namespace ColorVision.Services.Dao
         {
 
         }
+
         public override MeasureImgResultModel GetModelFromDataRow(DataRow item)
         {
             MeasureImgResultModel model = new MeasureImgResultModel

@@ -1,6 +1,5 @@
 ﻿using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;
-using ColorVision.Services.Devices.Camera;
 using ColorVision.Themes;
 using System;
 using System.Windows;

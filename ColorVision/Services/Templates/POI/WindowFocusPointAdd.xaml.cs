@@ -1,6 +1,4 @@
-﻿using ColorVision.Services.Templates;
-using ColorVision.Services.Templates.POI;
-using ColorVision.Themes.Controls;
+﻿using ColorVision.Themes.Controls;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using System.Windows.Input;

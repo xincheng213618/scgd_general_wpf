@@ -17,7 +17,7 @@ namespace ColorVision.Services.Devices
             SysResourceDao sysResourceDao = new SysResourceDao();
             sysResourceDao.Save(sysResourceModel);
 
-            int pkId = sysResourceModel.GetPK();
+            int pkId = sysResourceModel.PKId;
             if (pkId > 0 && sysResourceDao.GetById(pkId) is SysResourceModel model)
             {
                 GroupService groupService = new GroupService(model);
@@ -66,7 +66,7 @@ namespace ColorVision.Services.Devices
             base.Save();
         }
 
-        public void SetCalibrationResource(DeviceCamera deviceCamera)
+        public void SetCalibrationResource(DeviceService deviceCamera)
         {
             foreach (var item in VisualChildren)
             {

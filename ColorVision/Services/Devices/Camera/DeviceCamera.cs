@@ -3,7 +3,6 @@ using ColorVision.MVVM;
 using ColorVision.MySql;
 using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Algorithm;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Devices.Camera.Dao;
@@ -12,7 +11,6 @@ using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Solution;
-using ColorVision.Solution.V.Files;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using cvColorVision;
@@ -41,16 +39,13 @@ namespace ColorVision.Services.Devices.Camera
 
     public class DeviceCamera : DeviceService<ConfigCamera>, IUploadMsg
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(MySqlControl));
+        private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCamera));
 
 
         public MQTTCamera DeviceService { get; set; }
 
-        /// <summary>
-        /// 矫正参数
-        /// </summary>
-        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
 
+        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
         public ViewCamera View { get; set; }
 
         public MQTTTerminalCamera Service { get; set; }

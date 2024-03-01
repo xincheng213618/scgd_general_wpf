@@ -17,6 +17,8 @@ namespace ColorVision.Solution.V.Files
         public ImageFile() { }
         public FileInfo FileInfo { get; set; }
         public ContextMenu ContextMenu { get; set; }
+        public RelayCommand AttributesCommand { get; set; }
+
         public ImageFile(FileInfo fileInfo) 
         {
             FileInfo = fileInfo;
@@ -27,7 +29,11 @@ namespace ColorVision.Solution.V.Files
                 Icon = icon.ToImageSource();
 
             ContextMenu = new ContextMenu();
+
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Open, Command = new RelayCommand((e) => Open()) });
+
+            AttributesCommand = new RelayCommand(a => FileProperties.ShowFileProperties(FullName), a => true);
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Property, Command = AttributesCommand });
         }
 
         public string Name { get; set; }

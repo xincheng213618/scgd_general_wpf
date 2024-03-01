@@ -1,4 +1,5 @@
 ﻿
+using Microsoft.Win32;
 using System;
 using System.Diagnostics;
 using System.Drawing;
@@ -101,6 +102,30 @@ namespace ColorVision.Common.Utilities
                 Debug.WriteLine(ex);
                 return false;
             }
+        }
+
+        public static string? GetServicePath(string serviceName)
+        {
+            string registryPath = $@"SYSTEM\CurrentControlSet\Services\{serviceName}";
+            string servicePath = string.Empty;
+
+            using RegistryKey key = Registry.LocalMachine.OpenSubKey(registryPath);
+            if (key != null)
+            {
+                object serviceImagePath = key.GetValue("ImagePath");
+                servicePath = serviceImagePath?.ToString();
+
+                // 如果路径包含引号，去掉它们
+                if (!string.IsNullOrEmpty(servicePath) && servicePath.StartsWith("\"",StringComparison.CurrentCulture))
+                {
+                    servicePath = servicePath.Trim('"');
+                }
+                if (string.IsNullOrWhiteSpace(servicePath)) return servicePath;
+                // 替换系统路径变量为实际路径
+                servicePath = Environment.ExpandEnvironmentVariables(servicePath);
+                return servicePath;
+            }
+            return null;
         }
 
 

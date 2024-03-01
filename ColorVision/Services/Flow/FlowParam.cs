@@ -1,8 +1,9 @@
 ﻿using ColorVision.Services.Dao;
+using ColorVision.Services.Flow.Dao;
 using ColorVision.Services.Templates;
 using System.Collections.Generic;
 
-namespace ColorVision.Services.Flow.Templates
+namespace ColorVision.Services.Flow
 {
     /// <summary>
     /// 流程引擎模板
@@ -11,11 +12,13 @@ namespace ColorVision.Services.Flow.Templates
     {
         public FlowParam()
         {
+
         }
         public FlowParam(ModMasterModel dbModel, List<ModDetailModel> flowDetail) : base(dbModel.Id, dbModel.Name ?? string.Empty, flowDetail)
         {
 
         }
+
         public FlowParam(ModMasterModel dbModel, List<ModFlowDetailModel> flowDetail) : base()
         {
             this.Id = dbModel.Id;
@@ -33,7 +36,7 @@ namespace ColorVision.Services.Flow.Templates
         private string dataBase64;
         public string DataBase64 { get => dataBase64; set { dataBase64 = value; } }
 
-        public const string propertyName = "filename";
+        private const string propertyName = "filename";
 
         public string? ResId
         {

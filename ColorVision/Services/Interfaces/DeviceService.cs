@@ -4,8 +4,11 @@ using ColorVision.Handler;
 using ColorVision.MVVM;
 using ColorVision.RC;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Camera.Calibrations;
+using ColorVision.Services.Templates;
 using Newtonsoft.Json;
 using System;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -37,10 +40,11 @@ namespace ColorVision.Services.Devices
         public bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
         private bool _IsEditMode;
 
-
-
         public virtual ImageSource Icon { get; set; }
         public SysDeviceModel SysResourceModel { get; set; }
+
+        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
+
 
         public virtual UserControl GetDeviceControl()
         {

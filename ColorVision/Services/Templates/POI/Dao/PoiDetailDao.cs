@@ -1,5 +1,4 @@
 ﻿using ColorVision.MySql;
-using ColorVision.Services.Templates.POI;
 using System.Data;
 
 namespace ColorVision.Services.Templates.POI.Dao

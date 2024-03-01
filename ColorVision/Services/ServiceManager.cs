@@ -21,7 +21,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
-using System.Windows.Controls;
 using ColorVision.Services.Dao;
 using ColorVision.Services.DAO;
 using ColorVision.Services.Flow;
@@ -111,9 +110,8 @@ namespace ColorVision.Services
             LastGenControl = DeviceServices;
         }
         public VSysResourceDao SysResourceDao { get; set; } = new VSysResourceDao();
-        SysDictionaryService sysDictionaryService = new SysDictionaryService();
         private Dictionary<string, List<MQTTServiceBase>> svrDevices = new Dictionary<string, List<MQTTServiceBase>>();
-
+        private SysDictionaryDao sysDictionaryDao = new SysDictionaryDao();
 
         public void LoadServices()
         {
@@ -122,7 +120,7 @@ namespace ColorVision.Services
 
 
             var ServiceTypess = Enum.GetValues(typeof(ServiceTypes)).Cast<ServiceTypes>();
-            List<SysDictionaryModel> SysDictionaryModels = sysDictionaryService.GetAllServiceType();
+            List<SysDictionaryModel> SysDictionaryModels = sysDictionaryDao.GetAllByPcode("service_type");
 
             TypeServices.Clear();
             foreach (var type in ServiceTypess)

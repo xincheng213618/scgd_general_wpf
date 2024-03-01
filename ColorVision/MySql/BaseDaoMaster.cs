@@ -1,12 +1,8 @@
-﻿using ColorVision.Services.Dao;
-using ColorVision.Services.Templates;
-using log4net;
-using Org.BouncyCastle.Pqc.Crypto.Hqc;
+﻿using log4net;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Windows.Documents;
 
 namespace ColorVision.MySql
 {
@@ -40,10 +36,10 @@ namespace ColorVision.MySql
 
         public virtual int Save(T item)
         {
-            DataTable d_info = SelectById(item.GetPK());
+            DataTable d_info = SelectById(item.PKId);
             ConvertRow(item, d_info);
             int ret = Save(d_info);
-            item.SetPK(d_info.Rows[0].Field<int>(PKField));
+            item.PKId =d_info.Rows[0].Field<int>(PKField);
             return ret;
         }
 
@@ -426,7 +422,7 @@ namespace ColorVision.MySql
 
         public DataRow GetRow(T item, DataTable dataTable)
         {
-            DataRow row = dataTable.SelectRow(item.GetPK());
+            DataRow row = dataTable.SelectRow(item.PKId);
             if (row == null)
             {
                 row = dataTable.NewRow();

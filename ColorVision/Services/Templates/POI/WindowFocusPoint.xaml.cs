@@ -16,9 +16,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -30,125 +28,53 @@ using System.Windows.Media.Imaging;
 using MQTTMessageLib.FileServer;
 using ColorVision.Services.Dao;
 using ColorVision.Settings;
+using ColorVision.Util.Draw.Rectangle;
 
 namespace ColorVision.Services.Templates.POI
 {
-
-    /// <summary>
-    /// WindowFocusPoint.xaml 的交互逻辑
-    /// </summary>
     public partial class WindowFocusPoint : Window, INotifyPropertyChanged
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(WindowFocusPoint));
+        private string TagName { get; set; } = "P_";
 
 
-        private string pre_name = "P_";
+        static SoftwareConfig SoftwareConfig { get => ConfigHandler.GetInstance().SoftwareConfig; }
 
-        public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
-
-        DatumArea DatumAreaPoints { get; set; } = new DatumArea();
-        SoftwareConfig SoftwareConfig { get; set; }
-        public WindowFocusPoint()
-        {
-            InitializeComponent();
-            ListView1.ItemsSource = DrawingVisualLists;
-            PoiParam = new PoiParam();
-            DatumAreaPoints = PoiParam.DatumArea;
-            StackPanelDatumAreaPoints.DataContext = PoiParam.DatumArea;
-            this.DataContext = PoiParam;
-        }
-
-        PoiParam PoiParam { get; set; }
+        public PoiParam PoiParam { get; set; }
         public WindowFocusPoint(PoiParam poiParam)
         {
             PoiParam = poiParam;
-            DatumAreaPoints = PoiParam.DatumArea; 
             InitializeComponent();
-            ListView1.ItemsSource = DrawingVisualLists;
-            StackPanelDatumAreaPoints.DataContext = DatumAreaPoints;
-            this.DataContext = PoiParam;
-
         }
 
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-        /// <summary>
-        /// 消息通知事件
-        /// </summary>
-        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
-
-        public bool IsLayoutUpdated { get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; NotifyPropertyChanged(); if (value) UpdateVisualLayout(value);  } }
-        private bool _IsLayoutUpdated;
-        private void Button_Click_UpdateVisualLayout(object sender, RoutedEventArgs e)
-        {
-            UpdateVisualLayout(true);
-        }
-        public ToolBarTop ToolBarTop { get; set; }
-
-        private void UpdateVisualLayout(bool IsLayoutUpdated)
-        {
-            foreach (var item in DefaultPoint)
-            {
-                if (item is DrawingVisualDatumCircle visualDatumCircle)
-                {
-                    visualDatumCircle.Attribute.Radius = 5 / Zoombox1.ContentMatrix.M11;
-                }
-            }
-
-            if (drawingVisualDatum != null && drawingVisualDatum is IDrawingVisualDatum Datum)
-            {
-                Datum.Pen.Thickness = 1 / Zoombox1.ContentMatrix.M11;
-                Datum.Render();
-            }
-
-            if (IsLayoutUpdated)
-            {
-                foreach (var item in DrawingVisualLists)
-                {
-                    item.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                    item.Render();
-                }
-
-            }
-        }
-
-
+        public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
+        public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
 
         private async void Window_Initialized(object sender, EventArgs e)
         {
-            SettingGroup.DataContext = this;
+            this.DataContext = PoiParam;
 
-            ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()
-                                             select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
+            ListView1.ItemsSource = DrawingVisualLists;
+
+            ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>() select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType.SelectedIndex = 0;
-            ComboBoxBorderType.SelectionChanged += (s, e) =>
-            {
-                if (ComboBoxBorderType.SelectedItem is KeyValuePair<string, BorderType> KeyValue && KeyValue.Value is BorderType communicateType)
-                {
 
-                }
-            };
-            ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()
-                                             select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
+            ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()  select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
 
-            ComboBoxBorderType11.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()
-                                              select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
+            ComboBoxBorderType11.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>() select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType11.SelectedIndex = 0;
 
-            ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingPOIPosition)).Cast<DrawingPOIPosition>()
-                                               select new KeyValuePair<DrawingPOIPosition, string>(e1, e1.ToDescription());
+            ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingPOIPosition)).Cast<DrawingPOIPosition>() select new KeyValuePair<DrawingPOIPosition, string>(e1, e1.ToDescription());
             ComboBoxBorderType2.SelectedIndex = 0;
 
-            WindowState = WindowState.Maximized;
             ImageContentGrid.MouseDown += (s, e) =>
             {
                 TextBox1.Focus();
             };
 
             ToolBarTop = new ToolBarTop(ImageContentGrid, Zoombox1, ImageShow);
-
+            ToolBarTop.Activate = true;
             ToolBar1.DataContext = ToolBarTop;
 
 
@@ -183,7 +109,7 @@ namespace ColorVision.Services.Templates.POI
             };
             DrawingVisualLists.CollectionChanged += (s, e) =>
             {
-                if (DrawingVisualLists.Count ==0)
+                if (DrawingVisualLists.Count == 0)
                 {
                     FocusPointGrid.Visibility = Visibility.Collapsed;
                     PropertyGrid21.Visibility = Visibility.Collapsed;
@@ -211,10 +137,9 @@ namespace ColorVision.Services.Templates.POI
                 if (oldMax != Zoombox1.ContentMatrix.M11)
                 {
                     oldMax = Zoombox1.ContentMatrix.M11;
-                    UpdateVisualLayout(IsLayoutUpdated);
+                    UpdateVisualLayout(PoiParam.DatumArea.IsLayoutUpdated);
                 }
             };
-            SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
 
             if (PoiParam.Height != 0 && PoiParam.Width != 0)
             {
@@ -223,15 +148,15 @@ namespace ColorVision.Services.Templates.POI
                 WaitControlProgressBar.Value = 0;
                 await Task.Delay(100);
 
-                if(SoftwareConfig.IsUseMySql)
+                if (SoftwareConfig.IsUseMySql)
                     TemplateControl.GetInstance().LoadPoiDetailFromDB(PoiParam);
 
                 WaitControlProgressBar.Value = 10;
 
                 if (PoiParam.PoiPoints.Count > 500)
-                    IsLayoutUpdated = false;
+                    PoiParam.DatumArea.IsLayoutUpdated = false;
 
-                CreateImage(PoiParam.Width, PoiParam.Height, Colors.White,false);
+                CreateImage(PoiParam.Width, PoiParam.Height, Colors.White, false);
                 WaitControlProgressBar.Value = 20;
                 DatumSet();
                 RenderDatumArea();
@@ -259,13 +184,13 @@ namespace ColorVision.Services.Templates.POI
                     {
                         PoiParamData poiParamData = new PoiParamData()
                         {
-                            ID =circle.ID,
+                            ID = circle.ID,
                             Name = circle.Name,
                             PointType = RiPointTypes.Circle,
                             PixX = circle.Center.X,
                             PixY = circle.Center.Y,
-                            PixWidth = circle.Radius*2,
-                            PixHeight = circle.Radius*2
+                            PixWidth = circle.Radius * 2,
+                            PixHeight = circle.Radius * 2
                         };
                         PoiParam.PoiPoints.Add(poiParamData);
                     }
@@ -273,7 +198,7 @@ namespace ColorVision.Services.Templates.POI
                     {
                         PoiParamData poiParamData = new PoiParamData()
                         {
-                            ID =rectangle.ID,
+                            ID = rectangle.ID,
                             Name = rectangle.Name,
                             PointType = RiPointTypes.Rect,
                             PixX = rectangle.Rect.X,
@@ -302,10 +227,54 @@ namespace ColorVision.Services.Templates.POI
                         DrawingPolygonCache = null;
                     }
                 }
+                if (e.Key == Key.Back)
+                {
+                    if (DrawingPolygonCache != null && DrawingPolygonCache.Attribute.Points.Count > 0)
+                    {
+                        DrawingPolygonCache.Attribute.Points.Remove(DrawingPolygonCache.Attribute.Points.Last());
+                        DrawingPolygonCache.Render();
+                    }
+
+                }
             };
-
-
         }
+
+        public ToolBarTop ToolBarTop { get; set; }
+
+        private void Button_UpdateVisualLayout_Click(object sender, RoutedEventArgs e)
+        {
+            UpdateVisualLayout(true);
+        }
+
+
+        private void UpdateVisualLayout(bool IsLayoutUpdated)
+        {
+            foreach (var item in DefaultPoint)
+            {
+                if (item is DrawingVisualDatumCircle visualDatumCircle)
+                {
+                    visualDatumCircle.Attribute.Radius = 5 / Zoombox1.ContentMatrix.M11;
+                }
+            }
+
+            if (drawingVisualDatum != null && drawingVisualDatum is IDrawingVisualDatum Datum)
+            {
+                Datum.Pen.Thickness = 1 / Zoombox1.ContentMatrix.M11;
+                Datum.Render();
+            }
+
+            if (IsLayoutUpdated)
+            {
+                foreach (var item in DrawingVisualLists)
+                {
+                    item.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                    item.Render();
+                }
+            }
+        }
+
+
+
         private LedPicData ledPicData;
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
@@ -470,7 +439,6 @@ namespace ColorVision.Services.Templates.POI
             PoiParam.DatumArea.Polygon4Y = height;
             RenderDatumArea();
             DatumSet();
-
         }
 
         private async void PoiParamToDrawingVisual(PoiParam poiParam)
@@ -527,14 +495,7 @@ namespace ColorVision.Services.Templates.POI
             {
 
             }
-
         }
-
-
-
-
-
-        public List<DrawingVisual> DefaultPoint { get; set; } = new List<DrawingVisual>();
 
         private void SetDefault_Click(object sender, RoutedEventArgs e)
         {
@@ -579,7 +540,6 @@ namespace ColorVision.Services.Templates.POI
 
         private void DatumSet()
         {
-
             foreach (var item in DefaultPoint)
             {
                 ImageShow.RemoveVisual(item);
@@ -589,11 +549,11 @@ namespace ColorVision.Services.Templates.POI
             {
                 List<Point> Points = new List<Point>()
                 {
-                    new Point(DatumAreaPoints.X1.X, DatumAreaPoints.X1.Y),
-                    new Point(DatumAreaPoints.X2.X, DatumAreaPoints.X2.Y),
-                    new Point(DatumAreaPoints.X3.X, DatumAreaPoints.X3.Y),
-                    new Point(DatumAreaPoints.X4.X, DatumAreaPoints.X4.Y),
-                    new Point(DatumAreaPoints.Center.X, DatumAreaPoints.Center.Y),
+                    new Point(PoiParam.DatumArea.X1X, PoiParam.DatumArea.X1Y),
+                    new Point(PoiParam.DatumArea.X2X, PoiParam.DatumArea.X2Y),
+                    new Point(PoiParam.DatumArea.X3X, PoiParam.DatumArea.X3Y),
+                    new Point(PoiParam.DatumArea.X4X, PoiParam.DatumArea.X4Y),
+                    new Point(PoiParam.DatumArea.CenterX, PoiParam.DatumArea.CenterY),
                 };
 
                 for (int i = 0; i < Points.Count; i++)
@@ -609,345 +569,8 @@ namespace ColorVision.Services.Templates.POI
                     ImageShow.AddVisual(drawingVisual);
                 }
             }
-
-
         }
 
-
-        private void ImageShow_Initialized(object sender, EventArgs e)
-        {
-            ImageShow.ContextMenuOpening += MainWindow_ContextMenuOpening;
-        }
-        private void MainWindow_ContextMenuOpening(object sender, ContextMenuEventArgs e)
-        {
-            var Point = Mouse.GetPosition(ImageShow);
-            var DrawingVisual = ImageShow.GetVisual(Point);
-
-            if (DrawingVisual != null && DrawingVisual is IDrawingVisual drawing)
-            {
-                var ContextMenu = new ContextMenu();
-
-                MenuItem menuItem = new MenuItem() { Header = "隐藏(_H)" };
-                menuItem.Click += (s, e) =>
-                {
-                    drawing.BaseAttribute.IsShow = false;
-                };
-                MenuItem menuIte2 = new MenuItem() { Header = "删除(_D)" };
-
-                menuIte2.Click += (s, e) =>
-                {
-                    ImageShow.RemoveVisual(DrawingVisual);
-                    PropertyGrid2.SelectedObject = null;
-                };
-                ContextMenu.Items.Add(menuItem);
-                ContextMenu.Items.Add(menuIte2);
-                ImageShow.ContextMenu = ContextMenu;
-            }
-            else
-            {
-                ImageShow.ContextMenu = null;
-            }
-
-        }
-
-        private static void DrawSelectRect(DrawingVisual drawingVisual, Rect rect)
-        {
-            using DrawingContext dc = drawingVisual.RenderOpen();
-            dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
-        }
-        private DrawingVisual SelectRect = new DrawingVisual();
-
-        private bool IsMouseDown;
-        private Point MouseDownP;
-
-        private DrawingVisual? SelectDrawingVisual;
-        private DrawingVisualPolygon DrawingPolygonCache;
-        private DrawingVisualCircle DrawCircleCache;
-        private DrawingVisualRectangle DrawingRectangleCache;
-
-
-        private void ImageShow_MouseLeave(object sender, MouseEventArgs e)
-        {
-
-        }
-
-        private void ImageShow_MouseEnter(object sender, MouseEventArgs e)
-        {
-
-        }
-        private void ImageShow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            if (PoiParam.DatumArea.IsUserDraw)
-            {
-                if (PoiParam.DatumArea.IsAreaPolygon && ToolBarTop.DrawPolygon)
-                {
-                    ImageShow.RemoveVisual(DrawingPolygonCache);
-                    PoiParam.DatumArea.Polygons.Clear();
-                    foreach (var item in DrawingPolygonCache.Attribute.Points)
-                    {
-                        PoiParam.DatumArea.Polygons.Add(item);
-                    }
-                    DrawingPolygonCache = null;
-                    RenderDatumArea();
-                }
-
-                if (PoiParam.DatumArea.IsAreaMask && ToolBarTop.DrawPolygon)
-                {
-                    ImageShow.RemoveVisual(DrawingPolygonCache);
-                    if (DrawingPolygonCache!=null && DrawingPolygonCache.Attribute.Points.Count == 4)
-                    {
-                        PoiParam.DatumArea.Polygon1X = (int)DrawingPolygonCache.Attribute.Points[0].X;
-                        PoiParam.DatumArea.Polygon1Y = (int)DrawingPolygonCache.Attribute.Points[0].Y;
-                        PoiParam.DatumArea.Polygon2X = (int)DrawingPolygonCache.Attribute.Points[1].X;
-                        PoiParam.DatumArea.Polygon2Y = (int)DrawingPolygonCache.Attribute.Points[1].Y;
-                        PoiParam.DatumArea.Polygon3X = (int)DrawingPolygonCache.Attribute.Points[2].X;
-                        PoiParam.DatumArea.Polygon3Y = (int)DrawingPolygonCache.Attribute.Points[2].Y;
-                        PoiParam.DatumArea.Polygon4X = (int)DrawingPolygonCache.Attribute.Points[3].X;
-                        PoiParam.DatumArea.Polygon4Y = (int)DrawingPolygonCache.Attribute.Points[3].Y;
-
-                        RenderDatumArea();
-                    }
-                    else
-                    {
-                        MessageBox.Show("必须要是4个点");
-                    }
-                    DrawingPolygonCache = null;
-
-                }
-            }
-
-            if (DrawingPolygonCache != null)
-            {
-                DrawingPolygonCache.MovePoints = null;
-                DrawingPolygonCache.Render();
-                DrawingPolygonCache = null;
-            }
-        }
-
-        private void ImageShow_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
-            {
-                MouseDownP = e.GetPosition(drawCanvas);
-                IsMouseDown = true;
-                drawCanvas.CaptureMouse();
-
-
-                Brush brush = PoiParam.DatumArea.IsUserDraw ? Brushes.Blue : Brushes.Red;
-
-                if (PoiParam.DatumArea.IsUserDraw)
-                {
-                    if (PoiParam.DatumArea.IsAreaCircle)
-                        ToolBarTop.DrawCircle = true;
-                    if (PoiParam.DatumArea.IsAreaRect)
-                        ToolBarTop.DrawRect = true;
-                    if (PoiParam.DatumArea.IsAreaPolygon)
-                        ToolBarTop.DrawPolygon = true;
-                    if (PoiParam.DatumArea.IsAreaMask)
-                        ToolBarTop.DrawPolygon = true;
-                }
-
-
-                if (ToolBarTop.EraseVisual)
-                {
-                    DrawSelectRect(SelectRect, new Rect(MouseDownP, MouseDownP)); ;
-                    drawCanvas.AddVisual(SelectRect);
-                }
-                else if (ToolBarTop.DrawCircle)
-                {
-                    DrawCircleCache = new DrawingVisualCircle() { AutoAttributeChanged = false };
-                    DrawCircleCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
-                    DrawCircleCache.Attribute.Center = MouseDownP;
-                    DrawCircleCache.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
-                    DrawCircleCache.IsDrawing = true;
-                    drawCanvas.AddVisual(DrawCircleCache);
-
-                }
-                else if (ToolBarTop.DrawRect)
-                {
-                    DrawingRectangleCache = new DrawingVisualRectangle() { AutoAttributeChanged = false };
-                    DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + 30, MouseDownP.Y + 30));
-                    DrawingRectangleCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
-
-                    drawCanvas.AddVisual(DrawingRectangleCache);
-
-                }
-                else if (ToolBarTop.DrawPolygon)
-                {
-                    if (DrawingPolygonCache == null)
-                    {
-                        DrawingPolygonCache = new DrawingVisualPolygon();
-                        DrawingPolygonCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
-                        drawCanvas.AddVisual(DrawingPolygonCache);
-                    }
-                }
-                else if (drawCanvas.GetVisual(MouseDownP) is IDrawingVisual drawingVisual)
-                {
-                    PropertyGrid2.SelectedObject = drawingVisual.BaseAttribute;
-
-                    ListView1.ScrollIntoView(drawingVisual);
-                    ListView1.SelectedIndex = DrawingVisualLists.IndexOf(drawingVisual);
-
-                    if (ToolBarTop.Activate == true)
-                    {
-                        if (drawingVisual is DrawingVisual visual)
-                            SelectDrawingVisual = visual;
-
-                         if (SelectDrawingVisual is DrawingVisualCircle Circl)
-                        {
-                            Circl.IsDrawing = true;
-                        }     
-                    }
-                }
-            }
-        }
-        Point LastMouseMove;
-
-
-        private void ImageShow_MouseMove(object sender, MouseEventArgs e)
-        {
-            if (sender is DrawCanvas drawCanvas && (Zoombox1.ActivateOn == ModifierKeys.None || !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn)))
-            {
-                var point = e.GetPosition(drawCanvas);
-
-                var controlWidth = drawCanvas.ActualWidth;
-                var controlHeight = drawCanvas.ActualHeight;
-
-                if (ToolBarTop.DrawPolygon)
-                {
-                    if (DrawingPolygonCache != null)
-                    {
-                        DrawingPolygonCache.MovePoints = point;
-                        DrawingPolygonCache.Render();
-                    }
-                }
-
-                if (IsMouseDown)
-                {
-
-                    if (ToolBarTop.EraseVisual)
-                    {
-                        DrawSelectRect(SelectRect, new Rect(MouseDownP, point)); ;
-                    }
-                    else if (ToolBarTop.DrawCircle)
-                    {
-                        double Radius = Math.Sqrt((Math.Pow(point.X - MouseDownP.X, 2) + Math.Pow(point.Y - MouseDownP.Y, 2)));
-                        DrawCircleCache.Attribute.Radius = Radius;
-                        DrawCircleCache.Render();
-                    }
-                    else if (ToolBarTop.DrawRect)
-                    {
-                        DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, point);
-                        DrawingRectangleCache.Render();
-                    }
-                    else if (ToolBarTop.DrawPolygon)
-                    {
-
-                    }
-                    else if (SelectDrawingVisual !=null)
-                    {
-                        if (SelectDrawingVisual is IRectangle rectangle)
-                        {
-                            var OldRect = rectangle.Rect;
-                            rectangle.Rect = new Rect(OldRect.X + point.X - LastMouseMove.X, OldRect.Y + point.Y - LastMouseMove.Y, OldRect.Width, OldRect.Height);
-                        }
-                        else if (SelectDrawingVisual is ICircle Circl)
-                        {
-                            Circl.Center += point - LastMouseMove;
-                        }
-                    }
-                }
-                LastMouseMove = point;
-            }
-        }
-        private void ImageShow_MouseUp(object sender, MouseButtonEventArgs e)
-        {
-            if (sender is DrawCanvas drawCanvas && !Keyboard.Modifiers.HasFlag(Zoombox1.ActivateOn))
-            {
-                IsMouseDown = false;
-                var MouseUpP = e.GetPosition(drawCanvas);
-
-
-
-                if (PoiParam.DatumArea.IsUserDraw)
-                {
-                    if (PoiParam.DatumArea.IsAreaCircle && ToolBarTop.DrawCircle)
-                    {
-                        PoiParam.DatumArea.CenterX = (int)DrawCircleCache.Attribute.Center.X;
-                        PoiParam.DatumArea.CenterY = (int)DrawCircleCache.Attribute.Center.Y;
-                        PoiParam.DatumArea.AreaCircleRadius = (int)DrawCircleCache.Attribute.Radius;
-                        drawCanvas.RemoveVisual(DrawCircleCache);
-                    }
-
-                    if (PoiParam.DatumArea.IsAreaRect && ToolBarTop.DrawRect)
-                    {
-                        PoiParam.DatumArea.CenterX = (int)(DrawingRectangleCache.Attribute.Rect.Width/2 + DrawingRectangleCache.Attribute.Rect.X);
-                        PoiParam.DatumArea.CenterY = (int)(DrawingRectangleCache.Attribute.Rect.Height / 2 + DrawingRectangleCache.Attribute.Rect.Y);
-                        PoiParam.DatumArea.AreaRectWidth = (int)DrawingRectangleCache.Attribute.Rect.Width;
-                        PoiParam.DatumArea.AreaRectHeight = (int)DrawingRectangleCache.Attribute.Rect.Height;
-                        drawCanvas.RemoveVisual(DrawingRectangleCache);
-                    }
-                    RenderDatumArea();
-                }
-
-
-                if (ToolBarTop.EraseVisual)
-                {
-                    drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseDownP));
-                    drawCanvas.RemoveVisual(drawCanvas.GetVisual(MouseUpP));
-                    foreach (var item in drawCanvas.GetVisuals(new RectangleGeometry(new Rect(MouseDownP, MouseUpP))))
-                    {
-                        drawCanvas.RemoveVisual(item);
-                    }
-                    drawCanvas.RemoveVisual(SelectRect);
-                }
-                else if (ToolBarTop.DrawPolygon && DrawingPolygonCache != null)
-                {
-                    DrawingPolygonCache.Points.Add(MouseUpP);
-                    DrawingPolygonCache.MovePoints = null;
-                    DrawingPolygonCache.Render();
-                }
-                else if (ToolBarTop.DrawCircle && DrawCircleCache!=null)
-                {
-                    DrawCircleCache.IsDrawing = false;
-                    DrawCircleCache.Render();
-
-                    PropertyGrid2.SelectedObject = DrawCircleCache.BaseAttribute;
-
-                    DrawCircleCache.AutoAttributeChanged = true;
-
-                    ListView1.ScrollIntoView(DrawCircleCache);
-                    ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawCircleCache);
-
-                }
-                else if (ToolBarTop.DrawRect)
-                {
-                    DrawingRectangleCache.Render();
-
-
-                    PropertyGrid2.SelectedObject = DrawingRectangleCache.BaseAttribute;
-                    DrawingRectangleCache.AutoAttributeChanged = true;
-                    ListView1.ScrollIntoView(DrawingRectangleCache);
-                    ListView1.SelectedIndex = DrawingVisualLists.IndexOf(DrawingRectangleCache);
-
-                }
-                drawCanvas.ReleaseMouseCapture();
-
-                if (SelectDrawingVisual is DrawingVisualCircle circle)
-                {
-                    circle.IsDrawing = false;
-                    circle.Render();
-                }
-                SelectDrawingVisual = null;
-
-
-            }
-        }
-
-        private void ImageShow_MouseWheel(object sender, MouseWheelEventArgs e)
-        {
-
-        }
 
 
 
@@ -972,7 +595,7 @@ namespace ColorVision.Services.Templates.POI
                             WaitControl.Visibility = Visibility.Visible;
                             WaitControlProgressBar.Visibility = Visibility.Visible;
                             WaitControlProgressBar.Value = 0;
-                            IsLayoutUpdated = false;
+                            PoiParam.DatumArea.IsLayoutUpdated = false;
                         }
 
 
@@ -1020,7 +643,7 @@ namespace ColorVision.Services.Templates.POI
                                     Circle.Attribute.Brush = Brushes.Transparent;
                                     Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                     Circle.Attribute.ID = start + i + 1;
-                                    Circle.Attribute.Text = string.Format("{0}{1}", pre_name, Circle.Attribute.ID);
+                                    Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
                                     Circle.Render();
                                     ImageShow.AddVisual(Circle);
                                     break;
@@ -1052,7 +675,7 @@ namespace ColorVision.Services.Templates.POI
                                     Rectangle.Attribute.Brush = Brushes.Transparent;
                                     Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
                                     Rectangle.Attribute.ID = start + i + 1;
-                                    Rectangle.Attribute.Name = string.Format("{0}{1}", pre_name, Rectangle.Attribute.ID);
+                                    Rectangle.Attribute.Name = string.Format("{0}{1}", TagName, Rectangle.Attribute.ID);
                                     Rectangle.Render();
                                     ImageShow.AddVisual(Rectangle);
                                     break;
@@ -1146,7 +769,7 @@ namespace ColorVision.Services.Templates.POI
                             WaitControl.Visibility = Visibility.Visible;
                             WaitControlProgressBar.Visibility = Visibility.Visible;
                             WaitControlProgressBar.Value = 0;
-                            IsLayoutUpdated = false;
+                            PoiParam.DatumArea.IsLayoutUpdated = false;
                         }
 
                         for (int i = 0; i < rows; i++)
@@ -1173,7 +796,7 @@ namespace ColorVision.Services.Templates.POI
                                         Circle.Attribute.Brush = Brushes.Transparent;
                                         Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                         Circle.Attribute.ID = start + i * cols + j + 1;
-                                        Circle.Attribute.Text = string.Format("{0}{1}", pre_name, Circle.Attribute.ID);
+                                        Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
                                         Circle.Render();
                                         ImageShow.AddVisual(Circle);
                                         break;
@@ -1184,7 +807,7 @@ namespace ColorVision.Services.Templates.POI
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
                                         Rectangle.Attribute.ID = start + i * cols + j + 1;
-                                        Rectangle.Attribute.Name = string.Format("{0}{1}", pre_name, Rectangle.Attribute.ID);
+                                        Rectangle.Attribute.Name = string.Format("{0}{1}", TagName, Rectangle.Attribute.ID);
                                         Rectangle.Render();
                                         ImageShow.AddVisual(Rectangle);
                                         break;
@@ -1204,7 +827,7 @@ namespace ColorVision.Services.Templates.POI
                         pts_src.Add(PoiParam.DatumArea.Polygon4);
 
 
-                        List<Point> points = SortPolyPoints(pts_src);
+                        List<Point> points = Helpers.SortPolyPoints(pts_src);
 
                         cols = PoiParam.DatumArea.AreaPolygonCol;
                         rows = PoiParam.DatumArea.AreaPolygonRow;
@@ -1238,7 +861,7 @@ namespace ColorVision.Services.Templates.POI
                                         Circle.Attribute.Brush = Brushes.Transparent;
                                         Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                         Circle.Attribute.ID = start + i * cols + j + 1;
-                                        Circle.Attribute.Text = string.Format("{0}{1}", pre_name, Circle.Attribute.ID);
+                                        Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
                                         Circle.Render();
                                         ImageShow.AddVisual(Circle);
                                         break;
@@ -1248,7 +871,7 @@ namespace ColorVision.Services.Templates.POI
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
                                         Rectangle.Attribute.ID = start + i * cols + j + 1;
-                                        Rectangle.Attribute.Name = string.Format("{0}{1}", pre_name, Rectangle.Attribute.ID);
+                                        Rectangle.Attribute.Name = string.Format("{0}{1}", TagName, Rectangle.Attribute.ID);
                                         Rectangle.Render();
                                         ImageShow.AddVisual(Rectangle);
                                         break;
@@ -1259,6 +882,86 @@ namespace ColorVision.Services.Templates.POI
                                 }
                             }
                         }
+                        break;
+
+                    case RiPointTypes.Polygon:
+                        
+                        int No = 0;
+                        for (int i = 0; i < PoiParam.DatumArea.Polygons.Count - 1; i++)
+                        {
+                            double dx = (PoiParam.DatumArea.Polygons[i+1].X - PoiParam.DatumArea.Polygons[i].X) / (PoiParam.DatumArea.Polygons[i].SplitNumber + 1);
+                            double dy = (PoiParam.DatumArea.Polygons[i + 1].Y - PoiParam.DatumArea.Polygons[i].Y) / (PoiParam.DatumArea.Polygons[i].SplitNumber + 1);
+
+                            for (int j = 1; j < PoiParam.DatumArea.Polygons[i].SplitNumber +1 ; j++)
+                            {
+                                No++;
+                                switch (PoiParam.DefaultPointType)
+                                {
+                                    case RiPointTypes.Circle:
+
+                                        DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
+                                        Circle.Attribute.Center = new Point(PoiParam.DatumArea.Polygons[i].X + dx*j, PoiParam.DatumArea.Polygons[i].Y + dy * j);
+                                        Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
+                                        Circle.Attribute.Brush = Brushes.Transparent;
+                                        Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
+                                        Circle.Attribute.ID = start + No;
+                                        Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
+                                        Circle.Render();
+                                        ImageShow.AddVisual(Circle);
+                                        break;
+                                    case RiPointTypes.Rect:
+                                        DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
+                                        Rectangle.Attribute.Rect = new Rect(PoiParam.DatumArea.Polygons[i].X + dx * j - PoiParam.DatumArea.DefaultRectWidth / 2, PoiParam.DatumArea.Polygons[i].Y + dy * j - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
+                                        Rectangle.Attribute.Brush = Brushes.Transparent;
+                                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
+                                        Rectangle.Attribute.ID = start + No;
+                                        Rectangle.Attribute.Name = string.Format("{0}{1}", TagName, Rectangle.Attribute.ID);
+                                        Rectangle.Render();
+                                        ImageShow.AddVisual(Rectangle);
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+
+
+                        }
+
+                        for (int i = 0; i < PoiParam.DatumArea.Polygons.Count; i++)
+                        {
+                            if (PoiParam.DatumArea.AreaPolygonUsNode)
+                            {
+                                switch (PoiParam.DefaultPointType)
+                                {
+                                    case RiPointTypes.Circle:
+
+                                        DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
+                                        Circle.Attribute.Center = new Point(PoiParam.DatumArea.Polygons[i].X, PoiParam.DatumArea.Polygons[i].Y);
+                                        Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
+                                        Circle.Attribute.Brush = Brushes.Transparent;
+                                        Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
+                                        Circle.Attribute.ID = start + i + 1;
+                                        Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
+                                        Circle.Render();
+                                        ImageShow.AddVisual(Circle);
+                                        break;
+                                    case RiPointTypes.Rect:
+                                        DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
+                                        Rectangle.Attribute.Rect = new Rect(PoiParam.DatumArea.Polygons[i].X - PoiParam.DatumArea.DefaultRectWidth / 2, PoiParam.DatumArea.Polygons[i].Y - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
+                                        Rectangle.Attribute.Brush = Brushes.Transparent;
+                                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
+                                        Rectangle.Attribute.ID = start + i + 1;
+                                        Rectangle.Attribute.Name = string.Format("{0}{1}", TagName, Rectangle.Attribute.ID);
+                                        Rectangle.Render();
+                                        ImageShow.AddVisual(Rectangle);
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+
+                        }
+
                         break;
                     default:
                         break;
@@ -1276,10 +979,7 @@ namespace ColorVision.Services.Templates.POI
         }
 
 
-        private void TextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
-        {
-            e.Handled = new Regex("[^0-9]+").IsMatch(e.Text);
-        }
+
 
         private void Button3_Click(object sender, RoutedEventArgs e)
         {
@@ -1377,7 +1077,7 @@ namespace ColorVision.Services.Templates.POI
                         pts_src.Add(PoiParam.DatumArea.Polygon4);
 
 
-                        List<Point> result = SortPolyPoints(pts_src);
+                        List<Point> result = Helpers.SortPolyPoints(pts_src);
                         DrawingVisualDatumPolygon Polygon = new DrawingVisualDatumPolygon() { IsComple = true };
                         Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                         Polygon.Attribute.Brush = Brushes.Transparent;
@@ -1395,7 +1095,7 @@ namespace ColorVision.Services.Templates.POI
                         Polygon1.Attribute.Brush = Brushes.Transparent;
                         foreach (var item in PoiParam.DatumArea.Polygons)
                         {
-                            Polygon1.Attribute.Points.Add(item);
+                            Polygon1.Attribute.Points.Add(new Point(item.X, item.Y));
                         }
                         Polygon1.Render();
                         drawingVisualDatum = Polygon1;
@@ -1407,54 +1107,9 @@ namespace ColorVision.Services.Templates.POI
                 }
 
             }
-
-
         }
 
-        public static List<Point> SortPolyPoints(List<Point> vPoints)
-        {
-            if (vPoints == null || vPoints.Count == 0) return new List<Point>();
-            //计算重心
-            double X = 0, Y = 0;
-            for (int i = 0; i < vPoints.Count; i++)
-            {
-                X += vPoints[i].X;
-                Y += vPoints[i].Y;
-            }
-            Point center = new Point((int)X / vPoints.Count, (int)Y / vPoints.Count);
-            //冒泡排序
-            for (int i = 0; i < vPoints.Count - 1; i++)
-            {
-                for (int j = 0; j < vPoints.Count - i - 1; j++)
-                {
-                    if (PointCmp(vPoints[j], vPoints[j + 1], center))
-                    {
-                        (vPoints[j + 1], vPoints[j]) = (vPoints[j], vPoints[j + 1]);
-                    }
-                }
-            }
-            return vPoints;
-        }
-
-        private static bool PointCmp(Point a, Point b, Point center)
-        {
-            if (a.X >= 0 && b.X < 0)
-                return true;
-            else if (a.X == 0 && b.X == 0)
-                return a.Y > b.Y;
-            //向量OA和向量OB的叉积
-            double det = (a.X - center.X) * (b.Y - center.Y) - (b.X - center.X) * (a.Y - center.Y);
-            if (det < 0)
-                return true;
-            if (det > 0)
-                return false;
-            //向量OA和向量OB共线，以距离判断大小
-            double d1 = (a.X - center.X) * (a.X - center.X) + (a.Y - center.Y) * (a.Y - center.Y);
-            double d2 = (b.X - center.X) * (b.X - center.X) + (b.Y - center.Y) * (b.Y - center.Y);
-            return d1 > d2;
-        }
-
-        private void Button_save_Click(object sender, RoutedEventArgs e)
+        private void Button_Save_Click(object sender, RoutedEventArgs e)
         {
             if (SoftwareConfig.IsUseMySql)
             {
@@ -1600,11 +1255,6 @@ namespace ColorVision.Services.Templates.POI
 
         }
 
-        private void Grid_MouseDown(object sender, MouseButtonEventArgs e)
-        {
-
-        }
-
         private WindowStatus OldWindowStatus { get; set; }
 
         private void Button8_Click(object sender, RoutedEventArgs e)
@@ -1647,10 +1297,6 @@ namespace ColorVision.Services.Templates.POI
         }
 
 
-        private void Button_Click_4(object sender, RoutedEventArgs e)
-        {
-
-        }
 
         private void DatumAreaImport_Click(object sender, RoutedEventArgs e)
         {
@@ -1662,11 +1308,6 @@ namespace ColorVision.Services.Templates.POI
             PoiParam.DatumArea.Polygon3Y = PoiParam.DatumArea.X3Y;
             PoiParam.DatumArea.Polygon4X = PoiParam.DatumArea.X4X;
             PoiParam.DatumArea.Polygon4Y = PoiParam.DatumArea.X4Y;
-        }
-
-        private void Button_Click_5(object sender, RoutedEventArgs e)
-        {
-
         }
 
         private void Button_Setting_Click(object sender, RoutedEventArgs e)
@@ -1788,7 +1429,7 @@ namespace ColorVision.Services.Templates.POI
                     Circle.Attribute.Brush = Brushes.Transparent;
                     Circle.Attribute.Pen = new Pen(Brushes.Red, (double)banjin[i] / 30);
                     Circle.Attribute.ID = i + 1;
-                    Circle.Attribute.Text = string.Format("{0}{1}", pre_name, Circle.Attribute.ID);
+                    Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
                     Circle.Render();
                     ImageShow.AddVisual(Circle);
                 }
@@ -1999,14 +1640,13 @@ namespace ColorVision.Services.Templates.POI
             ImportMarinPopup1.IsOpen = true;
         }
 
-        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
+        private void Button_Click(object sender, RoutedEventArgs e)
         {
-
-        }
-
-        private void GridViewColumnSort(object sender, RoutedEventArgs e)
-        {
-
+            if (sender is Button button && button.Tag is PolygonPoint polygonPoint)
+            {
+                PoiParam.DatumArea.Polygons.Remove(polygonPoint);
+                RenderDatumArea();
+            }
         }
 
 
