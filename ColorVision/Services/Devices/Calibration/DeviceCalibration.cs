@@ -8,18 +8,18 @@ using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Solution;
 using ColorVision.Themes.Controls;
+using cvColorVision;
+using log4net;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO.Compression;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Controls;
 using System.Windows;
-using log4net;
-using cvColorVision;
+using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Calibration
 {

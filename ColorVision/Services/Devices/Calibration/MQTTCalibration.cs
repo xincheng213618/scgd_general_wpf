@@ -1,16 +1,14 @@
-﻿using System.Collections.Generic;
-using ColorVision.Services.Msg;
-using System.Windows;
-using MQTTMessageLib;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Services.Devices.Camera.Calibrations;
-using System.Threading.Tasks;
-using System;
-using ColorVision.Common.Utilities;
-using MQTTMessageLib.FileServer;
-using System.Diagnostics;
-using System.Threading;
+using ColorVision.Services.Msg;
+using MQTTMessageLib;
 using MQTTMessageLib.Calibration;
 using MQTTMessageLib.FileServer;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading.Tasks;
+using System.Windows;
 
 namespace ColorVision.Services.Devices.Calibration
 {
