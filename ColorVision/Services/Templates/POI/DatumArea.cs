@@ -5,6 +5,13 @@ using System.Windows;
 
 namespace ColorVision.Services.Templates.POI
 {
+    public struct POIFilter
+    {
+        public bool Enable { get; set; }
+        public float Threshold { get; set; }
+        public bool XYZEnable { get; set; }
+        public int XYZType { get; set; }
+    }
     public class DatumArea : ViewModelBase
     {
 
@@ -147,6 +154,8 @@ namespace ColorVision.Services.Templates.POI
 
         public double LedLen4 { get => _LedLen4; set { _LedLen4 = value; NotifyPropertyChanged(); } }
         private double _LedLen4;
+
+        public POIFilter Filter { get; set; }
     }
 
 
