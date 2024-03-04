@@ -1,18 +1,9 @@
 ﻿using ScottPlot;
 using ScottPlot.Plottable;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Drawing;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Services.Devices.Algorithm.Views

@@ -3,13 +3,13 @@
 
 using ColorVision.NativeMethods;
 using log4net;
+using System;
 using System.CodeDom.Compiler;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading;
-using System;
-using System.Runtime.InteropServices;
 using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace ColorVision
 {

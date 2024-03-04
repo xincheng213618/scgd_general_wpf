@@ -1,6 +1,6 @@
 ﻿using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
-using ColorVision.Services.Devices.Spectrum.Configs;
+using ColorVision.Services.Dao;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Algorithm;
 using ColorVision.Services.Devices.Calibration;
@@ -12,14 +12,14 @@ using ColorVision.Services.Devices.Sensor;
 using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Devices.SMU.Configs;
 using ColorVision.Services.Devices.Spectrum;
+using ColorVision.Services.Devices.Spectrum.Configs;
+using ColorVision.Settings;
 using cvColorVision;
 using Newtonsoft.Json;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using ColorVision.Services.Dao;
-using ColorVision.Settings;
 
 
 namespace ColorVision.Services
