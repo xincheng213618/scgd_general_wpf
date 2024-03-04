@@ -1,10 +1,12 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.MVVM;
+using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
+using ColorVision.Services.Templates;
 using ColorVision.Solution;
 using ColorVision.Themes.Controls;
 using cvColorVision;
