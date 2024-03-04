@@ -115,8 +115,8 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         break;
 
                 }
-                using StreamWriter file = new StreamWriter(dialog.FileName, true, Encoding.UTF8) 
-                        if (listView1.View is GridView gridView1)
+                using StreamWriter file = new StreamWriter(dialog.FileName, true, Encoding.UTF8); 
+                if (listView1.View is GridView gridView1)
                 {
                     string headers = "";
                     foreach (var item in gridView1.Columns)
