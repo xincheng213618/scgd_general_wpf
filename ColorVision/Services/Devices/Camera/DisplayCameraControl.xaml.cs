@@ -3,7 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.MySql.Service;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera.Calibrations;
+using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.Devices.Camera.Views;
 using ColorVision.Services.Interfaces;

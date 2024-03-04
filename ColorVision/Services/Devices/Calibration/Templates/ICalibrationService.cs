@@ -2,9 +2,9 @@
 using ColorVision.Services.Templates;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Services.Devices.Camera.Calibrations
+namespace ColorVision.Services.Devices.Calibration.Templates
 {
-    public interface ICalibrationService<T> 
+    public interface ICalibrationService<T>
     {
         public ObservableCollection<T> VisualChildren { get; set; }
         public SysDeviceModel SysResourceModel { get; set; }

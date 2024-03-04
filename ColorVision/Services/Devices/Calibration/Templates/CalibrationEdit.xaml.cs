@@ -1,4 +1,5 @@
 ﻿using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Interfaces;
 using System;
 using System.Collections.ObjectModel;
@@ -6,7 +7,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.Camera.Calibrations
+namespace ColorVision.Services.Devices.Calibration.Templates
 {
     /// <summary>
     /// CalibrationEdit.xaml 的交互逻辑

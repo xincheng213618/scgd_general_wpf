@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8603,CS0649
 using ColorVision.MVVM;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Interfaces;
 using ColorVision.Services.Templates;
 using cvColorVision;
@@ -8,7 +9,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 
-namespace ColorVision.Services.Devices.Camera.Calibrations
+namespace ColorVision.Services.Devices.Calibration.Templates
 {
     public class CalibrationBase : ModelBase
     {
@@ -155,7 +156,7 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
 
     public class CalibrationParam : ParamBase
     {
-        public string CalibrationMode { get { return GetValue(_CalibrationMode); } set {  SetProperty(ref _CalibrationMode, value);  } }
+        public string CalibrationMode { get { return GetValue(_CalibrationMode); } set { SetProperty(ref _CalibrationMode, value); } }
         private string _CalibrationMode;
 
         public CalibrationNormal Normal { get; set; }
@@ -170,7 +171,7 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
             Color = new CalibrationColor(new List<ModDetailModel>());
         }
 
-        public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name??string.Empty ,modDetails)
+        public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
         {
             Normal = new CalibrationNormal(modDetails, "");
             Color = new CalibrationColor(modDetails);

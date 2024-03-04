@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Net;
-using ColorVision.Services.Devices.Camera.Calibrations;
+using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
@@ -11,8 +11,6 @@ using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using System;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

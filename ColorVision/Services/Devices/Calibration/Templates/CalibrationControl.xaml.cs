@@ -2,8 +2,11 @@
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ColorVision.Services.Devices.Calibration;
+using ColorVision.Services.Devices.Calibration.Templates;
+using ColorVision.Services.Devices.Camera;
 
-namespace ColorVision.Services.Devices.Camera.Calibrations
+namespace ColorVision.Services.Devices.Calibration.Templates
 {
     /// <summary>
     /// CalibrationControl.xaml 的交互逻辑

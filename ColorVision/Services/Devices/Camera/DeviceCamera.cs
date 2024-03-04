@@ -3,7 +3,7 @@ using ColorVision.MVVM;
 using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration;
-using ColorVision.Services.Devices.Camera.Calibrations;
+using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Devices.Camera.Dao;
 using ColorVision.Services.Devices.Camera.Views;
@@ -29,14 +29,6 @@ using System.Windows.Media;
 
 namespace ColorVision.Services.Devices.Camera
 {
-
-    public class ColorVisionVCalibratioItem
-    {
-        public CalibrationType CalibrationType { get; set; }
-        public string FileName { get; set; }
-        public string Title { get; set; }
-    }
-
     public class DeviceCamera : DeviceService<ConfigCamera>, IUploadMsg, ICalibrationService<BaseResourceObject>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCamera));

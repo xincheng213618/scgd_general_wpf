@@ -2,7 +2,7 @@
 using cvColorVision;
 using System.ComponentModel;
 
-namespace ColorVision.Services.Devices.Camera.Calibrations
+namespace ColorVision.Services.Devices.Calibration.Templates
 {
     public enum ResouceType
     {
