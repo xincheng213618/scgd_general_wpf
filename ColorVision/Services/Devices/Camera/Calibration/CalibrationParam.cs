@@ -10,33 +10,6 @@ using System.Collections.ObjectModel;
 
 namespace ColorVision.Services.Devices.Camera.Calibrations
 {
-    public class CalibrationRsourceService
-    {
-        private static CalibrationRsourceService _instance;
-        private static readonly object _locker = new();
-        public static CalibrationRsourceService GetInstance() { lock (_locker) { return _instance ??= new CalibrationRsourceService(); } }
-
-        private VSysResourceDao resourceDao = new VSysResourceDao();
-
-        public CalibrationRsourceService()
-        {
-        }
-
-        public ObservableCollection<CalibrationResource> GetAllCalibrationRsources(ResouceType resouceType, int CameraId)
-        {
-            ObservableCollection<CalibrationResource> ObservableCollections = new ObservableCollection<CalibrationResource>();
-            var resouces = resourceDao.GetResourceItems((int)resouceType, CameraId);
-            foreach (var item in resouces)
-            {
-                ObservableCollections.Add(new CalibrationResource(item));
-            }
-            return ObservableCollections;
-        }
-
-        public int Delete(int id) => resourceDao.DeleteById(id);
-    }
-
-
     public class CalibrationBase : ModelBase
     {
         public RelayCommand SelectFileCommand { get; set; }

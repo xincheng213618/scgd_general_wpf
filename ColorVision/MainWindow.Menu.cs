@@ -7,6 +7,7 @@ using ColorVision.MySql;
 using ColorVision.OnlineLicensing;
 using ColorVision.RC;
 using ColorVision.Services;
+using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Flow;
 using ColorVision.Services.Msg;
