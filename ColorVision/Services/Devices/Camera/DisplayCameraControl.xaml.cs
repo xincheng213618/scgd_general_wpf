@@ -268,7 +268,7 @@ namespace ColorVision.Services.Devices.Camera
                 foreach (var item in Device.DeviceCalibration.CalibrationParams)
                     CalibrationParams.Add(item);
 
-                Device.CalibrationParams.CollectionChanged += (s, e) =>
+                Device.DeviceCalibration.CalibrationParams.CollectionChanged += (s, e) =>
                 {
                     switch (e.Action)
                     {
@@ -555,17 +555,25 @@ namespace ColorVision.Services.Devices.Camera
                 {
                     case "Calibration":
                         CalibrationControl calibration;
-                        if (Device.CalibrationParams.Count>0) 
+                        if (Device.DeviceCalibration != null)
                         {
-                             calibration = new CalibrationControl(Device, Device.CalibrationParams[0].Value);
+                            if (Device.DeviceCalibration.CalibrationParams.Count > 0)
+                            {
+                                calibration = new CalibrationControl(Device.DeviceCalibration, Device.CalibrationParams[0].Value);
+                            }
+                            else
+                            {
+                                calibration = new CalibrationControl(Device.DeviceCalibration);
+                            }
+                            windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, Device.DeviceCalibration, false);
+                            windowTemplate.Owner = Window.GetWindow(this);
+                            windowTemplate.ShowDialog();
                         }
                         else
                         {
-                             calibration = new CalibrationControl(Device);
+                            MessageBox.Show("在使用校正前，请先配置对映的校正服务");
                         }
-                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, Device, false);
-                        windowTemplate.Owner = Window.GetWindow(this);
-                        windowTemplate.ShowDialog();
+
                         break;
                     default:
                         HandyControl.Controls.Growl.Info(Properties.Resource.UnderDevelopment);

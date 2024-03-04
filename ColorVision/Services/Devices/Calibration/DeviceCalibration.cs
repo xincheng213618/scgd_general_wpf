@@ -20,6 +20,7 @@ using System.Windows.Controls;
 using System.Windows;
 using log4net;
 using cvColorVision;
+using ColorVision.MySql.Service;
 
 namespace ColorVision.Services.Devices.Calibration
 {
@@ -36,6 +37,7 @@ namespace ColorVision.Services.Devices.Calibration
             DeviceService = new MQTTCalibration(Config);
             EditLazy = new Lazy<EditCalibration>(() => { EditCalibration ??= new EditCalibration(this); return EditCalibration; });
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
+            TemplateControl.GetInstance().LoadModCabParam(CalibrationParams, SysResourceModel.Id, ModMasterType.Calibration);
         }
 
         public static void ExtractToDirectoryWithOverwrite(string zipPath, string extractPath)
