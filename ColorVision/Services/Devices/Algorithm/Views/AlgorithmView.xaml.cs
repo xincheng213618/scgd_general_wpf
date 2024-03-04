@@ -20,6 +20,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.Services.Devices.Spectrum.Views;
 
 namespace ColorVision.Services.Devices.Algorithm.Views
 {
@@ -89,41 +90,54 @@ namespace ColorVision.Services.Devices.Algorithm.Views
         {
             if (listView1.SelectedIndex < 0)
             {
+                return;
+            }
+            if (listView1.SelectedIndex < 0 ||listView1.Items[listView1.SelectedIndex] is not AlgorithmResult result)
+            {
                 MessageBox.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
                 return;
             }
-
-            using var dialog = new System.Windows.Forms.SaveFileDialog();
-            dialog.Filter = "CSV files (*.csv) | *.csv";
-            dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
-            dialog.RestoreDirectory = true;
-            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            else
             {
-                using StreamWriter file = new StreamWriter(dialog.FileName, true, Encoding.UTF8);
-                if (listView1.View is GridView gridView1)
-                {
-                    string headers = "";
-                    foreach (var item in gridView1.Columns)
-                    {
-                        headers += item.Header.ToString() + ",";
-                    }
-                    file.WriteLine(headers);
+                using var dialog = new System.Windows.Forms.SaveFileDialog();
+                dialog.Filter = "CSV files (*.csv) | *.csv";
+                dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+                dialog.RestoreDirectory = true;
+                if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+                switch (result.ResultType)
+                {   
+                    case AlgorithmResultType.POI_XY_UV:
+                        PoiResultCIExyuvData.SaveCsv(result.PoiResultCIExyuvDatas, dialog.FileName);
+                        break;
+                    default:
+                        using StreamWriter file = new StreamWriter(dialog.FileName, true, Encoding.UTF8);
+                        if (listView1.View is GridView gridView1)
+                        {
+                            string headers = "";
+                            foreach (var item in gridView1.Columns)
+                            {
+                                headers += item.Header.ToString() + ",";
+                            }
+                            file.WriteLine(headers);
+                        }
+                        string value = "";
+                        foreach (var item in AlgResults)
+                        {
+                            value += item.Id + ","
+                                + item.Batch + ","
+                                + item.POITemplateName + ","
+                                + item.FilePath + ","
+                                + item.CreateTime + ","
+                                + item.ResultTypeDis + ","
+                                + item.TotalTime + ","
+                                + item.Result + ","
+                                + item.ResultDesc + ","
+                                + Environment.NewLine;
+                        }
+                        file.WriteLine(value);
+                        break;
                 }
-                string value = "";
-                foreach (var item in AlgResults)
-                {
-                    value += item.Id + "," 
-                        +item.Batch + "," 
-                        + item.POITemplateName  + "," 
-                        + item.FilePath +","
-                        + item.CreateTime + ","
-                        + item.ResultTypeDis + ","
-                        + item.TotalTime + ","
-                        + item.Result + ","
-                        + item.ResultDesc + ","
-                        + Environment.NewLine;
-                }
-                file.WriteLine(value);
                 ImageSource bitmapSource = ImageView.ImageShow.Source;
                 ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine( Path.GetDirectoryName(dialog.FileName),Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
             }
@@ -599,6 +613,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                     AlgorithmResult algorithmResult = new AlgorithmResult(item);
                     AlgResults.Add(algorithmResult);
                 }
+                SerchPopup.IsOpen = false;
                 return;
             }
             else
@@ -682,7 +697,48 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
         private void SideSave_Click(object sender, RoutedEventArgs e)
         {
-            
+            if (listView1.Items[listView1.SelectedIndex] is AlgorithmResult result)
+            {
+                if (listView1.SelectedIndex < 0)
+                {
+                    MessageBox.Show("您需要先选择数据");
+                    return;
+                }
+                using var dialog = new System.Windows.Forms.SaveFileDialog();
+                dialog.Filter = "CSV files (*.csv) | *.csv";
+                dialog.FileName = DateTime.Now.ToString("光谱仪导出yyyy-MM-dd-HH-mm-ss");
+                dialog.RestoreDirectory = true;
+                if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+                switch (result.ResultType)
+                {   
+                    case AlgorithmResultType.POI:
+                        break;
+                    case AlgorithmResultType.POI_XY_UV:
+                        PoiResultCIExyuvData.SaveCsv(result.PoiResultCIExyuvDatas,dialog.FileName);
+                        break;
+                    case AlgorithmResultType.POI_Y:
+                        break;
+                    case AlgorithmResultType.FOV:
+                        break;
+                    case AlgorithmResultType.SFR:
+                        break;
+                    case AlgorithmResultType.MTF:
+                        break;
+                    case AlgorithmResultType.Ghost:
+                        break;
+                    case AlgorithmResultType.LedCheck:
+                        break;
+                    case AlgorithmResultType.LightArea:
+                        break;
+                    case AlgorithmResultType.Distortion:
+                        break;
+                    case AlgorithmResultType.BuildPOI:
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
 
         private void ButtonChart_Click(object sender, RoutedEventArgs e)
