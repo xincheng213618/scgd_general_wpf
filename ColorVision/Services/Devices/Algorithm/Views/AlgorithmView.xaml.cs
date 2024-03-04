@@ -109,35 +109,37 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                 {   
                     case AlgorithmResultType.POI_XY_UV:
                         PoiResultCIExyuvData.SaveCsv(result.PoiResultCIExyuvDatas, dialog.FileName);
-                        break;
+                        ImageUtil.SaveImageSourceToFile(ImageView.ImageShow.Source, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
+                        return;
                     default:
-                        using StreamWriter file = new StreamWriter(dialog.FileName, true, Encoding.UTF8);
-                        if (listView1.View is GridView gridView1)
-                        {
-                            string headers = "";
-                            foreach (var item in gridView1.Columns)
-                            {
-                                headers += item.Header.ToString() + ",";
-                            }
-                            file.WriteLine(headers);
-                        }
-                        string value = "";
-                        foreach (var item in AlgResults)
-                        {
-                            value += item.Id + ","
-                                + item.Batch + ","
-                                + item.POITemplateName + ","
-                                + item.FilePath + ","
-                                + item.CreateTime + ","
-                                + item.ResultTypeDis + ","
-                                + item.TotalTime + ","
-                                + item.Result + ","
-                                + item.ResultDesc + ","
-                                + Environment.NewLine;
-                        }
-                        file.WriteLine(value);
                         break;
+
                 }
+                using StreamWriter file = new StreamWriter(dialog.FileName, true, Encoding.UTF8) 
+                        if (listView1.View is GridView gridView1)
+                {
+                    string headers = "";
+                    foreach (var item in gridView1.Columns)
+                    {
+                        headers += item.Header.ToString() + ",";
+                    }
+                    file.WriteLine(headers);
+                }
+                string value = "";
+                foreach (var item in AlgResults)
+                {
+                    value += item.Id + ","
+                        + item.Batch + ","
+                        + item.POITemplateName + ","
+                        + item.FilePath + ","
+                        + item.CreateTime + ","
+                        + item.ResultTypeDis + ","
+                        + item.TotalTime + ","
+                        + item.Result + ","
+                        + item.ResultDesc + ","
+                        + Environment.NewLine;
+                }
+                file.WriteLine(value);
                 ImageSource bitmapSource = ImageView.ImageShow.Source;
                 ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine( Path.GetDirectoryName(dialog.FileName),Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
             }
