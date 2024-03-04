@@ -185,11 +185,8 @@ namespace ColorVision.Services.Flow
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
                     handler.Cancelling += delegate
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            flowControl?.Stop();
-                            handler?.Close();
-                        });
+                        flowControl?.Stop();
+                        handler?.Close();
                     };
 
                     flowControl.FlowData += (s, e) =>
