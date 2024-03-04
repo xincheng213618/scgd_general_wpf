@@ -1,8 +1,9 @@
 ﻿using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
-using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.MySql;
 using ColorVision.MySql.Service;
+using ColorVision.Services.Dao;
+using ColorVision.Services.DAO;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Algorithm;
 using ColorVision.Services.Devices.Calibration;
@@ -13,7 +14,11 @@ using ColorVision.Services.Devices.Sensor;
 using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Devices.SMU.Dao;
 using ColorVision.Services.Devices.Spectrum;
+using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Dao;
+using ColorVision.Services.Flow;
+using ColorVision.Services.Interfaces;
+using ColorVision.Settings;
 using ColorVision.UserSpace;
 using Newtonsoft.Json;
 using System;
@@ -21,11 +26,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
-using ColorVision.Services.Dao;
-using ColorVision.Services.DAO;
-using ColorVision.Services.Flow;
-using ColorVision.Settings;
-using ColorVision.Services.Interfaces;
 
 namespace ColorVision.Services
 {

@@ -1,9 +1,9 @@
-﻿using System;
-using OpenCvSharp;
+﻿using OpenCvSharp;
+using System;
 using System.Drawing;
 using System.IO;
-using System.Windows.Resources;
 using System.Windows;
+using System.Windows.Resources;
 
 namespace ColorVision.Media
 {

@@ -1,9 +1,9 @@
-﻿using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Windows.Controls;
-using System.Linq;
-using ColorVision.Common.Extension;
+﻿using ColorVision.Common.Extension;
 using ColorVision.MVVM;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Windows.Controls;
 using System.Windows.Data;
 
 namespace ColorVision.Common.MVVM

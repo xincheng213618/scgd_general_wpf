@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.ObjectModel;
-using System.Linq;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Data;
-using ColorVision.Common.Extension;
+﻿using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Devices.Camera.Dao;
@@ -15,6 +8,13 @@ using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Sorts;
 using ColorVision.Themes.Controls;
+using System;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 
 namespace ColorVision.Services.Devices.Camera
 {

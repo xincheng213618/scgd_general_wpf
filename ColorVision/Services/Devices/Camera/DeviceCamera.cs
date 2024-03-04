@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.MVVM;
-using ColorVision.MySql;
 using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration;

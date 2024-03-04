@@ -1,11 +1,11 @@
-﻿using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Input;
+﻿using ColorVision.Services.Devices;
 using System;
-using System.Windows.Documents;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
-using ColorVision.Services.Devices;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Documents;
+using System.Windows.Input;
 
 namespace ColorVision.Services
 {

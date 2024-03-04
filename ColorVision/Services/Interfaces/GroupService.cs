@@ -1,6 +1,5 @@
 ﻿#pragma warning disable  CS8604,CS8631
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Interfaces;
 

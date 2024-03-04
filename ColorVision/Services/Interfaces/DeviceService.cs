@@ -19,7 +19,6 @@ namespace ColorVision.Services.Devices
     public class DeviceService : BaseResourceObject, IDisposable
     {
         public virtual string Code { get; set; }
-
         public virtual string SendTopic { get; set; }
         public virtual string SubscribeTopic { get; set; }
         public virtual bool IsAlive { get; set; }
