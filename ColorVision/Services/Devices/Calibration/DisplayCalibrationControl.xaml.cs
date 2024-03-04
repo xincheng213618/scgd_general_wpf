@@ -31,6 +31,7 @@ namespace ColorVision.Services.Devices.Calibration
         private MQTTCalibration DeviceService { get => Device.DeviceService;  }
         private IPendingHandler? handler { get; set; }
         private NetFileUtil netFileUtil;
+
         public DisplayCalibrationControl(DeviceCalibration device)
         {
             this.Device = device;

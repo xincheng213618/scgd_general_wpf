@@ -16,6 +16,7 @@ namespace ColorVision.Services.Devices
     }
 
 
+
     public class BaseResourceObject : ViewModelBase,ITreeViewItem
     {
         public RelayCommand DeleteCommand { get; set; }

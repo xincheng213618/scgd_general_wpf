@@ -23,7 +23,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Calibration
 {
-    public class DeviceCalibration : DeviceService<ConfigCalibration>, IUploadMsg
+    public class DeviceCalibration : DeviceService<ConfigCalibration>, IUploadMsg, ICalibrationService<BaseResourceObject>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCalibration));
 

@@ -37,7 +37,7 @@ namespace ColorVision.Services.Devices.Camera
         public string Title { get; set; }
     }
 
-    public class DeviceCamera : DeviceService<ConfigCamera>, IUploadMsg
+    public class DeviceCamera : DeviceService<ConfigCamera>, IUploadMsg, ICalibrationService<BaseResourceObject>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCamera));
         public MQTTCamera DeviceService { get; set; }
