@@ -3,12 +3,16 @@ using ColorVision.Net;
 using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
+using ColorVision.Services.Templates;
+using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.Themes;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using System;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -37,6 +41,55 @@ namespace ColorVision.Services.Devices.Calibration
             this.PreviewMouseDown += UserControl_PreviewMouseDown;
 
         }
+        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; }
+
+        private void UserControl_Initialized(object sender, EventArgs e)
+        {
+            this.DataContext = Device;
+
+            CalibrationParams = new ObservableCollection<TemplateModel<CalibrationParam>>();
+            CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam() { Id = -1 }));
+
+            foreach (var item in Device.CalibrationParams)
+                CalibrationParams.Add(item);
+
+            Device.CalibrationParams.CollectionChanged += (s, e) =>
+            {
+                switch (e.Action)
+                {
+                    case NotifyCollectionChangedAction.Add:
+                        // 处理添加项
+                        if (e.NewItems != null)
+                            foreach (TemplateModel<CalibrationParam> newItem in e.NewItems)
+                                CalibrationParams.Add(newItem);
+                        break;
+                    case NotifyCollectionChangedAction.Remove:
+                        // 处理移除项
+                        if (e.OldItems != null)
+                            foreach (TemplateModel<CalibrationParam> newItem in e.OldItems)
+                                CalibrationParams.Remove(newItem);
+                        break;
+                    case NotifyCollectionChangedAction.Replace:
+                        // 处理替换项
+                        // ...
+                        break;
+                    case NotifyCollectionChangedAction.Move:
+                        // 处理移动项
+                        // ...
+                        break;
+                    case NotifyCollectionChangedAction.Reset:
+                        // 处理清空集合
+                        CalibrationParams.Clear();
+                        CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()) { Id = -1 });
+                        break;
+                }
+            };
+
+            ComboxCalibrationTemplate.ItemsSource = CalibrationParams;
+            ComboxCalibrationTemplate.SelectedIndex = 0;
+        }
+
+
 
         private void Service_OnCalibrationEvent(object sender, MessageRecvArgs arg)
         {
@@ -96,10 +149,7 @@ namespace ColorVision.Services.Devices.Calibration
             }
         }
 
-        private void UserControl_Initialized(object sender, EventArgs e)
-        {
-            this.DataContext = Device;
-        }
+
 
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");  } }
         private bool _IsSelected;
@@ -164,6 +214,42 @@ namespace ColorVision.Services.Devices.Calibration
         private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
         {
             DeviceService.GetRawFiles();
+        }
+        public TemplateControl TemplateControl { get; set; }
+
+        private void MenuItem_Template(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                TemplateControl = TemplateControl.GetInstance();
+                SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
+                WindowTemplate windowTemplate;
+                if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+                {
+                    MessageBox.Show(Application.Current.MainWindow, Properties.Resource.DatabaseConnectionFailed, "ColorVision");
+                    return;
+                }
+                switch (button.Tag?.ToString() ?? string.Empty)
+                {
+                    case "Calibration":
+                        CalibrationControl calibration;
+                        if (Device.CalibrationParams.Count > 0)
+                        {
+                            calibration = new CalibrationControl(Device, Device.CalibrationParams[0].Value);
+                        }
+                        else
+                        {
+                            calibration = new CalibrationControl(Device);
+                        }
+                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, Device, false);
+                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate.ShowDialog();
+                        break;
+                    default:
+                        HandyControl.Controls.Growl.Info(Properties.Resource.UnderDevelopment);
+                        break;
+                }
+            }
         }
     }
 }
