@@ -41,51 +41,11 @@ namespace ColorVision.Services.Devices.Calibration
             this.PreviewMouseDown += UserControl_PreviewMouseDown;
 
         }
-        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; }
-
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Device;
 
-            CalibrationParams = new ObservableCollection<TemplateModel<CalibrationParam>>();
-            CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam() { Id = -1 }));
-
-            foreach (var item in Device.CalibrationParams)
-                CalibrationParams.Add(item);
-
-            Device.CalibrationParams.CollectionChanged += (s, e) =>
-            {
-                switch (e.Action)
-                {
-                    case NotifyCollectionChangedAction.Add:
-                        // 处理添加项
-                        if (e.NewItems != null)
-                            foreach (TemplateModel<CalibrationParam> newItem in e.NewItems)
-                                CalibrationParams.Add(newItem);
-                        break;
-                    case NotifyCollectionChangedAction.Remove:
-                        // 处理移除项
-                        if (e.OldItems != null)
-                            foreach (TemplateModel<CalibrationParam> newItem in e.OldItems)
-                                CalibrationParams.Remove(newItem);
-                        break;
-                    case NotifyCollectionChangedAction.Replace:
-                        // 处理替换项
-                        // ...
-                        break;
-                    case NotifyCollectionChangedAction.Move:
-                        // 处理移动项
-                        // ...
-                        break;
-                    case NotifyCollectionChangedAction.Reset:
-                        // 处理清空集合
-                        CalibrationParams.Clear();
-                        CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()) { Id = -1 });
-                        break;
-                }
-            };
-
-            ComboxCalibrationTemplate.ItemsSource = CalibrationParams;
+            ComboxCalibrationTemplate.ItemsSource = Device.CalibrationParams;
             ComboxCalibrationTemplate.SelectedIndex = 0;
         }
 
