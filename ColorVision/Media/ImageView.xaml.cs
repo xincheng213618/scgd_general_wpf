@@ -3,6 +3,7 @@ using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
 using ColorVision.MVVM;
 using ColorVision.Net;
+using cvColorVision;
 using log4net;
 using MQTTMessageLib.Algorithm;
 using OpenCvSharp.WpfExtensions;
@@ -23,22 +24,6 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Media
 {
-    /// <summary>
-    /// 用于还原窗口
-    /// </summary>
-
-    public class WindowStatus
-    {
-        public object Root { get; set; }
-        public Grid Parent { get; set; }
-
-        public WindowStyle WindowStyle { get; set; }
-
-        public WindowState WindowState { get; set; }
-
-        public ResizeMode ResizeMode { get; set; }
-    }
-
     /// <summary>
     /// ImageView.xaml 的交互逻辑
     /// </summary>
@@ -71,7 +56,6 @@ namespace ColorVision.Media
             ToolBar1.DataContext = ToolBarTop;
             ToolBarTop.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             ListView1.ItemsSource = DrawingVisualLists;
-
 
             this.Focusable = true;
             Zoombox1.LayoutUpdated += Zoombox1_LayoutUpdated;
@@ -152,27 +136,27 @@ namespace ColorVision.Media
 
 
 
-        private void DrawGridImage(DrawingVisual drawingVisual, BitmapSource bitmapImage)
+        private void DrawGridImage(DrawingVisual drawingVisual, BitmapSource bitmapSource)
         {
             Brush brush = Brushes.Black;
             FontFamily fontFamily = new FontFamily("Arial");
 
             double fontSize = 10;
             using DrawingContext dc = drawingVisual.RenderOpen();
-            for (int i = 0; i < bitmapImage.Width; i += 40)
+            for (int i = 0; i < bitmapSource.Width; i += 40)
             {
                 string text = i.ToString();
                 FormattedText formattedText = new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(formattedText, new Point(i, -10));
-                dc.DrawLine(new Pen(Brushes.Blue, 1), new Point(i, 0), new Point(i, bitmapImage.Height));
+                dc.DrawLine(new Pen(Brushes.Blue, 1), new Point(i, 0), new Point(i, bitmapSource.Height));
             }
 
-            for (int j = 0; j < bitmapImage.Height; j += 40)
+            for (int j = 0; j < bitmapSource.Height; j += 40)
             {
                 string text = j.ToString();
                 FormattedText formattedText = new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(formattedText, new Point(-10, j));
-                dc.DrawLine(new Pen(Brushes.Blue, 1), new Point(0, j), new Point(bitmapImage.Width, j));
+                dc.DrawLine(new Pen(Brushes.Blue, 1), new Point(0, j), new Point(bitmapSource.Width, j));
             }
         }
 
@@ -552,48 +536,6 @@ namespace ColorVision.Media
             }
         }
 
-
-
-
-        [UnmanagedCallersOnly(CallConvs = new Type[] { typeof(CallConvCdecl) })]
-        [SuppressGCTransition]
-        private static int InitialFrame(IntPtr buff, int rows, int cols, int type)
-        {
-            PixelFormat format = type switch
-            {
-                1 => PixelFormats.Gray8,
-                3 => PixelFormats.Bgr24,
-                4 => PixelFormats.Bgr32,
-                _ => PixelFormats.Default,
-            };
-            if (rows == 0) { return 2; }
-
-            Application.Current.Dispatcher.Invoke(delegate
-            {
-                WriteableBitmap writeableBitmap = new WriteableBitmap(cols, rows, 96.0, 96.0, format, null);
-                OpenCVHelper.RtlMoveMemory(writeableBitmap.BackBuffer, buff, (uint)(cols * rows * type));
-                writeableBitmap.Lock();
-                writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
-                writeableBitmap.Unlock();
-                if (ViewGridManager.GetInstance().Views[3] is ImageView view)
-                {
-                    view.ImageShow.Source = writeableBitmap;
-                }
-            });
-            return 0;
-        }
-
-        public unsafe void OpenCVImage(string? filePath)
-        {
-            OpenCVHelper.SetInitialFrame((nint)(delegate* unmanaged[Cdecl]<IntPtr, int, int, int, int>)(&InitialFrame));
-
-            if (filePath != null && File.Exists(filePath))
-            {
-                ToolBar1.Visibility = Visibility.Visible;
-            }
-        }
-
-
         public void OpenImage(CVCIEFileInfo fileInfo)
         {
             if (fileInfo.fileType == MQTTMessageLib.FileServer.FileExtType.Tif) OpenTifImage(fileInfo.data);
@@ -619,7 +561,7 @@ namespace ColorVision.Media
             {
                 dst = src;
             }
-            SetImageSource(dst.ToBitmapSource());
+            SetImageSource(dst.ToWriteableBitmap());
         }
 
         public void OpenTifImage(byte[] data)
@@ -628,7 +570,7 @@ namespace ColorVision.Media
             {
                 logger.Info("OpenImage .....");
                 var src = OpenCvSharp.Cv2.ImDecode(data, OpenCvSharp.ImreadModes.Unchanged);
-                SetImageSource(src.ToBitmapSource());
+                SetImageSource(src.ToWriteableBitmap());
             }
         }
 
@@ -636,7 +578,6 @@ namespace ColorVision.Media
         {
             ImageShow.Source = null;
         }
-
 
         public void OpenImage(string? filePath)
         {
@@ -661,6 +602,8 @@ namespace ColorVision.Media
                 else
                 {
                     BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
+
+
                     SetImageSource(bitmapImage);
                 }
             }
@@ -673,12 +616,13 @@ namespace ColorVision.Media
 
             int i = OpenCVHelper.ReadGhostImage(filePath, LEDpixelX.Length, LEDpixelX, LEDPixelY, GhostPixelX.Length, GhostPixelX, GhostPixelY, out HImage hImage);
             if (i != 0) return;
-            var writeableBitmap =HImageToWriteableBitmap(hImage);
+            var writeableBitmap = hImage.ToWriteableBitmap();
             ViewBitmapSource = writeableBitmap;
             ImageShow.Source = ViewBitmapSource;
+
             i = OpenCVHelper.ReadGhostHImage(hImage, out HImage hImage1);
             if (i != 0) return;
-            PseudoImage = HImageToWriteableBitmap(hImage1);
+            PseudoImage = hImage1.ToWriteableBitmap();
 
             Task.Run(() => {
                 Application.Current.Dispatcher.Invoke(() =>
@@ -688,34 +632,15 @@ namespace ColorVision.Media
             });
         }
 
-
-
-
-        private static WriteableBitmap HImageToWriteableBitmap(HImage hImage)
+        private void SetImageSource(WriteableBitmap writeableBitmap)
         {
-            PixelFormat format = hImage.channels switch
-            {
-                1 => PixelFormats.Gray8,
-                3 => PixelFormats.Bgr24,
-                4 => PixelFormats.Bgr32,
-                _ => PixelFormats.Default,
-            };
+            int ret = OpenCVHelper.ReadGhostHImage(writeableBitmap.ToHImage(), out HImage hImage1);
+            if (ret == 0)
+                PseudoImage = hImage1.ToWriteableBitmap();
 
-            WriteableBitmap writeableBitmap = new WriteableBitmap(hImage.cols, hImage.rows, 96.0, 96.0, format, null);
-            OpenCVHelper.RtlMoveMemory(writeableBitmap.BackBuffer, hImage.pData, (uint)(hImage.cols * hImage.rows * hImage.channels));
-            writeableBitmap.Lock();
-            writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
-            writeableBitmap.Unlock();
-            return writeableBitmap;
-        }
-
-
-
-        private void SetImageSource(BitmapSource bitmapImage)
-        {
-            ViewBitmapSource = bitmapImage;
+            ViewBitmapSource = writeableBitmap;
             ImageShow.Source = ViewBitmapSource;
-            DrawGridImage(DrawingVisualGrid, bitmapImage);
+            DrawGridImage(DrawingVisualGrid, writeableBitmap);
             Zoombox1.ZoomUniform();
             ToolBar1.Visibility = Visibility.Visible;
             ImageShow.ImageInitialize();
@@ -723,6 +648,10 @@ namespace ColorVision.Media
 
         private void SetImageSource(BitmapImage bitmapImage)
         {
+            int ret = OpenCVHelper.ReadGhostHImage(bitmapImage.BitmapImageToHImage(), out HImage hImage1);
+            if (ret == 0)
+                PseudoImage = hImage1.ToWriteableBitmap();
+
             ViewBitmapSource = bitmapImage;
             ImageShow.Source = ViewBitmapSource;
             DrawGridImage(DrawingVisualGrid, bitmapImage);
@@ -873,11 +802,6 @@ namespace ColorVision.Media
                 }
 
             }
-        }
-
-        public void ResetPOIPoint()
-        {
-            ImageShow.Clear();
         }
 
         private void reference_Click(object sender, RoutedEventArgs e)

@@ -1,6 +1,10 @@
 ﻿#pragma warning disable CA1401,CA1051,CA2101
 using System;
 using System.Runtime.InteropServices;
+using System.Windows.Media.Imaging;
+using System.Windows.Media;
+using System.Windows;
+using SkiaSharp.Views.WPF;
 
 namespace ColorVision
 {
@@ -27,6 +31,64 @@ namespace ColorVision
 
         public IntPtr pData;
     }
+
+
+    public static class HImageExtension
+    {
+        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
+        private static extern void RtlMoveMemory(IntPtr Destination, IntPtr Source, uint Length);
+
+        public static WriteableBitmap ToWriteableBitmap(this HImage hImage)
+        {
+            PixelFormat format = hImage.channels switch
+            {
+                1 => PixelFormats.Gray8,
+                3 => PixelFormats.Bgr24,
+                4 => PixelFormats.Bgr32,
+                _ => PixelFormats.Default,
+            };
+
+            WriteableBitmap writeableBitmap = new WriteableBitmap(hImage.cols, hImage.rows, 96.0, 96.0, format, null);
+            RtlMoveMemory(writeableBitmap.BackBuffer, hImage.pData, (uint)(hImage.cols * hImage.rows * hImage.channels));
+            writeableBitmap.Lock();
+            writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
+            writeableBitmap.Unlock();
+            return writeableBitmap;
+        }
+        public static HImage BitmapImageToHImage(this BitmapImage bitmapImage)
+        {
+            // Convert the BitmapImage to a WriteableBitmap first
+            WriteableBitmap writeableBitmap = new WriteableBitmap(bitmapImage);
+
+            // Now convert the WriteableBitmap to an HImage
+            return writeableBitmap.ToHImage();
+        }
+
+        public static HImage ToHImage(this WriteableBitmap writeableBitmap)
+        {
+            // Determine the number of channels and depth based on the pixel format
+            int channels = writeableBitmap.Format.BitsPerPixel / 8;
+            int depth = 8; // Assuming 8 bits per channel, this may need to be adjusted based on actual format
+
+            // Create a new HImage instance
+            HImage hImage = new HImage
+            {
+                rows = writeableBitmap.PixelHeight,
+                cols = writeableBitmap.PixelWidth,
+                channels = channels,
+                depth = depth, // You might need to adjust this based on the actual bits per pixel
+                pData = Marshal.AllocHGlobal(writeableBitmap.PixelWidth * writeableBitmap.PixelHeight * channels)
+            };
+
+            // Copy the pixel data from the WriteableBitmap to the HImage
+            writeableBitmap.Lock();
+            RtlMoveMemory(hImage.pData, writeableBitmap.BackBuffer, (uint)(hImage.cols * hImage.rows * hImage.channels));
+            writeableBitmap.Unlock();
+
+            return hImage;
+        }
+    }
+
 
     public static class OpenCVHelper
     {

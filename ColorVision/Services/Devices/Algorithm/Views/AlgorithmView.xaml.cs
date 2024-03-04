@@ -190,7 +190,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             if (listView1.SelectedIndex < 0) return;
             if (listView1.Items[listView1.SelectedIndex] is AlgorithmResult result)
             {
-                ImageView.ResetPOIPoint();
+                ImageView.ImageShow.Clear();
                 List<POIPoint> DrawPoiPoint = new List<POIPoint>();
                 switch (result.ResultType)
                 {
