@@ -38,8 +38,6 @@ namespace ColorVision.Services.Templates
         private static string FileNameFlowParms = "FlowParmSetup";
 
         private ModService modService = new ModService();
-        private SysResourceService resourceService = new SysResourceService();
-        private MeasureService measureService = new MeasureService();
 
         public string TemplatePath { get; set; }
 
@@ -452,11 +450,12 @@ namespace ColorVision.Services.Templates
             }
             return null;
         }
+        private VSysResourceDao VSysResourceDao { get; set; } = new VSysResourceDao();
 
         internal ResourceParam? AddDeviceParam(string name, string code, int type, int pid)
         {
             SysResourceModel sysResource = new SysResourceModel(name, code, type, pid, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            resourceService.Save(sysResource);
+            VSysResourceDao.Save(sysResource);
             int pkId = sysResource.PKId;
             if (pkId > 0)
             {
@@ -468,7 +467,7 @@ namespace ColorVision.Services.Templates
         internal ResourceParam? AddServiceParam(string name, string code, int type)
         {
             SysResourceModel sysResource = new SysResourceModel(name, code, type, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            resourceService.Save(sysResource);
+            VSysResourceDao.Save(sysResource);
             int pkId = sysResource.PKId;
             if (pkId > 0)
             {
@@ -480,7 +479,7 @@ namespace ColorVision.Services.Templates
         internal MeasureParam? AddMeasureParam(string name)
         {
             MeasureMasterModel model = new MeasureMasterModel(name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            measureService.Save(model);
+            measureMaster.Save(model);
             int pkId = model.PKId;
             if (pkId > 0)
             {
@@ -490,13 +489,13 @@ namespace ColorVision.Services.Templates
         }
         private MeasureParam? LoadMeasureParamById(int pkId)
         {
-            MeasureMasterModel model = measureService.GetMasterById(pkId);
+            MeasureMasterModel model = measureMaster.GetById(pkId);
             if (model != null) return new MeasureParam(model);
             else return null;
         }
         private ResourceParam? LoadServiceParamById(int pkId)
         {
-            SysResourceModel model = resourceService.GetMasterById(pkId);
+            SysResourceModel model = VSysResourceDao.GetById(pkId);
             if (model != null) return new ResourceParam(model);
             else return null;
         }
@@ -616,17 +615,15 @@ namespace ColorVision.Services.Templates
             return FlowParams;
         }
 
-        internal List<SysResourceModel> LoadAllServices()
-        {
-            return resourceService.GetAllServices(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-        }
+        private MeasureMasterDao measureMaster = new MeasureMasterDao();
+        private MeasureDetailDao measureDetail = new MeasureDetailDao();
 
         internal ObservableCollection<TemplateModel<MeasureParam>> LoadMeasureParams()
         {
             MeasureParams.Clear();
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                List<MeasureMasterModel> devices = measureService.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                List<MeasureMasterModel> devices = measureMaster.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in devices)
                 {
                     MeasureParams.Add(new TemplateModel<MeasureParam>(dbModel.Name ?? "default", new MeasureParam(dbModel)));
@@ -635,25 +632,12 @@ namespace ColorVision.Services.Templates
             return MeasureParams;
         }
 
-        internal int PoiMasterDeleteById(int id)
-        {
-            return poiMaster.DeleteById(id);
-        }
-
-        internal int ModMasterDeleteById(int id)
-        {
-            return modService.MasterDeleteById(id);
-        }
 
         internal void Save2DB(FlowParam flowParam)
         {
             modService.Save(flowParam);
         }
 
-        internal List<MeasureDetailModel> LoadMeasureDetail(int pid)
-        {
-            return measureService.GetDetailByPid(pid);
-        }
 
         private SysModMasterDao masterDao;
 
@@ -667,20 +651,7 @@ namespace ColorVision.Services.Templates
             return modService.GetMasterByPid(pid);
         }
 
-        internal int Save(MeasureDetailModel detailModel)
-        {
-            return measureService.Save(detailModel);
-        }
 
-        internal int ModMDetailDeleteById(int id)
-        {
-            return measureService.DetailDeleteById(id);
-        }
-
-        internal int MeasureMasterDeleteById(int id)
-        {
-            return measureService.MasterDeleteById(id);
-        }
 
         public ObservableCollection<TemplateModel<MeasureParam>> MeasureParams { get; set; }
         public ObservableCollection<TemplateModel<AOIParam>> AoiParams { get; set; }

@@ -1,4 +1,5 @@
 ﻿using ColorVision.MVVM;
+using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Templates.POI;
 using System;
@@ -57,13 +58,13 @@ namespace ColorVision.Services.Templates
     /// </summary>
     public partial class MeasureParamControl : UserControl
     {
-        private TemplateControl templateControl;
+        private TemplateControl TemplateControl = TemplateControl.GetInstance();
         public MeasureParamControl()
         {
             InitializeComponent();
-            templateControl = TemplateControl.GetInstance();
         }
-
+        private MeasureMasterDao measureMaster = new MeasureMasterDao();
+        private MeasureDetailDao measureDetail = new MeasureDetailDao();
         public int MasterID { get; set; }
         public ObservableCollection<MParamConfig> ListConfigs { get; set; } = new ObservableCollection<MParamConfig>();
         public ObservableCollection<MParamConfig> ModTypeConfigs { get; set; } = new ObservableCollection<MParamConfig>();
@@ -83,15 +84,15 @@ namespace ColorVision.Services.Templates
                 MParamConfig config = (MParamConfig)Mod_Type.SelectedItem;
                 if (config.Type != null && config.Type.Equals("POI", StringComparison.Ordinal))
                 {
-                    templateControl.LoadPoiParam();
-                    foreach (var item in templateControl.PoiParams)
+                    TemplateControl.LoadPoiParam();
+                    foreach (var item in TemplateControl.PoiParams)
                     {
                         ModMasterConfigs.Add(new MParamConfig(item.Value));
                     }
                 }
                 else
                 {
-                    List<ModMasterModel> mods = templateControl.LoadModMasterByPid(config.ID);
+                    List<ModMasterModel> mods = TemplateControl.LoadModMasterByPid(config.ID);
                     foreach (var item in mods)
                     {
                         ModMasterConfigs.Add(new MParamConfig(item));
@@ -118,20 +119,19 @@ namespace ColorVision.Services.Templates
                 {
                     MParamConfig mod = (MParamConfig)Mod_Master.SelectedItem;
                     detailModel.TID = mod.ID;
-
-                    templateControl.Save(detailModel);
-
+                    measureDetail.Save(detailModel);
                     Reload();
                 }
             }
         }
+
 
         private void Button_Del_Click(object sender, RoutedEventArgs e)
         {
             if(ListView1.SelectedItem!=null)
             {
                 MParamConfig config = (MParamConfig)ListView1.SelectedItem;
-                templateControl.ModMDetailDeleteById(config.ID);
+                measureDetail.DeleteById(config.ID);
 
                 Reload();
             }
@@ -139,7 +139,7 @@ namespace ColorVision.Services.Templates
 
         private void Reload()
         {
-            List<MeasureDetailModel> des = templateControl.LoadMeasureDetail(MasterID);
+            List<MeasureDetailModel> des = measureDetail.GetAllByPid(MasterID);
             Reload(des);
         }
 

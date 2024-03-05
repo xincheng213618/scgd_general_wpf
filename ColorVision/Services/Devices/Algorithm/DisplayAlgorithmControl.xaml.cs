@@ -39,8 +39,6 @@ namespace ColorVision.Services.Devices.Algorithm
 
         private IPendingHandler? handler { get; set; }
 
-        private ResultService resultService { get; set; }
-
         private NetFileUtil netFileUtil;
 
 
@@ -277,7 +275,6 @@ namespace ColorVision.Services.Devices.Algorithm
                 }
             };
 
-            resultService = new ResultService();
         }
 
         private void PoiClick(object sender, RoutedEventArgs e)

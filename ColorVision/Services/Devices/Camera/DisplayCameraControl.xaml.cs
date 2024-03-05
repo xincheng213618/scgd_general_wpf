@@ -45,7 +45,6 @@ namespace ColorVision.Services.Devices.Camera
         private NetFileUtil netFileUtil;
         private IPendingHandler? handler { get; set; }
 
-        private ResultService resultService { get; set; }
 
         public DisplayCameraControl(DeviceCamera device)
         {
@@ -390,8 +389,6 @@ namespace ColorVision.Services.Devices.Camera
                         break;
                 }
             };
-
-            resultService = new ResultService();
         }
 
         private void CameraInit_Click(object sender, RoutedEventArgs e)

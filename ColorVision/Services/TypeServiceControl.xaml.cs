@@ -65,12 +65,12 @@ namespace ColorVision.Services
                
                 DBTerminalServiceConfig dbCfg = new DBTerminalServiceConfig {  HeartbeatTime = 5000,};
                 sysResource.Value = JsonConvert.SerializeObject(dbCfg);
-
-                SysResourceService sysResourceService = new SysResourceService();
-                sysResourceService.Save(sysResource);
+                
+                VSysResourceDao resourceDao = new VSysResourceDao();
+                resourceDao.Save(sysResource);
 
                 int pkId = sysResource.PKId;
-                if (pkId > 0 && sysResourceService.GetMasterById(pkId) is SysResourceModel model)
+                if (pkId > 0 && resourceDao.GetById(pkId) is SysResourceModel model)
                     serviceKind.AddChild(new TerminalService(model));
                 MQTTRCService.GetInstance().RestartServices(serviceKind.ServiceTypes.ToString());
             }

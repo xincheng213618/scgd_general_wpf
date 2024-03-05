@@ -70,24 +70,12 @@ namespace ColorVision.Services
             deviceConfig.SendTopic = ServiceTerminal.Config.SendTopic;
             deviceConfig.SubscribeTopic = ServiceTerminal.Config.SubscribeTopic;
             sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
-            ServiceControl.ResourceService.Save(sysResource);
+            ServiceControl.VSysResourceDao.Save(sysResource);
             int pkId = sysResource.PKId;
-            if (pkId > 0 && ServiceControl.ResourceService.GetDeviceById(pkId) is SysDeviceModel model) return model;
+            if (pkId > 0 && ServiceControl.VSysDeviceDao.GetById(pkId) is SysDeviceModel model) return model;
             else return null;
         }
-        private SysResourceModel? saveConfigInfo(DeviceServiceConfig deviceConfig, SysResourceModel sysResource)
-        {
-            deviceConfig.Name = TextBox_Name.Text;
-            deviceConfig.Code = TextBox_Code.Text;
 
-            deviceConfig.SendTopic = ServiceTerminal.Config.SendTopic;
-            deviceConfig.SubscribeTopic = ServiceTerminal.Config.SubscribeTopic;
-            sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
-            ServiceControl.ResourceService.Save(sysResource);
-            int pkId = sysResource.PKId;
-            if (pkId > 0 && ServiceControl.ResourceService.GetMasterById(pkId) is SysResourceModel model) return model;
-            else return null;
-        }
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
             if (TextBox_Type.SelectedItem is TerminalService serviceTerminal)

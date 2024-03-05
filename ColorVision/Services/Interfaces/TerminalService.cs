@@ -147,8 +147,8 @@ namespace ColorVision.Services
             Parent.RemoveChild(this);
             if (SysResourceModel != null)
             {
-                ServiceManager.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
-                ServiceManager.GetInstance().ResourceService.DeleteAllByPid(SysResourceModel.Id);
+                ServiceManager.GetInstance().VSysResourceDao.DeleteById(SysResourceModel.Id);
+                ServiceManager.GetInstance().VSysResourceDao.DeleteAllByPid(SysResourceModel.Id);
             }
         }
 
@@ -181,8 +181,7 @@ namespace ColorVision.Services
             base.Save();
             DBTerminalServiceConfig dbCfg = new DBTerminalServiceConfig { HeartbeatTime = Config.HeartbeatTime, };
             SysResourceModel.Value = JsonConvert.SerializeObject(dbCfg);
-            //SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            ServiceManager.GetInstance().ResourceService.Save(SysResourceModel);
+            ServiceManager.GetInstance().VSysResourceDao.Save(SysResourceModel);
            
             MQTTRCService.GetInstance().RestartServices(Config.ServiceType.ToString());
         }

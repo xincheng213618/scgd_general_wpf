@@ -278,6 +278,8 @@ namespace ColorVision.Services.Templates
                 }
             }
         }
+        private MeasureMasterDao measureMaster = new MeasureMasterDao();
+        private MeasureDetailDao measureDetail = new MeasureDetailDao();
 
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -301,7 +303,7 @@ namespace ColorVision.Services.Templates
                         if (UserControl is MeasureParamControl mpc && TemplateModelBases[listView.SelectedIndex].GetValue() is MeasureParam mp)
                         {
                             mpc.MasterID = mp.Id;
-                            List<MeasureDetailModel> des = TemplateControl.LoadMeasureDetail(mp.Id);
+                            List<MeasureDetailModel> des = measureDetail.GetAllByPid(mp.Id); 
                             mpc.Reload(des);
                             mpc.ModTypeConfigs.Clear();
                             mpc.ModTypeConfigs.Add(new MParamConfig(-1,"关注点","POI"));
@@ -541,12 +543,14 @@ namespace ColorVision.Services.Templates
             ListView1.ScrollIntoView(config);
         }
 
+        private ModService modService = new ModService();
+
         public void TemplateDel()
         {
             void TemplateDel<T>(ObservableCollection<TemplateModel<T>> keyValuePairs) where T : ParamBase
             {
                 if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
-                    TemplateControl.ModMasterDeleteById(keyValuePairs[ListView1.SelectedIndex].Value.Id);
+                    modService.MasterDeleteById(keyValuePairs[ListView1.SelectedIndex].Value.Id);
                 keyValuePairs.RemoveAt(ListView1.SelectedIndex);
             }
 
