@@ -1,0 +1,207 @@
+﻿<UserControl  x:Class="ColorVision.Services.Devices.Calibration.Views.ViewCalibration"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ColorVision.Services.Devices.Calibration.Views"
+             xmlns:resx="clr-namespace:ColorVision.Properties"
+             xmlns:cv="clr-namespace:ColorVision.Media"
+             xmlns:vm="clr-namespace:ColorVision.Common.MVVM;assembly=ColorVision.Common"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:hc="https://handyorg.github.io/handycontrol" 
+             mc:Ignorable="d" 
+             d:DesignHeight="450" d:DesignWidth="800" Background="{DynamicResource  BackgroundBrush}"  Initialized="UserControl_Initialized">
+    <Grid x:Name="MainGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <cv:ImageView Grid.Row="0" x:Name="ImageView"></cv:ImageView>
+        <Grid x:Name="Grid1" Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="38"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <ToolBarTray>
+                <ToolBar Grid.Row="0">
+                    <Button Click="Button_Click_Export" Margin="2,0,0,0" >
+                        <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
+                    </Button>
+                    <Button Click="Button_Click_Clear" Margin="2,0,0,0"  >
+                        <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
+                    </Button>
+
+                    <Button x:Name="Order" Content="排序" Click="Order_Click" Visibility="Collapsed"  Margin="2,0,0,0"/>
+                    <Popup  x:Name="OrderPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Order}">
+                        <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="90">
+                            <StackPanel Margin="5">
+                                <StackPanel Margin="0,5">
+                                    <RadioButton x:Name="RadioID"  Margin="0,1" Content="名称"  IsChecked="True" Checked="Radio_Checked" HorizontalAlignment="Left"/>
+                                    <RadioButton x:Name="RadioBatch" Margin="0,1" Content="批次号"  Checked="Radio_Checked" HorizontalAlignment="Left"/>
+                                    <RadioButton x:Name="RadioFilePath" Margin="0,1" Content="文件名"  Checked="Radio_Checked" HorizontalAlignment="Left"/>
+                                    <RadioButton x:Name="RadioCreateTime" Margin="0,1" Content="创建时间"  Checked="Radio_Checked" HorizontalAlignment="Left"/>
+                                </StackPanel>
+                                <StackPanel Margin="0,5">
+                                    <RadioButton x:Name="RadioUp" Margin="0,1"  Content="递增" IsChecked="True" Checked="Radio_Checked" HorizontalAlignment="Left"/>
+                                    <RadioButton x:Name="RadioDown" Margin="0,1" Content="递减" Checked="Radio_Checked" HorizontalAlignment="Left"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </Popup>
+                    <Button Content="搜索" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
+
+                    <Button x:Name="Search" Content="高级查询" Click="Search1_Click" Margin="2,0,0,0"/>
+                    <Popup  x:Name="SerchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Search}">
+                        <Border Margin="5" Style="{StaticResource BorderModuleArea}"  Width="227">
+                            <StackPanel Margin="5">
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="序号" Width="60"/>
+                                    <TextBox  x:Name="TextBoxId" Style="{StaticResource TextBox.Small}" Text=""/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="批次号" Width="60"/>
+                                    <TextBox x:Name="TextBoxBatch"  Style="{StaticResource TextBox.Small}" Text=""/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="文件" Width="60"/>
+                                    <TextBox  x:Name="TextBoxFile" Style="{StaticResource TextBox.Small}"  Text=""/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="设备码" Width="60"/>
+                                    <TextBox  x:Name="TbDeviceCode" Style="{StaticResource TextBox.Small}"  Text=""/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="开始时间" Width="60"/>
+                                    <hc:DateTimePicker x:Name="SearchTimeSart" SelectedDateTime="{x:Static sys:DateTime.MinValue}" Style="{StaticResource DateTimePicker.Small}" />
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="截至时间" Width="60"/>
+                                    <hc:DateTimePicker x:Name="SearchTimeEnd" SelectedDateTime="{x:Static sys:DateTime.Now}" Style="{StaticResource DateTimePicker.Small}"  />
+                                </DockPanel>
+                                <Button Content="查询" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </Popup>
+
+
+                    <Button x:Name="OpenColumnVisibilityPopupButton" Content="列显示" Visibility="Collapsed"  Click="OpenColumnVisibilityPopupButton_Click"/>
+                    <Popup  x:Name="ColumnVisibilityPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=OpenColumnVisibilityPopupButton}">
+                        <Border  Style="{StaticResource BorderModuleArea}" Background="{DynamicResource SecondaryRegionBrush}" Width="145" CornerRadius="5">
+                            <ListView x:Name="GridViewColumnVisibilityListView" BorderThickness="0" Background="Transparent" Margin="-3,-2,-3,-5"  Style="{StaticResource ListView.Small}">
+                                <ListView.View >
+                                    <GridView >
+                                        <GridView.ColumnHeaderContainerStyle>
+                                            <Style TargetType="{x:Type GridViewColumnHeader}">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                            </Style>
+                                        </GridView.ColumnHeaderContainerStyle>
+                                        <GridViewColumn>
+                                            <GridViewColumn.CellTemplate>
+                                                <DataTemplate  DataType="{x:Type vm:GridViewColumnVisibility}">
+                                                    <StackPanel Orientation="Horizontal">
+                                                        <CheckBox IsChecked="{Binding IsVisible}" Margin="-5,0,5,0" Click="CheckBox_Click"/>
+                                                        <TextBlock Text="{Binding ColumnName}"/>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </GridViewColumn.CellTemplate>
+                                        </GridViewColumn>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </Border>
+                    </Popup>
+
+                </ToolBar>
+                <ToolBar>
+                    <Button Content="Src"  Click="Src_Click"/>
+                    <Button Content="R"  Click="R_Click"/>
+                    <Button Content="G"  Click="G_Click"/>
+                    <Button Content="B"  Click="B_Click"/>
+
+                    <Button Content="X"  Click="X_Click"/>
+                    <Button Content="Y"  Click="Y_Click"/>
+                    <Button Content="Z"  Click="Z_Click"/>
+                    <ComboBox x:Name="ComboxPOITemplate" Width="130" HorizontalAlignment="Left"  SelectedValuePath="Value"  DisplayMemberPath="Key"/>
+                    <Button Content="在图像中绘制关注点" Click="POI_Click"/>
+                </ToolBar>
+            </ToolBarTray>
+            <ListView Height="250" Grid.Row="1" x:Name="listView1" Background="Transparent" BorderThickness="0"  Margin="-5" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                <ListView.Resources >
+                    <ContextMenu x:Key="ContextMenuItem">
+                        <MenuItem Header="{x:Static resx:Resource.Delete}"  Click="MenuItem_Delete_Click" Tag="{Binding .}"  />
+                    </ContextMenu>
+                    <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
+                </ListView.Resources>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
+                        <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.View >
+                    <GridView >
+                        <GridView.ColumnHeaderContainerStyle>
+                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                <Setter Property="Visibility" Value="Visible"/>
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                                <EventSetter Event="Click" Handler="GridViewColumnSort"/>
+                            </Style>
+                        </GridView.ColumnHeaderContainerStyle>
+                        <GridViewColumn  Header="序号" Width="50">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:ViewResultCalibration}">
+                                    <TextBlock Text="{Binding Id}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="批次号" Width="160">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:ViewResultCalibration}">
+                                    <TextBlock Text="{ Binding  Batch}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="图像数据文件" Width="120">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:ViewResultCalibration}">
+                                    <TextBlock Text="{ Binding   FilePath}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="参数" >
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:ViewResultCalibration}">
+                                    <TextBlock Text="{ Binding   ReqParams}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+
+                        <GridViewColumn  Header="结果" Width="50">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:ViewResultCalibration}">
+                                    <TextBlock Text="{ Binding  Result}" />
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="用时" Width="100">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:ViewResultCalibration}">
+                                    <TextBlock Text="{ Binding  TotalTime}" />
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="图像信息" >
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:ViewResultCalibration}">
+                                    <TextBlock Text="{ Binding  ImgFrameInfo}" />
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>   
+                    </GridView>
+                </ListView.View>
+
+            </ListView>
+        </Grid>
+    </Grid>
+</UserControl>

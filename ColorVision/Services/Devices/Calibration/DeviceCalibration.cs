@@ -3,6 +3,7 @@ using ColorVision.MVVM;
 using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;
+using ColorVision.Services.Devices.Calibration.Views;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
@@ -31,8 +32,11 @@ namespace ColorVision.Services.Devices.Calibration
 
         public RelayCommand UploadCalibrationCommand { get; set; }
 
+        public ViewCalibration View{ get; set; }
+
         public DeviceCalibration(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
+            View = new ViewCalibration(this);
             DeviceService = new MQTTCalibration(Config);
             EditLazy = new Lazy<EditCalibration>(() => { EditCalibration ??= new EditCalibration(this); return EditCalibration; });
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
@@ -330,7 +334,6 @@ namespace ColorVision.Services.Devices.Calibration
         public override UserControl GetDeviceInfo() => new DeviceCalibrationControl(this,false);
 
         public override UserControl GetDisplayControl() => new DisplayCalibrationControl(this);
-
 
 
         readonly Lazy<EditCalibration> EditLazy;

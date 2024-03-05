@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Net;
 using ColorVision.Services.Devices.Calibration.Templates;
+using ColorVision.Services.Devices.Calibration.Views;
 using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
@@ -11,6 +12,7 @@ using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -41,50 +43,57 @@ namespace ColorVision.Services.Devices.Calibration
             this.PreviewMouseDown += UserControl_PreviewMouseDown;
 
         }
+
+        public ViewCalibration View { get; set; }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Device;
 
-            CalibrationParams = new ObservableCollection<TemplateModel<CalibrationParam>>();
-            //CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam() { Id = -1 }));
-
-            foreach (var item in Device.CalibrationParams)
-                CalibrationParams.Add(item);
-
-            //Device.CalibrationParams.CollectionChanged += (s, e) =>
-            //{
-            //    switch (e.Action)
-            //    {
-            //        case NotifyCollectionChangedAction.Add:
-            //            // 处理添加项
-            //            if (e.NewItems != null)
-            //                foreach (TemplateModel<CalibrationParam> newItem in e.NewItems)
-            //                    CalibrationParams.Add(newItem);
-            //            break;
-            //        case NotifyCollectionChangedAction.Remove:
-            //            // 处理移除项
-            //            if (e.OldItems != null)
-            //                foreach (TemplateModel<CalibrationParam> newItem in e.OldItems)
-            //                    CalibrationParams.Remove(newItem);
-            //            break;
-            //        case NotifyCollectionChangedAction.Replace:
-            //            // 处理替换项
-            //            // ...
-            //            break;
-            //        case NotifyCollectionChangedAction.Move:
-            //            // 处理移动项
-            //            // ...
-            //            break;
-            //        case NotifyCollectionChangedAction.Reset:
-            //            // 处理清空集合
-            //            CalibrationParams.Clear();
-            //            CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()) { Id = -1 });
-            //            break;
-            //    }
-            //};
-
-            ComboxCalibrationTemplate.ItemsSource = CalibrationParams;
+            CalibrationParams = Device.CalibrationParams;
+            ComboxCalibrationTemplate.ItemsSource = Device.CalibrationParams;
             ComboxCalibrationTemplate.SelectedIndex = 0;
+
+            View = Device.View;
+            ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
+            ViewGridManager.GetInstance().ViewMaxChangedEvent += ViewMaxChangedEvent;
+
+            void ViewMaxChangedEvent(int max)
+            {
+                List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
+                KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowSingle, -2));
+                KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowHidden, -1));
+                for (int i = 0; i < max; i++)
+                {
+                    KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));
+                }
+                ComboxView.ItemsSource = KeyValues;
+                ComboxView.SelectedValue = View.View.ViewIndex;
+            }
+            View.View.ViewIndexChangedEvent += (e1, e2) =>
+            {
+                ComboxView.SelectedIndex = e2 + 2;
+            };
+            ComboxView.SelectionChanged += (s, e) =>
+            {
+                if (ComboxView.SelectedItem is KeyValuePair<string, int> KeyValue)
+                {
+                    View.View.ViewIndex = KeyValue.Value;
+                    ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
+                }
+            };
+            View.View.ViewIndex = -1;
+
+            this.PreviewMouseLeftButtonDown += (s, e) =>
+            {
+                if (ViewConfig.GetInstance().IsAutoSelect)
+                {
+                    if (ViewGridManager.GetInstance().ViewMax == 1)
+                    {
+                        View.View.ViewIndex = 0;
+                        ViewGridManager.GetInstance().SetViewIndex(View, 0);
+                    }
+                }
+            };
         }
 
 
