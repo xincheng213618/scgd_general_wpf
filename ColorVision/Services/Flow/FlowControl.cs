@@ -1,5 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MVVM;
+using ColorVision.Themes;
 using log4net;
 using Newtonsoft.Json;
 using System;
@@ -38,6 +39,7 @@ namespace ColorVision.Services.Flow
         private static readonly ILog logger = LogManager.GetLogger(typeof(FlowControl));
 
         string svrName = "FlowControl";
+        string devName = "DEV01";
         public FlowControlData FlowControlData { get; set; }
 
         private MQTTControl MQTTControl;
@@ -65,7 +67,7 @@ namespace ColorVision.Services.Flow
         {
             if (flowEngine == null)
             {
-                FlowEngineLib.Base.CVBaseDataFlow baseEvent = new FlowEngineLib.Base.CVBaseDataFlow(svrName, "Stop", SerialNumber);
+                FlowEngineLib.Base.CVBaseDataFlow baseEvent = new FlowEngineLib.Base.CVBaseDataFlow(svrName, devName, "Stop", SerialNumber, string.Empty);
 
                 string Msg = JsonConvert.SerializeObject(baseEvent);
                 Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
@@ -83,7 +85,7 @@ namespace ColorVision.Services.Flow
             SerialNumber = sn;
             if (flowEngine == null)
             {
-                FlowEngineLib.Base.CVBaseDataFlow baseEvent = new FlowEngineLib.Base.CVBaseDataFlow(svrName, "Start", sn);
+                FlowEngineLib.Base.CVBaseDataFlow baseEvent = new FlowEngineLib.Base.CVBaseDataFlow(svrName, devName, "Start", sn, string.Empty);
 
                 string Msg = JsonConvert.SerializeObject(baseEvent);
                 Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));

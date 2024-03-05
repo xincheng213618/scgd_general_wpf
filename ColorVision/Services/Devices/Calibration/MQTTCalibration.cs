@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Services.Devices.Camera.Calibrations;
+using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Msg;
 using MQTTMessageLib;
 using MQTTMessageLib.Calibration;
@@ -29,9 +29,9 @@ namespace ColorVision.Services.Devices.Calibration
                 {
                     case "Calibration":
 
-                        object obj = msg.Data;
-                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, obj.ToString()));
-                        break;
+                        //object obj = msg.Data;
+                        //Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, obj.ToString()));
+                        //break;
                     default:
                         OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         break;
@@ -51,12 +51,19 @@ namespace ColorVision.Services.Devices.Calibration
         }
 
 
-        public MsgRecord Calibration(CalibrationParam item,string FilePath,double R,double G,double B)
+        public MsgRecord Calibration(CalibrationParam item, string fileName, int pid, string tempName, string serialNumber, float R, float G, float B)
         {
-            Dictionary<string, object> Params = new Dictionary<string, object>();
+            string sn = null;
+            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            else sn = serialNumber;
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
+            Params.Add("DeviceParam", new DeviceParamCalibration() { exp = new float[] { R, G, B }, gain = 1, });
+
             MsgSend msg = new MsgSend
             {
-                EventName = "Calibration",
+                EventName = MQTTCalibrationEventEnum.Event_GetData,
+                SerialNumber = sn,
                 Params = Params
             };
 

@@ -527,7 +527,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
         private void Button_Click_Refresh(object sender, RoutedEventArgs e)
         {
-            Service.GetCIEFiles();
+            Service.GetCIEFiles(Service.Config.BindDeviceCode, "Algorithm");
         }
 
         private void Button_Click_Upload(object sender, RoutedEventArgs e)
@@ -692,12 +692,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
         private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
         {
-            Service.GetRawFiles();
-        }
-
-        private void Button_Click_RawUpload(object sender, RoutedEventArgs e)
-        {
-
+            Service.GetRawFiles(Service.Config.BindDeviceCode, "Algorithm");
         }
 
         private void Button_Click_RawOpen(object sender, RoutedEventArgs e)

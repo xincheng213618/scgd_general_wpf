@@ -167,6 +167,29 @@
                             </StackPanel>
                         </StackPanel>
                     </Border>
+                    <Border Style="{StaticResource BorderModuleArea}" Margin="0,5">
+                        <StackPanel Margin="5">
+                            <DockPanel Margin="0,2">
+                                <ToggleButton  HorizontalAlignment="Left"  Height="16" Width="40"  Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding DatumArea.Filter.Enable}"/>
+                                <TextBlock HorizontalAlignment="Left" Text="关注点过滤启用"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock HorizontalAlignment="Left" Text="Threshold"  MinWidth="80"/>
+                                <TextBox HorizontalAlignment="Left" Text="{Binding DatumArea.Filter.Threshold}" Width="55"  />
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <ToggleButton  HorizontalAlignment="Left"  Height="16" Width="40"  Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding DatumArea.Filter.XYZEnable}"/>
+                                <TextBlock HorizontalAlignment="Left" Text="XYZEnable" />
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock HorizontalAlignment="Left" Text="XYZType"  MinWidth="80"/>
+                                <TextBox HorizontalAlignment="Left" Text="{Binding DatumArea.Filter.XYZType}" Width="55"  />
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+
+
+
                     <Border Margin="0" Style="{StaticResource BorderModuleArea}"  CornerRadius="0,0,5,5">
                         <TabControl Background="Transparent">
                             <TabItem Header="配置参数">
