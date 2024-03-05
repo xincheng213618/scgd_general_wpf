@@ -144,35 +144,23 @@ namespace ColorVision.Update
 
                 Stopwatch stopwatch = new Stopwatch(); // 创建一个计时器来追踪下载时间
 
-                long previousBytesReceived = 0; // 之前接收的字节数
-                double speed = 0; 
 
                 client.DownloadProgressChanged += (sender, e) =>
                 {
                     ProgressValue = e.ProgressPercentage;
 
-                    //if (!stopwatch.IsRunning)
-                    //{
-                    //    stopwatch.Start(); // 如果计时器未启动，则启动计时器
-                    //}
+                    if (stopwatch.ElapsedMilliseconds > 1000) // 更新速度至少每秒一次
+                    {
+                        double speed = e.BytesReceived / stopwatch.Elapsed.TotalSeconds;
+                        SpeedValue = $"Current speed: {speed / 1024 / 1024:F2} MB/s";
+                    }
 
-                    //// 计算从上一次触发事件以来接收的字节数
-                    //long bytesReceivedSinceLastTick = e.BytesReceived - previousBytesReceived;
-                    //previousBytesReceived = e.BytesReceived; // 更新总接收字节数
-
-                    //// 计算时间差
-                    //double timeSpan = stopwatch.Elapsed.TotalSeconds;
-                    //stopwatch.Restart(); // 重置并重新开始计时
-
-                    //if (timeSpan > 0) // 防止除以0
-                    //{
-                    //    SpeedValue = Common.Utilities.MemorySize.MemorySizeText(bytesReceivedSinceLastTick / (long)timeSpan);
-                    //}
 
                 };
                 // 绑定下载完成事件
                 client.DownloadFileCompleted += (sender, e) =>
                 {
+                    stopwatch.Stop();
                     // 检查是否出错或者操作被取消
                     if (e.Cancelled)
                     {
@@ -190,6 +178,9 @@ namespace ColorVision.Update
                         });
                     }
                 };
+
+                stopwatch.Start(); // 如果计时器未启动，则启动计时器
+
                 await client.DownloadFileTaskAsync(new Uri(downloadUrl), downloadPath);
             }
 #pragma warning restore SYSLIB0014 // 类型或成员已过时
