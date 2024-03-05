@@ -122,13 +122,21 @@ namespace ColorVision.Services.Devices.Algorithm
             MsgSend msg = new MsgSend { EventName = "UnInit" };
             return PublishAsyncClient(msg);
         }
-
-        public void GetCIEFiles()
+        public void GetRawFiles(string deviceCode, string deviceType)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = MQTTFileServerEventEnum.Event_File_List_All,
-                Params = new Dictionary<string, object> { { "FileExtType", FileExtType.CIE } }
+                Params = new Dictionary<string, object> { { "FileExtType", FileExtType.Raw }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } }
+            };
+            PublishAsyncClient(msg);
+        }
+        public void GetCIEFiles(string deviceCode, string deviceType)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTFileServerEventEnum.Event_File_List_All,
+                Params = new Dictionary<string, object> { { "FileExtType", FileExtType.CIE } ,{ "DeviceCode", deviceCode }, { "DeviceType", deviceType } }
             };
             PublishAsyncClient(msg);
         }
@@ -388,15 +396,6 @@ namespace ColorVision.Services.Devices.Algorithm
             PublishAsyncClient(msg);
         }
 
-        public void GetRawFiles()
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = MQTTFileServerEventEnum.Event_File_List_All,
-                Params = new Dictionary<string, object> { { "FileExtType", FileExtType.Raw } }
-            };
-            PublishAsyncClient(msg);
-        }
         public void CacheClear()
         {
             PublishAsyncClient(new MsgSend { EventName = "" });

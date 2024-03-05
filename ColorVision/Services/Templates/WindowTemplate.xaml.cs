@@ -7,7 +7,7 @@ using ColorVision.Properties;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Algorithm.Templates;
-using ColorVision.Services.Devices.Camera.Calibrations;
+using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.PG.Templates;
 using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Devices.Spectrum;
@@ -191,8 +191,8 @@ namespace ColorVision.Services.Templates
             GridProperty.Children.Add(UserControl);
         }
 
-        public DeviceService DeviceCamera { get; set; }
-        public WindowTemplate(TemplateType windowTemplateType, UserControl userControl, DeviceService deviceCamera ,bool IsReLoad = true)
+        public ICalibrationService<BaseResourceObject> DeviceCamera { get; set; }
+        public WindowTemplate(TemplateType windowTemplateType, UserControl userControl, ICalibrationService<BaseResourceObject> deviceCamera ,bool IsReLoad = true)
         {
             DeviceCamera = deviceCamera;
             TemplateType = windowTemplateType;

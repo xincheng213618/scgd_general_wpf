@@ -1,10 +1,10 @@
-﻿<Window x:Class="ColorVision.Services.Devices.Camera.Calibrations.CalibrationEdit"
+﻿<Window x:Class="ColorVision.Services.Devices.Calibration.Templates.CalibrationEdit"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:hc="https://handyorg.github.io/handycontrol"
-        xmlns:local="clr-namespace:ColorVision.Services.Devices.Camera.Calibrations"
+        xmlns:local="clr-namespace:ColorVision.Services.Devices.Calibration.Templates"
         xmlns:group="clr-namespace:ColorVision.Services.Devices"
         mc:Ignorable="d"
         Title="CalibrationEdit"  Background="{DynamicResource GlobalBackground}"  Closed="Window_Closed" Height="350" Width="1200" Initialized="Window_Initialized" >

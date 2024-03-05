@@ -69,14 +69,13 @@
                             <DockPanel Margin="0,2">
                                 <RadioButton Content="本地" IsChecked="True" GroupName="alg_src"/>
                                 <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
-                                <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" HorizontalAlignment="Left" Width="130" />
+                                <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" HorizontalAlignment="Left" Width="170" />
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <RadioButton x:Name="AlgRawSelect" GroupName="alg_src"/>
                                 <Button Content="刷新" Click="Button_Click_RawRefresh" />
-                                <Button DockPanel.Dock="Right" Content="上传" Click="Button_Click_RawUpload" Visibility="Hidden" Width="0" />
                                 <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_RawOpen" />
-                                <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}" Width="120" />
+                                <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}" Width="150" />
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <RadioButton x:Name="AlgBatchSelect" Content="批次号" GroupName="alg_src"/>

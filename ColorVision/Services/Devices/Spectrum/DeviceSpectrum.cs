@@ -1,19 +1,18 @@
-﻿using ColorVision.Services.Devices.Spectrum.Configs;
-using ColorVision.Services.Devices.Spectrum.Views;
-using System.Windows.Controls;
-using ColorVision.Services.Dao;
-using ColorVision.Themes.Controls;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.MVVM;
-using ColorVision.Services.Devices.Camera.Calibrations;
-using System.Windows;
-using ColorVision.Services.Interfaces;
-using ColorVision.Common.Utilities;
-using System.Collections.ObjectModel;
 using ColorVision.MySql.Service;
-using System.Threading.Tasks;
-using System;
-using System.IO;
+using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Spectrum.Configs;
+using ColorVision.Services.Devices.Spectrum.Views;
+using ColorVision.Services.Interfaces;
 using ColorVision.Services.Templates;
+using ColorVision.Themes.Controls;
+using System;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Spectrum
 {

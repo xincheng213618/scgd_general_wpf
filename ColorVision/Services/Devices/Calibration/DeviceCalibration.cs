@@ -1,10 +1,12 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.MVVM;
+using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
+using ColorVision.Services.Templates;
 using ColorVision.Solution;
 using ColorVision.Themes.Controls;
 using cvColorVision;
@@ -21,7 +23,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Calibration
 {
-    public class DeviceCalibration : DeviceService<ConfigCalibration>, IUploadMsg
+    public class DeviceCalibration : DeviceService<ConfigCalibration>, IUploadMsg, ICalibrationService<BaseResourceObject>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCalibration));
 
@@ -34,6 +36,7 @@ namespace ColorVision.Services.Devices.Calibration
             DeviceService = new MQTTCalibration(Config);
             EditLazy = new Lazy<EditCalibration>(() => { EditCalibration ??= new EditCalibration(this); return EditCalibration; });
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
+            TemplateControl.GetInstance().LoadModCabParam(CalibrationParams, SysResourceModel.Id, ModMasterType.Calibration);
         }
 
         public static void ExtractToDirectoryWithOverwrite(string zipPath, string extractPath)

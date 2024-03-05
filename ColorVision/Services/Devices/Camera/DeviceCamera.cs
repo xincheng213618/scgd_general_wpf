@@ -2,7 +2,8 @@
 using ColorVision.MVVM;
 using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera.Calibrations;
+using ColorVision.Services.Devices.Calibration;
+using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Devices.Camera.Dao;
 using ColorVision.Services.Devices.Camera.Views;
@@ -28,20 +29,23 @@ using System.Windows.Media;
 
 namespace ColorVision.Services.Devices.Camera
 {
-
-    public class ColorVisionVCalibratioItem
-    {
-        public CalibrationType CalibrationType { get; set; }
-        public string FileName { get; set; }
-        public string Title { get; set; }
-    }
-
-    public class DeviceCamera : DeviceService<ConfigCamera>, IUploadMsg
+    public class DeviceCamera : DeviceService<ConfigCamera>, IUploadMsg, ICalibrationService<BaseResourceObject>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCamera));
-
-
         public MQTTCamera DeviceService { get; set; }
+
+        public DeviceCalibration? DeviceCalibration
+        {
+            get
+            {
+                foreach (var item in ServiceManager.GetInstance().DeviceServices)
+                {
+                    if (item is DeviceCalibration deviceCalibration && deviceCalibration.Code == Config.BindDeviceCode)
+                        return deviceCalibration;
+                }
+                return null;
+            }
+        }
 
         public ViewCamera View { get; set; }
 
@@ -72,7 +76,6 @@ namespace ColorVision.Services.Devices.Camera
             View.View.Title = "相机视图";
             View.View.Icon = Icon;
 
-            DisplayLazy = new Lazy<DisplayCameraControl>(() => DisplayCameraControl ?? new DisplayCameraControl(this));
             EditCameraLazy = new Lazy<EditCamera>(() => { EditCamera ??= new EditCamera(this); return EditCamera; });
 
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
@@ -442,13 +445,8 @@ namespace ColorVision.Services.Devices.Camera
 
         public override UserControl GetDeviceControl() => new DeviceCameraControl(this);
         public override UserControl GetDeviceInfo() => new DeviceCameraControl(this, false);
-
-
-        readonly Lazy<DisplayCameraControl> DisplayLazy;
-        public DisplayCameraControl DisplayCameraControl { get; set; }
-        public override UserControl GetDisplayControl() => DisplayLazy.Value;
-
-
+        
+        public override UserControl GetDisplayControl() => new DisplayCameraControl(this);
         readonly Lazy<EditCamera> EditCameraLazy;
         public EditCamera EditCamera { get; set; }
         public override UserControl GetEditControl() => EditCameraLazy.Value;
