@@ -1,7 +1,6 @@
 ﻿using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
 using ColorVision.MySql;
-using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
 using ColorVision.Services.DAO;
 using ColorVision.Services.Devices;
@@ -47,19 +46,15 @@ namespace ColorVision.Services
         public Dictionary<string, string> ServiceTokens { get; set; } = new Dictionary<string, string>();
 
 
-        public SysResourceService ResourceService { get; set; }
-
-
-        private ResultService resultService;
         public ObservableCollection<IDisPlayControl> DisPlayControls { get; set; } = new ObservableCollection<IDisPlayControl>();
 
+
+        public VSysResourceDao VSysResourceDao { get; set; } = new VSysResourceDao();
+        public VSysDeviceDao VSysDeviceDao { get; set; } = new VSysDeviceDao();
 
         public ServiceManager()
         {
             UserConfig = ConfigHandler.GetInstance().SoftwareConfig.UserConfig;
-
-            ResourceService = new SysResourceService();
-            resultService = new ResultService();
 
             svrDevices = new Dictionary<string, List<MQTTServiceBase>>();
             ServiceTokens = new Dictionary<string,string>();
@@ -136,7 +131,7 @@ namespace ColorVision.Services
 
             TerminalServices.Clear();
             svrDevices.Clear();
-            List<SysResourceModel> sysResourceModelServices = ResourceService.GetAllServices(UserConfig.TenantId);
+            List<SysResourceModel> sysResourceModelServices = SysResourceDao.GetAll(UserConfig.TenantId);
             foreach (var typeService1 in TypeServices)
             {
                 var sysResourceModels = sysResourceModelServices.FindAll((x) => x.Type == (int)typeService1.ServiceTypes);
@@ -173,7 +168,7 @@ namespace ColorVision.Services
                 }
             }
 
-            List<SysDeviceModel> sysResourceModelDevices = ResourceService.GetAllDevices(UserConfig.TenantId);
+            List<SysDeviceModel> sysResourceModelDevices = VSysDeviceDao.GetAll(UserConfig.TenantId);
             DeviceServices.Clear();
 
             foreach (var terminalService in TerminalServices)
@@ -322,19 +317,36 @@ namespace ColorVision.Services
                 }
             }
         }
+        private BatchResultMasterDao batchDao = new BatchResultMasterDao();
 
         public void ProcResult(FlowControlData flowControlData)
         {
             int totalTime = flowControlData.Params.TTL;
-            resultService.BatchUpdateEnd(flowControlData.SerialNumber, totalTime, flowControlData.EventName);
+            batchDao.UpdateEnd(flowControlData.SerialNumber, totalTime, flowControlData.EventName);
             SpectrumDrawPlotFromDB(flowControlData.SerialNumber);
         }
+
+
+        private SpectumResultDao spectumDao = new SpectumResultDao();
+        private SMUResultDao smuDao = new SMUResultDao();
 
         public void SpectrumDrawPlotFromDB(string bid)
         {
             List<SpectrumData> datas = new List<SpectrumData>();
-            List<SpectumResultModel> resultSpec = resultService.SpectumSelectBySN(bid);
-            List<SMUResultModel> resultSMU = resultService.SMUSelectBySN(bid);
+            List<SpectumResultModel> resultSpec;
+            List<SMUResultModel> resultSMU;
+            BatchResultMasterModel batch = batchDao.GetByCode(bid);
+            if (batch == null)
+            {
+                 resultSMU = smuDao.selectBySN(bid);
+                 resultSpec = spectumDao.selectBySN(bid);
+            }
+            else
+            {
+                resultSMU = smuDao.GetAllByPid(batch.Id);
+                resultSpec = spectumDao.GetAllByPid(batch.Id);
+            }
+
             for (int i = 0; i < resultSpec.Count; i++)
             {
                 var item = resultSpec[i];
@@ -396,14 +408,14 @@ namespace ColorVision.Services
         public BatchResultMasterModel BatchSave(string sn)
         {
             BatchResultMasterModel model = new BatchResultMasterModel(sn, UserConfig.TenantId);
-            resultService.BatchSave(model);
+            batchDao.Save(model);
             return model;
         }
 
         public int ResultBatchSave(string sn)
         {
             BatchResultMasterModel model = new BatchResultMasterModel(sn, UserConfig.TenantId);
-            return resultService.BatchSave(model);
+            return batchDao.Save(model);
         }
 
         private static string GetServiceKey(string svrType, string svrCode)

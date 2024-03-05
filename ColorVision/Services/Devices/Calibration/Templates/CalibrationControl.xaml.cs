@@ -2,9 +2,6 @@
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using System.Windows.Input;
-using ColorVision.Services.Devices.Calibration;
-using ColorVision.Services.Devices.Calibration.Templates;
-using ColorVision.Services.Devices.Camera;
 
 namespace ColorVision.Services.Devices.Calibration.Templates
 {

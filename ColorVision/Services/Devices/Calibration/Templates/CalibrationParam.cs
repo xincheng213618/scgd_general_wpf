@@ -2,11 +2,9 @@
 using ColorVision.MVVM;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.Interfaces;
 using ColorVision.Services.Templates;
 using cvColorVision;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 
 
 namespace ColorVision.Services.Devices.Calibration.Templates

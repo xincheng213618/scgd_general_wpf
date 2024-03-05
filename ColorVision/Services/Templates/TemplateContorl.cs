@@ -1,6 +1,6 @@
 ﻿#pragma warning disable CS8604
+using ColorVision.Common.Utilities;
 using ColorVision.MySql;
-using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Algorithm.Templates;
 using ColorVision.Services.Devices.Calibration.Templates;
@@ -36,10 +36,6 @@ namespace ColorVision.Services.Templates
 
         private static string FileNameLedJudgeParams = "LedJudgeSetup";
         private static string FileNameFlowParms = "FlowParmSetup";
-
-        private ModService modService = new ModService();
-        private SysResourceService resourceService = new SysResourceService();
-        private MeasureService measureService = new MeasureService();
 
         public string TemplatePath { get; set; }
 
@@ -344,7 +340,7 @@ namespace ColorVision.Services.Templates
 
         public void Save2DB<T>(T value) where T : ParamBase
         {
-            modService.Save(value);
+            Save(value);
         }
 
 
@@ -419,44 +415,123 @@ namespace ColorVision.Services.Templates
             }
         }
 
-
+        private ModMasterDao masterModDao = new ModMasterDao();
+        private ModDetailDao detailDao = new ModDetailDao();
         public T? AddParamMode<T>(string code, string Name) where T : ParamBase, new()
         {
             ModMasterModel modMaster = new ModMasterModel(code, Name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            modService.Save(modMaster);
+            Save(modMaster);
             int pkId = modMaster.PKId;
             if (pkId > 0)
             {
-                ModMasterModel modMasterModel = modService.GetMasterById(pkId);
-                List<ModDetailModel> modDetailModels = modService.GetDetailByPid(pkId);
+                ModMasterModel modMasterModel = masterModDao.GetById(pkId);
+                List<ModDetailModel> modDetailModels = detailDao.GetAllByPid(pkId);
                 if (modMasterModel != null) return (T)Activator.CreateInstance(typeof(T), new object[] { modMasterModel, modDetailModels });
                 else return null;
             }
             return null;
         }
 
+        private SysDictionaryModDetailDao sysDao = new SysDictionaryModDetailDao();
+        private SysDictionaryModDao sysDicDao = new SysDictionaryModDao();
+        private VSysResourceDao resourceDao = new VSysResourceDao();
 
+        public int Save(ModMasterModel modMaster)
+        {
+            int ret = -1;
+            SysDictionaryModModel mod = sysDicDao.GetByCode(modMaster.Pcode, modMaster.TenantId);
+            if (mod != null)
+            {
+                modMaster.Pid = mod.Id;
+                ret = masterFlowDao.Save(modMaster);
+                List<ModDetailModel> list = new List<ModDetailModel>();
+                List<SysDictionaryModDetaiModel> sysDic = sysDao.GetAllByPid(modMaster.Pid);
+                foreach (var item in sysDic)
+                {
+                    list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
+                }
+                detailDao.SaveByPid(modMaster.Id, list);
+            }
+            return ret;
+        }
+        public void Save(FlowParam flowParam)
+        {
+            List<ModDetailModel> list = new List<ModDetailModel>();
+            flowParam.GetDetail(list);
+            if (list.Count > 0 && list[0] is ModDetailModel model)
+            {
+                if (int.TryParse(model.ValueA, out int id))
+                {
+                    SysResourceModel res = resourceDao.GetById(id);
+                    if (res != null)
+                    {
+                        res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
+                        res.Name = flowParam.Name;
+                        res.Value = flowParam.DataBase64;
+                        resourceDao.Save(res);
+                    }
+                }
+                else
+                {
+                    SysResourceModel res = new SysResourceModel();
+                    res.Name = flowParam.Name;
+                    res.Type = 101;
+                    if (!string.IsNullOrEmpty(flowParam.DataBase64))
+                    {
+                        res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
+                        res.Value = flowParam.DataBase64;
+                    }
+                    resourceDao.Save(res);
+                    model.ValueA = res.Id.ToString();
+                }
+                detailDao.UpdateByPid(flowParam.Id, list);
+            }
+        }
 
+        public static int Save1(ModMasterModel modMaster)
+        {
+            ModMasterDao modMasterDao = new ModMasterDao();
+            SysDictionaryModDao sysDicDao = new SysDictionaryModDao();
+            SysDictionaryModDetailDao sysDao = new SysDictionaryModDetailDao();
+            ModDetailDao detailDao = new ModDetailDao();
+            int ret = -1;
+            SysDictionaryModModel mod = sysDicDao.GetByCode(modMaster.Pcode, modMaster.TenantId);
+            if (mod != null)
+            {
+                modMaster.Pid = mod.Id;
+                ret = modMasterDao.Save(modMaster);
+                List<ModDetailModel> list = new List<ModDetailModel>();
+                List<SysDictionaryModDetaiModel> sysDic = sysDao.GetAllByPid(modMaster.Pid);
+                foreach (var item in sysDic)
+                {
+                    list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
+                }
+                detailDao.SaveByPid(modMaster.Id, list);
+            }
+            return ret;
+        }
 
+        private ModFlowDetailDao detailFlowDao = new ModFlowDetailDao();
 
         internal FlowParam? AddFlowParam(string text)
         {
             ModMasterModel flowMaster = new ModMasterModel(ModMasterType.Flow, text, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            modService.Save(flowMaster);
+            Save(flowMaster);
             int pkId = flowMaster.PKId;
             if (pkId > 0)
             {
-                List<ModFlowDetailModel> flowDetail = modService.GetFlowDetailByPid(pkId);
+                List<ModFlowDetailModel> flowDetail = detailFlowDao.GetAllByPid(pkId);
                 if (flowMaster != null) return new FlowParam(flowMaster, flowDetail);
                 else return null;
             }
             return null;
         }
+        private VSysResourceDao VSysResourceDao { get; set; } = new VSysResourceDao();
 
         internal ResourceParam? AddDeviceParam(string name, string code, int type, int pid)
         {
             SysResourceModel sysResource = new SysResourceModel(name, code, type, pid, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            resourceService.Save(sysResource);
+            VSysResourceDao.Save(sysResource);
             int pkId = sysResource.PKId;
             if (pkId > 0)
             {
@@ -468,7 +543,7 @@ namespace ColorVision.Services.Templates
         internal ResourceParam? AddServiceParam(string name, string code, int type)
         {
             SysResourceModel sysResource = new SysResourceModel(name, code, type, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            resourceService.Save(sysResource);
+            VSysResourceDao.Save(sysResource);
             int pkId = sysResource.PKId;
             if (pkId > 0)
             {
@@ -480,7 +555,7 @@ namespace ColorVision.Services.Templates
         internal MeasureParam? AddMeasureParam(string name)
         {
             MeasureMasterModel model = new MeasureMasterModel(name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            measureService.Save(model);
+            measureMaster.Save(model);
             int pkId = model.PKId;
             if (pkId > 0)
             {
@@ -490,13 +565,13 @@ namespace ColorVision.Services.Templates
         }
         private MeasureParam? LoadMeasureParamById(int pkId)
         {
-            MeasureMasterModel model = measureService.GetMasterById(pkId);
+            MeasureMasterModel model = measureMaster.GetById(pkId);
             if (model != null) return new MeasureParam(model);
             else return null;
         }
         private ResourceParam? LoadServiceParamById(int pkId)
         {
-            SysResourceModel model = resourceService.GetMasterById(pkId);
+            SysResourceModel model = VSysResourceDao.GetById(pkId);
             if (model != null) return new ResourceParam(model);
             else return null;
         }
@@ -512,7 +587,7 @@ namespace ColorVision.Services.Templates
                 List<ModMasterModel> smus = masterFlowDao.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in smus)
                 {
-                    List<ModDetailModel> smuDetails = modService.GetDetailByPid(dbModel.Id);
+                    List<ModDetailModel> smuDetails = detailDao.GetAllByPid(dbModel.Id);
                     foreach (var dbDetail in smuDetails)
                     {
                         dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
@@ -538,7 +613,7 @@ namespace ColorVision.Services.Templates
                 List<ModMasterModel> smus = masterFlowDao.GetResourceAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId, resourceId);
                 foreach (var dbModel in smus)
                 {
-                    List<ModDetailModel> smuDetails = modService.GetDetailByPid(dbModel.Id);
+                    List<ModDetailModel> smuDetails = detailDao.GetAllByPid(dbModel.Id);
                     foreach (var dbDetail in smuDetails)
                     {
                         dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
@@ -547,22 +622,36 @@ namespace ColorVision.Services.Templates
                 }
             }
         }
+        internal void Save(ParamBase value)
+        {
+            if (masterModDao.GetById(value.Id) is ModMasterModel modMasterModel && modMasterModel.Pcode != null)
+            {
+                modMasterModel.Name = value.Name;
+                ModMasterDao modMasterDao = new ModMasterDao(modMasterModel.Pcode);
+                modMasterDao.Save(modMasterModel);
+            }
+            List<ModDetailModel> list = new List<ModDetailModel>();
+            value.GetDetail(list);
+            detailDao.UpdateByPid(value.Id, list);
+        }
 
         public T? AddCalibrationParam<T>(string code, string Name, int resourceId) where T : ParamBase, new()
         {
             ModMasterModel modMaster = new ModMasterModel(code, Name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             modMaster.ResourceId = resourceId;
-            modService.Save(modMaster);
+            Save(modMaster);
             int pkId = modMaster.PKId;
             if (pkId > 0)
             {
-                ModMasterModel modMasterModel = modService.GetMasterById(pkId);
-                List<ModDetailModel> modDetailModels = modService.GetDetailByPid(pkId);
+                ModMasterModel modMasterModel = masterModDao.GetById(pkId);
+                List<ModDetailModel> modDetailModels = detailDao.GetAllByPid(pkId);
                 if (modMasterModel != null) return (T)Activator.CreateInstance(typeof(T), new object[] { modMasterModel, modDetailModels });
                 else return null;
             }
             return null;
         }
+
+        private ModMasterDao masterFlowDao = new ModMasterDao(ModMasterType.Flow);
 
 
         internal ObservableCollection<TemplateModel<FlowParam>> LoadFlowParam()
@@ -570,39 +659,11 @@ namespace ColorVision.Services.Templates
             FlowParams.Clear();
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                List<ModMasterModel> flows = modService.GetFlowAll(UserCenter.GetInstance().TenantId);
+                List<ModMasterModel> flows = masterFlowDao.GetAll(UserCenter.GetInstance().TenantId);
                 foreach (var dbModel in flows)
                 {
-                    List<ModFlowDetailModel> flowDetails = modService.GetFlowDetailByPid(dbModel.Id);
+                    List<ModFlowDetailModel> flowDetails = detailFlowDao.GetAllByPid(dbModel.Id);
                     var item = new TemplateModel<FlowParam>(dbModel.Name ?? "default", new FlowParam(dbModel, flowDetails));
-                    //ModDetailModel fn = item.Value.GetParameter(FlowParam.propertyName);
-                    //if (fn != null)
-                    //{
-                    //    if (!string.IsNullOrEmpty(fn.ValueA))
-                    //    {
-                    //        int id = -1;
-                    //        if (int.TryParse(fn.ValueA, out id))
-                    //        {
-                    //            SysResourceModel res = resourceService.GetMasterById(id);
-                    //            if (res != null)
-                    //            {
-                    //                item.Value.DataBase64 = res.Value ?? string.Empty;
-                    //            }
-                    //            else
-                    //            {
-                    //                fn.ValueA = string.Empty;
-                    //            }
-                    //        }
-                    //        else
-                    //        {
-                    //            fn.ValueA = string.Empty;
-                    //        }
-                    //    }
-                    //    else
-                    //    {
-                    //        fn.ValueA = string.Empty;
-                    //    }
-                    //}
                     FlowParams.Add(item);
                 }
             }
@@ -616,17 +677,15 @@ namespace ColorVision.Services.Templates
             return FlowParams;
         }
 
-        internal List<SysResourceModel> LoadAllServices()
-        {
-            return resourceService.GetAllServices(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-        }
+        private MeasureMasterDao measureMaster = new MeasureMasterDao();
+        private MeasureDetailDao measureDetail = new MeasureDetailDao();
 
         internal ObservableCollection<TemplateModel<MeasureParam>> LoadMeasureParams()
         {
             MeasureParams.Clear();
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                List<MeasureMasterModel> devices = measureService.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                List<MeasureMasterModel> devices = measureMaster.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in devices)
                 {
                     MeasureParams.Add(new TemplateModel<MeasureParam>(dbModel.Name ?? "default", new MeasureParam(dbModel)));
@@ -635,25 +694,12 @@ namespace ColorVision.Services.Templates
             return MeasureParams;
         }
 
-        internal int PoiMasterDeleteById(int id)
-        {
-            return poiMaster.DeleteById(id);
-        }
-
-        internal int ModMasterDeleteById(int id)
-        {
-            return modService.MasterDeleteById(id);
-        }
 
         internal void Save2DB(FlowParam flowParam)
         {
-            modService.Save(flowParam);
+            Save(flowParam);
         }
 
-        internal List<MeasureDetailModel> LoadMeasureDetail(int pid)
-        {
-            return measureService.GetDetailByPid(pid);
-        }
 
         private SysModMasterDao masterDao;
 
@@ -662,25 +708,6 @@ namespace ColorVision.Services.Templates
             return masterDao.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
         }
 
-        internal List<ModMasterModel> LoadModMasterByPid(int pid)
-        {
-            return modService.GetMasterByPid(pid);
-        }
-
-        internal int Save(MeasureDetailModel detailModel)
-        {
-            return measureService.Save(detailModel);
-        }
-
-        internal int ModMDetailDeleteById(int id)
-        {
-            return measureService.DetailDeleteById(id);
-        }
-
-        internal int MeasureMasterDeleteById(int id)
-        {
-            return measureService.MasterDeleteById(id);
-        }
 
         public ObservableCollection<TemplateModel<MeasureParam>> MeasureParams { get; set; }
         public ObservableCollection<TemplateModel<AOIParam>> AoiParams { get; set; }

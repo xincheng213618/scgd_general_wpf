@@ -8,6 +8,20 @@ namespace ColorVision.Services.Dao
 {
     public class SysResourceModel : PKModel
     {
+
+        public SysResourceModel(SysDeviceModel sysDeviceModel)
+        {
+            Code = sysDeviceModel.Code; 
+            Id = sysDeviceModel.Id;
+            Name = sysDeviceModel.Name;
+            Pid = sysDeviceModel.Pid;
+            Type = sysDeviceModel.Type; 
+            TenantId = sysDeviceModel.TenantId; 
+            TypeCode = sysDeviceModel.TypeCode; 
+            Value = sysDeviceModel.Value;
+            CreateDate = sysDeviceModel.CreateDate;
+        }
+
         public SysResourceModel() { }
         public SysResourceModel(string name, string code, int tp, int pid, int tenantId)
         {

@@ -1,8 +1,6 @@
 ﻿#pragma warning disable CS8604,CS0168,CS8629,CA1822,CS8602
 using ColorVision.Common.Utilities;
-using ColorVision.MySql.Service;
 using ColorVision.Net;
-using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;
 using ColorVision.Services.Interfaces;
@@ -38,8 +36,6 @@ namespace ColorVision.Services.Devices.Algorithm
         public AlgorithmView View { get => Device.View; }
 
         private IPendingHandler? handler { get; set; }
-
-        private ResultService resultService { get; set; }
 
         private NetFileUtil netFileUtil;
 
@@ -277,7 +273,6 @@ namespace ColorVision.Services.Devices.Algorithm
                 }
             };
 
-            resultService = new ResultService();
         }
 
         private void PoiClick(object sender, RoutedEventArgs e)

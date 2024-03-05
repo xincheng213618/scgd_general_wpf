@@ -1,5 +1,4 @@
 ﻿using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Interfaces;
 using System;
 using System.Collections.ObjectModel;

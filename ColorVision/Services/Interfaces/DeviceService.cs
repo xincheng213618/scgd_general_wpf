@@ -210,7 +210,7 @@ namespace ColorVision.Services.Devices
             SysResourceModel.Code = Config.Code;
             SysResourceModel.Name = Config.Name;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            ServiceManager.GetInstance().ResourceService.Save(SysResourceModel);
+            ServiceManager.GetInstance().VSysResourceDao.Save(new SysResourceModel(SysResourceModel));
             IsEditMode = false;
 
             ///每次提交之后重启服务
@@ -224,7 +224,7 @@ namespace ColorVision.Services.Devices
         {
             base.Delete();
             if (SysResourceModel != null)
-                ServiceManager.GetInstance().ResourceService.DeleteById(SysResourceModel.Id);
+                ServiceManager.GetInstance().VSysResourceDao.DeleteById(SysResourceModel.Id);
             Parent.RemoveChild(this);
             this.Dispose();
         }

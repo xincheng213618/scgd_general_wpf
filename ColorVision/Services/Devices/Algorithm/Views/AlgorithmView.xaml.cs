@@ -20,9 +20,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.Services.Devices.Spectrum.Views;
 using ColorVision.Services.Dao;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace ColorVision.Services.Devices.Algorithm.Views
 {
