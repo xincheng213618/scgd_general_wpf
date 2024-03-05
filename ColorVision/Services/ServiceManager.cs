@@ -1,7 +1,6 @@
 ﻿using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
 using ColorVision.MySql;
-using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
 using ColorVision.Services.DAO;
 using ColorVision.Services.Devices;

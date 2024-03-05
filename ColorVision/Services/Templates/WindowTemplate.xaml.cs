@@ -2,7 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Extension;
 using ColorVision.MVVM;
-using ColorVision.MySql.Service;
 using ColorVision.Properties;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices;
@@ -543,14 +542,38 @@ namespace ColorVision.Services.Templates
             ListView1.ScrollIntoView(config);
         }
 
-        private ModService modService = new ModService();
+        private ModMasterDao masterFlowDao = new ModMasterDao(ModMasterType.Flow);
+        private ModMasterDao masterModDao = new ModMasterDao();
+
+        private ModDetailDao detailDao = new ModDetailDao();
+        private VSysResourceDao resourceDao = new VSysResourceDao();
 
         public void TemplateDel()
         {
+
+            void MasterDeleteById(int id)
+            {
+                List<ModDetailModel> de = detailDao.GetAllByPid(id);
+                int ret = masterFlowDao.DeleteById(id);
+                detailDao.DeleteAllByPid(id);
+                if (de != null && de.Count > 0)
+                {
+                    string[] codes = new string[de.Count];
+                    int idx = 0;
+                    foreach (ModDetailModel model in de)
+                    {
+                        string code = model.GetValueMD5();
+                        codes[idx++] = code;
+                    }
+                    resourceDao.DeleteInCodes(codes);
+                }
+            }
             void TemplateDel<T>(ObservableCollection<TemplateModel<T>> keyValuePairs) where T : ParamBase
             {
                 if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
-                    modService.MasterDeleteById(keyValuePairs[ListView1.SelectedIndex].Value.Id);
+                {
+                    MasterDeleteById(keyValuePairs[ListView1.SelectedIndex].Value.Id);
+                }
                 keyValuePairs.RemoveAt(ListView1.SelectedIndex);
             }
 

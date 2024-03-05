@@ -165,4 +165,8 @@
     </Page>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services\Service\" />
+  </ItemGroup>
+
 </Project>

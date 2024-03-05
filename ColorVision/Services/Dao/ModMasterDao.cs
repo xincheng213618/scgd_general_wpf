@@ -5,6 +5,25 @@ using ColorVision.MySql;
 
 namespace ColorVision.Services.Dao
 {
+    public partial class ModMasterType
+    {
+        public const string Flow = "flow";
+        public const string Aoi = "AOI";
+        public const string SMU = "SMU";
+        public const string PG = "pg";
+        public const string MTF = "MTF";
+        public const string SFR = "SFR";
+        public const string FOV = "FOV";
+        public const string POI = "POI";
+        public const string Ghost = "ghost";
+        public const string Distortion = "distortion";
+        public const string LedCheck = "ledcheck";
+        public const string FocusPoints = "focusPoints";
+        public const string Calibration = "Calibration";
+        public const string BuildPOI = "BuildPOI";
+        public const string SpectrumResource = "SpectrumResource";
+    }
+
     public class ModMasterModel : PKModel
     {
         public ModMasterModel() : this("", "", 0) { }

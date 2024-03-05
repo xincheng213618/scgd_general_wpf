@@ -1,6 +1,5 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.MVVM;
-using ColorVision.Themes;
 using log4net;
 using Newtonsoft.Json;
 using System;

@@ -1,5 +1,4 @@
 ﻿using ColorVision.MVVM;
-using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Templates.POI;
 using System;
@@ -75,6 +74,7 @@ namespace ColorVision.Services.Templates
             Mod_Type.ItemsSource = ModTypeConfigs;
             Mod_Master.ItemsSource = ModMasterConfigs;
         }
+        private ModMasterDao masterModDao = new ModMasterDao();
 
         private void ModTypeSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -92,7 +92,7 @@ namespace ColorVision.Services.Templates
                 }
                 else
                 {
-                    List<ModMasterModel> mods = TemplateControl.LoadModMasterByPid(config.ID);
+                    List<ModMasterModel> mods = masterModDao.GetAllByPid(config.ID);
                     foreach (var item in mods)
                     {
                         ModMasterConfigs.Add(new MParamConfig(item));
