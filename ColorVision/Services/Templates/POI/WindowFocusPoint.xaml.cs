@@ -41,7 +41,7 @@ namespace ColorVision.Services.Templates.POI
         static SoftwareConfig SoftwareConfig { get => ConfigHandler.GetInstance().SoftwareConfig; }
 
         public PoiParam PoiParam { get; set; }
-        public WindowFocusPoint(PoiParam poiParam)
+        public WindowFocusPoint(PoiParam poiParam) 
         {
             PoiParam = poiParam;
             InitializeComponent();
