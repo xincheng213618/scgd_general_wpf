@@ -7,6 +7,8 @@ namespace ColorVision.Services.Templates.POI
 {
     public class POIFilter : ViewModelBase
     {
+        public bool NoAreaEnable { get => _NoAreaEnable; set { _NoAreaEnable = value; NotifyPropertyChanged(); } }
+        private bool _NoAreaEnable;
         public bool Enable { get => _Enable; set { _Enable = value; NotifyPropertyChanged(); } }
         private bool _Enable;
         public float Threshold { get => _Threshold; set { _Threshold = value; NotifyPropertyChanged(); } }
