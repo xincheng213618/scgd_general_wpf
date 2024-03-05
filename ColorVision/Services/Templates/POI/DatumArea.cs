@@ -7,17 +7,18 @@ namespace ColorVision.Services.Templates.POI
 {
     public class POIFilter : ViewModelBase
     {
-        public bool NoAreaEnable { get => _NoAreaEnable; set { _NoAreaEnable = value; NotifyPropertyChanged(); } }
+        public bool NoAreaEnable { get =>  _NoAreaEnable; set { _NoAreaEnable = value; NotifyPropertyChanged();  if (value) { Enable = false; XYZEnable = false; } } }
         private bool _NoAreaEnable;
-        public bool Enable { get => _Enable; set { _Enable = value; NotifyPropertyChanged(); } }
+        public bool Enable { get => _Enable; set { _Enable = value; NotifyPropertyChanged(); if (value) { NoAreaEnable = false; XYZEnable = false; } } }
         private bool _Enable;
-        public float Threshold { get => _Threshold; set { _Threshold = value; NotifyPropertyChanged(); } }
-        private float _Threshold = 50;
 
-        public bool XYZEnable { get => _XYZEnable; set { _XYZEnable = value; NotifyPropertyChanged(); } }
+        public bool XYZEnable { get => _XYZEnable; set { _XYZEnable = value; NotifyPropertyChanged(); if (value) { NoAreaEnable = false; Enable = false; } } }
         private bool _XYZEnable;
         public int XYZType { get => _XYZType; set { _XYZType = value; NotifyPropertyChanged(); } }
         private int _XYZType;
+
+        public float Threshold { get => _Threshold; set { _Threshold = value; NotifyPropertyChanged(); } }
+        private float _Threshold = 50;
     }
     public class DatumArea : ViewModelBase
     {
@@ -162,7 +163,7 @@ namespace ColorVision.Services.Templates.POI
         public double LedLen4 { get => _LedLen4; set { _LedLen4 = value; NotifyPropertyChanged(); } }
         private double _LedLen4;
 
-        public POIFilter Filter { get; set; }
+        public POIFilter Filter { get; set; } = new POIFilter();
     }
 
 
