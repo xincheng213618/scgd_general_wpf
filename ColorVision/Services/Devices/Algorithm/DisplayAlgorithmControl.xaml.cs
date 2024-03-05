@@ -162,7 +162,10 @@ namespace ColorVision.Services.Devices.Algorithm
                     break;
                 case MQTTFileServerEventEnum.Event_File_Download:
                     DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                    FileDownload(pm_dl);
+                    if (pm_dl != null)
+                    {
+                        FileDownload(pm_dl);
+                    }
                     break;
                 default:
                     ShowResultFromDB(arg.SerialNumber, Convert.ToInt32(arg.Data.MasterId));
@@ -623,6 +626,11 @@ namespace ColorVision.Services.Devices.Algorithm
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
+            if (string.IsNullOrWhiteSpace(CB_CIEImageFiles.Text))
+            {
+                MessageBox.Show("请先选中图片");
+                return;
+            }
             handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
             handler.Cancelling += delegate
             {
@@ -771,6 +779,11 @@ namespace ColorVision.Services.Devices.Algorithm
 
         private void Button_Click_RawOpen(object sender, RoutedEventArgs e)
         {
+            if (string.IsNullOrWhiteSpace(CB_RawImageFiles.Text))
+            {
+                MessageBox.Show("请先选中图片");
+                return;
+            }
             handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
             handler.Cancelling += delegate
             {

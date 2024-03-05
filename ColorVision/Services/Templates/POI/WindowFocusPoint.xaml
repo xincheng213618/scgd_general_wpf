@@ -176,10 +176,10 @@
                                         <TextBlock  HorizontalAlignment="Left" Text="使用绘图添加"/>
                                     </DockPanel>
                                     <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
-                                        <RadioButton x:Name="RadioButtonAreaCircle" GroupName="shapeArea" IsChecked="{Binding DatumArea.IsAreaCircle}" Width="60" Content="圆"/>
-                                        <RadioButton x:Name="RadioButtonAreaRect"  GroupName="shapeArea" IsChecked="{Binding DatumArea.IsAreaRect}" Width="60" Content="矩形"/>
-                                        <RadioButton x:Name="RadioButtonAreaMask"  GroupName="shapeArea" IsChecked="{Binding DatumArea.IsAreaMask}" Width="70" Content="四边形"/>
-                                        <RadioButton x:Name="RadioButtonAreaPolygon"  GroupName="shapeArea" IsChecked="{Binding DatumArea.IsAreaPolygon}" Width="60" Content="折线"/>
+                                        <RadioButton x:Name="RadioButtonAreaCircle" GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding DatumArea.IsAreaCircle}" Width="60" Content="圆"/>
+                                        <RadioButton x:Name="RadioButtonAreaRect"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding DatumArea.IsAreaRect}" Width="60" Content="矩形"/>
+                                        <RadioButton x:Name="RadioButtonAreaMask"  GroupName="shapeArea"   Checked="RadioButtonArea_Checked" IsChecked="{Binding DatumArea.IsAreaMask}" Width="70" Content="四边形"/>
+                                        <RadioButton x:Name="RadioButtonAreaPolygon"  GroupName="shapeArea"  Checked="RadioButtonArea_Checked" IsChecked="{Binding DatumArea.IsAreaPolygon}" Width="60" Content="折线"/>
                                     </StackPanel>
                                     <StackPanel>
                                         <StackPanel  Margin="5" Visibility="{Binding DatumArea.IsAreaCircle,Converter={StaticResource bool2VisibilityConverter}}">
@@ -339,8 +339,7 @@
                                             <Button Content="设置布点区域" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="ShowDatumArea_Click"/>
                                         </StackPanel>
                                         <StackPanel  Margin="5" Visibility="{Binding DatumArea.IsAreaPolygon,Converter={StaticResource bool2VisibilityConverter}}">
-
-                                            <ListView  x:Name="ListViewPolygon"  MaxHeight="200" Style="{StaticResource ListView.Small}" ItemsSource="{Binding DatumArea.Polygons}" Grid.Column="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
+                                            <ListView  x:Name="ListViewPolygon"  MaxHeight="200" Style="{StaticResource ListView.Small}" ItemsSource="{Binding DatumArea.Polygons}" Grid.Column="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" >
                                                 <ListView.Resources>
                                                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
                                                     </ContextMenu>
@@ -373,7 +372,7 @@
                                                         <GridViewColumn Header="显示" Width="70">
                                                             <GridViewColumn.CellTemplate>
                                                                 <DataTemplate DataType="{x:Type local:PolygonPoint}">
-                                                                    <TextBox Text="{Binding SplitNumber}" Width="50"/>
+                                                                    <TextBox Text="{Binding SplitNumber}" HorizontalContentAlignment="Center" Width="50"/>
                                                                 </DataTemplate>
                                                             </GridViewColumn.CellTemplate>
                                                         </GridViewColumn>
@@ -387,8 +386,8 @@
 
                                             <UniformGrid  Columns="2" >
                                                 <DockPanel Margin="2" HorizontalAlignment="Left">
-                                                    <TextBlock Text="分割数:"   MinWidth="50"/>
-                                                    <TextBox Text="{Binding DatumArea.AreaPolygonLenNum}" Width="55"  PreviewKeyDown="TextBox_PreviewKeyDown"/>
+                                                    <TextBlock Text="设定分割"   MinWidth="70"/>
+                                                    <TextBox Text="{Binding DatumArea.AreaPolygonLenNum}" Width="55"/>
                                                 </DockPanel>
                                                 <DockPanel Margin="2" HorizontalAlignment="Left">
                                                     <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding DatumArea.AreaPolygonUsNode}"/>

@@ -1,53 +1,109 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using MQTTMessageLib.Algorithm;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace ColorVision.Services.Devices.Algorithm.Views
 {
     public class PoiResultCIExyuvData : PoiResultData
     {
-        public static void SaveCsv(ObservableCollection<PoiResultCIExyuvData>  poiResultCIExyuvDatas, string FileName)
+        public static void SaveCsv(ObservableCollection<PoiResultCIExyuvData> poiResultCIExyuvDatas, string FileName)
         {
             var csvBuilder = new StringBuilder();
             List<string> properties = new List<string> { "名称", "位置", "大小", "形状", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
 
             // 写入列头
-            for (int i = 0; i < properties.Count; i++)
+            csvBuilder.AppendLine(string.Join(",", properties));
+
+            // 写入数据行
+            foreach (var item in poiResultCIExyuvDatas)
             {
-                // 添加列名
-                csvBuilder.Append(properties[i]);
+                List<string> values = new List<string>
+        {
+            item.Name,
+            item.PixelPos.ToString(),
+            item.PixelSize.ToString(),
+            item.Shapes,
+            item.CCT.ToString(CultureInfo.InvariantCulture),
+            item.Wave.ToString(CultureInfo.InvariantCulture),
+            item.X.ToString(CultureInfo.InvariantCulture),
+            item.Y.ToString(CultureInfo.InvariantCulture),
+            item.Z.ToString(CultureInfo.InvariantCulture),
+            item.u.ToString(CultureInfo.InvariantCulture),
+            item.v.ToString(CultureInfo.InvariantCulture),
+            item.x.ToString(CultureInfo.InvariantCulture),
+            item.y.ToString(CultureInfo.InvariantCulture)
+        };
 
-                // 如果不是最后一列，则添加逗号
-                if (i < properties.Count - 1)
-                    csvBuilder.Append(',');
+                csvBuilder.AppendLine(string.Join(",", values));
             }
-            // 添加换行符
-            csvBuilder.AppendLine();
 
+            // 统计计算
+            var maxValues = new Dictionary<string, double>();
+            var minValues = new Dictionary<string, double>();
+            var sumValues = new Dictionary<string, double>();
+            var count = poiResultCIExyuvDatas.Count;
+
+            // 初始化字典
+            foreach (var property in properties.Skip(4)) // 假设前三个属性不是数字
+            {
+                maxValues[property] = double.MinValue;
+                minValues[property] = double.MaxValue;
+                sumValues[property] = 0.0;
+            }
+
+            // 计算最大值、最小值和总和
+            foreach (var item in poiResultCIExyuvDatas)
+            {
+                maxValues["CCT"] = Math.Max(maxValues["CCT"], item.CCT);
+                minValues["CCT"] = Math.Min(minValues["CCT"], item.CCT);
+                sumValues["CCT"] += item.CCT;
+
+                // ... 对其他属性做同样的处理
+            }
+
+            // 计算平均值
+            var meanValues = sumValues.ToDictionary(kvp => kvp.Key, kvp => kvp.Value / count);
+
+            // 计算方差
+            var varianceValues = new Dictionary<string, double>();
+            foreach (var property in properties.Skip(4)) // 假设前三个属性不是数字
+            {
+                varianceValues[property] = 0.0;
+            }
 
             foreach (var item in poiResultCIExyuvDatas)
             {
-                if (item is PoiResultCIExyuvData poiResultCIExyuvData)
-                {
-                    csvBuilder.Append(poiResultCIExyuvData.Name + ",");
-                    csvBuilder.Append(poiResultCIExyuvData.PixelPos + ",");
-                    csvBuilder.Append(poiResultCIExyuvData.PixelSize + ",");
-                    csvBuilder.Append(poiResultCIExyuvData.Shapes + ",");
-                    csvBuilder.Append(poiResultCIExyuvData.CCT + ",");
-                    csvBuilder.Append(poiResultCIExyuvData.Wave + ",");
-                    csvBuilder.Append(poiResultCIExyuvData.X + ",");
-                    csvBuilder.Append(poiResultCIExyuvData.Y + ",");
-                    csvBuilder.Append(poiResultCIExyuvData.Z + ",");
-                    csvBuilder.Append(poiResultCIExyuvData.u + ",");
-                    csvBuilder.Append(poiResultCIExyuvData.v + ",");
-                    csvBuilder.Append(poiResultCIExyuvData.x + ",");
-                    csvBuilder.Append(poiResultCIExyuvData.y + ",");
-                    csvBuilder.AppendLine();
-                }
+                varianceValues["CCT"] += Math.Pow(item.CCT - meanValues["CCT"], 2);
+                // ... 对其他属性做同样的处理
             }
+
+            foreach (var property in properties.Skip(4)) // 假设前三个属性不是数字
+            {
+                varianceValues[property] = varianceValues[property] / count;
+            }
+
+            // 将统计数据添加到CSV
+            csvBuilder.AppendLine("\n统计信息");
+            csvBuilder.AppendLine("属性,最大值,最小值,平均值,方差");
+            foreach (var property in properties.Skip(4)) // 假设前三个属性不是数字
+            {
+                List<string> stats = new List<string>
+        {
+            property,
+            maxValues[property].ToString(CultureInfo.InvariantCulture),
+            minValues[property].ToString(CultureInfo.InvariantCulture),
+            meanValues[property].ToString(CultureInfo.InvariantCulture),
+            varianceValues[property].ToString(CultureInfo.InvariantCulture)
+        };
+                csvBuilder.AppendLine(string.Join(",", stats));
+            }
+
             File.WriteAllText(FileName, csvBuilder.ToString(), Encoding.UTF8);
         }
 

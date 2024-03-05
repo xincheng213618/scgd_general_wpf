@@ -12,10 +12,10 @@ namespace ColorVision.Services.Templates.POI
         private bool _IsShowDatum;
 
         public bool IsShowDatumArea { get => _IsShowDatumArea; set { _IsShowDatumArea = value; NotifyPropertyChanged(); } }
-        private bool _IsShowDatumArea;
+        private bool _IsShowDatumArea = true;
 
         public bool IsLayoutUpdated { get => _IsLayoutUpdated; set { _IsLayoutUpdated = value; NotifyPropertyChanged(); } }
-        private bool _IsLayoutUpdated;
+        private bool _IsLayoutUpdated = true;
 
         public Point X3 { get; set; } = new Point() { X = 300, Y = 300 };
         public Point X4 { get; set; } = new Point() { X = 100, Y = 300 };

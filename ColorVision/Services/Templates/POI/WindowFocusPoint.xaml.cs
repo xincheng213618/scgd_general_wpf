@@ -1000,7 +1000,6 @@ namespace ColorVision.Services.Templates.POI
         {
             if (sender is ListView listView && listView.SelectedIndex > -1 && DrawingVisualLists[listView.SelectedIndex] is IDrawingVisual drawingVisual && drawingVisual is Visual visual)
             {
-
                 PropertyGrid2.SelectedObject = drawingVisual.BaseAttribute;
                 ImageShow.TopVisual(visual);
             }
@@ -1033,6 +1032,11 @@ namespace ColorVision.Services.Templates.POI
 
         DrawingVisual drawingVisualDatum;
         private void ShowDatumArea_Click(object sender, RoutedEventArgs e)
+        {
+            RenderDatumArea();
+        }
+
+        private void RadioButtonArea_Checked(object sender, RoutedEventArgs e)
         {
             RenderDatumArea();
         }

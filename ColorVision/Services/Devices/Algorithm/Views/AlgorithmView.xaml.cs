@@ -699,7 +699,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
         private void SideSave_Click(object sender, RoutedEventArgs e)
         {
-            if (listView1.Items[listView1.SelectedIndex] is AlgorithmResult result)
+            if (listView1.SelectedIndex>0 && listView1.Items[listView1.SelectedIndex] is AlgorithmResult result)
             {
                 if (listView1.SelectedIndex < 0)
                 {
@@ -708,7 +708,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                 }
                 using var dialog = new System.Windows.Forms.SaveFileDialog();
                 dialog.Filter = "CSV files (*.csv) | *.csv";
-                dialog.FileName = DateTime.Now.ToString("光谱仪导出yyyy-MM-dd-HH-mm-ss");
+                dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
                 dialog.RestoreDirectory = true;
                 if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 

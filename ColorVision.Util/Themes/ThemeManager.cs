@@ -21,9 +21,14 @@ namespace ColorVision.Themes
 
     public static class ThemeManagerExtensions
     {
+        /// <summary>
+        /// 更新主题
+        /// </summary>
         public static void ApplyTheme(this Application app, Theme theme) => ThemeManager.Current.ApplyTheme(app, theme);
+        /// <summary>
+        /// 强制更新主题，即使主题一致也会更新
+        /// </summary>
         public static void ForceApplyTheme(this Application app, Theme theme) => ThemeManager.Current.ApplyThemeChanged(app, theme);
-
     }
 
     public delegate void ThemeChangedHandler(Theme newtheme);
@@ -177,7 +182,7 @@ namespace ColorVision.Themes
 
 
         /// <summary>
-        /// Windows,APP的主题
+        /// Windows应用的主题
         /// </summary>
         public Theme AppsTheme { get => _AppsTheme; set { if (value == _AppsTheme) return;  AppsThemeChanged?.Invoke(value); _AppsTheme = value; } }
         private  Theme _AppsTheme = AppsUseLightTheme() ? Theme.Light : Theme.Dark;
