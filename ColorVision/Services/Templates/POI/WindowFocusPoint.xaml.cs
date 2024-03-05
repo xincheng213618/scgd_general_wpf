@@ -68,6 +68,9 @@ namespace ColorVision.Services.Templates.POI
             ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingPOIPosition)).Cast<DrawingPOIPosition>() select new KeyValuePair<DrawingPOIPosition, string>(e1, e1.ToDescription());
             ComboBoxBorderType2.SelectedIndex = 0;
 
+            ComboBoxXYZType.ItemsSource = from e1 in Enum.GetValues(typeof(XYZType)).Cast<XYZType>() select new KeyValuePair<XYZType, string>(e1, e1.ToString());
+            ComboBoxXYZType.SelectedIndex = 0;
+
             ImageContentGrid.MouseDown += (s, e) =>
             {
                 TextBox1.Focus();

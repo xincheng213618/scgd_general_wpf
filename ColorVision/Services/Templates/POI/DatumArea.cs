@@ -5,6 +5,13 @@ using System.Windows;
 
 namespace ColorVision.Services.Templates.POI
 {
+    public enum XYZType
+    {
+        X = 0,
+        Y = 1,
+        Z = 2
+    }
+
     public class POIFilter : ViewModelBase
     {
         public bool NoAreaEnable { get =>  _NoAreaEnable; set { _NoAreaEnable = value; NotifyPropertyChanged();  if (value) { Enable = false; XYZEnable = false; } } }
@@ -14,12 +21,14 @@ namespace ColorVision.Services.Templates.POI
 
         public bool XYZEnable { get => _XYZEnable; set { _XYZEnable = value; NotifyPropertyChanged(); if (value) { NoAreaEnable = false; Enable = false; } } }
         private bool _XYZEnable;
-        public int XYZType { get => _XYZType; set { _XYZType = value; NotifyPropertyChanged(); } }
-        private int _XYZType;
+        public XYZType XYZType { get => _XYZType; set { _XYZType = value; NotifyPropertyChanged(); } }
+        private XYZType _XYZType;
 
         public float Threshold { get => _Threshold; set { _Threshold = value; NotifyPropertyChanged(); } }
         private float _Threshold = 50;
     }
+
+
     public class DatumArea : ViewModelBase
     {
 
