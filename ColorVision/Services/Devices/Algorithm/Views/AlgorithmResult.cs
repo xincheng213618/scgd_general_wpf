@@ -12,10 +12,10 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
     public class AlgorithmResult : ViewModelBase, ISortID, ISortBatch, ISortCreateTime, ISortFilePath
     {
-        public ObservableCollection<PoiResultData> PoiData { get; set; }
+        public ObservableCollection<PoiResultData> PoiResultDatas { get; set; }
 
-        public ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; } = new ObservableCollection<PoiResultCIExyuvData>();
-        public ObservableCollection<PoiResultCIEYData> PoiResultCIEYDatas { get; set; } = new ObservableCollection<PoiResultCIEYData>();
+        public ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
+        public ObservableCollection<PoiResultCIEYData> PoiResultCIEYDatas { get; set; }
 
         public ObservableCollection<FOVResultData> FOVData { get; set; }
         public ObservableCollection<MTFResultData> MTFData { get; set; }
@@ -42,7 +42,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             _resultCode = (int)resultCode;
             _totalTime = totalTime;
             _resultDesc = resultDesc;
-            PoiData = new ObservableCollection<PoiResultData>();
         }
 
 

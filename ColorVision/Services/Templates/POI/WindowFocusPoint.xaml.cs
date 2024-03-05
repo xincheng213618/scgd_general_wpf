@@ -279,17 +279,29 @@ namespace ColorVision.Services.Templates.POI
         private void Button1_Click(object sender, RoutedEventArgs e)
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif,*.cvraw) | *.jpg; *.jpeg; *.png;*.tif;*.cvraw";
+            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif,*.cvraw,*.cvcie) | *.jpg; *.jpeg; *.png;*.tif;*.cvraw;*.cvcie";
             openFileDialog.RestoreDirectory = true;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string filePath = openFileDialog.FileName;
+
 
                 if (Path.GetExtension(filePath).Contains("cvraw"))
                 {
                     try
                     {
                         OpenImage(new NetFileUtil("1").OpenLocalCVFile(filePath, FileExtType.Raw));
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message);
+                    }
+                }
+                else if (Path.GetExtension(filePath).Contains("cvcie"))
+                {
+                    try
+                    {
+                        OpenImage(new NetFileUtil("1").OpenLocalCVFile(filePath, FileExtType.CIE));
                     }
                     catch (Exception ex)
                     {

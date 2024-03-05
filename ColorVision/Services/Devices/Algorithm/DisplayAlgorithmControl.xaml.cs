@@ -53,7 +53,6 @@ namespace ColorVision.Services.Devices.Algorithm
             netFileUtil.handler += NetFileUtil_handler;
             Service.OnMessageRecved += Service_OnAlgorithmEvent;
             View.OnCurSelectionChanged += View_OnCurSelectionChanged;
-
             this.PreviewMouseDown += UserControl_PreviewMouseDown;
         }
 
@@ -180,8 +179,8 @@ namespace ColorVision.Services.Devices.Algorithm
         {
             if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, FileExtType.CIE);
         }
-        private AlgResultMasterDao algResultMasterDao = new AlgResultMasterDao();
 
+        private AlgResultMasterDao algResultMasterDao = new AlgResultMasterDao();
         private void ShowResultFromDB(string serialNumber, int masterId)
         {
             List<AlgResultMasterModel> resultMaster = null;
@@ -198,89 +197,13 @@ namespace ColorVision.Services.Devices.Algorithm
            
             foreach (AlgResultMasterModel result in resultMaster)
             {
-                Process(result);
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Device.View.AlgResultMasterModelDataDraw(result);
+                });
             }
             handler?.Close();
         }
-
-        public void Process(AlgResultMasterModel result)
-        {
-            switch (result.ImgFileType)
-            {
-                case AlgorithmResultType.POI_XY_UV:
-                case AlgorithmResultType.POI_Y:
-                case AlgorithmResultType.POI:
-                    LoadResultPOIFromDB(result);
-                    break;
-                default:
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        Device.View.AlgResultMasterModelDataDraw(result);
-                    });
-                    break;
-            }
-        }
-
-        private POIPointResultDao poiPointResultDao = new POIPointResultDao();
-
-
-        private void LoadResultPOIFromDB(AlgResultMasterModel result)
-        {
-            var details = poiPointResultDao.GetAllByPid(result.Id);
-            switch (result.ImgFileType)
-            {
-                case AlgorithmResultType.POI_XY_UV:
-                    var results = BuildPOIResultCIExyuv(details);
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        Device.View.PoiDataDraw(result, results);
-                    });
-                    break;
-                case AlgorithmResultType.POI_Y:
-                    var results_y = BuildPOIResultCIEY(details);
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        Device.View.PoiDataDraw(result, results_y);
-                    });
-                    break;
-                case AlgorithmResultType.POI:
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        Device.View.AlgResultDataDraw(result);
-                    });
-                    break;
-            }
-        }
-
-        private List<POIResultCIE<POIDataCIExyuv>> BuildPOIResultCIExyuv(List<POIPointResultModel> details)
-        {
-            List<POIResultCIE<POIDataCIExyuv>> results = new List<POIResultCIE<POIDataCIExyuv>>();
-            foreach (POIPointResultModel detail in details)
-            {
-                POIResultCIE<POIDataCIExyuv> result = new POIResultCIE<POIDataCIExyuv>(
-                                            new POIPoint((int)detail.PoiId, -1, detail.PoiName, (POIPointTypes)detail.PoiType, (int)detail.PoiX, (int)detail.PoiY, (int)detail.PoiWidth, (int)detail.PoiHeight),
-                                            JsonConvert.DeserializeObject<POIDataCIExyuv>(detail.Value));
-
-                results.Add(result);
-            }
-            return results;
-        }
-
-        private List<MQTTMessageLib.Algorithm.POIResultCIE<POIDataCIEY>> BuildPOIResultCIEY(List<POIPointResultModel> details)
-        {
-            List<POIResultCIE<POIDataCIEY>> results = new List<POIResultCIE<POIDataCIEY>>();
-            foreach (POIPointResultModel detail in details)
-            {
-                POIResultCIE<POIDataCIEY> result = new POIResultCIE<POIDataCIEY>(
-                                        new POIPoint((int)detail.PoiId, -1, detail.PoiName, (POIPointTypes)detail.PoiType, (int)detail.PoiX, (int)detail.PoiY, (int)detail.PoiWidth, (int)detail.PoiHeight),
-                                        JsonConvert.DeserializeObject<POIDataCIEY>(detail.Value));
-
-                results.Add(result);
-            }
-
-            return results;
-        }
-
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {

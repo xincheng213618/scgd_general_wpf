@@ -4,6 +4,8 @@ using System.Collections.ObjectModel;
 
 namespace ColorVision.Services.Devices.Algorithm.Views
 {
+
+    
     public class PoiResult : ViewModelBase
     {
         private int _Id;

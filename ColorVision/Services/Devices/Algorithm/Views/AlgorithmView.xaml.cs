@@ -21,6 +21,8 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Services.Devices.Spectrum.Views;
+using ColorVision.Services.Dao;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
 namespace ColorVision.Services.Devices.Algorithm.Views
 {
@@ -145,35 +147,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             }
         }
 
-        public void AlgResultDataDraw(AlgResultMasterModel result)
-        {
-            AlgorithmResult algorithmResult = new AlgorithmResult(result);
-            AlgResults.Add(algorithmResult);
-            RefreshResultListView();
-
-        }
-        public void PoiDataDraw(AlgResultMasterModel result, List<POIResultCIE<POIDataCIEY>> results)
-        {
-            AlgorithmResult algorithmResult = new AlgorithmResult(result);
-            AlgResults.Add(algorithmResult);
-            foreach (var item in results)
-            {
-                PoiResultCIEYData resultData = new PoiResultCIEYData(item.Point, item.Data);
-                algorithmResult.PoiData.Add(resultData);
-            }
-        }
-        public void PoiDataDraw(AlgResultMasterModel result, List<POIResultCIE<POIDataCIExyuv>> results)
-        {
-            AlgorithmResult algorithmResult = new AlgorithmResult(result);
-            AlgResults.Add(algorithmResult);
-            foreach (var item in results)
-            {
-                PoiResultCIExyuvData resultData = new PoiResultCIExyuvData(item.Point, item.Data);
-                algorithmResult.PoiResultCIExyuvDatas.Add(resultData);
-            }
-            RefreshResultListView();
-        }
-
         public void AlgResultMasterModelDataDraw(AlgResultMasterModel result)
         {
             AlgorithmResult algorithmResult = new AlgorithmResult(result);
@@ -200,6 +173,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
         private AlgResultSFRDao SFRResultDao = new AlgResultSFRDao();
         private AlgResultMTFDao MTFResultDao = new AlgResultMTFDao();
         private AlgResultDistortionDao DisResultDao = new AlgResultDistortionDao();
+        private POIPointResultDao poiPointResultDao = new POIPointResultDao();
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -208,24 +182,67 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             {
                 ImageView.ImageShow.Clear();
                 List<POIPoint> DrawPoiPoint = new List<POIPoint>();
+                List<string> cieBdHeader = new List<string>();
+                List<string> cieHeader = new List<string>();
                 switch (result.ResultType)
                 {
                     case AlgorithmResultType.POI:
                         OnCurSelectionChanged?.Invoke(result);
+
+                        if (result.PoiResultDatas == null)
+                        {
+                            result.PoiResultDatas = new ObservableCollection<PoiResultData>();
+                            List<POIPointResultModel> POIPointResultModels = poiPointResultDao.GetAllByPid(result.Id);
+                            foreach (var item in POIPointResultModels)
+                            {
+                                PoiResultData poiResult = new PoiResultData(item);
+                                result.PoiResultDatas.Add(poiResult);
+                            };
+                        }
+
+                        cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes" };
+                        cieHeader = new List<string> { "名称", "位置", "大小", "形状" };
+
+                        if (listViewSide.View is GridView gridViewPOI)
+                        {
+                            LeftGridViewColumnVisibilitys.Clear();
+                            gridViewPOI.Columns.Clear();
+                            for (int i = 0; i < cieHeader.Count; i++)
+                                gridViewPOI.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
+                        }
+
+                        listViewSide.ItemsSource = result.PoiResultDatas;
+
+                        foreach (var item in result.PoiResultDatas)
+                            DrawPoiPoint.Add(item.Point);
+                        ImageView.AddPOIPoint(DrawPoiPoint);
+                        listViewSide.Visibility = Visibility.Visible;
+
                         break;
                     case AlgorithmResultType.POI_XY_UV:
                         OnCurSelectionChanged?.Invoke(result);
+                        if (result.PoiResultCIExyuvDatas == null)
+                        {
+                            result.PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
+                            List<POIPointResultModel> POIPointResultModels = poiPointResultDao.GetAllByPid(result.Id);
+                            foreach (var item in POIPointResultModels)
+                            {
+                                PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(item);
+                                result.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                            };
+                        }
 
-                        List<string> cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
-                        List<string> cieHeader = new List<string> { "名称", "位置", "大小", "形状", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
+                        cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
+                        cieHeader = new List<string> { "名称", "位置", "大小", "形状", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
 
-                        if (listViewSide.View is GridView gridView2)
+                        if (listViewSide.View is GridView gridViewPOI_XY_UV)
                         {
                             LeftGridViewColumnVisibilitys.Clear();
-                            gridView2.Columns.Clear();
+                            gridViewPOI_XY_UV.Columns.Clear();
                             for (int i = 0; i < cieHeader.Count; i++)
-                                gridView2.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
+                                gridViewPOI_XY_UV.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
                         }
+
                         listViewSide.ItemsSource = result.PoiResultCIExyuvDatas;
 
                         foreach (var item in result.PoiResultCIExyuvDatas)
@@ -235,6 +252,17 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         break;
                     case AlgorithmResultType.POI_Y:
                         OnCurSelectionChanged?.Invoke(result);
+
+                        if (result.PoiResultCIEYDatas == null)
+                        {
+                            result.PoiResultCIEYDatas = new ObservableCollection<PoiResultCIEYData>();
+                            List<POIPointResultModel> POIPointResultModels = poiPointResultDao.GetAllByPid(result.Id);
+                            foreach (var item in POIPointResultModels)
+                            {
+                                PoiResultCIEYData poiResultCIExyuvData = new PoiResultCIEYData(item);
+                                result.PoiResultCIEYDatas.Add(poiResultCIExyuvData);
+                            };
+                        }
 
                         //亮度
                         List<string> bdheadersY = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "Y" };
