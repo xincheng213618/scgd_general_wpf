@@ -1,16 +1,16 @@
-﻿using System;
-using System.IO;
-using ColorVision.Common.Utilities;
-using ColorVision.RecentFile;
-using log4net;
-using System.Windows;
-using ColorVision.HotKey;
-using System.Windows.Input;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Extension;
-using ColorVision.Solution.V;
-using System.Collections.ObjectModel;
+using ColorVision.HotKey;
 using ColorVision.MVVM;
+using ColorVision.RecentFile;
 using ColorVision.Settings;
+using ColorVision.Solution.V;
+using log4net;
+using System;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Windows;
+using System.Windows.Input;
 
 namespace ColorVision.Solution
 {

@@ -1,14 +1,13 @@
 ﻿#pragma warning disable  CS8604,CS8631
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.Devices.Camera.Calibrations;
+using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Interfaces;
 
 namespace ColorVision.Services.Devices
 {
     public class GroupService: BaseResourceObject
     {
-        public static GroupService? AddGroupService(DeviceService deviceService , string Name)
+        public static GroupService? AddGroupService(ICalibrationService<BaseResourceObject> deviceService , string Name)
         {
             SysResourceModel sysResourceModel = new SysResourceModel() { Name = Name ,Type = (int)ResourceType.Group };
             sysResourceModel.Pid = deviceService.SysResourceModel.Id;
@@ -66,7 +65,7 @@ namespace ColorVision.Services.Devices
             base.Save();
         }
 
-        public void SetCalibrationResource(DeviceService deviceCamera)
+        public void SetCalibrationResource(ICalibrationService<BaseResourceObject> calibrationService)
         {
             foreach (var item in VisualChildren)
             {
@@ -76,7 +75,7 @@ namespace ColorVision.Services.Devices
                     switch ((ResouceType)calibrationResource.SysResourceModel.Type)
                     {
                         case ResouceType.DarkNoise:
-                            foreach (var item1 in deviceCamera.VisualChildren)
+                            foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
                                 {
@@ -85,7 +84,7 @@ namespace ColorVision.Services.Devices
                             }
                             break;
                         case ResouceType.DefectPoint:
-                            foreach (var item1 in deviceCamera.VisualChildren)
+                            foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
                                 {
@@ -94,7 +93,7 @@ namespace ColorVision.Services.Devices
                             }
                             break;
                         case ResouceType.DSNU:
-                            foreach (var item1 in deviceCamera.VisualChildren)
+                            foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
                                 {
@@ -103,7 +102,7 @@ namespace ColorVision.Services.Devices
                             }
                             break;
                         case ResouceType.Uniformity:
-                            foreach (var item1 in deviceCamera.VisualChildren)
+                            foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
                                 {
@@ -112,7 +111,7 @@ namespace ColorVision.Services.Devices
                             }
                             break;
                         case ResouceType.Distortion:
-                            foreach (var item1 in deviceCamera.VisualChildren)
+                            foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
                                 {
@@ -121,7 +120,7 @@ namespace ColorVision.Services.Devices
                             }
                             break;
                         case ResouceType.ColorShift:
-                            foreach (var item1 in deviceCamera.VisualChildren)
+                            foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
                                 {
@@ -130,7 +129,7 @@ namespace ColorVision.Services.Devices
                             }
                             break;
                         case ResouceType.Luminance:
-                            foreach (var item1 in deviceCamera.VisualChildren)
+                            foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
                                 {
@@ -139,7 +138,7 @@ namespace ColorVision.Services.Devices
                             }
                             break;
                         case ResouceType.LumOneColor:
-                            foreach (var item1 in deviceCamera.VisualChildren)
+                            foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
                                 {
@@ -148,7 +147,7 @@ namespace ColorVision.Services.Devices
                             }
                             break;
                         case ResouceType.LumFourColor:
-                            foreach (var item1 in deviceCamera.VisualChildren)
+                            foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
                                 {
@@ -157,7 +156,7 @@ namespace ColorVision.Services.Devices
                             }
                             break;
                         case ResouceType.LumMultiColor:
-                            foreach (var item1 in deviceCamera.VisualChildren)
+                            foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id )
                                 {

@@ -1,11 +1,11 @@
 ﻿using ColorVision.MVVM;
+using ColorVision.Settings;
+using log4net;
 using MySql.Data.MySqlClient;
 using System;
-using log4net;
-using System.Windows;
-using System.Threading.Tasks;
-using ColorVision.Settings;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using System.Windows;
 
 namespace ColorVision.MySql
 {

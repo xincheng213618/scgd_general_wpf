@@ -1,12 +1,16 @@
-﻿using ColorVision.Draw;
-using ColorVision.Common.Extension;
+﻿using ColorVision.Common.Extension;
+using ColorVision.Common.Utilities;
+using ColorVision.Draw;
 using ColorVision.Media;
 using ColorVision.Net;
+using ColorVision.Services.Dao;
 using ColorVision.Services.Templates.POI.Dao;
-using ColorVision.Common.Utilities;
+using ColorVision.Settings;
+using ColorVision.Util.Draw.Rectangle;
 using cvColorVision;
 using cvColorVision.Util;
 using log4net;
+using MQTTMessageLib.FileServer;
 using NPOI.SS.UserModel;
 using OpenCvSharp.WpfExtensions;
 using System;
@@ -25,10 +29,6 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using MQTTMessageLib.FileServer;
-using ColorVision.Services.Dao;
-using ColorVision.Settings;
-using ColorVision.Util.Draw.Rectangle;
 
 namespace ColorVision.Services.Templates.POI
 {

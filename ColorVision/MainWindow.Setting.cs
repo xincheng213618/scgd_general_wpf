@@ -1,14 +1,14 @@
-﻿using HandyControl.Tools.Extension;
+﻿using ColorVision.Solution;
 using HandyControl.Tools;
+using HandyControl.Tools.Extension;
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Interop;
-using System.Windows.Media.Animation;
 using System.Windows.Media;
-using System.IO;
-using ColorVision.Solution;
+using System.Windows.Media.Animation;
 
 namespace ColorVision
 {

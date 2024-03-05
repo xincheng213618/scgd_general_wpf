@@ -1,13 +1,13 @@
-﻿using System;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Solution.V;
+using System;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Linq;
-using ColorVision.Solution.V;
-using ColorVision.Common.Utilities;
 
 namespace ColorVision.Solution
 {

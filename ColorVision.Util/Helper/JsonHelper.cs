@@ -1,8 +1,8 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.IO;
-using YamlDotNet.Serialization.NamingConventions;
 using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace ColorVision.Common.Utilities.Helper
 {

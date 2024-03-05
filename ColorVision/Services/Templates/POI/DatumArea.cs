@@ -5,12 +5,17 @@ using System.Windows;
 
 namespace ColorVision.Services.Templates.POI
 {
-    public struct POIFilter
+    public class POIFilter : ViewModelBase
     {
-        public bool Enable { get; set; }
-        public float Threshold { get; set; }
-        public bool XYZEnable { get; set; }
-        public int XYZType { get; set; }
+        public bool Enable { get => _Enable; set { _Enable = value; NotifyPropertyChanged(); } }
+        private bool _Enable;
+        public float Threshold { get => _Threshold; set { _Threshold = value; NotifyPropertyChanged(); } }
+        private float _Threshold = 50;
+
+        public bool XYZEnable { get => _XYZEnable; set { _XYZEnable = value; NotifyPropertyChanged(); } }
+        private bool _XYZEnable;
+        public int XYZType { get => _XYZType; set { _XYZType = value; NotifyPropertyChanged(); } }
+        private int _XYZType;
     }
     public class DatumArea : ViewModelBase
     {

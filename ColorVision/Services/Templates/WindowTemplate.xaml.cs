@@ -1,14 +1,22 @@
-﻿using ColorVision.Extension;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.MySql.Service;
+using ColorVision.Properties;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Algorithm.Templates;
-using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.Devices.Camera.Calibrations;
+using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.PG.Templates;
+using ColorVision.Services.Devices.SMU;
+using ColorVision.Services.Devices.Spectrum;
 using ColorVision.Services.Flow;
+using ColorVision.Services.Templates.Measure;
+using ColorVision.Services.Templates.POI;
+using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Settings;
-using ColorVision.Common.Utilities;
+using ColorVision.Sorts;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -18,15 +26,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using ColorVision.Services.Devices.Spectrum;
-using ColorVision.Common.MVVM;
-using ColorVision.Sorts;
-using ColorVision.Properties;
-using ColorVision.Services.Templates.Measure;
-using ColorVision.Services.Templates.POI;
-using ColorVision.Services.Templates.POI.Dao;
-using ColorVision.Services.Devices.SMU;
-using ColorVision.Services.Devices;
 
 namespace ColorVision.Services.Templates
 {
@@ -192,8 +191,8 @@ namespace ColorVision.Services.Templates
             GridProperty.Children.Add(UserControl);
         }
 
-        public DeviceService DeviceCamera { get; set; }
-        public WindowTemplate(TemplateType windowTemplateType, UserControl userControl, DeviceService deviceCamera ,bool IsReLoad = true)
+        public ICalibrationService<BaseResourceObject> DeviceCamera { get; set; }
+        public WindowTemplate(TemplateType windowTemplateType, UserControl userControl, ICalibrationService<BaseResourceObject> deviceCamera ,bool IsReLoad = true)
         {
             DeviceCamera = deviceCamera;
             TemplateType = windowTemplateType;

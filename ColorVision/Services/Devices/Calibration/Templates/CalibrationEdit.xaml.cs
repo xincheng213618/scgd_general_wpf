@@ -1,4 +1,5 @@
 ﻿using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Interfaces;
 using System;
 using System.Collections.ObjectModel;
@@ -6,20 +7,17 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.Camera.Calibrations
+namespace ColorVision.Services.Devices.Calibration.Templates
 {
-
-
-
     /// <summary>
     /// CalibrationEdit.xaml 的交互逻辑
     /// </summary>
     public partial class CalibrationEdit : Window
     {
-        public DeviceService DeviceCamera { get; set; }
-        public CalibrationEdit(DeviceService deviceCamera)
+        public ICalibrationService<BaseResourceObject> CalibrationService { get; set; }
+        public CalibrationEdit(ICalibrationService<BaseResourceObject> calibrationService)
         {
-            DeviceCamera = deviceCamera;
+            CalibrationService = calibrationService;
             InitializeComponent();
         }
 
@@ -39,11 +37,11 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            foreach (var item in DeviceCamera.VisualChildren)
+            foreach (var item in CalibrationService.VisualChildren)
             {
                 if (item is GroupService groupService)
                 {
-                    groupService.SetCalibrationResource(DeviceCamera);
+                    groupService.SetCalibrationResource(CalibrationService);
                     GroupServices.Add(groupService);
                 }
                 if (item is CalibrationResource calibrationResource)
@@ -116,7 +114,7 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
         private void Button_Add_Click(object sender, RoutedEventArgs e)
         {
             string calue = NewCreateFileName("title");
-            var group = GroupService.AddGroupService(DeviceCamera, calue);
+            var group = GroupService.AddGroupService(CalibrationService, calue);
             if (group != null)
             {
                 GroupServices.Add(group);
@@ -148,7 +146,7 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
                 GroupService groupService = GroupServices[ListView1.SelectedIndex];
                 SysResourceDao.DeleteById(groupService.SysResourceModel.Id,false);
                 GroupServices.Remove(groupService);
-                DeviceCamera.VisualChildren.Remove(groupService);
+                CalibrationService.VisualChildren.Remove(groupService);
                 MessageBox.Show("删除成功");
             }
         }

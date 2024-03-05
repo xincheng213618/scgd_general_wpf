@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Net;
-using ColorVision.Services.Devices.Camera.Calibrations;
+using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
@@ -12,7 +12,6 @@ using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -31,6 +30,7 @@ namespace ColorVision.Services.Devices.Calibration
         private MQTTCalibration DeviceService { get => Device.DeviceService;  }
         private IPendingHandler? handler { get; set; }
         private NetFileUtil netFileUtil;
+        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; }
         public DisplayCalibrationControl(DeviceCalibration device)
         {
             this.Device = device;
@@ -41,8 +41,6 @@ namespace ColorVision.Services.Devices.Calibration
             this.PreviewMouseDown += UserControl_PreviewMouseDown;
 
         }
-        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; }
-
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Device;
@@ -53,37 +51,37 @@ namespace ColorVision.Services.Devices.Calibration
             foreach (var item in Device.CalibrationParams)
                 CalibrationParams.Add(item);
 
-            Device.CalibrationParams.CollectionChanged += (s, e) =>
-            {
-                switch (e.Action)
-                {
-                    case NotifyCollectionChangedAction.Add:
-                        // 处理添加项
-                        if (e.NewItems != null)
-                            foreach (TemplateModel<CalibrationParam> newItem in e.NewItems)
-                                CalibrationParams.Add(newItem);
-                        break;
-                    case NotifyCollectionChangedAction.Remove:
-                        // 处理移除项
-                        if (e.OldItems != null)
-                            foreach (TemplateModel<CalibrationParam> newItem in e.OldItems)
-                                CalibrationParams.Remove(newItem);
-                        break;
-                    case NotifyCollectionChangedAction.Replace:
-                        // 处理替换项
-                        // ...
-                        break;
-                    case NotifyCollectionChangedAction.Move:
-                        // 处理移动项
-                        // ...
-                        break;
-                    case NotifyCollectionChangedAction.Reset:
-                        // 处理清空集合
-                        CalibrationParams.Clear();
-                        CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()) { Id = -1 });
-                        break;
-                }
-            };
+            //Device.CalibrationParams.CollectionChanged += (s, e) =>
+            //{
+            //    switch (e.Action)
+            //    {
+            //        case NotifyCollectionChangedAction.Add:
+            //            // 处理添加项
+            //            if (e.NewItems != null)
+            //                foreach (TemplateModel<CalibrationParam> newItem in e.NewItems)
+            //                    CalibrationParams.Add(newItem);
+            //            break;
+            //        case NotifyCollectionChangedAction.Remove:
+            //            // 处理移除项
+            //            if (e.OldItems != null)
+            //                foreach (TemplateModel<CalibrationParam> newItem in e.OldItems)
+            //                    CalibrationParams.Remove(newItem);
+            //            break;
+            //        case NotifyCollectionChangedAction.Replace:
+            //            // 处理替换项
+            //            // ...
+            //            break;
+            //        case NotifyCollectionChangedAction.Move:
+            //            // 处理移动项
+            //            // ...
+            //            break;
+            //        case NotifyCollectionChangedAction.Reset:
+            //            // 处理清空集合
+            //            CalibrationParams.Clear();
+            //            CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()) { Id = -1 });
+            //            break;
+            //    }
+            //};
 
             ComboxCalibrationTemplate.ItemsSource = CalibrationParams;
             ComboxCalibrationTemplate.SelectedIndex = 0;

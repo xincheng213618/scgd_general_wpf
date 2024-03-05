@@ -1,30 +1,29 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.MVVM;
+using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.Devices.Camera.Calibrations;
 using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Solution;
 using ColorVision.Themes.Controls;
+using cvColorVision;
+using log4net;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.IO.Compression;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 using System.Threading.Tasks;
-using System.Windows.Controls;
 using System.Windows;
-using log4net;
-using cvColorVision;
-using ColorVision.MySql.Service;
+using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Calibration
 {
-    public class DeviceCalibration : DeviceService<ConfigCalibration>, IUploadMsg
+    public class DeviceCalibration : DeviceService<ConfigCalibration>, IUploadMsg, ICalibrationService<BaseResourceObject>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCalibration));
 

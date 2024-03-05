@@ -1,19 +1,19 @@
 ﻿#pragma warning disable CS8602,CA1707
 
+using ColorVision.Common.Utilities;
+using ColorVision.Extension;
+using ColorVision.Services.Devices.Calibration.Templates;
+using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Msg;
 using cvColorVision;
+using MQTTMessageLib;
+using MQTTMessageLib.Camera;
+using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
-using System.Windows;
-using ColorVision.Extension;
-using MQTTMessageLib.FileServer;
-using MQTTMessageLib.Camera;
-using MQTTMessageLib;
-using ColorVision.Services.Devices.Camera.Configs;
-using ColorVision.Services.Devices.Camera.Calibrations;
-using System.Threading.Tasks;
 using System.Diagnostics;
-using ColorVision.Common.Utilities;
+using System.Threading.Tasks;
+using System.Windows;
 
 namespace ColorVision.Services.Devices.Camera
 {

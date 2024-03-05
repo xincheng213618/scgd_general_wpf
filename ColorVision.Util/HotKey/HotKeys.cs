@@ -1,12 +1,11 @@
-﻿
+﻿using ColorVision.HotKey.GlobalHotKey;
+using ColorVision.HotKey.WindowHotKey;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Windows.Controls;
 using System.Windows;
-using System.Collections.Generic;
-using ColorVision.HotKey.GlobalHotKey;
-using ColorVision.HotKey.WindowHotKey;
+using System.Windows.Controls;
 
 namespace ColorVision.HotKey
 {

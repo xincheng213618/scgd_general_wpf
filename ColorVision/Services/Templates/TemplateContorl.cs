@@ -3,9 +3,14 @@ using ColorVision.MySql;
 using ColorVision.MySql.Service;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Algorithm.Templates;
-using ColorVision.Services.Devices.Camera.Calibrations;
+using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.PG.Templates;
+using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Flow;
+using ColorVision.Services.Flow.Dao;
+using ColorVision.Services.Templates.Measure;
+using ColorVision.Services.Templates.POI;
+using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.UserSpace;
@@ -16,11 +21,6 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Threading;
 using System.Windows;
-using ColorVision.Services.Templates.Measure;
-using ColorVision.Services.Templates.POI;
-using ColorVision.Services.Templates.POI.Dao;
-using ColorVision.Services.Flow.Dao;
-using ColorVision.Services.Devices.SMU;
 
 namespace ColorVision.Services.Templates
 {

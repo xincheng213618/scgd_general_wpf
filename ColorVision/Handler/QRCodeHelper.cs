@@ -1,5 +1,5 @@
-﻿using QRCoder.Xaml;
-using QRCoder;
+﻿using QRCoder;
+using QRCoder.Xaml;
 using System.Windows.Media;
 
 namespace ColorVision.Handler

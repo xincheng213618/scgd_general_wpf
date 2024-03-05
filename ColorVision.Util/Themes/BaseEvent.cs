@@ -1,6 +1,6 @@
 ﻿#pragma warning disable CA1010
-using System.Windows.Input;
 using System.Windows;
+using System.Windows.Input;
 
 namespace ColorVision.Themes
 {
