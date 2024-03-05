@@ -178,8 +178,6 @@ namespace ColorVision.Services.Devices.Camera.Calibrations
         public CalibrationBase LumMultiColor { get; set; }
     }
 
-
-
     public class CalibrationParam : ParamBase
     {
         public string CalibrationMode { get { return GetValue(_CalibrationMode); } set {  SetProperty(ref _CalibrationMode, value);  } }

@@ -77,7 +77,7 @@
                 </DockPanel>
                 <DockPanel Margin="0,2">
                     <TextBlock Text="校正：" />
-                    <Button  DockPanel.Dock="Right" Content="应用"  HorizontalAlignment="Right" Click="Calibration_Click" />
+                    <Button  DockPanel.Dock="Right" Content="计算"  HorizontalAlignment="Right" Click="Calibration_Click" />
                     <ComboBox  x:Name="ComboxCalibrationTemplate" Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                     <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                         <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>

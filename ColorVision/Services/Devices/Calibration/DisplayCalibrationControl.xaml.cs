@@ -48,7 +48,7 @@ namespace ColorVision.Services.Devices.Calibration
             this.DataContext = Device;
 
             CalibrationParams = new ObservableCollection<TemplateModel<CalibrationParam>>();
-            CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam() { Id = -1 }));
+            //CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam() { Id = -1 }));
 
             foreach (var item in Device.CalibrationParams)
                 CalibrationParams.Add(item);
@@ -171,8 +171,17 @@ namespace ColorVision.Services.Devices.Calibration
             {
                 if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
                 {
-                    MsgRecord msgRecord = DeviceService.Calibration(param, ImageFile.Text, Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB );
-                    Helpers.SendCommand(button, msgRecord);
+                    string sn = string.Empty;
+                    string imgFileName = ImageFile.Text;
+                    FileExtType fileExtType = FileExtType.Tif;
+
+                    if (GetSN(ref sn, ref imgFileName, ref fileExtType))
+                    {
+                        var pm = CalibrationParams[ComboxCalibrationTemplate.SelectedIndex].Value;
+
+                        MsgRecord msgRecord = DeviceService.Calibration(param, imgFileName, pm.Id, ComboxCalibrationTemplate.Text, sn, (float)Device.Config.ExpTimeR, (float)Device.Config.ExpTimeG, (float)Device.Config.ExpTimeB);
+                        Helpers.SendCommand(button, msgRecord);
+                    }
 
                 }
             }
@@ -250,6 +259,40 @@ namespace ColorVision.Services.Devices.Calibration
                         break;
                 }
             }
+        }
+
+        private bool GetSN(ref string sn, ref string imgFileName, ref FileExtType fileExtType)
+        {
+            bool? isSN = AlgBatchSelect.IsChecked;
+            bool? isRaw = AlgRawSelect.IsChecked;
+            if (isSN.HasValue && isSN.Value)
+            {
+                if (string.IsNullOrWhiteSpace(AlgBatchCode.Text))
+                {
+                    MessageBox.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
+                    return false;
+                }
+                sn = AlgBatchCode.Text;
+                imgFileName = string.Empty;
+            }
+            else if (isRaw.HasValue && isRaw.Value)
+            {
+                imgFileName = CB_RawImageFiles.Text;
+                fileExtType = FileExtType.Raw;
+                sn = string.Empty;
+            }
+            else
+            {
+                imgFileName = ImageFile.Text;
+                fileExtType = FileExtType.Tif;
+                sn = string.Empty;
+            }
+            if (string.IsNullOrWhiteSpace(imgFileName))
+            {
+                MessageBox.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
+                return false;
+            }
+            return true;
         }
     }
 }
