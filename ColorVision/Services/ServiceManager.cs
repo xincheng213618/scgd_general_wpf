@@ -131,7 +131,7 @@ namespace ColorVision.Services
 
             TerminalServices.Clear();
             svrDevices.Clear();
-            List<SysResourceModel> sysResourceModelServices = SysResourceDao.GetAll(UserConfig.TenantId);
+            List<SysResourceModel> sysResourceModelServices = SysResourceDao.   (UserConfig.TenantId);
             foreach (var typeService1 in TypeServices)
             {
                 var sysResourceModels = sysResourceModelServices.FindAll((x) => x.Type == (int)typeService1.ServiceTypes);

@@ -454,6 +454,7 @@ namespace ColorVision.Services.Templates
             }
             return ret;
         }
+
         public void Save(FlowParam flowParam)
         {
             List<ModDetailModel> list = new List<ModDetailModel>();
@@ -526,6 +527,7 @@ namespace ColorVision.Services.Templates
             }
             return null;
         }
+
         private VSysResourceDao VSysResourceDao { get; set; } = new VSysResourceDao();
 
         internal ResourceParam? AddDeviceParam(string name, string code, int type, int pid)
