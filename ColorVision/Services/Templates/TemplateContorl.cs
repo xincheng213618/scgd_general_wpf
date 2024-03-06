@@ -535,6 +535,21 @@ namespace ColorVision.Services.Templates
             if (pkId > 0)
             {
                 List<ModFlowDetailModel> flowDetail = detailFlowDao.GetAllByPid(pkId);
+                if (int.TryParse(flowDetail[0].ValueA, out int id))
+                {
+                    SysResourceModel sysResourceModeldefault = resourceDao.GetById(id);
+                    if (sysResourceModeldefault != null)
+                    {
+                        SysResourceModel sysResourceModel = new SysResourceModel();
+                        sysResourceModel.Name = flowMaster.Name;
+                        sysResourceModel.Code = sysResourceModeldefault.Code;
+                        sysResourceModel.Type = sysResourceModeldefault.Type;
+                        sysResourceModel.Value = sysResourceModeldefault.Value;
+                        resourceDao.Save(sysResourceModel);
+                        flowDetail[0].ValueA = sysResourceModel.Id.ToString();
+                        detailFlowDao.Save(flowDetail[0]);
+                    }
+                }
                 if (flowMaster != null) return new FlowParam(flowMaster, flowDetail);
                 else return null;
             }
