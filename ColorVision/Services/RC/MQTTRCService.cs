@@ -71,10 +71,8 @@ namespace ColorVision.RC
             LoadCfg();
             this.RegStatus = ServiceNodeStatus.Unregistered;
             ServiceName = Guid.NewGuid().ToString();
-            SubscribeTopic = MQTTRCServiceTypeConst.BuildNodeTopic(NodeName);
 
             MQTTControl = MQTTControl.GetInstance();
-            MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
 
 
@@ -93,10 +91,14 @@ namespace ColorVision.RC
             this.AppSecret = RcServiceConfig.AppSecret;
             this.RCNodeName = RcServiceConfig.RCName;
 
+            this.SubscribeTopic = MQTTRCServiceTypeConst.BuildNodeTopic(NodeName, RCNodeName);
+
             this.RCRegTopic = MQTTRCServiceTypeConst.BuildRegTopic(RCNodeName);
             this.RCHeartbeatTopic = MQTTRCServiceTypeConst.BuildHeartbeatTopic(RCNodeName);
             this.RCPublicTopic = MQTTRCServiceTypeConst.BuildPublicTopic(RCNodeName);
             this.RCAdminTopic = MQTTRCServiceTypeConst.BuildAdminTopic(RCNodeName);
+
+            MQTTControl.SubscribeCache(SubscribeTopic);
         }
 
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
@@ -383,16 +385,21 @@ namespace ColorVision.RC
         }
         public bool TryRegist(RCServiceConfig cfg)
         {
+            bool isok = false;
             ServiceNodeStatus curStatus = RegStatus;
             TryTestRegist = true;
             for (int i = 0; i < 3; i++)
             {
-                if(DoRegist(cfg)) return true;
+                if (DoRegist(cfg))
+                {
+                    isok = true;
+                    break;
+                }
                 Thread.Sleep(200);
             }
             TryTestRegist = false;
             RegStatus = curStatus;
-            return false;
+            return isok;
         }
 
         public bool IsRegisted()
