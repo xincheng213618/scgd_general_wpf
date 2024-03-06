@@ -471,6 +471,19 @@ namespace ColorVision.Services.Templates
                         res.Value = flowParam.DataBase64;
                         resourceDao.Save(res);
                     }
+                    else
+                    {
+                        res = new SysResourceModel();
+                        res.Name = flowParam.Name;
+                        res.Type = 101;
+                        if (!string.IsNullOrEmpty(flowParam.DataBase64))
+                        {
+                            res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
+                            res.Value = flowParam.DataBase64;
+                        }
+                        resourceDao.Save(res);
+                        model.ValueA = res.Id.ToString();
+                    }
                 }
                 else
                 {
