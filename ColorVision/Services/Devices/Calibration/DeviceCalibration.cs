@@ -288,7 +288,7 @@ namespace ColorVision.Services.Devices.Calibration
                             bool IsExist = false;
                             foreach (var item in VisualChildren)
                             {
-                                if (item is GroupService groupService1 && groupService1.Name == filePath)
+                                if (item is GroupResource groupResource1 && groupResource1.Name == filePath)
                                 {
                                     log.Info($"{filePath} Exit");
                                     IsExist = true;
@@ -299,17 +299,17 @@ namespace ColorVision.Services.Devices.Calibration
                             {
                                 continue;
                             }
-                            GroupService groupService = GroupService.AddGroupService(this, filePath);
-                            if (groupService != null)
+                            GroupResource groupResource = GroupResource.AddGroupResource(this, filePath);
+                            if (groupResource != null)
                             {
                                 foreach (var item1 in keyValuePairs)
                                 {
                                     if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
                                     {
-                                        groupService.AddChild(colorVisionVCalibratioItems);
+                                        groupResource.AddChild(colorVisionVCalibratioItems);
                                     }
                                 }
-                                groupService.SetCalibrationResource(this);
+                                groupResource.SetCalibrationResource(this);
                             }
                         }
                     }

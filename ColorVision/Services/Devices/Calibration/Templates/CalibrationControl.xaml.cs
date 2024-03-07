@@ -34,7 +34,7 @@ namespace ColorVision.Services.Devices.Calibration.Templates
             this.CalibrationParam = calibrationParam;
             this.DataContext = CalibrationParam;
         }
-        public ObservableCollection<GroupService> GroupServices { get; set; } = new ObservableCollection<GroupService>();
+        public ObservableCollection<GroupResource> groupResources { get; set; } = new ObservableCollection<GroupResource>();
 
 
         public void Initializedsss(ICalibrationService<BaseResourceObject> calibrationService, CalibrationParam calibrationParam)
@@ -53,13 +53,13 @@ namespace ColorVision.Services.Devices.Calibration.Templates
 
         private void UserControl_Initialized(object sender, System.EventArgs e)
         {
-            ComboBoxList.ItemsSource = GroupServices;
+            ComboBoxList.ItemsSource = groupResources;
             foreach (var item in CalibrationService.VisualChildren)
             {
-                if (item is GroupService groupService)
+                if (item is GroupResource groupResource)
                 {
-                    groupService.SetCalibrationResource(CalibrationService);
-                    GroupServices.Add(groupService);
+                    groupResource.SetCalibrationResource(CalibrationService);
+                    groupResources.Add(groupResource);
                 }
             }
         }
@@ -100,28 +100,28 @@ namespace ColorVision.Services.Devices.Calibration.Templates
                 CalibrationParam.Color.LumMultiColor.IsSelected = false;
                 CalibrationParam.Color.LumOneColor.IsSelected = false;
 
-                if (comboBox.SelectedValue is GroupService groupService)
+                if (comboBox.SelectedValue is GroupResource groupResource)
                 {
-                    CalibrationParam.Normal.DarkNoise.FilePath = groupService.DarkNoise?.Name ?? string.Empty;
-                    CalibrationParam.Normal.DarkNoise.Id = groupService.DarkNoise?.Id;
-                    CalibrationParam.Normal.DefectPoint.FilePath = groupService.DefectPoint?.Name ?? string.Empty;
-                    CalibrationParam.Normal.DefectPoint.Id = groupService.DefectPoint?.Id;
-                    CalibrationParam.Normal.DSNU.FilePath = groupService.DSNU?.Name ?? string.Empty;
-                    CalibrationParam.Normal.DSNU.Id = groupService.DSNU?.Id;
-                    CalibrationParam.Normal.Distortion.FilePath = groupService.Distortion?.Name ?? string.Empty;
-                    CalibrationParam.Normal.Distortion.Id = groupService.Distortion?.Id;
-                    CalibrationParam.Normal.ColorShift.FilePath = groupService.ColorShift?.Name ?? string.Empty;
-                    CalibrationParam.Normal.ColorShift.Id = groupService.ColorShift?.Id;
-                    CalibrationParam.Normal.Uniformity.FilePath = groupService.Uniformity?.Name ?? string.Empty;
-                    CalibrationParam.Normal.Uniformity.Id = groupService.Uniformity?.Id;
-                    CalibrationParam.Color.Luminance.FilePath = groupService.Luminance?.Name ?? string.Empty;
-                    CalibrationParam.Color.Luminance.Id = groupService.Luminance?.Id;
-                    CalibrationParam.Color.LumFourColor.FilePath = groupService.LumFourColor?.Name ?? string.Empty;
-                    CalibrationParam.Color.LumFourColor.Id = groupService.LumFourColor?.Id;
-                    CalibrationParam.Color.LumMultiColor.FilePath = groupService.LumMultiColor?.Name ?? string.Empty;
-                    CalibrationParam.Color.LumMultiColor.Id = groupService.LumMultiColor?.Id;
-                    CalibrationParam.Color.LumOneColor.FilePath = groupService.LumOneColor?.Name ?? string.Empty;
-                    CalibrationParam.Color.LumOneColor.Id = groupService.LumOneColor?.Id;
+                    CalibrationParam.Normal.DarkNoise.FilePath = groupResource.DarkNoise?.Name ?? string.Empty;
+                    CalibrationParam.Normal.DarkNoise.Id = groupResource.DarkNoise?.Id;
+                    CalibrationParam.Normal.DefectPoint.FilePath = groupResource.DefectPoint?.Name ?? string.Empty;
+                    CalibrationParam.Normal.DefectPoint.Id = groupResource.DefectPoint?.Id;
+                    CalibrationParam.Normal.DSNU.FilePath = groupResource.DSNU?.Name ?? string.Empty;
+                    CalibrationParam.Normal.DSNU.Id = groupResource.DSNU?.Id;
+                    CalibrationParam.Normal.Distortion.FilePath = groupResource.Distortion?.Name ?? string.Empty;
+                    CalibrationParam.Normal.Distortion.Id = groupResource.Distortion?.Id;
+                    CalibrationParam.Normal.ColorShift.FilePath = groupResource.ColorShift?.Name ?? string.Empty;
+                    CalibrationParam.Normal.ColorShift.Id = groupResource.ColorShift?.Id;
+                    CalibrationParam.Normal.Uniformity.FilePath = groupResource.Uniformity?.Name ?? string.Empty;
+                    CalibrationParam.Normal.Uniformity.Id = groupResource.Uniformity?.Id;
+                    CalibrationParam.Color.Luminance.FilePath = groupResource.Luminance?.Name ?? string.Empty;
+                    CalibrationParam.Color.Luminance.Id = groupResource.Luminance?.Id;
+                    CalibrationParam.Color.LumFourColor.FilePath = groupResource.LumFourColor?.Name ?? string.Empty;
+                    CalibrationParam.Color.LumFourColor.Id = groupResource.LumFourColor?.Id;
+                    CalibrationParam.Color.LumMultiColor.FilePath = groupResource.LumMultiColor?.Name ?? string.Empty;
+                    CalibrationParam.Color.LumMultiColor.Id = groupResource.LumMultiColor?.Id;
+                    CalibrationParam.Color.LumOneColor.FilePath = groupResource.LumOneColor?.Name ?? string.Empty;
+                    CalibrationParam.Color.LumOneColor.Id = groupResource.LumOneColor?.Id;
                 }
 
             }
@@ -132,11 +132,11 @@ namespace ColorVision.Services.Devices.Calibration.Templates
             CalibrationEdit CalibrationEdit = new CalibrationEdit(CalibrationService);
             CalibrationEdit.Closed += (s, e) =>
             {
-                GroupServices.Clear();
+                groupResources.Clear();
                 foreach (var item in CalibrationService.VisualChildren)
                 {
-                    if (item is GroupService groupService)
-                        GroupServices.Add(groupService);
+                    if (item is GroupResource groupResource)
+                        groupResources.Add(groupResource);
                 }
             };
             CalibrationEdit.Show();

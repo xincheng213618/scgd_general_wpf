@@ -20,7 +20,7 @@ namespace ColorVision.Services.Devices.Calibration.Templates
             InitializeComponent();
         }
 
-        public ObservableCollection<GroupService> GroupServices { get; set; } = new ObservableCollection<GroupService>();
+        public ObservableCollection<GroupResource> groupResources { get; set; } = new ObservableCollection<GroupResource>();
 
         public ObservableCollection<CalibrationResource> DarkNoiseList { get; set; } = new ObservableCollection<CalibrationResource>();
         public ObservableCollection<CalibrationResource> DefectPointList { get; set; } = new ObservableCollection<CalibrationResource>();
@@ -38,10 +38,10 @@ namespace ColorVision.Services.Devices.Calibration.Templates
         {
             foreach (var item in CalibrationService.VisualChildren)
             {
-                if (item is GroupService groupService)
+                if (item is GroupResource groupResource)
                 {
-                    groupService.SetCalibrationResource(CalibrationService);
-                    GroupServices.Add(groupService);
+                    groupResource.SetCalibrationResource(CalibrationService);
+                    groupResources.Add(groupResource);
                 }
                 if (item is CalibrationResource calibrationResource)
                 {
@@ -83,11 +83,11 @@ namespace ColorVision.Services.Devices.Calibration.Templates
                 }
             }
 
-            ListView1.ItemsSource = GroupServices;
-            if (GroupServices.Count > 0)
+            ListView1.ItemsSource = groupResources;
+            if (groupResources.Count > 0)
             {
                 ListView1.SelectedIndex = 0;
-                StackPanelCab.DataContext = GroupServices[0];
+                StackPanelCab.DataContext = groupResources[0];
             }
 
             ComboBoxDarkNoise.ItemsSource = DarkNoiseList;
@@ -106,17 +106,17 @@ namespace ColorVision.Services.Devices.Calibration.Templates
         {
             if (ListView1.SelectedIndex > -1)
             {
-                StackPanelCab.DataContext = GroupServices[ListView1.SelectedIndex];
+                StackPanelCab.DataContext = groupResources[ListView1.SelectedIndex];
             }
         }
 
         private void Button_Add_Click(object sender, RoutedEventArgs e)
         {
             string calue = NewCreateFileName("title");
-            var group = GroupService.AddGroupService(CalibrationService, calue);
+            var group = GroupResource.AddGroupResource(CalibrationService, calue);
             if (group != null)
             {
-                GroupServices.Add(group);
+                groupResources.Add(group);
             }
             else
             {
@@ -126,7 +126,7 @@ namespace ColorVision.Services.Devices.Calibration.Templates
 
         public string NewCreateFileName(string FileName)
         {
-            var list = GroupServices.Select(g => g.Name).Distinct().ToList();
+            var list = groupResources.Select(g => g.Name).Distinct().ToList();
             for (int i = 1; i < 9999; i++)
             {
                 if (!list.Contains($"{FileName}{i}"))
@@ -142,17 +142,17 @@ namespace ColorVision.Services.Devices.Calibration.Templates
         {
             if (ListView1.SelectedIndex > -1)
             {
-                GroupService groupService = GroupServices[ListView1.SelectedIndex];
-                SysResourceDao.DeleteById(groupService.SysResourceModel.Id,false);
-                GroupServices.Remove(groupService);
-                CalibrationService.VisualChildren.Remove(groupService);
+                GroupResource groupResource = groupResources[ListView1.SelectedIndex];
+                SysResourceDao.DeleteById(groupResource.SysResourceModel.Id,false);
+                groupResources.Remove(groupResource);
+                CalibrationService.VisualChildren.Remove(groupResource);
                 MessageBox.Show("删除成功");
             }
         }
 
         private void Window_Closed(object sender, EventArgs e)
         {
-            foreach (var item in GroupServices)
+            foreach (var item in groupResources)
             {
                 item.Save();
             }

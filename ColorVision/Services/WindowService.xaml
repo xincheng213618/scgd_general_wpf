@@ -46,7 +46,7 @@
                                 <TextBlock Text="{Binding Name}"/>
                             </DockPanel>
                         </HierarchicalDataTemplate>
-                        <HierarchicalDataTemplate DataType="{x:Type core:GroupService}" ItemsSource="{Binding VisualChildren}" >
+                        <HierarchicalDataTemplate DataType="{x:Type core:GroupResource}" ItemsSource="{Binding VisualChildren}" >
                             <DockPanel>
                                 <TextBlock Text="{Binding Name}"/>
                             </DockPanel>

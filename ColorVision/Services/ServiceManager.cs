@@ -42,7 +42,7 @@ namespace ColorVision.Services
         public ObservableCollection<TerminalService> TerminalServices { get; set; } = new ObservableCollection<TerminalService>();
         public ObservableCollection<DeviceService> DeviceServices { get; set; } = new ObservableCollection<DeviceService>();
 
-        public ObservableCollection<GroupService> GroupServices { get; set; } = new ObservableCollection<GroupService>();
+        public ObservableCollection<GroupResource> groupResources { get; set; } = new ObservableCollection<GroupResource>();
         public ObservableCollection<DeviceService> LastGenControl { get; set; } = new ObservableCollection<DeviceService>();
 
         public Dictionary<string, string> ServiceTokens { get; set; } = new Dictionary<string, string>();
@@ -262,7 +262,7 @@ namespace ColorVision.Services
                 }
             }
 
-            GroupServices.Clear();
+            groupResources.Clear();
             foreach (var deviceService in DeviceServices)
             {
                 List<SysResourceModel> sysResourceModels = sysResourceDao1.GetResourceItems(deviceService.SysResourceModel.Id, UserConfig.TenantId);
@@ -270,9 +270,9 @@ namespace ColorVision.Services
                 {
                     if (sysResourceModel.Type == (int)ResourceType.Group)
                     {
-                        GroupService groupService = new GroupService(sysResourceModel);
-                        deviceService.AddChild(groupService);
-                        GroupServices.Add(groupService);
+                        GroupResource groupResource = new GroupResource(sysResourceModel);
+                        deviceService.AddChild(groupResource);
+                        groupResources.Add(groupResource);
                     }
                    else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
                     {
@@ -287,35 +287,35 @@ namespace ColorVision.Services
                 }
             }
 
-            foreach (var groupService in GroupServices)
+            foreach (var groupResource in groupResources)
             {
-                LoadGroupService(groupService);
+                LoadgroupResource(groupResource);
             }
         }
         SysResourceDao sysResourceDao1 = new SysResourceDao();
 
-        public void LoadGroupService(GroupService groupService)
+        public void LoadgroupResource(GroupResource groupResource)
         {
             sysResourceDao1.CreatResourceGroup();
-            List<SysResourceModel> sysResourceModels = sysResourceDao1.GetGroupResourceItems(groupService.SysResourceModel.Id);
+            List<SysResourceModel> sysResourceModels = sysResourceDao1.GetGroupResourceItems(groupResource.SysResourceModel.Id);
             foreach (var sysResourceModel in sysResourceModels)
             {
                 if (sysResourceModel.Type == (int)ResourceType.Group)
                 {
-                    GroupService groupService1 = new GroupService(sysResourceModel);
-                    LoadGroupService(groupService1);
-                    groupService.AddChild(groupService);
-                    GroupServices.Add(groupService);
+                    GroupResource groupResource1 = new GroupResource(sysResourceModel);
+                    LoadgroupResource(groupResource1);
+                    groupResource.AddChild(groupResource);
+                    groupResources.Add(groupResource);
                 }
                 else if (30<=sysResourceModel.Type && sysResourceModel.Type <= 40)
                 {
                     CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
-                    groupService.AddChild(calibrationResource);
+                    groupResource.AddChild(calibrationResource);
                 }
                 else
                 {
                     BaseResource calibrationResource = new BaseResource(sysResourceModel);
-                    groupService.AddChild(calibrationResource);
+                    groupResource.AddChild(calibrationResource);
                 }
             }
         }

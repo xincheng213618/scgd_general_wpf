@@ -17,7 +17,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Services.Devices
 {
-    public class DeviceService : BaseResourceObject, IDisposable
+    public class DeviceService : BaseResourceObject, IDisposable , ITreeViewItem
     {
         public virtual string Code { get; set; }
         public virtual string SendTopic { get; set; }
@@ -29,6 +29,13 @@ namespace ColorVision.Services.Devices
 
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
         private bool _IsSelected;
+
+        public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
+        private bool _IsExpanded = true;
+
+        public bool IsChecked { get => _IsChecked; set { _IsChecked = value; NotifyPropertyChanged(); } }
+        private bool _IsChecked = true;
+        public ContextMenu ContextMenu { get; set; }
 
         public RelayCommand PropertyCommand { get; set; }
         public RelayCommand ExportCommand { get; set; }

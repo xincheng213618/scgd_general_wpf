@@ -14,8 +14,16 @@ using System.Windows.Media;
 
 namespace ColorVision.Services.Terminal
 {
-    public class TerminalServiceBase : BaseResourceObject
+    public class TerminalServiceBase : BaseResourceObject, ITreeViewItem
     {
+        public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
+        private bool _IsExpanded = true;
+
+        public bool IsChecked { get => _IsChecked; set { _IsChecked = value; NotifyPropertyChanged(); } }
+        private bool _IsChecked = true;
+        public ContextMenu ContextMenu { get; set; }
+
+
         public virtual UserControl GenDeviceControl()
         {
             throw new System.NotImplementedException();
@@ -44,7 +52,6 @@ namespace ColorVision.Services.Terminal
         {
             MessageBox.Show("Create");
         }
-
 
         public TerminalService(SysResourceModel sysResourceModel) : base()
         {

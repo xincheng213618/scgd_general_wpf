@@ -6,22 +6,10 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Core
 {
-
-    public interface ITreeViewItem
-    {
-        public bool IsExpanded { get; set; }
-        public ContextMenu ContextMenu { get; set; }
-
-
-    }
-
-
-
-    public class BaseResourceObject : ViewModelBase,ITreeViewItem
+    public class BaseResourceObject : ViewModelBase
     {
         public RelayCommand DeleteCommand { get; set; }
         public RelayCommand SaveCommand { get; set; }
-        public ContextMenu ContextMenu { get; set; }
         public ObservableCollection<BaseResourceObject> VisualChildren { get; set; }
         public ServiceManager ServiceControl { get; set; }
 
@@ -54,10 +42,6 @@ namespace ColorVision.Services.Core
             baseObject.Parent = null;
             VisualChildren.Remove(baseObject);
         }
-
-        public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
-        private bool _IsExpanded = true;
-
 
         public virtual string Name { get; set; }
 
