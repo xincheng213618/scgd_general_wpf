@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA170,CA1709
+﻿#pragma warning disable CA1708
 using ColorVision.Services.Dao;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;

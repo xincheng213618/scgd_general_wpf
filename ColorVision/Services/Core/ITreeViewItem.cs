@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8625
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 
 namespace ColorVision.Services.Core
 {

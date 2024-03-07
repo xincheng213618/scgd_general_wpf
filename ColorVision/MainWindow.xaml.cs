@@ -333,7 +333,7 @@ namespace ColorVision
             }
         }
         
-        public async Task CheckLocalService()
+        public static async Task CheckLocalService()
         {
             await Task.Delay(2000);
             try
@@ -344,8 +344,6 @@ namespace ColorVision
                 {
                     excmd += "net start RegistrationCenterService&&";
                 }
-
-
 
                 ServiceController sc1 = new ServiceController("CVMainService_x86");
                 if (sc1.Status == ServiceControllerStatus.Stopped)

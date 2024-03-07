@@ -1499,7 +1499,14 @@ namespace ColorVision.Services.Templates.POI
             {
                 try
                 {
-                    OpenImage(new NetFileUtil("1").OpenLocalCVFile(measureImgResultModel.FileUrl, FileExtType.Raw));
+                    if (measureImgResultModel.FileUrl != null)
+                    {
+                        OpenImage(new NetFileUtil("1").OpenLocalCVFile(measureImgResultModel.FileUrl, FileExtType.Raw));
+                    }
+                    else
+                    {
+                        MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址" );
+                    }
                 }
                 catch(Exception ex)
                 {

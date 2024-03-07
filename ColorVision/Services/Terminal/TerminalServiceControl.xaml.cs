@@ -257,7 +257,7 @@ namespace ColorVision.Services.Terminal
                     default:
                         break;
                 };
-                if (sysDevModel != null) RC.MQTTRCService.GetInstance().RestartServices(sysDevModel.TypeCode, sysDevModel.PCode, sysDevModel.Code);
+                if (sysDevModel != null && sysDevModel.TypeCode!=null && sysDevModel.PCode!=null && sysDevModel.Code!=null) RC.MQTTRCService.GetInstance().RestartServices(sysDevModel.TypeCode, sysDevModel.PCode, sysDevModel.Code);
                 MessageBox.Show("添加资源成功");
                 MQTTCreate.Visibility = Visibility.Collapsed;
             }

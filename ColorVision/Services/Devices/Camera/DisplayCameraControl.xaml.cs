@@ -78,6 +78,7 @@ namespace ColorVision.Services.Devices.Camera
                 IsSelected = true;
             }
         }
+        private MeasureImgResultDao measureImgResultDao = new MeasureImgResultDao();
 
 
         private void View_OnCurSelectionChanged(ViewResultCamera data)
@@ -119,7 +120,29 @@ namespace ColorVision.Services.Devices.Camera
                 switch (arg.EventName)
                 {
                     case MQTTCameraEventEnum.Event_GetData:
-                        ShowResultFromDB(arg.SerialNumber, Convert.ToInt32(arg.Data.MasterId));
+                        int masterId = Convert.ToInt32(arg.Data.MasterId);
+                        List<MeasureImgResultModel> resultMaster = null;
+                        if (masterId > 0)
+                        {
+                            resultMaster = new List<MeasureImgResultModel>();
+                            MeasureImgResultModel model = measureImgResultDao.GetById(masterId);
+                            if (model != null)
+                                resultMaster.Add(model);
+                        }
+                        else
+                        {
+                            resultMaster = measureImgResultDao.GetAllByBatchCode(arg.SerialNumber);
+                        }
+                        if (resultMaster != null)
+                        {
+                            foreach (MeasureImgResultModel result in resultMaster)
+                            {
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    View.ShowResult(result);
+                                });
+                            }
+                        }
                         break;
                     case MQTTFileServerEventEnum.Event_File_Download:
                         //DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
@@ -160,7 +183,29 @@ namespace ColorVision.Services.Devices.Camera
                 switch (arg.EventName)
                 {
                     case MQTTCameraEventEnum.Event_GetData:
-                        ShowResultFromDB(arg.SerialNumber, Convert.ToInt32(arg.Data.MasterId));
+                        int masterId = Convert.ToInt32(arg.Data.MasterId);
+                        List<MeasureImgResultModel> resultMaster = null;
+                        if (masterId > 0)
+                        {
+                            resultMaster = new List<MeasureImgResultModel>();
+                            MeasureImgResultModel model = measureImgResultDao.GetById(masterId);
+                            if (model != null)
+                                resultMaster.Add(model);
+                        }
+                        else
+                        {
+                            resultMaster = measureImgResultDao.GetAllByBatchCode(arg.SerialNumber);
+                        }
+                        if (resultMaster != null)
+                        {
+                            foreach (MeasureImgResultModel result in resultMaster)
+                            {
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    Device.View.ShowResult(result);
+                                });
+                            }
+                        }
                         break;
                     case MQTTFileServerEventEnum.Event_File_Download:
                         Application.Current.Dispatcher.Invoke(() =>
@@ -194,39 +239,7 @@ namespace ColorVision.Services.Devices.Camera
                 netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, param.FileExtType);
             }
         }
-        private MeasureImgResultDao measureImgResultDao = new MeasureImgResultDao();
 
-        private void ShowResultFromDB(string serialNumber, int masterId)
-        {
-            List<MeasureImgResultModel> resultMaster = null;
-            if (masterId > 0)
-            {
-                resultMaster = new List<MeasureImgResultModel>();
-                MeasureImgResultModel model = measureImgResultDao.GetById(masterId);
-                resultMaster.Add(model);
-            }
-            else
-            {
-                resultMaster = measureImgResultDao.GetAllByBatchCode(serialNumber);
-            }
-            if (resultMaster != null)
-            {
-                foreach (MeasureImgResultModel result in resultMaster)
-                {
-                    ShowResult(result);
-                }
-            }
-
-            handler?.Close();
-        }
-
-        private void ShowResult(MeasureImgResultModel result)
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                Device.View.ShowResult(result);
-            });
-        }
 
         private void NetFileUtil_handler(object sender, NetFileEvent arg)
         {

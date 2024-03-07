@@ -731,14 +731,6 @@ namespace ColorVision.Services.Templates
         }
 
 
-        private SysModMasterDao masterDao;
-
-        internal List<SysModMasterModel> LoadSysModMaster()
-        {
-            return masterDao.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-        }
-
-
         public ObservableCollection<TemplateModel<MeasureParam>> MeasureParams { get; set; }
         public ObservableCollection<TemplateModel<AOIParam>> AoiParams { get; set; }
         public ObservableCollection<TemplateModel<PGParam>> PGParams { get; set; }

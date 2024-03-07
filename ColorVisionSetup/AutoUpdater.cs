@@ -67,7 +67,6 @@ namespace ColorVision.Update
             string downloadPath = Path.Combine(Path.GetTempPath(), $"ColorVision-{latestVersion}.exe");
 
             // 实例化 WebClient
-#pragma warning disable SYSLIB0014 // 类型或成员已过时
             using (var client = new WebClient())
             {
                 // 创建进度报告器并订阅进度更新事件
@@ -109,7 +108,6 @@ namespace ColorVision.Update
                 };
                 await client.DownloadFileTaskAsync(new Uri(downloadUrl), downloadPath);
             }
-#pragma warning restore SYSLIB0014 // 类型或成员已过时
         }
 
         public string Status { get => _Status; set { _Status = value; NotifyPropertyChanged(); } }

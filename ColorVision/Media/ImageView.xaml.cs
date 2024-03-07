@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8604 // 引用类型参数可能为 null。
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
 using ColorVision.MVVM;

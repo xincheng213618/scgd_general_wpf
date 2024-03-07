@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8625
-namespace ColorVision.Services.Core
+﻿namespace ColorVision.Services.Core
 {
     public static class BaseResourceObjectExtensions
     {
