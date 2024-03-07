@@ -54,12 +54,12 @@ namespace ColorVision
             writeableBitmap.Unlock();
             return writeableBitmap;
         }
-        public static HImage BitmapImageToHImage(this BitmapImage bitmapImage)
+        public static HImage ToHImage(this BitmapImage bitmapImage)
         {
             // Convert the BitmapImage to a WriteableBitmap first
             WriteableBitmap writeableBitmap = new WriteableBitmap(bitmapImage);
 
-            // Now convert the WriteableBitmap to an HImage
+            // Now convert the WriteableBitmap to an HImageCache
             return writeableBitmap.ToHImage();
         }
 
@@ -69,7 +69,7 @@ namespace ColorVision
             int channels = writeableBitmap.Format.BitsPerPixel / 8;
             int depth = 8; // Assuming 8 bits per channel, this may need to be adjusted based on actual format
 
-            // Create a new HImage instance
+            // Create a new HImageCache instance
             HImage hImage = new HImage
             {
                 rows = writeableBitmap.PixelHeight,
@@ -79,7 +79,7 @@ namespace ColorVision
                 pData = Marshal.AllocHGlobal(writeableBitmap.PixelWidth * writeableBitmap.PixelHeight * channels)
             };
 
-            // Copy the pixel data from the WriteableBitmap to the HImage
+            // Copy the pixel data from the WriteableBitmap to the HImageCache
             writeableBitmap.Lock();
             RtlMoveMemory(hImage.pData, writeableBitmap.BackBuffer, (uint)(hImage.cols * hImage.rows * hImage.channels));
             writeableBitmap.Unlock();
@@ -109,7 +109,7 @@ namespace ColorVision
         public static extern int ReadGhostImage([MarshalAs(UnmanagedType.LPStr)] string FilePath, int singleLedPixelNum, int[] LEDPixelX, int[] LEDPixelY, int singleGhostPixelNum, int[] GhostPixelX, int[] GhostPixelY, out HImage hImage);
 
         [DllImport("OpenCVHelper.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int ReadGhostHImage(HImage image, out HImage hImage);
+        public static extern int PseudoColor(HImage image, out HImage hImage, uint min , uint max);
 
 
         [DllImport("OpenCVHelper.dll")]

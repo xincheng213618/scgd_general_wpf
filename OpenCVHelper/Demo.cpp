@@ -4,7 +4,7 @@
 #include <opencv2/opencv.hpp>
 
 
-int ReadGhostHImage(HImage img, HImage* outImage)
+int PseudoColor(HImage img, HImage* outImage, uint min1, uint max1)
 {
 	 cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 
@@ -19,6 +19,14 @@ int ReadGhostHImage(HImage img, HImage* outImage)
 	cv::minMaxLoc(mat, &minVal, &maxVal); // 找到图像的最小和最大像素值
 	cv::Mat scaledMat;
 	mat.convertTo(scaledMat, CV_8UC1, 255.0 / (maxVal - minVal), -minVal * 255.0 / (maxVal - minVal));
+
+
+	cv::Mat maskGreater = scaledMat > max1; // Change maxVal to your specific threshold
+	scaledMat.setTo(cv::Scalar(255, 255, 255), maskGreater);
+
+	// Set values less than a threshold to black
+	cv::Mat maskLess = scaledMat < min1; // Change minVal to your specific threshold
+	scaledMat.setTo(cv::Scalar(0, 0, 0), maskLess);
 
 	cv::applyColorMap(scaledMat, scaledMat, cv::COLORMAP_JET);
 

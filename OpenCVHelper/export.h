@@ -22,7 +22,8 @@ typedef struct HImage
 }HImage;
 
 extern "C" COLORVISIONCORE_API int ReadGhostImage(const char* FilePath, int singleLedPixelNum, int* LED_pixel_X, int* LED_pixel_Y, int singleGhostPixelNum, int* Ghost_pixel_X, int* Ghost_pixel_Y, HImage * outImage);
-extern "C" COLORVISIONCORE_API int ReadGhostHImage(HImage img, HImage * outImage);
+
+extern "C" COLORVISIONCORE_API int PseudoColor(HImage img, HImage * outImage, uint min , uint max);
 
 extern "C" COLORVISIONCORE_API double CalArtculation(int nw, int nh, char* data);
 extern "C" COLORVISIONCORE_API double CalArtculationROI(int nw, int nh, char* data,int x ,int y ,int width, int height);

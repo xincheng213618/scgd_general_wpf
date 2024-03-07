@@ -50,14 +50,14 @@
                         <GridView>
                             <GridViewColumn  Header="像素范围">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:DataGridValue}">
+                                    <DataTemplate  DataType="{x:Type local:PseudoValue}">
                                         <TextBlock Text="{ Binding  ValText}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="颜色">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:DataGridValue}">
+                                    <DataTemplate  DataType="{x:Type local:PseudoValue}">
                                         <Label Content=" " Background="{Binding Color}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>

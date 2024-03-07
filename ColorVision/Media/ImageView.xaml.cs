@@ -6,6 +6,7 @@ using ColorVision.Net;
 using log4net;
 using MQTTMessageLib.Algorithm;
 using OpenCvSharp.WpfExtensions;
+using SkiaSharp.Views.WPF;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -613,12 +614,15 @@ namespace ColorVision.Media
 
             int i = OpenCVHelper.ReadGhostImage(filePath, LEDpixelX.Length, LEDpixelX, LEDPixelY, GhostPixelX.Length, GhostPixelX, GhostPixelY, out HImage hImage);
             if (i != 0) return;
+            HImageCache = hImage;
             var writeableBitmap = hImage.ToWriteableBitmap();
             ViewBitmapSource = writeableBitmap;
             ImageShow.Source = ViewBitmapSource;
 
-            i = OpenCVHelper.ReadGhostHImage(hImage, out HImage hImage1);
-            if (i != 0) return;
+            uint min = (uint)PseudoSlider.ValueStart;
+            uint max = (uint)PseudoSlider.ValueEnd;
+            int ret = OpenCVHelper.PseudoColor((HImage)HImageCache, out HImage hImage1, min, max);
+            if (ret != 0) return;
             PseudoImage = hImage1.ToWriteableBitmap();
 
             Task.Run(() => {
@@ -629,9 +633,14 @@ namespace ColorVision.Media
             });
         }
 
+        public HImage? HImageCache { get; set; }
+
         private void SetImageSource(WriteableBitmap writeableBitmap)
         {
-            int ret = OpenCVHelper.ReadGhostHImage(writeableBitmap.ToHImage(), out HImage hImage1);
+            HImageCache = writeableBitmap.ToHImage();
+            uint min = (uint)PseudoSlider.ValueStart;
+            uint max = (uint)PseudoSlider.ValueEnd;
+            int ret = OpenCVHelper.PseudoColor((HImage)HImageCache, out HImage hImage1, min, max);
             if (ret == 0)
                 PseudoImage = hImage1.ToWriteableBitmap();
 
@@ -645,7 +654,11 @@ namespace ColorVision.Media
 
         private void SetImageSource(BitmapImage bitmapImage)
         {
-            int ret = OpenCVHelper.ReadGhostHImage(bitmapImage.BitmapImageToHImage(), out HImage hImage1);
+            HImageCache = bitmapImage.ToHImage();
+
+            uint min = (uint)PseudoSlider.ValueStart;
+            uint max = (uint)PseudoSlider.ValueEnd;
+            int ret = OpenCVHelper.PseudoColor((HImage)HImageCache, out HImage hImage1, min, max);
             if (ret == 0)
                 PseudoImage = hImage1.ToWriteableBitmap();
 
@@ -826,8 +839,17 @@ namespace ColorVision.Media
 
         private void RangeSlider1_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
         {
-            RowDefinitionStart.Height = new GridLength((170.0 / 255.0) * (255 - RangeSlider1.ValueEnd));
-            RowDefinitionEnd.Height = new GridLength((170.0 / 255.0) * RangeSlider1.ValueStart);
+            RowDefinitionStart.Height = new GridLength((170.0 / 255.0) * (255 - PseudoSlider.ValueEnd));
+            RowDefinitionEnd.Height = new GridLength((170.0 / 255.0) * PseudoSlider.ValueStart);
+            if (HImageCache !=null)
+            {
+                uint min = (uint)PseudoSlider.ValueStart;
+                uint max = (uint)PseudoSlider.ValueEnd;
+                int ret = OpenCVHelper.PseudoColor((HImage)HImageCache, out HImage hImage1, min, max);
+                if (ret == 0)
+                    PseudoImage = hImage1.ToWriteableBitmap();
+                ImageShow.Source = PseudoImage;
+            }
         }
     }
 }
