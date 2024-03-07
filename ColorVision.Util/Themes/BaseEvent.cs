@@ -1,4 +1,7 @@
-﻿using System.Windows;
+﻿#pragma warning disable CA1010,CA1822
+using System;
+using System.Collections;
+using System.Windows;
 using System.Windows.Input;
 
 namespace ColorVision.Themes

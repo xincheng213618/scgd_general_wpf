@@ -11,7 +11,10 @@
     <Grid>
         <StackPanel>
             <ProgressBar Height="15"  Foreground="#B41515" Maximum="100" Minimum="0" Value="{Binding ProgressValue}" Background="#373B41" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
-            <TextBlock Text="{Binding SpeedValue}"/>
+            <DockPanel Margin="5">
+                <TextBlock Text="{Binding SpeedValue}"/>
+                <TextBlock HorizontalAlignment="Right" Text="{Binding RemainingTimeValue}"/>
+            </DockPanel>
         </StackPanel>
     </Grid>
 </Window>

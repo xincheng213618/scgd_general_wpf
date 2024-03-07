@@ -4,6 +4,7 @@ using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows.Input;
+using ColorVision.Common.Extension;
 
 namespace ColorVision.Draw
 {

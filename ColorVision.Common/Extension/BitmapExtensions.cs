@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision.Extension
+namespace ColorVision.Common.Extension
 {
     public static class BitmapExtensions
     {
