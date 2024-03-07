@@ -131,7 +131,7 @@
                 <Grid x:Name="SolutionGrid" Background="LightGray" Visibility="{Binding ElementName=SolutionTab1,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter}}"/>
             </Grid>
             <GridSplitter Panel.ZIndex="102" x:Name="GridSplitter" Margin="0,26,0,26" Grid.Column="0" HorizontalAlignment="Right" Width="4" Background="Transparent"/>
-            <Button Grid.Column="0" x:Name="ButtonShiftIn" Panel.ZIndex="102"  Visibility="Visible" Click="OnLeftMainContentShiftIn" hc:IconElement.Geometry="{StaticResource RightGeometry}" Padding="8 8 0 8" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-16 0 -16 0" Style="{StaticResource ButtonIconCircular}" />
+            <Button Grid.Column="0" x:Name="ButtonShiftIn" Panel.ZIndex="102"  Visibility="Collapsed" Click="OnLeftMainContentShiftIn" hc:IconElement.Geometry="{StaticResource RightGeometry}" Padding="8 8 0 8" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-16 0 -16 0" Style="{StaticResource ButtonIconCircular}" />
         </Grid>
         <Grid Grid.Row="2" Height="35" x:Name="StatusBarGrid" d:DataContext="{d:DesignInstance SettingUp:ConfigHandler}" Visibility="{Binding SoftwareConfig.SoftwareSetting.IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}" >
             <StatusBar BorderThickness="0,1,0,0" >

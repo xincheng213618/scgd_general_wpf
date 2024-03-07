@@ -49,12 +49,13 @@
             </Grid>
             <Grid Grid.Row="1">
                 <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
-                <ListView  x:Name="ListViewService"  Background="Transparent" SelectionChanged="ListViewService_SelectionChanged" BorderThickness="0">
+                <ListView  x:Name="ListViewService" Background="Transparent" SelectionChanged="ListViewService_SelectionChanged" BorderThickness="0">
                     <ListView.Resources >
                     </ListView.Resources>
                     <ListView.ItemContainerStyle>
-                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
                             <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                            <Setter Property="IsSelected" Value="{Binding IsSelected}"/>
                         </Style>
                     </ListView.ItemContainerStyle>
                     <ListView.View >

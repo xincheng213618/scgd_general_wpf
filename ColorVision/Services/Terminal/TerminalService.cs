@@ -19,7 +19,7 @@ namespace ColorVision.Services.Terminal
         public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
         private bool _IsExpanded = true;
 
-        public bool IsChecked { get => _IsChecked; set { _IsChecked = value; NotifyPropertyChanged(); } }
+        public bool IsSelected { get => _IsChecked; set { _IsChecked = value; NotifyPropertyChanged(); } }
         private bool _IsChecked = true;
         public ContextMenu ContextMenu { get; set; }
 
