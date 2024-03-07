@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
@@ -11,6 +12,22 @@ namespace ColorVision.Common.Utilities
     public static class DebounceTimer
     {
         private static readonly ConcurrentDictionary<string, Timer> _timers = new ConcurrentDictionary<string, Timer>();
+
+
+        public static void AddOrResetTimer<T>(string actionType, int delayMilliseconds, Action<T> action, T parameter)
+        {
+            ElapsedEventHandler handler = (sender, args) => action(parameter);
+            AddOrResetTimer(actionType, delayMilliseconds, handler);
+        }
+        /// <summary>
+        /// 匿名类型使用
+        /// </summary>
+        public static void AddOrResetTimer(string actionType, int delayMilliseconds, Action action)
+        {
+            ElapsedEventHandler handler = (sender, args) => action();
+            AddOrResetTimer(actionType, delayMilliseconds, handler);
+        }
+
 
         /// <summary>
         /// Adds or resets a debounced event timer for a given action type.
