@@ -5,7 +5,6 @@ using ColorVision.MVVM;
 using ColorVision.Properties;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Algorithm.Templates;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.PG.Templates;

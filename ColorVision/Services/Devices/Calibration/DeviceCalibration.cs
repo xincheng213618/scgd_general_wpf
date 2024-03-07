@@ -3,7 +3,6 @@ using ColorVision.MVVM;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Calibration.Views;
-using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Core;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;

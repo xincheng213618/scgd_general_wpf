@@ -1,5 +1,4 @@
-﻿using ColorVision.Services.Core;
-using ColorVision.Services.Msg;
+﻿using ColorVision.Services.Msg;
 using System.Collections.Generic;
 
 namespace ColorVision.Services.Devices.Sensor

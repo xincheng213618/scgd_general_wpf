@@ -1,6 +1,4 @@
-﻿using ColorVision.Services.Core;
-
-namespace ColorVision.Services.Devices.CfwPort
+﻿namespace ColorVision.Services.Devices.CfwPort
 {
     public class ConfigCfwPort: DeviceServiceConfig
     {

@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Services.Core;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Msg;
 using MQTTMessageLib;

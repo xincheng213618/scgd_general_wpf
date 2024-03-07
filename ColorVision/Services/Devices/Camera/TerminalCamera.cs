@@ -1,5 +1,4 @@
-﻿using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
+﻿using ColorVision.Services.Dao;
 using ColorVision.Services.Terminal;
 using System.Windows;
 

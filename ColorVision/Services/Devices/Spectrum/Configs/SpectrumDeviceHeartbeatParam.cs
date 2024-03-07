@@ -1,6 +1,4 @@
-﻿using ColorVision.Services.Core;
-
-namespace ColorVision.Services.Devices.Spectrum.Configs
+﻿namespace ColorVision.Services.Devices.Spectrum.Configs
 {
     public class SpectrumDeviceHeartbeatParam : DeviceHeartbeatParam
     {

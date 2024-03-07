@@ -1,5 +1,4 @@
-﻿using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
+﻿using ColorVision.Services.Dao;
 using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Sensor

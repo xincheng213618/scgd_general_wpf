@@ -100,7 +100,7 @@ namespace ColorVision.Media
                     nowStep = nextStep;
                     cmRt.Line(0, ColorMap.colorMapIdx[i], 50, ColorMap.colorMapIdx[i], OpenCvSharp.Scalar.All(0));
                 }
-                PseudoValues.Reverse();
+                _ = PseudoValues.Reverse();
             }
         }
 

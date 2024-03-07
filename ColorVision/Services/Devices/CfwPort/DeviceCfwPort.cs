@@ -1,5 +1,4 @@
-﻿using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
+﻿using ColorVision.Services.Dao;
 using ColorVision.Themes;
 using System.Windows;
 using System.Windows.Controls;

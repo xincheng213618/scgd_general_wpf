@@ -1,5 +1,4 @@
-﻿using ColorVision.Services.Core;
-using ColorVision.Services.Msg;
+﻿using ColorVision.Services.Msg;
 using MQTTMessageLib;
 using System.Collections.Generic;
 using System.Windows;

@@ -1,4 +1,5 @@
-﻿using ColorVision.MVVM;
+﻿#pragma warning disable CS8629
+using ColorVision.MVVM;
 using ColorVision.Services.Dao;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;

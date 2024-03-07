@@ -1,5 +1,4 @@
-﻿using ColorVision.Device.FileServer;
-using ColorVision.Device.PG;
+﻿using ColorVision.Device.PG;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.DAO;
@@ -27,6 +26,7 @@ using System.Data;
 using System.Linq;
 using ColorVision.Services.Type;
 using ColorVision.Services.Terminal;
+using ColorVision.Services.Devices.FileServer;
 
 namespace ColorVision.Services
 {

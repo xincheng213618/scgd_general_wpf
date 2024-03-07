@@ -5,7 +5,6 @@ using ColorVision.MVVM;
 using ColorVision.RC;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Templates;
 using Newtonsoft.Json;

@@ -1,11 +1,11 @@
 ﻿using ColorVision.MQTT;
-using ColorVision.Services.Terminal;
+using ColorVision.Services.Core;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 
-namespace ColorVision.Services.Core
+namespace ColorVision.Services.Terminal
 {
     public class MQTTServiceTerminalBase : MQTTServiceBase
     {
@@ -13,7 +13,6 @@ namespace ColorVision.Services.Core
         public virtual Dictionary<string, string> DevicesSNMD5 { get; set; } = new Dictionary<string, string>();
 
     }
-
 
     public class MQTTServiceTerminalBase<T> : MQTTServiceTerminalBase where T : TerminalServiceConfig
     {

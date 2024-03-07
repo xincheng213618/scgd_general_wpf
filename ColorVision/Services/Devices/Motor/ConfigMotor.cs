@@ -1,5 +1,4 @@
-﻿using ColorVision.Services.Core;
-using ColorVision.Services.Devices.Camera.Configs;
+﻿using ColorVision.Services.Devices.Camera.Configs;
 using cvColorVision;
 using Newtonsoft.Json;
 

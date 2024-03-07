@@ -1,12 +1,12 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.MQTT;
-using ColorVision.Services.Devices;
+using ColorVision.Services.Core;
 using MQTTMessageLib;
 using System;
 using System.Collections.Generic;
 using System.Windows;
 
-namespace ColorVision.Services.Core
+namespace ColorVision.Services.Devices
 {
     public class MessageRecvArgs
     {

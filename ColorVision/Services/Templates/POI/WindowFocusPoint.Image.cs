@@ -1,4 +1,5 @@
-﻿using ColorVision.Draw;
+﻿#pragma warning disable CS8602,CS8604
+using ColorVision.Draw;
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -256,13 +257,13 @@ namespace ColorVision.Services.Templates.POI
                     {
                         DrawSelectRect(SelectRect, new Rect(MouseDownP, point)); ;
                     }
-                    else if (ToolBarTop.DrawCircle)
+                    else if (ToolBarTop.DrawCircle && DrawCircleCache !=null)
                     {
                         double Radius = Math.Sqrt((Math.Pow(point.X - MouseDownP.X, 2) + Math.Pow(point.Y - MouseDownP.Y, 2)));
                         DrawCircleCache.Attribute.Radius = Radius;
                         DrawCircleCache.Render();
                     }
-                    else if (ToolBarTop.DrawRect)
+                    else if (ToolBarTop.DrawRect && DrawingRectangleCache!=null)
                     {
                         DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, point);
                         DrawingRectangleCache.Render();
