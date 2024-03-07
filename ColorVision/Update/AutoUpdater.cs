@@ -12,6 +12,8 @@ using System.Windows;
 
 namespace ColorVision.Update
 {
+
+
     public class AutoUpdater : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AutoUpdater));
