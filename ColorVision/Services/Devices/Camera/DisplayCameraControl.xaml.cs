@@ -555,7 +555,7 @@ namespace ColorVision.Services.Devices.Camera
                         {
                             if (Device.DeviceCalibration.CalibrationParams.Count > 0)
                             {
-                                calibration = new CalibrationControl(Device.DeviceCalibration, Device.CalibrationParams[0].Value);
+                                calibration = new CalibrationControl(Device.DeviceCalibration, Device.DeviceCalibration.CalibrationParams[0].Value);
                             }
                             else
                             {
