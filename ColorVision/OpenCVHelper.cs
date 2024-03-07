@@ -66,8 +66,11 @@ namespace ColorVision
         public static HImage ToHImage(this WriteableBitmap writeableBitmap)
         {
             // Determine the number of channels and depth based on the pixel format
-            int channels = writeableBitmap.Format.BitsPerPixel / 8;
-            int depth = 8; // Assuming 8 bits per channel, this may need to be adjusted based on actual format
+            int channels = writeableBitmap.Format.Masks.Count;
+            int depth = writeableBitmap.Format.BitsPerPixel/ writeableBitmap.Format.Masks.Count; // Assuming 8 bits per channel, this may need to be adjusted based on actual format
+
+
+
 
             // Create a new HImageCache instance
             HImage hImage = new HImage
