@@ -2,6 +2,7 @@
 
 using ColorVision.Common.Utilities;
 using ColorVision.Extension;
+using ColorVision.Services.Core;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Msg;

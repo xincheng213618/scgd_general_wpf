@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using ColorVision.Services.Core;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using System.Windows.Input;

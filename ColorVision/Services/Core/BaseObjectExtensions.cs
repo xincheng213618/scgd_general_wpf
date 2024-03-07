@@ -1,5 +1,5 @@
 ﻿#pragma warning disable CS8625
-namespace ColorVision.Services.Devices
+namespace ColorVision.Services.Core
 {
     public static class BaseObjectExtensions
     {

@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Common.Utilities;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Core;
 using System.Windows.Input;
 using MQTTMessageLib;
 using ColorVision.Themes;

@@ -1,9 +1,9 @@
 ﻿#pragma warning disable  CS8604,CS8631
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Type;
 
-namespace ColorVision.Services.Devices
+namespace ColorVision.Services.Core
 {
     public class GroupService: BaseResourceObject
     {

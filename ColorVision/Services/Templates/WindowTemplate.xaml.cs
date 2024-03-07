@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.Properties;
+using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Algorithm.Templates;

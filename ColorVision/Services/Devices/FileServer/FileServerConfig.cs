@@ -1,4 +1,5 @@
-﻿using ColorVision.Services.Devices;
+﻿using ColorVision.Services.Core;
+using ColorVision.Services.Devices;
 
 namespace ColorVision.Device.FileServer
 {

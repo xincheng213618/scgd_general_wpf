@@ -3,7 +3,7 @@ using ColorVision.MVVM;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Core;
 using ColorVision.Services.Templates;
 using ColorVision.Themes.Controls;
 using System;

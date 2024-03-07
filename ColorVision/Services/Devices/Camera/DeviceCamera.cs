@@ -6,7 +6,7 @@ using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Devices.Camera.Dao;
 using ColorVision.Services.Devices.Camera.Views;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Core;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Solution;

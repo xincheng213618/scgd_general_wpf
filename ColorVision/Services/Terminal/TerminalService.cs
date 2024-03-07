@@ -1,8 +1,10 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.RC;
+using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Camera;
+using ColorVision.Services.Type;
 using ColorVision.Themes;
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -10,7 +12,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Services
+namespace ColorVision.Services.Terminal
 {
     public class TerminalServiceBase : BaseResourceObject
     {

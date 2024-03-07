@@ -125,54 +125,54 @@ namespace ColorVision.Services.Templates
         {
             switch (typeof(T))
             {
-                case Type t when t == typeof(CalibrationParam):
+                case System.Type t when t == typeof(CalibrationParam):
                     break;
-                case Type t when t == typeof(LedReusltParam):
+                case System.Type t when t == typeof(LedReusltParam):
                     IDefault(FileNameLedJudgeParams, new LedReusltParam());
                     DicTemplate.TryAdd("LedReuslt", LedReusltParams);
                     break;
-                case Type t when t == typeof(PoiParam):
+                case System.Type t when t == typeof(PoiParam):
                     LoadPoiParam();
                     DicTemplate.TryAdd("Poi", PoiParams);
                     break;
-                case Type t when t == typeof(FlowParam):
+                case System.Type t when t == typeof(FlowParam):
                     LoadFlowParam();
                     DicTemplate.TryAdd("Flow", FlowParams);
                     break;
-                case Type t when t == typeof(AOIParam):
+                case System.Type t when t == typeof(AOIParam):
                     LoadModParam(AoiParams, ModMasterType.Aoi);
                     break;
-                case Type t when t == typeof(SMUParam):
+                case System.Type t when t == typeof(SMUParam):
                     LoadModParam(SMUParams, ModMasterType.SMU);
                     break;
-                case Type t when t == typeof(PGParam):
+                case System.Type t when t == typeof(PGParam):
                     LoadModParam(PGParams, ModMasterType.PG);
                     break;
-                case Type t when t == typeof(SFRParam):
+                case System.Type t when t == typeof(SFRParam):
                     LoadModParam(SFRParams, ModMasterType.SFR);
                     break;
-                case Type t when t == typeof(MTFParam):
+                case System.Type t when t == typeof(MTFParam):
                     LoadModParam(MTFParams, ModMasterType.MTF);
                     break;
-                case Type t when t == typeof(FOVParam):
+                case System.Type t when t == typeof(FOVParam):
                     LoadModParam(FOVParams, ModMasterType.FOV);
                     break;
-                case Type t when t == typeof(GhostParam):
+                case System.Type t when t == typeof(GhostParam):
                     LoadModParam(GhostParams, ModMasterType.Ghost);
                     break;
-                case Type t when t == typeof(DistortionParam):
+                case System.Type t when t == typeof(DistortionParam):
                     LoadModParam(DistortionParams, ModMasterType.Distortion);
                     break;
-                case Type t when t == typeof(FocusPointsParam):
+                case System.Type t when t == typeof(FocusPointsParam):
                     LoadModParam(FocusPointsParams, ModMasterType.FocusPoints);
                     break;
-                case Type t when t == typeof(LedCheckParam):
+                case System.Type t when t == typeof(LedCheckParam):
                     LoadModParam(LedCheckParams, ModMasterType.LedCheck);
                     break;
-                case Type t when t == typeof(MeasureParam):
+                case System.Type t when t == typeof(MeasureParam):
                     LoadMeasureParams();
                     break;
-                case Type t when t == typeof(BuildPOIParam):
+                case System.Type t when t == typeof(BuildPOIParam):
                     LoadModParam(BuildPOIParams, ModMasterType.BuildPOI);
                     break;
                 default:

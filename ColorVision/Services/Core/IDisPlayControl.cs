@@ -1,4 +1,4 @@
-﻿namespace ColorVision.Services.Interfaces
+﻿namespace ColorVision.Services.Core
 {
     public interface IDisPlayControl
     {

@@ -2,7 +2,7 @@
 using ColorVision.Services.Dao;
 using ColorVision.Sorts;
 
-namespace ColorVision.Services.Interfaces
+namespace ColorVision.Services.Core
 {
     public class CalibrationResource : BaseResource, ISortID, ISortFilePath
     {

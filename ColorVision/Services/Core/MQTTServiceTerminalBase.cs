@@ -1,10 +1,11 @@
 ﻿using ColorVision.MQTT;
+using ColorVision.Services.Terminal;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 
-namespace ColorVision.Services
+namespace ColorVision.Services.Core
 {
     public class MQTTServiceTerminalBase : MQTTServiceBase
     {

@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
 
-namespace ColorVision.Services
+namespace ColorVision.Services.Core
 {
     public class MQTTServiceBase : ViewModelBase, IHeartbeat, IServiceConfig, IDisposable
     {

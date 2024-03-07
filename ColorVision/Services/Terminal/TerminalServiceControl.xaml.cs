@@ -1,5 +1,6 @@
 ﻿using ColorVision.Device.FileServer;
 using ColorVision.Device.PG;
+using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Algorithm;
@@ -13,6 +14,8 @@ using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Devices.SMU.Configs;
 using ColorVision.Services.Devices.Spectrum;
 using ColorVision.Services.Devices.Spectrum.Configs;
+using ColorVision.Services.Terminal;
+using ColorVision.Services.Type;
 using ColorVision.Settings;
 using cvColorVision;
 using Newtonsoft.Json;
@@ -22,7 +25,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 
 
-namespace ColorVision.Services
+namespace ColorVision.Services.Terminal
 {
     /// <summary>
     /// TerminalServiceControl.xaml 的交互逻辑

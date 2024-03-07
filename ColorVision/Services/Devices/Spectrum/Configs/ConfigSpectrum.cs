@@ -1,4 +1,5 @@
-﻿using ColorVision.Services.Devices.Camera.Configs;
+﻿using ColorVision.Services.Core;
+using ColorVision.Services.Devices.Camera.Configs;
 using MQTTMessageLib;
 using Newtonsoft.Json;
 

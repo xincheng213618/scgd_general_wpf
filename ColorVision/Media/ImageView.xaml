@@ -193,7 +193,6 @@
                     <ToggleButton IsChecked="{Binding DrawPolygon}"  Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}"  >
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}"  Margin="-5"/>
                     </ToggleButton>
-
                 </ToolBar>
                 
             </ToolBarTray>

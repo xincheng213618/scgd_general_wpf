@@ -16,7 +16,7 @@ using ColorVision.Services.Devices.Spectrum;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Dao;
 using ColorVision.Services.Flow;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Core;
 using ColorVision.Settings;
 using ColorVision.UserSpace;
 using Newtonsoft.Json;
@@ -25,6 +25,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
+using ColorVision.Services.Type;
+using ColorVision.Services.Terminal;
 
 namespace ColorVision.Services
 {

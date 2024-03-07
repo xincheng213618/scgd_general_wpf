@@ -4,7 +4,7 @@ using ColorVision.MVVM;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices
+namespace ColorVision.Services.Core
 {
 
     public interface ITreeViewItem

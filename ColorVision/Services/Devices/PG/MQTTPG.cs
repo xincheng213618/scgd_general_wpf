@@ -1,4 +1,5 @@
 ﻿using ColorVision.MQTT;
+using ColorVision.Services.Core;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.PG.Templates;
 using ColorVision.Services.Msg;

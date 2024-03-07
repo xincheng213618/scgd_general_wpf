@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:local="clr-namespace:ColorVision.Services.Devices.Calibration.Templates"
-        xmlns:group="clr-namespace:ColorVision.Services.Devices"
+        xmlns:group="clr-namespace:ColorVision.Services.Core"
         mc:Ignorable="d"
         Title="CalibrationEdit"  Background="{DynamicResource GlobalBackground}"  Closed="Window_Closed" Height="350" Width="1200" Initialized="Window_Initialized" >
     <Window.Resources>

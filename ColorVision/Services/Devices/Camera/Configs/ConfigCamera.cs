@@ -2,6 +2,7 @@
 using cvColorVision;
 using ColorVision.Services.Devices.Camera.Video;
 using System;
+using ColorVision.Services.Core;
 
 namespace ColorVision.Services.Devices.Camera.Configs
 {

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Device.PG;
+using ColorVision.Services.Core;
 
 namespace ColorVision.Services.Devices.Sensor
 {

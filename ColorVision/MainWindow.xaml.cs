@@ -4,7 +4,7 @@ using ColorVision.Media;
 using ColorVision.MySql;
 using ColorVision.Services;
 using ColorVision.Services.Flow;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Core;
 using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.Solution.View;

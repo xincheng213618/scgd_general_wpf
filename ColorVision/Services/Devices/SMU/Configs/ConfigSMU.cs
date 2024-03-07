@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Services.Devices.SMU.Configs
+﻿using ColorVision.Services.Core;
+
+namespace ColorVision.Services.Devices.SMU.Configs
 {
     public class ConfigSMU : DeviceServiceConfig
     {
