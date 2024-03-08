@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Media"
         mc:Ignorable="d"
-        Title="WindowCIE" Height="450" Width="800">
+        Title="WindowCIE" Height="450" Width="800" Icon="/Assets/Image/CIE1931xy.ico">
     <Grid>
         <Image Source="/Assets/Image/CIE1931xy.png"/>
     </Grid>
