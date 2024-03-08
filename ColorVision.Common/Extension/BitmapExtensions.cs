@@ -17,9 +17,30 @@ namespace ColorVision.Common.Extension
             {
                 throw new ArgumentOutOfRangeException(nameof(bitmapImage));
             }
+            byte[] pixelData;
+            CroppedBitmap croppedBitmap;
+            if (bitmapImage is WriteableBitmap writeableBitmap && writeableBitmap.Format.ToString() == "Rgb48")
+            {
+                // For RGB48 format, each channel is 16 bits, so we need 6 bytes per pixel
+                pixelData = new byte[6];
+                croppedBitmap = new CroppedBitmap(bitmapImage, new Int32Rect(x, y, 1, 1));
+
+                // Stride is the number of bytes per pixel row, for RGB48 it's 6 bytes per pixel
+                croppedBitmap.CopyPixels(pixelData, 6, 0);
+
+                // Convert the 16-bit channel data to 8-bit by taking the most significant byte
+                // This is a simplification and may result in some loss of color precision
+                byte red = pixelData[0];
+                byte green = pixelData[2];
+                byte blue = pixelData[4];
+
+                // There is no alpha channel in RGB48, so we assume it's fully opaque (255)
+                return Color.FromArgb(255, red, green, blue);
+            }
+
             Color color = Colors.Black;
-            byte[] pixelData = new byte[4];
-            CroppedBitmap croppedBitmap = new CroppedBitmap(bitmapImage, new Int32Rect(x, y, 1, 1));
+            pixelData = new byte[4];
+            croppedBitmap = new CroppedBitmap(bitmapImage, new Int32Rect(x, y, 1, 1));
             croppedBitmap.CopyPixels(pixelData, 4, 0);
             color = Color.FromArgb(pixelData[3], pixelData[2], pixelData[1], pixelData[0]);
             return color;
