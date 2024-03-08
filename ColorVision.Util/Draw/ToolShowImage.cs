@@ -18,8 +18,6 @@ namespace ColorVision.Draw
 
         public DrawingVisual DrawingVisualImage1 { get; set; }
 
-
-
         public ToolShowImage(ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
@@ -50,7 +48,6 @@ namespace ColorVision.Draw
             }
         }
         private bool _IsShow;
-
 
         public class ImageInfo
         {
