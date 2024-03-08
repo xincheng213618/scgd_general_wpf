@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Device.FileServer;
 using ColorVision.MVVM;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;

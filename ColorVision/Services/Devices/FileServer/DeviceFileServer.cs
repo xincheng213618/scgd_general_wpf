@@ -1,5 +1,6 @@
 ﻿using ColorVision.Media;
 using ColorVision.Services;
+using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using System.Windows.Controls;
 
