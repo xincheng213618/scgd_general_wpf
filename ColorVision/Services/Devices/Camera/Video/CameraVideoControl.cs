@@ -66,8 +66,8 @@ namespace ColorVision.Services.Devices.Camera.Video
             this.width = (int)width;
             this.height = (int)height;
             this.IsEnableResize = true;
-            //this.width = 5544;
-            //this.height = 3684;
+            //this.Width = 5544;
+            //this.Height = 3684;
             if (reader != null) reader.Startup(mapName, isLocal);
         }
 
