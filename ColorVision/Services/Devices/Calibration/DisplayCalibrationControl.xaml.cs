@@ -186,7 +186,7 @@ namespace ColorVision.Services.Devices.Calibration
                     {
                         var pm = CalibrationParams[ComboxCalibrationTemplate.SelectedIndex].Value;
 
-                        MsgRecord msgRecord = DeviceService.Calibration(param, imgFileName, pm.Id, ComboxCalibrationTemplate.Text, sn, (float)Device.Config.ExpTimeR, (float)Device.Config.ExpTimeG, (float)Device.Config.ExpTimeB);
+                        MsgRecord msgRecord = DeviceService.Calibration(param, imgFileName, fileExtType, pm.Id, ComboxCalibrationTemplate.Text, sn, (float)Device.Config.ExpTimeR, (float)Device.Config.ExpTimeG, (float)Device.Config.ExpTimeB);
                         Helpers.SendCommand(button, msgRecord);
                     }
 
@@ -294,7 +294,7 @@ namespace ColorVision.Services.Devices.Calibration
                 fileExtType = FileExtType.Tif;
                 sn = string.Empty;
             }
-            if (string.IsNullOrWhiteSpace(imgFileName))
+            if (string.IsNullOrWhiteSpace(sn) && string.IsNullOrWhiteSpace(imgFileName))
             {
                 MessageBox.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
                 return false;

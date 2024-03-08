@@ -18,6 +18,7 @@ using ColorVision.Services.Flow;
 using ColorVision.Services.Core;
 using ColorVision.Settings;
 using ColorVision.UserSpace;
+using FlowEngineLib;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -45,7 +46,7 @@ namespace ColorVision.Services
         public ObservableCollection<GroupResource> groupResources { get; set; } = new ObservableCollection<GroupResource>();
         public ObservableCollection<DeviceService> LastGenControl { get; set; } = new ObservableCollection<DeviceService>();
 
-        public Dictionary<string, string> ServiceTokens { get; set; } = new Dictionary<string, string>();
+        public List<MQTTServiceInfo> ServiceTokens { get; set; }
 
 
         public ObservableCollection<IDisPlayControl> DisPlayControls { get; set; } = new ObservableCollection<IDisPlayControl>();
@@ -59,7 +60,7 @@ namespace ColorVision.Services
             UserConfig = ConfigHandler.GetInstance().SoftwareConfig.UserConfig;
 
             svrDevices = new Dictionary<string, List<MQTTServiceBase>>();
-            ServiceTokens = new Dictionary<string,string>();
+            ServiceTokens = new List<MQTTServiceInfo>();
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadServices();
             LoadServices();
         }
@@ -161,9 +162,6 @@ namespace ColorVision.Services
                     {
                         svrDevices.Add(svrKey, new List<MQTTServiceBase>());
                     }
-
-                    if (sysResourceModel.Code != null && !ServiceTokens.ContainsKey(sysResourceModel.Code))
-                        ServiceTokens.TryAdd(sysResourceModel.Code, string.Empty);
 
                     typeService1.AddChild(terminalService);
                     TerminalServices.Add(terminalService);

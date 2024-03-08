@@ -40,6 +40,10 @@ namespace ColorVision.Services.Core
             timer.Start();
         }
 
+        public void SubscribeCache()
+        {
+            MQTTControl.SubscribeCache(SubscribeTopic);
+        }
         private Task Processing(MqttApplicationMessageReceivedEventArgs arg)
         {
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
