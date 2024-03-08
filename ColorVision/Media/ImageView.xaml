@@ -201,6 +201,9 @@
                     <Button Click="Button_Click">
                         <Image  Source="{DynamicResource openDrawingImage}" Margin="-5"/>
                     </Button>
+                    <Button x:Name="ButtonCIE1931" Click="ButtonCIE1931_Click">
+                        <Image  Source="/Assets/Image/CIE1931xy1.png" Margin="-5"/>
+                    </Button>
                     <ToggleButton x:Name="Pseudo" Click="ToggleButton_Click">
                         <Image  Source="/Assets/png/PowerToy.png" Margin="-5"/>
                     </ToggleButton>

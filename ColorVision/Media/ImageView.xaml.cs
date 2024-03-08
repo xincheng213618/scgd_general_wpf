@@ -865,5 +865,12 @@ namespace ColorVision.Media
             RowDefinitionEnd.Height = new GridLength((170.0 / 255.0) * PseudoSlider.ValueStart);
             DebounceTimer.AddOrResetTimer("RenderPseudo",300, RenderPseudo);
         }
+
+        private void ButtonCIE1931_Click(object sender, RoutedEventArgs e)
+        {
+            WindowCIE windowCIE = new WindowCIE();
+            windowCIE.Owner = Window.GetWindow(this);
+            windowCIE.Show();
+        }
     }
 }
