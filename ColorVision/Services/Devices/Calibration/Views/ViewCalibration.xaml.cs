@@ -152,7 +152,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
             }
         }
 
-        public void OpenImage(CVCIEFileInfo fileData)
+        public void OpenImage(CVCIEFile fileData)
         {
             ImageView.OpenImage(fileData);
         }

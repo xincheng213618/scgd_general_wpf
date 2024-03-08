@@ -535,7 +535,7 @@ namespace ColorVision.Media
             }
         }
 
-        public void OpenImage(CVCIEFileInfo fileInfo)
+        public void OpenImage(CVCIEFile fileInfo)
         {
             if (fileInfo.FileExtType == MQTTMessageLib.FileServer.FileExtType.Tif) OpenTifImage(fileInfo.data);
             else if(fileInfo.FileExtType == MQTTMessageLib.FileServer.FileExtType.Raw || fileInfo.FileExtType == MQTTMessageLib.FileServer.FileExtType.Src)
@@ -544,13 +544,13 @@ namespace ColorVision.Media
             }
         }
 
-        private void ShowImage(CVCIEFileInfo fileInfo)
+        private void ShowImage(CVCIEFile fileInfo)
         {
             logger.Info("OpenImage .....");
 
-            OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.Height, fileInfo.Width, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
+            OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
             OpenCvSharp.Mat dst = null;
-            if (fileInfo.Bpp == 32)
+            if (fileInfo.bpp == 32)
             {
                 OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
                 dst = new OpenCvSharp.Mat();
@@ -590,9 +590,9 @@ namespace ColorVision.Media
                 }
                 else if (ext.Contains(".cvraw") || ext.Contains(".cvsrc"))
                 {
-                    CVCIEFileInfo fileInfo = new CVCIEFileInfo();
+                    CVCIEFile fileInfo = new CVCIEFile();
                     fileInfo.FileExtType = MQTTMessageLib.FileServer.FileExtType.Raw;
-                    int ret = CVFileUtil.ReadCVFile_Raw(filePath, ref fileInfo);
+                    int ret = CVFileUtil.ReadCVRaw(filePath, ref fileInfo);
                     if (ret == 0)
                     {
                         OpenImage(fileInfo);

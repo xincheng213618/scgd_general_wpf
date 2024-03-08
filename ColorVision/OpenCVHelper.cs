@@ -12,7 +12,7 @@ namespace ColorVision
         public int rows;
         public int cols;
         public int channels;
-        public int depth; //Bpp
+        public int depth; //bpp
 
         public readonly int Type
         {

@@ -599,7 +599,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
         }
 
-        internal void OpenImage(CVCIEFileInfo fileInfo)
+        internal void OpenImage(CVCIEFile fileInfo)
         {
             ImageView.OpenImage(fileInfo);
         }
