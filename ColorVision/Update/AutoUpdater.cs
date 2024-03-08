@@ -218,7 +218,7 @@ namespace ColorVision.Update
 
                             ProgressValue = progressPercentage;
 
-                            if (stopwatch.ElapsedMilliseconds > 500) // Update speed at least once per second
+                            if (stopwatch.ElapsedMilliseconds > 400) // Update speed at least once per second
                             {
                                 double speed = totalReadBytes / stopwatch.Elapsed.TotalSeconds;
                                 SpeedValue = $"Current speed: {speed / 1024 / 1024:F2} MB/s";
