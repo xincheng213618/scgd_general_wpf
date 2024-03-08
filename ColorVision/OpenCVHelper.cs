@@ -66,12 +66,36 @@ namespace ColorVision
         public static HImage ToHImage(this WriteableBitmap writeableBitmap)
         {
             // Determine the number of channels and depth based on the pixel format
-            int channels = writeableBitmap.Format.Masks.Count;
-            int depth = writeableBitmap.Format.BitsPerPixel/ writeableBitmap.Format.Masks.Count; // Assuming 8 bits per channel, this may need to be adjusted based on actual format
-
-
-
-
+            int channels;
+            int depth;
+            switch (writeableBitmap.Format.ToString())
+            {
+                case "Bgr32":
+                case "Bgra32":
+                case "Pbgra32":
+                    channels = 4; // BGRA format has 4 channels
+                    depth = 8; // 8 bits per channel
+                    break;
+                case "Rgb24":
+                    channels = 3; // RGB format has 3 channels
+                    depth = 8; // 8 bits per channel
+                    break;
+                case "Rgb48":
+                    channels = 3; // RGB format has 3 channels
+                    depth = 16; // 8 bits per channel
+                    break;
+                case "Gray8":
+                    channels = 1; // Gray scale has 1 channel
+                    depth = 8; // 8 bits per channel
+                    break;
+                case "Gray16":
+                    channels = 1; // Gray scale has 1 channel
+                    depth = 16; // 16 bits per channel
+                    break;
+                default:
+                    MessageBox.Show($"{writeableBitmap.Format}暂不支持的格式,请联系开发人员");
+                    throw new NotSupportedException("The pixel format is not supported.");
+            }
             // Create a new HImageCache instance
             HImage hImage = new HImage
             {
