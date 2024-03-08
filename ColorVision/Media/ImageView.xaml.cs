@@ -5,6 +5,7 @@ using ColorVision.MVVM;
 using ColorVision.Net;
 using log4net;
 using MQTTMessageLib.Algorithm;
+using MQTTMessageLib.FileServer;
 using OpenCvSharp.WpfExtensions;
 using SkiaSharp.Views.WPF;
 using System;
@@ -535,20 +536,20 @@ namespace ColorVision.Media
             }
         }
 
-        public void OpenImage(CVCIEFileInfo fileInfo)
+        public void OpenImage(CVCIEFile fileInfo)
         {
-            if (fileInfo.fileType == MQTTMessageLib.FileServer.FileExtType.Tif) OpenTifImage(fileInfo.data);
-            else if(fileInfo.fileType == MQTTMessageLib.FileServer.FileExtType.Raw || fileInfo.fileType == MQTTMessageLib.FileServer.FileExtType.Src)
+            if (fileInfo.FileExtType == MQTTMessageLib.FileServer.FileExtType.Tif) OpenTifImage(fileInfo.data);
+            else if(fileInfo.FileExtType == MQTTMessageLib.FileServer.FileExtType.Raw || fileInfo.FileExtType == MQTTMessageLib.FileServer.FileExtType.Src)
             {
                 ShowImage(fileInfo);
             }
         }
 
-        private void ShowImage(CVCIEFileInfo fileInfo)
+        private void ShowImage(CVCIEFile fileInfo)
         {
             logger.Info("OpenImage .....");
 
-            OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.height, fileInfo.width, OpenCvSharp.MatType.MakeType(fileInfo.depth, fileInfo.channels), fileInfo.data);
+            OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
             OpenCvSharp.Mat dst = null;
             if (fileInfo.bpp == 32)
             {
@@ -588,14 +589,16 @@ namespace ColorVision.Media
                     BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
                     SetImageSource(bitmapImage);
                 }
-                else if (ext.Contains(".cvraw") || ext.Contains(".cvsrc"))
+                else if (ext.Contains(".cvraw") || ext.Contains(".cvsrc") || ext.Contains(".cvsrc"))
                 {
-                    CVCIEFileInfo fileInfo = new CVCIEFileInfo();
-                    fileInfo.fileType = MQTTMessageLib.FileServer.FileExtType.Raw;
-                    int ret = CVFileUtils.ReadCVFile_Raw(filePath, ref fileInfo);
-                    if (ret == 0)
+                    FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
+                    try
                     {
-                        OpenImage(fileInfo);
+                        OpenImage(new NetFileUtil("1").OpenLocalCVFile(filePath, fileExtType));
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message);
                     }
                 }
                 else

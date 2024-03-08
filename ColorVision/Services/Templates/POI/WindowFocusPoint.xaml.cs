@@ -288,23 +288,13 @@ namespace ColorVision.Services.Templates.POI
             {
                 string filePath = openFileDialog.FileName;
 
-
-                if (Path.GetExtension(filePath).Contains("cvraw"))
+                string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
+                if (ext.Contains("cvraw")|| ext.Contains("cvsrc") || ext.Contains("cvcie"))
                 {
+                    FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
                     try
                     {
-                        OpenImage(new NetFileUtil("1").OpenLocalCVFile(filePath, FileExtType.Raw));
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message);
-                    }
-                }
-                else if (Path.GetExtension(filePath).Contains("cvcie"))
-                {
-                    try
-                    {
-                        OpenImage(new NetFileUtil("1").OpenLocalCVFile(filePath, FileExtType.CIE));
+                        OpenImage(new NetFileUtil("1").OpenLocalCVFile(filePath, fileExtType));
                     }
                     catch (Exception ex)
                     {
@@ -333,22 +323,22 @@ namespace ColorVision.Services.Templates.POI
 
                 if (ext == ".cvraw")
                 {
-                    CVCIEFileInfo fileInfo = new CVCIEFileInfo();
-                    fileInfo.fileType = FileExtType.Raw;
-                    int ret = CVFileUtils.ReadCVFile_Raw(filePath, ref fileInfo);
+                    CVCIEFile fileInfo = new CVCIEFile();
+                    fileInfo.FileExtType = FileExtType.Raw;
+                    int ret = CVFileUtil.ReadCVRaw(filePath, ref fileInfo);
                     if (ret == 0)
                     {
                         OpenCvSharp.Mat src;
                         if (fileInfo.bpp != 8)
                         {
-                            OpenCvSharp.Mat temp = new OpenCvSharp.Mat(fileInfo.height, fileInfo.width, OpenCvSharp.MatType.MakeType(fileInfo.depth, fileInfo.channels), fileInfo.data);
+                            OpenCvSharp.Mat temp = new OpenCvSharp.Mat(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
                             src = new OpenCvSharp.Mat();
                             temp.ConvertTo(src, OpenCvSharp.MatType.CV_8U, 1.0 / 256.0);
                             temp.Dispose();
                         }
                         else
                         {
-                             src = new OpenCvSharp.Mat(fileInfo.height, fileInfo.width, OpenCvSharp.MatType.MakeType(fileInfo.depth, fileInfo.channels), fileInfo.data);
+                             src = new OpenCvSharp.Mat(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
                         }
 
                         BitmapSource bitmapSource = src.ToBitmapSource();
@@ -1520,18 +1510,18 @@ namespace ColorVision.Services.Templates.POI
         }
 
 
-        public void OpenImage(CVCIEFileInfo fileInfo)
+        public void OpenImage(CVCIEFile fileInfo)
         {
-            if (fileInfo.fileType == FileExtType.Src) OpenImage(fileInfo.data);
-            else if (fileInfo.fileType == FileExtType.Raw)
+            if (fileInfo.FileExtType == FileExtType.Src) OpenImage(fileInfo.data);
+            else if (fileInfo.FileExtType == FileExtType.Raw)
             {
                 ShowImage(fileInfo);
             }
         }
 
-        private void ShowImage(CVCIEFileInfo fileInfo)
+        private void ShowImage(CVCIEFile fileInfo)
         {
-            OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.height, fileInfo.width, OpenCvSharp.MatType.MakeType(fileInfo.depth, fileInfo.channels), fileInfo.data);
+            OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
             OpenCvSharp.Mat dst = null;
             if (fileInfo.bpp == 32)
             {

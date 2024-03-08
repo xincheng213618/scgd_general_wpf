@@ -83,7 +83,7 @@ namespace ColorVision.Net
 
         private void DownloadFileChannel(string serverEndpoint, string fileName, FileExtType extType, CVImageChannelType channelType)
         {
-            CVCIEFileInfo fileInfo = new CVCIEFileInfo();
+            CVCIEFile fileInfo = new CVCIEFile();
             int code = DoDownloadFile(serverEndpoint, fileName, extType ,ref fileInfo);
             if (code == 0)
             {
@@ -119,14 +119,14 @@ namespace ColorVision.Net
                 }
                 if (channel >= 0)
                 {
-                    code = CVFileUtils.ReadCVFile_channel(channel, fileInfo, ref fileInfo);
+                    code = CVFileUtil.ReadCVChannel(channel, fileInfo, ref fileInfo);
                 }
             }
             handler?.Invoke(this, new NetFileEvent(FileEvent.FileDownload, code, fileName, fileInfo));
         }
 
 
-        private int DoDownloadFile(string serverEndpoint, string fileName, FileExtType extType, ref CVCIEFileInfo fileInfo)
+        private int DoDownloadFile(string serverEndpoint, string fileName, FileExtType extType, ref CVCIEFile fileInfo)
         {
             int code = -1;
             DealerSocket client = null;
@@ -163,12 +163,12 @@ namespace ColorVision.Net
                     if (extType == FileExtType.Tif)
                     {
                         fileInfo.data = bytes;
-                        fileInfo.fileType = extType;
+                        fileInfo.FileExtType = extType;
                     }
                     else if (extType == FileExtType.Raw || extType == FileExtType.CIE)
                     {
                         code = DecodeCVFile(bytes, fileName, ref fileInfo);
-                        fileInfo.fileType = FileExtType.Raw;
+                        fileInfo.FileExtType = FileExtType.Raw;
                     }
                 }
             }
@@ -177,7 +177,7 @@ namespace ColorVision.Net
         }
         private void DownloadFile(string serverEndpoint, string fileName, FileExtType extType)
         {
-            CVCIEFileInfo fileInfo = new CVCIEFileInfo();
+            CVCIEFile fileInfo = new CVCIEFile();
             int code = DoDownloadFile(serverEndpoint, fileName, extType, ref fileInfo);
             handler?.Invoke(this, new NetFileEvent(FileEvent.FileDownload, code, fileName, fileInfo));
         }
@@ -186,7 +186,7 @@ namespace ColorVision.Net
         {
             DealerSocket client = null;
             var message = new List<byte[]>();
-            CVCIEFileInfo fileData = new CVCIEFileInfo();
+            CVCIEFile fileData = new CVCIEFile();
             int code = ReadLocalBinaryFile(fileName, ref fileData);
             bool? sendResult = false;
             string signRecv;
@@ -221,7 +221,7 @@ namespace ColorVision.Net
             }
         }
 
-        public static int ReadLocalBinaryFile(string path,ref CVCIEFileInfo fileInfo)
+        public static int ReadLocalBinaryFile(string path,ref CVCIEFile fileInfo)
         {
             int code = -1;
             if (File.Exists(path))
@@ -235,7 +235,7 @@ namespace ColorVision.Net
                     fileInfo.data = new byte[length];
                     //读取文件中的内容并保存到字节数组中
                     binaryReader.Read(fileInfo.data, 0, fileInfo.data.Length);
-                    fileInfo.fileType = FileExtType.Tif;
+                    fileInfo.FileExtType = FileExtType.Tif;
                     code = 0;
                 }
                 else
@@ -277,7 +277,7 @@ namespace ColorVision.Net
         public void OpenLocalFileChannel(string fileName, FileExtType extType, CVImageChannelType channelType)
         {
             int code = -1;
-            CVCIEFileInfo data = new CVCIEFileInfo();
+            CVCIEFile data = new CVCIEFile();
             int channel = -1;
             int readRet = -1;
             switch (channelType)
@@ -285,11 +285,11 @@ namespace ColorVision.Net
                 case CVImageChannelType.SRC:
                     if (extType == FileExtType.Raw)
                     {
-                        readRet = CVFileUtils.ReadCVFile_Raw(fileName, ref data);
+                        readRet = CVFileUtil.ReadCVRaw(fileName, ref data);
                     }
                     else if (extType == FileExtType.CIE)
                     {
-                        readRet = CVFileUtils.ReadCVFile_CIE_src(fileName, ref data);
+                        readRet = CVFileUtil.ReadCVCIESrc(fileName, ref data);
                     }
                     if (readRet == 0) code = 0;
                     break;
@@ -322,12 +322,12 @@ namespace ColorVision.Net
             {
                 if (extType == FileExtType.Raw)
                 {
-                    CVFileUtils.ReadCVFile_Raw_channel(fileName, channel, ref data);
+                    CVFileUtil.ReadCVRawChannel(fileName, channel, ref data);
                     code = 0;
                 }
                 else if (extType == FileExtType.CIE)
                 {
-                    CVFileUtils.ReadCVFile_CIE_XYZ(fileName, channel, ref data);
+                    CVFileUtil.ReadCVCIEXYZ(fileName, channel, ref data);
                     code = 0;
                 }
             }
@@ -337,12 +337,12 @@ namespace ColorVision.Net
 
         public void OpenLocalFile(string fileName, FileExtType extType)
         {
-            CVCIEFileInfo fileInfo = new CVCIEFileInfo();
+            CVCIEFile fileInfo = new CVCIEFile();
             int code = ReadLocalFile(fileName, extType, ref fileInfo);
             handler?.Invoke(this, new NetFileEvent(FileEvent.FileDownload, code, fileName, fileInfo));
         }
 
-        public CVCIEFileInfo OpenLocalCVFile(string fileName, FileExtType extType)
+        public CVCIEFile OpenLocalCVFile(string fileName, FileExtType extType)
         {
             if (Path.GetExtension(fileName).Contains("cvraw"))
             {
@@ -353,12 +353,12 @@ namespace ColorVision.Net
                 extType = FileExtType.CIE;
             }
 
-            CVCIEFileInfo fileInfo = new CVCIEFileInfo();
+            CVCIEFile fileInfo = new CVCIEFile();
             int code = ReadLocalFile(fileName, extType, ref fileInfo);
             return fileInfo;
         }
 
-        private int ReadLocalFile(string fileName, FileExtType extType, ref CVCIEFileInfo fileInfo)
+        private int ReadLocalFile(string fileName, FileExtType extType, ref CVCIEFile fileInfo)
         {
             int code = -1;
             if (!File.Exists(fileName)) return -1;
@@ -372,26 +372,16 @@ namespace ColorVision.Net
 
         public void OpenLocalCIEFile(string fileName)
         {
-            CVCIEFileInfo fileInfo = new CVCIEFileInfo();
+            CVCIEFile fileInfo = new CVCIEFile();
             int code = ReadCVImage(fileName, ref fileInfo); ;
             handler?.Invoke(this, new NetFileEvent(FileEvent.FileDownload, code, fileName, fileInfo));
         }
 
-        private int DecodeCVFile(byte[] fileData, string fileName,ref CVCIEFileInfo fileInfo)
+        private int DecodeCVFile(byte[] fileData, string fileName,ref CVCIEFile fileInfo)
         {
-            UInt32 w = 0, h = 0, bpp = 0, channels = 0;
-            string srcFileName;
-            byte[] imgData = null;
-            float[] exp;
             int code = -1;
-            if (CVFileUtils.GetParamFromFile(fileData, out w, out h, out bpp, out channels, out exp, out imgData, out srcFileName))
+            if (CVFileUtil.ReadByte(fileData, ref  fileInfo))
             {
-                fileInfo.width = (int)w;
-                fileInfo.height = (int)h;
-                fileInfo.bpp = (int)bpp;
-                fileInfo.channels = (int)channels;
-                fileInfo.data = imgData;
-                fileInfo.depth = GetDepth(bpp);
                 code = 0;
             }
             else
@@ -401,25 +391,19 @@ namespace ColorVision.Net
             return code;
         }
 
-        private int DecodeCVFileTo8U(byte[] fileData, string fileName, ref CVCIEFileInfo fileInfo)
+        private int DecodeCVFileTo8U(byte[] fileData, string fileName, ref CVCIEFile fileInfo)
         {
-            UInt32 w = 0, h = 0, bpp = 0, channels = 0;
-            string srcFileName;
-            byte[] imgData = null;
-            float[] exp;
             int code = -1;
-            if (CVFileUtils.GetParamFromFile(fileData, out w, out h, out bpp, out channels, out exp, out imgData, out srcFileName))
+            if (CVFileUtil.ReadByte(fileData, ref fileInfo))
             {
-                int Depth = CVFileUtils.GetMatDepth((int)bpp);
-
-                OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)h, (int)w, OpenCvSharp.MatType.MakeType(Depth, (int)channels), imgData);
+                OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
                 OpenCvSharp.Mat dst = new OpenCvSharp.Mat();
-                if (bpp == 32)
+                if (fileInfo.bpp == 32)
                 {
                     OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
                     src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
                 }
-                else if (bpp == 16)
+                else if (fileInfo.bpp == 16)
                 {
                     src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U, 255.0 / 65535, 0.5);
                 }
@@ -427,16 +411,12 @@ namespace ColorVision.Net
                 {
                     dst = src;
                 }
-                int len = (int)(w * h * channels);
+                int len = (int)(fileInfo.rows * fileInfo.cols * fileInfo.channels);
                 fileInfo.data = new byte[len];
                 Marshal.Copy(dst.Data, fileInfo.data, 0, len);
                 log.DebugFormat("Raw src file({0}) convert rgb.", fileName);
-                fileInfo.fileType = FileExtType.Raw;
-                fileInfo.width = (int)w;
-                fileInfo.height = (int)h;
+                fileInfo.FileExtType = FileExtType.Raw;
                 fileInfo.bpp = 8;
-                fileInfo.channels = (int)channels;
-                fileInfo.depth = dst.Depth();
                 code = 0;
             }
             else
@@ -447,93 +427,73 @@ namespace ColorVision.Net
             return code;
         }
 
-        private int ReadCVImageRaw(string fileName,ref CVCIEFileInfo fileInfo)
+        private int ReadCVImageRaw(string fileName,ref CVCIEFile fileInfo)
         {
-            byte[] fileData = CVFileUtils.ReadBinaryFile(fileName);
+            byte[] fileData = CVFileUtil.ReadFile(fileName);
 
             return DecodeCVFileTo8U(fileData, fileName,ref fileInfo);
         }
 
-        private int ReadCVImage(string fileName,ref CVCIEFileInfo fileInfo)
+        private int ReadCVImage(string fileName,ref CVCIEFile fileInfo)
         {
-            UInt32 w = 0, h = 0, bpp = 0, channels = 0;
-            string srcFileName;
-            byte[] imgData = null;
-            float[] exp;
-            if (CVFileUtils.GetParamFromFile(fileName, out w, out h, out bpp, out channels, out exp, out imgData, out srcFileName))
+            if (CVFileUtil.ReadFile(fileName, ref fileInfo))
             {
-                if (!string.IsNullOrEmpty(srcFileName))
+                if (!string.IsNullOrEmpty(fileInfo.srcFileName))
                 {
-                    if (!File.Exists(srcFileName))
+                    if (!File.Exists(fileInfo.srcFileName))
                     {
                         string path = System.IO.Path.GetDirectoryName(fileName);
-                        srcFileName = path + System.IO.Path.DirectorySeparatorChar + srcFileName;
+                        fileInfo.srcFileName = path + System.IO.Path.DirectorySeparatorChar + fileInfo.srcFileName;
                     }
-                    if (File.Exists(srcFileName))
+                    if (File.Exists(fileInfo.srcFileName))
                     {
-                        if (srcFileName.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
+                        if (fileInfo.srcFileName.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
                         {
-                            return ReadCVImageRaw(srcFileName, ref fileInfo);
+                            return ReadCVImageRaw(fileInfo.srcFileName, ref fileInfo);
                         }
                         else
                         {
-                            fileInfo.data = CVFileUtils.ReadBinaryFile(srcFileName);
-                            fileInfo.fileType = FileExtType.Src;
+                            fileInfo.data = CVFileUtil.ReadFile(fileInfo.srcFileName);
+                            fileInfo.FileExtType = FileExtType.Src;
                             return 0;
                         }
                     }
                 }
                 
-                if (bpp == 16 || bpp == 8)
+                if (fileInfo.bpp == 16 || fileInfo.bpp == 8)
                 {
-                    fileInfo.data = imgData;
-                    fileInfo.fileType = FileExtType.Raw;
-                    fileInfo.width = (int)w;
-                    fileInfo.height = (int)h;
-                    fileInfo.bpp = (int)bpp;
-                    fileInfo.channels = (int)channels;
-                    fileInfo.depth = GetDepth((uint)fileInfo.bpp);
+                    fileInfo.FileExtType = FileExtType.Raw;
                     return 0;
                 }
-                else if (bpp == 32)
+                else if (fileInfo.bpp == 32)
                 {
-                    //srcFileName = fileName + ".tif";
-                    int len = (int)(w * h * (bpp / 8));
+                    int len = (int)(fileInfo.rows * fileInfo.cols * (fileInfo.bpp / 8));
                     OpenCvSharp.Mat dst = new OpenCvSharp.Mat();
-                    if (channels == 3)
+                    if (fileInfo.channels == 3)
                     {
                         byte[] data = new byte[len];
-                        //Buffer.BlockCopy(imgData, 0, fileInfo, 0, fileInfo.Length);
-                        //OpenCvSharp.Mat srcX = new OpenCvSharp.Mat((int)h, (int)w, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), fileInfo);
-                        Buffer.BlockCopy(imgData, len, data, 0, data.Length);
-                        OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)h, (int)w, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
-                        //Buffer.BlockCopy(imgData, len * 2, fileInfo, 0, fileInfo.Length);
-                        //OpenCvSharp.Mat srcZ = new OpenCvSharp.Mat((int)h, (int)w, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), fileInfo);
-                        //OpenCvSharp.Mat[] srcMerge = new OpenCvSharp.Mat[3] { srcX, srcY, srcZ };
-                        //OpenCvSharp.Mat src = new OpenCvSharp.Mat();
-                        //OpenCvSharp.Cv2.Merge(srcMerge, src);
+                        Buffer.BlockCopy(fileInfo.data, len, data, 0, data.Length);
+                        OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileInfo.rows, (int)fileInfo.cols, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
+
                         OpenCvSharp.Cv2.Normalize(src, src, 0, 1, OpenCvSharp.NormTypes.MinMax);
                         src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U, 255);
                         //OpenCvSharp.Cv2.ImWrite(srcFileName, dst);
                     }
                     else
                     {
-                        OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)h, (int)w, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), imgData);
+                        OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileInfo.cols, (int)fileInfo.rows, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), fileInfo.data);
                         OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
                         src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
                         //OpenCvSharp.Cv2.ImWrite(srcFileName, dst);
                     }
-                    byte[] data_dst = new byte[w * h];
+                    byte[] data_dst = new byte[fileInfo.rows * fileInfo.cols];
                     Marshal.Copy(dst.Data, data_dst, 0, data_dst.Length);
                     fileInfo.data = data_dst;
-                    fileInfo.fileType = FileExtType.Raw;
-                    fileInfo.width = (int)w;
-                    fileInfo.height = (int)h;
+                    fileInfo.FileExtType = FileExtType.Raw;
                     fileInfo.bpp = 8;
                     fileInfo.channels =1;
-                    fileInfo.depth = GetDepth((uint)fileInfo.bpp);
                     //int code = ReadLocalBinaryFile(srcFileName,ref fileInfo);
-                    log.WarnFormat("CIE src file({0}) is not exist. opencv real build.", srcFileName);
+                    log.WarnFormat("CIE src file({0}) is not exist. opencv real build.", fileInfo.srcFileName);
                     return 0;
                 }
             }
@@ -580,7 +540,7 @@ namespace ColorVision.Net
             return bpp;
         }
 
-        private int ReadLocalTIFImage(string fileName,ref CVCIEFileInfo result)
+        private int ReadLocalTIFImage(string fileName,ref CVCIEFile result)
         {
             OpenCvSharp.Mat src = OpenCvSharp.Cv2.ImRead(fileName, OpenCvSharp.ImreadModes.Unchanged);
             int bpp = GetBpp(src.Depth());
@@ -607,13 +567,14 @@ namespace ColorVision.Net
         FileDownload,
         FileUpload,
     }
+
     public class NetFileEvent
     {
         public int Code { get; set; }
         public FileEvent EventName { get; set; }
         public string FileName { get; set; }
-        public CVCIEFileInfo FileData { get; set; }
-        public NetFileEvent(FileEvent eventName, int code, string fileName, CVCIEFileInfo fileData)
+        public CVCIEFile FileData { get; set; }
+        public NetFileEvent(FileEvent eventName, int code, string fileName, CVCIEFile fileData)
         {
             this.EventName = eventName;
             this.Code = code;

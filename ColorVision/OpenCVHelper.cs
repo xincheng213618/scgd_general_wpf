@@ -12,7 +12,7 @@ namespace ColorVision
         public int rows;
         public int cols;
         public int channels;
-        public int depth; //Bpp
+        public int depth; //bpp
 
         public readonly int Type
         {
@@ -65,7 +65,7 @@ namespace ColorVision
 
         public static HImage ToHImage(this WriteableBitmap writeableBitmap)
         {
-            // Determine the number of channels and depth based on the pixel format
+            // Determine the number of channels and Depth based on the pixel format
             int channels;
             int depth;
             switch (writeableBitmap.Format.ToString())
@@ -76,6 +76,7 @@ namespace ColorVision
                     channels = 4; // BGRA format has 4 channels
                     depth = 8; // 8 bits per channel
                     break;
+                case "Bgr24":
                 case "Rgb24":
                     channels = 3; // RGB format has 3 channels
                     depth = 8; // 8 bits per channel
