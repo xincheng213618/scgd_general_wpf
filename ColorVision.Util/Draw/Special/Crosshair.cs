@@ -7,9 +7,9 @@ using System.Windows.Input;
 using ColorVision.Common.Extension;
 using Microsoft.VisualBasic.Devices;
 
-namespace ColorVision.Draw
+namespace ColorVision.Draw.Special
 {
-    public class ToolShowImage
+    public class Crosshair
     {
         private ZoomboxSub ZoomboxSub { get; set; }
         private DrawCanvas Image { get; set; }
@@ -18,7 +18,7 @@ namespace ColorVision.Draw
 
         public DrawingVisual DrawingVisualImage1 { get; set; }
 
-        public ToolShowImage(ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public Crosshair(ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
             Image = drawCanvas;
@@ -62,13 +62,10 @@ namespace ColorVision.Draw
             public SolidColorBrush Color { get; set; }
         }
 
-        public void DrawImage(Point actPoint, Point disPoint, ImageInfo imageInfo)
+        public void DrawImage(DrawCanvas drawCanvas,Point actPoint, Point disPoint, ImageInfo imageInfo)
         {
-            if (Image.Source is BitmapSource bitmapImage && disPoint.X > 60 && disPoint.X < bitmapImage.PixelWidth - 60 && disPoint.Y > 45 && disPoint.Y < bitmapImage.PixelHeight - 45)
+            if (Image.Source is BitmapSource bitmapImage)
             {
-
-                CroppedBitmap croppedBitmap = new CroppedBitmap(bitmapImage, new Int32Rect(disPoint.X.ToInt32() - 60, disPoint.Y.ToInt32() - 45, 120, 90));
-
                 using DrawingContext dc = DrawVisualImage.RenderOpen();
 
                 double mouseX = actPoint.X; // 示例坐标
@@ -77,7 +74,7 @@ namespace ColorVision.Draw
                 double radius = 5 / ZoomboxSub.ContentMatrix.M11; // 直径为10，半径为5
                 // 绘制空心圆
                 Pen circlePen = new Pen(Brushes.Black, length); // 黑色笔刷，线宽为1
-                dc.DrawEllipse(null, new Pen(Brushes.White, length*1.5), actPoint, radius, radius);
+                dc.DrawEllipse(null, new Pen(Brushes.White, length * 1.5), actPoint, radius, radius);
                 dc.DrawEllipse(null, circlePen, actPoint, radius, radius);
 
                 // 绘制虚线的笔刷
@@ -92,66 +89,18 @@ namespace ColorVision.Draw
 
                 // 绘制X轴虚线
                 dc.DrawLine(dashedPen1, new Point(0, mouseY), new Point(mouseX - radius, mouseY)); // 左边
-                dc.DrawLine(dashedPen1, new Point(mouseX + radius, mouseY), new Point(bitmapImage.PixelWidth, mouseY));
+                dc.DrawLine(dashedPen1, new Point(mouseX + radius, mouseY), new Point(drawCanvas.ActualWidth, mouseY));
 
 
                 dc.DrawLine(dashedPen, new Point(0, mouseY), new Point(mouseX - radius, mouseY)); // 左边
-                dc.DrawLine(dashedPen, new Point(mouseX + radius, mouseY), new Point(bitmapImage.PixelWidth, mouseY));
+                dc.DrawLine(dashedPen, new Point(mouseX + radius, mouseY), new Point(drawCanvas.ActualWidth, mouseY));
 
                 // 绘制Y轴虚线
                 dc.DrawLine(dashedPen1, new Point(mouseX, 0), new Point(mouseX, mouseY - radius)); // 上边
-                dc.DrawLine(dashedPen1, new Point(mouseX, mouseY + radius), new Point(mouseX, bitmapImage.PixelHeight));
+                dc.DrawLine(dashedPen1, new Point(mouseX, mouseY + radius), new Point(mouseX, drawCanvas.ActualHeight));
 
                 dc.DrawLine(dashedPen, new Point(mouseX, 0), new Point(mouseX, mouseY - radius)); // 上边
-                dc.DrawLine(dashedPen, new Point(mouseX, mouseY + radius), new Point(mouseX, bitmapImage.PixelHeight)); 
-
-
-                //var transform = new MatrixTransform(1 / ZoomboxSub.ContentMatrix.M11, ZoomboxSub.ContentMatrix.M12, ZoomboxSub.ContentMatrix.M21, 1 / ZoomboxSub.ContentMatrix.M22, (1 - 1 / ZoomboxSub.ContentMatrix.M11) * actPoint.X, (1 - 1 / ZoomboxSub.ContentMatrix.M22) * actPoint.Y);
-                //dc.PushTransform(transform);
-
-                //dc.DrawImage(croppedBitmap, new Rect(new Point(actPoint.X, actPoint.Y + 25), new Size(120, 90)));
-
-                //dc.DrawLine(new Pen(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#00B1FF")), 3), new Point(actPoint.X + 59, actPoint.Y + 25), new Point(actPoint.X + 59, actPoint.Y + 25 + 90));
-                //dc.DrawLine(new Pen(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#00B1FF")), 3), new Point(actPoint.X, actPoint.Y + 25 + 44), new Point(actPoint.X + 120, actPoint.Y + 25 + 44));
-
-
-                //double x1 = actPoint.X;
-                //double y1 = actPoint.Y + 25;
-
-                //double width = 120;
-                //double height = 90;
-
-
-                //dc.DrawLine(new Pen(Brushes.Black, 0.5), new Point(x1, y1 - 0.25), new Point(x1, y1 + height + 0.25));
-                //dc.DrawLine(new Pen(Brushes.Black, 0.5), new Point(x1, y1), new Point(x1 + width, y1));
-                //dc.DrawLine(new Pen(Brushes.Black, 0.5), new Point(x1 + width, y1 - 0.25), new Point(x1 + width, y1 + height + 0.25));
-                //dc.DrawLine(new Pen(Brushes.Black, 0.5), new Point(x1, y1 + height), new Point(x1 + width, y1 + height));
-
-                //x1++;
-                //y1++;
-                //width -= 2;
-                //height -= 2;
-                //dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1, y1 - 0.75), new Point(x1, y1 + height + 0.75));
-                //dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1, y1), new Point(x1 + width, y1));
-                //dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1 + width, y1 - 0.75), new Point(x1 + width, y1 + height + 0.75));
-                //dc.DrawLine(new Pen(Brushes.White, 1.5), new Point(x1, y1 + height), new Point(x1 + width, y1 + height));
-
-                //dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#AA000000")), new Pen(Brushes.White, 0), new Rect(x1 - 1, y1 + height + 1, width + 2, 45));
-
-                //Brush brush = Brushes.White;
-                //FontFamily fontFamily = new FontFamily("Arial");
-                //double fontSize = 10;
-                //FormattedText formattedText = new FormattedText($"R:{imageInfo.R}  G:{imageInfo.G}  B:{imageInfo.B}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                //dc.DrawText(formattedText, new Point(x1 + 5, y1 + height + 5));
-                //FormattedText formattedTex1 = new FormattedText($"({imageInfo.X},{imageInfo.Y})", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                //dc.DrawText(formattedTex1, new Point(x1 + 5, y1 + height + 31));
-
-                //FormattedText formattedTex3 = new FormattedText($"{imageInfo.Hex}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                //dc.DrawText(formattedTex3, new Point(x1 + 5, y1 + height + 18));
-                //dc.Pop();
-                //if (DrawVisualImage.Effect is not DropShadowEffect)
-                //    DrawVisualImage.Effect = new DropShadowEffect() { Opacity = 0.5 };
-
+                dc.DrawLine(dashedPen, new Point(mouseX, mouseY + radius), new Point(mouseX, drawCanvas.ActualHeight));
             }
         }
 
@@ -178,7 +127,7 @@ namespace ColorVision.Draw
                 if (point.X.ToInt32() >= 0 && point.X.ToInt32() < bitmap.PixelWidth && point.Y.ToInt32() >= 0 && point.Y.ToInt32() < bitmap.PixelHeight)
                 {
                     var color = bitmap.GetPixelColor(point.X.ToInt32(), point.Y.ToInt32());
-                    DrawImage(actPoint, bitPoint, new ImageInfo
+                    DrawImage( drawCanvas, actPoint, bitPoint, new ImageInfo
                     {
                         X = point.X.ToInt32(),
                         Y = point.Y.ToInt32(),
