@@ -76,25 +76,37 @@ namespace ColorVision.Draw
 
                 double mouseX = actPoint.X; // 示例坐标
                 double mouseY = actPoint.Y; // 示例坐标
-
-                double radius = 5; // 直径为10，半径为5
+                double length = 1 / ZoomboxSub.ContentMatrix.M11;
+                double radius = 5 / ZoomboxSub.ContentMatrix.M11; // 直径为10，半径为5
                 // 绘制空心圆
-                Pen circlePen = new Pen(Brushes.Black, 1); // 黑色笔刷，线宽为1
+                Pen circlePen = new Pen(Brushes.Black, length); // 黑色笔刷，线宽为1
+                dc.DrawEllipse(null, new Pen(Brushes.White, length*1.5), actPoint, radius, radius);
                 dc.DrawEllipse(null, circlePen, actPoint, radius, radius);
 
                 // 绘制虚线的笔刷
-                Pen dashedPen = new Pen(Brushes.Black, 1)
+                Pen dashedPen = new Pen(Brushes.Black, length)
+                {
+                    DashStyle = new DashStyle(new double[] { 2, 2 }, 0) // 虚线样式
+                };
+                Pen dashedPen1 = new Pen(Brushes.White, length * 1.5)
                 {
                     DashStyle = new DashStyle(new double[] { 2, 2 }, 0) // 虚线样式
                 };
 
                 // 绘制X轴虚线
+                dc.DrawLine(dashedPen1, new Point(0, mouseY), new Point(mouseX - radius, mouseY)); // 左边
+                dc.DrawLine(dashedPen1, new Point(mouseX + radius, mouseY), new Point(bitmapImage.PixelWidth, mouseY));
+
+
                 dc.DrawLine(dashedPen, new Point(0, mouseY), new Point(mouseX - radius, mouseY)); // 左边
-                dc.DrawLine(dashedPen, new Point(mouseX + radius, mouseY), new Point(bitmapImage.PixelWidth, mouseY)); // 假设图像宽度为500
+                dc.DrawLine(dashedPen, new Point(mouseX + radius, mouseY), new Point(bitmapImage.PixelWidth, mouseY));
 
                 // 绘制Y轴虚线
+                dc.DrawLine(dashedPen1, new Point(mouseX, 0), new Point(mouseX, mouseY - radius)); // 上边
+                dc.DrawLine(dashedPen1, new Point(mouseX, mouseY + radius), new Point(mouseX, bitmapImage.PixelHeight));
+
                 dc.DrawLine(dashedPen, new Point(mouseX, 0), new Point(mouseX, mouseY - radius)); // 上边
-                dc.DrawLine(dashedPen, new Point(mouseX, mouseY + radius), new Point(mouseX, bitmapImage.PixelHeight)); // 假设图像高度为500
+                dc.DrawLine(dashedPen, new Point(mouseX, mouseY + radius), new Point(mouseX, bitmapImage.PixelHeight)); 
 
 
                 //var transform = new MatrixTransform(1 / ZoomboxSub.ContentMatrix.M11, ZoomboxSub.ContentMatrix.M12, ZoomboxSub.ContentMatrix.M21, 1 / ZoomboxSub.ContentMatrix.M22, (1 - 1 / ZoomboxSub.ContentMatrix.M11) * actPoint.X, (1 - 1 / ZoomboxSub.ContentMatrix.M22) * actPoint.Y);
