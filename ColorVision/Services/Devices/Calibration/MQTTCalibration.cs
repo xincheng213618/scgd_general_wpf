@@ -51,12 +51,12 @@ namespace ColorVision.Services.Devices.Calibration
         }
 
 
-        public MsgRecord Calibration(CalibrationParam item, string fileName, int pid, string tempName, string serialNumber, float R, float G, float B)
+        public MsgRecord Calibration(CalibrationParam item, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber, float R, float G, float B)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
             Params.Add("DeviceParam", new DeviceParamCalibration() { exp = new float[] { R, G, B }, gain = 1, });
 

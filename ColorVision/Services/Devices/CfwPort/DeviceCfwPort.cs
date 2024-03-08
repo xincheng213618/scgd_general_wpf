@@ -30,6 +30,9 @@ namespace ColorVision.Services.Devices.CfwPort
 
         public override UserControl GetDisplayControl() => new DisplayCfwPortControl(this);
 
-
+        public override MQTTServiceBase? GetMQTTService()
+        {
+            return DeviceService;
+        }
     }
 }

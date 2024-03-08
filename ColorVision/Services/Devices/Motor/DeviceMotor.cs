@@ -29,6 +29,9 @@ namespace ColorVision.Services.Devices.Motor
 
         public override UserControl GetDisplayControl() => new DisplayMotorControl(this);
 
-
+        public override MQTTServiceBase? GetMQTTService()
+        {
+            return DeviceService;
+        }
     }
 }

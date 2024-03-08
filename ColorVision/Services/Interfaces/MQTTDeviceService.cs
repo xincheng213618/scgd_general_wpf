@@ -66,7 +66,8 @@ namespace ColorVision.Services.Devices
             Config = config;
             SendTopic = Config.SendTopic;
             SubscribeTopic = Config.SubscribeTopic;
-            MQTTControl.SubscribeCache(SubscribeTopic);
+
+            //SubscribeCache();
         }
 
         public void DoHeartbeat(List<DeviceHeartbeatParam> devsheartbeat)

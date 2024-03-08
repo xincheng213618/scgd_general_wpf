@@ -1,4 +1,5 @@
 ﻿using ColorVision.Media;
+using ColorVision.Services;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices;
 using System.Windows.Controls;
@@ -21,6 +22,9 @@ namespace ColorVision.Device.FileServer
         public override UserControl GetDeviceInfo() => new DeviceFileServerControl(this,false);
 
         public override UserControl GetDisplayControl() =>new FileServerDisplayControl(this);
-
+        public override MQTTServiceBase? GetMQTTService()
+        {
+            return DeviceService;
+        }
     }
 }

@@ -79,7 +79,10 @@ namespace ColorVision.Services.Devices
             throw new NotImplementedException();
         }
 
-
+        public virtual MQTTServiceBase? GetMQTTService()
+        {
+            return null;
+        }
         public virtual void Dispose()
         {
             GC.SuppressFinalize(this);

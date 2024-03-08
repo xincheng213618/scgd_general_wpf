@@ -1,4 +1,5 @@
-﻿using ColorVision.Services.Dao;
+﻿using ColorVision.Services;
+using ColorVision.Services.Dao;
 using ColorVision.Services.Devices;
 using System.Windows.Controls;
 
@@ -17,7 +18,10 @@ namespace ColorVision.Device.PG
         public override UserControl GetDeviceInfo() => new DevicePGControl(this, false);
 
         public override UserControl GetDisplayControl() => new DisplayPGControl(this);
-
+        public override MQTTServiceBase? GetMQTTService()
+        {
+            return DeviceService;
+        }
         public string IsNet
         {
             get

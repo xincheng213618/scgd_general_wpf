@@ -450,7 +450,10 @@ namespace ColorVision.Services.Devices.Camera
         public EditCamera EditCamera { get; set; }
         public override UserControl GetEditControl() => EditCameraLazy.Value;
 
-
+        public override MQTTServiceBase? GetMQTTService()
+        {
+            return DeviceService;
+        }
         public override void Dispose()
         {
             Service.Dispose();

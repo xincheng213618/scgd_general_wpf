@@ -32,7 +32,7 @@ namespace ColorVision.Services.Flow
                 winf2.Visibility = STNodeEditorMain.ActiveNode == null ? Visibility.Collapsed : Visibility.Visible;
                 STNodePropertyGrid1.SetNode(STNodeEditorMain.ActiveNode);
             };
-            flowEngine.AttachLoader(STNodeEditorMain);
+            flowEngine.AttachNodeEditor(STNodeEditorMain);
             View = new View();
             ViewGridManager.GetInstance().AddView(0, this);
 

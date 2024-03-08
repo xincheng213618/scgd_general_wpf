@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Device.FileServer;
 using ColorVision.MVVM;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;
@@ -339,6 +340,9 @@ namespace ColorVision.Services.Devices.Calibration
         public EditCalibration EditCalibration { get; set; }
         public override UserControl GetEditControl() => EditLazy.Value;
 
-
+        public override MQTTServiceBase? GetMQTTService()
+        {
+            return DeviceService;
+        }
     }
 }

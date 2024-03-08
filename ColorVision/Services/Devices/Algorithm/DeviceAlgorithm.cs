@@ -46,5 +46,9 @@ namespace ColorVision.Services.Devices.Algorithm
         public EditAlorithm EditAlorithm { get; set; }
         public override UserControl GetEditControl() => EditLazy.Value;
 
+        public override MQTTServiceBase? GetMQTTService()
+        {
+            return MQTTService;
+        }
     }
 }
