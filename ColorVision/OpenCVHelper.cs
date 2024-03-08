@@ -65,7 +65,7 @@ namespace ColorVision
 
         public static HImage ToHImage(this WriteableBitmap writeableBitmap)
         {
-            // Determine the number of channels and depth based on the pixel format
+            // Determine the number of channels and Depth based on the pixel format
             int channels;
             int depth;
             switch (writeableBitmap.Format.ToString())
