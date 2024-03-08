@@ -1,7 +1,6 @@
-﻿#pragma warning disable CS8625
-namespace ColorVision.Services.Devices
+﻿namespace ColorVision.Services.Core
 {
-    public static class BaseObjectExtensions
+    public static class BaseResourceObjectExtensions
     {
         /// <summary>
         /// 得到指定数据类型的祖先节点。

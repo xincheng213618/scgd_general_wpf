@@ -6,6 +6,8 @@ using System.Windows.Input;
 using Gu.Wpf.Geometry;
 using System.Reflection;
 using ColorVision.Draw.Ruler;
+using ColorVision.Util.Draw.Special;
+using ColorVision.Draw.Special;
 
 namespace ColorVision.Draw
 {
@@ -22,9 +24,13 @@ namespace ColorVision.Draw
         public RelayCommand OpenProperty { get; set; }
 
         private ZoomboxSub ZoomboxSub { get; set; }
+
         private DrawCanvas Image { get; set; }
 
-        private ToolShowImage ShowImage { get; set; }
+        private MouseMagnifier MouseMagnifier { get; set; }
+
+        private Crosshair Crosshair { get; set; }
+
         private ToolBarMeasure ToolBarMeasure { get; set; }
 
         private FrameworkElement Parent { get; set; }
@@ -40,8 +46,8 @@ namespace ColorVision.Draw
             ZoomboxSub = zombox ?? throw new ArgumentNullException(nameof(zombox));
             Image = drawCanvas ?? throw new ArgumentNullException(nameof(drawCanvas));
 
-
-            ShowImage = new ToolShowImage(zombox, drawCanvas);
+            MouseMagnifier = new MouseMagnifier(zombox, drawCanvas);
+            Crosshair = new Crosshair(zombox, drawCanvas);
             ToolBarMeasure = new ToolBarMeasure(Parent, zombox, drawCanvas);
             ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zombox, drawCanvas);
             ToolConcentricCircle = new ToolReferenceLine(zombox, drawCanvas);
@@ -129,6 +135,19 @@ namespace ColorVision.Draw
             set => ZoomboxSub.Zoom(value);
         }
 
+        private bool _Crosshair;
+        public bool CrosshairFunction
+        {
+            get => _Crosshair;
+            set
+            {
+                if (_Crosshair == value) return;
+                _Crosshair = value;
+                Crosshair.IsShow = value;
+                NotifyPropertyChanged();
+            }
+        }
+
         private bool _ShowImageInfo;
         public bool ShowImageInfo
         {
@@ -138,7 +157,7 @@ namespace ColorVision.Draw
                 if (value) Activate = false;
                 _ShowImageInfo = value;
 
-                ShowImage.IsShow = value;
+                MouseMagnifier.IsShow = value;
                 NotifyPropertyChanged();
             }
         }

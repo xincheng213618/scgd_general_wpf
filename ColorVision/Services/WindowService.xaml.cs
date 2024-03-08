@@ -1,5 +1,6 @@
 ﻿using ColorVision.RC;
 using ColorVision.Services.Devices;
+using ColorVision.Services.Terminal;
 using ColorVision.Settings;
 using System;
 using System.Threading.Tasks;

@@ -1,5 +1,4 @@
-﻿#pragma warning disable CS8603,CS0649
-using cvColorVision;
+﻿using cvColorVision;
 using System.ComponentModel;
 
 namespace ColorVision.Services.Devices.Calibration.Templates

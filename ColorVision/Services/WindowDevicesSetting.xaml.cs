@@ -50,11 +50,11 @@ namespace ColorVision.Services
 
         private void Button_Click_4(object sender, RoutedEventArgs e)
         {
-            if (SeriesExportTreeView2.SelectedItem is DeviceService mQTTDevice)
+            if (SeriesExportTreeView2.SelectedItem is DeviceService deviceService)
             {
-                MQTTDevices1.Remove(mQTTDevice);
-                MQTTDevices1.Insert(MQTTDevices1.Count, mQTTDevice);
-                mQTTDevice.IsSelected = true;
+                MQTTDevices1.Remove(deviceService);
+                MQTTDevices1.Insert(MQTTDevices1.Count, deviceService);
+                deviceService.IsSelected = true;
             }
         }
 

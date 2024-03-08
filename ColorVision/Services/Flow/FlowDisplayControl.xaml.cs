@@ -8,7 +8,7 @@ using ColorVision.Themes;
 using System.Windows.Media;
 using ColorVision.Settings;
 using ColorVision.Common.Utilities;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Core;
 using System.Windows.Input;
 using ColorVision.Services.Templates;
 

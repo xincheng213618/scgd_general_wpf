@@ -56,9 +56,8 @@ namespace ColorVision.Services.Devices.Algorithm.Views
         ScatterPlot? scatterPlot;
         private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ComboBox comboBox && wpfplot1!=null)
+            if (sender is ComboBox comboBox && wpfplot1!=null && comboBox.SelectedItem is  ComboBoxItem comboBoxItem)
             {
-                ComboBoxItem comboBoxItem = comboBox.SelectedItem as ComboBoxItem;
                 wpfplot1.Plot.YLabel(comboBoxItem.Content.ToString());
                 wpfplot1.Plot.Remove(scatterPlot);
                 double[] x = new double[PoiResultCIExyuvData.Count];

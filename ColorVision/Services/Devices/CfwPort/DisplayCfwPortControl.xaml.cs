@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Core;
 using ColorVision.Themes;
 using System;
 using System.Windows;

@@ -7,7 +7,6 @@ using ColorVision.Services.Dao;
 using ColorVision.Sorts;
 using ColorVision.Common.Utilities;
 using log4net;
-using MQTTMessageLib.Camera;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

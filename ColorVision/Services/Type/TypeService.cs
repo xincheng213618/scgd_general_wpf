@@ -1,8 +1,9 @@
 ﻿using ColorVision.Services.Dao;
+using ColorVision.Services.Terminal;
 using System.Collections.Generic;
 using System.Windows.Controls;
 
-namespace ColorVision.Services
+namespace ColorVision.Services.Type
 {
     public enum ServiceTypes
     {
@@ -19,14 +20,11 @@ namespace ColorVision.Services
         Flowtime = 101,
     }
 
+
     public enum ResourceType
     {
         Group = 1000
     }
-
-
-
-
 
     public class TypeService : TerminalServiceBase
     {

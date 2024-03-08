@@ -5,7 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Services"
         xmlns:system="clr-namespace:System;assembly=mscorlib"
-        xmlns:mqtt="clr-namespace:ColorVision.Services.Devices" 
+        xmlns:device="clr-namespace:ColorVision.Services.Devices" 
+        xmlns:terminal="clr-namespace:ColorVision.Services.Terminal" 
+        xmlns:type="clr-namespace:ColorVision.Services.Type" 
+
         xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         Height="450" Width="800" Title="{x:Static properties:Resource.AdvancedSettings}" Background="{DynamicResource GlobalBackground}"  WindowStyle="ToolWindow" WindowStartupLocation="CenterScreen" Initialized="Window_Initialied">
@@ -61,17 +64,17 @@
                         </Border.BorderBrush>
                         <TreeView x:Name="SeriesExportTreeView1" Margin="2">
                             <TreeView.Resources>
-                                <HierarchicalDataTemplate DataType="{x:Type local:TypeService}" ItemsSource="{Binding VisualChildren}" >
+                                <HierarchicalDataTemplate DataType="{x:Type type:TypeService}" ItemsSource="{Binding VisualChildren}" >
                                     <StackPanel >
                                         <TextBlock Text="{Binding Name}"/>
                                     </StackPanel>
                                 </HierarchicalDataTemplate>
-                                <HierarchicalDataTemplate DataType="{x:Type local:TerminalService}" ItemsSource="{Binding VisualChildren}" >
+                                <HierarchicalDataTemplate DataType="{x:Type terminal:TerminalService}" ItemsSource="{Binding VisualChildren}" >
                                     <StackPanel >
                                         <TextBlock Text="{Binding Name}"/>
                                     </StackPanel>
                                 </HierarchicalDataTemplate>
-                                <HierarchicalDataTemplate DataType="{x:Type mqtt:DeviceService}" >
+                                <HierarchicalDataTemplate DataType="{x:Type device:DeviceService}" >
                                     <StackPanel>
                                         <TextBlock Text="{Binding Name}"/>
                                     </StackPanel>
@@ -113,17 +116,17 @@
                             </Border.BorderBrush>
                             <TreeView x:Name="SeriesExportTreeView2"  AllowDrop="True"  Margin="2">
                                 <TreeView.Resources>
-                                    <HierarchicalDataTemplate DataType="{x:Type local:TypeService}" ItemsSource="{Binding VisualChildren}" >
+                                    <HierarchicalDataTemplate DataType="{x:Type type:TypeService}" ItemsSource="{Binding VisualChildren}" >
                                         <StackPanel >
                                             <TextBlock Text="{Binding Name}"/>
                                         </StackPanel>
                                     </HierarchicalDataTemplate>
-                                    <HierarchicalDataTemplate DataType="{x:Type local:TerminalService}" ItemsSource="{Binding VisualChildren}" >
+                                    <HierarchicalDataTemplate DataType="{x:Type terminal:TerminalService}" ItemsSource="{Binding VisualChildren}" >
                                         <StackPanel >
                                             <TextBlock Text="{Binding Name}"/>
                                         </StackPanel>
                                     </HierarchicalDataTemplate>
-                                    <HierarchicalDataTemplate DataType="{x:Type mqtt:DeviceService}" ItemsSource="{Binding VisualChildren}" >
+                                    <HierarchicalDataTemplate DataType="{x:Type device:DeviceService}" ItemsSource="{Binding VisualChildren}" >
                                         <StackPanel>
                                             <TextBlock Text="{Binding Name}"/>
                                         </StackPanel>

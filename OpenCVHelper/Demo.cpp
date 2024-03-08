@@ -4,7 +4,19 @@
 #include <opencv2/opencv.hpp>
 
 
-int ReadGhostHImage(HImage img, HImage* outImage)
+static void MatToHImage(cv::Mat& mat, HImage* outImage)
+{
+	///这里不分配的话，局部内存会在运行结束之后清空
+	outImage->pData = new unsigned char[mat.total() * mat.elemSize()];
+	memcpy(outImage->pData, mat.data, mat.total() * mat.elemSize());
+
+	outImage->rows = mat.rows;
+	outImage->cols = mat.cols;
+	outImage->channels = mat.channels();
+	outImage->depth = mat.depth(); // 设置每像素位数
+}
+
+int PseudoColor(HImage img, HImage* outImage, uint min1, uint max1)
 {
 	 cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 
@@ -20,16 +32,18 @@ int ReadGhostHImage(HImage img, HImage* outImage)
 	cv::Mat scaledMat;
 	mat.convertTo(scaledMat, CV_8UC1, 255.0 / (maxVal - minVal), -minVal * 255.0 / (maxVal - minVal));
 
+
+	cv::Mat maskGreater = scaledMat > max1; // Change maxVal to your specific threshold
+	scaledMat.setTo(cv::Scalar(255, 255, 255), maskGreater);
+
+	// Set values less than a threshold to black
+	cv::Mat maskLess = scaledMat < min1; // Change minVal to your specific threshold
+	scaledMat.setTo(cv::Scalar(0, 0, 0), maskLess);
+
 	cv::applyColorMap(scaledMat, scaledMat, cv::COLORMAP_JET);
 
 	///这里不分配的话，局部内存会在运行结束之后清空
-	outImage->pData = new unsigned char[scaledMat.total() * scaledMat.elemSize()];
-	memcpy(outImage->pData, scaledMat.data, scaledMat.total() * scaledMat.elemSize());
-
-	outImage->rows = scaledMat.rows;
-	outImage->cols = scaledMat.cols;
-	outImage->channels = scaledMat.channels();
-	outImage->depth = scaledMat.depth(); // 设置每像素位数
+	MatToHImage(scaledMat, outImage);
 	return 0;
 }
 
@@ -79,16 +93,7 @@ int ReadGhostImage(const char* FilePath, int singleLedPixelNum, int* LED_pixel_X
 	cv::drawContours(scaledMat, paintContours1, -1, cv::Scalar(0,0, 255), -1, 8, cv::noArray(), INT_MAX, cv::Point());
 	//paintContours.clear();
 
-
-
-	///这里不分配的话，局部内存会在运行结束之后清空
-	outImage->pData = new unsigned char[scaledMat.total() * scaledMat.elemSize()];
-	memcpy(outImage->pData, scaledMat.data, scaledMat.total() * scaledMat.elemSize());
-
-	outImage->rows = scaledMat.rows;
-	outImage->cols = scaledMat.cols;
-	outImage->channels = scaledMat.channels();
-	outImage->depth = scaledMat.depth(); // 设置每像素位数
+	MatToHImage(scaledMat, outImage);
 	return 0;
 }
 

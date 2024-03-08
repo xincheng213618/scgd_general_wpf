@@ -1,10 +1,9 @@
 ﻿using ColorVision.Media;
 using ColorVision.Services;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices;
 using System.Windows.Controls;
 
-namespace ColorVision.Device.FileServer
+namespace ColorVision.Services.Devices.FileServer
 {
     public class DeviceFileServer : DeviceService<FileServerConfig>
     {

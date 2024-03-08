@@ -60,6 +60,7 @@ namespace ColorVision.Media
             minLut = 0;
             maxLut = 255;
         }
+
         public ColorMap(string fileName, int colorMapNum)
         {
             if (File.Exists(fileName))
@@ -72,13 +73,6 @@ namespace ColorVision.Media
                 //logger.Error("加载ColorMap失败，请确认当前目录是否存在colormap.png");
             }
         }
-        //private void AddToLog(string txt, bool isDebug)
-        //{
-        //    if (isDebug)
-        //        logger.Debug(txt);
-        //    else
-        //        logger.Info(txt);
-        //}
         private double getStepVal(Mat src)//计算输入图片的伪彩色步长
         {
             double minVal = 0, maxVal = 512;
@@ -90,25 +84,6 @@ namespace ColorVision.Media
             return setp;
         }
 
-        //private double[] getStepValPer(Mat src)//计算输入图片的伪彩色步长
-        //{
-        //    double minVal = 0, maxVal = 512;
-        //    //获取一下当前图片的最大最小值
-        //    Cv2.MinMaxIdx(src, out minVal, out maxVal);
-        //    //计算出每个颜色的步长
-        //    double[] setp = new double[depth];//一共有depth个步长数据
-        //    if (minLut+ (100- maxLut) >=100)//如果上下限的和值超过了100，则认为上下限设置的有问题--minLut:20,maxLut:70,那么实际上要扣除的是20+（100-70）=50/100
-        //    {
-        //        return setp;
-        //    }
-        //    for (int i = 0; i < depth; i++)
-        //    {
-        //        double srcPicVal = maxVal - minVal;
-        //        double dstPicVal = srcPicVal * (100 - minLut - (100 - maxLut)) / 100;//扣除了上下限之后剩余需要计算步长的像素数量
-        //        setp[i] = dstPicVal * stepPer[i]/100;//计算出每一个伪彩色等级在扣除了上下限后所占的像素数量
-        //    }
-        //    return setp;
-        //}
 
         public void ApplyLUTColorMap(Mat src, Mat dst)
         {
@@ -279,34 +254,6 @@ namespace ColorVision.Media
             return new Mat(n, 1, MatType.CV_32FC1, linspace0(x0, x1, n, step));
         }
 
-        //private int _dr(Mat dst, int n)
-        //{
-        //    int cols = 100;
-        //    //int Height = 0;
-        //    int i = 1;
-        //    for (; i < colorMap.Length; i++)
-        //    {
-        //        Color clr0 = colorMap[i - 1];
-        //        Color clr = colorMap[i];
-        //        Mat r = linspace(clr0.R, clr.R, n);
-        //        Mat g = linspace(clr0.G, clr.G, n);
-        //        Mat b = linspace(clr0.B, clr.B, n);
-        //        byte[,] rd = ConvertToBytes(r, cols);
-        //        byte[,] gd = ConvertToBytes(g, cols);
-        //        byte[,] bd = ConvertToBytes(b, cols);
-
-        //        Mat m_r = new Mat(n, cols, MatType.CV_8UC1, rd);
-        //        Mat m_g = new Mat(n, cols, MatType.CV_8UC1, gd);
-        //        Mat m_b = new Mat(n, cols, MatType.CV_8UC1, bd);
-
-        //        Mat m = new Mat();
-        //        Cv2.Merge(new Mat[] { m_b, m_g, m_r }, m);
-        //        Mat poi = dst[new Rect(0, (i - 1) * n, cols, n)];
-        //        m.CopyTo(poi);
-        //    }
-
-        //    return i * n;
-        //}
 
         public static Mat ReMapInversion(Mat src)
         {
@@ -326,33 +273,6 @@ namespace ColorVision.Media
 
             return dst;
         }
-        //public Mat DrawMap()
-        //{
-        //    int rows = 1024;
-        //    int cols = srcColor.Cols;
-        //    int n = colorMapIdx.Length;
-        //    Mat cm = new Mat(rows, cols + 150, srcColor.Type(), Scalar.All(255));
-        //    Mat cmRt = cm[new Rect(0, 0, cols, rows)];
-        //    int Height = _dr(cmRt, 1024 / n);
-        //    //MatHelp.format(cmRt);
-        //    ReMapInversion(cmRt).CopyTo(cmRt);
-        //    Mat m = linspace(rows - Height, Height - 1, n);
-        //    Mat mClr = new Mat();
-        //    m.ConvertTo(mClr, MatType.CV_16UC1);
-        //    cmRt = cm[new Rect(cols, rows - Height, 150, Height)];
-        //    for (int i = 0; i < n; i++)
-        //    {
-        //        int fy = mClr.Get<ushort>(i, 0);
-        //        cmRt.Line(0, fy, 50, fy, Scalar.All(0));
-        //        String valText = String.Format("{0}", n - i);
-        //        //if (i == 0)
-        //        // cmRt.PutText(valText, new OpenCvSharp.POINT(60, fy + 20), HersheyFonts.HersheyDuplex, 1, Scalar.All(0));
-        //        //else
-        //        cmRt.PutText(valText, new OpenCvSharp.POINT(60, fy), HersheyFonts.HersheyDuplex, 1, Scalar.All(0));
-
-        //    }
-        //    return cm;
-        //}
 
         public void buildCustomMap(int n, double min, double max)//初始化colormap
         {

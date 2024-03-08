@@ -1,17 +1,23 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.Settings;
 using log4net;
+using Org.BouncyCastle.Asn1.Ocsp;
 using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Reflection;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace ColorVision.Update
 {
+
+
     public class AutoUpdater : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AutoUpdater));
@@ -115,10 +121,35 @@ namespace ColorVision.Update
                 Console.WriteLine("An error occurred while updating: " + ex.Message);
             }
         }
-        private static async Task<Version>  GetLatestVersionNumber(string url)
+        bool IsPassWorld;
+
+
+        private async Task<Version> GetLatestVersionNumber(string url)
         {
             using HttpClient _httpClient = new HttpClient();
-            string versionString = await _httpClient.GetStringAsync(url);
+            string versionString = null;
+            try
+            {
+                // First attempt to get the string without authentication
+                versionString = await _httpClient.GetStringAsync(url);
+            }
+            catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                IsPassWorld = true;
+                // If the request is unauthorized, add the authentication header and try again
+                var byteArray = System.Text.Encoding.ASCII.GetBytes("1:1");
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+
+                // You should also consider handling other potential issues here, such as network errors
+                versionString = await _httpClient.GetStringAsync(url);
+            }
+
+            // If versionString is still null, it means there was an issue with getting the version number
+            if (versionString == null)
+            {
+                throw new InvalidOperationException("Unable to retrieve version number.");
+            }
+
             return new Version(versionString.Trim());
         }
 
@@ -127,6 +158,9 @@ namespace ColorVision.Update
 
         public string SpeedValue { get => _SpeedValue; set { _SpeedValue = value; NotifyPropertyChanged(); } }
         private string _SpeedValue;
+
+        public string RemainingTimeValue { get => _RemainingTimeValue; set { _RemainingTimeValue = value; NotifyPropertyChanged(); } }
+        private string _RemainingTimeValue;
 
 
         private async Task DownloadAndUpdate(Version latestVersion)
@@ -137,53 +171,77 @@ namespace ColorVision.Update
             // 指定下载路径
             string downloadPath = Path.Combine(Path.GetTempPath(), $"ColorVision-{latestVersion}.exe");
 
-            // 实例化 WebClient
-#pragma warning disable SYSLIB0014 // 类型或成员已过时
-            using (var client = new WebClient())
+            using (var client = new HttpClient())
             {
-
-                Stopwatch stopwatch = new Stopwatch(); // 创建一个计时器来追踪下载时间
-
-
-                client.DownloadProgressChanged += (sender, e) =>
+                if (IsPassWorld)
                 {
-                    ProgressValue = e.ProgressPercentage;
+                    string credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{1}:{1}"));
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);
+                }
 
-                    if (stopwatch.ElapsedMilliseconds > 1000) // 更新速度至少每秒一次
-                    {
-                        double speed = e.BytesReceived / stopwatch.Elapsed.TotalSeconds;
-                        SpeedValue = $"Current speed: {speed / 1024 / 1024:F2} MB/s";
-                    }
+                Stopwatch stopwatch = new Stopwatch();
 
+                var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead);
 
-                };
-                // 绑定下载完成事件
-                client.DownloadFileCompleted += (sender, e) =>
+                if (!response.IsSuccessStatusCode)
                 {
-                    stopwatch.Stop();
-                    // 检查是否出错或者操作被取消
-                    if (e.Cancelled)
+                    MessageBox.Show($"{Properties.Resource.ErrorOccurred}: {response.ReasonPhrase}");
+                    return;
+                }
+
+                var totalBytes = response.Content.Headers.ContentLength ?? -1L;
+                var totalReadBytes = 0L;
+                var readBytes = 0;
+                var buffer = new byte[8192];
+                var isMoreToRead = true;
+
+                stopwatch.Start();
+
+                using (var fileStream = new FileStream(downloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (var stream = await response.Content.ReadAsStreamAsync())
+                {
+                    do
                     {
-                        MessageBox.Show(Properties.Resource.DownloadCancelled);
-                    }
-                    else if (e.Error != null)
-                    {
-                        MessageBox.Show($"{Properties.Resource.ErrorOccurred}: {e.Error.Message}");
-                    }
-                    else
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
+                        readBytes = await stream.ReadAsync(buffer, 0, buffer.Length);
+                        if (readBytes == 0)
                         {
-                            RestartApplication(downloadPath);
-                        });
+                            isMoreToRead = false;
+                        }
+                        else
+                        {
+                            await fileStream.WriteAsync(buffer, 0, readBytes);
+
+                            totalReadBytes += readBytes;
+                            int progressPercentage = totalBytes != -1L
+                                ? (int)((totalReadBytes * 100) / totalBytes)
+                                : -1;
+
+                            ProgressValue = progressPercentage;
+
+                            if (stopwatch.ElapsedMilliseconds > 500) // Update speed at least once per second
+                            {
+                                double speed = totalReadBytes / stopwatch.Elapsed.TotalSeconds;
+                                SpeedValue = $"Current speed: {speed / 1024 / 1024:F2} MB/s";
+
+                                if (totalBytes != -1L)
+                                {
+                                    double remainingBytes = totalBytes - totalReadBytes;
+                                    double remainingTime = remainingBytes / speed; // in seconds
+                                    RemainingTimeValue = $"Time left: {TimeSpan.FromSeconds(remainingTime):hh\\:mm\\:ss}";
+                                }
+                            }
+                        }
                     }
-                };
+                    while (isMoreToRead);
+                }
 
-                stopwatch.Start(); // 如果计时器未启动，则启动计时器
+                stopwatch.Stop();
 
-                await client.DownloadFileTaskAsync(new Uri(downloadUrl), downloadPath);
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    RestartApplication(downloadPath);
+                });
             }
-#pragma warning restore SYSLIB0014 // 类型或成员已过时
         }
 
 

@@ -1,8 +1,6 @@
-﻿#pragma warning disable CS8603,CS0649
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices;
+﻿using ColorVision.Services.Dao;
 
-namespace ColorVision.Services.Interfaces
+namespace ColorVision.Services.Core
 {
     public class BaseResource : BaseResourceObject
     {

@@ -4,22 +4,27 @@ using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows.Input;
+using ColorVision.Common.Extension;
+using Microsoft.VisualBasic.Devices;
+using ColorVision.Draw;
 
-namespace ColorVision.Draw
+namespace ColorVision.Util.Draw.Special
 {
-    public class ToolShowImage
+    public class MouseMagnifier
     {
         private ZoomboxSub ZoomboxSub { get; set; }
         private DrawCanvas Image { get; set; }
 
         public DrawingVisual DrawVisualImage { get; set; }
 
+        public DrawingVisual DrawingVisualImage1 { get; set; }
 
-        public ToolShowImage(ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public MouseMagnifier(ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
             Image = drawCanvas;
             DrawVisualImage = new DrawingVisual();
+            DrawingVisualImage1 = new DrawingVisual();
         }
 
         public bool IsShow
@@ -28,7 +33,6 @@ namespace ColorVision.Draw
             {
                 if (_IsShow == value) return;
                 _IsShow = value;
-
                 DrawVisualImageControl(_IsShow);
                 if (value)
                 {
@@ -46,7 +50,6 @@ namespace ColorVision.Draw
         }
         private bool _IsShow;
 
-
         public class ImageInfo
         {
             public int X { get; set; }
@@ -62,8 +65,9 @@ namespace ColorVision.Draw
 
         public void DrawImage(Point actPoint, Point disPoint, ImageInfo imageInfo)
         {
-            if (Image.Source is BitmapImage bitmapImage && disPoint.X > 60 && disPoint.X < bitmapImage.PixelWidth - 60 && disPoint.Y > 45 && disPoint.Y < bitmapImage.PixelHeight - 45)
+            if (Image.Source is BitmapSource bitmapImage && disPoint.X > 60 && disPoint.X < bitmapImage.PixelWidth - 60 && disPoint.Y > 45 && disPoint.Y < bitmapImage.PixelHeight - 45)
             {
+
                 CroppedBitmap croppedBitmap = new CroppedBitmap(bitmapImage, new Int32Rect(disPoint.X.ToInt32() - 60, disPoint.Y.ToInt32() - 45, 120, 90));
 
                 using DrawingContext dc = DrawVisualImage.RenderOpen();

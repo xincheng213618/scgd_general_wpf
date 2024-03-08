@@ -1,13 +1,12 @@
-﻿#pragma warning disable  CS8604,CS8631
-using ColorVision.Services.Dao;
+﻿using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Type;
 
-namespace ColorVision.Services.Devices
+namespace ColorVision.Services.Core
 {
-    public class GroupService: BaseResourceObject
+    public class GroupResource: BaseResourceObject
     {
-        public static GroupService? AddGroupService(ICalibrationService<BaseResourceObject> deviceService , string Name)
+        public static GroupResource? AddGroupResource(ICalibrationService<BaseResourceObject> deviceService , string Name)
         {
             SysResourceModel sysResourceModel = new SysResourceModel() { Name = Name ,Type = (int)ResourceType.Group };
             sysResourceModel.Pid = deviceService.SysResourceModel.Id;
@@ -19,14 +18,14 @@ namespace ColorVision.Services.Devices
             int pkId = sysResourceModel.PKId;
             if (pkId > 0 && sysResourceDao.GetById(pkId) is SysResourceModel model)
             {
-                GroupService groupService = new GroupService(model);
-                deviceService.AddChild(groupService);
-                return groupService;
+                GroupResource groupResource = new GroupResource(model);
+                deviceService.AddChild(groupResource);
+                return groupResource;
             }
             return null;
         }
 
-        public GroupService(SysResourceModel sysResourceModel)
+        public GroupResource(SysResourceModel sysResourceModel)
         {
             SysResourceModel = sysResourceModel;
             Name = sysResourceModel.Name ?? sysResourceModel.Id.ToString();

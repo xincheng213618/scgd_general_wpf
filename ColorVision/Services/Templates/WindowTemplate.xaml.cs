@@ -3,8 +3,8 @@ using ColorVision.Common.Utilities;
 using ColorVision.Extension;
 using ColorVision.MVVM;
 using ColorVision.Properties;
+using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Algorithm.Templates;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.PG.Templates;
@@ -306,7 +306,7 @@ namespace ColorVision.Services.Templates
                             mpc.Reload(des);
                             mpc.ModTypeConfigs.Clear();
                             mpc.ModTypeConfigs.Add(new MParamConfig(-1,"关注点","POI"));
-                            List<SysModMasterModel> sysModMaster = TemplateControl.LoadSysModMaster();
+                            List<SysModMasterModel> sysModMaster = new SysModMasterDao().GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
                             foreach (SysModMasterModel model in sysModMaster)
                             {
                                 mpc.ModTypeConfigs.Add(new MParamConfig(model));

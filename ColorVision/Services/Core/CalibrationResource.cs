@@ -1,8 +1,7 @@
-﻿#pragma warning disable CS8603,CS0649
-using ColorVision.Services.Dao;
+﻿using ColorVision.Services.Dao;
 using ColorVision.Sorts;
 
-namespace ColorVision.Services.Interfaces
+namespace ColorVision.Services.Core
 {
     public class CalibrationResource : BaseResource, ISortID, ISortFilePath
     {

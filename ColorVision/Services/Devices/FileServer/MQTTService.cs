@@ -1,6 +1,5 @@
 ﻿
 using ColorVision.MQTT;
-using ColorVision.Services.Devices;
 using ColorVision.Services.Msg;
 using MQTTMessageLib.FileServer;
 using MQTTnet.Client;
@@ -10,7 +9,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ColorVision.Device.FileServer
+namespace ColorVision.Services.Devices.FileServer
 {
     public class FileServerEventName
     {

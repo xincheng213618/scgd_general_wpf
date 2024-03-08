@@ -1499,7 +1499,14 @@ namespace ColorVision.Services.Templates.POI
             {
                 try
                 {
-                    OpenImage(new NetFileUtil("1").OpenLocalCVFile(measureImgResultModel.FileUrl, FileExtType.Raw));
+                    if (measureImgResultModel.FileUrl != null)
+                    {
+                        OpenImage(new NetFileUtil("1").OpenLocalCVFile(measureImgResultModel.FileUrl, FileExtType.Raw));
+                    }
+                    else
+                    {
+                        MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址" );
+                    }
                 }
                 catch(Exception ex)
                 {
@@ -1571,7 +1578,14 @@ namespace ColorVision.Services.Templates.POI
             {
                 try
                 {
-                    OpenImage(new NetFileUtil("1").OpenLocalCVFile(MeasureImgResultModels[ComboBoxImg.SelectedIndex].FileUrl, FileExtType.Raw));
+                    if (MeasureImgResultModels[ComboBoxImg.SelectedIndex] is MeasureImgResultModel model && model.FileUrl != null)
+                    {
+                        OpenImage(new NetFileUtil("1").OpenLocalCVFile(model.FileUrl, FileExtType.Raw));
+                    }
+                    else
+                    {
+                        MessageBox.Show("打开最近服务拍摄的图像失败");
+                    }
                 }
                 catch (Exception ex)
                 {

@@ -1,7 +1,7 @@
-﻿using System.Collections.Generic;
-using ColorVision.Services.Msg;
-using System.Windows;
+﻿using ColorVision.Services.Msg;
 using MQTTMessageLib;
+using System.Collections.Generic;
+using System.Windows;
 
 namespace ColorVision.Services.Devices.CfwPort
 {

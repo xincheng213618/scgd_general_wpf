@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Core;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Themes;

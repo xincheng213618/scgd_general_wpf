@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8604 // 引用类型参数可能为 null。
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
 using ColorVision.MVVM;
@@ -6,12 +6,14 @@ using ColorVision.Net;
 using log4net;
 using MQTTMessageLib.Algorithm;
 using OpenCvSharp.WpfExtensions;
+using SkiaSharp.Views.WPF;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Threading.Tasks;
+using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -613,13 +615,12 @@ namespace ColorVision.Media
 
             int i = OpenCVHelper.ReadGhostImage(filePath, LEDpixelX.Length, LEDpixelX, LEDPixelY, GhostPixelX.Length, GhostPixelX, GhostPixelY, out HImage hImage);
             if (i != 0) return;
+            HImageCache = hImage;
             var writeableBitmap = hImage.ToWriteableBitmap();
             ViewBitmapSource = writeableBitmap;
             ImageShow.Source = ViewBitmapSource;
 
-            i = OpenCVHelper.ReadGhostHImage(hImage, out HImage hImage1);
-            if (i != 0) return;
-            PseudoImage = hImage1.ToWriteableBitmap();
+            DebounceTimer.AddOrResetTimer("RenderPseudo", 500, RenderPseudo);
 
             Task.Run(() => {
                 Application.Current.Dispatcher.Invoke(() =>
@@ -629,11 +630,12 @@ namespace ColorVision.Media
             });
         }
 
+        public HImage? HImageCache { get; set; }
+
         private void SetImageSource(WriteableBitmap writeableBitmap)
         {
-            int ret = OpenCVHelper.ReadGhostHImage(writeableBitmap.ToHImage(), out HImage hImage1);
-            if (ret == 0)
-                PseudoImage = hImage1.ToWriteableBitmap();
+            HImageCache = writeableBitmap.ToHImage();
+            DebounceTimer.AddOrResetTimer("RenderPseudo", 500, RenderPseudo);
 
             ViewBitmapSource = writeableBitmap;
             ImageShow.Source = ViewBitmapSource;
@@ -645,9 +647,8 @@ namespace ColorVision.Media
 
         private void SetImageSource(BitmapImage bitmapImage)
         {
-            int ret = OpenCVHelper.ReadGhostHImage(bitmapImage.BitmapImageToHImage(), out HImage hImage1);
-            if (ret == 0)
-                PseudoImage = hImage1.ToWriteableBitmap();
+            HImageCache = bitmapImage.ToHImage();
+            DebounceTimer.AddOrResetTimer("RenderPseudo", 500, RenderPseudo);
 
             ViewBitmapSource = bitmapImage;
             ImageShow.Source = ViewBitmapSource;
@@ -661,8 +662,9 @@ namespace ColorVision.Media
             ToolBar1.Visibility = Visibility.Visible;
             ImageShow.ImageInitialize();
         }
-        public ImageSource PseudoImage { get; set; }
 
+
+        public ImageSource PseudoImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
 
 
@@ -824,10 +826,51 @@ namespace ColorVision.Media
             }
         }
 
+        public void RenderPseudo(object? sender, ElapsedEventArgs e)
+        {
+            if (HImageCache != null)
+            {
+                // 首先获取滑动条的值，这需要在UI线程中执行
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    uint min = (uint)PseudoSlider.ValueStart;
+                    uint max = (uint)PseudoSlider.ValueEnd;
+                    logger.Info($"ImagePath，正在执行PseudoColor,min:{min},max:{max}");
+
+                    // 在后台线程中执行耗时的图像处理操作
+                    Task.Run(() =>
+                    {
+                        int ret = OpenCVHelper.PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max);
+
+                        // 图像处理完成后，回到UI线程更新界面
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (ret == 0)
+                            {
+                                PseudoImage = hImageProcessed.ToWriteableBitmap();
+                                if (Pseudo.IsChecked == true)
+                                {
+                                    ImageShow.Source = PseudoImage;
+                                }
+                            }
+                        });
+                    });
+                });
+            }
+        }
+
         private void RangeSlider1_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
         {
-            RowDefinitionStart.Height = new GridLength((170.0 / 255.0) * (255 - RangeSlider1.ValueEnd));
-            RowDefinitionEnd.Height = new GridLength((170.0 / 255.0) * RangeSlider1.ValueStart);
+            RowDefinitionStart.Height = new GridLength((170.0 / 255.0) * (255 - PseudoSlider.ValueEnd));
+            RowDefinitionEnd.Height = new GridLength((170.0 / 255.0) * PseudoSlider.ValueStart);
+            DebounceTimer.AddOrResetTimer("RenderPseudo",300, RenderPseudo);
+        }
+
+        private void ButtonCIE1931_Click(object sender, RoutedEventArgs e)
+        {
+            WindowCIE windowCIE = new WindowCIE();
+            windowCIE.Owner = Window.GetWindow(this);
+            windowCIE.Show();
         }
     }
 }

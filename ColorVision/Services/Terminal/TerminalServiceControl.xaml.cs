@@ -1,5 +1,4 @@
-﻿using ColorVision.Device.FileServer;
-using ColorVision.Device.PG;
+﻿using ColorVision.Device.PG;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Algorithm;
@@ -7,12 +6,14 @@ using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Devices.CfwPort;
+using ColorVision.Services.Devices.FileServer;
 using ColorVision.Services.Devices.Motor;
 using ColorVision.Services.Devices.Sensor;
 using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Devices.SMU.Configs;
 using ColorVision.Services.Devices.Spectrum;
 using ColorVision.Services.Devices.Spectrum.Configs;
+using ColorVision.Services.Type;
 using ColorVision.Settings;
 using cvColorVision;
 using Newtonsoft.Json;
@@ -22,7 +23,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 
 
-namespace ColorVision.Services
+namespace ColorVision.Services.Terminal
 {
     /// <summary>
     /// TerminalServiceControl.xaml 的交互逻辑
@@ -256,7 +257,7 @@ namespace ColorVision.Services
                     default:
                         break;
                 };
-                if (sysDevModel != null) RC.MQTTRCService.GetInstance().RestartServices(sysDevModel.TypeCode, sysDevModel.PCode, sysDevModel.Code);
+                if (sysDevModel != null && sysDevModel.TypeCode!=null && sysDevModel.PCode!=null && sysDevModel.Code!=null) RC.MQTTRCService.GetInstance().RestartServices(sysDevModel.TypeCode, sysDevModel.PCode, sysDevModel.Code);
                 MessageBox.Show("添加资源成功");
                 MQTTCreate.Visibility = Visibility.Collapsed;
             }

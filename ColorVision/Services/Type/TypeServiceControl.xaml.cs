@@ -1,12 +1,13 @@
 ﻿using ColorVision.RC;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Terminal;
 using ColorVision.Settings;
 using Newtonsoft.Json;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services
+namespace ColorVision.Services.Type
 {
     /// <summary>
     /// TypeServiceControl.xaml 的交互逻辑

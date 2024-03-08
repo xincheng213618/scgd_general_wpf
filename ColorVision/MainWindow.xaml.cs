@@ -4,7 +4,7 @@ using ColorVision.Media;
 using ColorVision.MySql;
 using ColorVision.Services;
 using ColorVision.Services.Flow;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Core;
 using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.Solution.View;
@@ -165,16 +165,6 @@ namespace ColorVision
             menuItem.Items.Add(menuItem1);
             Menu1.Items.Add(menuItem);
 
-            MenuItem menuItem2 = new MenuItem() { Header = "WindowCIE" };
-            menuItem2.Click += (s,e)=>
-            {
-                WindowCIE windowCIE = new WindowCIE();
-                windowCIE.Show();
-            };
-            menuItem.Items.Add(menuItem2);
-
-            
-
 
             MenuItem menuItem3 = new MenuItem() { Header = Properties.Resource.RestartService, Tag = "CalibrationUpload" };
             menuItem3.Click += (s,e) =>
@@ -333,7 +323,7 @@ namespace ColorVision
             }
         }
         
-        public async Task CheckLocalService()
+        public static async Task CheckLocalService()
         {
             await Task.Delay(2000);
             try
@@ -344,8 +334,6 @@ namespace ColorVision
                 {
                     excmd += "net start RegistrationCenterService&&";
                 }
-
-
 
                 ServiceController sc1 = new ServiceController("CVMainService_x86");
                 if (sc1.Status == ServiceControllerStatus.Stopped)

@@ -6,9 +6,13 @@ using System.Data;
 
 namespace ColorVision.MySql
 {
+    /// <summary>
+    /// 因为项目中本身包含Service,所以这里取消Service层的设置，直接从Dao层
+    /// </summary>
     public class BaseDao
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseDao));
+
         public MySqlControl MySqlControl { get; set; }
         public string TableName { get { return _TableName; } set { _TableName = value; } }
         private string _TableName;

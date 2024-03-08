@@ -1,8 +1,10 @@
 ﻿using ColorVision.MVVM;
 using ColorVision.RC;
+using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Camera;
+using ColorVision.Services.Type;
 using ColorVision.Themes;
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -10,10 +12,18 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Services
+namespace ColorVision.Services.Terminal
 {
-    public class TerminalServiceBase : BaseResourceObject
+    public class TerminalServiceBase : BaseResourceObject, ITreeViewItem
     {
+        public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
+        private bool _IsExpanded = true;
+
+        public bool IsSelected { get => _IsChecked; set { _IsChecked = value; NotifyPropertyChanged(); } }
+        private bool _IsChecked = true;
+        public ContextMenu ContextMenu { get; set; }
+
+
         public virtual UserControl GenDeviceControl()
         {
             throw new System.NotImplementedException();
@@ -42,7 +52,6 @@ namespace ColorVision.Services
         {
             MessageBox.Show("Create");
         }
-
 
         public TerminalService(SysResourceModel sysResourceModel) : base()
         {
