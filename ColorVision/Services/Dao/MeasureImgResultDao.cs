@@ -67,7 +67,8 @@ namespace ColorVision.Services.Dao
             keyValuePairs.Add("device_code", device_code);
             keyValuePairs.Add(">create_date", dateTimeSTART);
             keyValuePairs.Add("<create_date", dateTimeEnd);
-            keyValuePairs.Add("result_code", "0");
+            //业务要求，取图失败的时候的记录不显示
+            //keyValuePairs.Add("result_code", "0");
             return ConditionalQuery(keyValuePairs);
         }
     }
