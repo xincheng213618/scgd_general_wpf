@@ -15,8 +15,7 @@ namespace ColorVision.Net
         public int rows;
         public int cols;
         public int bpp;
-
-        public int Depth
+        public readonly int Depth
         {
             get
             {
