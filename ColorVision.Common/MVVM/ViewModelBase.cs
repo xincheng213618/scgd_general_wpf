@@ -23,7 +23,7 @@ namespace ColorVision.MVVM
             NotifyPropertyChanged(propertyName);
             return true;
         }
-        protected virtual bool SetProperty1<T>(ref T storage, T value, [CallerMemberName] string propertyName = "")
+        protected virtual bool SetIfChangedProperty<T>(ref T storage, T value, [CallerMemberName] string propertyName = "")
         {
             if (EqualityComparer<T>.Default.Equals(storage, value))
                 return false;

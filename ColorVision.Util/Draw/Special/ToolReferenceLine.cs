@@ -4,8 +4,9 @@ using System.Windows.Input;
 using System;
 using System.Globalization;
 using System.Collections.Generic;
+using ColorVision.Draw;
 
-namespace ColorVision.Draw
+namespace ColorVision.Util.Draw.Special
 {
     public class ToolReferenceLine
     {
@@ -62,7 +63,7 @@ namespace ColorVision.Draw
 
         private Point RMouseDownP;
         private Point LMouseDownP;
-        private System.Windows.Vector PointLen;
+        private Vector PointLen;
 
 
         private void PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -85,11 +86,11 @@ namespace ColorVision.Draw
             IsLMouseDown = false;
         }
 
-       
+
 
         private void MouseMove(object sender, MouseEventArgs e)
         {
-            if (IsShow && (IsRMouseDown|| IsLMouseDown))
+            if (IsShow && (IsRMouseDown || IsLMouseDown))
             {
                 if (IsRMouseDown)
                 {
@@ -131,7 +132,7 @@ namespace ColorVision.Draw
         {
             // Convert angle to radians
             double angleRad = angle * Math.PI / 180.0;
-            
+
             // Define the second lenc for the line from the given lenc and angle
             Point pAngle = new Point(p.X + Math.Cos(angleRad), p.Y + Math.Sin(angleRad));
 
@@ -167,12 +168,12 @@ namespace ColorVision.Draw
 
         private static bool IsBetween(Point A, Point B, Point C)
         {
-            bool withinX = (Math.Min(A.X, B.X) <= C.X) && (C.X <= Math.Max(A.X, B.X));
-            bool withinY = (Math.Min(A.Y, B.Y) <= C.Y) && (C.Y <= Math.Max(A.Y, B.Y));
+            bool withinX = Math.Min(A.X, B.X) <= C.X && C.X <= Math.Max(A.X, B.X);
+            bool withinY = Math.Min(A.Y, B.Y) <= C.Y && C.Y <= Math.Max(A.Y, B.Y);
             return withinX && withinY;
         }
 
-        public static List<Point> CalculateIntersectionPoints(double width ,double height, Point point,double angle)
+        public static List<Point> CalculateIntersectionPoints(double width, double height, Point point, double angle)
         {
             List<Point> points = new List<Point>();
             if (GetIntersection(point, angle, new Point(0, 0), new Point(0, width)) is Point point1)
@@ -185,7 +186,7 @@ namespace ColorVision.Draw
                 points.Add(point4);
 
 
-            if (GetIntersection(point, angle +90, new Point(0, 0), new Point(0, width)) is Point point5)
+            if (GetIntersection(point, angle + 90, new Point(0, 0), new Point(0, width)) is Point point5)
                 points.Add(point5);
             if (GetIntersection(point, angle + 90, new Point(0, width), new Point(height, width)) is Point point6)
                 points.Add(point6);
@@ -213,7 +214,7 @@ namespace ColorVision.Draw
             double ActualWidth = Image.ActualWidth;
             double ActualHeight = Image.ActualHeight;
 
-            if(Mode == 0)
+            if (Mode == 0)
             {
                 // 旋转变换
                 List<Point> intersectionPoints = CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint, angle);
@@ -228,7 +229,7 @@ namespace ColorVision.Draw
                 textAttribute.FontSize = 15 / ZoomboxSub.ContentMatrix.M11;
 
                 FormattedText formattedText = new FormattedText(angle.ToString("F1") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedText, RMouseDownP + new System.Windows.Vector(20, 20));
+                dc.DrawText(formattedText, RMouseDownP + new Vector(20, 20));
 
 
 
@@ -252,7 +253,7 @@ namespace ColorVision.Draw
                 FormattedText formattedText3 = new FormattedText((lenc + 1).ToString("F1"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                 dc.DrawText(formattedText3, RMouseDownP - PointLen);
             }
-            else if (Mode==1)
+            else if (Mode == 1)
             {
 
                 // 旋转变换
@@ -268,20 +269,20 @@ namespace ColorVision.Draw
                 textAttribute.FontSize = 15 / ZoomboxSub.ContentMatrix.M11;
 
                 FormattedText formattedText = new FormattedText(angle.ToString("F1") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedText, RMouseDownP + new System.Windows.Vector(20, 20));
+                dc.DrawText(formattedText, RMouseDownP + new Vector(20, 20));
             }
             else if (Mode == 2)
             {
-                double angle1 = (angle +45) * Math.PI / 180.0;
+                double angle1 = (angle + 45) * Math.PI / 180.0;
                 // 旋转变换
-                List<Point> intersectionPoints = CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint + new Vector(5*ratio* Math.Cos(angle1), 5 * ratio * Math.Sin(angle1)), angle);
+                List<Point> intersectionPoints = CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint + new Vector(5 * ratio * Math.Cos(angle1), 5 * ratio * Math.Sin(angle1)), angle);
 
                 if (intersectionPoints.Count == 4)
                 {
                     dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]); // 水平线,
                     dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
                 }
-                intersectionPoints = CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint - new Vector(5 * ratio * Math.Cos(angle1), 5*ratio * Math.Sin(angle1)), angle);
+                intersectionPoints = CalculateIntersectionPoints(ActualHeight, ActualWidth, CenterPoint - new Vector(5 * ratio * Math.Cos(angle1), 5 * ratio * Math.Sin(angle1)), angle);
                 if (intersectionPoints.Count == 4)
                 {
                     dc.DrawLine(pen, intersectionPoints[0], intersectionPoints[1]); // 水平线,
@@ -295,7 +296,7 @@ namespace ColorVision.Draw
                 textAttribute.FontSize = 15 / ZoomboxSub.ContentMatrix.M11;
 
                 FormattedText formattedText = new FormattedText(angle.ToString("F1") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
-                dc.DrawText(formattedText, RMouseDownP + new System.Windows.Vector(20, 20));
+                dc.DrawText(formattedText, RMouseDownP + new Vector(20, 20));
             }
 
 

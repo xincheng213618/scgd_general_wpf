@@ -7,16 +7,6 @@ using System.Linq;
 namespace ColorVision.MySql
 {
 
-    public class BaseViewDao<T> : BaseDao1 where T : IPKModel
-    {
-        private static readonly ILog log = LogManager.GetLogger(typeof(BaseTableDao<T>));
-
-        public BaseViewDao(string viewName, string pkField, bool isLogicDel) : base(viewName, pkField, isLogicDel)
-        {
-
-        }
-    }
-
     public class BaseDaoMaster<T>: BaseDao1 where T : IPKModel
     {
         public string ViewName { get; set; }
@@ -64,7 +54,8 @@ namespace ColorVision.MySql
         }
         public int UpdateByPid(int pid, List<T> datas)
         {
-            DataTable d_info = GetUpdateTableAllByPid(pid);
+            string sql = $"select * from {TableName} where pid={pid}" + GetDelSQL(true);
+            DataTable d_info = GetData(sql);
             d_info.TableName = TableName;
             //CreateColumns(d_info);
             foreach (var item in datas)
@@ -163,55 +154,6 @@ namespace ColorVision.MySql
             return d_info;
         }
 
-        public virtual DataTable GetTablePidIsNullByTenantId(int tenantId)
-        {
-            string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and ( pid is null or pid=-1)" + GetDelSQL(true);
-            DataTable d_info = GetData(sql);
-            return d_info;
-        }
-
-        public virtual DataTable GetTablePidIsNotNullByTenantId(int tenantId)
-        {
-            string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and pid > 0" + GetDelSQL(true);
-            DataTable d_info = GetData(sql);
-            return d_info;
-        }
-
-        public virtual DataTable GetTableAllByPid(int pid)
-        {
-            string sql = $"select * from {GetTableName()} where pid={pid}" + GetDelSQL(true) + $" order by {PKField}";
-            DataTable d_info = GetData(sql);
-            return d_info;
-        }
-
-        public virtual DataTable GetTableAllByBatchid(int Batchid)
-        {
-            string sql = $"select * from {GetTableName()} where batch_id={Batchid}" + GetDelSQL(true) + $" order by {PKField}";
-            DataTable d_info = GetData(sql);
-            return d_info;
-        }
-
-        public virtual DataTable GetUpdateTableAllByPid(int pid)
-        {
-            string sql = $"select * from {TableName} where pid={pid}" + GetDelSQL(true);
-            DataTable d_info = GetData(sql);
-            return d_info;
-        }
-
-        public DataTable GetTableAllByPcode(string pcode)
-        {
-            string sql = $"select * from {GetTableName()} where pcode='{pcode}'" + GetDelSQL(true);
-            DataTable d_info = GetData(sql);
-            return d_info;
-        }
-
-        public DataTable GetTableAllByType(int type)
-        {
-            string sql = $"select * from {GetTableName()} where type={type}" + GetDelSQL(true);
-            DataTable d_info = GetData(sql);
-            return d_info;
-        }
-
         public List<T> GetAll()  => GetAllByParam(new Dictionary<string, object>());
         public List<T> GetAllByParam(Dictionary<string, object> param)
         {
@@ -294,7 +236,8 @@ namespace ColorVision.MySql
         public List<T> GetPidIsNotNull(int tenantId)
         {
             List<T> list = new List<T>();
-            DataTable d_info = GetTablePidIsNotNullByTenantId(tenantId);
+            string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and pid > 0" + GetDelSQL(true);
+            DataTable d_info = GetData(sql);
             foreach (var item in d_info.AsEnumerable())
             {
                 T? model = GetModelFromDataRow(item);
@@ -309,7 +252,8 @@ namespace ColorVision.MySql
         public List<T> GetPidIsNull(int tenantId)
         {
             List<T> list = new List<T>();
-            DataTable d_info = GetTablePidIsNullByTenantId(tenantId);
+            string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and ( pid is null or pid=-1)" + GetDelSQL(true);
+            DataTable d_info = GetData(sql);
             foreach (var item in d_info.AsEnumerable())
             {
                 T? model = GetModelFromDataRow(item);
@@ -326,7 +270,8 @@ namespace ColorVision.MySql
         public List<T> GetAllByPid(int pid)
         {
             List<T> list = new List<T>();
-            DataTable d_info = GetTableAllByPid(pid);
+            string sql = $"select * from {GetTableName()} where pid={pid}" + GetDelSQL(true) + $" order by {PKField}";
+            DataTable d_info = GetData(sql);
             foreach (var item in d_info.AsEnumerable())
             {
                 T? model = GetModelFromDataRow(item);
@@ -344,7 +289,9 @@ namespace ColorVision.MySql
         public List<T> GetAllByBatchid(int pid)
         {
             List<T> list = new List<T>();
-            DataTable d_info = GetTableAllByBatchid(pid);
+            string sql = $"select * from {GetTableName()} where batch_id={pid}" + GetDelSQL(true) + $" order by {PKField}";
+            DataTable d_info = GetData(sql);
+
             foreach (var item in d_info.AsEnumerable())
             {
                 T? model = GetModelFromDataRow(item);
@@ -406,7 +353,8 @@ namespace ColorVision.MySql
         public List<T> GetAllByPcode(string pcode)
         {
             List<T> list = new List<T>();
-            DataTable d_info = GetTableAllByPcode(pcode);
+            string sql = $"select * from {GetTableName()} where pcode='{pcode}'" + GetDelSQL(true);
+            DataTable d_info = GetData(sql);
             foreach (var item in d_info.AsEnumerable())
             {
                 T? model = GetModelFromDataRow(item);

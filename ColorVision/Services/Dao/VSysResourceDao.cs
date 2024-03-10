@@ -213,7 +213,8 @@ namespace ColorVision.Services.Dao
         internal List<SysResourceModel> GetAllType(int type)
         {
             List<SysResourceModel> list = new List<SysResourceModel>();
-            DataTable d_info = GetTableAllByType(type);
+            string sql = $"select * from {GetTableName()} where type={type}" + GetDelSQL(true);
+            DataTable d_info = GetData(sql);
             foreach (var item in d_info.AsEnumerable())
             {
                 SysResourceModel? model = GetModelFromDataRow(item);
@@ -370,7 +371,8 @@ namespace ColorVision.Services.Dao
         internal List<SysResourceModel> GetAllType(int type)
         {
             List<SysResourceModel> list = new List<SysResourceModel>();
-            DataTable d_info = GetTableAllByType(type);
+            string sql = $"select * from {GetTableName()} where type={type}" + GetDelSQL(true);
+            DataTable d_info = GetData(sql);
             foreach (var item in d_info.AsEnumerable())
             {
                 SysResourceModel? model = GetModelFromDataRow(item);
