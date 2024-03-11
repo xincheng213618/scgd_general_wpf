@@ -20,6 +20,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Services.Templates;
 using ColorVision.Services.Templates.POI;
+using cvColorVision;
+using System.Linq;
 
 namespace ColorVision.Services.Devices.Camera.Views
 {
@@ -83,6 +85,10 @@ namespace ColorVision.Services.Devices.Camera.Views
             if (listView1.View is GridView gridView)
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
             GridViewColumnVisibilityListView.ItemsSource = GridViewColumnVisibilitys;
+
+
+            ComboBoxLayers.ItemsSource  =from e1 in Enum.GetValues(typeof(ImageLayer)).Cast<ImageLayer>()
+                                         select new KeyValuePair<string, ImageLayer>(e1.ToString(), e1);
         }
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
@@ -258,53 +264,6 @@ namespace ColorVision.Services.Devices.Camera.Views
             OrderPopup.IsOpen = false;
         }
 
-        private void Src_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.SRC);
-        }
-
-        private void X_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_X);
-        }
-
-        private void Z_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Z);
-        }
-        private void Y_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Y);
-
-        }
-        private void B_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_B);
-        }
-
-        private void R_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_R);
-        }
-
-        private void G_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            var msgRecord = DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_G);
-        }
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
@@ -348,7 +307,55 @@ namespace ColorVision.Services.Devices.Camera.Views
 
         private void POI_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxPOITemplate.SelectedValue is PoiParam poiParams)
+        }
+
+        private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+           if (sender is ComboBox comboBox && comboBox.SelectedValue is ImageLayer imageLayer)
+            {
+                if (listView1.SelectedIndex > -1)
+                {
+                    var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+                    switch (imageLayer)
+                    {
+                        case ImageLayer.Src:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.SRC);
+                            break;
+                        case ImageLayer.R:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_R);
+                            break;
+                        case ImageLayer.G:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_G);
+                            break;
+                        case ImageLayer.B:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_B);
+                            break;
+                        case ImageLayer.X:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_X);
+                            break;
+                        case ImageLayer.Y:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Y);
+                            break;
+                        case ImageLayer.Z:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Z);
+                            break;
+                        default:
+                            break;
+                    }
+
+                }
+                else
+                {
+                    MessageBox.Show("请先选择您要切换的图像");
+                }
+
+            }
+
+        }
+
+        private void ComboxPOITemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ComboBox comboBox && comboBox.SelectedValue is PoiParam poiParams)
             {
                 if (poiParams.Id == -1)
                 {
@@ -385,8 +392,9 @@ namespace ColorVision.Services.Devices.Camera.Views
                         case RiPointTypes.Mask:
                             break;
                     }
-               }
+                }
             }
+
         }
     }
 }

@@ -9,6 +9,18 @@ namespace ColorVision.Services.Devices.Camera.Views
 {
     public delegate void ImgCurSelectionChanged(ViewResultCamera data);
 
+
+    public enum ImageLayer
+    {
+        Src,
+        R,
+        G,
+        B,
+        X,
+        Y,
+        Z
+    }
+
     public class ViewResultCamera : ViewModelBase,ISortID,ISortBatch, ISortCreateTime, ISortFilePath
     {
         public ViewResultCamera(MeasureImgResultModel measureImgResultModel)
