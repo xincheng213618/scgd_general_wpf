@@ -27,9 +27,9 @@ namespace ColorVision.Draw
 
         private DrawCanvas Image { get; set; }
 
-        private MouseMagnifier MouseMagnifier { get; set; }
+        public MouseMagnifier MouseMagnifier { get; set; }
 
-        private Crosshair Crosshair { get; set; }
+        public Crosshair Crosshair { get; set; }
 
         private ToolBarMeasure ToolBarMeasure { get; set; }
 

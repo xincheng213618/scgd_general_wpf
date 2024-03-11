@@ -6,13 +6,14 @@ using System.Windows.Media;
 using System.Windows.Input;
 using ColorVision.Common.Extension;
 using Microsoft.VisualBasic.Devices;
+using ColorVision.Util.Draw.Special;
 
 namespace ColorVision.Draw.Special
 {
     public class Crosshair
     {
         private ZoomboxSub ZoomboxSub { get; set; }
-        private DrawCanvas Image { get; set; }
+        private DrawCanvas DrawCanvas { get; set; }
 
         public DrawingVisual DrawVisualImage { get; set; }
 
@@ -21,7 +22,7 @@ namespace ColorVision.Draw.Special
         public Crosshair(ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
-            Image = drawCanvas;
+            this.DrawCanvas = drawCanvas;
             DrawVisualImage = new DrawingVisual();
             DrawingVisualImage1 = new DrawingVisual();
         }
@@ -35,39 +36,25 @@ namespace ColorVision.Draw.Special
                 DrawVisualImageControl(_IsShow);
                 if (value)
                 {
-                    Image.MouseMove += MouseMove;
-                    Image.MouseEnter += MouseEnter;
-                    Image.MouseLeave += MouseLeave;
+                    DrawCanvas.MouseMove += MouseMove;
+                    DrawCanvas.MouseEnter += MouseEnter;
+                    DrawCanvas.MouseLeave += MouseLeave;
                 }
                 else
                 {
-                    Image.MouseMove -= MouseMove;
-                    Image.MouseEnter -= MouseEnter;
-                    Image.MouseLeave -= MouseLeave;
+                    DrawCanvas.MouseMove -= MouseMove;
+                    DrawCanvas.MouseEnter -= MouseEnter;
+                    DrawCanvas.MouseLeave -= MouseLeave;
                 }
             }
         }
         private bool _IsShow;
 
-        public class ImageInfo
+        public void DrawImage(Point actPoint)
         {
-            public int X { get; set; }
-            public int Y { get; set; }
-            public double X1 { get; set; }
-            public double Y1 { get; set; }
-            public int R { get; set; }
-            public int G { get; set; }
-            public int B { get; set; }
-            public string Hex { get; set; }
-            public SolidColorBrush Color { get; set; }
-        }
-
-        public void DrawImage(DrawCanvas drawCanvas,Point actPoint, Point disPoint, ImageInfo imageInfo)
-        {
-            if (Image.Source is BitmapSource bitmapImage)
+            if (DrawCanvas.Source is BitmapSource bitmapImage)
             {
                 using DrawingContext dc = DrawVisualImage.RenderOpen();
-
                 double mouseX = actPoint.X; // 示例坐标
                 double mouseY = actPoint.Y; // 示例坐标
                 double length = 1 / ZoomboxSub.ContentMatrix.M11;
@@ -89,21 +76,22 @@ namespace ColorVision.Draw.Special
 
                 // 绘制X轴虚线
                 dc.DrawLine(dashedPen1, new Point(0, mouseY), new Point(mouseX - radius, mouseY)); // 左边
-                dc.DrawLine(dashedPen1, new Point(mouseX + radius, mouseY), new Point(drawCanvas.ActualWidth, mouseY));
+                dc.DrawLine(dashedPen1, new Point(mouseX + radius, mouseY), new Point(DrawCanvas.ActualWidth, mouseY));
 
 
                 dc.DrawLine(dashedPen, new Point(0, mouseY), new Point(mouseX - radius, mouseY)); // 左边
-                dc.DrawLine(dashedPen, new Point(mouseX + radius, mouseY), new Point(drawCanvas.ActualWidth, mouseY));
+                dc.DrawLine(dashedPen, new Point(mouseX + radius, mouseY), new Point(DrawCanvas.ActualWidth, mouseY));
 
                 // 绘制Y轴虚线
                 dc.DrawLine(dashedPen1, new Point(mouseX, 0), new Point(mouseX, mouseY - radius)); // 上边
-                dc.DrawLine(dashedPen1, new Point(mouseX, mouseY + radius), new Point(mouseX, drawCanvas.ActualHeight));
+                dc.DrawLine(dashedPen1, new Point(mouseX, mouseY + radius), new Point(mouseX, DrawCanvas.ActualHeight));
 
                 dc.DrawLine(dashedPen, new Point(mouseX, 0), new Point(mouseX, mouseY - radius)); // 上边
-                dc.DrawLine(dashedPen, new Point(mouseX, mouseY + radius), new Point(mouseX, drawCanvas.ActualHeight));
+                dc.DrawLine(dashedPen, new Point(mouseX, mouseY + radius), new Point(mouseX, DrawCanvas.ActualHeight));
             }
         }
 
+        public double Ratio { get; set;}
 
         public void MouseMove(object sender, MouseEventArgs e)
         {
@@ -119,6 +107,8 @@ namespace ColorVision.Draw.Special
                 int imageHeight = bitmap.PixelHeight;
                 var actPoint = new Point(point.X, point.Y);
 
+                Ratio = 1 / controlWidth * imageWidth;
+
                 point.X = point.X / controlWidth * imageWidth;
                 point.Y = point.Y / controlHeight * imageHeight;
 
@@ -127,19 +117,7 @@ namespace ColorVision.Draw.Special
                 if (point.X.ToInt32() >= 0 && point.X.ToInt32() < bitmap.PixelWidth && point.Y.ToInt32() >= 0 && point.Y.ToInt32() < bitmap.PixelHeight)
                 {
                     var color = bitmap.GetPixelColor(point.X.ToInt32(), point.Y.ToInt32());
-                    DrawImage( drawCanvas, actPoint, bitPoint, new ImageInfo
-                    {
-                        X = point.X.ToInt32(),
-                        Y = point.Y.ToInt32(),
-                        X1 = point.X,
-                        Y1 = point.Y,
-
-                        R = color.R,
-                        G = color.G,
-                        B = color.B,
-                        Color = new SolidColorBrush(color),
-                        Hex = color.ToHex()
-                    });
+                    DrawImage(actPoint);
                 }
             }
 
@@ -150,19 +128,19 @@ namespace ColorVision.Draw.Special
 
         public void MouseEnter(object sender, MouseEventArgs e) => DrawVisualImageControl(true);
 
-        public void MouseLeave(object sender, MouseEventArgs e) => DrawVisualImageControl(false);
+        public void MouseLeave(object sender, MouseEventArgs e) => DrawVisualImageControl(true);
 
         public void DrawVisualImageControl(bool Control)
         {
             if (Control)
             {
-                if (!Image.ContainsVisual(DrawVisualImage))
-                    Image.AddVisual(DrawVisualImage);
+                if (!DrawCanvas.ContainsVisual(DrawVisualImage))
+                    DrawCanvas.AddVisual(DrawVisualImage);
             }
             else
             {
-                if (Image.ContainsVisual(DrawVisualImage))
-                    Image.RemoveVisual(DrawVisualImage);
+                if (DrawCanvas.ContainsVisual(DrawVisualImage))
+                    DrawCanvas.RemoveVisual(DrawVisualImage);
             }
         }
     }

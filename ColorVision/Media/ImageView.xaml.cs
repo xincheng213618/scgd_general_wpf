@@ -3,6 +3,7 @@ using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
 using ColorVision.MVVM;
 using ColorVision.Net;
+using ColorVision.Util.Draw.Special;
 using log4net;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
@@ -873,6 +874,17 @@ namespace ColorVision.Media
         {
             WindowCIE windowCIE = new WindowCIE();
             windowCIE.Owner = Window.GetWindow(this);
+
+            MouseMoveColorHandler mouseMoveColorHandler = (s, e) =>
+            {
+                windowCIE.ChangeSelect(e);
+            };
+
+            ToolBarTop.MouseMagnifier.MouseMoveColorHandler += mouseMoveColorHandler;
+            windowCIE.Closed += (s, e) =>
+            {
+                ToolBarTop.MouseMagnifier.MouseMoveColorHandler -= mouseMoveColorHandler;
+            };
             windowCIE.Show();
         }
     }

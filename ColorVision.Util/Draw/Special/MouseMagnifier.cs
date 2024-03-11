@@ -10,6 +10,22 @@ using ColorVision.Draw;
 
 namespace ColorVision.Util.Draw.Special
 {
+    public class ImageInfo
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+        public double X1 { get; set; }
+        public double Y1 { get; set; }
+        public int R { get; set; }
+        public int G { get; set; }
+        public int B { get; set; }
+        public string Hex { get; set; }
+        public SolidColorBrush Color { get; set; }
+    }
+
+    public delegate void MouseMoveColorHandler(object sender, ImageInfo imageInfo);
+
+
     public class MouseMagnifier
     {
         private ZoomboxSub ZoomboxSub { get; set; }
@@ -19,6 +35,7 @@ namespace ColorVision.Util.Draw.Special
 
         public DrawingVisual DrawingVisualImage1 { get; set; }
 
+        public event MouseMoveColorHandler MouseMoveColorHandler;
         public MouseMagnifier(ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
@@ -50,18 +67,6 @@ namespace ColorVision.Util.Draw.Special
         }
         private bool _IsShow;
 
-        public class ImageInfo
-        {
-            public int X { get; set; }
-            public int Y { get; set; }
-            public double X1 { get; set; }
-            public double Y1 { get; set; }
-            public int R { get; set; }
-            public int G { get; set; }
-            public int B { get; set; }
-            public string Hex { get; set; }
-            public SolidColorBrush Color { get; set; }
-        }
 
         public void DrawImage(Point actPoint, Point disPoint, ImageInfo imageInfo)
         {
@@ -121,7 +126,6 @@ namespace ColorVision.Util.Draw.Special
             }
         }
 
-
         public void MouseMove(object sender, MouseEventArgs e)
         {
             if (IsShow && sender is DrawCanvas drawCanvas && drawCanvas.Source is BitmapSource bitmap)
@@ -144,7 +148,7 @@ namespace ColorVision.Util.Draw.Special
                 if (point.X.ToInt32() >= 0 && point.X.ToInt32() < bitmap.PixelWidth && point.Y.ToInt32() >= 0 && point.Y.ToInt32() < bitmap.PixelHeight)
                 {
                     var color = bitmap.GetPixelColor(point.X.ToInt32(), point.Y.ToInt32());
-                    DrawImage(actPoint, bitPoint, new ImageInfo
+                    ImageInfo imageInfo = new ImageInfo
                     {
                         X = point.X.ToInt32(),
                         Y = point.Y.ToInt32(),
@@ -156,7 +160,9 @@ namespace ColorVision.Util.Draw.Special
                         B = color.B,
                         Color = new SolidColorBrush(color),
                         Hex = color.ToHex()
-                    });
+                    };
+                    MouseMoveColorHandler?.Invoke(this, imageInfo);
+                    DrawImage(actPoint, bitPoint, imageInfo);
                 }
             }
 
