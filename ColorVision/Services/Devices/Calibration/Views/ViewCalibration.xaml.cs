@@ -166,7 +166,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
             foreach (var item in algResults)
             {
                 ViewResultCalibration CameraImgResult = new ViewResultCalibration(item);
-                ViewResultCameras.Add(CameraImgResult);
+                ViewResultCameras.AddUnique(CameraImgResult);
             }
         }
 
@@ -178,7 +178,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
                 foreach (var item in MeasureImgResultDao.GetAll())
                 {
                     ViewResultCalibration algorithmResult = new ViewResultCalibration(item);
-                    ViewResultCameras.Add(algorithmResult);
+                    ViewResultCameras.AddUnique(algorithmResult);
                 }
                 return;
             }
@@ -189,7 +189,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
                 foreach (var item in algResults)
                 {
                     ViewResultCalibration algorithmResult = new ViewResultCalibration(item);
-                    ViewResultCameras.Add(algorithmResult);
+                    ViewResultCameras.AddUnique(algorithmResult);
                 }
 
             }
