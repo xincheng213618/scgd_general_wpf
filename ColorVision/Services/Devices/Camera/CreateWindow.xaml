@@ -9,7 +9,7 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:TerminalCamera}"
-        Title="创建设备" Height="600" Width="400" Initialized="Window_Initialized">
+        Title="创建设备" Height="400" Width="400" Initialized="Window_Initialized">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -382,7 +382,7 @@
 
         </ScrollViewer>
         <Grid Grid.Row="2">
-            <Button Content="创建" Command="{Binding CreateCommand}"/>
+            <Button  Content="{x:Static resx:Resource.Submit}" Height="30" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding CreateCommand}" />
         </Grid>
 
     </Grid>

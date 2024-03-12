@@ -1,12 +1,27 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Device.PG;
+using ColorVision.MVVM;
 using ColorVision.RC;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices;
+using ColorVision.Services.Devices.Algorithm;
+using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Devices.Camera;
+using ColorVision.Services.Devices.Camera.Configs;
+using ColorVision.Services.Devices.CfwPort;
+using ColorVision.Services.Devices.FileServer;
+using ColorVision.Services.Devices.Motor;
+using ColorVision.Services.Devices.Sensor;
+using ColorVision.Services.Devices.SMU.Configs;
+using ColorVision.Services.Devices.SMU;
+using ColorVision.Services.Devices.Spectrum.Configs;
+using ColorVision.Services.Devices.Spectrum;
 using ColorVision.Services.Type;
+using ColorVision.Settings;
 using ColorVision.Themes;
+using cvColorVision;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
@@ -49,10 +64,6 @@ namespace ColorVision.Services.Terminal
         public RelayCommand OpenCreateWindowCommand { get; set; }
         public RelayCommand CreateCommand { get; set; }
 
-        public virtual void Create()
-        {
-            MessageBox.Show("Create");
-        }
 
         public TerminalService(SysResourceModel sysResourceModel) : base()
         {
@@ -79,7 +90,7 @@ namespace ColorVision.Services.Terminal
             Config.SendTopic = SysResourceModel.TypeCode + "/CMD/" + SysResourceModel.Code;
 
             CreateCommand = new RelayCommand(a => Create());
-
+            OpenCreateWindowCommand = new RelayCommand(a => OpenCreateWindow());
             switch (ServiceType)
             {
                 case ServiceTypes.camera:
@@ -150,6 +161,213 @@ namespace ColorVision.Services.Terminal
             };
             ContextMenu.Items.Add(menuItem);
         }
+        public string CreatCode { get => _CreatCode; set { _CreatCode = value; NotifyPropertyChanged(); } }
+        private string _CreatCode;
+        public string CreatName { get => _CreatName; set { _CreatName = value; NotifyPropertyChanged(); } }
+        private string _CreatName;
+
+        public virtual void OpenCreateWindow()
+        {
+
+        }
+
+        public virtual void Create()
+        {
+
+            SysDeviceModel? saveDevConfigInfo(DeviceServiceConfig deviceConfig, SysResourceModel sysResource)
+            {
+                deviceConfig.Name = CreatName;
+                deviceConfig.Code = CreatCode;
+
+                deviceConfig.SendTopic = Config.SendTopic;
+                deviceConfig.SubscribeTopic = Config.SubscribeTopic;
+                sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
+                ServiceManager.GetInstance().VSysResourceDao.Save(sysResource);
+                int pkId = sysResource.PKId;
+                if (pkId > 0 && ServiceManager.GetInstance().VSysDeviceDao.GetById(pkId) is SysDeviceModel model) return model;
+                else return null;
+            }
+
+
+            if (!ServicesHelper.IsInvalidPath(CreatName, "资源名称") || !ServicesHelper.IsInvalidPath(CreatCode, "资源标识"))
+                return;
+
+            if (ServicesCodes.Contains(CreatCode))
+            {
+                MessageBox.Show("设备标识已存在,不允许重复添加");
+                return;
+            }
+
+            SysResourceModel sysResource = new SysResourceModel(CreatName, CreatCode, SysResourceModel.Type, SysResourceModel.Id, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            SysDeviceModel sysDevModel = null;
+            DeviceServiceConfig deviceConfig;
+            int fromPort;
+            switch (Type)
+            {
+                case ServiceTypes.camera:
+                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6800);
+                    ConfigCamera cameraConfig1 = new ConfigCamera
+                    {
+                        Id = CreatCode,
+                        Name = CreatName,
+                        CameraType = CameraType.LV_Q,
+                        TakeImageMode = TakeImageMode.Measure_Normal,
+                        ImageBpp = ImageBpp.bpp8,
+                        Channel = ImageChannel.One,
+                        FileServerCfg = new FileServerCfg()
+                        {
+                            Endpoint = "127.0.0.1",
+                            PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
+                            DataBasePath = "D:\\CVTest",
+                        },
+                        VideoConfig = new Devices.Camera.Video.CameraVideoConfig()
+                        {
+                            Host = "127.0.0.1",
+                            Port = (Math.Abs(new Random().Next()) % 99 + 9000),
+                        }
+                    };
+
+                    sysDevModel = saveDevConfigInfo(cameraConfig1, sysResource);
+                    if (sysDevModel != null)
+                    {
+                        if (MQTTServiceTerminalBase is MQTTTerminalCamera cameraService)
+                        {
+                            AddChild(new DeviceCamera(sysDevModel, cameraService));
+                        }
+                    }
+                    break;
+                case ServiceTypes.pg:
+                    ConfigPG pGConfig = new ConfigPG
+                    {
+                        Id = CreatCode,
+                        Name = CreatName,
+                    };
+                    sysDevModel = saveDevConfigInfo(pGConfig, sysResource);
+                    if (sysDevModel != null)
+                        AddChild(new DevicePG(sysDevModel));
+                    break;
+                case ServiceTypes.Spectrum:
+                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6700);
+                    deviceConfig = new ConfigSpectrum
+                    {
+                        Id = CreatCode,
+                        Name = CreatName,
+                        ShutterCfg = new ShutterConfig()
+                        {
+                            Addr = "COM1",
+                            BaudRate = 115200,
+                            DelayTime = 1000,
+                            OpenCmd = "a",
+                            CloseCmd = "b"
+                        },
+                        FileServerCfg = new FileServerCfg()
+                        {
+                            Endpoint = "127.0.0.1",
+                            PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
+                            DataBasePath = "D:\\CVTest",
+                        }
+                    };
+                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                    if (sysDevModel != null)
+                        AddChild(new DeviceSpectrum(sysDevModel));
+                    break;
+                case ServiceTypes.SMU:
+                    deviceConfig = new ConfigSMU
+                    {
+                        Id = CreatCode,
+                        Name = CreatName,
+                    };
+                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                    if (sysDevModel != null)
+                        AddChild(new DeviceSMU(sysDevModel));
+                    break;
+                case ServiceTypes.Sensor:
+                    deviceConfig = new ConfigSensor
+                    {
+                        Id = CreatCode,
+                        Name = CreatName,
+                    };
+                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                    if (sysDevModel != null)
+                        AddChild(new DeviceSensor(sysDevModel));
+                    break;
+                case ServiceTypes.FileServer:
+                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6500);
+                    deviceConfig = new FileServerConfig
+                    {
+                        Id = CreatCode,
+                        Name = CreatName,
+                        Endpoint = "127.0.0.1",
+                        PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
+                        FileBasePath = "D:\\CVTest",
+                    };
+                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                    if (sysDevModel != null)
+                        AddChild(new DeviceFileServer(sysDevModel));
+                    break;
+                case ServiceTypes.Algorithm:
+                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6600);
+                    deviceConfig = new ConfigAlgorithm
+                    {
+                        Id = CreatCode,
+                        Name = CreatName,
+                        FileServerCfg = new FileServerCfg()
+                        {
+                            Endpoint = "127.0.0.1",
+                            PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
+                            DataBasePath = "D:\\CVTest",
+                        }
+                    };
+                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                    if (sysDevModel != null)
+                        AddChild(new DeviceAlgorithm(sysDevModel));
+                    break;
+                case ServiceTypes.CfwPort:
+                    deviceConfig = new ConfigCfwPort
+                    {
+                        Id = CreatCode,
+                        Name = CreatName,
+                    };
+                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                    if (sysDevModel != null)
+                        AddChild(new DeviceCfwPort(sysDevModel));
+                    break;
+                case ServiceTypes.Calibration:
+                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6200);
+                    deviceConfig = new ConfigCalibration
+                    {
+                        Id = CreatCode,
+                        Name = CreatName,
+                        FileServerCfg = new FileServerCfg()
+                        {
+                            Endpoint = "127.0.0.1",
+                            PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
+                            DataBasePath = "D:\\CVTest",
+                        }
+                    };
+                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                    if (sysDevModel != null)
+                        AddChild(new DeviceCalibration(sysDevModel));
+                    break;
+                case ServiceTypes.Motor:
+                    deviceConfig = new ConfigMotor
+                    {
+                        Id = CreatCode,
+                        Name = CreatName,
+                    };
+                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                    if (sysDevModel != null)
+                        AddChild(new DeviceMotor(sysDevModel));
+                    break;
+                default:
+                    break;
+            };
+
+            if (sysDevModel != null && sysDevModel.TypeCode != null && sysDevModel.PCode != null && sysDevModel.Code != null)
+                RC.MQTTRCService.GetInstance().RestartServices(sysDevModel.TypeCode, sysDevModel.PCode, sysDevModel.Code);
+            MessageBox.Show("添加资源成功");
+        }
+
 
         public override void Delete()
         {

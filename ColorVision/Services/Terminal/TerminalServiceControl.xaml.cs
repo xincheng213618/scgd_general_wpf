@@ -31,7 +31,6 @@ namespace ColorVision.Services.Terminal
     public partial class TerminalServiceControl : UserControl
     {
         public TerminalService ServiceTerminal { get; set; }  
-        public ServiceManager ServiceControl { get; set; }
 
         public TerminalServiceControl(TerminalService mQTTService)
         {
@@ -41,7 +40,6 @@ namespace ColorVision.Services.Terminal
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ServiceControl = ServiceManager.GetInstance();
             this.DataContext = ServiceTerminal;
 
             if (ServiceTerminal.VisualChildren.Count == 0)
@@ -60,199 +58,11 @@ namespace ColorVision.Services.Terminal
                 }
             };
         }
-        private SysDeviceModel? saveDevConfigInfo(DeviceServiceConfig deviceConfig, SysResourceModel sysResource)
-        {
-            deviceConfig.Name = TextBox_Name.Text;
-            deviceConfig.Code = TextBox_Code.Text;
 
-            deviceConfig.SendTopic = ServiceTerminal.Config.SendTopic;
-            deviceConfig.SubscribeTopic = ServiceTerminal.Config.SubscribeTopic;
-            sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
-            ServiceControl.VSysResourceDao.Save(sysResource);
-            int pkId = sysResource.PKId;
-            if (pkId > 0 && ServiceControl.VSysDeviceDao.GetById(pkId) is SysDeviceModel model) return model;
-            else return null;
-        }
+
 
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
-            if (!ServicesHelper.IsInvalidPath(TextBox_Name.Text, "资源名称") || !ServicesHelper.IsInvalidPath(TextBox_Code.Text, "资源标识"))
-                return;
-
-            if (ServiceTerminal.ServicesCodes.Contains(TextBox_Code.Text))
-            {
-                MessageBox.Show("设备标识已存在,不允许重复添加");
-                return;
-            }
-
-            SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, ServiceTerminal.SysResourceModel.Type, ServiceTerminal.SysResourceModel.Id, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            SysDeviceModel sysDevModel = null;
-            DeviceServiceConfig deviceConfig;
-            int fromPort;
-            switch (ServiceTerminal.Type)
-            {
-                case ServiceTypes.camera:
-                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6800);
-                    ConfigCamera cameraConfig1 = new ConfigCamera
-                    {
-                        Id = TextBox_Code.Text,
-                        Name = TextBox_Name.Text,
-                        CameraType = CameraType.LV_Q,
-                        TakeImageMode = TakeImageMode.Measure_Normal,
-                        ImageBpp = ImageBpp.bpp8,
-                        Channel = ImageChannel.One,
-                        FileServerCfg = new FileServerCfg()
-                        {
-                            Endpoint = "127.0.0.1",
-                            PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
-                            DataBasePath = "D:\\CVTest",
-                        },
-                        VideoConfig = new Devices.Camera.Video.CameraVideoConfig()
-                        {
-                            Host = "127.0.0.1",
-                            Port = (Math.Abs(new Random().Next()) % 99 + 9000),
-                        }
-                    };
-
-                    sysDevModel = saveDevConfigInfo(cameraConfig1, sysResource);
-                    if (sysDevModel != null)
-                    {
-                        if (ServiceTerminal.MQTTServiceTerminalBase is MQTTTerminalCamera cameraService)
-                        {
-                            ServiceTerminal.AddChild(new DeviceCamera(sysDevModel, cameraService));
-                        }
-                    }
-                    break;
-                case ServiceTypes.pg:
-                    ConfigPG pGConfig = new ConfigPG
-                    {
-                        Id = TextBox_Code.Text,
-                        Name = TextBox_Name.Text
-                    };
-                    sysDevModel = saveDevConfigInfo(pGConfig, sysResource);
-                    if (sysDevModel != null)
-                        ServiceTerminal.AddChild(new DevicePG(sysDevModel));
-                    break;
-                case ServiceTypes.Spectrum:
-                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6700);
-                    deviceConfig = new ConfigSpectrum
-                    {
-                        Id = TextBox_Code.Text,
-                        Name = TextBox_Name.Text,
-                        ShutterCfg = new ShutterConfig()
-                        {
-                            Addr = "COM1",
-                            BaudRate = 115200,
-                            DelayTime = 1000,
-                            OpenCmd = "a",
-                            CloseCmd = "b"
-                        },
-                        FileServerCfg = new FileServerCfg()
-                        {
-                            Endpoint = "127.0.0.1",
-                            PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
-                            DataBasePath = "D:\\CVTest",
-                        }
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                        ServiceTerminal.AddChild(new DeviceSpectrum(sysDevModel));
-                    break;
-                case ServiceTypes.SMU:
-                    deviceConfig = new ConfigSMU
-                    {
-                        Id = TextBox_Code.Text,
-                        Name = TextBox_Name.Text
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                        ServiceTerminal.AddChild(new DeviceSMU(sysDevModel));
-                    break;
-                case ServiceTypes.Sensor:
-                    deviceConfig = new ConfigSensor
-                    {
-                        Id = TextBox_Code.Text,
-                        Name = TextBox_Name.Text
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                        ServiceTerminal.AddChild(new DeviceSensor(sysDevModel));
-                    break;
-                case ServiceTypes.FileServer:
-                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6500);
-                    deviceConfig = new FileServerConfig
-                    {
-                        Id = TextBox_Code.Text,
-                        Name = TextBox_Name.Text,
-                        Endpoint = "127.0.0.1",
-                        PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
-                        FileBasePath = "D:\\CVTest",
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                        ServiceTerminal.AddChild(new DeviceFileServer(sysDevModel));
-                    break;
-                case ServiceTypes.Algorithm:
-                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6600);
-                    deviceConfig = new ConfigAlgorithm
-                    {
-                        Id = TextBox_Code.Text,
-                        Name = TextBox_Name.Text,
-                        FileServerCfg = new FileServerCfg()
-                        {
-                            Endpoint = "127.0.0.1",
-                            PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
-                            DataBasePath = "D:\\CVTest",
-                        }
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                        ServiceTerminal.AddChild(new DeviceAlgorithm(sysDevModel));
-                    break;
-                case ServiceTypes.CfwPort:
-                    deviceConfig = new ConfigCfwPort
-                    {
-                        Id = TextBox_Code.Text,
-                        Name = TextBox_Name.Text,
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                        ServiceTerminal.AddChild(new DeviceCfwPort(sysDevModel));
-                    break;
-                case ServiceTypes.Calibration:
-                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6200);
-                    deviceConfig = new ConfigCalibration
-                    {
-                        Id = TextBox_Code.Text,
-                        Name = TextBox_Name.Text,
-                        FileServerCfg = new FileServerCfg()
-                        {
-                            Endpoint = "127.0.0.1",
-                            PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
-                            DataBasePath = "D:\\CVTest",
-                        }
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                        ServiceTerminal.AddChild(new DeviceCalibration(sysDevModel));
-                    break;
-                case ServiceTypes.Motor:
-                    deviceConfig = new ConfigMotor
-                    {
-                        Id = TextBox_Code.Text,
-                        Name = TextBox_Name.Text,
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                        ServiceTerminal.AddChild(new DeviceMotor(sysDevModel));
-                    break;
-                default:
-                    break;
-            };
-
-            if (sysDevModel != null && sysDevModel.TypeCode != null && sysDevModel.PCode != null && sysDevModel.Code != null) 
-                RC.MQTTRCService.GetInstance().RestartServices(sysDevModel.TypeCode, sysDevModel.PCode, sysDevModel.Code);
-            MessageBox.Show("添加资源成功");
             MQTTCreate.Visibility = Visibility.Collapsed;
         }
 

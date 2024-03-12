@@ -17,10 +17,7 @@ namespace ColorVision.Services.Devices.Camera
             OpenCreateWindowCommand = new RelayCommand((s) => OpenCreateWindow());
         }
 
-        public string CreatCode { get => _CreatCode; set { _CreatCode = value; NotifyPropertyChanged(); } }
-        private string _CreatCode;
-        public string CreatName { get => _CreatName; set { _CreatName = value; NotifyPropertyChanged(); } }
-        private string _CreatName;
+
         
         public ConfigCamera CreateConfig { get; set; }
 
