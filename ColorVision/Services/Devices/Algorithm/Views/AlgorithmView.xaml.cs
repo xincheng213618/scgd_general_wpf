@@ -771,27 +771,32 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
         private void ButtonChart_Click(object sender, RoutedEventArgs e)
         {
-            if (listView1.Items[listView1.SelectedIndex] is AlgorithmResult result)
+            if (listView1.SelectedIndex > -1)
             {
-                if (result.ResultType == AlgorithmResultType.POI_XY_UV)
+                if (listView1.Items[listView1.SelectedIndex] is AlgorithmResult result)
                 {
-                    if(result.PoiResultCIExyuvDatas.Count != 0)
+                    if (result.ResultType == AlgorithmResultType.POI_XY_UV)
                     {
-                        WindowChart windowChart = new WindowChart(result.PoiResultCIExyuvDatas);
-                        windowChart.Show();
+                        if (result.PoiResultCIExyuvDatas.Count != 0)
+                        {
+                            WindowChart windowChart = new WindowChart(result.PoiResultCIExyuvDatas);
+                            windowChart.Show();
+                        }
+                        else
+                        {
+                            MessageBox.Show("结果为空");
+                        }
                     }
                     else
                     {
-                        MessageBox.Show("结果为空");
+                        MessageBox.Show("暂不支持其他");
                     }
                 }
-                else
-                {
-                    MessageBox.Show("暂不支持其他");
-                }
+            }
+            else
+            {
+                MessageBox.Show("没有选择条目");
             }
         }
-
-     
     }
 }

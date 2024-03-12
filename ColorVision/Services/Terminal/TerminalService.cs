@@ -63,7 +63,7 @@ namespace ColorVision.Services.Terminal
         public RelayCommand RefreshCommand { get; set; }
         public RelayCommand OpenCreateWindowCommand { get; set; }
         public RelayCommand CreateCommand { get; set; }
-
+        public EventHandler CreateDeviceOver { get; set; }
 
         public TerminalService(SysResourceModel sysResourceModel) : base()
         {
@@ -205,36 +205,8 @@ namespace ColorVision.Services.Terminal
             switch (Type)
             {
                 case ServiceTypes.camera:
-                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6800);
-                    ConfigCamera cameraConfig1 = new ConfigCamera
-                    {
-                        Id = CreatCode,
-                        Name = CreatName,
-                        CameraType = CameraType.LV_Q,
-                        TakeImageMode = TakeImageMode.Measure_Normal,
-                        ImageBpp = ImageBpp.bpp8,
-                        Channel = ImageChannel.One,
-                        FileServerCfg = new FileServerCfg()
-                        {
-                            Endpoint = "127.0.0.1",
-                            PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
-                            DataBasePath = "D:\\CVTest",
-                        },
-                        VideoConfig = new Devices.Camera.Video.CameraVideoConfig()
-                        {
-                            Host = "127.0.0.1",
-                            Port = (Math.Abs(new Random().Next()) % 99 + 9000),
-                        }
-                    };
-
-                    sysDevModel = saveDevConfigInfo(cameraConfig1, sysResource);
-                    if (sysDevModel != null)
-                    {
-                        if (MQTTServiceTerminalBase is MQTTTerminalCamera cameraService)
-                        {
-                            AddChild(new DeviceCamera(sysDevModel, cameraService));
-                        }
-                    }
+                    //在拆干净之前先放在这里
+                    TerminalCamera terminalCamera = new TerminalCamera(sysResource);
                     break;
                 case ServiceTypes.pg:
                     ConfigPG pGConfig = new ConfigPG
