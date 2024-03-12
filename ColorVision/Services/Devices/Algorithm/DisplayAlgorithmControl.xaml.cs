@@ -121,6 +121,7 @@ namespace ColorVision.Services.Devices.Algorithm
                 case FileExtType.Raw:
                     Application.Current.Dispatcher.Invoke(() =>
                     {
+                        data.Files.Reverse();
                         CB_RawImageFiles.ItemsSource = data.Files;
                         CB_RawImageFiles.SelectedIndex = 0;
                     });
@@ -130,6 +131,7 @@ namespace ColorVision.Services.Devices.Algorithm
                 case FileExtType.CIE:
                     Application.Current.Dispatcher.Invoke(() =>
                     {
+                        data.Files.Reverse();
                         CB_CIEImageFiles.ItemsSource = data.Files;
                         CB_CIEImageFiles.SelectedIndex = 0;
                     });

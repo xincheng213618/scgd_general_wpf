@@ -115,6 +115,7 @@ namespace ColorVision.Services.Devices.Calibration
                 case FileExtType.Raw:
                     Application.Current.Dispatcher.Invoke(() =>
                     {
+                        data.Files.Reverse();
                         CB_RawImageFiles.ItemsSource = data.Files;
                         CB_RawImageFiles.SelectedIndex = 0;
                     });

@@ -152,6 +152,9 @@ namespace ColorVision.Services.Devices.Calibration.Templates
 
     public class CalibrationParam : ParamBase
     {
+
+        public string Cache { get; set; }
+
         public string CalibrationMode { get { return GetValue(_CalibrationMode); } set { SetProperty(ref _CalibrationMode, value); } }
         private string _CalibrationMode;
 
