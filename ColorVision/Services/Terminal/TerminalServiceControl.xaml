@@ -115,7 +115,7 @@
                 </Grid>
 
             </Grid>
-            <GroupBox x:Name="MQTTCreate" Header="配置设备" Grid.Row="2" Visibility="Visible">
+            <GroupBox x:Name="MQTTCreate" Header="配置设备" Grid.Row="2" Visibility="Collapsed">
                 <Grid Margin="5">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
