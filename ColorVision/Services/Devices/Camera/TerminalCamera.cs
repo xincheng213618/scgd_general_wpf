@@ -21,7 +21,7 @@ namespace ColorVision.Services.Devices.Camera
         
         public ConfigCamera CreateConfig { get; set; }
 
-        public void OpenCreateWindow()
+        public override void OpenCreateWindow()
         {
             int fromPort = (Math.Abs(new Random().Next()) % 99 + 6800);
 
@@ -62,7 +62,6 @@ namespace ColorVision.Services.Devices.Camera
             createWindow.ShowDialog();
         }
 
-        public EventHandler CreateDeviceOver { get; set; }
 
         public override void Create()
         {
