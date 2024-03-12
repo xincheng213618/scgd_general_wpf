@@ -46,6 +46,7 @@ namespace ColorVision.Services.Terminal
         public ImageSource Icon { get; set; }
 
         public RelayCommand RefreshCommand { get; set; }
+        public RelayCommand OpenCreateWindowCommand { get; set; }
         public RelayCommand CreateCommand { get; set; }
 
         public virtual void Create()
@@ -179,9 +180,6 @@ namespace ColorVision.Services.Terminal
                 return codes;
             }
         }
-
-
-
 
         public override UserControl GenDeviceControl() => new TerminalServiceControl(this);
 
