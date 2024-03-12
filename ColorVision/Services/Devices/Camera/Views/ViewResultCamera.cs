@@ -71,7 +71,7 @@ namespace ColorVision.Services.Devices.Camera.Views
         {
             get
             {
-                return string.Format("{0}", TimeSpan.FromMilliseconds(_totalTime).ToString().TrimEnd('0'));
+                return string.Format("{0}",   TimeSpan.FromMilliseconds(_totalTime).ToString(@"mm\:ss\:fff"));
             }
         }
         private long _totalTime;
