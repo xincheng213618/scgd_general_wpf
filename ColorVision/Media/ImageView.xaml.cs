@@ -872,6 +872,8 @@ namespace ColorVision.Media
 
         private void ButtonCIE1931_Click(object sender, RoutedEventArgs e)
         {
+            bool old = ToolBarTop.ShowImageInfo;
+            ToolBarTop.ShowImageInfo = true; 
             WindowCIE windowCIE = new WindowCIE();
             windowCIE.Owner = Window.GetWindow(this);
 
@@ -884,6 +886,7 @@ namespace ColorVision.Media
             windowCIE.Closed += (s, e) =>
             {
                 ToolBarTop.MouseMagnifier.MouseMoveColorHandler -= mouseMoveColorHandler;
+                ToolBarTop.ShowImageInfo = old;
             };
             windowCIE.Show();
         }

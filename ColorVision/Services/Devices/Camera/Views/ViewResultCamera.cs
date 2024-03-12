@@ -28,7 +28,7 @@ namespace ColorVision.Services.Devices.Camera.Views
             Id = measureImgResultModel.Id;
             Batch = measureImgResultModel.BatchCode ?? string.Empty;
             FilePath = measureImgResultModel.RawFile ?? string.Empty;
-            FileType = (CameraFileType)measureImgResultModel.FileType;
+            FileType = (CameraFileType)(measureImgResultModel.FileType ?? 0);
             ReqParams = measureImgResultModel.ReqParams ?? string.Empty;
             ImgFrameInfo = measureImgResultModel.ImgFrameInfo ?? string.Empty;
             CreateTime = measureImgResultModel.CreateDate;
