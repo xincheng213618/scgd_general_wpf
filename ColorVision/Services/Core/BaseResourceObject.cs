@@ -11,8 +11,6 @@ namespace ColorVision.Services.Core
         public RelayCommand DeleteCommand { get; set; }
         public RelayCommand SaveCommand { get; set; }
         public ObservableCollection<BaseResourceObject> VisualChildren { get; set; }
-        public ServiceManager ServiceControl { get; set; }
-
         public BaseResourceObject()
         {
             VisualChildren = new ObservableCollection<BaseResourceObject>();

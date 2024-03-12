@@ -52,8 +52,21 @@ namespace ColorVision.Services.Devices.Camera
             CreateWindow createWindow = new CreateWindow(this);
             createWindow.Owner = Window.GetWindow(Application.Current.MainWindow);
             createWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            EventHandler handler = (s, e) =>
+            {
+                createWindow.Close();
+            };
+            CreateDeviceOver += handler;
+            createWindow.Closed += (s, e) =>
+            {
+                if (CreateDeviceOver!=null)
+                    CreateDeviceOver -= handler;
+            };
             createWindow.ShowDialog();
         }
+
+        public EventHandler CreateDeviceOver { get; set; }
+
         public override void Create()
         {
             if ( !ServicesHelper.IsInvalidPath(CreatCode, "资源标识") ||!ServicesHelper.IsInvalidPath(CreatName, "资源名称") )
@@ -68,17 +81,15 @@ namespace ColorVision.Services.Devices.Camera
             CreateConfig.Id = CreatCode;
             CreateConfig.Name = CreatName;
             sysResource.Value = JsonConvert.SerializeObject(CreateConfig);
-            ServiceControl.VSysResourceDao.Save(sysResource);
+            ServiceManager.GetInstance().VSysResourceDao.Save(sysResource);
             int pkId = sysResource.PKId;
-            if (pkId > 0 && ServiceControl.VSysDeviceDao.GetById(pkId) is SysDeviceModel model)
+            if (pkId > 0 && ServiceManager.GetInstance().VSysDeviceDao.GetById(pkId) is SysDeviceModel model)
             {
-
                 if (MQTTServiceTerminalBase is MQTTTerminalCamera cameraService)
                 {
                     AddChild(new DeviceCamera(model, cameraService));
                 }
-
-
+                CreateDeviceOver?.Invoke(this,new EventArgs());
             }
             else
             {
