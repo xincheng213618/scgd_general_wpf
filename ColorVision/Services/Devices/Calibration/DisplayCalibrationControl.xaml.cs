@@ -143,7 +143,7 @@ namespace ColorVision.Services.Devices.Calibration
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    //View.OpenImage(arg.FileData);
+                    View.OpenImage(arg.FileData);
                 });
                 handler?.Close();
             }
@@ -152,7 +152,7 @@ namespace ColorVision.Services.Devices.Calibration
                 handler?.Close();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    //MessageBox.IsShow(Application.Current.MainWindow, "文件打开失败", "ColorVision");
+                    MessageBox.Show(Application.Current.MainWindow, "文件打开失败", "ColorVision");
                 });
             }
         }
