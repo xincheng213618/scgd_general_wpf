@@ -161,7 +161,7 @@ namespace ColorVision.Services.Devices.Algorithm
                     DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
                     if (pm_dl != null)
                     {
-                        FileDownload(pm_dl);
+                        if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, FileExtType.CIE);
                     }
                     break;
                 default:

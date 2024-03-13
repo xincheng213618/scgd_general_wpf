@@ -44,6 +44,9 @@ namespace ColorVision.Services.Devices.Calibration
                     case "Calibration":
                         Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, "校准失败"));
                         break;
+                    default:
+                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
+                        break;
                 }
             }
 
