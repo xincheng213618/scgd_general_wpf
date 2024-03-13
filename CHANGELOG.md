@@ -1,5 +1,13 @@
 #   CHANGELOAG
 
+## [1.0.8.10] 2024-03-13
+
+1.Fix 校正模块打开图像
+
+2.Fix POI cvcie 过滤
+
+3.Fix 校正列表在在进行切换group的时候有cache
+
 ## [1.0.8.9] 2024-03-12
 
 1.Code Clean
