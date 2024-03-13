@@ -646,6 +646,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 加载 的本地化字符串。
+        /// </summary>
+        public static string Loading {
+            get {
+                return ResourceManager.GetString("Loading", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 日志 的本地化字符串。
         /// </summary>
         public static string Log {
@@ -1272,6 +1281,15 @@ namespace ColorVision.Properties {
         public static string ServiceAgreement {
             get {
                 return ResourceManager.GetString("ServiceAgreement", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 服务配置 的本地化字符串。
+        /// </summary>
+        public static string ServiceConfiguration {
+            get {
+                return ResourceManager.GetString("ServiceConfiguration", resourceCulture);
             }
         }
         
