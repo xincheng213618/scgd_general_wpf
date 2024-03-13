@@ -6,6 +6,24 @@ using System.Windows.Input;
 
 namespace ColorVision.Services.Devices.Calibration.Templates
 {
+    class TempCache
+    {
+        public string Cache { get; set; }
+        public bool DarkNoiseIsSelected { get; set; }
+        public bool DefectPointIsSelected { get; set; }
+        public bool DSNUIsSelected { get; set; }
+        public bool DistortionIsSelected { get; set; }
+        public bool ColorShiftIsSelected { get; set; }
+        public bool UniformityIsSelected { get; set; }
+        public bool LumFourColorIsSelected { get; set; }
+        public bool LumOneColorIsSelected { get; set; }
+        public bool LumMultiColorIsSelected { get; set; }
+        public bool LuminanceIsSelected { get; set; }
+
+
+
+    }
+
     /// <summary>
     /// CalibrationControl.xaml 的交互逻辑
     /// </summary>
@@ -38,6 +56,7 @@ namespace ColorVision.Services.Devices.Calibration.Templates
         public CalibrationParam calibrationParam1 { get; set; }
 
         public ObservableCollection<GroupResource> groupResources { get; set; } = new ObservableCollection<GroupResource>();
+        TempCache TempCache { get; set; } = new TempCache();
 
         public void Initializedsss(ICalibrationService<BaseResourceObject> calibrationService, CalibrationParam calibrationParam)
         {
@@ -48,18 +67,17 @@ namespace ColorVision.Services.Devices.Calibration.Templates
             this.CalibrationParam = calibrationParam;
             this.DataContext = CalibrationParam;
 
-            OldCalibrationParam.Cache = calibrationParam.CalibrationMode;
-            OldCalibrationParam.Normal.DarkNoise.IsSelected = calibrationParam.Normal.DarkNoise.IsSelected;
-            OldCalibrationParam.Normal.DefectPoint.IsSelected = calibrationParam.Normal.DefectPoint.IsSelected;
-            OldCalibrationParam.Normal.DSNU.IsSelected = calibrationParam.Normal.DSNU.IsSelected;
-            OldCalibrationParam.Normal.Distortion.IsSelected = calibrationParam.Normal.Distortion.IsSelected;
-            OldCalibrationParam.Normal.ColorShift.IsSelected = calibrationParam.Normal.ColorShift.IsSelected;
-            OldCalibrationParam.Normal.Uniformity.IsSelected = calibrationParam.Normal.Uniformity.IsSelected;
-
-            OldCalibrationParam.Color.Luminance.IsSelected = calibrationParam.Color.Luminance.IsSelected;
-            OldCalibrationParam.Color.LumFourColor.IsSelected = calibrationParam.Color.LumFourColor.IsSelected;
-            OldCalibrationParam.Color.LumMultiColor.IsSelected = calibrationParam.Color.LumMultiColor.IsSelected;
-            OldCalibrationParam.Color.LumOneColor.IsSelected = calibrationParam.Color.LumOneColor.IsSelected;
+            TempCache.Cache = calibrationParam.CalibrationMode;
+            TempCache.DarkNoiseIsSelected = calibrationParam.Normal.DarkNoise.IsSelected;
+            TempCache.DefectPointIsSelected = calibrationParam.Normal.DefectPoint.IsSelected;
+            TempCache.DSNUIsSelected = calibrationParam.Normal.DSNU.IsSelected;
+            TempCache.DistortionIsSelected = calibrationParam.Normal.Distortion.IsSelected;
+            TempCache.ColorShiftIsSelected = calibrationParam.Normal.ColorShift.IsSelected;
+            TempCache.UniformityIsSelected = calibrationParam.Normal.Uniformity.IsSelected;
+            TempCache.LuminanceIsSelected = calibrationParam.Color.Luminance.IsSelected;
+            TempCache.LumFourColorIsSelected = calibrationParam.Color.LumFourColor.IsSelected;
+            TempCache.LumMultiColorIsSelected = calibrationParam.Color.LumMultiColor.IsSelected;
+            TempCache.LumOneColorIsSelected = calibrationParam.Color.LumOneColor.IsSelected;
 
 
             string CalibrationMode = calibrationParam.CalibrationMode;
@@ -68,7 +86,6 @@ namespace ColorVision.Services.Devices.Calibration.Templates
             ComboBoxList.SelectionChanged += ComboBox_SelectionChanged;
         }
 
-        public CalibrationParam OldCalibrationParam { get; set; } = new CalibrationParam();
 
         private void UserControl_Initialized(object sender, System.EventArgs e)
         {
@@ -97,8 +114,6 @@ namespace ColorVision.Services.Devices.Calibration.Templates
         {
             if (sender is ComboBox comboBox)
             {
-
-
                 CalibrationParam.Normal.DarkNoise.FilePath = string.Empty;
                 CalibrationParam.Normal.DefectPoint.FilePath = string.Empty;
                 CalibrationParam.Normal.DSNU.FilePath = string.Empty;
@@ -113,21 +128,19 @@ namespace ColorVision.Services.Devices.Calibration.Templates
 
                 if (comboBox.SelectedValue is GroupResource groupResource)
                 {
-
-
-                    if (groupResource.Name == OldCalibrationParam.Cache)
+                    if (groupResource.Name == TempCache.Cache)
                     {
-                        CalibrationParam.Normal.DarkNoise.IsSelected = OldCalibrationParam.Normal.DarkNoise.IsSelected;
-                        CalibrationParam.Normal.DefectPoint.IsSelected = OldCalibrationParam.Normal.DefectPoint.IsSelected;
-                        CalibrationParam.Normal.DSNU.IsSelected = OldCalibrationParam.Normal.DSNU.IsSelected;
-                        CalibrationParam.Normal.Distortion.IsSelected = OldCalibrationParam.Normal.Distortion.IsSelected;
-                        CalibrationParam.Normal.ColorShift.IsSelected = OldCalibrationParam.Normal.ColorShift.IsSelected;
-                        CalibrationParam.Normal.Uniformity.IsSelected = OldCalibrationParam.Normal.Uniformity.IsSelected;
+                        CalibrationParam.Normal.DarkNoise.IsSelected = TempCache.DarkNoiseIsSelected;
+                        CalibrationParam.Normal.DefectPoint.IsSelected = TempCache.DefectPointIsSelected;
+                        CalibrationParam.Normal.DSNU.IsSelected = TempCache.DSNUIsSelected;
+                        CalibrationParam.Normal.Distortion.IsSelected = TempCache.DistortionIsSelected;
+                        CalibrationParam.Normal.ColorShift.IsSelected = TempCache.ColorShiftIsSelected;
+                        CalibrationParam.Normal.Uniformity.IsSelected = TempCache.UniformityIsSelected;
 
-                        CalibrationParam.Color.Luminance.IsSelected = OldCalibrationParam.Color.Luminance.IsSelected;
-                        CalibrationParam.Color.LumFourColor.IsSelected = OldCalibrationParam.Color.LumFourColor.IsSelected;
-                        CalibrationParam.Color.LumMultiColor.IsSelected = OldCalibrationParam.Color.LumMultiColor.IsSelected;
-                        CalibrationParam.Color.LumOneColor.IsSelected = OldCalibrationParam.Color.LumOneColor.IsSelected;
+                        CalibrationParam.Color.Luminance.IsSelected = TempCache.LuminanceIsSelected;
+                        CalibrationParam.Color.LumFourColor.IsSelected = TempCache.LumFourColorIsSelected;
+                        CalibrationParam.Color.LumMultiColor.IsSelected = TempCache.LumMultiColorIsSelected;
+                        CalibrationParam.Color.LumOneColor.IsSelected = TempCache.LumOneColorIsSelected;
                     }
                     else
                     {
