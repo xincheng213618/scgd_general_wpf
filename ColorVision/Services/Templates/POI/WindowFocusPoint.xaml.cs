@@ -1556,7 +1556,8 @@ namespace ColorVision.Services.Templates.POI
             imgs.Reverse();
             foreach (var item in imgs)
             {
-                MeasureImgResultModels.Add(item);
+                if (!string.IsNullOrWhiteSpace(item.RawFile) &&!item.RawFile.ToLower(CultureInfo.CurrentCulture).Contains(".cvcie"))
+                    MeasureImgResultModels.Add(item);
             }
             ComboBoxImg.ItemsSource = MeasureImgResultModels;
             ComboBoxImg.DisplayMemberPath = "RawFile";

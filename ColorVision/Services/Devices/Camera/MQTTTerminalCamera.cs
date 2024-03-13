@@ -23,7 +23,6 @@ namespace ColorVision.Services.Devices.Camera
         }
 
 
-
         private DeviceStatusType _DeviceStatus;
 
         public List<MQTTCamera> Devices { get; set; }

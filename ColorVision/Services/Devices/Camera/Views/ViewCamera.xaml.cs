@@ -168,7 +168,7 @@ namespace ColorVision.Services.Devices.Camera.Views
         public void ShowResult(MeasureImgResultModel model)
         {
             ViewResultCamera result = new ViewResultCamera(model);
-            ViewResultCameras.Add(result);
+            ViewResultCameras.AddUnique(result);
 
             if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
             listView1.ScrollIntoView(listView1.SelectedItem);
@@ -184,7 +184,7 @@ namespace ColorVision.Services.Devices.Camera.Views
             foreach (var item in algResults)
             {
                 ViewResultCamera CameraImgResult = new ViewResultCamera(item);
-                ViewResultCameras.Add(CameraImgResult);
+                ViewResultCameras.AddUnique(CameraImgResult);
             }
         }
 
@@ -196,7 +196,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                 foreach (var item in MeasureImgResultDao.GetAll())
                 {
                     ViewResultCamera algorithmResult = new ViewResultCamera(item);
-                    ViewResultCameras.Add(algorithmResult);
+                    ViewResultCameras.AddUnique(algorithmResult);
                 }
                 return;
             }
@@ -207,7 +207,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                 foreach (var item in algResults)
                 {
                     ViewResultCamera algorithmResult = new ViewResultCamera(item);
-                    ViewResultCameras.Add(algorithmResult);
+                    ViewResultCameras.AddUnique(algorithmResult);
                 }
 
             }

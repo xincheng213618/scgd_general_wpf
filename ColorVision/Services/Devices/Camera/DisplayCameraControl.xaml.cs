@@ -568,7 +568,7 @@ namespace ColorVision.Services.Devices.Camera
                         {
                             if (Device.DeviceCalibration.CalibrationParams.Count > 0)
                             {
-                                calibration = new CalibrationControl(Device.DeviceCalibration, Device.CalibrationParams[0].Value);
+                                calibration = new CalibrationControl(Device.DeviceCalibration, Device.DeviceCalibration.CalibrationParams[0].Value);
                             }
                             else
                             {
@@ -638,15 +638,16 @@ namespace ColorVision.Services.Devices.Camera
         }
         private void Close_Click(object sender, RoutedEventArgs e)
         {
-            if (DService.IsVideoOpen)
-            {
-                DService.Close();
-                CameraVideoControl.Close();
+            if (sender is Button button)
+            {  
+                MsgRecord msgRecord = DService.Close();
+                Helpers.SendCommand(button,msgRecord);
+                if (DService.IsVideoOpen)
+                {
+                    CameraVideoControl.Close();
+                }
             }
-            else
-            {
-                DService.Close();
-            }
+
         }
         private DispatcherTimer _timer;
 

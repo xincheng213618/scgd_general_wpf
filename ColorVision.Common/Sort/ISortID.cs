@@ -10,6 +10,16 @@ namespace ColorVision.Sorts
 
     public static partial class SortableExtension
     {
+        public static void AddUnique<T>(this ObservableCollection<T> collection,T item) where T : ISortID
+        {
+            if (!collection.Any(existingItem => existingItem.Id == item.Id))
+            {
+                collection.Add(item);
+            }
+        }
+
+
+
         public static void SortByID<T>(this ObservableCollection<T> collection, bool descending = false) where T : ISortID
         {
             var sortedItems = collection.ToList();

@@ -182,7 +182,7 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn  Header="用时" Width="100">
+                        <GridViewColumn  Header="用时(ms)" Width="100">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
                                     <TextBlock Text="{ Binding  TotalTime}" />

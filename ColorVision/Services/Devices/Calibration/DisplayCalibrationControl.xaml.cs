@@ -106,6 +106,13 @@ namespace ColorVision.Services.Devices.Calibration
                     DeviceListAllFilesParam data = JsonConvert.DeserializeObject<DeviceListAllFilesParam>(JsonConvert.SerializeObject(arg.Data));
                     DoShowFileList(data);
                     break;
+                case MQTTFileServerEventEnum.Event_File_Download:
+                    DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                    if (pm_dl != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, FileExtType.CIE);
+                    }
+                    break;
             }
         }
         private void DoShowFileList(DeviceListAllFilesParam data)
@@ -115,6 +122,7 @@ namespace ColorVision.Services.Devices.Calibration
                 case FileExtType.Raw:
                     Application.Current.Dispatcher.Invoke(() =>
                     {
+                        data.Files.Reverse();
                         CB_RawImageFiles.ItemsSource = data.Files;
                         CB_RawImageFiles.SelectedIndex = 0;
                     });
@@ -142,7 +150,7 @@ namespace ColorVision.Services.Devices.Calibration
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    //View.OpenImage(arg.FileData);
+                    View.OpenImage(arg.FileData);
                 });
                 handler?.Close();
             }
@@ -151,7 +159,7 @@ namespace ColorVision.Services.Devices.Calibration
                 handler?.Close();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    //MessageBox.IsShow(Application.Current.MainWindow, "文件打开失败", "ColorVision");
+                    MessageBox.Show(Application.Current.MainWindow, "文件打开失败", "ColorVision");
                 });
             }
         }
@@ -219,12 +227,18 @@ namespace ColorVision.Services.Devices.Calibration
         }
         private void Button_Click_RawOpen(object sender, RoutedEventArgs e)
         {
+            if (string.IsNullOrWhiteSpace(CB_RawImageFiles.Text))
+            {
+                MessageBox.Show("请先选中图片");
+                return;
+            }
             handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
             handler.Cancelling += delegate
             {
                 handler?.Close();
             };
             doOpen(CB_RawImageFiles.Text, FileExtType.Raw);
+
         }
 
         private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
