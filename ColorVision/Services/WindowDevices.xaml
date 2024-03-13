@@ -10,7 +10,7 @@
         xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         xmlns:set="clr-namespace:ColorVision.Settings"
-        Title=""{x:Static properties:Resource.ServiceConfiguration}"" Height="800" Width="1000" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized" >
+        Title="{x:Static properties:Resource.ServiceConfiguration}" Height="800" Width="1000" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized" >
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
