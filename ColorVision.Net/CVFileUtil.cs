@@ -86,7 +86,6 @@ namespace ColorVision.Net
             if (fileData == null) return -1;
             if (ReadByte(fileData, ref fileInfo))
             {
-                fileInfo.bpp = 8;
                 return 0;
             }
 
