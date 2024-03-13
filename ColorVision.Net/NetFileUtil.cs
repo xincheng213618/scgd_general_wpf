@@ -352,7 +352,6 @@ namespace ColorVision.Net
             {
                 extType = FileExtType.CIE;
             }
-
             CVCIEFile fileInfo = new CVCIEFile();
             int code = ReadLocalFile(fileName, extType, ref fileInfo);
             return fileInfo;
@@ -484,7 +483,6 @@ namespace ColorVision.Net
                         OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileInfo.cols, (int)fileInfo.rows, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), fileInfo.data);
                         OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
                         src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
-                        //OpenCvSharp.Cv2.ImWrite(srcFileName, dst);
                     }
                     byte[] data_dst = new byte[fileInfo.rows * fileInfo.cols];
                     Marshal.Copy(dst.Data, data_dst, 0, data_dst.Length);

@@ -20,6 +20,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -539,39 +540,28 @@ namespace ColorVision.Media
 
         public void OpenImage(CVCIEFile fileInfo)
         {
-            if (fileInfo.FileExtType == MQTTMessageLib.FileServer.FileExtType.Tif) OpenTifImage(fileInfo.data);
-            else if(fileInfo.FileExtType == MQTTMessageLib.FileServer.FileExtType.Raw || fileInfo.FileExtType == MQTTMessageLib.FileServer.FileExtType.Src)
+            if (fileInfo.FileExtType == FileExtType.Tif)
             {
-                ShowImage(fileInfo);
+                var src = OpenCvSharp.Cv2.ImDecode(fileInfo.data, OpenCvSharp.ImreadModes.Unchanged);
+                SetImageSource(src.ToWriteableBitmap());
             }
-        }
-
-        private void ShowImage(CVCIEFile fileInfo)
-        {
-            logger.Info("OpenImage .....");
-
-            OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
-            OpenCvSharp.Mat dst = null;
-            if (fileInfo.bpp == 32)
-            {
-                OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
-                dst = new OpenCvSharp.Mat();
-                src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
-            }
-            else
-            {
-                dst = src;
-            }
-            SetImageSource(dst.ToWriteableBitmap());
-        }
-
-        public void OpenTifImage(byte[] data)
-        {
-            if (data != null)
+            else if(fileInfo.FileExtType == FileExtType.Raw || fileInfo.FileExtType == FileExtType.Src)
             {
                 logger.Info("OpenImage .....");
-                var src = OpenCvSharp.Cv2.ImDecode(data, OpenCvSharp.ImreadModes.Unchanged);
-                SetImageSource(src.ToWriteableBitmap());
+
+                OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
+                OpenCvSharp.Mat dst = null;
+                if (fileInfo.bpp == 32)
+                {
+                    OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
+                    dst = new OpenCvSharp.Mat();
+                    src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
+                }
+                else
+                {
+                    dst = src;
+                }
+                SetImageSource(dst.ToWriteableBitmap());
             }
         }
 
@@ -590,7 +580,7 @@ namespace ColorVision.Media
                     BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
                     SetImageSource(bitmapImage);
                 }
-                else if (ext.Contains(".cvraw") || ext.Contains(".cvsrc") || ext.Contains(".cvsrc"))
+                else if (ext.Contains(".cvraw") || ext.Contains(".cvsrc") || ext.Contains(".cvcie"))
                 {
                     FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
                     try
