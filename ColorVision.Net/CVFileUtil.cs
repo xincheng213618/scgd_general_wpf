@@ -86,7 +86,6 @@ namespace ColorVision.Net
             if (fileData == null) return -1;
             if (ReadByte(fileData, ref fileInfo))
             {
-                fileInfo.bpp = 8;
                 return 0;
             }
 
@@ -143,14 +142,14 @@ namespace ColorVision.Net
                 if (fileData == null) return -1;
                 if (ReadByte(fileData, ref fileOut))
                 {
-                    fileOut.channels = 1;
                     int ret = -1;
-                    fileOut.channels = 1;
                     if (fileOut.channels > 1)
                     {
+                        fileOut.channels = 1;
                         int len = (int)(fileOut.cols * fileOut.rows * fileOut.bpp / 8);
-                        fileOut.data = new byte[len];
-                        Buffer.BlockCopy(fileOut.data, channel * len, fileOut.data, 0, len);
+                        byte[] data = new byte[len];
+                        Buffer.BlockCopy(fileOut.data, channel * len, data, 0, len);
+                        fileOut.data = data;
                     }
                     else
                     {
