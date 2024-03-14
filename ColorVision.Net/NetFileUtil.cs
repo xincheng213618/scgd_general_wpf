@@ -9,6 +9,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using log4net;
+using System.Linq;
 
 namespace ColorVision.Net
 {
@@ -18,7 +19,6 @@ namespace ColorVision.Net
         private static readonly ILog log = LogManager.GetLogger(typeof(NetFileUtil));
 
         public event NetFileHandler handler;
-        private Dictionary<string, string> fileCache;
         private string FileCachePath;
 
         public NetFileUtil()
@@ -27,19 +27,21 @@ namespace ColorVision.Net
 
         public NetFileUtil(string fileCachePath)
         {
-            this.fileCache = new Dictionary<string, string>();
-            if (!string.IsNullOrEmpty(fileCachePath))
-            {
-                this.FileCachePath = fileCachePath;
-                CreateDirectory(this.FileCachePath);
-            }
+            this.FileCachePath = fileCachePath;
         }
 
         public string GetCacheFileFullName(string fileName)
         {
-            if (string.IsNullOrEmpty(fileName)) return string.Empty;
-            else if (fileCache.ContainsKey(fileName)) return fileCache[fileName];
-            else return string.Empty;
+            if (string.IsNullOrWhiteSpace(fileName)) return string.Empty;
+            DirectoryInfo directoryInfo = new DirectoryInfo(FileCachePath);
+            if (!directoryInfo.Exists) return string.Empty;
+            directoryInfo.GetFiles();
+            foreach (var item in directoryInfo.GetFiles())
+            {
+                if (item.Name.Contains(fileName))
+                    return item.FullName;
+            }
+            return string.Empty;
         }
 
         public void OpenRemoteFile(string serverEndpoint, string fileName, FileExtType extType)
@@ -149,7 +151,6 @@ namespace ColorVision.Net
                     {
                         string fullFileName = FileCachePath + Path.DirectorySeparatorChar + fileName;
                         WriteLocalBinaryFile(fullFileName, bytes);
-                        fileCache.Add(fileName, fullFileName);
                     }
                 }
                 client?.Close();
