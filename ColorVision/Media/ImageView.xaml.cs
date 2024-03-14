@@ -563,6 +563,10 @@ namespace ColorVision.Media
                 }
                 SetImageSource(dst.ToWriteableBitmap());
             }
+            else if (fileInfo.FileExtType == FileExtType.CIE)
+            {
+
+            }
         }
 
         public void Clear()

@@ -364,7 +364,7 @@ namespace ColorVision.Net
         {
             int code;
             if (!File.Exists(fileName)) return -1;
-            if (extType == FileExtType.CIE) code = ReadCVImage(fileName, ref fileInfo);
+            if (extType == FileExtType.CIE) code = ReadCVCIE(fileName, ref fileInfo);
 
             else if (extType == FileExtType.Raw) code = ReadCVImageRaw(fileName, ref fileInfo);
             else if (extType == FileExtType.Src) code = ReadCVImageRaw(fileName, ref fileInfo);
@@ -372,14 +372,6 @@ namespace ColorVision.Net
             else code = ReadLocalBinaryFile(fileName, ref fileInfo);
             return code;
         }
-
-        public void OpenLocalCIEFile(string fileName)
-        {
-            CVCIEFile fileInfo = new CVCIEFile();
-            int code = ReadCVImage(fileName, ref fileInfo); ;
-            handler?.Invoke(this, new NetFileEvent(FileEvent.FileDownload, code, fileName, fileInfo));
-        }
-
         private int DecodeCVFile(byte[] fileData, string fileName,ref CVCIEFile fileInfo)
         {
             int code = -1;
@@ -437,29 +429,22 @@ namespace ColorVision.Net
             return DecodeCVFileTo8U(fileData, fileName,ref fileInfo);
         }
 
-        private int ReadCVImage(string fileName,ref CVCIEFile fileInfo)
+        private int ReadCVCIE(string fileName,ref CVCIEFile fileInfo)
         {
             if (CVFileUtil.ReadFile(fileName, ref fileInfo))
             {
-                if (!string.IsNullOrEmpty(fileInfo.srcFileName))
+                //如果有原图则读取原图
+                if (string.IsNullOrEmpty(fileInfo.srcFileName) && File.Exists(fileInfo.srcFileName))
                 {
-                    if (!File.Exists(fileInfo.srcFileName))
+                    if (fileInfo.srcFileName.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
                     {
-                        string path = System.IO.Path.GetDirectoryName(fileName);
-                        fileInfo.srcFileName = path + System.IO.Path.DirectorySeparatorChar + fileInfo.srcFileName;
+                        return ReadCVImageRaw(fileInfo.srcFileName, ref fileInfo);
                     }
-                    if (File.Exists(fileInfo.srcFileName))
+                    else
                     {
-                        if (fileInfo.srcFileName.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
-                        {
-                            return ReadCVImageRaw(fileInfo.srcFileName, ref fileInfo);
-                        }
-                        else
-                        {
-                            fileInfo.data = CVFileUtil.ReadFile(fileInfo.srcFileName);
-                            fileInfo.FileExtType = FileExtType.Src;
-                            return 0;
-                        }
+                        fileInfo.data = CVFileUtil.ReadFile(fileInfo.srcFileName);
+                        fileInfo.FileExtType = FileExtType.Src;
+                        return 0;
                     }
                 }
                 
@@ -477,10 +462,8 @@ namespace ColorVision.Net
                         byte[] data = new byte[len];
                         Buffer.BlockCopy(fileInfo.data, len, data, 0, data.Length);
                         OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileInfo.rows, (int)fileInfo.cols, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
-
                         OpenCvSharp.Cv2.Normalize(src, src, 0, 1, OpenCvSharp.NormTypes.MinMax);
                         src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U, 255);
-                        //OpenCvSharp.Cv2.ImWrite(srcFileName, dst);
                     }
                     else
                     {
@@ -488,6 +471,7 @@ namespace ColorVision.Net
                         OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
                         src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
                     }
+
                     byte[] data_dst = new byte[fileInfo.rows * fileInfo.cols];
                     Marshal.Copy(dst.Data, data_dst, 0, data_dst.Length);
                     fileInfo.data = data_dst;
@@ -528,7 +512,6 @@ namespace ColorVision.Net
                 default:
                     break;
             }
-
             return bpp;
         }
 

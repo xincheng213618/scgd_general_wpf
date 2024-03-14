@@ -29,6 +29,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
     public partial class ViewCalibration : UserControl, IView
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(ViewCalibration));
+
         public View View { get; set; }
 
         public ObservableCollection<ViewResultCalibration> ViewResultCalibrations { get; set; } = new ObservableCollection<ViewResultCalibration>();
