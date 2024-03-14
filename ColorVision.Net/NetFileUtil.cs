@@ -359,9 +359,10 @@ namespace ColorVision.Net
 
         private int ReadLocalFile(string fileName, FileExtType extType, ref CVCIEFile fileInfo)
         {
-            int code = -1;
+            int code;
             if (!File.Exists(fileName)) return -1;
             if (extType == FileExtType.CIE) code = ReadCVImage(fileName, ref fileInfo);
+
             else if (extType == FileExtType.Raw) code = ReadCVImageRaw(fileName, ref fileInfo);
             else if (extType == FileExtType.Src) code = ReadCVImageRaw(fileName, ref fileInfo);
             else if (extType == FileExtType.Tif) code = ReadLocalTIFImage(fileName, ref fileInfo);
@@ -490,26 +491,16 @@ namespace ColorVision.Net
                     fileInfo.FileExtType = FileExtType.Raw;
                     fileInfo.bpp = 8;
                     fileInfo.channels =1;
-                    //int code = ReadLocalBinaryFile(srcFileName,ref fileInfo);
-                    log.WarnFormat("CIE src file({0}) is not exist. opencv real build.", fileInfo.srcFileName);
                     return 0;
                 }
             }
             else
             {
-                log.ErrorFormat("CIE file({0}) is not exist.", fileName);
-            }
 
+            }
             return -1;
         }
 
-        private int GetDepth(uint bpp)
-        {
-            if (bpp == 8) return 0;
-            else if (bpp == 16) return 2;
-
-            return 0;
-        }
 
         private int GetBpp(int depth)
         {
