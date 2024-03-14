@@ -238,6 +238,8 @@ namespace ColorVision.Services.Devices
             if (SysResourceModel != null)
                 ServiceManager.GetInstance().VSysResourceDao.DeleteById(SysResourceModel.Id);
             Parent.RemoveChild(this);
+
+            ServiceManager.GetInstance().DeviceServices.Remove(this);
             this.Dispose();
         }
     }

@@ -74,8 +74,6 @@ namespace ColorVision.Services.Devices.Camera
             View.View.Title = "相机视图";
             View.View.Icon = Icon;
 
-            EditCameraLazy = new Lazy<EditCamera>(() => { EditCamera ??= new EditCamera(this); return EditCamera; });
-
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
 
 
@@ -445,9 +443,7 @@ namespace ColorVision.Services.Devices.Camera
         public override UserControl GetDeviceInfo() => new DeviceCameraControl(this, false);
         
         public override UserControl GetDisplayControl() => new DisplayCameraControl(this);
-        readonly Lazy<EditCamera> EditCameraLazy;
-        public EditCamera EditCamera { get; set; }
-        public override UserControl GetEditControl() => EditCameraLazy.Value;
+        public override UserControl GetEditControl() => new EditCamera(this);
 
         public override MQTTServiceBase? GetMQTTService()
         {
