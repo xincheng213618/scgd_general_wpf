@@ -21,15 +21,18 @@ namespace ColorVision.Net
         private Dictionary<string, string> fileCache;
         private string FileCachePath;
 
+        public NetFileUtil()
+        {
+        }
+
         public NetFileUtil(string fileCachePath)
         {
-            this.fileCache = new Dictionary<string, string>();
             if (!string.IsNullOrEmpty(fileCachePath))
             {
                 this.FileCachePath = fileCachePath;
-                CreateDirectory(this.FileCachePath);
             }
         }
+
         public string GetCacheFileFullName(string fileName)
         {
             if (string.IsNullOrEmpty(fileName)) return string.Empty;

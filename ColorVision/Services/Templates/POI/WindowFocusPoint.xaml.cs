@@ -294,7 +294,7 @@ namespace ColorVision.Services.Templates.POI
                     FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
                     try
                     {
-                        OpenImage(new NetFileUtil("1").OpenLocalCVFile(filePath, fileExtType));
+                        OpenImage(new NetFileUtil().OpenLocalCVFile(filePath, fileExtType));
                     }
                     catch (Exception ex)
                     {
@@ -1491,7 +1491,7 @@ namespace ColorVision.Services.Templates.POI
                 {
                     if (measureImgResultModel.FileUrl != null)
                     {
-                        OpenImage(new NetFileUtil("1").OpenLocalCVFile(measureImgResultModel.FileUrl, FileExtType.Raw));
+                        OpenImage(new NetFileUtil().OpenLocalCVFile(measureImgResultModel.FileUrl, FileExtType.Raw));
                     }
                     else
                     {
@@ -1571,7 +1571,7 @@ namespace ColorVision.Services.Templates.POI
                 {
                     if (MeasureImgResultModels[ComboBoxImg.SelectedIndex] is MeasureImgResultModel model && model.FileUrl != null)
                     {
-                        OpenImage(new NetFileUtil("1").OpenLocalCVFile(model.FileUrl, FileExtType.Raw));
+                        OpenImage(new NetFileUtil().OpenLocalCVFile(model.FileUrl, FileExtType.Raw));
                     }
                     else
                     {

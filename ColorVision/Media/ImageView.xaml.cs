@@ -585,7 +585,7 @@ namespace ColorVision.Media
                     FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
                     try
                     {
-                        OpenImage(new NetFileUtil("1").OpenLocalCVFile(filePath, fileExtType));
+                        OpenImage(new NetFileUtil().OpenLocalCVFile(filePath, fileExtType));
                     }
                     catch (Exception ex)
                     {
