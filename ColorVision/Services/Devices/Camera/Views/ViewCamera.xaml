@@ -178,7 +178,7 @@
                         <GridViewColumn  Header="结果" Width="50">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
-                                    <TextBlock Text="{ Binding  ResultMsg}" />
+                                    <TextBlock Text="{ Binding  ResultCode}" />
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
@@ -186,7 +186,7 @@
                         <GridViewColumn  Header="信息" Width="50">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
-                                    <TextBlock Text="{ Binding  ResultCode}" />
+                                    <TextBlock Text="{ Binding  ResultMsg}" />
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
