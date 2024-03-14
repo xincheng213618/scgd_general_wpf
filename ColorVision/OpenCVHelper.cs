@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace ColorVision
 {
-    public struct HImage 
+    public struct HImage : IDisposable
     {
         public int rows;
         public int cols;
@@ -30,7 +30,17 @@ namespace ColorVision
         }
 
         public IntPtr pData;
-          
+
+        public void Dispose()
+        {
+            // 使用 Marshal.FreeHGlobal 来释放由 Marshal.AllocHGlobal 分配的内存
+            if (pData != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(pData);
+                pData = IntPtr.Zero;
+            }
+        }
+
     }
 
 

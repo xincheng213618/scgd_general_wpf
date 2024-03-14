@@ -396,5 +396,10 @@ namespace ColorVision.Services.Devices.Camera.Views
             }
 
         }
+
+        private void ClearImage_Click(object sender, RoutedEventArgs e)
+        {
+            ImageView.Clear();
+        }
     }
 }

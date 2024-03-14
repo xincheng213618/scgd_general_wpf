@@ -574,6 +574,11 @@ namespace ColorVision.Media
         public void Clear()
         {
             ImageShow.Source = null;
+            if (HImageCache != null)
+            {
+                HImageCache?.Dispose();
+                HImageCache = null;
+            }
         }
 
         public void OpenImage(string? filePath)
@@ -623,6 +628,12 @@ namespace ColorVision.Media
 
         private void SetImageSource(WriteableBitmap writeableBitmap)
         {
+            if (HImageCache != null)
+            {
+                HImageCache?.Dispose();
+                HImageCache = null;
+            }
+
             HImageCache = writeableBitmap.ToHImage();
 
             ToolBarTop.PseudoVisible = Visibility.Visible;
@@ -838,6 +849,7 @@ namespace ColorVision.Media
                             if (ret == 0)
                             {
                                 PseudoImage = hImageProcessed.ToWriteableBitmap();
+                                //在转换完成之后需要释放掉内存；
                                 OpenCVHelper.FreeHImageData(hImageProcessed.pData);
                                 hImageProcessed.pData = IntPtr.Zero;
 
