@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows;
+using System.Runtime.CompilerServices;
 
 namespace ColorVision
 {
@@ -54,14 +55,9 @@ namespace ColorVision
             writeableBitmap.Unlock();
             return writeableBitmap;
         }
-        public static HImage ToHImage(this BitmapImage bitmapImage)
-        {
-            // Convert the BitmapImage to a WriteableBitmap first
-            WriteableBitmap writeableBitmap = new WriteableBitmap(bitmapImage);
+        public static HImage ToHImage(this BitmapImage bitmapImage) => bitmapImage.ToWriteableBitmap().ToHImage();
 
-            // Now convert the WriteableBitmap to an HImageCache
-            return writeableBitmap.ToHImage();
-        }
+        public static WriteableBitmap ToWriteableBitmap(this BitmapImage bitmapImage) => new WriteableBitmap(bitmapImage);
 
         public static HImage ToHImage(this WriteableBitmap writeableBitmap)
         {

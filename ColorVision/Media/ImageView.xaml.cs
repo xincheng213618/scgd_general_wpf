@@ -583,7 +583,7 @@ namespace ColorVision.Media
                 if (ext.Contains(".tif"))
                 {
                     BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
-                    SetImageSource(bitmapImage);
+                    SetImageSource(bitmapImage.ToWriteableBitmap());
                 }
                 else if (ext.Contains(".cvraw") || ext.Contains(".cvsrc") || ext.Contains(".cvcie"))
                 {
@@ -602,7 +602,7 @@ namespace ColorVision.Media
                     BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
 
 
-                    SetImageSource(bitmapImage);
+                    SetImageSource(bitmapImage.ToWriteableBitmap());
                 }
             }
         }
@@ -614,22 +614,12 @@ namespace ColorVision.Media
 
             int i = OpenCVHelper.ReadGhostImage(filePath, LEDpixelX.Length, LEDpixelX, LEDPixelY, GhostPixelX.Length, GhostPixelX, GhostPixelY, out HImage hImage);
             if (i != 0) return;
-            HImageCache = hImage;
-            var writeableBitmap = hImage.ToWriteableBitmap();
-            ViewBitmapSource = writeableBitmap;
-            ImageShow.Source = ViewBitmapSource;
-
-            DebounceTimer.AddOrResetTimer("RenderPseudo", 500, RenderPseudo);
-
-            Task.Run(() => {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    Zoombox1.ZoomUniform();
-                });
-            });
+            SetImageSource(hImage.ToWriteableBitmap());
         }
 
         public HImage? HImageCache { get; set; }
+
+
 
         private void SetImageSource(WriteableBitmap writeableBitmap)
         {
@@ -638,29 +628,19 @@ namespace ColorVision.Media
             {
                 ToolBarTop.PseudoVisible = Visibility.Visible;
                 DebounceTimer.AddOrResetTimer("RenderPseudo", 500, RenderPseudo);
+
+                ToolBarTop.CIEVisible = Visibility.Collapsed ;
             }
             else
             {
                 ToolBarTop.PseudoVisible = Visibility.Collapsed;
+                ToolBarTop.CIEVisible = Visibility.Visible;
             }
             ViewBitmapSource = writeableBitmap;
             ImageShow.Source = ViewBitmapSource;
             DrawGridImage(DrawingVisualGrid, writeableBitmap);
-            Zoombox1.ZoomUniform();
-            ToolBar1.Visibility = Visibility.Visible;
-            ImageShow.ImageInitialize();
-        }
-
-        private void SetImageSource(BitmapImage bitmapImage)
-        {
-            HImageCache = bitmapImage.ToHImage();
-            DebounceTimer.AddOrResetTimer("RenderPseudo", 500, RenderPseudo);
-
-            ViewBitmapSource = bitmapImage;
-            ImageShow.Source = ViewBitmapSource;
-            DrawGridImage(DrawingVisualGrid, bitmapImage);
             Task.Run(() => {
-                Application.Current.Dispatcher.Invoke(()=>
+                Application.Current.Dispatcher.Invoke(() =>
                 {
                     Zoombox1.ZoomUniform();
                 });
