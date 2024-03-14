@@ -25,8 +25,8 @@ namespace ColorVision.Services.Devices.Calibration.Views
             _totalTime = measureImgResultModel.TotalTime;
         }
 
-        public int Id { get { return _ID; } set { _ID = value; NotifyPropertyChanged(); } }
-        private int _ID;
+        public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
+        private int _Id;
 
         public string? Batch { get { return _Batch; } set { _Batch = value; NotifyPropertyChanged(); } }
         private string? _Batch;
