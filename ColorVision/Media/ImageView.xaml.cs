@@ -563,6 +563,7 @@ namespace ColorVision.Media
                     dst = src;
                 }
                 SetImageSource(dst.ToWriteableBitmap());
+                dst.Dispose();
             }
             else if (fileInfo.FileExtType == FileExtType.CIE)
             {
@@ -620,7 +621,6 @@ namespace ColorVision.Media
         public HImage? HImageCache { get; set; }
 
 
-
         private void SetImageSource(WriteableBitmap writeableBitmap)
         {
             HImageCache = writeableBitmap.ToHImage();
@@ -637,6 +637,7 @@ namespace ColorVision.Media
                 ToolBarTop.CIEVisible = Visibility.Visible;
             }
             ViewBitmapSource = writeableBitmap;
+
             ImageShow.Source = ViewBitmapSource;
             DrawGridImage(DrawingVisualGrid, writeableBitmap);
             Task.Run(() => {
