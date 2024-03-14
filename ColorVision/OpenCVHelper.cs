@@ -8,19 +8,19 @@ using System.Runtime.CompilerServices;
 
 namespace ColorVision
 {
-    public struct HImage
+    public class HImage : IDisposable
     {
         public int rows;
         public int cols;
         public int channels;
         public int depth; //bpp
 
-        public readonly int Type
+        public  int Type
         {
             get { return (((depth & ((1 << 3) - 1)) + ((channels - 1) << 3))); }
         }
 
-        public readonly int ElemSize
+        public  int ElemSize
         {
             get
             {
@@ -30,6 +30,18 @@ namespace ColorVision
         }
 
         public IntPtr pData;
+
+        public void Dispose()
+        {
+            if (pData != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(pData);
+                pData = IntPtr.Zero;
+            }
+
+            GC.SuppressFinalize(this);
+        }
+
     }
 
 

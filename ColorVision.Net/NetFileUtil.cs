@@ -449,6 +449,8 @@ namespace ColorVision.Net
                     }
                     if (File.Exists(cvrawPath))
                     {
+                        fileInfo.data = null;
+                        GC.Collect();
                         if (cvrawPath.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
                         {
                             return ReadCVImageRaw(cvrawPath, ref fileInfo);
