@@ -416,7 +416,7 @@ namespace ColorVision.Services.Devices.Camera
         {
             if (sender is Button button)
             {
-                var msgRecord = DService.Open(DService.Config.Id, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
+                var msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
             }
         }
 
