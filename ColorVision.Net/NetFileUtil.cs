@@ -437,20 +437,30 @@ namespace ColorVision.Net
             if (CVFileUtil.ReadFile(fileName, ref fileInfo))
             {
                 //如果有原图则读取原图
-                if (string.IsNullOrEmpty(fileInfo.srcFileName) && File.Exists(fileInfo.srcFileName))
+                string cvrawPath = fileInfo.srcFileName;
+
+                if (!string.IsNullOrEmpty(cvrawPath) )
                 {
-                    if (fileInfo.srcFileName.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
+                    cvrawPath = Path.GetFileName(cvrawPath);
+
+                    if (!File.Exists(cvrawPath))
                     {
-                        return ReadCVImageRaw(fileInfo.srcFileName, ref fileInfo);
+                        cvrawPath = Path.GetDirectoryName(fileName) + "\\" + cvrawPath;
                     }
-                    else
+                    if (File.Exists(cvrawPath))
                     {
-                        fileInfo.data = CVFileUtil.ReadFile(fileInfo.srcFileName);
-                        fileInfo.FileExtType = FileExtType.Src;
-                        return 0;
+                        if (cvrawPath.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
+                        {
+                            return ReadCVImageRaw(cvrawPath, ref fileInfo);
+                        }
+                        else
+                        {
+                            fileInfo.data = CVFileUtil.ReadFile(cvrawPath);
+                            fileInfo.FileExtType = FileExtType.Src;
+                            return 0;
+                        }
                     }
                 }
-                
                 if (fileInfo.bpp == 16 || fileInfo.bpp == 8)
                 {
                     fileInfo.FileExtType = FileExtType.Raw;
