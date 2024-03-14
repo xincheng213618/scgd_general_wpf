@@ -8,7 +8,7 @@ using System.Runtime.CompilerServices;
 
 namespace ColorVision
 {
-    public class HImage : IDisposable
+    public struct HImage 
     {
         public int rows;
         public int cols;
@@ -30,18 +30,7 @@ namespace ColorVision
         }
 
         public IntPtr pData;
-
-        public void Dispose()
-        {
-            if (pData != IntPtr.Zero)
-            {
-                Marshal.FreeHGlobal(pData);
-                pData = IntPtr.Zero;
-            }
-
-            GC.SuppressFinalize(this);
-        }
-
+          
     }
 
 
@@ -145,7 +134,11 @@ namespace ColorVision
         public static extern int ReadGhostImage([MarshalAs(UnmanagedType.LPStr)] string FilePath, int singleLedPixelNum, int[] LEDPixelX, int[] LEDPixelY, int singleGhostPixelNum, int[] GhostPixelX, int[] GhostPixelY, out HImage hImage);
 
         [DllImport("OpenCVHelper.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int PseudoColor(HImage image, out HImage hImage, uint min , uint max);
+        public static extern int PseudoColor(HImage image, out HImage hImage, uint min, uint max);
+
+        [DllImport("OpenCVHelper.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void FreeHImageData(IntPtr data);
+
 
 
         [DllImport("OpenCVHelper.dll")]

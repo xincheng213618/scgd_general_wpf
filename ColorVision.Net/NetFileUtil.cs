@@ -10,6 +10,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using log4net;
 using System.Linq;
+using System.Windows.Navigation;
 
 namespace ColorVision.Net
 {
@@ -434,71 +435,82 @@ namespace ColorVision.Net
 
         private int ReadCVCIE(string fileName,ref CVCIEFile fileInfo)
         {
-            if (CVFileUtil.ReadFile(fileName, ref fileInfo))
+            byte[] fileData = CVFileUtil.ReadFile(fileName);
+            if (fileData == null) return -1;
+            int startIndex = CVFileUtil.ReadCIEFileHeader(fileData, ref fileInfo);
+            
+            //如果有原图则读取原图
+             string cvrawPath = fileInfo.srcFileName;
+
+            if (!string.IsNullOrEmpty(cvrawPath))
             {
-                //如果有原图则读取原图
-                string cvrawPath = fileInfo.srcFileName;
+                cvrawPath = Path.GetFileName(cvrawPath);
 
-                if (!string.IsNullOrEmpty(cvrawPath) )
+                if (!File.Exists(cvrawPath))
                 {
-                    cvrawPath = Path.GetFileName(cvrawPath);
+                    cvrawPath = Path.GetDirectoryName(fileName) + "\\" + cvrawPath;
+                }
+                if (File.Exists(cvrawPath))
+                {
+                    fileData = null;
 
-                    if (!File.Exists(cvrawPath))
+                    if (cvrawPath.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
                     {
-                        cvrawPath = Path.GetDirectoryName(fileName) + "\\" + cvrawPath;
-                    }
-                    if (File.Exists(cvrawPath))
-                    {
-                        fileInfo.data = null;
-                        GC.Collect();
-                        if (cvrawPath.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
-                        {
-                            return ReadCVImageRaw(cvrawPath, ref fileInfo);
-                        }
-                        else
-                        {
-                            fileInfo.data = CVFileUtil.ReadFile(cvrawPath);
-                            fileInfo.FileExtType = FileExtType.Src;
-                            return 0;
-                        }
-                    }
-                }
-                if (fileInfo.bpp == 16 || fileInfo.bpp == 8)
-                {
-                    fileInfo.FileExtType = FileExtType.Raw;
-                    return 0;
-                }
-                else if (fileInfo.bpp == 32)
-                {
-                    int len = (int)(fileInfo.rows * fileInfo.cols * (fileInfo.bpp / 8));
-                    OpenCvSharp.Mat dst = new OpenCvSharp.Mat();
-                    if (fileInfo.channels == 3)
-                    {
-                        byte[] data = new byte[len];
-                        Buffer.BlockCopy(fileInfo.data, len, data, 0, data.Length);
-                        OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileInfo.rows, (int)fileInfo.cols, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
-                        OpenCvSharp.Cv2.Normalize(src, src, 0, 1, OpenCvSharp.NormTypes.MinMax);
-                        src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U, 255);
+                        return ReadCVImageRaw(cvrawPath, ref fileInfo);
                     }
                     else
                     {
-                        OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileInfo.cols, (int)fileInfo.rows, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), fileInfo.data);
-                        OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
-                        src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
+                        fileInfo.data = CVFileUtil.ReadFile(cvrawPath);
+                        fileInfo.FileExtType = FileExtType.Src;
+                        return 0;
                     }
-
-                    byte[] data_dst = new byte[fileInfo.rows * fileInfo.cols];
-                    Marshal.Copy(dst.Data, data_dst, 0, data_dst.Length);
-                    fileInfo.data = data_dst;
-                    fileInfo.FileExtType = FileExtType.Raw;
-                    fileInfo.bpp = 8;
-                    fileInfo.channels =1;
-                    return 0;
                 }
             }
-            else
-            {
 
+            if (startIndex > 0)
+            {
+                int dataLen = BitConverter.ToInt32(fileData, startIndex);
+                startIndex += 4;
+                if (dataLen > 0)
+                {
+                    byte[] bytes = new byte[dataLen];
+                    Buffer.BlockCopy(fileData, startIndex, bytes, 0, dataLen);
+                    fileInfo.data = bytes;
+                }
+                fileData = null;
+            }
+
+            if (fileInfo.bpp == 16 || fileInfo.bpp == 8)
+            {
+                fileInfo.FileExtType = FileExtType.Raw;
+                return 0;
+            }
+            else if (fileInfo.bpp == 32)
+            {
+                int len = (int)(fileInfo.rows * fileInfo.cols * (fileInfo.bpp / 8));
+                OpenCvSharp.Mat dst = new OpenCvSharp.Mat();
+                if (fileInfo.channels == 3)
+                {
+                    byte[] data = new byte[len];
+                    Buffer.BlockCopy(fileInfo.data, len, data, 0, data.Length);
+                    OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileInfo.rows, (int)fileInfo.cols, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
+                    OpenCvSharp.Cv2.Normalize(src, src, 0, 1, OpenCvSharp.NormTypes.MinMax);
+                    src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U, 255);
+                }
+                else
+                {
+                    OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileInfo.cols, (int)fileInfo.rows, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), fileInfo.data);
+                    OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
+                    src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
+                }
+
+                byte[] data_dst = new byte[fileInfo.rows * fileInfo.cols];
+                Marshal.Copy(dst.Data, data_dst, 0, data_dst.Length);
+                fileInfo.data = data_dst;
+                fileInfo.FileExtType = FileExtType.Raw;
+                fileInfo.bpp = 8;
+                fileInfo.channels = 1;
+                return 0;
             }
             return -1;
         }

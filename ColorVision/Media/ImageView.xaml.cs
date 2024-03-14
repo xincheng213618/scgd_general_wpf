@@ -624,16 +624,19 @@ namespace ColorVision.Media
         private void SetImageSource(WriteableBitmap writeableBitmap)
         {
             HImageCache = writeableBitmap.ToHImage();
+
+            ToolBarTop.PseudoVisible = Visibility.Visible;
+            DebounceTimer.AddOrResetTimer("RenderPseudo", 500, RenderPseudo);
+
             if (HImageCache?.channels == 1)
             {
-                ToolBarTop.PseudoVisible = Visibility.Visible;
-                DebounceTimer.AddOrResetTimer("RenderPseudo", 500, RenderPseudo);
+
 
                 ToolBarTop.CIEVisible = Visibility.Collapsed ;
             }
             else
             {
-                ToolBarTop.PseudoVisible = Visibility.Collapsed;
+                //ToolBarTop.PseudoVisible = Visibility.Collapsed;
                 ToolBarTop.CIEVisible = Visibility.Visible;
             }
             ViewBitmapSource = writeableBitmap;
@@ -835,10 +838,14 @@ namespace ColorVision.Media
                             if (ret == 0)
                             {
                                 PseudoImage = hImageProcessed.ToWriteableBitmap();
+                                OpenCVHelper.FreeHImageData(hImageProcessed.pData);
+                                hImageProcessed.pData = IntPtr.Zero;
+
                                 if (Pseudo.IsChecked == true)
                                 {
                                     ImageShow.Source = PseudoImage;
                                 }
+
                             }
                         });
                     });

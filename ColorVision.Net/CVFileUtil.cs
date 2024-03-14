@@ -151,7 +151,7 @@ namespace ColorVision.Net
             return -2;
         }
 
-        private static int ReadCIEFileHeader(byte[] fileData, ref CVCIEFile cVCIEFileInfo)
+        public static int ReadCIEFileHeader(byte[] fileData, ref CVCIEFile cVCIEFileInfo)
         {
             int startIndex = 0;
             if (fileData != null && fileData.Length > 5 && fileData[0] == 'C' && fileData[1] == 'V' && fileData[2] == 'C' && fileData[3] == 'I' && fileData[4] == 'E')
