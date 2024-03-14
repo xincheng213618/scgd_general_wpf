@@ -50,7 +50,6 @@ namespace ColorVision.Services.Devices
 
         public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
 
-
         public virtual UserControl GetDeviceControl()
         {
             throw new NotImplementedException();
@@ -213,6 +212,8 @@ namespace ColorVision.Services.Devices
         public override DateTime LastAliveTime { get => Config.LastAliveTime; set { Config.LastAliveTime = value; NotifyPropertyChanged(); } }
         public override int HeartbeatTime { get => Config.HeartbeatTime; set { Config.HeartbeatTime = value; NotifyPropertyChanged(); } }
 
+        public event EventHandler ConfigChanged;
+
         public override void Save()
         {
             base.Save();
@@ -225,6 +226,8 @@ namespace ColorVision.Services.Devices
             ///每次提交之后重启服务
             MQTTRCService.GetInstance().RestartServices(SysResourceModel.TypeCode, SysResourceModel.PCode, Config.Code);
             QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
+
+            ConfigChanged?.Invoke(this, new EventArgs());
         }
 
 

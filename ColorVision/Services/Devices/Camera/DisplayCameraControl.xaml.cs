@@ -267,54 +267,16 @@ namespace ColorVision.Services.Devices.Camera
 
         public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; }
 
+
+
+
+
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Device;
 
-            CalibrationParams = new ObservableCollection<TemplateModel<CalibrationParam>>();
-            CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam() { Id = -1}));
-
-            if (Device.DeviceCalibration != null)
-            {
-                foreach (var item in Device.DeviceCalibration.CalibrationParams)
-                    CalibrationParams.Add(item);
-
-                Device.DeviceCalibration.CalibrationParams.CollectionChanged += (s, e) =>
-                {
-                    switch (e.Action)
-                    {
-                        case NotifyCollectionChangedAction.Add:
-                            // 处理添加项
-                            if (e.NewItems != null)
-                                foreach (TemplateModel<CalibrationParam> newItem in e.NewItems)
-                                    CalibrationParams.Add(newItem);
-                            break;
-                        case NotifyCollectionChangedAction.Remove:
-                            // 处理移除项
-                            if (e.OldItems != null)
-                                foreach (TemplateModel<CalibrationParam> newItem in e.OldItems)
-                                    CalibrationParams.Remove(newItem);
-                            break;
-                        case NotifyCollectionChangedAction.Replace:
-                            // 处理替换项
-                            // ...
-                            break;
-                        case NotifyCollectionChangedAction.Move:
-                            // 处理移动项
-                            // ...
-                            break;
-                        case NotifyCollectionChangedAction.Reset:
-                            // 处理清空集合
-                            CalibrationParams.Clear();
-                            CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()) { Id = -1 });
-                            break;
-                    }
-                };
-            }
-
-
-            ComboxCalibrationTemplate.ItemsSource = CalibrationParams;
-            ComboxCalibrationTemplate.SelectedIndex = 0;  
+            Device_ConfigChanged();
+            Device.ConfigChanged +=(s,e)=> Device_ConfigChanged();
 
             StackPanelOpen.Visibility = Visibility.Visible;
             StackPanelImage.Visibility = Visibility.Collapsed;
@@ -401,6 +363,47 @@ namespace ColorVision.Services.Devices.Camera
                         break;
                 }
             };
+        }
+
+
+
+        private void Device_ConfigChanged()
+        {
+            CalibrationParams = new ObservableCollection<TemplateModel<CalibrationParam>>();
+            CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam() { Id = -1 }));
+
+            if (Device.DeviceCalibration != null)
+            {
+                foreach (var item in Device.DeviceCalibration.CalibrationParams)
+                    CalibrationParams.Add(item);
+
+                Device.DeviceCalibration.CalibrationParams.CollectionChanged -= CalibrationParams_CollectionChanged;
+                Device.DeviceCalibration.CalibrationParams.CollectionChanged += CalibrationParams_CollectionChanged;
+            }
+
+            ComboxCalibrationTemplate.ItemsSource = CalibrationParams;
+            ComboxCalibrationTemplate.SelectedIndex = 0;
+        }
+
+        private void CalibrationParams_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            switch (e.Action)
+            {
+                case NotifyCollectionChangedAction.Add:
+                    if (e.NewItems != null)
+                        foreach (TemplateModel<CalibrationParam> newItem in e.NewItems)
+                            CalibrationParams.Add(newItem);
+                    break;
+                case NotifyCollectionChangedAction.Remove:
+                    if (e.OldItems != null)
+                        foreach (TemplateModel<CalibrationParam> newItem in e.OldItems)
+                            CalibrationParams.Remove(newItem);
+                    break;
+                case NotifyCollectionChangedAction.Reset:
+                    CalibrationParams.Clear();
+                    CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()) { Id = -1 });
+                    break;
+            }
         }
 
         private void CameraInit_Click(object sender, RoutedEventArgs e)
