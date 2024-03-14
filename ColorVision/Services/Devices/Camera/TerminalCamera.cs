@@ -56,8 +56,7 @@ namespace ColorVision.Services.Devices.Camera
             CreateDeviceOver += handler;
             createWindow.Closed += (s, e) =>
             {
-                if (CreateDeviceOver!=null)
-                    CreateDeviceOver -= handler;
+                CreateDeviceOver -= handler;
             };
             createWindow.ShowDialog();
         }

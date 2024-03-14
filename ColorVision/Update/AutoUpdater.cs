@@ -202,14 +202,14 @@ namespace ColorVision.Update
                 {
                     do
                     {
-                        readBytes = await stream.ReadAsync(buffer, 0, buffer.Length);
+                        readBytes = await stream.ReadAsync(buffer);
                         if (readBytes == 0)
                         {
                             isMoreToRead = false;
                         }
                         else
                         {
-                            await fileStream.WriteAsync(buffer, 0, readBytes);
+                            await fileStream.WriteAsync(buffer.AsMemory(0, readBytes));
 
                             totalReadBytes += readBytes;
                             int progressPercentage = totalBytes != -1L
