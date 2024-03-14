@@ -56,6 +56,7 @@ namespace ColorVision.Media
 
             ToolBarTop = new ToolBarTop(this,Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
+            ToolBar2.DataContext = ToolBarTop;
             ToolBarTop.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             ListView1.ItemsSource = DrawingVisualLists;
 
@@ -633,8 +634,15 @@ namespace ColorVision.Media
         private void SetImageSource(WriteableBitmap writeableBitmap)
         {
             HImageCache = writeableBitmap.ToHImage();
-            DebounceTimer.AddOrResetTimer("RenderPseudo", 500, RenderPseudo);
-
+            if (HImageCache?.channels == 1)
+            {
+                ToolBarTop.PseudoVisible = Visibility.Visible;
+                DebounceTimer.AddOrResetTimer("RenderPseudo", 500, RenderPseudo);
+            }
+            else
+            {
+                ToolBarTop.PseudoVisible = Visibility.Collapsed;
+            }
             ViewBitmapSource = writeableBitmap;
             ImageShow.Source = ViewBitmapSource;
             DrawGridImage(DrawingVisualGrid, writeableBitmap);
