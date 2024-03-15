@@ -307,16 +307,8 @@ namespace ColorVision.Services.Devices.Camera
             {
                 if (ComboxView.SelectedItem is KeyValuePair<string, int> KeyValue)
                 {
-                    if (View.View.ViewIndex == KeyValue.Value)
-                    {
-                        MessageBox.Show("相同");
-                    }
-                    else
-                    {
-                        View.View.ViewIndex = KeyValue.Value;
-                        ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
-                    }
-
+                    View.View.ViewIndex = KeyValue.Value;
+                    ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
                 }
             };
             View.View.ViewIndex = -1;
