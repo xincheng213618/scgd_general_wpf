@@ -55,23 +55,26 @@ namespace ColorVision.Update
             {
                 try
                 {
-                    FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(updateFile);
-                    if (localVersion < new Version(fileVersionInfo.FileVersion??string.Empty))
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            RestartApplication(updateFile);
-                        });
-                    }
-                    else
-                    {
-                        // 删除文件
-                        File.Delete(updateFile);
-                        log.Info($"Deleted update file: {updateFile}");
-                    }
+                    //这里先注释掉，逻辑有些问题
+                    //FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(updateFile);
+                    //if (localVersion < new Version(fileVersionInfo.FileVersion??string.Empty))
+                    //{
+                    //    Application.Current.Dispatcher.Invoke(() =>
+                    //    {
+                    //        RestartApplication(updateFile);
+                    //    });
+                    //}
+                    //else
+                    //{
+                    //    // 删除文件
+
+                    //}
+                    File.Delete(updateFile);
+                    log.Info($"Deleted update file: {updateFile}");
                 }
                 catch (Exception ex)
                 {
+                    File.Delete(updateFile);
                     // 如果删除过程中出现错误，输出错误信息
                     log.Info($"Error deleting the update file {updateFile}: {ex.Message}");
                 }

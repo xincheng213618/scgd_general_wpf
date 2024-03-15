@@ -621,6 +621,8 @@ namespace ColorVision.Media
             int i = OpenCVHelper.ReadGhostImage(filePath, LEDpixelX.Length, LEDpixelX, LEDPixelY, GhostPixelX.Length, GhostPixelX, GhostPixelY, out HImage hImage);
             if (i != 0) return;
             SetImageSource(hImage.ToWriteableBitmap());
+            OpenCVHelper.FreeHImageData(hImage.pData);
+            hImage.pData = IntPtr.Zero;
         }
 
         public HImage? HImageCache { get; set; }

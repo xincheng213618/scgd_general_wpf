@@ -53,6 +53,7 @@ namespace ColorVision.Services.Devices.Spectrum
                 ComboxView.ItemsSource = KeyValues;
                 ComboxView.SelectedValue = View.View.ViewIndex;
             }
+            View.View.ClearViewIndexChangedSubscribers();
             View.View.ViewIndexChangedEvent += (e1, e2) =>
             {
                 ComboxView.SelectedIndex = e2 + 2;

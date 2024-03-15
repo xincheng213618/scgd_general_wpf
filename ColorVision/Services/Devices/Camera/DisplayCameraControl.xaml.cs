@@ -269,7 +269,7 @@ namespace ColorVision.Services.Devices.Camera
 
 
 
-
+        
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -298,6 +298,7 @@ namespace ColorVision.Services.Devices.Camera
                 ComboxView.ItemsSource = KeyValues;
                 ComboxView.SelectedValue = View.View.ViewIndex;
             }
+            View.View.ClearViewIndexChangedSubscribers();
             View.View.ViewIndexChangedEvent += (e1, e2) =>
             {
                 ComboxView.SelectedIndex = e2 + 2;
@@ -306,8 +307,16 @@ namespace ColorVision.Services.Devices.Camera
             {
                 if (ComboxView.SelectedItem is KeyValuePair<string, int> KeyValue)
                 {
-                    View.View.ViewIndex = KeyValue.Value;
-                    ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
+                    if (View.View.ViewIndex == KeyValue.Value)
+                    {
+                        MessageBox.Show("相同");
+                    }
+                    else
+                    {
+                        View.View.ViewIndex = KeyValue.Value;
+                        ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
+                    }
+
                 }
             };
             View.View.ViewIndex = -1;
