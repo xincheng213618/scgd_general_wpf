@@ -80,8 +80,6 @@ namespace ColorVision.Services.Devices.Calibration
             {
                 return false;
             }
-
-
         }
 
 

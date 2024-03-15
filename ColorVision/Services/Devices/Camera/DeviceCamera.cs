@@ -152,14 +152,12 @@ namespace ColorVision.Services.Devices.Camera
             }
         }
 
-        public static void ExtractToDirectoryWithOverwrite(string zipPath, string extractPath)
+        public static bool ExtractToDirectoryWithOverwrite(string zipPath, string extractPath)
         {
-            // 确保解压目录存在
             Directory.CreateDirectory(extractPath);
-
-            // 打开ZIP文件
-            using (ZipArchive archive = ZipFile.Open(zipPath,ZipArchiveMode.Read))
+            try
             {
+                using ZipArchive archive = ZipFile.Open(zipPath, ZipArchiveMode.Read);
                 foreach (ZipArchiveEntry entry in archive.Entries)
                 {
                     // 获取在目标路径中的完整路径
@@ -187,6 +185,11 @@ namespace ColorVision.Services.Devices.Camera
                         entry.ExtractToFile(destinationPath);
                     }
                 }
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -226,7 +229,14 @@ namespace ColorVision.Services.Devices.Camera
                 Directory.CreateDirectory(path);
                 await Task.Delay(10);
                 Msg = "正在解析校正文件：" + " 请稍后...";
-                ExtractToDirectoryWithOverwrite(UploadFilePath, path);
+                bool sss = ExtractToDirectoryWithOverwrite(UploadFilePath, path);
+                if (!sss)
+                {
+                    Msg = "解压失败";
+                    await Task.Delay(100);
+                    Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
+                    return;
+                }
 
                 string Cameracfg = path + "\\Camera.cfg";
 
