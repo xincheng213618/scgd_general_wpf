@@ -1,5 +1,8 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.MVVM;
 using ColorVision.Services.DAO;
+using ColorVision.Services.Devices.Spectrum.Views;
+using ColorVision.Sorts;
 using MQTTMessageLib.Camera;
 using System;
 using System.Collections.Generic;
@@ -19,7 +22,7 @@ using System.Windows.Shapes;
 
 namespace ColorVision.Solution.View
 {
-    public class ViewBatchResult : ViewModelBase
+    public class ViewBatchResult : ViewModelBase,ISortID,ISortCreateTime, ISortBatch
     {
         public ViewBatchResult(BatchResultMasterModel batchResultMasterModel)
         {
@@ -75,10 +78,11 @@ namespace ColorVision.Solution.View
         {
 
         }
-
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilities { get; set; }
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
-
+            if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && listView1.View is GridView gridView)
+                GridViewColumnVisibilities = GridViewColumnVisibility.GenContentMenuGridViewColumnZero(contextMenu, gridView.Columns);
         }
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -88,6 +92,33 @@ namespace ColorVision.Solution.View
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
+            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
+            {
+                foreach (var item in GridViewColumnVisibilities)
+                {
+                    if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
+                    {
+                        switch (item.ColumnName)
+                        {
+                            case "序号":
+                                item.IsSortD = !item.IsSortD;
+                                ViewBatchResults.SortByID(item.IsSortD);
+                                break;
+                            case "测量时间":
+                                item.IsSortD = !item.IsSortD;
+                                ViewBatchResults.SortByCreateTime(item.IsSortD);
+                                break;
+                            case "批次号":
+                                item.IsSortD = !item.IsSortD;
+                                ViewBatchResults.SortByBatch(item.IsSortD);
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    }
+                }
+            }
 
         }
 

@@ -82,7 +82,7 @@ namespace ColorVision.Common.MVVM
             }
         }
 
-        public static void GenContentMenuGridViewColumnZero(ContextMenu contextMenu, GridViewColumnCollection gridViewColumns, ObservableCollection<GridViewColumnVisibility>? gridViewColumnVisibilitys = null)
+        public static ObservableCollection<GridViewColumnVisibility> GenContentMenuGridViewColumnZero(ContextMenu contextMenu, GridViewColumnCollection gridViewColumns, ObservableCollection<GridViewColumnVisibility>? gridViewColumnVisibilitys = null)
         {
             if (gridViewColumnVisibilitys == null)
             {
@@ -95,6 +95,7 @@ namespace ColorVision.Common.MVVM
             AddGridViewColumn(gridViewColumns, gridViewColumnVisibilitys);
             contextMenu.Items.Clear();
             GenContentMenuGridViewColumn(contextMenu, gridViewColumns, gridViewColumnVisibilitys);
+            return gridViewColumnVisibilitys;
         }
 
         public static void GenContentMenuGridViewColumn(ContextMenu contextMenu,GridViewColumnCollection gridViewColumns, ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys)
