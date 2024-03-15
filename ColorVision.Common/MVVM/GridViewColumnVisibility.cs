@@ -15,6 +15,7 @@ namespace ColorVision.Common.MVVM
 
         public static void AdjustGridViewColumnAuto(this ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys, GridViewColumnCollection gridViewColumns) => GridViewColumnVisibility.AdjustGridViewColumnAuto(gridViewColumns, gridViewColumnVisibilitys);
     }
+
    // https://stackoverflow.com/questions/747872/wpf-displaying-a-context-menu-for-a-gridviews-items
     public class GridViewColumnVisibility:ViewModelBase
     {
