@@ -452,6 +452,8 @@ namespace ColorVision.Services.Devices.Camera
         public override UserControl GetDeviceControl() => new DeviceCameraControl(this);
         public override UserControl GetDeviceInfo() => new DeviceCameraControl(this, false);
         
+
+
         public override UserControl GetDisplayControl() => new DisplayCameraControl(this);
         public override UserControl GetEditControl() => new EditCamera(this);
 

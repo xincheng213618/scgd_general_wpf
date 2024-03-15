@@ -25,7 +25,7 @@ namespace ColorVision.Services.DAO
         public string? Name { get; set; }
         public string? Code { get; set; }
         public DateTime? CreateDate { get; set; }
-        public int TotalTime { get; set; }
+        public int? TotalTime { get; set; }
         public string? Result { get; set; }
         public int TenantId { get; set; }
     }
@@ -44,7 +44,7 @@ namespace ColorVision.Services.DAO
                 Name = item.Field<string>("name"),
                 Code = item.Field<string>("code"),
                 TenantId = item.Field<int>("tenant_id"),
-                TotalTime = item.Field<int>("total_time"),
+                TotalTime = item.Field<int?>("total_time"),
                 Result = item.Field<string>("result"),
                 CreateDate = item.Field<DateTime?>("create_date"),
             };
@@ -56,10 +56,9 @@ namespace ColorVision.Services.DAO
         {
             if (item != null)
             {
-                if (item.Id > 0) row["id"] = item.Id;
-                if (item.Name != null) row["name"] = item.Name;
-                if (item.Code != null) row["code"] = item.Code;
-                if (item.TId >= 0) row["t_id"] = item.TId;
+                row["id"] = item.Id;
+                row["name"] = item.Name;
+                row["t_id"] = item.TId;
                 row["create_date"] = item.CreateDate;
                 row["result"] = item.Result;
                 row["total_time"] = item.TotalTime;

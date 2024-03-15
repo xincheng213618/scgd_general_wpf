@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Solution.View"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized">
     <Grid>
         <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="5" Margin="5">
             <Grid>
@@ -13,7 +13,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Text="批次管理" FontSize="25" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="20"/>
+                <TextBlock Grid.Row="0" Text="综合查询" FontSize="25" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="10"/>
                 <StackPanel Grid.Row="1">
                     <ListView Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" BorderThickness="0" Background="Transparent" Margin="-5" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
                         <ListView.Resources>
@@ -31,49 +31,35 @@
                                         <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                     </Style>
                                 </GridView.ColumnHeaderContainerStyle>
-                                <GridViewColumn  Header="序号" Width="{Binding IsIDShow,Converter={StaticResource WidthToBooleanConverter}}">
+                                <GridViewColumn  Header="序号">
                                     <GridViewColumn.CellTemplate>
-                                        <DataTemplate  >
+                                        <DataTemplate  DataType="{x:Type local:ViewBatchResult}"  >
                                             <TextBlock Text="{Binding Id}"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
                                 <GridViewColumn  Header="批次号">
                                     <GridViewColumn.CellTemplate>
-                                        <DataTemplate >
-                                            <TextBlock Text="{Binding BatchID}"/>
+                                        <DataTemplate  DataType="{x:Type local:ViewBatchResult}"  >
+                                            <TextBlock Text="{Binding Batch}"/>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+
+                                <GridViewColumn  Header="用时">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:ViewBatchResult}"  >
+                                            <TextBlock Text="{Binding TotalTime}"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
                                 <GridViewColumn  Header="测量时间">
                                     <GridViewColumn.CellTemplate>
-                                        <DataTemplate  >
+                                        <DataTemplate DataType="{x:Type local:ViewBatchResult}"  >
                                             <TextBlock Text="{Binding CreateTime}"/>
                                         </DataTemplate>
                                     </GridViewColumn.CellTemplate>
                                 </GridViewColumn>
-                                <GridViewColumn  Header="测量属性">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate  >
-                                            <TextBlock Text="{Binding MeasurementType ,Converter={StaticResource DescriptioConverter}}"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn  Header="原值">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate >
-                                            <TextBlock Text="{Binding LimitStart}"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-                                <GridViewColumn  Header="限值">
-                                    <GridViewColumn.CellTemplate>
-                                        <DataTemplate >
-                                            <TextBlock Text="{Binding LimitEnd}"/>
-                                        </DataTemplate>
-                                    </GridViewColumn.CellTemplate>
-                                </GridViewColumn>
-
                             </GridView>
                         </ListView.View>
                     </ListView>

@@ -171,7 +171,7 @@
                         </GridViewColumn>
                         <GridViewColumn  Header="参数" >
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:ViewResultCalibration}">
+                                <DataTemplate  DataType="{ local:ViewResultCalibration}">
                                     <TextBlock Text="{ Binding   ReqParams}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
