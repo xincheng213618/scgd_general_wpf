@@ -17,6 +17,8 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ColorVision.Services.Dao;
+using MQTTMessageLib.Camera;
 
 namespace ColorVision.Services.Devices.Calibration
 {
@@ -69,6 +71,7 @@ namespace ColorVision.Services.Devices.Calibration
                 ComboxView.ItemsSource = KeyValues;
                 ComboxView.SelectedValue = View.View.ViewIndex;
             }
+            View.View.ClearViewIndexChangedSubscribers();
             View.View.ViewIndexChangedEvent += (e1, e2) =>
             {
                 ComboxView.SelectedIndex = e2 + 2;
@@ -97,7 +100,7 @@ namespace ColorVision.Services.Devices.Calibration
         }
 
 
-
+        MeasureImgResultDao measureImgResultDao = new MeasureImgResultDao();
         private void Service_OnCalibrationEvent(object sender, MessageRecvArgs arg)
         {
             switch (arg.EventName)
@@ -113,7 +116,34 @@ namespace ColorVision.Services.Devices.Calibration
                         if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, FileExtType.CIE);
                     }
                     break;
+                case MQTTCameraEventEnum.Event_GetData:
+                    int masterId = Convert.ToInt32(arg.Data.MasterId);
+                    List<MeasureImgResultModel> resultMaster = null;
+                    if (masterId > 0)
+                    {
+                        resultMaster = new List<MeasureImgResultModel>();
+                        MeasureImgResultModel model = measureImgResultDao.GetById(masterId);
+                        if (model != null)
+                            resultMaster.Add(model);
+                    }
+                    else
+                    {
+                        resultMaster = measureImgResultDao.GetAllByBatchCode(arg.SerialNumber);
+                    }
+                    if (resultMaster != null)
+                    {
+                        foreach (MeasureImgResultModel result in resultMaster)
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                Device.View.ShowResult(result);
+                            });
+                        }
+                    }
+                    break;
             }
+
+
         }
         private void DoShowFileList(DeviceListAllFilesParam data)
         {

@@ -197,6 +197,8 @@ namespace ColorVision.Services.Terminal
                 MessageBox.Show("设备标识已存在,不允许重复添加");
                 return;
             }
+            DeviceService deviceService = null;
+
 
             SysResourceModel sysResource = new SysResourceModel(CreatName, CreatCode, SysResourceModel.Type, SysResourceModel.Id, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             SysDeviceModel sysDevModel = null;
@@ -216,7 +218,9 @@ namespace ColorVision.Services.Terminal
                     };
                     sysDevModel = saveDevConfigInfo(pGConfig, sysResource);
                     if (sysDevModel != null)
-                        AddChild(new DevicePG(sysDevModel));
+                    {
+                        deviceService = new DevicePG(sysDevModel);
+                    }
                     break;
                 case ServiceTypes.Spectrum:
                     fromPort = (Math.Abs(new Random().Next()) % 99 + 6700);
@@ -241,7 +245,9 @@ namespace ColorVision.Services.Terminal
                     };
                     sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
                     if (sysDevModel != null)
-                        AddChild(new DeviceSpectrum(sysDevModel));
+                    {
+                        deviceService = new DeviceSpectrum(sysDevModel);
+                    }
                     break;
                 case ServiceTypes.SMU:
                     deviceConfig = new ConfigSMU
@@ -251,7 +257,9 @@ namespace ColorVision.Services.Terminal
                     };
                     sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
                     if (sysDevModel != null)
-                        AddChild(new DeviceSMU(sysDevModel));
+                    {
+                        deviceService = new DeviceSMU(sysDevModel);
+                    }
                     break;
                 case ServiceTypes.Sensor:
                     deviceConfig = new ConfigSensor
@@ -261,7 +269,9 @@ namespace ColorVision.Services.Terminal
                     };
                     sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
                     if (sysDevModel != null)
-                        AddChild(new DeviceSensor(sysDevModel));
+                        {
+                        deviceService = new DeviceSensor(sysDevModel);
+                    }
                     break;
                 case ServiceTypes.FileServer:
                     fromPort = (Math.Abs(new Random().Next()) % 99 + 6500);
@@ -275,7 +285,10 @@ namespace ColorVision.Services.Terminal
                     };
                     sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
                     if (sysDevModel != null)
-                        AddChild(new DeviceFileServer(sysDevModel));
+                    {
+                        deviceService = new DeviceFileServer(sysDevModel);
+                    }
+
                     break;
                 case ServiceTypes.Algorithm:
                     fromPort = (Math.Abs(new Random().Next()) % 99 + 6600);
@@ -292,7 +305,9 @@ namespace ColorVision.Services.Terminal
                     };
                     sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
                     if (sysDevModel != null)
-                        AddChild(new DeviceAlgorithm(sysDevModel));
+                        {
+                        deviceService = new DeviceAlgorithm(sysDevModel);
+                    }
                     break;
                 case ServiceTypes.CfwPort:
                     deviceConfig = new ConfigCfwPort
@@ -302,7 +317,9 @@ namespace ColorVision.Services.Terminal
                     };
                     sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
                     if (sysDevModel != null)
-                        AddChild(new DeviceCfwPort(sysDevModel));
+                        {
+                        deviceService = new DeviceCfwPort(sysDevModel);
+                    }
                     break;
                 case ServiceTypes.Calibration:
                     fromPort = (Math.Abs(new Random().Next()) % 99 + 6200);
@@ -319,7 +336,9 @@ namespace ColorVision.Services.Terminal
                     };
                     sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
                     if (sysDevModel != null)
-                        AddChild(new DeviceCalibration(sysDevModel));
+                        {
+                        deviceService = new DeviceCalibration(sysDevModel);
+                    }
                     break;
                 case ServiceTypes.Motor:
                     deviceConfig = new ConfigMotor
@@ -329,15 +348,28 @@ namespace ColorVision.Services.Terminal
                     };
                     sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
                     if (sysDevModel != null)
-                        AddChild(new DeviceMotor(sysDevModel));
+                    {
+                        deviceService = new DeviceMotor(sysDevModel);
+
+
+                    }
                     break;
                 default:
                     break;
             };
+            if (deviceService != null)
+            {
+                AddChild(deviceService);
+                ServiceManager.GetInstance().DeviceServices.Add(deviceService);
+                if (sysDevModel != null && sysDevModel.TypeCode != null && sysDevModel.PCode != null && sysDevModel.Code != null)
+                    RC.MQTTRCService.GetInstance().RestartServices(sysDevModel.TypeCode, sysDevModel.PCode, sysDevModel.Code);
+                MessageBox.Show("添加资源成功");
+            }
+            else
+            {
+                MessageBox.Show("资源创建失败");
+            }
 
-            if (sysDevModel != null && sysDevModel.TypeCode != null && sysDevModel.PCode != null && sysDevModel.Code != null)
-                RC.MQTTRCService.GetInstance().RestartServices(sysDevModel.TypeCode, sysDevModel.PCode, sysDevModel.Code);
-            MessageBox.Show("添加资源成功");
         }
 
 
@@ -350,6 +382,8 @@ namespace ColorVision.Services.Terminal
                 ServiceManager.GetInstance().VSysResourceDao.DeleteById(SysResourceModel.Id);
                 ServiceManager.GetInstance().VSysResourceDao.DeleteAllByPid(SysResourceModel.Id);
             }
+
+            ServiceManager.GetInstance().TerminalServices.Remove(this);
         }
 
         public ServiceTypes Type { get => (ServiceTypes)SysResourceModel.Type; }

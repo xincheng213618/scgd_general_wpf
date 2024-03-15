@@ -20,6 +20,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -55,6 +56,7 @@ namespace ColorVision.Media
 
             ToolBarTop = new ToolBarTop(this,Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
+            ToolBar2.DataContext = ToolBarTop;
             ToolBarTop.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             ListView1.ItemsSource = DrawingVisualLists;
 
@@ -539,45 +541,44 @@ namespace ColorVision.Media
 
         public void OpenImage(CVCIEFile fileInfo)
         {
-            if (fileInfo.FileExtType == MQTTMessageLib.FileServer.FileExtType.Tif) OpenTifImage(fileInfo.data);
-            else/* if(fileInfo.FileExtType == MQTTMessageLib.FileServer.FileExtType.Raw || fileInfo.FileExtType == MQTTMessageLib.FileServer.FileExtType.Src)*/
+            if (fileInfo.FileExtType == FileExtType.Tif)
             {
-                ShowImage(fileInfo);
+                var src = OpenCvSharp.Cv2.ImDecode(fileInfo.data, OpenCvSharp.ImreadModes.Unchanged);
+                SetImageSource(src.ToWriteableBitmap());
             }
-        }
-
-        private void ShowImage(CVCIEFile fileInfo)
-        {
-            logger.Info("OpenImage .....");
-
-            OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
-            OpenCvSharp.Mat dst = null;
-            if (fileInfo.bpp == 32)
-            {
-                OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
-                dst = new OpenCvSharp.Mat();
-                src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
-            }
-            else
-            {
-                dst = src;
-            }
-            SetImageSource(dst.ToWriteableBitmap());
-        }
-
-        public void OpenTifImage(byte[] data)
-        {
-            if (data != null)
+            else if(fileInfo.FileExtType == FileExtType.Raw || fileInfo.FileExtType == FileExtType.Src)
             {
                 logger.Info("OpenImage .....");
-                var src = OpenCvSharp.Cv2.ImDecode(data, OpenCvSharp.ImreadModes.Unchanged);
-                SetImageSource(src.ToWriteableBitmap());
+
+                OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
+                OpenCvSharp.Mat dst = null;
+                if (fileInfo.bpp == 32)
+                {
+                    OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
+                    dst = new OpenCvSharp.Mat();
+                    src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
+                }
+                else
+                {
+                    dst = src;
+                }
+                SetImageSource(dst.ToWriteableBitmap());
+                dst.Dispose();
+            }
+            else if (fileInfo.FileExtType == FileExtType.CIE)
+            {
+
             }
         }
 
         public void Clear()
         {
             ImageShow.Source = null;
+            if (HImageCache != null)
+            {
+                HImageCache?.Dispose();
+                HImageCache = null;
+            }
         }
 
         public void OpenImage(string? filePath)
@@ -588,14 +589,14 @@ namespace ColorVision.Media
                 if (ext.Contains(".tif"))
                 {
                     BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
-                    SetImageSource(bitmapImage);
+                    SetImageSource(bitmapImage.ToWriteableBitmap());
                 }
-                else if (ext.Contains(".cvraw") || ext.Contains(".cvsrc") || ext.Contains(".cvsrc"))
+                else if (ext.Contains(".cvraw") || ext.Contains(".cvsrc") || ext.Contains(".cvcie"))
                 {
                     FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
                     try
                     {
-                        OpenImage(new NetFileUtil("1").OpenLocalCVFile(filePath, fileExtType));
+                        OpenImage(new NetFileUtil().OpenLocalCVFile(filePath, fileExtType));
                     }
                     catch (Exception ex)
                     {
@@ -607,7 +608,7 @@ namespace ColorVision.Media
                     BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
 
 
-                    SetImageSource(bitmapImage);
+                    SetImageSource(bitmapImage.ToWriteableBitmap());
                 }
             }
         }
@@ -619,46 +620,44 @@ namespace ColorVision.Media
 
             int i = OpenCVHelper.ReadGhostImage(filePath, LEDpixelX.Length, LEDpixelX, LEDPixelY, GhostPixelX.Length, GhostPixelX, GhostPixelY, out HImage hImage);
             if (i != 0) return;
-            HImageCache = hImage;
-            var writeableBitmap = hImage.ToWriteableBitmap();
-            ViewBitmapSource = writeableBitmap;
-            ImageShow.Source = ViewBitmapSource;
-
-            DebounceTimer.AddOrResetTimer("RenderPseudo", 500, RenderPseudo);
-
-            Task.Run(() => {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    Zoombox1.ZoomUniform();
-                });
-            });
+            SetImageSource(hImage.ToWriteableBitmap());
+            OpenCVHelper.FreeHImageData(hImage.pData);
+            hImage.pData = IntPtr.Zero;
         }
 
         public HImage? HImageCache { get; set; }
 
+
         private void SetImageSource(WriteableBitmap writeableBitmap)
         {
+            if (HImageCache != null)
+            {
+                HImageCache?.Dispose();
+                HImageCache = null;
+            }
+
             HImageCache = writeableBitmap.ToHImage();
+
+            ToolBarTop.PseudoVisible = Visibility.Visible;
             DebounceTimer.AddOrResetTimer("RenderPseudo", 500, RenderPseudo);
 
+            if (HImageCache?.channels == 1)
+            {
+
+
+                ToolBarTop.CIEVisible = Visibility.Collapsed ;
+            }
+            else
+            {
+                //ToolBarTop.PseudoVisible = Visibility.Collapsed;
+                ToolBarTop.CIEVisible = Visibility.Visible;
+            }
             ViewBitmapSource = writeableBitmap;
+
             ImageShow.Source = ViewBitmapSource;
             DrawGridImage(DrawingVisualGrid, writeableBitmap);
-            Zoombox1.ZoomUniform();
-            ToolBar1.Visibility = Visibility.Visible;
-            ImageShow.ImageInitialize();
-        }
-
-        private void SetImageSource(BitmapImage bitmapImage)
-        {
-            HImageCache = bitmapImage.ToHImage();
-            DebounceTimer.AddOrResetTimer("RenderPseudo", 500, RenderPseudo);
-
-            ViewBitmapSource = bitmapImage;
-            ImageShow.Source = ViewBitmapSource;
-            DrawGridImage(DrawingVisualGrid, bitmapImage);
             Task.Run(() => {
-                Application.Current.Dispatcher.Invoke(()=>
+                Application.Current.Dispatcher.Invoke(() =>
                 {
                     Zoombox1.ZoomUniform();
                 });
@@ -852,10 +851,15 @@ namespace ColorVision.Media
                             if (ret == 0)
                             {
                                 PseudoImage = hImageProcessed.ToWriteableBitmap();
+                                //在转换完成之后需要释放掉内存；
+                                OpenCVHelper.FreeHImageData(hImageProcessed.pData);
+                                hImageProcessed.pData = IntPtr.Zero;
+
                                 if (Pseudo.IsChecked == true)
                                 {
                                     ImageShow.Source = PseudoImage;
                                 }
+
                             }
                         });
                     });

@@ -56,8 +56,7 @@ namespace ColorVision.Services.Devices.Camera
             CreateDeviceOver += handler;
             createWindow.Closed += (s, e) =>
             {
-                if (CreateDeviceOver!=null)
-                    CreateDeviceOver -= handler;
+                CreateDeviceOver -= handler;
             };
             createWindow.ShowDialog();
         }
@@ -83,7 +82,11 @@ namespace ColorVision.Services.Devices.Camera
             {
                 if (MQTTServiceTerminalBase is MQTTTerminalCamera cameraService)
                 {
-                    AddChild(new DeviceCamera(model, cameraService));
+
+                    var deviceService = new DeviceCamera(model, cameraService);
+                    AddChild(deviceService);
+                    ServiceManager.GetInstance().DeviceServices.Add(deviceService);
+
                 }
                 CreateDeviceOver?.Invoke(this,new EventArgs());
             }

@@ -33,7 +33,8 @@ namespace ColorVision.Services.Devices.Camera.Views
             ImgFrameInfo = measureImgResultModel.ImgFrameInfo ?? string.Empty;
             CreateTime = measureImgResultModel.CreateDate;
             ResultCode = measureImgResultModel.ResultCode;
-            ResultDesc = measureImgResultModel.ResultDesc ?? string.Empty;
+            ResultMsg = measureImgResultModel.ResultMsg;
+            ResultDesc = measureImgResultModel.ResultMsg ?? string.Empty;
             _totalTime = measureImgResultModel.TotalTime;
         }
 
@@ -58,27 +59,18 @@ namespace ColorVision.Services.Devices.Camera.Views
         public DateTime? CreateTime { get { return _RecvTime; } set { _RecvTime = value; NotifyPropertyChanged(); } }
         private DateTime? _RecvTime;
 
-        public string Result
-        {
-            get
-            {
-                return ResultCode == 0 ? "成功" : "失败";
-            }
-        }
+        public string? ResultMsg { get => _ResultMsg; set { _ResultMsg = value; NotifyPropertyChanged(); } }
+        private string? _ResultMsg;
+        public int ResultCode { get { return _resultCode; } set { _resultCode = value; NotifyPropertyChanged(); } }
         private int _resultCode;
 
-        public string TotalTime
-        {
-            get
-            {
-                return string.Format("{0}",   TimeSpan.FromMilliseconds(_totalTime).ToString(@"mm\:ss\:fff"));
-            }
-        }
+        public string TotalTime => string.Format("{0}", TimeSpan.FromMilliseconds(_totalTime).ToString(@"mm\:ss\:fff"));
         private long _totalTime;
 
         private string _resultDesc;
 
-        public int ResultCode { get { return _resultCode; } set { _resultCode = value; NotifyPropertyChanged(); } }
+
+
         public string ResultDesc { get { return _resultDesc; } set { _resultDesc = value; NotifyPropertyChanged(); } }
     }
 

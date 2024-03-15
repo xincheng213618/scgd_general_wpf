@@ -9,45 +9,6 @@ using System.Security.Cryptography;
 
 namespace ColorVision.Net
 {
-    public struct CVCIEFile
-    {
-        public FileExtType FileExtType;
-        public int rows;
-        public int cols;
-        public int bpp;
-        public readonly int Depth
-        {
-            get
-            {
-                return bpp switch
-                {
-                    8 => 0,
-                    16 => 2,
-                    32 => 5,
-                    64 => 6,
-                    _ => 0,
-                };
-            }
-        }
-        public int channels;
-        public int gain;
-        public float[] exp;
-        public string srcFileName;
-        public byte[] data;
-
-        public CVCIEFile(CVCIEFile info)
-        {
-            FileExtType = info.FileExtType;
-            rows = info.rows;
-            cols = info.cols;
-            bpp = info.bpp;
-            channels = info.channels;
-            gain = info.gain;
-            exp = info.exp;
-            srcFileName = info.srcFileName;
-            data = info.data;
-        }
-    }
 
 
     public static class CVFileUtil
@@ -190,7 +151,7 @@ namespace ColorVision.Net
             return -2;
         }
 
-        private static int ReadCIEFileHeader(byte[] fileData, ref CVCIEFile cVCIEFileInfo)
+        public static int ReadCIEFileHeader(byte[] fileData, ref CVCIEFile cVCIEFileInfo)
         {
             int startIndex = 0;
             if (fileData != null && fileData.Length > 5 && fileData[0] == 'C' && fileData[1] == 'V' && fileData[2] == 'C' && fileData[3] == 'I' && fileData[4] == 'E')

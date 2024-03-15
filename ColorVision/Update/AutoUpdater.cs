@@ -55,23 +55,26 @@ namespace ColorVision.Update
             {
                 try
                 {
-                    FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(updateFile);
-                    if (localVersion < new Version(fileVersionInfo.FileVersion??string.Empty))
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            RestartApplication(updateFile);
-                        });
-                    }
-                    else
-                    {
-                        // 删除文件
-                        File.Delete(updateFile);
-                        log.Info($"Deleted update file: {updateFile}");
-                    }
+                    //这里先注释掉，逻辑有些问题
+                    //FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(updateFile);
+                    //if (localVersion < new Version(fileVersionInfo.FileVersion??string.Empty))
+                    //{
+                    //    Application.Current.Dispatcher.Invoke(() =>
+                    //    {
+                    //        RestartApplication(updateFile);
+                    //    });
+                    //}
+                    //else
+                    //{
+                    //    // 删除文件
+
+                    //}
+                    File.Delete(updateFile);
+                    log.Info($"Deleted update file: {updateFile}");
                 }
                 catch (Exception ex)
                 {
+                    File.Delete(updateFile);
                     // 如果删除过程中出现错误，输出错误信息
                     log.Info($"Error deleting the update file {updateFile}: {ex.Message}");
                 }
@@ -202,14 +205,14 @@ namespace ColorVision.Update
                 {
                     do
                     {
-                        readBytes = await stream.ReadAsync(buffer, 0, buffer.Length);
+                        readBytes = await stream.ReadAsync(buffer);
                         if (readBytes == 0)
                         {
                             isMoreToRead = false;
                         }
                         else
                         {
-                            await fileStream.WriteAsync(buffer, 0, readBytes);
+                            await fileStream.WriteAsync(buffer.AsMemory(0, readBytes));
 
                             totalReadBytes += readBytes;
                             int progressPercentage = totalBytes != -1L

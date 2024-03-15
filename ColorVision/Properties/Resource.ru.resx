@@ -630,4 +630,10 @@
   <data name="ColorVisionUpdater" xml:space="preserve">
     <value>Программа обновления ColorVision</value>
   </data>
+  <data name="Loading" xml:space="preserve">
+    <value>нагрузка</value>
+  </data>
+  <data name="ServiceConfiguration" xml:space="preserve">
+    <value>Конфигурация сервиса</value>
+  </data>
 </root>

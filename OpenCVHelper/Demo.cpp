@@ -46,7 +46,11 @@ int PseudoColor(HImage img, HImage* outImage, uint min1, uint max1)
 	MatToHImage(scaledMat, outImage);
 	return 0;
 }
-
+void FreeHImageData(unsigned char* data)
+{
+	// 使用 delete[] 来释放由 new[] 分配的内存
+	delete[] data;
+}
 
 
 

@@ -1,7 +1,11 @@
 ﻿using ColorVision.Common.Extension;
+using ColorVision.Services.Devices.Calibration;
 using cvColorVision;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Drawing.Text;
 using System.Linq;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -98,6 +102,20 @@ namespace ColorVision.Services.Devices.Camera
                     };
                 }
 
+            };
+
+            this.Loaded += (s, e) =>
+            {
+                ObservableCollection<string> calibrations = new ObservableCollection<string>();
+
+                foreach (var item in ServiceManager.GetInstance().DeviceServices)
+                {
+                    if (item is DeviceCalibration calibration)
+                    {
+                        calibrations.Add(calibration.Code);
+                    }
+                }
+                TextBox_BindDevice.ItemsSource = calibrations;
             };
 
 
