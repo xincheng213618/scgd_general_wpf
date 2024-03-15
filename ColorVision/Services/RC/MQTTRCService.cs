@@ -410,6 +410,11 @@ namespace ColorVision.RC
                 MQTTRCServicesRestartRequest reg = new MQTTRCServicesRestartRequest(AppId, NodeName, nodeType, Token.AccessToken, svrCode, devCode);
                 PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(reg));
             }
+
+            Task.Factory.StartNew(() => {
+                Thread.Sleep(2000);
+                QueryServices();
+            });
         }
         public bool TryRegist(RCServiceConfig cfg)
         {

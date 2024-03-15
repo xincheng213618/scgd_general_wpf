@@ -1,4 +1,5 @@
 ﻿using ColorVision.MVVM;
+using ColorVision.RC;
 using ColorVision.Settings;
 using System;
 using System.Collections.ObjectModel;
@@ -84,7 +85,15 @@ namespace ColorVision.MQTT
             Task.Run( async () =>
             {
                 bool IsConnect = await MQTTControl.TestConnect(MQTTConfig);
-                await this.Dispatcher.BeginInvoke(() => MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}", "ColorVision"));
+                await this.Dispatcher.BeginInvoke(() =>
+                {
+                    Task.Run(() =>
+                    {
+                        MQTTRCService.GetInstance().QueryServices();
+                        MQTTRCService.GetInstance().ReRegist();
+                    });
+                    MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}", "ColorVision");
+                });
             });
 
         }
