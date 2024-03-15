@@ -540,7 +540,7 @@ namespace ColorVision.Media
         public void OpenImage(CVCIEFile fileInfo)
         {
             if (fileInfo.FileExtType == MQTTMessageLib.FileServer.FileExtType.Tif) OpenTifImage(fileInfo.data);
-            else if(fileInfo.FileExtType == MQTTMessageLib.FileServer.FileExtType.Raw || fileInfo.FileExtType == MQTTMessageLib.FileServer.FileExtType.Src)
+            else/* if(fileInfo.FileExtType == MQTTMessageLib.FileServer.FileExtType.Raw || fileInfo.FileExtType == MQTTMessageLib.FileServer.FileExtType.Src)*/
             {
                 ShowImage(fileInfo);
             }
