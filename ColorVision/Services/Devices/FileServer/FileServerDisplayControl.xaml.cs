@@ -25,21 +25,23 @@ namespace ColorVision.Services.Devices.FileServer
     public partial class FileServerDisplayControl : UserControl,IDisPlayControl
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(FileServerDisplayControl));
-        public DeviceFileServer DeviceImg { get; set; }
+        public DeviceFileServer DeviceFileServer { get; set; }
 
-        public ImageView View { get => DeviceImg.View; }
+        public MQTTFileServer MQTTFileServer { get => DeviceFileServer.MQTTFileServer; }
+
+        public ImageView View { get => DeviceFileServer.View; }
 
         private NetFileUtil netFileUtil;
 
-        public FileServerDisplayControl(DeviceFileServer deviceImg)
+        public FileServerDisplayControl(DeviceFileServer deviceFileServer)
         {
-            DeviceImg = deviceImg;
+            DeviceFileServer = deviceFileServer;
             InitializeComponent();
 
             netFileUtil = new NetFileUtil(string.Empty);
             netFileUtil.handler += NetFileUtil_handler;
 
-            DeviceImg.DeviceService.OnImageData += Service_OnImageData;
+            DeviceFileServer.MQTTFileServer.OnImageData += Service_OnImageData;
 
             this.PreviewMouseDown += UserControl_PreviewMouseDown;
         }
@@ -106,7 +108,7 @@ namespace ColorVision.Services.Devices.FileServer
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = DeviceImg;
+            this.DataContext = DeviceFileServer;
 
             ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
             ViewGridManager.GetInstance().ViewMaxChangedEvent += ViewMaxChangedEvent;
@@ -158,7 +160,7 @@ namespace ColorVision.Services.Devices.FileServer
                 }
             };
 
-            Task t = new(() => { DeviceImg.DeviceService.GetAllFiles(); });
+            Task t = new(() => { MQTTFileServer.GetAllFiles(); });
             t.Start();
         }
 
@@ -166,12 +168,7 @@ namespace ColorVision.Services.Devices.FileServer
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
-            doOpen(FilesView.Text);
-        }
-
-        private void doOpen(string fileName)
-        {
-            DeviceImg.DeviceService.Open(fileName);
+            MQTTFileServer.Open(FilesView.Text);
 
             handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
             handler.Cancelling += delegate
@@ -182,7 +179,7 @@ namespace ColorVision.Services.Devices.FileServer
 
         private void Button_Click_Refresh(object sender, RoutedEventArgs e)
         {
-            DeviceImg.DeviceService.GetAllFiles();
+            MQTTFileServer.GetAllFiles();
         }
 
         private void Button_Click_Upload(object sender, RoutedEventArgs e)
@@ -193,8 +190,7 @@ namespace ColorVision.Services.Devices.FileServer
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-               // DeviceImg.DeviceService.UploadFile(Path.GetFileName(openFileDialog.FileName));
-                DeviceImg.DeviceService.UploadFile(openFileDialog.FileName);
+                MQTTFileServer.UploadFile(openFileDialog.FileName);
                 handler = PendingBox.Show(Application.Current.MainWindow, "", "上传", true);
                 handler.Cancelling += delegate
                 {
@@ -203,7 +199,7 @@ namespace ColorVision.Services.Devices.FileServer
             }
         }
 
-        private static byte[] readFile(string path)
+        private static byte[] ReadFile(string path)
         {
             FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read);
             BinaryReader binaryReader = new BinaryReader(fileStream);

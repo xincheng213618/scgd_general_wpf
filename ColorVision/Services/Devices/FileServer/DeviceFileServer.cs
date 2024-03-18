@@ -8,13 +8,13 @@ namespace ColorVision.Services.Devices.FileServer
 {
     public class DeviceFileServer : DeviceService<FileServerConfig>
     {
-        public MQTTService DeviceService { get; set; }
+        public MQTTFileServer MQTTFileServer { get; set; }
 
         public ImageView View { get; set; }
 
         public DeviceFileServer(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
-            DeviceService = new MQTTService(Config);
+            MQTTFileServer = new MQTTFileServer(Config);
             View = new ImageView();
         }
 
@@ -24,7 +24,7 @@ namespace ColorVision.Services.Devices.FileServer
         public override UserControl GetDisplayControl() =>new FileServerDisplayControl(this);
         public override MQTTServiceBase? GetMQTTService()
         {
-            return DeviceService;
+            return MQTTFileServer;
         }
     }
 }

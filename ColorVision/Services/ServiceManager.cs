@@ -217,7 +217,7 @@ namespace ColorVision.Services
                             break;
                         case ServiceTypes.FileServer:
                             DeviceFileServer img = new DeviceFileServer(sysResourceModel);
-                            svrObj = img.DeviceService;
+                            svrObj = img.MQTTFileServer;
                             terminalService.AddChild(img);
                             DeviceServices.Add(img);
                             break;

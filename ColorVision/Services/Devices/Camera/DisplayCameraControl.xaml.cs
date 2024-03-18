@@ -521,7 +521,7 @@ namespace ColorVision.Services.Devices.Camera
             {
                 //if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
                 //{
-                //    MsgRecord msgRecord = DeviceService.CalibrationControl(param);
+                //    MsgRecord msgRecord = MQTTFileServer.CalibrationControl(param);
                 //    Helpers.SendCommand(button, msgRecord);
 
                 //}

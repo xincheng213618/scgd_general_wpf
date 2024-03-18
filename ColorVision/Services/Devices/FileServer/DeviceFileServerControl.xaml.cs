@@ -10,7 +10,7 @@ namespace ColorVision.Services.Devices.FileServer
     public partial class DeviceFileServerControl : UserControl
     {
         public DeviceFileServer DeviceFileServer { get; set; }
-        public MQTTService DService { get => DeviceFileServer.DeviceService; }
+        public MQTTFileServer DService { get => DeviceFileServer.MQTTFileServer; }
 
         public bool IsCanEdit { get; set; }
         public DeviceFileServerControl(DeviceFileServer device, bool isCanEdit = true)
