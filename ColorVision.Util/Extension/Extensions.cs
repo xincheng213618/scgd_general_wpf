@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8602 // 取消引用可能出现的空引用。
 
+using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;
 using System.ComponentModel;
@@ -15,10 +16,22 @@ using System.Windows.Media.Imaging;
 namespace ColorVision.Extension
 {
     /// <summary>
-    // 扩展加载，没有特殊标记的丢在这里，反正会自动识别加载
+    // 扩展加载，没有特殊标记的丢在这里，反正会自    动识别加载
     /// </summary>
     public static class Extensions
     {
+        public static T? CloneViaJson<T>(this T source) where T : ViewModelBase
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+
+            // 序列化source对象到JSON字符串
+            string serialized = JsonConvert.SerializeObject(source);
+
+            // 反序列化JSON字符串回到新的对象实例
+            T clone = JsonConvert.DeserializeObject<T>(serialized);
+            return clone;
+        }
+
         public static JsonSerializerSettings settings { get; set; } = new JsonSerializerSettings
         {
             Formatting = Formatting.Indented
