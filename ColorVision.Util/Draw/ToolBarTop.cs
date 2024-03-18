@@ -1,13 +1,13 @@
-﻿using ColorVision.MVVM;
-using System;
-using System.Windows;
-using System.Windows.Media;
-using System.Windows.Input;
-using Gu.Wpf.Geometry;
-using System.Reflection;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Draw.Ruler;
-using ColorVision.Util.Draw.Special;
 using ColorVision.Draw.Special;
+using ColorVision.Util.Draw.Special;
+using Gu.Wpf.Geometry;
+using System;
+using System.Reflection;
+using System.Windows;
+using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.Draw
 {

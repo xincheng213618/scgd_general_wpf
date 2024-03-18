@@ -1,4 +1,4 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Settings;
 using log4net;
 using Org.BouncyCastle.Asn1.Ocsp;

@@ -1,5 +1,5 @@
-﻿using ColorVision.Services.Dao;
-using ColorVision.Sorts;
+﻿using ColorVision.Common.Sorts;
+using ColorVision.Services.Dao;
 
 namespace ColorVision.Services.Core
 {

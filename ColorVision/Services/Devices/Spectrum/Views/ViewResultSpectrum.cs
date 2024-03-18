@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Drawing;
-using ColorVision.MVVM;
+using ColorVision.Common.Sorts;
+using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.Spectrum.Dao;
-using ColorVision.Sorts;
 using Newtonsoft.Json;
 using ScottPlot;
 using ScottPlot.Plottable;

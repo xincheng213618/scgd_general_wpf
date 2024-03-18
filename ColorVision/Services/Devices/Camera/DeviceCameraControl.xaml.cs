@@ -1,9 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Sorts;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Dao;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
-using ColorVision.Sorts;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;

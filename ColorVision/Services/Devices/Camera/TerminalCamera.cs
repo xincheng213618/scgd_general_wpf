@@ -1,4 +1,4 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Terminal;
@@ -49,15 +49,11 @@ namespace ColorVision.Services.Devices.Camera
             CreateWindow createWindow = new CreateWindow(this);
             createWindow.Owner = Window.GetWindow(Application.Current.MainWindow);
             createWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-            EventHandler handler = (s, e) =>
+
+            CreateDeviceOver += (s, e) =>
             {
                 createWindow.Close();
-            };
-            CreateDeviceOver += handler;
-            createWindow.Closed += (s, e) =>
-            {
-                CreateDeviceOver -= handler;
-            };
+            }; ;
             createWindow.ShowDialog();
         }
 

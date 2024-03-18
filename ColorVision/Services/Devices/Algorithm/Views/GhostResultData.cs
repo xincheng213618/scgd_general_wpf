@@ -1,4 +1,4 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.Algorithm.Dao;
 
 namespace ColorVision.Services.Devices.Algorithm.Views

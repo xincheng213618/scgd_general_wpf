@@ -1,6 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Devices.SMU.Dao;
-using ColorVision.Sorts;
+﻿using ColorVision.Services.Devices.SMU.Dao;
 using ColorVision.Common.Utilities;
 using ScottPlot;
 using ScottPlot.Plottable;
@@ -12,6 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using ColorVision.Common.Sorts;
 
 namespace ColorVision.Services.Devices.SMU.Views
 {
@@ -53,18 +52,8 @@ namespace ColorVision.Services.Devices.SMU.Views
             wpfplot2.Plot.Title("电压曲线");
             if (listView1.View is GridView gridView)
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-            GridViewColumnVisibilityListView.ItemsSource = GridViewColumnVisibilitys;
         }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-        private void OpenColumnVisibilityPopupButton_Click(object sender, RoutedEventArgs e)
-        {
-            ColumnVisibilityPopup.IsOpen = true;
-        }
-        private void CheckBox_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.View is GridView gridView)
-                GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-        }
         private void ContextMenu1_Opened(object sender, RoutedEventArgs e)
         {
             if (sender is ContextMenu contextMenu && listView2.View is GridView gridView && contextMenu.Items.Count ==0)

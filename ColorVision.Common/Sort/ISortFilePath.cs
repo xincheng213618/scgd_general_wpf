@@ -2,7 +2,7 @@
 using System.Linq;
 using ColorVision.NativeMethods;
 
-namespace ColorVision.Sorts
+namespace ColorVision.Common.Sorts
 {
     public interface ISortFilePath
     {

@@ -1,7 +1,7 @@
 ﻿#pragma warning disable  CS8604,CS8631
 using ColorVision.Extension;
 using ColorVision.Handler;
-using ColorVision.MVVM;
+using ColorVision.Common.MVVM;
 using ColorVision.RC;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
@@ -160,7 +160,7 @@ namespace ColorVision.Services.Devices
                 var config = JsonConvert.DeserializeObject<T>(data);
                 if (config != null)
                 {
-                    config.CopyTo(this.Config);
+                    config.CloneValuesTo(this.Config);
                     Save();
                 }
                 else

@@ -1,7 +1,7 @@
-﻿using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.Sorts;
 using ColorVision.Common.Utilities;
 using ColorVision.Extension;
-using ColorVision.MVVM;
+using ColorVision.Common.MVVM;
 using ColorVision.Properties;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
@@ -15,7 +15,6 @@ using ColorVision.Services.Templates.Measure;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Settings;
-using ColorVision.Sorts;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -808,7 +807,7 @@ namespace ColorVision.Services.Templates
                         CalibrationParam? calibrationParam1 = JsonConvert.DeserializeObject<CalibrationParam>(File.ReadAllText(ofd.FileName));
                         CalibrationParam? calibrationParam = TemplateControl.AddParamMode<CalibrationParam>(TemplateTypeFactory.GetModeTemplateType(TemplateType), name);
                         if (calibrationParam1 != null && calibrationParam!=null)
-                            calibrationParam1.CopyTo(calibrationParam);
+                            calibrationParam1.CloneValuesTo(calibrationParam);
                         if (calibrationParam != null)
                         {
                             CreateNewTemplate(DeviceCamera.CalibrationParams, name, calibrationParam);

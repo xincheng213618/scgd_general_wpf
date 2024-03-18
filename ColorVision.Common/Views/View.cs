@@ -1,4 +1,4 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Common.MVVM;
 using System.Windows.Media;
 
 namespace ColorVision

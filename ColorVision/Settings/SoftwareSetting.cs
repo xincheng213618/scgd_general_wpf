@@ -1,5 +1,5 @@
 ﻿using ColorVision.Language;
-using ColorVision.MVVM;
+using ColorVision.Common.MVVM;
 using log4net;
 using log4net.Core;
 using log4net.Repository.Hierarchy;
