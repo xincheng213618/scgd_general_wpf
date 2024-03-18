@@ -38,7 +38,7 @@ namespace ColorVision.Solution.View
     /// <summary>
     /// DataSummaryPage.xaml 的交互逻辑
     /// </summary>
-    public partial class DataSummaryPage : UserControl
+    public partial class DataSummaryPage : Page
     {
         public Frame Frame { get; set; }
 
@@ -58,7 +58,11 @@ namespace ColorVision.Solution.View
             {
                 ViewBatchResults.Add(new ViewBatchResult(item));
             }
+
             listView1.ItemsSource = ViewBatchResults;
+
+            if (listView1.View is GridView gridView)
+                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilities);
         }
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -68,17 +72,13 @@ namespace ColorVision.Solution.View
                 Frame.Navigate(new BatchShowPage(Frame, ViewBatchResults[listView.SelectedIndex]));
             }
         }
-        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilities { get; set; }
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilities { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
             if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && listView1.View is GridView gridView)
-                GridViewColumnVisibilities = GridViewColumnVisibility.GenContentMenuGridViewColumnZero(contextMenu, gridView.Columns);
+                 GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilities);
         }
 
-        private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-
-        }
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
@@ -112,6 +112,9 @@ namespace ColorVision.Solution.View
 
         }
 
+        private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
 
+        }
     }
 }
