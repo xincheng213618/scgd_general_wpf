@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!-- 
     Microsoft ResX Schema 
@@ -118,525 +118,525 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="MenuFile" xml:space="preserve">
-    <value>文件(_F)</value>
+    <value>Fichier(F)</value>
   </data>
   <data name="MenuHelp" xml:space="preserve">
-    <value>帮助(_H)</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
-    <value>退出(_X)</value>
-  </data>
-  <data name="MenuEdit" xml:space="preserve">
-    <value>編輯(_E)</value>
+    <value>Aide(H)</value>
   </data>
   <data name="MenuCut" xml:space="preserve">
-    <value>剪下(_T)</value>
+    <value>Couper(T)</value>
   </data>
   <data name="MenuCopy" xml:space="preserve">
-    <value>複製(_C)</value>
-  </data>
-  <data name="MenuNew" xml:space="preserve">
-    <value>新建(_N)</value>
-  </data>
-  <data name="MenuOpen" xml:space="preserve">
-    <value>打开(_O)</value>
-  </data>
-  <data name="MenuUndo" xml:space="preserve">
-    <value>撤銷(_U)</value>
-  </data>
-  <data name="MenuTool" xml:space="preserve">
-    <value>工具(_T)</value>
-  </data>
-  <data name="MenuUpdate" xml:space="preserve">
-    <value>檢查更新(_U)</value>
-  </data>
-  <data name="MenuView" xml:space="preserve">
-    <value>視圖(_V)</value>
-  </data>
-  <data name="MenuViewSidebar" xml:space="preserve">
-    <value>側邊欄</value>
-  </data>
-  <data name="MenuViewStatusBar" xml:space="preserve">
-    <value>狀態欄</value>
+    <value>Copie(C)</value>
   </data>
   <data name="MenuDelete" xml:space="preserve">
-    <value>刪除(_D)</value>
+    <value>Supprimer(D)</value>
+  </data>
+  <data name="MenuEdit" xml:space="preserve">
+    <value>Modifier(E)</value>
+  </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>Quitter (X)</value>
+  </data>
+  <data name="MenuNew" xml:space="preserve">
+    <value>Nouveau(N)</value>
+  </data>
+  <data name="MenuOpen" xml:space="preserve">
+    <value>Ouvert(O)</value>
+  </data>
+  <data name="MenuUpdate" xml:space="preserve">
+    <value>Vérifier les mises à jour (U)</value>
+  </data>
+  <data name="MenuView" xml:space="preserve">
+    <value>Vue(V)</value>
+  </data>
+  <data name="MenuViewSidebar" xml:space="preserve">
+    <value>Barre latérale</value>
+  </data>
+  <data name="MenuViewStatusBar" xml:space="preserve">
+    <value>Barre d'état</value>
+  </data>
+  <data name="MenuUndo" xml:space="preserve">
+    <value>Annuler (U)</value>
+  </data>
+  <data name="MenuTool" xml:space="preserve">
+    <value>Outil(T)</value>
   </data>
   <data name="Sign_in" xml:space="preserve">
-    <value>登入</value>
+    <value>Se connecter</value>
   </data>
   <data name="MenuAbout" xml:space="preserve">
-    <value>關於(_A)</value>
+    <value>À propos de)</value>
   </data>
   <data name="MenuSettings" xml:space="preserve">
-    <value>設置(_S)</value>
+    <value>Paramètres</value>
   </data>
   <data name="MenuOptions" xml:space="preserve">
-    <value>選項(_O）</value>
+    <value>Option(O)</value>
   </data>
   <data name="Account" xml:space="preserve">
-    <value>賬號</value>
+    <value>compte</value>
   </data>
   <data name="Password" xml:space="preserve">
-    <value>密碼</value>
+    <value>mot de passe</value>
   </data>
   <data name="AccountLogin" xml:space="preserve">
-    <value>賬號登入</value>
+    <value>Connexion au compte</value>
   </data>
   <data name="Sign_out" xml:space="preserve">
-    <value>退出</value>
+    <value>quitter</value>
   </data>
   <data name="Create_an_account" xml:space="preserve">
-    <value>創建一個帳號</value>
+    <value>Enregistrez un</value>
   </data>
   <data name="RecentFiles" xml:space="preserve">
-    <value>最近使用過的檔案(_F)</value>
+    <value>Fichiers récemment utilisés (F)</value>
   </data>
   <data name="About" xml:space="preserve">
-    <value>關於</value>
+    <value>à propos</value>
   </data>
   <data name="Language" xml:space="preserve">
-    <value>語言</value>
+    <value>langue de l'interface utilisateur</value>
   </data>
   <data name="MenuLanguage" xml:space="preserve">
-    <value>語言(_L）</value>
+    <value>Langue(L)</value>
   </data>
   <data name="Theme" xml:space="preserve">
-    <value>主題</value>
-  </data>
-  <data name="FillPassword" xml:space="preserve">
-    <value>請輸入密碼</value>
-  </data>
-  <data name="FillAccount" xml:space="preserve">
-    <value>請輸入帳號</value>
-  </data>
-  <data name="TbSettingsStartBoot" xml:space="preserve">
-    <value>開機啓動(可能會不成功)</value>
-  </data>
-  <data name="WindowHidden" xml:space="preserve">
-    <value>隱藏</value>
-  </data>
-  <data name="WindowSingle" xml:space="preserve">
-    <value>獨立視窗</value>
-  </data>
-  <data name="HotKeys" xml:space="preserve">
-    <value>快捷鍵</value>
-  </data>
-  <data name="Close" xml:space="preserve">
-    <value>關閉</value>
-  </data>
-  <data name="Minimize" xml:space="preserve">
-    <value>最小化</value>
-  </data>
-  <data name="Maximize" xml:space="preserve">
-    <value>最大化</value>
-  </data>
-  <data name="Pin" xml:space="preserve">
-    <value>置頂</value>
-  </data>
-  <data name="Restore" xml:space="preserve">
-    <value>向下還原</value>
-  </data>
-  <data name="ThemeLight" xml:space="preserve">
-    <value>白色</value>
-  </data>
-  <data name="ThemeDark" xml:space="preserve">
-    <value>黑色</value>
-  </data>
-  <data name="ThemeUseSystem" xml:space="preserve">
-    <value>跟随系统</value>
-  </data>
-  <data name="LanguageResartSign" xml:space="preserve">
-    <value>您必須重新啟動才能使用新的語言設定</value>
-  </data>
-  <data name="Save" xml:space="preserve">
-    <value>保存</value>
-  </data>
-  <data name="Cancel" xml:space="preserve">
-    <value>取消</value>
-  </data>
-  <data name="Female" xml:space="preserve">
-    <value>女</value>
-  </data>
-  <data name="Male" xml:space="preserve">
-    <value>男</value>
-  </data>
-  <data name="OK" xml:space="preserve">
-    <value>確定</value>
-  </data>
-  <data name="Edit" xml:space="preserve">
-    <value>編輯</value>
-  </data>
-  <data name="Submit" xml:space="preserve">
-    <value>提交</value>
-  </data>
-  <data name="Reset" xml:space="preserve">
-    <value>重置</value>
-  </data>
-  <data name="Reseted" xml:space="preserve">
-    <value>已重置</value>
-  </data>
-  <data name="Delete" xml:space="preserve">
-    <value>刪除</value>
-  </data>
-  <data name="Add" xml:space="preserve">
-    <value>添加</value>
-  </data>
-  <data name="TesConnection" xml:space="preserve">
-    <value>測試連接</value>
-  </data>
-  <data name="Host" xml:space="preserve">
-    <value>主機</value>
-  </data>
-  <data name="Port" xml:space="preserve">
-    <value>端口</value>
-  </data>
-  <data name="Database" xml:space="preserve">
-    <value>資料庫名稱</value>
-  </data>
-  <data name="UserName" xml:space="preserve">
-    <value>用戶</value>
-  </data>
-  <data name="UserPwd" xml:space="preserve">
-    <value>密碼</value>
-  </data>
-  <data name="Settings" xml:space="preserve">
-    <value>设置</value>
-  </data>
-  <data name="Property" xml:space="preserve">
-    <value>屬性</value>
-  </data>
-  <data name="Template" xml:space="preserve">
-    <value>範本</value>
-  </data>
-  <data name="MenuTemplate" xml:space="preserve">
-    <value>範本(T)</value>
-  </data>
-  <data name="Open" xml:space="preserve">
-    <value>打開</value>
-  </data>
-  <data name="Name" xml:space="preserve">
-    <value>名称</value>
-  </data>
-  <data name="Code" xml:space="preserve">
-    <value>程式碼</value>
-  </data>
-  <data name="ThemePink" xml:space="preserve">
-    <value>粉紅色</value>
-  </data>
-  <data name="StartRecoverUILayout" xml:space="preserve">
-    <value>啟動復原介面佈局</value>
-  </data>
-  <data name="AutoSwitchSelectedView" xml:space="preserve">
-    <value>自動切換選取視圖</value>
-  </data>
-  <data name="LogLevel" xml:space="preserve">
-    <value>日誌等級</value>
-  </data>
-  <data name="SoftwareVersion" xml:space="preserve">
-    <value>軟體版本</value>
-  </data>
-  <data name="DisableHardwareAcceleration" xml:space="preserve">
-    <value>禁用硬體加速</value>
-  </data>
-  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
-    <value>軟體啟動時開啟本機服務</value>
-  </data>
-  <data name="Wizard" xml:space="preserve">
-    <value>嚮導</value>
-  </data>
-  <data name="Clear" xml:space="preserve">
-    <value>清除</value>
-  </data>
-  <data name="HistoryCache" xml:space="preserve">
-    <value>歷史緩存</value>
-  </data>
-  <data name="PerformanceTest" xml:space="preserve">
-    <value>效能檢測</value>
-  </data>
-  <data name="ProjectSettings" xml:space="preserve">
-    <value>工程設定</value>
-  </data>
-  <data name="GeneralSettings" xml:space="preserve">
-    <value>通用設定</value>
-  </data>
-  <data name="CheckForUpdates" xml:space="preserve">
-    <value>檢查更新</value>
-  </data>
-  <data name="CheckUpdatesOnStartup" xml:space="preserve">
-    <value>軟體啟動時偵測更新</value>
-  </data>
-  <data name="TransparentWindow" xml:space="preserve">
-    <value>透明視窗</value>
-  </data>
-  <data name="General" xml:space="preserve">
-    <value>一般</value>
-  </data>
-  <data name="Project" xml:space="preserve">
-    <value>工程</value>
-  </data>
-  <data name="DefaultExportStorageFormat" xml:space="preserve">
-    <value>預設導出儲存格式</value>
-  </data>
-  <data name="NewProjectFormat" xml:space="preserve">
-    <value>新工程格式</value>
-  </data>
-  <data name="ConfigureNewProject" xml:space="preserve">
-    <value>配置新工程</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>項目名稱</value>
-  </data>
-  <data name="CreateProject" xml:space="preserve">
-    <value>創建工程</value>
-  </data>
-  <data name="SelectProjectSaveLocation" xml:space="preserve">
-    <value>選擇項目保存位置</value>
-  </data>
-  <data name="Refresh" xml:space="preserve">
-    <value>重新整理</value>
-  </data>
-  <data name="Export" xml:space="preserve">
-    <value>匯出</value>
-  </data>
-  <data name="Apply" xml:space="preserve">
-    <value>應用</value>
-  </data>
-  <data name="Import" xml:space="preserve">
-    <value>導入</value>
-  </data>
-  <data name="SearchProjectFiles" xml:space="preserve">
-    <value>搜尋工程文件</value>
-  </data>
-  <data name="ServiceAgreement" xml:space="preserve">
-    <value>服務協定</value>
-  </data>
-  <data name="MyLicense_R" xml:space="preserve">
-    <value>我的許可證(R)</value>
-  </data>
-  <data name="SaveWindowLayout" xml:space="preserve">
-    <value>儲存視窗佈局</value>
-  </data>
-  <data name="ApplyWindowLayout" xml:space="preserve">
-    <value>應用程式視窗佈局</value>
-  </data>
-  <data name="WorkflowEngine_F" xml:space="preserve">
-    <value>流程引擎(F)</value>
-  </data>
-  <data name="RegistryCenter" xml:space="preserve">
-    <value>註冊中心</value>
+    <value>thème</value>
   </data>
   <data name="MenuTheme" xml:space="preserve">
-    <value>主題(H)</value>
+    <value>Sujet (H)</value>
+  </data>
+  <data name="FillPassword" xml:space="preserve">
+    <value>Veuillez entrer le mot de passe</value>
+  </data>
+  <data name="FillAccount" xml:space="preserve">
+    <value>Veuillez saisir votre nom d'utilisateur</value>
+  </data>
+  <data name="TbSettingsStartBoot" xml:space="preserve">
+    <value>Démarrage (peut échouer)</value>
+  </data>
+  <data name="WindowHidden" xml:space="preserve">
+    <value>cacher</value>
+  </data>
+  <data name="WindowSingle" xml:space="preserve">
+    <value>fenêtre indépendante</value>
+  </data>
+  <data name="HotKeys" xml:space="preserve">
+    <value>touche de raccourci</value>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>fermeture</value>
+  </data>
+  <data name="Minimize" xml:space="preserve">
+    <value>minimiser</value>
+  </data>
+  <data name="Maximize" xml:space="preserve">
+    <value>maximiser</value>
+  </data>
+  <data name="Pin" xml:space="preserve">
+    <value>épingler en haut</value>
+  </data>
+  <data name="Restore" xml:space="preserve">
+    <value>Restaurer</value>
+  </data>
+  <data name="ThemeLight" xml:space="preserve">
+    <value>couleur claire</value>
+  </data>
+  <data name="ThemeDark" xml:space="preserve">
+    <value>Sombre</value>
+  </data>
+  <data name="ThemeUseSystem" xml:space="preserve">
+    <value>Suivez le système</value>
+  </data>
+  <data name="LanguageResartSign" xml:space="preserve">
+    <value>Vous devez redémarrer pour utiliser les nouveaux paramètres de langue</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>sauvegarder</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
+  <data name="Female" xml:space="preserve">
+    <value>femelle</value>
+  </data>
+  <data name="Male" xml:space="preserve">
+    <value>mâle</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>Bien sûr</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>modifier</value>
+  </data>
+  <data name="Submit" xml:space="preserve">
+    <value>soumettre</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>réinitialiser</value>
+  </data>
+  <data name="Reseted" xml:space="preserve">
+    <value>Réinitialiser</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>supprimer</value>
+  </data>
+  <data name="Add" xml:space="preserve">
+    <value>Ajouter à</value>
+  </data>
+  <data name="TesConnection" xml:space="preserve">
+    <value>tester la connexion</value>
+  </data>
+  <data name="Host" xml:space="preserve">
+    <value>Hôte</value>
+  </data>
+  <data name="Port" xml:space="preserve">
+    <value>port</value>
+  </data>
+  <data name="Database" xml:space="preserve">
+    <value>Base de données de noms</value>
+  </data>
+  <data name="UserName" xml:space="preserve">
+    <value>utilisateur</value>
+  </data>
+  <data name="UserPwd" xml:space="preserve">
+    <value>mot de passe</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>installation</value>
+  </data>
+  <data name="Property" xml:space="preserve">
+    <value>Les attributs</value>
+  </data>
+  <data name="Template" xml:space="preserve">
+    <value>modèle</value>
+  </data>
+  <data name="MenuTemplate" xml:space="preserve">
+    <value>Modèle (T)</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Ouvrir</value>
+  </data>
+  <data name="Name" xml:space="preserve">
+    <value>nom</value>
+  </data>
+  <data name="Code" xml:space="preserve">
+    <value>logo</value>
   </data>
   <data name="MTFToolTip" xml:space="preserve">
-    <value>調製傳遞函數</value>
+    <value>fonction de transfert de modulation</value>
+  </data>
+  <data name="ThemePink" xml:space="preserve">
+    <value>rose</value>
   </data>
   <data name="EnableDatabase" xml:space="preserve">
-    <value>啟用資料庫</value>
+    <value>Activer la base de données</value>
+  </data>
+  <data name="StartRecoverUILayout" xml:space="preserve">
+    <value>Démarrer la disposition de l’interface de récupération</value>
+  </data>
+  <data name="AutoSwitchSelectedView" xml:space="preserve">
+    <value>Changer automatiquement les vues sélectionnées</value>
+  </data>
+  <data name="LogLevel" xml:space="preserve">
+    <value>Niveau de journalisation</value>
+  </data>
+  <data name="SoftwareVersion" xml:space="preserve">
+    <value>Une version de logiciel</value>
+  </data>
+  <data name="DisableHardwareAcceleration" xml:space="preserve">
+    <value>Désactiver l'accélération matérielle</value>
+  </data>
+  <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
+    <value>Ouvrez le service local au démarrage du logiciel</value>
+  </data>
+  <data name="Wizard" xml:space="preserve">
+    <value>magicien</value>
   </data>
   <data name="ClearCache" xml:space="preserve">
-    <value>清除快取</value>
+    <value>vider le cache</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Clair</value>
+  </data>
+  <data name="HistoryCache" xml:space="preserve">
+    <value>cache historique</value>
+  </data>
+  <data name="PerformanceTest" xml:space="preserve">
+    <value>Test de performance</value>
+  </data>
+  <data name="ProjectSettings" xml:space="preserve">
+    <value>Paramètres du projet</value>
+  </data>
+  <data name="GeneralSettings" xml:space="preserve">
+    <value>Réglages généraux</value>
+  </data>
+  <data name="CheckForUpdates" xml:space="preserve">
+    <value>Vérifier les mises à jour</value>
+  </data>
+  <data name="CheckUpdatesOnStartup" xml:space="preserve">
+    <value>Détecter les mises à jour au démarrage du logiciel</value>
+  </data>
+  <data name="TransparentWindow" xml:space="preserve">
+    <value>fenêtre transparente</value>
+  </data>
+  <data name="General" xml:space="preserve">
+    <value>Universel</value>
+  </data>
+  <data name="Project" xml:space="preserve">
+    <value>projet</value>
+  </data>
+  <data name="DefaultExportStorageFormat" xml:space="preserve">
+    <value>Format de stockage d'exportation par défaut</value>
+  </data>
+  <data name="NewProjectFormat" xml:space="preserve">
+    <value>Nouveau format de projet</value>
+  </data>
+  <data name="ConfigureNewProject" xml:space="preserve">
+    <value>Configurer un nouveau projet</value>
+  </data>
+  <data name="ProjectName" xml:space="preserve">
+    <value>nom du projet</value>
+  </data>
+  <data name="CreateProject" xml:space="preserve">
+    <value>Créer un projet</value>
+  </data>
+  <data name="SelectProjectSaveLocation" xml:space="preserve">
+    <value>Choisissez où enregistrer le projet</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>rafraîchir</value>
+  </data>
+  <data name="Export" xml:space="preserve">
+    <value>Exporter</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>application</value>
+  </data>
+  <data name="Import" xml:space="preserve">
+    <value>importer</value>
+  </data>
+  <data name="SearchProjectFiles" xml:space="preserve">
+    <value>Rechercher des fichiers de projet</value>
+  </data>
+  <data name="ServiceAgreement" xml:space="preserve">
+    <value>Contrat de service</value>
+  </data>
+  <data name="MyLicense_R" xml:space="preserve">
+    <value>Ma licence(R)</value>
+  </data>
+  <data name="SaveWindowLayout" xml:space="preserve">
+    <value>Enregistrer la disposition des fenêtres</value>
+  </data>
+  <data name="ApplyWindowLayout" xml:space="preserve">
+    <value>Appliquer la disposition des fenêtres</value>
+  </data>
+  <data name="WorkflowEngine_F" xml:space="preserve">
+    <value>Moteur de processus (F)</value>
+  </data>
+  <data name="RegistryCenter" xml:space="preserve">
+    <value>Centre d'inscription</value>
   </data>
   <data name="Success" xml:space="preserve">
-    <value>成功</value>
+    <value>succès</value>
   </data>
   <data name="Failure" xml:space="preserve">
-    <value>失敗</value>
+    <value>échouer</value>
   </data>
   <data name="Acquire" xml:space="preserve">
-    <value>採集</value>
+    <value>collection</value>
   </data>
   <data name="RunAsAdmin" xml:space="preserve">
-    <value>以管理員身份執行</value>
+    <value>Exécuter en tant qu'administrateur</value>
   </data>
   <data name="NotRunAsAdmin" xml:space="preserve">
-    <value>以非管理員身份執行</value>
+    <value>Exécuter en tant que non-administrateur</value>
   </data>
   <data name="Log" xml:space="preserve">
-    <value>紀錄</value>
+    <value>enregistrer</value>
   </data>
   <data name="x64ServiceLog" xml:space="preserve">
-    <value>x64服務日誌</value>
+    <value>journal des services x64</value>
   </data>
   <data name="LaunchSuccess" xml:space="preserve">
-    <value>啟動成功</value>
+    <value>Démarré avec succès</value>
   </data>
   <data name="ExperimentalFeature" xml:space="preserve">
-    <value>實驗性功能</value>
+    <value>Fonctionnalités expérimentales</value>
   </data>
   <data name="SpectrometerLog" xml:space="preserve">
-    <value>光譜儀日誌</value>
+    <value>Journal du spectromètre</value>
   </data>
   <data name="CameraLog" xml:space="preserve">
-    <value>相機日誌</value>
+    <value>Journal de la caméra</value>
   </data>
   <data name="RestartService" xml:space="preserve">
-    <value>重啟服務</value>
+    <value>Redémarrer le service</value>
   </data>
   <data name="InstallCertificate" xml:space="preserve">
-    <value>安裝證書</value>
+    <value>Installer le certificat</value>
   </data>
   <data name="ApplicationExit" xml:space="preserve">
-    <value>程式關閉</value>
+    <value>Le programme se termine</value>
   </data>
   <data name="EnterAcquisitionWindow" xml:space="preserve">
-    <value>進入採集視窗</value>
+    <value>Entrez dans la fenêtre de collecte</value>
   </data>
   <data name="SelectResourceToLoad" xml:space="preserve">
-    <value>請選擇您要載入的資源：</value>
+    <value>Veuillez sélectionner la ressource que vous souhaitez charger :</value>
   </data>
   <data name="AdvancedSettings" xml:space="preserve">
-    <value>進階設定</value>
+    <value>réglages avancés</value>
   </data>
   <data name="BasicInformation" xml:space="preserve">
-    <value>基本訊息</value>
+    <value>Informations de base</value>
   </data>
   <data name="DeviceIdentification" xml:space="preserve">
-    <value>設備識別</value>
+    <value>Identité de l'équipement</value>
   </data>
   <data name="DeviceName" xml:space="preserve">
-    <value>設備名稱</value>
+    <value>Nom de l'appareil</value>
   </data>
   <data name="Status" xml:space="preserve">
-    <value>狀態</value>
+    <value>État</value>
   </data>
   <data name="ServiceIdentifier" xml:space="preserve">
-    <value>服務標識</value>
+    <value>Numéro de service</value>
   </data>
   <data name="ServiceName" xml:space="preserve">
-    <value>服務名稱</value>
+    <value>Nom du service</value>
   </data>
   <data name="TransmitChannel" xml:space="preserve">
-    <value>傳送頻道</value>
+    <value>envoyer le canal</value>
   </data>
   <data name="ReceiveChannel" xml:space="preserve">
-    <value>接收頻道</value>
+    <value>canal de réception</value>
   </data>
   <data name="CreateNewConfigurationFile" xml:space="preserve">
-    <value>新建設定檔</value>
+    <value>Créer un nouveau fichier de configuration</value>
   </data>
   <data name="CopyConfigurationFile" xml:space="preserve">
-    <value>複製設定檔</value>
+    <value>Copier le fichier de configuration</value>
   </data>
   <data name="ClearData" xml:space="preserve">
-    <value>清空數據</value>
+    <value>Effacer les données</value>
   </data>
   <data name="SimulateSend" xml:space="preserve">
-    <value>類比發送</value>
+    <value>Envoi analogique</value>
   </data>
   <data name="SimulateReceive" xml:space="preserve">
-    <value>模擬接受</value>
+    <value>Simulation d'acceptation</value>
   </data>
   <data name="ViewSentData" xml:space="preserve">
-    <value>查看發送數據</value>
+    <value>Afficher les données d'envoi</value>
   </data>
   <data name="ViewReceivedData" xml:space="preserve">
-    <value>查看接受數據</value>
+    <value>Afficher les données d'acceptation</value>
   </data>
   <data name="MsgLogWindow" xml:space="preserve">
-    <value>Msg記錄視窗</value>
+    <value>Fenêtre d'enregistrement des messages</value>
   </data>
   <data name="ImportLicense" xml:space="preserve">
-    <value>導入許可證</value>
+    <value>Licence d'importation</value>
   </data>
   <data name="LicenseManagement" xml:space="preserve">
-    <value>許可證管理</value>
+    <value>Gestion des licences</value>
   </data>
   <data name="CopySerialNumber" xml:space="preserve">
-    <value>複製序號</value>
+    <value>Copier le numéro de série</value>
   </data>
   <data name="SerialNumber" xml:space="preserve">
-    <value>序號</value>
+    <value>numéro de série</value>
   </data>
   <data name="CurrentVersionIsUpToDate" xml:space="preserve">
-    <value>目前版本已經是最新版本</value>
+    <value>La version actuelle est déjà la dernière version</value>
   </data>
   <data name="ConfirmUpdate" xml:space="preserve">
-    <value>是否更新</value>
+    <value>Mettre à jour ou pas</value>
   </data>
   <data name="NewVersionFound" xml:space="preserve">
-    <value>發現新版本</value>
+    <value>nouvelle version trouvée</value>
   </data>
   <data name="DownloadCancelled" xml:space="preserve">
-    <value>下載已取消</value>
+    <value>Téléchargement annulé</value>
   </data>
   <data name="ErrorOccurred" xml:space="preserve">
-    <value>發生錯誤</value>
+    <value>Une erreur s'est produite</value>
   </data>
   <data name="TemplateManagementWindow" xml:space="preserve">
-    <value>範本管理視窗</value>
+    <value>Fenêtre de gestion des modèles</value>
   </data>
   <data name="New" xml:space="preserve">
-    <value>新建</value>
+    <value>Nouveau</value>
   </data>
   <data name="TemplateName" xml:space="preserve">
-    <value>模板名稱</value>
+    <value>Nom du modèle</value>
   </data>
   <data name="OutputView" xml:space="preserve">
-    <value>輸出視圖</value>
+    <value>Vue de sortie</value>
   </data>
   <data name="MqttConnectionConfiguration" xml:space="preserve">
-    <value>MQTT連接配置</value>
+    <value>Configuration de la connexion MQTT</value>
   </data>
   <data name="MqttConnection" xml:space="preserve">
-    <value>MQTT連接</value>
+    <value>Connexion MQTT</value>
   </data>
   <data name="ConnectionName" xml:space="preserve">
-    <value>連接名</value>
+    <value>nom de connexion</value>
   </data>
   <data name="MysqlConnectionConfiguration" xml:space="preserve">
-    <value>Mysql連線配置</value>
+    <value>Configuration de la connexion MySQL</value>
   </data>
   <data name="MysqlConnection" xml:space="preserve">
-    <value>Mysql連接</value>
+    <value>Connexion MySQL</value>
   </data>
   <data name="ExecutionProcess" xml:space="preserve">
-    <value>執行流程</value>
+    <value>Processus de mise en œuvre</value>
   </data>
   <data name="StopProcess" xml:space="preserve">
-    <value>停止流程</value>
+    <value>Arrêter le processus</value>
   </data>
   <data name="Calculate" xml:space="preserve">
-    <value>計算</value>
+    <value>calculer</value>
   </data>
   <data name="RecentUsedContent" xml:space="preserve">
-    <value>最近使用的內容</value>
+    <value>Contenu récemment utilisé</value>
   </data>
   <data name="NoRelatedItemsFound" xml:space="preserve">
-    <value>未找到相關項目</value>
+    <value>Aucun élément associé trouvé</value>
   </data>
   <data name="OpenItem" xml:space="preserve">
-    <value>打開專案</value>
+    <value>Projet ouvert</value>
   </data>
   <data name="OpenLocalProjectOrFile" xml:space="preserve">
-    <value>開啟本地的項目或文件</value>
+    <value>Ouvrir un projet ou un fichier local</value>
   </data>
   <data name="CreateNewProjectOrFile" xml:space="preserve">
-    <value>建立一個新的專案或文件</value>
+    <value>Créer un nouveau projet ou fichier</value>
   </data>
   <data name="DatabaseConnectionFailed" xml:space="preserve">
-    <value>資料庫連線失敗，請先連接資料庫在操作</value>
+    <value>La connexion à la base de données a échoué, veuillez vous connecter à la base de données avant de l'utiliser</value>
   </data>
   <data name="UnderDevelopment" xml:space="preserve">
-    <value>開發中</value>
+    <value>En développement</value>
   </data>
   <data name="ChangeLog" xml:space="preserve">
-    <value>變更日誌</value>
+    <value>Journal des modifications</value>
   </data>
   <data name="SerialNumber1" xml:space="preserve">
-    <value>序號</value>
+    <value>numéro de série</value>
   </data>
   <data name="ColorVisionUpdater" xml:space="preserve">
-    <value>ColorVision 更新程式</value>
+    <value>Programme de mise à jour ColorVision</value>
   </data>
   <data name="Loading" xml:space="preserve">
-    <value>載入</value>
+    <value>charger</value>
   </data>
   <data name="ServiceConfiguration" xml:space="preserve">
-    <value>服務配置</value>
+    <value>Configuration des services</value>
   </data>
   <data name="ConfigurationComplete" xml:space="preserve">
-    <value>配置結束</value>
+    <value>Configuration terminée</value>
   </data>
 </root>

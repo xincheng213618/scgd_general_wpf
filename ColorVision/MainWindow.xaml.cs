@@ -27,6 +27,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using ColorVision.Wizards;
 
 namespace ColorVision
 {
@@ -487,6 +488,12 @@ namespace ColorVision
             string changelogContent = File.ReadAllText(changelogPath);
             changelogWindow.SetChangelogText(changelogContent);
             changelogWindow.ShowDialog();
+        }
+
+        private void Wizard_Click(object sender, RoutedEventArgs e)
+        {
+            WizardWindow wizardWindow = new WizardWindow();
+            wizardWindow.Show();
         }
     }
 }

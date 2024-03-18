@@ -636,4 +636,7 @@
   <data name="ServiceConfiguration" xml:space="preserve">
     <value>Конфигурация сервиса</value>
   </data>
+  <data name="ConfigurationComplete" xml:space="preserve">
+    <value>Настройка завершена</value>
+  </data>
 </root>

@@ -636,4 +636,7 @@
   <data name="ServiceConfiguration" xml:space="preserve">
     <value>サービス構成</value>
   </data>
+  <data name="ConfigurationComplete" xml:space="preserve">
+    <value>設定が完了しました</value>
+  </data>
 </root>

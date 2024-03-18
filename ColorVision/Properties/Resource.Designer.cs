@@ -268,6 +268,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 配置结束 的本地化字符串。
+        /// </summary>
+        public static string ConfigurationComplete {
+            get {
+                return ResourceManager.GetString("ConfigurationComplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 配置新工程 的本地化字符串。
         /// </summary>
         public static string ConfigureNewProject {
