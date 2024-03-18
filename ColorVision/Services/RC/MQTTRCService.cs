@@ -77,7 +77,16 @@ namespace ColorVision.RC
 
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
-
+            MQTTControl.MQTTConnectChanged += (object? sender, EventArgs e) =>
+            {
+                logger.InfoFormat("MQTTMsgChanged=>{0}", JsonConvert.SerializeObject(e));
+                Task.Run(() =>
+                {
+                    Thread.Sleep(2000);
+                    MQTTRCService.GetInstance().QueryServices();
+                    MQTTRCService.GetInstance().ReRegist();
+                });
+            };
 
             int heartbeatTime = 2 * 1000;
             System.Timers.Timer hbTimer = new System.Timers.Timer(heartbeatTime);
