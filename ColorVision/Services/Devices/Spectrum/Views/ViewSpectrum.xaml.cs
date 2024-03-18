@@ -53,7 +53,6 @@ namespace ColorVision.Services.Devices.Spectrum.Views
                 TextBox1.Focus();
             };
             View = new View();
-            ViewGridManager.GetInstance().AddView(this);
 
 
             listView1.ItemsSource = ViewResultSpectrums;

@@ -46,8 +46,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            View= new View();
-            ViewGridManager.GetInstance().AddView(this);
+            View = new View();
 
             listView1.ItemsSource = ViewResultCalibrations;
 
