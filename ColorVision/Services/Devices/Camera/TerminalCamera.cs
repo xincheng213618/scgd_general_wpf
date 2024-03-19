@@ -5,6 +5,7 @@ using ColorVision.Services.Extension;
 using ColorVision.Services.Terminal;
 using ColorVision.Settings;
 using ColorVision.Themes;
+using ColorVision.Utilities;
 using cvColorVision;
 using Newtonsoft.Json;
 using System;
@@ -52,11 +53,12 @@ namespace ColorVision.Services.Devices.Camera
                     Port = (Math.Abs(new Random().Next()) % 99 + 9000),
                 }
             };
+
             CreateConfig.SendTopic = Config.SendTopic;
             CreateConfig.SubscribeTopic = Config.SubscribeTopic;
 
             CreateWindow createWindow = new CreateWindow(this);
-            createWindow.Owner = Window.GetWindow(Application.Current.MainWindow);
+            createWindow.Owner = WindowHelpers.GetActiveWindow();
             createWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
             CreateDeviceOver += (s, e) =>
