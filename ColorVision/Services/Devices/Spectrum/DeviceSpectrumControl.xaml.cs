@@ -32,14 +32,6 @@ namespace ColorVision.Services.Devices.Spectrum
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             this.DataContext = this.Device;
-
-            if (IsCanEdit)
-            {
-                UserControl userControl = Device.GetEditControl();
-                if (userControl.Parent is Panel grid)
-                    grid.Children.Remove(userControl);
-                MQTTEditContent.Children.Add(userControl);
-            }
         }
 
         private void Spectrum_AutoParamHandlerEvent(AutoIntTimeParam colorPara)
@@ -48,13 +40,6 @@ namespace ColorVision.Services.Devices.Spectrum
             Device.Config.MaxIntegralTime = colorPara.iLimitTime;
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            MQTTShowContent.Visibility = Visibility.Collapsed;
-            MQTTEditContent.Visibility = Visibility.Visible;
-            ButtonEdit.Visibility = Visibility.Collapsed;
-            if (SpectrumService != null) SpectrumService.GetParam();
-        }
 
         protected virtual void Dispose(bool disposing)
         {

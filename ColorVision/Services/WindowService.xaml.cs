@@ -37,7 +37,6 @@ namespace ColorVision.Services
                     break;
             }
             SelectAndFocusFirstNode(TreeView1);
-
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -58,10 +57,7 @@ namespace ColorVision.Services
 
         private void TreeView1_Loaded(object sender, RoutedEventArgs e)
         {
-            if (sender is TreeView treeView)
-            {
-                SelectAndFocusFirstNode(treeView);
-            }
+
         }
 
         public async void SelectAndFocusFirstNode(TreeView treeView)
