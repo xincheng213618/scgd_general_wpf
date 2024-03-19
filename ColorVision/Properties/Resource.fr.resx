@@ -592,7 +592,7 @@
     <value>Connexion MySQL</value>
   </data>
   <data name="ExecutionProcess" xml:space="preserve">
-    <value>Processus de mise en œuvre</value>
+    <value>Processus</value>
   </data>
   <data name="StopProcess" xml:space="preserve">
     <value>Arrêter le processus</value>

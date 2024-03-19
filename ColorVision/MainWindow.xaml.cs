@@ -366,6 +366,7 @@ namespace ColorVision
             await Task.Delay(1000);
             Application.Current.Dispatcher.Invoke(() =>
             {
+                AutoUpdater.DeleteAllCachedUpdateFiles();
                 AutoUpdater autoUpdater = AutoUpdater.GetInstance();
                 autoUpdater.CheckAndUpdate(false);
             });

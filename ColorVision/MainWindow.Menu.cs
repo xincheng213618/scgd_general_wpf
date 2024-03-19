@@ -235,8 +235,7 @@ namespace ColorVision
 
         private void Update_Click(object sender, RoutedEventArgs e)
         {
-            AutoUpdater AutoUpdater = new AutoUpdater();
-            AutoUpdater.CheckAndUpdate();
+            AutoUpdater.GetInstance().CheckAndUpdate();
         }
         private void License_Click(object sender, RoutedEventArgs e)
         {

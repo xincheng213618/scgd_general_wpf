@@ -10,6 +10,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
@@ -36,7 +37,6 @@ namespace ColorVision.Update
         public AutoUpdater()
         {
             UpdateCommand = new RelayCommand((e) =>  CheckAndUpdate(false));
-            DeleteAllCachedUpdateFiles();
         }
 
         public RelayCommand UpdateCommand { get; set; }
@@ -102,9 +102,17 @@ namespace ColorVision.Update
                     {
                         if (MessageBox.Show($"{Properties.Resource.NewVersionFound}{LatestVersion},{Properties.Resource.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                         {
-                            WindowUpdate windowUpdate = new WindowUpdate() {  Owner =Application.Current.MainWindow ,WindowStartupLocation = WindowStartupLocation.CenterOwner};
+                            CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+                            WindowUpdate windowUpdate = new WindowUpdate() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                            windowUpdate.Closed += (s, e) =>
+                            {
+                                _cancellationTokenSource.Cancel();
+                            };
+                            SpeedValue = string.Empty ;
+                            RemainingTimeValue = string.Empty;
+                            ProgressValue = 0;
+                            Task.Run(() => DownloadAndUpdate(LatestVersion, _cancellationTokenSource.Token));
                             windowUpdate.Show();
-                            Task.Run(() => DownloadAndUpdate(LatestVersion));
                         }
                     });              
                 }
@@ -166,7 +174,7 @@ namespace ColorVision.Update
         private string _RemainingTimeValue;
 
 
-        private async Task DownloadAndUpdate(Version latestVersion)
+        private async Task DownloadAndUpdate(Version latestVersion,CancellationToken cancellationToken)
         {
             // 构建下载URL，这里假设下载路径与版本号相关
             string downloadUrl = $"{GlobalConst.UpdatePath}/ColorVision/ColorVision-{latestVersion}.exe";
@@ -220,6 +228,11 @@ namespace ColorVision.Update
                                 : -1;
 
                             ProgressValue = progressPercentage;
+
+                            if (cancellationToken.IsCancellationRequested)
+                            {
+                                return;
+                            }
 
                             if (stopwatch.ElapsedMilliseconds > 200) // Update speed at least once per second
                             {
