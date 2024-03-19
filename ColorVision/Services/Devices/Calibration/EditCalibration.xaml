@@ -37,10 +37,7 @@
                     </GroupBox>
                     <GroupBox Header="配置信息" Margin="0,5">
                         <StackPanel Margin="5">
-                            <DockPanel Margin="0,2">
-                                <TextBlock  Text="绑定相机" Width="120"/>
-                                <TextBox  x:Name="TextBox_BindDevice" Text="{Binding Config.BindDeviceCode}"/>
-                            </DockPanel>
+
                             <DockPanel Margin="0,2">
                                 <TextBlock  Text="数据目录"  Width="120"/>
                                 <TextBox  x:Name="TextBox_CIEImgPath" Text="{Binding Config.FileServerCfg.DataBasePath}"/>

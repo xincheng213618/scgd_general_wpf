@@ -1,9 +1,11 @@
-﻿using ColorVision.Services.Core;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;
 using ColorVision.Services.Devices.Calibration.Views;
 using ColorVision.Services.Extension;
 using ColorVision.Themes;
+using ColorVision.Utilities;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -26,7 +28,13 @@ namespace ColorVision.Services.Devices.Algorithm
 
             DisplayAlgorithmControlLazy = new Lazy<DisplayAlgorithmControl>(() => { DisplayAlgorithmControl ??= new DisplayAlgorithmControl(this); return DisplayAlgorithmControl; });
 
-            EditLazy = new Lazy<EditAlorithm>(() => { EditAlorithm ??= new EditAlorithm(); return EditAlorithm; });
+            EditCommand = new RelayCommand(a =>
+            {
+                EditAlgorithm window = new EditAlgorithm(this);
+                window.Owner = WindowHelpers.GetActiveWindow();
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                window.ShowDialog();
+            });
         }
         readonly Lazy<DisplayAlgorithmControl> DisplayAlgorithmControlLazy;
         public DisplayAlgorithmControl DisplayAlgorithmControl { get; set; }
@@ -36,9 +44,6 @@ namespace ColorVision.Services.Devices.Algorithm
 
         public override UserControl GetDisplayControl() => DisplayAlgorithmControlLazy.Value;
 
-        readonly Lazy<EditAlorithm> EditLazy;
-        public EditAlorithm EditAlorithm { get; set; }
-        public override UserControl GetEditControl() => EditLazy.Value;
 
         public override MQTTServiceBase? GetMQTTService()
         {

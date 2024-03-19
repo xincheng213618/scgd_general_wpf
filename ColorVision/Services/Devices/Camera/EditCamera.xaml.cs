@@ -40,7 +40,6 @@ namespace ColorVision.Services.Devices.Camera
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = DeviceCamera;
 
             CameraID.ItemsSource = DeviceCamera.Service.DevicesSN;
 
@@ -105,7 +104,6 @@ namespace ColorVision.Services.Devices.Camera
             };
 
 
-            string value = DeviceCamera.Config.BindDeviceCode;
             ObservableCollection<string> Calibrations = new ObservableCollection<string>();
             foreach (var item in ServiceManager.GetInstance().DeviceServices)
             {
@@ -116,7 +114,6 @@ namespace ColorVision.Services.Devices.Camera
                 }
             }
             TextBox_BindDevice.ItemsSource = Calibrations;
-            TextBox_BindDevice.Text = value;
 
             var ImageChannelTypeList = new[]{
                  new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, "Channel_R"),
@@ -201,6 +198,9 @@ namespace ColorVision.Services.Devices.Camera
                         break;
                 }
             };
+
+
+            this.DataContext = DeviceCamera;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

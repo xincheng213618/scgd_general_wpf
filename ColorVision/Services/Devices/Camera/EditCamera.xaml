@@ -35,7 +35,7 @@
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="绑定矫正服务"  Width="120"/>
-                                <hc:ComboBox  x:Name="TextBox_BindDevice" IsEditable="True" SelectedIndex="0" Text="{Binding Config.BindDeviceCode}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                                <hc:ComboBox  x:Name="TextBox_BindDevice" IsEditable="True" SelectedIndex="0" Text="{Binding Config.BindDeviceCode}"  hc:InfoElement.ShowClearButton="True"  />
                             </DockPanel>
 
                         </StackPanel>
