@@ -358,6 +358,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 当前速度： 的本地化字符串。
+        /// </summary>
+        public static string CurrentSpeed {
+            get {
+                return ResourceManager.GetString("CurrentSpeed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 当前版本已经是最新版本 的本地化字符串。
         /// </summary>
         public static string CurrentVersionIsUpToDate {
@@ -1515,6 +1524,15 @@ namespace ColorVision.Properties {
         public static string ThemeUseSystem {
             get {
                 return ResourceManager.GetString("ThemeUseSystem", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 剩余时间： 的本地化字符串。
+        /// </summary>
+        public static string TimeLeft {
+            get {
+                return ResourceManager.GetString("TimeLeft", resourceCulture);
             }
         }
         

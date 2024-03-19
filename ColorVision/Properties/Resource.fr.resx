@@ -639,4 +639,10 @@
   <data name="ConfigurationComplete" xml:space="preserve">
     <value>Configuration terminée</value>
   </data>
+  <data name="CurrentSpeed" xml:space="preserve">
+    <value>Vitesse actuelle:</value>
+  </data>
+  <data name="TimeLeft" xml:space="preserve">
+    <value>temps restant:</value>
+  </data>
 </root>
