@@ -58,7 +58,6 @@ namespace ColorVision.Services.Devices.Camera
 
             if (msg.Code == 0)
             {
-
                 switch (msg.EventName)
                 {
                     case "Close":
@@ -129,6 +128,23 @@ namespace ColorVision.Services.Devices.Camera
                         break;
                     default:
                         OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
+                        break;
+                }
+            }
+            else if(msg.Code == -401)
+            {
+                switch (msg.EventName)
+                {
+                    case "Open":
+                        DeviceStatus = DeviceStatusType.Closed;
+                        string SN = msg.Data.SN;
+                        NativeMethods.Clipboard.SetText(SN);
+                        Application.Current.Dispatcher.BeginInvoke(() => 
+                        {
+                            MessageBox.Show($"找不到激活文件,设备码{msg.DeviceCode} {Environment.NewLine}SN:{SN}");
+                        });
+                        break;
+                    default:
                         break;
                 }
             }

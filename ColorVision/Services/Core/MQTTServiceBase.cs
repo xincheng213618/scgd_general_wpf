@@ -71,8 +71,14 @@ namespace ColorVision.Services.Core
                         MQTTRCService.GetInstance().QueryServices();
                         return Task.CompletedTask;
                     }
+                    //没有sn提示
+                    //if (json.Code == -401)
+                    //{
+                    //    MsgReturnReceived?.Invoke(json);
+                    //    return Task.CompletedTask;
+                    //}
 
-                    if (json.Code != 0 && json.Code != 1)
+                    if (json.Code != 0 && json.Code != 1 && json.Code != -1 && json.Code == -401)
                     {
                         MsgReturnReceived?.Invoke(json);
                         return Task.CompletedTask;
