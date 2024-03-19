@@ -1,5 +1,5 @@
-﻿using ColorVision.OnlineLicensing;
-using ColorVision.Services.Msg;
+﻿using ColorVision.Services.Msg;
+using ColorVision.Services.OnlineLicensing;
 using ColorVision.Services.Terminal;
 using MQTTMessageLib;
 using Newtonsoft.Json.Linq;
