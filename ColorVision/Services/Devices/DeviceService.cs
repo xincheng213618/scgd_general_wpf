@@ -14,10 +14,17 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ColorVision.Services.Devices.Camera;
 
 namespace ColorVision.Services.Devices
 {
-    public class DeviceService : BaseResourceObject, IDisposable , ITreeViewItem
+
+    public interface IIcon
+    {
+        public ImageSource Icon { get; set; }
+    }
+
+    public class DeviceService : BaseResourceObject, IDisposable , ITreeViewItem,IIcon
     {
         public virtual string Code { get; set; }
         public virtual string SendTopic { get; set; }

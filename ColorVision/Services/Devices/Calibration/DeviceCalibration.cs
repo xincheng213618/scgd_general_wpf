@@ -21,6 +21,8 @@ using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Themes;
 using System.Windows.Media;
+using ColorVision.Services.Devices.Camera.Views;
+using ColorVision.Services.Extension;
 
 namespace ColorVision.Services.Devices.Calibration
 {
@@ -36,18 +38,10 @@ namespace ColorVision.Services.Devices.Calibration
 
         public DeviceCalibration(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
-            View = new ViewCalibration(this);
             DeviceService = new MQTTCalibration(Config);
-
-
-            if (Application.Current.TryFindResource("DICalibrationIcon") is DrawingImage drawingImage)
-                Icon = drawingImage;
-            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-            {
-                if (Application.Current.TryFindResource("DICalibrationIcon") is DrawingImage drawingImage)
-                    Icon = drawingImage;
-                View.View.Icon = Icon;
-            };
+            View = new ViewCalibration(this);
+            View.View.Title = $"校正视图 - {Config.Code}";
+            this.SetResource("DICalibrationIcon", View.View);;
 
             EditLazy = new Lazy<EditCalibration>(() => { EditCalibration ??= new EditCalibration(this); return EditCalibration; });
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));

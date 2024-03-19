@@ -2,6 +2,8 @@
 using ColorVision.Services;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Calibration.Views;
+using ColorVision.Services.Extension;
 using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.FileServer
@@ -16,6 +18,7 @@ namespace ColorVision.Services.Devices.FileServer
         {
             MQTTFileServer = new MQTTFileServer(Config);
             View = new ImageView();
+            View.View.Title = $"文件服务 - {Config.Code}";
         }
 
         public override UserControl GetDeviceControl() => new DeviceFileServerControl(this);

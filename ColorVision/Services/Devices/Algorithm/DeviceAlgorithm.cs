@@ -1,6 +1,8 @@
 ﻿using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;
+using ColorVision.Services.Devices.Calibration.Views;
+using ColorVision.Services.Extension;
 using ColorVision.Themes;
 using System;
 using System.Windows;
@@ -16,20 +18,11 @@ namespace ColorVision.Services.Devices.Algorithm
 
         public DeviceAlgorithm(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
-            View ??= new AlgorithmView(this);
             MQTTService = new MQTTAlgorithm(this, Config);
 
-            if (Application.Current.TryFindResource("DrawingImageAlgorithm") is DrawingImage DrawingImageAlgorithm)
-                Icon = DrawingImageAlgorithm;
-
-            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-            {
-                if (Application.Current.TryFindResource("DrawingImageAlgorithm") is DrawingImage DrawingImageAlgorithm)
-                    Icon = DrawingImageAlgorithm;
-                View.View.Icon = Icon;
-            };
-            View.View.Title = "算法展示";
-            View.View.Icon = Icon;
+            View = new AlgorithmView(this);
+            View.View.Title = $"算法视图 - {Config.Code}";
+            this.SetResource("DrawingImageAlgorithm", View.View);
 
             DisplayAlgorithmControlLazy = new Lazy<DisplayAlgorithmControl>(() => { DisplayAlgorithmControl ??= new DisplayAlgorithmControl(this); return DisplayAlgorithmControl; });
 

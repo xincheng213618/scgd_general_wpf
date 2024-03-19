@@ -4,6 +4,7 @@ using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
+using ColorVision.Services.Extension;
 using ColorVision.Services.Templates;
 using ColorVision.Themes.Controls;
 using System;
@@ -27,6 +28,9 @@ namespace ColorVision.Services.Devices.Spectrum
         {
             DeviceService = new MQTTSpectrum(Config);
             View = new ViewSpectrum(this);
+            View.View.Title = $"光谱仪视图 - {Config.Code}";
+            this.SetResource("DISpectrumIcon", View.View);
+
             UploadSpectrumCommand = new RelayCommand(UploadResource);
             SpectrumResourceParam.Load(SpectrumResourceParams, SysResourceModel.Id, ModMasterType.SpectrumResource);
         }

@@ -1,7 +1,9 @@
 ﻿using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Camera.Views;
 using ColorVision.Services.Devices.SMU.Configs;
 using ColorVision.Services.Devices.SMU.Views;
+using ColorVision.Services.Extension;
 using ColorVision.Themes;
 using System.Windows;
 using System.Windows.Controls;
@@ -20,19 +22,8 @@ namespace ColorVision.Services.Devices.SMU
         {
             Service = new MQTTSMU(Config);
             View = new ViewSMU();
-
-            if (Application.Current.TryFindResource("SMUDrawingImage") is DrawingImage SMUDrawingImage)
-                Icon = SMUDrawingImage;
-
-            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-            {
-                if (Application.Current.TryFindResource("SMUDrawingImage") is DrawingImage drawingImage)
-                    Icon = drawingImage;
-                View.View.Icon = Icon;
-            };
-
-            View.View.Title = "源表";
-            View.View.Icon = Icon;
+            View.View.Title = $"源表视图 - {Config.Code}";
+            this.SetResource("SMUDrawingImage", View.View);
         }
         public override UserControl GetDeviceControl() => new DeviceSMUControl(this);
         public override UserControl GetDeviceInfo() => new DeviceSMUControl(this, false);

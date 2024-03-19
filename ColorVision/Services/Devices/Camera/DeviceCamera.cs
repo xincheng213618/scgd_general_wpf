@@ -25,6 +25,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ColorVision.Services.Extension;
 
 namespace ColorVision.Services.Devices.Camera
 {
@@ -57,22 +58,19 @@ namespace ColorVision.Services.Devices.Camera
         {
             Service = cameraService;
             DeviceService = new MQTTCamera(Config, Service);
-            this.Config.SendTopic = Service.SendTopic;
-            this.Config.SubscribeTopic = Service.SubscribeTopic;
 
             View = new ViewCamera(this);
-            if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage drawingImage)
-                Icon = drawingImage;
+            View.View.Title = $"相机视图 - {Config.Code}";
+            this.SetResource("DrawingImageCamera", View.View);
 
-            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+
+            EditCommand = new RelayCommand(a =>
             {
-                if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage drawingImage)
-                    Icon = drawingImage;
-                View.View.Icon = Icon;
-            };
-
-            View.View.Title = "相机视图";
-            View.View.Icon = Icon;
+                Window window = new Window();
+                window.Content = new EditCamera(this);
+                window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                window.ShowDialog();
+            });
 
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
 
@@ -455,6 +453,7 @@ namespace ColorVision.Services.Devices.Camera
 
 
         public override UserControl GetDisplayControl() => new DisplayCameraControl(this);
+
         public override UserControl GetEditControl() => new EditCamera(this);
 
         public override MQTTServiceBase? GetMQTTService()
