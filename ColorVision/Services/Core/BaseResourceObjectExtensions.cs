@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Services.Core
+﻿using ColorVision.Services.Devices;
+
+namespace ColorVision.Services.Core
 {
     public static class BaseResourceObjectExtensions
     {
@@ -14,6 +16,17 @@
                 return null;
 
             return This.Parent.GetAncestor<T>();
+        }
+
+
+        public static bool ExistsDevice(this BaseResourceObject This,string Code)
+        {
+            foreach (var item in This.VisualChildren)
+            {
+                if (item is DeviceService t && t.Code == Code)
+                    return true;
+            }
+            return false;
         }
     }
 }
