@@ -48,14 +48,14 @@ namespace ColorVision.Services
 
         private void TreeView1_Loaded(object sender, RoutedEventArgs e)
         {
-            TreeViewItem firstNode = TreeView1.ItemContainerGenerator.ContainerFromIndex(0) as TreeViewItem;
+            //TreeViewItem firstNode = TreeView1.ItemContainerGenerator.ContainerFromIndex(0) as TreeViewItem;
 
-            // 选中第一个节点
-            if (firstNode != null)
-            {
-                firstNode.IsSelected = true;
-                firstNode.Focus();
-            }
+            //// 选中第一个节点
+            //if (firstNode != null)
+            //{
+            //    firstNode.IsSelected = true;
+            //    firstNode.Focus();
+            //}
         }
 
 

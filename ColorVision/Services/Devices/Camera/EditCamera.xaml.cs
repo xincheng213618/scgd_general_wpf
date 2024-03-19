@@ -103,19 +103,21 @@ namespace ColorVision.Services.Devices.Camera
                 }
 
             };
-
             this.Loaded += (s, e) =>
             {
-                ObservableCollection<string> calibrations = new ObservableCollection<string>();
-
+                string value = DeviceCamera.Config.BindDeviceCode;
+                ObservableCollection<string> Calibrations = new ObservableCollection<string>();
                 foreach (var item in ServiceManager.GetInstance().DeviceServices)
                 {
                     if (item is DeviceCalibration calibration)
                     {
-                        calibrations.Add(calibration.Code);
+                        if (!Calibrations.Contains(calibration.Code))
+                            Calibrations.Add(calibration.Code);
                     }
                 }
-                TextBox_BindDevice.ItemsSource = calibrations;
+                TextBox_BindDevice.ItemsSource = Calibrations;
+                TextBox_BindDevice.Text = value;
+
             };
 
 

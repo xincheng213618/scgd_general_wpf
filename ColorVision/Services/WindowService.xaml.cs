@@ -26,21 +26,18 @@ namespace ColorVision.Services
             {
                 case 0:
                     TreeView1.ItemsSource = ServiceManager.GetInstance().TypeServices;
-                    SelectAndFocusFirstNode(TreeView1);
                     break;
                 case 1:
                     TreeView1.ItemsSource = ServiceManager.GetInstance().TerminalServices;
-                    SelectAndFocusFirstNode(TreeView1);
                     break;
                 case 2:
                     TreeView1.ItemsSource = ServiceManager.GetInstance().DeviceServices;
-                    SelectAndFocusFirstNode(TreeView1);
                     break;
                 default:
                     break;
             }
+            SelectAndFocusFirstNode(TreeView1);
 
-            ButtonOK.Focus();
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -67,12 +64,12 @@ namespace ColorVision.Services
             }
         }
 
-        public  async void SelectAndFocusFirstNode(TreeView treeView)
+        public async void SelectAndFocusFirstNode(TreeView treeView)
         {
             await Task.Delay(1);
             if (treeView.Items.Count > 0)
             {
-                if (treeView.ItemContainerGenerator.ContainerFromIndex(0) is TreeViewItem firstNode)
+                if (treeView.SelectedItem == null && treeView.ItemContainerGenerator.ContainerFromIndex(0) is TreeViewItem firstNode)
                 {
                     firstNode.IsSelected = true;
                     Dispatcher.Invoke(() => firstNode.Focus());
