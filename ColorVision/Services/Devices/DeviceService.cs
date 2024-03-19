@@ -1,12 +1,13 @@
 ﻿#pragma warning disable  CS8604,CS8631
+using ColorVision.Common.MVVM;
 using ColorVision.Extension;
 using ColorVision.Handler;
-using ColorVision.Common.MVVM;
 using ColorVision.RC;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Templates;
+using ColorVision.Utilities;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
@@ -14,8 +15,6 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using ColorVision.Services.Devices.Camera;
-using ColorVision.Device.PG;
 
 namespace ColorVision.Services.Devices
 {
@@ -183,9 +182,9 @@ namespace ColorVision.Services.Devices
 
             PropertyCommand = new RelayCommand((e) =>
             {
-                Window window = new Window() { Width = 400, Height=400 , Title = Properties.Resource.Property};
+                Window window = new Window() { Width = 600, Height= 400 , Title = Properties.Resource.Property};
                 window.Content = GetDeviceInfo();
-                window.Owner = Application.Current.MainWindow;
+                window.Owner = WindowHelpers.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });

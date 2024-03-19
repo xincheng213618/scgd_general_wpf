@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing.Text;
 using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
@@ -16,7 +17,7 @@ namespace ColorVision.Services.Devices.Camera
     /// <summary>
     /// EditCamera.xaml 的交互逻辑
     /// </summary>
-    public partial class EditCamera : UserControl
+    public partial class EditCamera : Window
     {
         public DeviceCamera DeviceCamera { get; set; }
 
@@ -102,24 +103,20 @@ namespace ColorVision.Services.Devices.Camera
                 }
 
             };
-            this.Loaded += (s, e) =>
+
+
+            string value = DeviceCamera.Config.BindDeviceCode;
+            ObservableCollection<string> Calibrations = new ObservableCollection<string>();
+            foreach (var item in ServiceManager.GetInstance().DeviceServices)
             {
-                string value = DeviceCamera.Config.BindDeviceCode;
-                ObservableCollection<string> Calibrations = new ObservableCollection<string>();
-                foreach (var item in ServiceManager.GetInstance().DeviceServices)
+                if (item is DeviceCalibration calibration)
                 {
-                    if (item is DeviceCalibration calibration)
-                    {
-                        if (!Calibrations.Contains(calibration.Code))
-                            Calibrations.Add(calibration.Code);
-                    }
+                    if (!Calibrations.Contains(calibration.Code))
+                        Calibrations.Add(calibration.Code);
                 }
-                TextBox_BindDevice.ItemsSource = Calibrations;
-                TextBox_BindDevice.Text = value;
-
-            };
-
-
+            }
+            TextBox_BindDevice.ItemsSource = Calibrations;
+            TextBox_BindDevice.Text = value;
 
             var ImageChannelTypeList = new[]{
                  new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, "Channel_R"),
@@ -206,5 +203,9 @@ namespace ColorVision.Services.Devices.Camera
             };
         }
 
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
     }
 }

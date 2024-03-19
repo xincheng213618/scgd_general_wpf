@@ -26,6 +26,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using ColorVision.Services.Extension;
+using ColorVision.Utilities;
 
 namespace ColorVision.Services.Devices.Camera
 {
@@ -66,9 +67,9 @@ namespace ColorVision.Services.Devices.Camera
 
             EditCommand = new RelayCommand(a =>
             {
-                Window window = new Window();
-                window.Content = new EditCamera(this);
-                window.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                EditCamera window = new EditCamera(this);
+                window.Owner = WindowHelpers.GetActiveWindow();
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });
 
@@ -455,8 +456,6 @@ namespace ColorVision.Services.Devices.Camera
         private Lazy<DisplayCameraControl> DisplayCameraControlLazy { get; set; }
 
         public override UserControl GetDisplayControl() => DisplayCameraControlLazy.Value;
-
-        public override UserControl GetEditControl() => new EditCamera(this);
 
         public override MQTTServiceBase? GetMQTTService()
         {
