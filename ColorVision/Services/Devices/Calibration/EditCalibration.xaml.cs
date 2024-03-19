@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
@@ -8,7 +9,7 @@ namespace ColorVision.Services.Devices.Calibration
     /// <summary>
     /// EditCamera.xaml 的交互逻辑
     /// </summary>
-    public partial class EditCalibration : UserControl
+    public partial class EditCalibration : Window
     {
         public DeviceCalibration DeviceCalibration { get; set; }
 
@@ -35,5 +36,9 @@ namespace ColorVision.Services.Devices.Calibration
             this.DataContext = DeviceCalibration;
         }
 
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
     }
 }

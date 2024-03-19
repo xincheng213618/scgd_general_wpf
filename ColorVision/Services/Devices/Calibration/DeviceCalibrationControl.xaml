@@ -51,113 +51,59 @@
                     </DockPanel>
                 </Border>
             </Grid>
-
-            <Border  Grid.Row="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
-                <Grid x:Name="MQTTShow" Margin="5">
-                    <Grid x:Name="MQTTShowContent" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}">
-                        <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="0,0,5,0">
-                            <StackPanel >
-                                <GroupBox Header="基本信息" Margin="0,5">
-                                    <StackPanel Margin="5">
-                                        <DockPanel>
-                                            <TextBlock Text="设备Code:" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Code}"/>
-                                        </DockPanel>
-                                        <DockPanel>
-                                            <TextBlock Text="发送信道" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SendTopic}"/>
-                                        </DockPanel>
-                                        <DockPanel>
-                                            <TextBlock Text="接收信道" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SubscribeTopic}"/>
-                                        </DockPanel>
-                                        <DockPanel>
-                                            <TextBlock Text="心跳时间(ms)"  Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.HeartbeatTime}"/>
-                                        </DockPanel>
-                                        <DockPanel>
-                                            <TextBlock Text="Token"  Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ServiceToken}"/>
-                                        </DockPanel>
-                                    </StackPanel>
-                                </GroupBox>
-                                <GroupBox Header="数据目录服务配置" >
-                                    <StackPanel Margin="5">
-                                        <DockPanel Margin="0,2">
-                                            <TextBlock Text="数据目录:" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.DataBasePath}" />
-                                        </DockPanel>
-                                        <DockPanel Margin="0,5">
-                                            <TextBlock  Text="端口地址:" Width="120"/>
-                                            <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.Endpoint}"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="0,5">
-                                            <TextBlock  Text="端口范围:" Width="120"/>
-                                            <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.PortRange}"/>
-                                        </DockPanel>
-                                        <DockPanel>
-                                            <Button DockPanel.Dock="Right" Content="清理" Click="ServiceCache_Click"/>
-                                            <TextBlock Text="服务缓存"/>
-                                        </DockPanel>
-                                    </StackPanel>
-                                </GroupBox>
-
-                                <Button Content="上传校正文件"  Command="{Binding UploadCalibrationCommand}" />
-
-                                <Button Content="校正模板设置" Tag="Calibration"  Click="MenuItem_Template" />
-                                <Button Content="校正模板管理" Click="Button_Click_1"/>
+            <Border Grid.Row="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
+                <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="5">
+                    <StackPanel >
+                        <GroupBox Header="基本信息" Margin="0,0,0,5">
+                            <StackPanel Margin="5">
+                                <DockPanel>
+                                    <TextBlock Text="设备Code:" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Code}"/>
+                                </DockPanel>
+                                <DockPanel>
+                                    <TextBlock Text="发送信道" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SendTopic}"/>
+                                </DockPanel>
+                                <DockPanel>
+                                    <TextBlock Text="接收信道" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SubscribeTopic}"/>
+                                </DockPanel>
+                                <DockPanel>
+                                    <TextBlock Text="心跳时间(ms)"  Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.HeartbeatTime}"/>
+                                </DockPanel>
+                                <DockPanel>
+                                    <TextBlock Text="Token"  Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ServiceToken}"/>
+                                </DockPanel>
                             </StackPanel>
-                        </Border>
-                    </Grid>
-                    <Grid  x:Name="MQTTEditContent" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="50"/>
-                        </Grid.ColumnDefinitions>
-                        <Border Background ="{DynamicResource GlobalBackground}"  CornerRadius="5" Margin="0,0,5,0">
-                            <StackPanel Margin="5" >
-                                <GroupBox Header="资源信息" Margin="0,5">
-                                    <StackPanel Margin="5">
-                                        <DockPanel Margin="0,2" >
-                                            <TextBlock Text="Code" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Code}"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="0,2" >
-                                            <TextBlock Text="界面展示名称" Width="120"/>
-                                            <TextBox Text="{Binding Config.Name}"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="0,5" >
-                                            <TextBlock Text="心跳时间(ms)"  Width="120"/>
-                                            <TextBox Text="{Binding Config.HeartbeatTime}"/>
-                                        </DockPanel>
-                                    </StackPanel>
-                                </GroupBox>
-                                <GroupBox Header="配置信息" Margin="0,5">
-                                    <StackPanel Margin="5">
-                                        <DockPanel Margin="0,2">   
-                                            <TextBlock  Text="绑定相机" Width="120"/>
-                                            <TextBox  x:Name="TextBox_BindDevice" Text="{Binding Config.BindDeviceCode}"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="0,2">
-                                            <TextBlock  Text="数据目录"  Width="120"/>
-                                            <TextBox  x:Name="TextBox_CIEImgPath" Text="{Binding Config.FileServerCfg.DataBasePath}"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="0,2">
-                                            <TextBlock  Text="端口地址" Width="120"/>
-                                            <TextBox  x:Name="TextBox_Endpoint" Text="{Binding Config.FileServerCfg.Endpoint}"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="0,2">
-                                            <TextBlock  Text="端口范围" Width="120"/>
-                                            <TextBox  x:Name="TextBox_PortRange" Text="{Binding Config.FileServerCfg.PortRange}"/>
-                                        </DockPanel>
-
-                                    </StackPanel>
-                                </GroupBox>
+                        </GroupBox>
+                        <GroupBox Header="数据目录服务配置" >
+                            <StackPanel Margin="5">
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="数据目录:" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.DataBasePath}" />
+                                </DockPanel>
+                                <DockPanel Margin="0,5">
+                                    <TextBlock  Text="端口地址:" Width="120"/>
+                                    <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.Endpoint}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,5">
+                                    <TextBlock  Text="端口范围:" Width="120"/>
+                                    <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.FileServerCfg.PortRange}"/>
+                                </DockPanel>
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Content="清理" Click="ServiceCache_Click"/>
+                                    <TextBlock Text="服务缓存"/>
+                                </DockPanel>
                             </StackPanel>
-                        </Border>
-                        <Button Grid.Column="1"  Content="{x:Static resx:Resource.Submit}"  Command="{Binding SaveCommand}" />
-                    </Grid>
-                </Grid>
+                        </GroupBox>
+
+                        <Button Content="上传校正文件"  Command="{Binding UploadCalibrationCommand}" />
+                        <Button Content="校正模板设置" Tag="Calibration"  Click="MenuItem_Template" />
+                        <Button Content="校正模板管理" Click="Button_Click_1"/>
+                    </StackPanel>
+                </Border>
             </Border>
         </Grid>
     </Grid>

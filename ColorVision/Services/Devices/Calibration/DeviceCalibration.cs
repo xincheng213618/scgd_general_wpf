@@ -23,6 +23,8 @@ using ColorVision.Themes;
 using System.Windows.Media;
 using ColorVision.Services.Devices.Camera.Views;
 using ColorVision.Services.Extension;
+using ColorVision.Services.Devices.Camera;
+using ColorVision.Utilities;
 
 namespace ColorVision.Services.Devices.Calibration
 {
@@ -43,7 +45,15 @@ namespace ColorVision.Services.Devices.Calibration
             View.View.Title = $"校正视图 - {Config.Code}";
             this.SetIconResource("DICalibrationIcon", View.View);;
 
-            EditLazy = new Lazy<EditCalibration>(() => { EditCalibration ??= new EditCalibration(this); return EditCalibration; });
+            EditCommand = new RelayCommand(a =>
+            {
+                EditCalibration window = new EditCalibration(this);
+                window.Owner = WindowHelpers.GetActiveWindow();
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                window.ShowDialog();
+            });
+
+            DisplayLazy = new Lazy<DisplayCalibrationControl>(() => new DisplayCalibrationControl(this));
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
             TemplateControl.GetInstance().LoadModCabParam(CalibrationParams, SysResourceModel.Id, ModMasterType.Calibration);
         }
@@ -138,6 +148,7 @@ namespace ColorVision.Services.Devices.Calibration
                 string Cameracfg = path + "\\Camera.cfg";
 
                 string Calibrationcfg = path + "\\Calibration.cfg";
+
                 Dictionary<string, List<ColorVisionVCalibratioItem>> keyValuePairs1 = JsonConvert.DeserializeObject<Dictionary<string, List<ColorVisionVCalibratioItem>>>(File.ReadAllText(Calibrationcfg, Encoding.GetEncoding("gbk")));
 
                 Dictionary<string, CalibrationResource> keyValuePairs2 = new Dictionary<string, CalibrationResource>();
@@ -340,7 +351,6 @@ namespace ColorVision.Services.Devices.Calibration
                 await Task.Delay(100);
                 Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
             }
-
         }
 
 
@@ -349,12 +359,10 @@ namespace ColorVision.Services.Devices.Calibration
 
         public override UserControl GetDeviceInfo() => new DeviceCalibrationControl(this,false);
 
-        public override UserControl GetDisplayControl() => new DisplayCalibrationControl(this);
+        readonly Lazy<DisplayCalibrationControl> DisplayLazy;
 
+        public override UserControl GetDisplayControl() => DisplayLazy.Value;
 
-        readonly Lazy<EditCalibration> EditLazy;
-        public EditCalibration EditCalibration { get; set; }
-        public override UserControl GetEditControl() => EditLazy.Value;
 
         public override MQTTServiceBase? GetMQTTService()
         {
