@@ -19,6 +19,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.Themes;
+using System.Windows.Media;
 
 namespace ColorVision.Services.Devices.Calibration
 {
@@ -36,6 +38,17 @@ namespace ColorVision.Services.Devices.Calibration
         {
             View = new ViewCalibration(this);
             DeviceService = new MQTTCalibration(Config);
+
+
+            if (Application.Current.TryFindResource("DICalibrationIcon") is DrawingImage drawingImage)
+                Icon = drawingImage;
+            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+            {
+                if (Application.Current.TryFindResource("DICalibrationIcon") is DrawingImage drawingImage)
+                    Icon = drawingImage;
+                View.View.Icon = Icon;
+            };
+
             EditLazy = new Lazy<EditCalibration>(() => { EditCalibration ??= new EditCalibration(this); return EditCalibration; });
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
             TemplateControl.GetInstance().LoadModCabParam(CalibrationParams, SysResourceModel.Id, ModMasterType.Calibration);

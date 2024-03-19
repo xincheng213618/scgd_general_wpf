@@ -307,5 +307,10 @@ namespace ColorVision.Services.Devices.Calibration
             }
             return true;
         }
+
+        private void Grid_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
+        }
     }
 }
