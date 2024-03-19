@@ -1,5 +1,5 @@
-﻿using ColorVision.Device.PG;
-using ColorVision.MySql;
+﻿using ColorVision.MySql;
+using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.DAO;
 using ColorVision.Services.Devices;
@@ -7,7 +7,9 @@ using ColorVision.Services.Devices.Algorithm;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Devices.CfwPort;
+using ColorVision.Services.Devices.FileServer;
 using ColorVision.Services.Devices.Motor;
+using ColorVision.Services.Devices.PG;
 using ColorVision.Services.Devices.Sensor;
 using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Devices.SMU.Dao;
@@ -15,7 +17,8 @@ using ColorVision.Services.Devices.Spectrum;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Dao;
 using ColorVision.Services.Flow;
-using ColorVision.Services.Core;
+using ColorVision.Services.Terminal;
+using ColorVision.Services.Type;
 using ColorVision.Settings;
 using ColorVision.UserSpace;
 using FlowEngineLib;
@@ -25,9 +28,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
-using ColorVision.Services.Type;
-using ColorVision.Services.Terminal;
-using ColorVision.Services.Devices.FileServer;
 
 namespace ColorVision.Services
 {

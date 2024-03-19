@@ -1,8 +1,8 @@
-﻿using ColorVision.Device.PG;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.RC;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.PG;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Algorithm;
 using ColorVision.Services.Devices.Calibration;
@@ -12,21 +12,19 @@ using ColorVision.Services.Devices.CfwPort;
 using ColorVision.Services.Devices.FileServer;
 using ColorVision.Services.Devices.Motor;
 using ColorVision.Services.Devices.Sensor;
-using ColorVision.Services.Devices.SMU.Configs;
 using ColorVision.Services.Devices.SMU;
-using ColorVision.Services.Devices.Spectrum.Configs;
+using ColorVision.Services.Devices.SMU.Configs;
 using ColorVision.Services.Devices.Spectrum;
+using ColorVision.Services.Devices.Spectrum.Configs;
+using ColorVision.Services.Extension;
 using ColorVision.Services.Type;
 using ColorVision.Settings;
-using ColorVision.Themes;
-using cvColorVision;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using ColorVision.Services.Extension;
 
 namespace ColorVision.Services.Terminal
 {

@@ -1,5 +1,4 @@
 ﻿using ColorVision.MQTT;
-using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.PG.Templates;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
@@ -11,7 +10,7 @@ using System.ComponentModel;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ColorVision.Device.PG
+namespace ColorVision.Services.Devices.PG
 {
 
     public enum PGType
