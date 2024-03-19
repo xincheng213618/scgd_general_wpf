@@ -81,6 +81,8 @@ namespace ColorVision.Services.Devices.Camera
 
             UploadLincenseCommand = new RelayCommand(a => UploadLincense());
             RefreshLincenseCommand = new RelayCommand(a => RefreshLincense());
+
+            DisplayCameraControlLazy = new Lazy<DisplayCameraControl>(() => new DisplayCameraControl(this));
         }
         #region License
         public RelayCommand UploadLincenseCommand { get; set; }
@@ -450,9 +452,9 @@ namespace ColorVision.Services.Devices.Camera
         public override UserControl GetDeviceControl() => new DeviceCameraControl(this);
         public override UserControl GetDeviceInfo() => new DeviceCameraControl(this, false);
         
+        private Lazy<DisplayCameraControl> DisplayCameraControlLazy { get; set; }
 
-
-        public override UserControl GetDisplayControl() => new DisplayCameraControl(this);
+        public override UserControl GetDisplayControl() => DisplayCameraControlLazy.Value;
 
         public override UserControl GetEditControl() => new EditCamera(this);
 

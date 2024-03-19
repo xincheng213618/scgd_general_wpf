@@ -15,6 +15,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using ColorVision.Services.Devices.Camera;
+using ColorVision.Device.PG;
 
 namespace ColorVision.Services.Devices
 {
@@ -247,6 +248,8 @@ namespace ColorVision.Services.Devices
             Parent.RemoveChild(this);
 
             ServiceManager.GetInstance().DeviceServices.Remove(this);
+            if (GetDisplayControl() is IDisPlayControl disPlayControl)
+                ServiceManager.GetInstance().DisPlayControls.Remove(disPlayControl);
             this.Dispose();
         }
     }

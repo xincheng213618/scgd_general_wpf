@@ -15,7 +15,7 @@
             <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
         </Style>
     </UserControl.Resources>
-    <Grid  x:Name="MQTTEditContent" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}">
+    <Grid  x:Name="MQTTEditContent">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>

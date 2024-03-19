@@ -405,7 +405,7 @@ namespace ColorVision
                                 if (e.OldItems != null)
                                     foreach (IDisPlayControl oldItem in e.OldItems)
                                         if (oldItem is UserControl userControl)
-                                            stackPanel1.Children.Add(userControl);
+                                            stackPanel1.Children.Remove(userControl);
                                 break;
                             case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
                                 break;
