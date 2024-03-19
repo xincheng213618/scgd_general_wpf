@@ -8,7 +8,7 @@
              xmlns:properties="clr-namespace:ColorVision.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceAlgorithm}"
-             Title="编辑" Height="450" Width="400" Initialized="Window_Initialized">
+             Title="编辑" Icon="{Binding Icon}" Height="450" Width="400" Initialized="Window_Initialized">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
