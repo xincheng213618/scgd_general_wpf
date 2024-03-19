@@ -359,7 +359,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                         case RiPointTypes.Circle:
                             DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
                             Circle.Attribute.Center = new Point(item.PixX, item.PixY);
-                            Circle.Attribute.Radius = item.PixWidth;
+                            Circle.Attribute.Radius = item.PixHeight/2;
                             Circle.Attribute.Brush = Brushes.Transparent;
                             Circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
                             Circle.Attribute.ID = item.ID;
