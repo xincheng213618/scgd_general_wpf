@@ -41,13 +41,6 @@ namespace ColorVision.Services.Devices.Camera
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             this.DataContext = Device;
-            if (IsCanEdit)
-            {
-                UserControl userControl = Device.GetEditControl();
-                if (userControl.Parent is Panel grid)
-                    grid.Children.Remove(userControl);
-                MQTTEditContent.Children.Add(userControl);
-            }
 
             Device.RefreshLincense();
             ListViewLincense.ItemsSource = Device.LicenseModels;

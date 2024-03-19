@@ -17,13 +17,12 @@ namespace ColorVision.Services.Devices.SMU
 
         public ViewSMU View { get; set; }
 
-
         public DeviceSMU(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
             Service = new MQTTSMU(Config);
             View = new ViewSMU();
             View.View.Title = $"源表视图 - {Config.Code}";
-            this.SetResource("SMUDrawingImage", View.View);
+            this.SetIconResource("SMUDrawingImage", View.View);
         }
         public override UserControl GetDeviceControl() => new DeviceSMUControl(this);
         public override UserControl GetDeviceInfo() => new DeviceSMUControl(this, false);

@@ -1,12 +1,15 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera.Configs;
+using ColorVision.Services.Extension;
 using ColorVision.Services.Terminal;
 using ColorVision.Settings;
+using ColorVision.Themes;
 using cvColorVision;
 using Newtonsoft.Json;
 using System;
 using System.Windows;
+using System.Windows.Media;
 
 namespace ColorVision.Services.Devices.Camera
 {
@@ -15,6 +18,12 @@ namespace ColorVision.Services.Devices.Camera
         public TerminalCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             OpenCreateWindowCommand = new RelayCommand((s) => OpenCreateWindow());
+
+            MQTTTerminalCamera cameraService = new MQTTTerminalCamera(Config);
+            MQTTServiceTerminalBase = cameraService;
+            RefreshCommand = new RelayCommand(a => cameraService.GetAllDevice());
+
+            this.SetIconResource("DrawingImageCamera");
         }
 
 

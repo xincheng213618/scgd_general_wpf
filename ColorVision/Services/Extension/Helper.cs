@@ -13,7 +13,7 @@ namespace ColorVision.Services.Extension
 {
     public static class ServicesExtension
     {
-        public static void SetResource(this IIcon Class, string ResourceName ,View? view = null)
+        public static void SetIconResource(this IIcon Class, string ResourceName ,View? view = null)
         {
             if (Application.Current.TryFindResource(ResourceName) is DrawingImage drawingImage)
                 Class.Icon = drawingImage;

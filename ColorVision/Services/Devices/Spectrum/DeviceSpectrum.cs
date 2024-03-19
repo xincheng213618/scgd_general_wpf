@@ -29,7 +29,7 @@ namespace ColorVision.Services.Devices.Spectrum
             DeviceService = new MQTTSpectrum(Config);
             View = new ViewSpectrum(this);
             View.View.Title = $"光谱仪视图 - {Config.Code}";
-            this.SetResource("DISpectrumIcon", View.View);
+            this.SetIconResource("DISpectrumIcon", View.View);
 
             UploadSpectrumCommand = new RelayCommand(UploadResource);
             SpectrumResourceParam.Load(SpectrumResourceParams, SysResourceModel.Id, ModMasterType.SpectrumResource);

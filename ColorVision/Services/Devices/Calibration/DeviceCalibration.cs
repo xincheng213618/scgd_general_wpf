@@ -41,7 +41,7 @@ namespace ColorVision.Services.Devices.Calibration
             DeviceService = new MQTTCalibration(Config);
             View = new ViewCalibration(this);
             View.View.Title = $"校正视图 - {Config.Code}";
-            this.SetResource("DICalibrationIcon", View.View);;
+            this.SetIconResource("DICalibrationIcon", View.View);;
 
             EditLazy = new Lazy<EditCalibration>(() => { EditCalibration ??= new EditCalibration(this); return EditCalibration; });
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));

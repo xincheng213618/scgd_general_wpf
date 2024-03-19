@@ -61,7 +61,7 @@ namespace ColorVision.Services.Devices.Camera
 
             View = new ViewCamera(this);
             View.View.Title = $"相机视图 - {Config.Code}";
-            this.SetResource("DrawingImageCamera", View.View);
+            this.SetIconResource("DrawingImageCamera", View.View);
 
 
             EditCommand = new RelayCommand(a =>

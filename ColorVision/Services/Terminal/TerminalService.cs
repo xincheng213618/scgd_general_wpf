@@ -26,6 +26,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ColorVision.Services.Extension;
 
 namespace ColorVision.Services.Terminal
 {
@@ -45,7 +46,7 @@ namespace ColorVision.Services.Terminal
         }
     }
 
-    public class TerminalService : TerminalServiceBase
+    public class TerminalService : TerminalServiceBase, IIcon
     {
         public SysResourceModel SysResourceModel { get; set; }
         public TerminalServiceConfig Config { get; set; }
@@ -83,6 +84,7 @@ namespace ColorVision.Services.Terminal
                     Config = new TerminalServiceConfig();
                 }
             }
+
             Config.Code = SysResourceModel.Code ?? string.Empty;
             Config.Name = Name;
 
@@ -94,60 +96,31 @@ namespace ColorVision.Services.Terminal
             switch (ServiceType)
             {
                 case ServiceTypes.camera:
-                    MQTTTerminalCamera cameraService = new MQTTTerminalCamera(Config);
-                    MQTTServiceTerminalBase = cameraService;
-                    RefreshCommand = new RelayCommand(a => cameraService.GetAllDevice());
-
-                    if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage DrawingImageCamera)
-                        Icon = DrawingImageCamera;
-                    ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-                    {
-                        if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage drawingImage)
-                            Icon = drawingImage;
-                    };
-
                     break;
                 case ServiceTypes.Algorithm:
-                    if (Application.Current.TryFindResource("DrawingImageAlgorithm") is DrawingImage DrawingImageAlgorithm)
-                        Icon = DrawingImageAlgorithm;
-                    ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-                    {
-                        if (Application.Current.TryFindResource("DrawingImageAlgorithm") is DrawingImage drawingImage)
-                            Icon = drawingImage;
-                    };
+                    this.SetIconResource("DrawingImageAlgorithm");
                     MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.SMU:
-                    if (Application.Current.TryFindResource("SMUDrawingImage") is DrawingImage SMUDrawingImage)
-                        Icon = SMUDrawingImage;
-                    ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-                    {
-                        if (Application.Current.TryFindResource("SMUDrawingImage") is DrawingImage drawingImage)
-                            Icon = drawingImage;
-                    };
+                    this.SetIconResource("SMUDrawingImage");
                     MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.Motor:
-                    if (Application.Current.TryFindResource("COMDrawingImage") is DrawingImage COMDrawingImage)
-                        Icon = COMDrawingImage;
-                    ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-                    {
-                        if (Application.Current.TryFindResource("COMDrawingImage") is DrawingImage drawingImage)
-                            Icon = drawingImage;
-                    };
+                    this.SetIconResource("COMDrawingImage");
                     MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.CfwPort:
-                    if (Application.Current.TryFindResource("CfwPortDrawingImage") is DrawingImage CfwPortDrawingImage)
-                        Icon = CfwPortDrawingImage;
-                    ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-                    {
-                        if (Application.Current.TryFindResource("CfwPortDrawingImage") is DrawingImage drawingImage)
-                            Icon = drawingImage;
-                    };
+                    this.SetIconResource("CfwPortDrawingImage");
                     MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
-
+                case ServiceTypes.Calibration:
+                    this.SetIconResource("DICalibrationIcon");
+                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
+                    break;
+                case ServiceTypes.Spectrum:
+                    this.SetIconResource("DISpectrumIcon");
+                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
+                    break;
                 default:
                     MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;

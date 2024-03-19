@@ -22,7 +22,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             View = new AlgorithmView(this);
             View.View.Title = $"算法视图 - {Config.Code}";
-            this.SetResource("DrawingImageAlgorithm", View.View);
+            this.SetIconResource("DrawingImageAlgorithm", View.View);
 
             DisplayAlgorithmControlLazy = new Lazy<DisplayAlgorithmControl>(() => { DisplayAlgorithmControl ??= new DisplayAlgorithmControl(this); return DisplayAlgorithmControl; });
 

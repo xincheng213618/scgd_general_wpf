@@ -17,7 +17,7 @@ namespace ColorVision.Services.Devices.CfwPort
         {
             DeviceService = new MQTTCfwPort(Config);
 
-            this.SetResource("CfwPortDrawingImage");
+            this.SetIconResource("CfwPortDrawingImage");
            
         }
 
