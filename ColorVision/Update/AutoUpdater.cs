@@ -192,7 +192,7 @@ namespace ColorVision.Update
 
                 Stopwatch stopwatch = new Stopwatch();
 
-                var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead);
+                var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -209,18 +209,18 @@ namespace ColorVision.Update
                 stopwatch.Start();
 
                 using (var fileStream = new FileStream(downloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
-                using (var stream = await response.Content.ReadAsStreamAsync())
+                using (var stream = await response.Content.ReadAsStreamAsync(cancellationToken))
                 {
                     do
                     {
-                        readBytes = await stream.ReadAsync(buffer);
+                        readBytes = await stream.ReadAsync(buffer, cancellationToken);
                         if (readBytes == 0)
                         {
                             isMoreToRead = false;
                         }
                         else
                         {
-                            await fileStream.WriteAsync(buffer.AsMemory(0, readBytes));
+                            await fileStream.WriteAsync(buffer.AsMemory(0, readBytes), cancellationToken);
 
                             totalReadBytes += readBytes;
                             int progressPercentage = totalBytes != -1L
