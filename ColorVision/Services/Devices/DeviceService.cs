@@ -229,11 +229,9 @@ namespace ColorVision.Services.Devices
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             ServiceManager.GetInstance().VSysResourceDao.Save(new SysResourceModel(SysResourceModel));
             IsEditMode = false;
-
             ///每次提交之后重启服务
             MQTTRCService.GetInstance().RestartServices(SysResourceModel.TypeCode, SysResourceModel.PCode, Config.Code);
             QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
-
             ConfigChanged?.Invoke(this, new EventArgs());
         }
 

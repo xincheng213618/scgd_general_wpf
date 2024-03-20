@@ -25,6 +25,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ColorVision.Utilities;
 
 namespace ColorVision.Services.Terminal
 {
@@ -60,6 +61,7 @@ namespace ColorVision.Services.Terminal
         public ImageSource Icon { get; set; }
 
         public RelayCommand RefreshCommand { get; set; }
+        public RelayCommand EditCommand { get; set; }
         public RelayCommand OpenCreateWindowCommand { get; set; }
         public RelayCommand CreateCommand { get; set; }
         public EventHandler CreateDeviceOver { get; set; }
@@ -91,6 +93,15 @@ namespace ColorVision.Services.Terminal
 
             CreateCommand = new RelayCommand(a => Create());
             OpenCreateWindowCommand = new RelayCommand(a => OpenCreateWindow());
+            RefreshCommand = new RelayCommand(a => MQTTRCService.GetInstance().RestartServices(Config.ServiceType.ToString(),sysResourceModel.Code ??string.Empty));
+            EditCommand = new RelayCommand(a =>
+            {
+                EditTerminal window = new EditTerminal(this);
+                window.Owner = WindowHelpers.GetActiveWindow();
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                window.ShowDialog();
+            });
+
             switch (ServiceType)
             {
                 case ServiceTypes.camera:

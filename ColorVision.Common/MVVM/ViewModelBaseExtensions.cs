@@ -28,6 +28,8 @@ namespace ColorVision.Common.MVVM
             #pragma warning restore SYSLIB0011
         }
 
+        public static void CopyFrom<T>(this T source, T target) where T : ViewModelBase => target.CopyTo(source);
+
         //复制一个新的对象
         public static void CopyTo<T>(this T source, T target) where T:ViewModelBase
         {

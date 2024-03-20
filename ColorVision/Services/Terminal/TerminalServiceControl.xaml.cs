@@ -48,32 +48,6 @@ namespace ColorVision.Services.Terminal
             MQTTCreate.Visibility = Visibility.Collapsed;
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            ServiceTerminal.Config.SubscribeTopic = ServiceTerminal.SysResourceModel.TypeCode + "/STATUS/" + ServiceTerminal.SysResourceModel.Code;
-            ServiceTerminal.Config.SendTopic = ServiceTerminal.SysResourceModel.TypeCode + "/CMD/" + ServiceTerminal.SysResourceModel.Code;
-
-            foreach (var item in ServiceTerminal.VisualChildren)
-            {
-                if(item is DeviceService mQTTDevice)
-                {
-                    mQTTDevice.SendTopic = ServiceTerminal.Config.SendTopic;
-                    mQTTDevice.SubscribeTopic = ServiceTerminal.Config.SubscribeTopic;
-                    mQTTDevice.Save();
-                }
-            }
-            ServiceTerminal.Save();
-
-            MQTTEditContent.Visibility = Visibility.Collapsed;
-            MQTTShowContent.Visibility = Visibility.Visible;
-        }
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            MQTTShowContent.Visibility = Visibility.Collapsed;
-            MQTTEditContent.Visibility = Visibility.Visible;
-        }
-
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
             MQTTCreate.Visibility = MQTTCreate.Visibility == Visibility.Visible? Visibility.Collapsed : Visibility.Visible;
@@ -101,11 +75,6 @@ namespace ColorVision.Services.Terminal
             }
         }
 
-
-        private void ReFresh_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
 
         private void TextBox_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
