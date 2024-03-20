@@ -1,4 +1,4 @@
-﻿using ColorVision.Device.PG;
+﻿using ColorVision.Services.Devices.PG;
 using System;
 using System.Collections.Generic;
 using System.Linq;

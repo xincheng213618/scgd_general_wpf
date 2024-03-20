@@ -1,12 +1,13 @@
-﻿#pragma warning disable  CS8604,CS8631
+﻿#pragma warning disable CS8604,CS8631
+using ColorVision.Common.MVVM;
 using ColorVision.Extension;
 using ColorVision.Handler;
-using ColorVision.MVVM;
 using ColorVision.RC;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Templates;
+using ColorVision.Utilities;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
@@ -17,7 +18,13 @@ using System.Windows.Media;
 
 namespace ColorVision.Services.Devices
 {
-    public class DeviceService : BaseResourceObject, IDisposable , ITreeViewItem
+
+    public interface IIcon
+    {
+        public ImageSource Icon { get; set; }
+    }
+
+    public class DeviceService : BaseResourceObject, IDisposable , ITreeViewItem,IIcon
     {
         public virtual string Code { get; set; }
         public virtual string SendTopic { get; set; }
@@ -160,7 +167,7 @@ namespace ColorVision.Services.Devices
                 var config = JsonConvert.DeserializeObject<T>(data);
                 if (config != null)
                 {
-                    config.CopyTo(this.Config);
+                    config.CloneValuesTo(this.Config);
                     Save();
                 }
                 else
@@ -175,9 +182,9 @@ namespace ColorVision.Services.Devices
 
             PropertyCommand = new RelayCommand((e) =>
             {
-                Window window = new Window() { Width = 400, Height=400 , Title = Properties.Resource.Property};
+                Window window = new Window() { Width = 600, Height= 400 , Title = Properties.Resource.Property};
                 window.Content = GetDeviceInfo();
-                window.Owner = Application.Current.MainWindow;
+                window.Owner = WindowHelpers.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });
@@ -240,6 +247,8 @@ namespace ColorVision.Services.Devices
             Parent.RemoveChild(this);
 
             ServiceManager.GetInstance().DeviceServices.Remove(this);
+            if (GetDisplayControl() is IDisPlayControl disPlayControl)
+                ServiceManager.GetInstance().DisPlayControls.Remove(disPlayControl);
             this.Dispose();
         }
     }

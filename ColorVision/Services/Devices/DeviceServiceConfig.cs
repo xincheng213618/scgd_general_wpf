@@ -1,4 +1,4 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Services.Core;
 using MQTTMessageLib;
 using Newtonsoft.Json;

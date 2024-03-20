@@ -19,6 +19,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Services.Dao;
 using MQTTMessageLib.Camera;
+using ColorVision.Extension;
 
 namespace ColorVision.Services.Devices.Calibration
 {
@@ -46,7 +47,7 @@ namespace ColorVision.Services.Devices.Calibration
 
         }
 
-        public ViewCalibration View { get; set; }
+        public ViewCalibration View { get=> Device.View; }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Device;
@@ -55,48 +56,9 @@ namespace ColorVision.Services.Devices.Calibration
             ComboxCalibrationTemplate.ItemsSource = Device.CalibrationParams;
             ComboxCalibrationTemplate.SelectedIndex = 0;
 
-            View = Device.View;
-            ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
-            ViewGridManager.GetInstance().ViewMaxChangedEvent += ViewMaxChangedEvent;
 
-            void ViewMaxChangedEvent(int max)
-            {
-                List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
-                KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowSingle, -2));
-                KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowHidden, -1));
-                for (int i = 0; i < max; i++)
-                {
-                    KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));
-                }
-                ComboxView.ItemsSource = KeyValues;
-                ComboxView.SelectedValue = View.View.ViewIndex;
-            }
-            View.View.ClearViewIndexChangedSubscribers();
-            View.View.ViewIndexChangedEvent += (e1, e2) =>
-            {
-                ComboxView.SelectedIndex = e2 + 2;
-            };
-            ComboxView.SelectionChanged += (s, e) =>
-            {
-                if (ComboxView.SelectedItem is KeyValuePair<string, int> KeyValue)
-                {
-                    View.View.ViewIndex = KeyValue.Value;
-                    ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
-                }
-            };
-            View.View.ViewIndex = -1;
+            this.AddViewConfig(View, ComboxView);
 
-            this.PreviewMouseLeftButtonDown += (s, e) =>
-            {
-                if (ViewConfig.GetInstance().IsAutoSelect)
-                {
-                    if (ViewGridManager.GetInstance().ViewMax == 1)
-                    {
-                        View.View.ViewIndex = 0;
-                        ViewGridManager.GetInstance().SetViewIndex(View, 0);
-                    }
-                }
-            };
         }
 
 
@@ -344,6 +306,11 @@ namespace ColorVision.Services.Devices.Calibration
                 return false;
             }
             return true;
+        }
+
+        private void Grid_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
         }
     }
 }

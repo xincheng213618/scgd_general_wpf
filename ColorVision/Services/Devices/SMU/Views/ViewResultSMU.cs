@@ -1,6 +1,6 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Sorts;
 using ColorVision.Services.Devices.SMU.Dao;
-using ColorVision.Sorts;
 using Newtonsoft.Json;
 using ScottPlot;
 using ScottPlot.Plottable;

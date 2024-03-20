@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace ColorVision.MVVM
+namespace ColorVision.Common.MVVM
 {
     /// <summary>
     /// 实例化一个Mode

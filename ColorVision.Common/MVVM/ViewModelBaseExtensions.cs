@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Reflection;
 
-namespace ColorVision.MVVM
+namespace ColorVision.Common.MVVM
 {
     /// <summary>
     /// ViewMode的扩展
@@ -10,10 +10,10 @@ namespace ColorVision.MVVM
     public static class ViewModeBaseExtensions
     {
         //复制一个新的对象
-        public static T CopyTo<T>(this T source) where T : ViewModelBase, new()
+        public static T CloneValuesTo<T>(this T source) where T : ViewModelBase, new()
         {
             T target = new T();
-            source.CopyTo(target);
+            source.CloneValuesTo(target);
             return target;
         }
 
@@ -29,32 +29,45 @@ namespace ColorVision.MVVM
         }
 
         //复制一个新的对象
-        public static void CopyTo<T>(this T source, T target) where T:ViewModelBase
+        public static void CloneValuesTo<T>(this T source, T target) where T:ViewModelBase
         {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            if (target == null) throw new ArgumentNullException(nameof(target));
+
             Type type = source.GetType();
-            var fields = type.GetRuntimeFields().ToList();
+
+            // 可能需要检查source和target是否是同一个类型或者target是否是source的子类。
+
+            // Copy fields
+            var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
             foreach (var field in fields)
             {
-                try
+                if (!field.IsInitOnly) // Ignore readonly fields
                 {
-                    field.SetValue(target, field.GetValue(source));
-                }
-                catch
-                {
-
+                    try
+                    {
+                        field.SetValue(target, field.GetValue(source));
+                    }
+                    catch (Exception ex)
+                    {
+                        // Handle or log the exception
+                        Console.WriteLine($"Error copying field {field.Name}: {ex.Message}");
+                    }
                 }
             }
 
-            var properties = type.GetRuntimeProperties().ToList();
+            // Copy properties
+            var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanRead && p.CanWrite);
             foreach (var property in properties)
             {
                 try
                 {
                     property.SetValue(target, property.GetValue(source));
                 }
-                catch
+                catch (Exception ex)
                 {
-
+                    // Handle or log the exception
+                    Console.WriteLine($"Error copying property {property.Name}: {ex.Message}");
                 }
             }
         }

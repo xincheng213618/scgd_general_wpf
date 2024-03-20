@@ -1,6 +1,6 @@
 ﻿using ColorVision.Themes.Controls;
 using System;
-using ColorVision.MVVM;
+using ColorVision.Common.MVVM;
 using System.Windows;
 
 namespace ColorVision.UserSpace
@@ -37,7 +37,7 @@ namespace ColorVision.UserSpace
 
         private void Ok_Click(object sender, RoutedEventArgs e)
         {
-            UserConfigCopy.CopyTo(UserConfig);
+            UserConfigCopy.CloneValuesTo(UserConfig);
         }
     }
 }

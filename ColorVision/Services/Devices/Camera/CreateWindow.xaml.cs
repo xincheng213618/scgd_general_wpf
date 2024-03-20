@@ -2,6 +2,7 @@
 using cvColorVision;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using ColorVision.Services.Core;
 
 namespace ColorVision.Services.Devices.Camera
 {
@@ -27,9 +29,23 @@ namespace ColorVision.Services.Devices.Camera
             TerminalCamera = terminalCamera;
             InitializeComponent();
         }
+        public string NewCreateFileName(string FileName)
+        {
+            if (!TerminalCamera.ExistsDevice(FileName))
+                return FileName;
+            for (int i = 1; i < 999; i++)
+            {
+                if (!TerminalCamera.ExistsDevice($"{FileName}{i}"))
+                    return $"{FileName}{i}";
+            }
+            return FileName;
+        }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            TerminalCamera.CreatCode = NewCreateFileName("DevCamera");
+            TerminalCamera.CreatName = NewCreateFileName("DevCamera");
+
             this.DataContext = TerminalCamera;
 
             var Config = TerminalCamera.CreateConfig;

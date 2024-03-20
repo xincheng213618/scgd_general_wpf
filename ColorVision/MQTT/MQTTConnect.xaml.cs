@@ -1,5 +1,5 @@
-﻿using ColorVision.MVVM;
-using ColorVision.RC;
+﻿using ColorVision.RC;
+using ColorVision.Common.MVVM;
 using ColorVision.Settings;
 using System;
 using System.Collections.ObjectModel;
@@ -52,7 +52,7 @@ namespace ColorVision.MQTT
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            MQTTConfigBackUp.CopyTo(MQTTConfig);
+            MQTTConfigBackUp.CloneValuesTo(MQTTConfig);
             this.Close();
         }
 
@@ -67,7 +67,7 @@ namespace ColorVision.MQTT
             MQTTConfig= ConfigHandler.GetInstance().SoftwareConfig.MQTTConfig;
             GridMQTT.DataContext = MQTTConfig;
             MQTTConfigBackUp = new MQTTConfig();
-            MQTTConfig.CopyTo(MQTTConfigBackUp);
+            MQTTConfig.CloneValuesTo(MQTTConfigBackUp);
 
             MQTTConfigs = ConfigHandler.GetInstance().SoftwareConfig.MQTTConfigs;
             ListViewMQTT.ItemsSource = MQTTConfigs;
@@ -140,7 +140,7 @@ namespace ColorVision.MQTT
             MQTTConfig  mQTTConfig = new MQTTConfig() { };
             mQTTConfig.Name = mQTTConfig.Name + "_1";
 
-            MQTTConfig.CopyTo(mQTTConfig);
+            MQTTConfig.CloneValuesTo(mQTTConfig);
             MQTTConfigs.Add(mQTTConfig);
         }
 

@@ -7,7 +7,7 @@
         xmlns:properties ="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:AutoUpdater}"
-        Title="{x:Static properties:Resource.ColorVisionUpdater}" Background="{DynamicResource GlobalBackground}" Height="90" Width="300" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resource.ColorVisionUpdater}" Background="{DynamicResource GlobalBackground}" Height="90" Width="350" Initialized="Window_Initialized">
     <Grid>
         <StackPanel>
             <ProgressBar Height="15"  Foreground="#B41515" Maximum="100" Minimum="0" Value="{Binding ProgressValue}" Background="#373B41" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />

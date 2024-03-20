@@ -1,0 +1,62 @@
+﻿<Window x:Class="ColorVision.Services.Devices.Algorithm.EditAlgorithm"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:local="clr-namespace:ColorVision.Services.Devices.Algorithm"
+             xmlns:properties="clr-namespace:ColorVision.Properties"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance local:DeviceAlgorithm}"
+             Title="编辑" Icon="{Binding Icon}" Height="450" Width="400" Initialized="Window_Initialized">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <ScrollViewer>
+            <StackPanel Margin="5,0" >
+                <GroupBox Header="资源信息" Margin="0,5">
+                    <StackPanel Margin="5">
+                        <DockPanel Margin="0,2" >
+                            <TextBlock Text="Code" Width="120"/>
+                            <TextBox Text="{Binding Config.Code}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,2" >
+                            <TextBlock Text="界面展示名称" Width="120"/>
+                            <TextBox Text="{Binding Config.Name}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,5" >
+                            <TextBlock Text="心跳时间(ms)"  Width="120"/>
+                            <TextBox Text="{Binding Config.HeartbeatTime}"/>
+                        </DockPanel>
+                    </StackPanel>
+                </GroupBox>
+                <GroupBox Header="配置信息" Margin="0,5">
+                    <StackPanel Margin="5">
+                        <DockPanel Margin="0,2">
+                            <TextBlock Text="绑定设备"  Width="120"/>
+                            <hc:ComboBox  x:Name="TextBox_BindDevice" IsEditable="True" SelectedIndex="0" Text="{Binding Config.BindDeviceCode}"  hc:InfoElement.ShowClearButton="True"  />
+                        </DockPanel>
+                        <DockPanel Margin="0,2">
+                            <TextBlock  Text="数据目录"  Width="120"/>
+                            <TextBox  x:Name="TextBox_CIEImgPath" Text="{Binding Config.FileServerCfg.DataBasePath}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,2">
+                            <TextBlock  Text="端口地址" Width="120"/>
+                            <TextBox  x:Name="TextBox_Endpoint" Text="{Binding Config.FileServerCfg.Endpoint}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,2">
+                            <TextBlock  Text="端口范围" Width="120"/>
+                            <TextBox  x:Name="TextBox_PortRange" Text="{Binding Config.FileServerCfg.PortRange}"/>
+                        </DockPanel>
+
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+        </ScrollViewer>
+        <Border Grid.Row="1" Margin="5" Height="30">
+            <Button  Content="{x:Static properties:Resource.Submit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding SaveCommand}" Click="Button_Click" />
+        </Border>
+    </Grid>
+</Window>

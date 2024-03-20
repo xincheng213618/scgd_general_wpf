@@ -12,7 +12,7 @@ namespace ColorVision.HotKey
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return (value is bool boll) && (boll) ? Common.Utilities.Properties.Resource.HotkeyNormal : Common.Utilities.Properties.Resource.HotkeyNormal;
+            return (value is bool boll) && (boll) ? Util.Properties.Resource.HotkeyNormal : Util.Properties.Resource.HotkeyNormal;
 
         }
 
@@ -111,14 +111,14 @@ namespace ColorVision.HotKey
         private void HotkeyTextBox_GotFocus(object sender, RoutedEventArgs e)
         {
             HotkeyTextBox1.Visibility = Visibility.Visible;
-            HotkeyTextBox1.Text = Common.Utilities.Properties.Resource.HotKeySet1;
+            HotkeyTextBox1.Text = Util.Properties.Resource.HotKeySet1;
         }
 
         private void HotkeyTextBox_LostFocus(object sender, RoutedEventArgs e)
         {
             if (HotkeyTextBox.Text == "<None>")
             {
-                HotkeyTextBox1.Text = Common.Utilities.Properties.Resource.HotKeySet2;
+                HotkeyTextBox1.Text = Util.Properties.Resource.HotKeySet2;
             }
             else
             {

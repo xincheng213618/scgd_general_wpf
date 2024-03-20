@@ -1,4 +1,5 @@
-﻿using ColorVision.Settings;
+﻿using ColorVision.Services.OnlineLicensing;
+using ColorVision.Settings;
 using ColorVision.Themes.Controls;
 using System;
 using System.Collections.ObjectModel;
@@ -9,7 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ColorVision.OnlineLicensing
+namespace ColorVision.Services.OnlineLicensing
 {
 
 

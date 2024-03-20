@@ -1,5 +1,5 @@
-﻿using ColorVision.MVVM;
-using ColorVision.Sorts;
+﻿using ColorVision.Common.Sorts;
+using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;

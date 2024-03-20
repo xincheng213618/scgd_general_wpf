@@ -636,4 +636,13 @@
   <data name="ServiceConfiguration" xml:space="preserve">
     <value>服务配置</value>
   </data>
+  <data name="ConfigurationComplete" xml:space="preserve">
+    <value>配置结束</value>
+  </data>
+  <data name="CurrentSpeed" xml:space="preserve">
+    <value>当前速度：</value>
+  </data>
+  <data name="TimeLeft" xml:space="preserve">
+    <value>剩余时间：</value>
+  </data>
 </root>

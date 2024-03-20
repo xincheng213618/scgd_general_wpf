@@ -1,10 +1,9 @@
 ﻿using ColorVision.Adorners;
 using ColorVision.Common.Utilities;
-using ColorVision.Media;
 using ColorVision.MySql;
 using ColorVision.Services;
-using ColorVision.Services.Flow;
 using ColorVision.Services.Core;
+using ColorVision.Services.Flow;
 using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.Solution.View;
@@ -12,6 +11,7 @@ using ColorVision.Themes;
 using ColorVision.Update;
 using ColorVision.UserSpace;
 using ColorVision.Utils;
+using ColorVision.Wizards;
 using log4net;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
@@ -47,7 +47,7 @@ namespace ColorVision
             {
                 return ConfigHandler.SoftwareConfig.SoftwareSetting;
             }
-        }  
+        }
         public MainWindow()
         {
             InitializeComponent();
@@ -69,7 +69,7 @@ namespace ColorVision
                     this.Height = SystemParameters.WorkArea.Height;
                 }
             }
-            this.SizeChanged +=(s, e) =>
+            this.SizeChanged += (s, e) =>
             {
                 if (SoftwareSetting.IsRestoreWindow)
                 {
@@ -84,7 +84,7 @@ namespace ColorVision
             this.Title = Title + $"- {(IsAdministrator ? Properties.Resource.RunAsAdmin : Properties.Resource.NotRunAsAdmin)}";
         }
 
-        private  void Window_Initialized(object sender, EventArgs e)
+        private void Window_Initialized(object sender, EventArgs e)
         {
             ConfigHandler = ConfigHandler.GetInstance();
             SolutionManager.GetInstance();
@@ -99,8 +99,10 @@ namespace ColorVision
             }
 
 
-            if (!WindowConfig.IsExist||(WindowConfig.IsExist&& WindowConfig.Icon == null)) {
-                ThemeManager.Current.SystemThemeChanged += (e) => {
+            if (!WindowConfig.IsExist || (WindowConfig.IsExist && WindowConfig.Icon == null))
+            {
+                ThemeManager.Current.SystemThemeChanged += (e) =>
+                {
                     this.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Assets/Image/{(e == Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
                 };
                 if (ThemeManager.Current.SystemTheme == Theme.Dark)
@@ -167,9 +169,9 @@ namespace ColorVision
 
 
             MenuItem menuItem3 = new MenuItem() { Header = Properties.Resource.RestartService, Tag = "CalibrationUpload" };
-            menuItem3.Click += (s,e) =>
+            menuItem3.Click += (s, e) =>
             {
-                Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&net stop CVMainService_x64&net start RegistrationCenterService&net start CVMainService_x64");
+                Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&&net start RegistrationCenterService");
             };
             menuItem.Items.Add(menuItem3);
 
@@ -215,7 +217,7 @@ namespace ColorVision
                 if (MySqlControl.GetInstance().IsConnect)
                     MySqlControl.GetInstance().EnsureLocalInfile();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 log.Info($"{DateTime.Now}:EnsureLocalInfile {ex.Message} ");
 
@@ -234,7 +236,7 @@ namespace ColorVision
                 if (x509Certificate2 != null)
                 {
                     MenuItem menuItem = new MenuItem() { Header = Properties.Resource.InstallCertificate };
-                    menuItem.Click += (s,e) =>
+                    menuItem.Click += (s, e) =>
                     {
                         InstallCertificate(x509Certificate2);
                     };
@@ -301,16 +303,16 @@ namespace ColorVision
                             // 如果找到匹配项，提取变更日志
                             string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
                             // 显示变更日志
-                            MessageBox.Show(Application.Current.MainWindow, $"{changeLogForCurrentVersion.ReplaceLineEndings()}",$"{currentVersion} {Properties.Resource.ChangeLog}：");
+                            MessageBox.Show(Application.Current.MainWindow, $"{changeLogForCurrentVersion.ReplaceLineEndings()}", $"{currentVersion} {Properties.Resource.ChangeLog}：");
                         }
                         else
                         {
                             // 如果未找到匹配项，说明没有为当前版本列出变更日志
-                            MessageBox.Show(Application.Current.MainWindow,"1.修复了一些已知的BUG", $"{currentVersion} {Properties.Resource.ChangeLog}：");
+                            MessageBox.Show(Application.Current.MainWindow, "1.修复了一些已知的BUG", $"{currentVersion} {Properties.Resource.ChangeLog}：");
                         }
 
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
                         log.Error(ex.Message);
                     }
@@ -322,7 +324,7 @@ namespace ColorVision
                 ConfigHandler.SaveConfig();
             }
         }
-        
+
         public static async Task CheckLocalService()
         {
             await Task.Delay(2000);
@@ -364,6 +366,7 @@ namespace ColorVision
             await Task.Delay(1000);
             Application.Current.Dispatcher.Invoke(() =>
             {
+                AutoUpdater.DeleteAllCachedUpdateFiles();
                 AutoUpdater autoUpdater = AutoUpdater.GetInstance();
                 autoUpdater.CheckAndUpdate(false);
             });
@@ -386,9 +389,9 @@ namespace ColorVision
                 flowDisplayControl ??= new FlowDisplayControl();
                 if (stackPanel1.Children.Contains(flowDisplayControl))
                     stackPanel1.Children.Remove(flowDisplayControl);
-                stackPanel1.Children.Insert(0,flowDisplayControl);
+                stackPanel1.Children.Insert(0, flowDisplayControl);
 
-                ServiceManager.GetInstance().DisPlayControls.CollectionChanged += (s,e)=>
+                ServiceManager.GetInstance().DisPlayControls.CollectionChanged += (s, e) =>
                 {
                     if (s is ObservableCollection<IDisPlayControl> disPlayControls)
                     {
@@ -404,7 +407,7 @@ namespace ColorVision
                                 if (e.OldItems != null)
                                     foreach (IDisPlayControl oldItem in e.OldItems)
                                         if (oldItem is UserControl userControl)
-                                            stackPanel1.Children.Add(userControl);
+                                            stackPanel1.Children.Remove(userControl);
                                 break;
                             case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
                                 break;
@@ -487,6 +490,12 @@ namespace ColorVision
             string changelogContent = File.ReadAllText(changelogPath);
             changelogWindow.SetChangelogText(changelogContent);
             changelogWindow.ShowDialog();
+        }
+
+        private void Wizard_Click(object sender, RoutedEventArgs e)
+        {
+            WizardWindow wizardWindow = new WizardWindow();
+            wizardWindow.Show();
         }
     }
 }

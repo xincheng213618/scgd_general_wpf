@@ -5,6 +5,7 @@ using ColorVision.Extension;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Msg;
+using ColorVision.Utilities;
 using cvColorVision;
 using MQTTMessageLib;
 using MQTTMessageLib.Camera;
@@ -33,7 +34,6 @@ namespace ColorVision.Services.Devices.Camera
             CameraService.Devices.Add(this);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatusType.OffLine;
-            //GetAllCameraID();
         }
 
         public override void Dispose()
@@ -58,7 +58,6 @@ namespace ColorVision.Services.Devices.Camera
 
             if (msg.Code == 0)
             {
-
                 switch (msg.EventName)
                 {
                     case "Close":
@@ -132,6 +131,23 @@ namespace ColorVision.Services.Devices.Camera
                         break;
                 }
             }
+            else if(msg.Code == -401)
+            {
+                switch (msg.EventName)
+                {
+                    case "Open":
+                        DeviceStatus = DeviceStatusType.Closed;
+                        string SN = msg.Data.SN;
+                        NativeMethods.Clipboard.SetText(SN);
+                        Application.Current.Dispatcher.BeginInvoke(() => 
+                        {
+                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"相机打开失败，找不到激活文件,设备码{msg.DeviceCode} {Environment.NewLine} 请粘贴到SN到指定位置:{SN} ","ColorVision");
+                        });
+                        break;
+                    default:
+                        break;
+                }
+            }
             else
             {
                 switch (msg.EventName)
@@ -141,7 +157,7 @@ namespace ColorVision.Services.Devices.Camera
                         break;
                     case "Open":
                         if (DeviceStatus == DeviceStatusType.Closed)
-                            Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, "打开失败"));
+                            Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, "打开失败", "ColorVision"));
                         DeviceStatus = DeviceStatusType.Closed;
                         break;
                     case "Init":
@@ -302,7 +318,6 @@ namespace ColorVision.Services.Devices.Camera
                 EventName = "Open",
                 Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "CameraID", CameraID }, { "Bpp", ImageBpp },{ "remoteIp", Config.VideoConfig.Host },{ "remotePort", Config.VideoConfig.Port } }
             };
-
             return PublishAsyncClient(msg);
         }
 

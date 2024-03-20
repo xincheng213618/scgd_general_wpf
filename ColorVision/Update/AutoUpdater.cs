@@ -1,4 +1,4 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Settings;
 using log4net;
 using Org.BouncyCastle.Asn1.Ocsp;
@@ -10,6 +10,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
@@ -36,7 +37,6 @@ namespace ColorVision.Update
         public AutoUpdater()
         {
             UpdateCommand = new RelayCommand((e) =>  CheckAndUpdate(false));
-            DeleteAllCachedUpdateFiles();
         }
 
         public RelayCommand UpdateCommand { get; set; }
@@ -102,9 +102,17 @@ namespace ColorVision.Update
                     {
                         if (MessageBox.Show($"{Properties.Resource.NewVersionFound}{LatestVersion},{Properties.Resource.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                         {
-                            WindowUpdate windowUpdate = new WindowUpdate() {  Owner =Application.Current.MainWindow ,WindowStartupLocation = WindowStartupLocation.CenterOwner};
+                            CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+                            WindowUpdate windowUpdate = new WindowUpdate() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                            windowUpdate.Closed += (s, e) =>
+                            {
+                                _cancellationTokenSource.Cancel();
+                            };
+                            SpeedValue = string.Empty ;
+                            RemainingTimeValue = string.Empty;
+                            ProgressValue = 0;
+                            Task.Run(() => DownloadAndUpdate(LatestVersion, _cancellationTokenSource.Token));
                             windowUpdate.Show();
-                            Task.Run(() => DownloadAndUpdate(LatestVersion));
                         }
                     });              
                 }
@@ -166,7 +174,7 @@ namespace ColorVision.Update
         private string _RemainingTimeValue;
 
 
-        private async Task DownloadAndUpdate(Version latestVersion)
+        private async Task DownloadAndUpdate(Version latestVersion,CancellationToken cancellationToken)
         {
             // 构建下载URL，这里假设下载路径与版本号相关
             string downloadUrl = $"{GlobalConst.UpdatePath}/ColorVision/ColorVision-{latestVersion}.exe";
@@ -184,7 +192,7 @@ namespace ColorVision.Update
 
                 Stopwatch stopwatch = new Stopwatch();
 
-                var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead);
+                var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -201,18 +209,18 @@ namespace ColorVision.Update
                 stopwatch.Start();
 
                 using (var fileStream = new FileStream(downloadPath, FileMode.Create, FileAccess.Write, FileShare.None))
-                using (var stream = await response.Content.ReadAsStreamAsync())
+                using (var stream = await response.Content.ReadAsStreamAsync(cancellationToken))
                 {
                     do
                     {
-                        readBytes = await stream.ReadAsync(buffer);
+                        readBytes = await stream.ReadAsync(buffer, cancellationToken);
                         if (readBytes == 0)
                         {
                             isMoreToRead = false;
                         }
                         else
                         {
-                            await fileStream.WriteAsync(buffer.AsMemory(0, readBytes));
+                            await fileStream.WriteAsync(buffer.AsMemory(0, readBytes), cancellationToken);
 
                             totalReadBytes += readBytes;
                             int progressPercentage = totalBytes != -1L
@@ -221,16 +229,21 @@ namespace ColorVision.Update
 
                             ProgressValue = progressPercentage;
 
+                            if (cancellationToken.IsCancellationRequested)
+                            {
+                                return;
+                            }
+
                             if (stopwatch.ElapsedMilliseconds > 200) // Update speed at least once per second
                             {
                                 double speed = totalReadBytes / stopwatch.Elapsed.TotalSeconds;
-                                SpeedValue = $"Current speed: {speed / 1024 / 1024:F2} MB/s";
+                                SpeedValue = $"{ColorVision.Properties.Resource.CurrentSpeed} {speed / 1024 / 1024:F2} MB/s";
 
                                 if (totalBytes != -1L)
                                 {
                                     double remainingBytes = totalBytes - totalReadBytes;
                                     double remainingTime = remainingBytes / speed; // in seconds
-                                    RemainingTimeValue = $"Time left: {TimeSpan.FromSeconds(remainingTime):hh\\:mm\\:ss}";
+                                    RemainingTimeValue = $"{ColorVision.Properties.Resource.TimeLeft} {TimeSpan.FromSeconds(remainingTime):hh\\:mm\\:ss}";
                                 }
                             }
                         }

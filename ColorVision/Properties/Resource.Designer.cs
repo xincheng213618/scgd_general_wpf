@@ -268,6 +268,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 配置结束 的本地化字符串。
+        /// </summary>
+        public static string ConfigurationComplete {
+            get {
+                return ResourceManager.GetString("ConfigurationComplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 配置新工程 的本地化字符串。
         /// </summary>
         public static string ConfigureNewProject {
@@ -345,6 +354,15 @@ namespace ColorVision.Properties {
         public static string CreateProject {
             get {
                 return ResourceManager.GetString("CreateProject", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前速度： 的本地化字符串。
+        /// </summary>
+        public static string CurrentSpeed {
+            get {
+                return ResourceManager.GetString("CurrentSpeed", resourceCulture);
             }
         }
         
@@ -1506,6 +1524,15 @@ namespace ColorVision.Properties {
         public static string ThemeUseSystem {
             get {
                 return ResourceManager.GetString("ThemeUseSystem", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 剩余时间： 的本地化字符串。
+        /// </summary>
+        public static string TimeLeft {
+            get {
+                return ResourceManager.GetString("TimeLeft", resourceCulture);
             }
         }
         

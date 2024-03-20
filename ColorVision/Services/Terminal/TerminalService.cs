@@ -1,8 +1,8 @@
-﻿using ColorVision.Device.PG;
-using ColorVision.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.RC;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.PG;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Algorithm;
 using ColorVision.Services.Devices.Calibration;
@@ -12,14 +12,13 @@ using ColorVision.Services.Devices.CfwPort;
 using ColorVision.Services.Devices.FileServer;
 using ColorVision.Services.Devices.Motor;
 using ColorVision.Services.Devices.Sensor;
-using ColorVision.Services.Devices.SMU.Configs;
 using ColorVision.Services.Devices.SMU;
-using ColorVision.Services.Devices.Spectrum.Configs;
+using ColorVision.Services.Devices.SMU.Configs;
 using ColorVision.Services.Devices.Spectrum;
+using ColorVision.Services.Devices.Spectrum.Configs;
+using ColorVision.Services.Extension;
 using ColorVision.Services.Type;
 using ColorVision.Settings;
-using ColorVision.Themes;
-using cvColorVision;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -35,7 +34,7 @@ namespace ColorVision.Services.Terminal
         private bool _IsExpanded = true;
 
         public bool IsSelected { get => _IsChecked; set { _IsChecked = value; NotifyPropertyChanged(); } }
-        private bool _IsChecked = true;
+        private bool _IsChecked;
         public ContextMenu ContextMenu { get; set; }
 
 
@@ -45,7 +44,7 @@ namespace ColorVision.Services.Terminal
         }
     }
 
-    public class TerminalService : TerminalServiceBase
+    public class TerminalService : TerminalServiceBase, IIcon
     {
         public SysResourceModel SysResourceModel { get; set; }
         public TerminalServiceConfig Config { get; set; }
@@ -83,6 +82,7 @@ namespace ColorVision.Services.Terminal
                     Config = new TerminalServiceConfig();
                 }
             }
+
             Config.Code = SysResourceModel.Code ?? string.Empty;
             Config.Name = Name;
 
@@ -94,60 +94,31 @@ namespace ColorVision.Services.Terminal
             switch (ServiceType)
             {
                 case ServiceTypes.camera:
-                    MQTTTerminalCamera cameraService = new MQTTTerminalCamera(Config);
-                    MQTTServiceTerminalBase = cameraService;
-                    RefreshCommand = new RelayCommand(a => cameraService.GetAllDevice());
-
-                    if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage DrawingImageCamera)
-                        Icon = DrawingImageCamera;
-                    ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-                    {
-                        if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage drawingImage)
-                            Icon = drawingImage;
-                    };
-
                     break;
                 case ServiceTypes.Algorithm:
-                    if (Application.Current.TryFindResource("DrawingImageAlgorithm") is DrawingImage DrawingImageAlgorithm)
-                        Icon = DrawingImageAlgorithm;
-                    ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-                    {
-                        if (Application.Current.TryFindResource("DrawingImageAlgorithm") is DrawingImage drawingImage)
-                            Icon = drawingImage;
-                    };
+                    this.SetIconResource("DrawingImageAlgorithm");
                     MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.SMU:
-                    if (Application.Current.TryFindResource("SMUDrawingImage") is DrawingImage SMUDrawingImage)
-                        Icon = SMUDrawingImage;
-                    ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-                    {
-                        if (Application.Current.TryFindResource("SMUDrawingImage") is DrawingImage drawingImage)
-                            Icon = drawingImage;
-                    };
+                    this.SetIconResource("SMUDrawingImage");
                     MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.Motor:
-                    if (Application.Current.TryFindResource("COMDrawingImage") is DrawingImage COMDrawingImage)
-                        Icon = COMDrawingImage;
-                    ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-                    {
-                        if (Application.Current.TryFindResource("COMDrawingImage") is DrawingImage drawingImage)
-                            Icon = drawingImage;
-                    };
+                    this.SetIconResource("COMDrawingImage");
                     MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.CfwPort:
-                    if (Application.Current.TryFindResource("CfwPortDrawingImage") is DrawingImage CfwPortDrawingImage)
-                        Icon = CfwPortDrawingImage;
-                    ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-                    {
-                        if (Application.Current.TryFindResource("CfwPortDrawingImage") is DrawingImage drawingImage)
-                            Icon = drawingImage;
-                    };
+                    this.SetIconResource("CfwPortDrawingImage");
                     MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
-
+                case ServiceTypes.Calibration:
+                    this.SetIconResource("DICalibrationIcon");
+                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
+                    break;
+                case ServiceTypes.Spectrum:
+                    this.SetIconResource("DISpectrumIcon");
+                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
+                    break;
                 default:
                     MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;

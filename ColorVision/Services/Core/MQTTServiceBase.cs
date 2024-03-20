@@ -1,5 +1,5 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MVVM;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.MQTT;
 using ColorVision.RC;
 using ColorVision.Services.Msg;
 using log4net;
@@ -19,7 +19,6 @@ namespace ColorVision.Services.Core
     public class MQTTServiceBase : ViewModelBase, IHeartbeat, IServiceConfig, IDisposable
     {
         internal static readonly ILog log = LogManager.GetLogger(typeof(MQTTServiceBase));
-        private static readonly log4net.ILog logger = LogManager.GetLogger(typeof(MQTTServiceBase));
         public MQTTSetting MQTTSetting { get; set; }
         public MQTTControl MQTTControl { get; set; }
 
@@ -71,8 +70,14 @@ namespace ColorVision.Services.Core
                         MQTTRCService.GetInstance().QueryServices();
                         return Task.CompletedTask;
                     }
+                    //没有sn提示
+                    //if (json.Code == -401)
+                    //{
+                    //    MsgReturnReceived?.Invoke(json);
+                    //    return Task.CompletedTask;
+                    //}
 
-                    if (json.Code != 0 && json.Code != 1)
+                    if (json.Code != 0 && json.Code != 1 && json.Code != -1 && json.Code != -401)
                     {
                         MsgReturnReceived?.Invoke(json);
                         return Task.CompletedTask;
@@ -114,6 +119,7 @@ namespace ColorVision.Services.Core
         private void Timer_Elapsed(object? sender, ElapsedEventArgs e)
         {
             TimeSpan sp = DateTime.Now - LastAliveTime;
+            //这里其实有问题,但是返回信号并不标准，只能按照这种写法
             long overTime = HeartbeatTime + HeartbeatTime / 2;
             if (sp > TimeSpan.FromMilliseconds(overTime))
             {

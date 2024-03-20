@@ -3,7 +3,7 @@ using ColorVision.Extension;
 
 using System.IO;
 using System.Windows.Media;
-using ColorVision.MVVM;
+using ColorVision.Common.MVVM;
 using System.Windows.Controls;
 
 namespace ColorVision.Solution.V.Files

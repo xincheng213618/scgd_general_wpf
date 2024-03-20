@@ -10,29 +10,26 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:TerminalCamera}"
         Title="创建设备" Height="400" Width="400" Initialized="Window_Initialized">
-    <Grid>
+    <Grid  Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0">
+        <Border Grid.Row="0">
             <StackPanel>
                 <DockPanel Margin="2" >
-                    <TextBlock Text="标识" MinWidth="30"/>
-                    <hc:ComboBox IsEditable="True" SelectedIndex="0" Text="{Binding CreatName}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                    <TextBlock Text="标识" MinWidth="50" />
+                    <hc:ComboBox IsEditable="True" SelectedIndex="0" Text="{Binding CreatName}"  hc:InfoElement.ShowClearButton="True"   />
                 </DockPanel>
                 <DockPanel Margin="2" >
-                    <TextBlock Text="名称" Width="30"/>
-                    <hc:ComboBox  IsEditable="True" SelectedIndex="0" Text="{Binding CreatCode}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                    <TextBlock Text="名称" Width="50" />
+                    <hc:ComboBox  IsEditable="True" SelectedIndex="0" Text="{Binding CreatCode}"  hc:InfoElement.ShowClearButton="True"  />
                 </DockPanel>
             </StackPanel>
-        </Grid>
-        <ScrollViewer Grid.Row="1">
+        </Border>
+        <ScrollViewer Grid.Row="1" Margin="0,5,0,5">
             <StackPanel  Margin="0,5" >
-
-
-
                 <GroupBox Header="配置信息" Margin="0,5">
                     <StackPanel Margin="5">
                         <DockPanel Margin="0,2">

@@ -1,4 +1,4 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Common.MVVM;
 using MQTTMessageLib.Algorithm;
 
 namespace ColorVision.Services.Devices.Algorithm.Views

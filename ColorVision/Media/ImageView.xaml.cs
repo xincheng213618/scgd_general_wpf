@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
-using ColorVision.MVVM;
+using ColorVision.Common.MVVM;
 using ColorVision.Net;
 using ColorVision.Util.Draw.Special;
 using log4net;

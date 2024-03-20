@@ -183,4 +183,7 @@
   <data name="ThemePink" xml:space="preserve">
     <value>분홍색</value>
   </data>
+  <data name="fr" xml:space="preserve">
+    <value>프랑스 국민</value>
+  </data>
 </root>

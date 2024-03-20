@@ -183,4 +183,7 @@
   <data name="ThemePink" xml:space="preserve">
     <value>粉紅色</value>
   </data>
+  <data name="fr" xml:space="preserve">
+    <value>法語</value>
+  </data>
 </root>

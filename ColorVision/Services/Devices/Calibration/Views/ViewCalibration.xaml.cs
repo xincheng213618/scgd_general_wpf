@@ -1,10 +1,8 @@
 ﻿#pragma warning disable CS8604,CS8629
-using ColorVision.Common.MVVM;
 using ColorVision.Draw;
 using ColorVision.Media;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
-using ColorVision.Sorts;
 using ColorVision.Common.Utilities;
 using log4net;
 using System;
@@ -19,7 +17,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Services.Templates;
 using ColorVision.Services.Templates.POI;
-using ColorVision.Services.Devices.Camera.Views;
+using ColorVision.Common.Sorts;
+
 
 namespace ColorVision.Services.Devices.Calibration.Views
 {
@@ -46,8 +45,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            View= new View();
-            ViewGridManager.GetInstance().AddView(this);
+            View = new View();
 
             listView1.ItemsSource = ViewResultCalibrations;
 
@@ -82,7 +80,6 @@ namespace ColorVision.Services.Devices.Calibration.Views
 
             if (listView1.View is GridView gridView)
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-            GridViewColumnVisibilityListView.ItemsSource = GridViewColumnVisibilitys;
         }
 
 
@@ -96,15 +93,6 @@ namespace ColorVision.Services.Devices.Calibration.Views
         }
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-        private void OpenColumnVisibilityPopupButton_Click(object sender, RoutedEventArgs e)
-        {
-            ColumnVisibilityPopup.IsOpen = true;    
-        }
-        private void CheckBox_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.View is GridView gridView)
-                GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-        }
 
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {

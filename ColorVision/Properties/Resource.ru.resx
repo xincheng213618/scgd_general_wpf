@@ -592,7 +592,7 @@
     <value>MySQL-соединение</value>
   </data>
   <data name="ExecutionProcess" xml:space="preserve">
-    <value>Процесс реализации</value>
+    <value>Процесс</value>
   </data>
   <data name="StopProcess" xml:space="preserve">
     <value>Остановить процесс</value>
@@ -635,5 +635,14 @@
   </data>
   <data name="ServiceConfiguration" xml:space="preserve">
     <value>Конфигурация сервиса</value>
+  </data>
+  <data name="ConfigurationComplete" xml:space="preserve">
+    <value>Настройка завершена</value>
+  </data>
+  <data name="CurrentSpeed" xml:space="preserve">
+    <value>Текущая скорость:</value>
+  </data>
+  <data name="TimeLeft" xml:space="preserve">
+    <value>оставшееся время:</value>
   </data>
 </root>

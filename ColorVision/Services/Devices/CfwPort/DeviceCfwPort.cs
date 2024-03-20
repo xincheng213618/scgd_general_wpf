@@ -1,5 +1,7 @@
 ﻿using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Algorithm.Views;
+using ColorVision.Services.Extension;
 using ColorVision.Themes;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,15 +17,8 @@ namespace ColorVision.Services.Devices.CfwPort
         {
             DeviceService = new MQTTCfwPort(Config);
 
-            if (Application.Current.TryFindResource("CfwPortDrawingImage") is DrawingImage drawingImage)
-                Icon = drawingImage;
-
-            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-            {
-                if (Application.Current.TryFindResource("CfwPortDrawingImage") is DrawingImage drawingImage)
-                    Icon = drawingImage;
-            };
-            
+            this.SetIconResource("CfwPortDrawingImage");
+           
         }
 
         public override UserControl GetDeviceControl() => new DeviceCfwPortControl(this);

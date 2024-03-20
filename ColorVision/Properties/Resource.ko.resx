@@ -636,4 +636,13 @@
   <data name="ServiceConfiguration" xml:space="preserve">
     <value>서비스 구성</value>
   </data>
+  <data name="ConfigurationComplete" xml:space="preserve">
+    <value>구성 완료</value>
+  </data>
+  <data name="CurrentSpeed" xml:space="preserve">
+    <value>현재 속도:</value>
+  </data>
+  <data name="TimeLeft" xml:space="preserve">
+    <value>남은 시간:</value>
+  </data>
 </root>

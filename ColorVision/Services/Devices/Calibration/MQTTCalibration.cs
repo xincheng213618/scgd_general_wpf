@@ -23,6 +23,7 @@ namespace ColorVision.Services.Devices.Calibration
 
         private void ProcessingReceived(MsgReturn msg)
         {
+            if (msg.DeviceCode != Config.Code) return;
             if (msg.Code == 0)
             {
                 switch (msg.EventName)

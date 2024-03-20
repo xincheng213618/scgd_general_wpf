@@ -11,12 +11,12 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using static cvColorVision.GCSDLL;
-using ColorVision.Sorts;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using System.Runtime.CompilerServices;
 using System.ComponentModel;
 using ColorVision.Services.Devices.Spectrum.Dao;
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Sorts;
 
 namespace ColorVision.Services.Devices.Spectrum.Views
 {
@@ -53,7 +53,6 @@ namespace ColorVision.Services.Devices.Spectrum.Views
                 TextBox1.Focus();
             };
             View = new View();
-            ViewGridManager.GetInstance().AddView(this);
 
 
             listView1.ItemsSource = ViewResultSpectrums;
@@ -74,7 +73,6 @@ namespace ColorVision.Services.Devices.Spectrum.Views
 
             if (listView1.View is GridView gridView)
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-            GridViewColumnVisibilityListView.ItemsSource = GridViewColumnVisibilitys;
 
             if (listView2.View is GridView gridView1)
                 GridViewColumnVisibility.AddGridViewColumn(gridView1.Columns, LeftGridViewColumnVisibilitys);
@@ -84,15 +82,6 @@ namespace ColorVision.Services.Devices.Spectrum.Views
 
         public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
-        private void OpenColumnVisibilityPopupButton_Click(object sender, RoutedEventArgs e)
-        {
-            ColumnVisibilityPopup.IsOpen = true;
-        }
-        private void CheckBox_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.View is GridView gridView)
-                GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-        }
 
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {

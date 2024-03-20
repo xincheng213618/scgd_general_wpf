@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing.Text;
 using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
@@ -16,12 +17,11 @@ namespace ColorVision.Services.Devices.Camera
     /// <summary>
     /// EditCamera.xaml 的交互逻辑
     /// </summary>
-    public partial class EditCamera : UserControl
+    public partial class EditCamera : Window
     {
         public DeviceCamera DeviceCamera { get; set; }
 
         public MQTTCamera Service { get => DeviceCamera.DeviceService; }
-
 
         public EditCamera(DeviceCamera mQTTDeviceCamera)
         {
@@ -40,7 +40,6 @@ namespace ColorVision.Services.Devices.Camera
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = DeviceCamera;
 
             CameraID.ItemsSource = DeviceCamera.Service.DevicesSN;
 
@@ -104,21 +103,17 @@ namespace ColorVision.Services.Devices.Camera
 
             };
 
-            this.Loaded += (s, e) =>
+
+            ObservableCollection<string> Calibrations = new ObservableCollection<string>();
+            foreach (var item in ServiceManager.GetInstance().DeviceServices)
             {
-                ObservableCollection<string> calibrations = new ObservableCollection<string>();
-
-                foreach (var item in ServiceManager.GetInstance().DeviceServices)
+                if (item is DeviceCalibration calibration)
                 {
-                    if (item is DeviceCalibration calibration)
-                    {
-                        calibrations.Add(calibration.Code);
-                    }
+                    if (!Calibrations.Contains(calibration.Code))
+                        Calibrations.Add(calibration.Code);
                 }
-                TextBox_BindDevice.ItemsSource = calibrations;
-            };
-
-
+            }
+            TextBox_BindDevice.ItemsSource = Calibrations;
 
             var ImageChannelTypeList = new[]{
                  new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, "Channel_R"),
@@ -203,7 +198,14 @@ namespace ColorVision.Services.Devices.Camera
                         break;
                 }
             };
+
+
+            this.DataContext = DeviceCamera;
         }
 
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            this.Close();
+        }
     }
 }

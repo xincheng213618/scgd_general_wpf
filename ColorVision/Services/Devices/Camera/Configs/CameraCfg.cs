@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-using ColorVision.MVVM;
+using ColorVision.Common.MVVM;
 using System.Windows;
 
 namespace ColorVision.Services.Devices.Camera.Configs

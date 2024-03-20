@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.MVVM;
+using ColorVision.Common.MVVM;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Devices.Calibration.Templates;
@@ -25,6 +25,8 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ColorVision.Services.Extension;
+using ColorVision.Utilities;
 
 namespace ColorVision.Services.Devices.Camera
 {
@@ -57,22 +59,19 @@ namespace ColorVision.Services.Devices.Camera
         {
             Service = cameraService;
             DeviceService = new MQTTCamera(Config, Service);
-            this.Config.SendTopic = Service.SendTopic;
-            this.Config.SubscribeTopic = Service.SubscribeTopic;
 
             View = new ViewCamera(this);
-            if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage drawingImage)
-                Icon = drawingImage;
+            View.View.Title = $"相机视图 - {Config.Code}";
+            this.SetIconResource("DrawingImageCamera", View.View);
 
-            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+
+            EditCommand = new RelayCommand(a =>
             {
-                if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage drawingImage)
-                    Icon = drawingImage;
-                View.View.Icon = Icon;
-            };
-
-            View.View.Title = "相机视图";
-            View.View.Icon = Icon;
+                EditCamera window = new EditCamera(this);
+                window.Owner = WindowHelpers.GetActiveWindow();
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                window.ShowDialog();
+            });
 
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
 
@@ -83,6 +82,8 @@ namespace ColorVision.Services.Devices.Camera
 
             UploadLincenseCommand = new RelayCommand(a => UploadLincense());
             RefreshLincenseCommand = new RelayCommand(a => RefreshLincense());
+
+            DisplayCameraControlLazy = new Lazy<DisplayCameraControl>(() => new DisplayCameraControl(this));
         }
         #region License
         public RelayCommand UploadLincenseCommand { get; set; }
@@ -452,10 +453,9 @@ namespace ColorVision.Services.Devices.Camera
         public override UserControl GetDeviceControl() => new DeviceCameraControl(this);
         public override UserControl GetDeviceInfo() => new DeviceCameraControl(this, false);
         
+        private Lazy<DisplayCameraControl> DisplayCameraControlLazy { get; set; }
 
-
-        public override UserControl GetDisplayControl() => new DisplayCameraControl(this);
-        public override UserControl GetEditControl() => new EditCamera(this);
+        public override UserControl GetDisplayControl() => DisplayCameraControlLazy.Value;
 
         public override MQTTServiceBase? GetMQTTService()
         {

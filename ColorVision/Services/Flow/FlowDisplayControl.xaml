@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:ColorVision.Services.Flow"
              xmlns:properties="clr-namespace:ColorVision.Properties"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized" >
+             d:DesignHeight="450" d:DesignWidth="300" Width="300" Initialized="UserControl_Initialized" >
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>

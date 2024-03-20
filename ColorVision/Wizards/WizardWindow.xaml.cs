@@ -2,6 +2,7 @@
 using ColorVision.MySql;
 using ColorVision.RC;
 using ColorVision.Settings;
+using System.Diagnostics;
 using System.Windows;
 
 namespace ColorVision.Wizards
@@ -15,13 +16,18 @@ namespace ColorVision.Wizards
         {
             InitializeComponent();
         }
+        private void Window_Initialized(object sender, System.EventArgs e)
+        {
+            this.DataContext = ConfigHandler.GetInstance().SoftwareConfig;
+        }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            StartWindow StartWindow = new StartWindow();
-            StartWindow.Show();
-            ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.WizardCompletionKey = true ;
-            this.Close();
+            ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.WizardCompletionKey = true;
+            ConfigHandler.GetInstance().SaveConfig();
+            //这里使用件的启动路径，启动主程序
+            Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"), "-r");
+            Application.Current.Shutdown();
         }
 
         private void MysqlButton_Click(object sender, RoutedEventArgs e)
@@ -38,5 +44,7 @@ namespace ColorVision.Wizards
         {
             new RCServiceConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+
+
     }
 }

@@ -7,7 +7,7 @@ using System.Windows.Input;
 using MQTTMessageLib;
 using ColorVision.Themes;
 
-namespace ColorVision.Device.PG
+namespace ColorVision.Services.Devices.PG
 {
     /// <summary>
     /// DisplayPGControl.xaml 的交互逻辑

@@ -1,4 +1,4 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Templates.POI;
 using System;

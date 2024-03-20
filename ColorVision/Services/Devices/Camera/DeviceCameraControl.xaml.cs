@@ -1,9 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Sorts;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Dao;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
-using ColorVision.Sorts;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -41,13 +41,6 @@ namespace ColorVision.Services.Devices.Camera
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             this.DataContext = Device;
-            if (IsCanEdit)
-            {
-                UserControl userControl = Device.GetEditControl();
-                if (userControl.Parent is Panel grid)
-                    grid.Children.Remove(userControl);
-                MQTTEditContent.Children.Add(userControl);
-            }
 
             Device.RefreshLincense();
             ListViewLincense.ItemsSource = Device.LicenseModels;

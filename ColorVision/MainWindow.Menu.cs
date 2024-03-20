@@ -4,13 +4,13 @@ using ColorVision.HotKey;
 using ColorVision.Language;
 using ColorVision.MQTT;
 using ColorVision.MySql;
-using ColorVision.OnlineLicensing;
 using ColorVision.RC;
 using ColorVision.Services;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Flow;
 using ColorVision.Services.Msg;
+using ColorVision.Services.OnlineLicensing;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Solution;
@@ -235,8 +235,7 @@ namespace ColorVision
 
         private void Update_Click(object sender, RoutedEventArgs e)
         {
-            AutoUpdater AutoUpdater = new AutoUpdater();
-            AutoUpdater.CheckAndUpdate();
+            AutoUpdater.GetInstance().CheckAndUpdate();
         }
         private void License_Click(object sender, RoutedEventArgs e)
         {

@@ -1,4 +1,4 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Common.MVVM;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -20,7 +20,7 @@ namespace ColorVision.Services.Devices.Camera.Video
         public CameraVideoConnect(CameraVideoConfig config)
         {
             CameraVideoConfig = config;
-            CameraVideoConfigCopy = config.CopyTo();
+            CameraVideoConfigCopy = config.CloneValuesTo();
             InitializeComponent();
         }
 
@@ -62,7 +62,7 @@ namespace ColorVision.Services.Devices.Camera.Video
             {
                 CameraVideoConfigCopy.Name = CameraVideoConfigCopy.Host +"_" + CameraVideoConfigCopy.Port;
             }
-            CameraVideoConfigCopy.CopyTo(CameraVideoConfig);
+            CameraVideoConfigCopy.CloneValuesTo(CameraVideoConfig);
             this.Close();
         }
 
@@ -102,7 +102,7 @@ namespace ColorVision.Services.Devices.Camera.Video
         private void Button_Click_Test2(object sender, RoutedEventArgs e)
         {
             CameraVideoConfig cameraVideoConfig = new CameraVideoConfig() {};
-            CameraVideoConfig.CopyTo(cameraVideoConfig);
+            CameraVideoConfig.CloneValuesTo(cameraVideoConfig);
             CameraVideoConfigs.Add(cameraVideoConfig);
 
         }
