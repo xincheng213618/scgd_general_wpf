@@ -473,22 +473,6 @@ namespace ColorVision.Services.Devices.Camera
             }
         }
 
-        private void Calibration_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button)
-            {
-                //if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
-                //{
-                //    MsgRecord msgRecord = MQTTFileServer.CalibrationControl(param);
-                //    Helpers.SendCommand(button, msgRecord);
-
-                //}
-
-                DService.UploadCalibrationFile("111","D:\\img\\20230407175926_1_src.tif", 38);
-            }
-        }
-
-
         private void SetChannel()
         {
             MsgSend msg = new MsgSend
