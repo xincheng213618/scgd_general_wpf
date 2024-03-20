@@ -253,5 +253,15 @@ namespace ColorVision.Services.Flow
         {
 
         }
+
+        private void Button_Click_AlignTop(object sender, RoutedEventArgs e)
+        {
+            STNodeEditorMain.AlignTop();
+        }
+
+        private void Button_Click_AlignDis(object sender, RoutedEventArgs e)
+        {
+            STNodeEditorMain.AlignHorizontalDistance();
+        }
     }
 }
