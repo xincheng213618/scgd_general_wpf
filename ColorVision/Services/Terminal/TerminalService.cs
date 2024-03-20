@@ -392,8 +392,9 @@ namespace ColorVision.Services.Terminal
         public override void Save()
         {
             base.Save();
-            DBTerminalServiceConfig dbCfg = new DBTerminalServiceConfig { HeartbeatTime = Config.HeartbeatTime, };
-            SysResourceModel.Value = JsonConvert.SerializeObject(dbCfg);
+            SysResourceModel.Name = Config.Name;
+            SysResourceModel.Code = Config.Code;
+            SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             ServiceManager.GetInstance().VSysResourceDao.Save(SysResourceModel);
            
             MQTTRCService.GetInstance().RestartServices(Config.ServiceType.ToString());
