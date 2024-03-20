@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Services.Devices.Calibration;
+using ColorVision.Services.Devices.Camera.Configs;
 using cvColorVision;
 using SkiaSharp;
 using System;
@@ -22,6 +23,8 @@ namespace ColorVision.Services.Devices.Camera
         public DeviceCamera DeviceCamera { get; set; }
 
         public MQTTCamera Service { get => DeviceCamera.DeviceService; }
+
+        public ConfigCamera EditConfig { get; set; }
 
         public EditCamera(DeviceCamera mQTTDeviceCamera)
         {
