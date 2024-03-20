@@ -167,7 +167,7 @@ namespace ColorVision.Services.Devices
                 var config = JsonConvert.DeserializeObject<T>(data);
                 if (config != null)
                 {
-                    config.CloneValuesTo(this.Config);
+                    config.CopyTo(this.Config);
                     Save();
                 }
                 else

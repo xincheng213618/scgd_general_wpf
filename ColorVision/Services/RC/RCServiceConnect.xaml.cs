@@ -29,7 +29,7 @@ namespace ColorVision.RC
             rcServiceConfig = ConfigHandler.GetInstance().SoftwareConfig.RcServiceConfig;
             GridRCService.DataContext = rcServiceConfig;
             rcServiceConfigBackUp = new RCServiceConfig();
-            rcServiceConfig.CloneValuesTo(rcServiceConfigBackUp);
+            rcServiceConfig.CopyTo(rcServiceConfigBackUp);
             PasswordBox1.Password = rcServiceConfig.AppSecret;
 
             rcServiceConfigs = ConfigHandler.GetInstance().SoftwareConfig.RcServiceConfigs;
@@ -71,7 +71,7 @@ namespace ColorVision.RC
 
         private void Button_Click_Cancel(object sender, RoutedEventArgs e)
         {
-            rcServiceConfigBackUp.CloneValuesTo(rcServiceConfig);
+            rcServiceConfigBackUp.CopyTo(rcServiceConfig);
             this.Close();
         }
 
@@ -127,7 +127,7 @@ namespace ColorVision.RC
         private void Button_Click_Copy(object sender, RoutedEventArgs e)
         {
             RCServiceConfig newCfg = new RCServiceConfig();
-            rcServiceConfig.CloneValuesTo(newCfg);
+            rcServiceConfig.CopyTo(newCfg);
 
             newCfg.Name = newCfg.Name + "_1";
             rcServiceConfigs.Add(newCfg);

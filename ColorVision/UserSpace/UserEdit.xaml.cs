@@ -37,7 +37,7 @@ namespace ColorVision.UserSpace
 
         private void Ok_Click(object sender, RoutedEventArgs e)
         {
-            UserConfigCopy.CloneValuesTo(UserConfig);
+            UserConfigCopy.CopyTo(UserConfig);
         }
     }
 }

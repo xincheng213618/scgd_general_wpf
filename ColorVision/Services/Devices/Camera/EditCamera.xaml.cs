@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Extension;
+using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Devices.Camera.Configs;
 using cvColorVision;
@@ -202,12 +203,14 @@ namespace ColorVision.Services.Devices.Camera
                 }
             };
 
-
+            EditConfig = DeviceCamera.Config.Clone();
             this.DataContext = DeviceCamera;
+            EditContent.DataContext = EditConfig;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            EditConfig.CopyTo(DeviceCamera.Config);
             this.Close();
         }
     }

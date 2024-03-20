@@ -52,7 +52,7 @@ namespace ColorVision.MySql
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            MySqlConfigBackUp.CloneValuesTo(MySqlConfig);
+            MySqlConfigBackUp.CopyTo(MySqlConfig);
             this.Close();
         }
 
@@ -68,7 +68,7 @@ namespace ColorVision.MySql
             MySqlConfig= ConfigHandler.GetInstance().SoftwareConfig.MySqlConfig;
             GridMQTT.DataContext = MySqlConfig;
             MySqlConfigBackUp = new MySqlConfig();
-            MySqlConfig.CloneValuesTo(MySqlConfigBackUp);
+            MySqlConfig.CopyTo(MySqlConfigBackUp);
             PasswordBox1.Password = MySqlConfig.UserPwd;
             MySqlConfigs = ConfigHandler.GetInstance().SoftwareConfig.MySqlConfigs;
             ListViewMySql.ItemsSource = MySqlConfigs;
@@ -138,7 +138,7 @@ namespace ColorVision.MySql
             MySqlConfig mySqlConfig = new MySqlConfig() { };
             mySqlConfig.Name = mySqlConfig.Name + "_1";
 
-            MySqlConfig.CloneValuesTo(mySqlConfig);
+            MySqlConfig.CopyTo(mySqlConfig);
             MySqlConfigs.Add(mySqlConfig);
         }
 
