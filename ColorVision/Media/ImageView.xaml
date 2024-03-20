@@ -157,7 +157,6 @@
                     <Button Command="{Binding ZoomNone}"  Margin="1,0">
                         <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageexpend}"  Margin="-5"/>
                     </Button>
-
                     <ToggleButton Click="Button8_Click" Margin="1,0" >
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMax}"  Margin="-5"/>
                     </ToggleButton>
@@ -199,13 +198,16 @@
             <ToolBarTray x:Name="ToolBar2"  DockPanel.Dock="Left" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="0,30,0,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Left" VerticalAlignment="Top">
                 <ToolBar ToolBarTray.IsLocked="True" >
                     <Button Click="Button_Click">
-                        <Image  Source="{DynamicResource openDrawingImage}" Margin="-5"/>
+                        <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource openDrawingImage}" Margin="-5"/>
+                    </Button>
+                    <Button Command="{Binding SaveCommand}">
+                        <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageSave}"  Margin="-5"/>
                     </Button>
                     <Button x:Name="ButtonCIE1931"  Visibility="{Binding CIEVisible}" Click="ButtonCIE1931_Click">
-                        <Image  Source="/Assets/Image/CIE1931xy1.png" Margin="-5"/>
+                        <Image  Style="{StaticResource ToolBarImage}"  Source="/Assets/Image/CIE1931xy1.png" Margin="-5"/>
                     </Button>
-                    <ToggleButton x:Name="Pseudo"   Visibility="{Binding PseudoVisible}" Click="ToggleButton_Click">
-                        <Image  Source="/Assets/png/PowerToy.png" Margin="-5"/>
+                    <ToggleButton x:Name="Pseudo"  Visibility="{Binding PseudoVisible}" Click="ToggleButton_Click">
+                        <Image Style="{StaticResource ToolBarImage}"   Source="/Assets/png/PowerToy.png" Margin="-5"/>
                     </ToggleButton>
                     <Grid  Height="200" Visibility="{Binding ElementName=Pseudo,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                         <Grid.RowDefinitions>
@@ -229,6 +231,7 @@
                         </Grid>
                         <hc:RangeSlider Grid.Row="1"  x:Name="PseudoSlider" FocusVisualStyle="{x:Null}"  Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="RangeSlider1_ValueChanged"/>
                     </Grid>
+
 
                 </ToolBar>
             </ToolBarTray>
