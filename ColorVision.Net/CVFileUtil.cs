@@ -85,7 +85,7 @@ namespace ColorVision.Net
                         CVCIEFile cvraw = new CVCIEFile();
                         if (ReadByte(raw, ref cvraw))
                         {
-                            OpenCvSharp.Mat src = new OpenCvSharp.Mat(cvraw.cols, cvraw.rows, OpenCvSharp.MatType.MakeType(cvraw.Depth, cvraw.Depth), cvraw.data);
+                            OpenCvSharp.Mat src = new OpenCvSharp.Mat(cvraw.cols, cvraw.rows, OpenCvSharp.MatType.MakeType(cvraw.Depth, cvraw.channels), cvraw.data);
                             src.SaveImage(SavePath + "\\" + fileInfo.Name + "Src.tif");
                             OpenCvSharp.Mat[] srces = src.Split();
                             if (srces.Length == 1)
@@ -122,7 +122,7 @@ namespace ColorVision.Net
                 else if (fileOut.FileExtType == FileExtType.Raw)
                 {
                     var cvraw = fileOut;
-                    OpenCvSharp.Mat src = new OpenCvSharp.Mat(cvraw.cols, cvraw.rows, OpenCvSharp.MatType.MakeType(cvraw.Depth, cvraw.Depth), cvraw.data);
+                    OpenCvSharp.Mat src = new OpenCvSharp.Mat(cvraw.cols, cvraw.rows, OpenCvSharp.MatType.MakeType(cvraw.Depth, cvraw.channels), cvraw.data);
                     src.SaveImage(SavePath + "\\" + fileInfo.Name + "Src.tif");
                     OpenCvSharp.Mat[] srces = src.Split();
                     if (srces.Length == 1)
