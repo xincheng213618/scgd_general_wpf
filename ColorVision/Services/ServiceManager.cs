@@ -43,7 +43,7 @@ namespace ColorVision.Services
         public ObservableCollection<TerminalService> TerminalServices { get; set; } = new ObservableCollection<TerminalService>();
         public ObservableCollection<DeviceService> DeviceServices { get; set; } = new ObservableCollection<DeviceService>();
 
-        public ObservableCollection<GroupResource> groupResources { get; set; } = new ObservableCollection<GroupResource>();
+        public ObservableCollection<GroupResource> GroupResources { get; set; } = new ObservableCollection<GroupResource>();
         public ObservableCollection<DeviceService> LastGenControl { get; set; } = new ObservableCollection<DeviceService>();
 
         public List<MQTTServiceInfo> ServiceTokens { get; set; }
@@ -260,7 +260,7 @@ namespace ColorVision.Services
                 }
             }
 
-            groupResources.Clear();
+            GroupResources.Clear();
             foreach (var deviceService in DeviceServices)
             {
                 List<SysResourceModel> sysResourceModels = sysResourceDao1.GetResourceItems(deviceService.SysResourceModel.Id, UserConfig.TenantId);
@@ -270,7 +270,7 @@ namespace ColorVision.Services
                     {
                         GroupResource groupResource = new GroupResource(sysResourceModel);
                         deviceService.AddChild(groupResource);
-                        groupResources.Add(groupResource);
+                        GroupResources.Add(groupResource);
                     }
                    else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
                     {
@@ -285,7 +285,7 @@ namespace ColorVision.Services
                 }
             }
 
-            foreach (var groupResource in groupResources)
+            foreach (var groupResource in GroupResources)
             {
                 LoadgroupResource(groupResource);
             }
@@ -303,7 +303,7 @@ namespace ColorVision.Services
                     GroupResource groupResource1 = new GroupResource(sysResourceModel);
                     LoadgroupResource(groupResource1);
                     groupResource.AddChild(groupResource);
-                    groupResources.Add(groupResource);
+                    GroupResources.Add(groupResource);
                 }
                 else if (30<=sysResourceModel.Type && sysResourceModel.Type <= 40)
                 {

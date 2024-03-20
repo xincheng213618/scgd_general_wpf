@@ -4,12 +4,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:local="clr-namespace:ColorVision.Services.Devices.FileServer"
-             xmlns:resx="clr-namespace:ColorVision.Properties"
+             xmlns:properties="clr-namespace:ColorVision.Properties"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              d:DataContext="{d:DesignInstance local:DeviceFileServer}"
              mc:Ignorable="d" 
-             Title="编辑" Icon="{Binding Icon}" Height="450" Width="400" Initialized="UserControl_Initialized">
+             Title="{x:Static properties:Resource.Edit}" Icon="{Binding Icon}" Height="450" Width="400" Initialized="UserControl_Initialized">
     <Window.Resources>
         <Style TargetType="TextBox" BasedOn="{StaticResource TextBoxBaseBaseStyle}">
             <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
@@ -59,7 +59,7 @@
             </Border>
         </ScrollViewer>
         <Border Grid.Row="1" Margin="5" Height="30">
-            <Button  Content="{x:Static resx:Resource.Submit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding SaveCommand}" Click="Button_Click" />
+            <Button  Content="{x:Static properties:Resource.Submit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding SaveCommand}" Click="Button_Click" />
         </Border>
     </Grid>
 </Window>

@@ -28,7 +28,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Border Height="30">
-            <TextBlock Grid.Row="0" Text="配置向导" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <TextBlock Grid.Row="0" Text="{x:Static properties:Resource.SetupWizard}" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
         <StackPanel Grid.Row="1" Margin="10">
             <DockPanel Margin="2">

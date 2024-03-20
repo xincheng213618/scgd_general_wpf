@@ -1339,6 +1339,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 配置向导 的本地化字符串。
+        /// </summary>
+        public static string SetupWizard {
+            get {
+                return ResourceManager.GetString("SetupWizard", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 登录 的本地化字符串。
         /// </summary>
         public static string Sign_in {
@@ -1632,6 +1641,15 @@ namespace ColorVision.Properties {
         public static string WorkflowEngine_F {
             get {
                 return ResourceManager.GetString("WorkflowEngine_F", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 流程引擎调试窗口 的本地化字符串。
+        /// </summary>
+        public static string WorkflowEngineDebugWindow {
+            get {
+                return ResourceManager.GetString("WorkflowEngineDebugWindow", resourceCulture);
             }
         }
         

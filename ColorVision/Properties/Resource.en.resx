@@ -645,4 +645,10 @@
   <data name="TimeLeft" xml:space="preserve">
     <value>Time Left:</value>
   </data>
+  <data name="SetupWizard" xml:space="preserve">
+    <value>Configuration wizard</value>
+  </data>
+  <data name="WorkflowEngineDebugWindow" xml:space="preserve">
+    <value>Process engine debug window</value>
+  </data>
 </root>

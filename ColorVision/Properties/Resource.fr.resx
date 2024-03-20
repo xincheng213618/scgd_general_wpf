@@ -645,4 +645,10 @@
   <data name="TimeLeft" xml:space="preserve">
     <value>temps restant:</value>
   </data>
+  <data name="SetupWizard" xml:space="preserve">
+    <value>Assistant de configuration</value>
+  </data>
+  <data name="WorkflowEngineDebugWindow" xml:space="preserve">
+    <value>Fenêtre de débogage du moteur de processus</value>
+  </data>
 </root>

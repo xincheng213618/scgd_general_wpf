@@ -645,4 +645,10 @@
   <data name="TimeLeft" xml:space="preserve">
     <value>剩余时间：</value>
   </data>
+  <data name="SetupWizard" xml:space="preserve">
+    <value>配置向导</value>
+  </data>
+  <data name="WorkflowEngineDebugWindow" xml:space="preserve">
+    <value>流程引擎调试窗口</value>
+  </data>
 </root>
