@@ -370,11 +370,7 @@ namespace ColorVision.Services.Devices.Camera
 
         private void CameraInit_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
-            {
-                DService.GetAllCameraID();
-            }
-
+            DService.GetAllCameraID();
         }
 
         private void Open_Click(object sender, RoutedEventArgs e)
@@ -382,7 +378,7 @@ namespace ColorVision.Services.Devices.Camera
             if (sender is Button button)
             {
                 var msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
-                Helpers.SendCommand(msgRecord, msgRecord.MsgRecordState.ToDescription());
+                Helpers.SendCommand(button,msgRecord);
             }
         }
 

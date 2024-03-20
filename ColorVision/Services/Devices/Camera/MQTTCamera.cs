@@ -5,6 +5,7 @@ using ColorVision.Extension;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Msg;
+using ColorVision.Utilities;
 using cvColorVision;
 using MQTTMessageLib;
 using MQTTMessageLib.Camera;
@@ -33,7 +34,6 @@ namespace ColorVision.Services.Devices.Camera
             CameraService.Devices.Add(this);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatusType.OffLine;
-            //GetAllCameraID();
         }
 
         public override void Dispose()
@@ -141,7 +141,7 @@ namespace ColorVision.Services.Devices.Camera
                         NativeMethods.Clipboard.SetText(SN);
                         Application.Current.Dispatcher.BeginInvoke(() => 
                         {
-                            MessageBox.Show($"找不到激活文件,设备码{msg.DeviceCode} {Environment.NewLine}SN:{SN}");
+                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"相机打开失败，找不到激活文件,设备码{msg.DeviceCode} {Environment.NewLine}SN:{SN}","ColorVision");
                         });
                         break;
                     default:
@@ -157,7 +157,7 @@ namespace ColorVision.Services.Devices.Camera
                         break;
                     case "Open":
                         if (DeviceStatus == DeviceStatusType.Closed)
-                            Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, "打开失败"));
+                            Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, "打开失败", "ColorVision"));
                         DeviceStatus = DeviceStatusType.Closed;
                         break;
                     case "Init":
