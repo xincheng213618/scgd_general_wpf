@@ -118,7 +118,7 @@ namespace ColorVision.Services.Devices.Camera.Views
             }
         }
         private MeasureImgResultDao measureImgResultDao = new MeasureImgResultDao();
-
+        string LocalFileName;
         private void DeviceService_OnMessageRecved(object sender, MessageRecvArgs arg)
         {
             if (arg.ResultCode == 0)
@@ -168,6 +168,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                         break;
                     case MQTTFileServerEventEnum.Event_File_Download:
                         DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                        LocalFileName = pm_dl.FileName;
                         if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, pm_dl.FileExtType);
                         break;
                     case MQTTCameraEventEnum.Event_GetData_Channel:
@@ -243,7 +244,6 @@ namespace ColorVision.Services.Devices.Camera.Views
                 MessageBox.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
                 return;
             }
-
             using var dialog = new System.Windows.Forms.SaveFileDialog();
             dialog.Filter = "CSV files (*.csv) | *.csv";
             dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
@@ -251,8 +251,17 @@ namespace ColorVision.Services.Devices.Camera.Views
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
             CsvWriter.WriteToCsv(ViewResultCameras[listView1.SelectedIndex], dialog.FileName);
 
-            ImageSource bitmapSource = ImageView.ImageShow.Source;
-            ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
+
+            if (File.Exists(LocalFileName))
+            {
+                CVFileUtil.SaveCVCIE(LocalFileName, Path.GetDirectoryName(dialog.FileName));
+            }
+            else
+            {
+                ImageSource bitmapSource = ImageView.ImageShow.Source;
+                ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
+            }
+
 
         }
 
