@@ -4,6 +4,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:local="clr-namespace:ColorVision.Services.Devices.SMU"
+             xmlns:config="clr-namespace:ColorVision.Services.Devices.SMU.Configs"
              xmlns:properties="clr-namespace:ColorVision.Properties"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
@@ -20,26 +21,22 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <ScrollViewer  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ScrollViewer x:Name="EditContent" d:DataContext="{d:DesignInstance config:ConfigSMU}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="0,0,5,0">
                 <StackPanel Margin="5,0">
                     <GroupBox Header="资源信息" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2" >
-                                <TextBlock Text="Code" Width="120"/>
-                                <TextBox Text="{Binding Config.Code}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2" >
                                 <TextBlock Text="界面展示名称" Width="120"/>
-                                <TextBox Text="{Binding Config.Name}"/>
+                                <TextBox Text="{Binding Name}"/>
                             </DockPanel>
                             <DockPanel Margin="0,5" >
                                 <TextBlock Text="心跳时间(ms)"  Width="120"/>
-                                <TextBox Text="{Binding Config.HeartbeatTime}"/>
+                                <TextBox Text="{Binding HeartbeatTime}"/>
                             </DockPanel>
                             <DockPanel Margin="0,5" >
                                 <TextBlock Text="设备自连接" Width="120"/>
-                                <CheckBox Content="启用" IsChecked="{Binding Config.IsAutoStart}"/>
+                                <CheckBox Content="启用" IsChecked="{Binding IsAutoStart}"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
@@ -47,13 +44,13 @@
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2" >
                                 <TextBlock Text="设备类型" Width="120"/>
-                                <hc:ComboBox x:Name="SMUType" IsEditable="True" Text="{Binding Config.DevType}" Margin="38,0,0,0" />
+                                <hc:ComboBox x:Name="SMUType" IsEditable="True" Text="{Binding DevType}" Margin="0,0,0,0" />
                             </DockPanel>
                             <DockPanel Margin="0,2" >
-                                <CheckBox DockPanel.Dock="Right" Content="网络" Width="50" Margin="5" IsChecked="{Binding Config.IsNet}"/>
+                                <CheckBox DockPanel.Dock="Right" Content="网络" Width="50" Margin="5" IsChecked="{Binding IsNet}"/>
                                 <TextBlock Text="设备地址"  Width="120"/>
-                                <TextBox Text="{Binding Config.Id}" Width="300" Visibility="{Binding Config.IsNet,Converter={StaticResource bool2VisibilityConverter}}" Margin="38,0,0,0"/>
-                                <hc:ComboBox  x:Name="TextSerial" IsEditable="True"  Width="300" Text="{Binding Config.Id}"  Visibility="{Binding Config.IsNet,Converter={StaticResource bool2VisibilityConverter1}}" hc:InfoElement.ShowClearButton="True"  />
+                                <TextBox Text="{Binding Id}" DockPanel.Dock="Right" Visibility="{Binding IsNet,Converter={StaticResource bool2VisibilityConverter}}" />
+                                <hc:ComboBox  x:Name="TextSerial" DockPanel.Dock="Right" IsEditable="True" Text="{Binding Id}"  Visibility="{Binding IsNet,Converter={StaticResource bool2VisibilityConverter1}}" hc:InfoElement.ShowClearButton="True"  />
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>

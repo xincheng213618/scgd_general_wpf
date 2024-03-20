@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.Extension;
+using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Devices.Spectrum;
+using ColorVision.Services.Devices.Spectrum.Configs;
 using cvColorVision;
 using SkiaSharp;
 using System;
@@ -21,7 +23,7 @@ namespace ColorVision.Services.Devices.Spectrum
     public partial class EditSpectrum : Window
     {
         public DeviceSpectrum Device { get; set; }
-
+        public ConfigSpectrum EditConfig {  get; set; }
         public EditSpectrum(DeviceSpectrum deviceSpectrum)
         {
             Device = deviceSpectrum;
@@ -44,11 +46,15 @@ namespace ColorVision.Services.Devices.Spectrum
             List<int> BaudRates = new List<int> { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
             TextBaudRate.ItemsSource = BaudRates;
             this.DataContext = Device;
+
+            EditConfig = Device.Config.Clone();
+            EditContent.DataContext = EditConfig;
         }
 
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            EditConfig.CopyTo(Device.Config);
             Device.DeviceService?.SetParam(Device.Config.MaxIntegralTime, Device.Config.BeginIntegralTime);
             this.Close();
         }

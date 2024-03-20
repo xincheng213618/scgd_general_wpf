@@ -1,5 +1,7 @@
 ﻿using ColorVision.Common.Extension;
+using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.Calibration;
+using ColorVision.Services.Devices.SMU.Configs;
 using cvColorVision;
 using SkiaSharp;
 using System;
@@ -20,7 +22,7 @@ namespace ColorVision.Services.Devices.SMU
     public partial class EditSMU : Window
     {
         public DeviceSMU Device { get; set; }
-
+        public ConfigSMU EditConfig {  get; set; }
         public EditSMU(DeviceSMU  deviceSMU)
         {
             Device = deviceSMU;
@@ -43,10 +45,14 @@ namespace ColorVision.Services.Devices.SMU
             List<string> devTypes = new List<string> { "Keithley_2400", "Keithley_2600", "Precise_S100" };
             SMUType.ItemsSource = devTypes;
             this.DataContext = Device;
+
+            EditConfig = Device.Config.Clone();
+            EditContent.DataContext = EditConfig;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            EditConfig.CopyTo(Device.Config);
             this.Close();
         }
     }

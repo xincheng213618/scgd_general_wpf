@@ -8,7 +8,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.FileServer
 {
-    public class DeviceFileServer : DeviceService<FileServerConfig>
+    public class DeviceFileServer : DeviceService<ConfigFileServer>
     {
         public MQTTFileServer MQTTFileServer { get; set; }
 

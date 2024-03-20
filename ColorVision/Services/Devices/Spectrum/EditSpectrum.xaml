@@ -4,6 +4,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:local="clr-namespace:ColorVision.Services.Devices.Spectrum"
+             xmlns:config="clr-namespace:ColorVision.Services.Devices.Spectrum.Configs"
              xmlns:properties="clr-namespace:ColorVision.Properties"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
@@ -20,26 +21,22 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <ScrollViewer  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ScrollViewer x:Name="EditContent" d:DataContext="{d:DesignInstance config:ConfigSpectrum}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="0,0,5,0">
                 <StackPanel >
                     <GroupBox Header="资源信息" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2" >
-                                <TextBlock Text="Code" Width="120"/>
-                                <TextBox Text="{Binding Config.Code}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2" >
                                 <TextBlock Text="界面展示名称" Width="120"/>
-                                <TextBox Text="{Binding Config.Name}"/>
+                                <TextBox Text="{Binding Name}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2" >
                                 <TextBlock Text="心跳时间(ms)"  Width="120"/>
-                                <TextBox Text="{Binding Config.HeartbeatTime}"/>
+                                <TextBox Text="{Binding HeartbeatTime}"/>
                             </DockPanel>
                             <DockPanel Margin="0,5" >
                                 <TextBlock Text="设备自连接" Width="120"/>
-                                <CheckBox Content="启用" IsChecked="{Binding Config.IsAutoStart}"/>
+                                <CheckBox Content="启用" IsChecked="{Binding IsAutoStart}"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
@@ -47,17 +44,17 @@
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2" >
                                 <TextBlock Text="自动测试间隔(ms)"  Width="120"/>
-                                <TextBox Text="{Binding Config.AutoTestTime}"/>
+                                <TextBox Text="{Binding AutoTestTime}"/>
                             </DockPanel>
 
                             <DockPanel Margin="0,2" >
                                 <TextBlock Text="最大积分时间(ms)"  Width="120"/>
-                                <TextBox Text="{Binding Config.MaxIntegralTime}"/>
+                                <TextBox Text="{Binding MaxIntegralTime}"/>
                             </DockPanel>
 
                             <DockPanel Margin="0,2" >
                                 <TextBlock Text="起始积分时间(ms)"  Width="120"/>
-                                <TextBox Text="{Binding Config.BeginIntegralTime}"/>
+                                <TextBox Text="{Binding BeginIntegralTime}"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
@@ -65,15 +62,15 @@
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="数据目录" Width="120"/>
-                                <TextBox Text="{Binding Config.FileServerCfg.DataBasePath}"/>
+                                <TextBox Text="{Binding FileServerCfg.DataBasePath}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="端口地址" Width="120"/>
-                                <TextBox Text="{Binding Config.FileServerCfg.Endpoint}"/>
+                                <TextBox Text="{Binding FileServerCfg.Endpoint}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="端口范围" Width="120"/>
-                                <TextBox Text="{Binding Config.FileServerCfg.PortRange}"/>
+                                <TextBox Text="{Binding FileServerCfg.PortRange}"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>

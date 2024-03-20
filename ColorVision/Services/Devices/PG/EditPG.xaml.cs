@@ -12,6 +12,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ColorVision.Common.MVVM;
 
 
 namespace ColorVision.Services.Devices.PG
@@ -22,6 +23,8 @@ namespace ColorVision.Services.Devices.PG
     public partial class EditPG : Window
     {
         public DevicePG Device { get; set; }
+
+        public ConfigPG EditConfig { get; set; }
 
         public EditPG(DevicePG devicePG)
         {
@@ -65,10 +68,14 @@ namespace ColorVision.Services.Devices.PG
 
 
             this.DataContext = Device;
+
+            EditConfig = Device.Config.Clone();
+            EditContent.DataContext = EditConfig;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            EditConfig.CopyTo(Device.Config);
             this.Close();
         }
     }

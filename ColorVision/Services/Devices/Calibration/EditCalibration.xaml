@@ -20,18 +20,18 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <ScrollViewer  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ScrollViewer  x:Name="EditContent" d:DataContext="{d:DesignInstance local:ConfigCalibration}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="0,0,5,0">
                 <StackPanel Margin="5,0">
                     <GroupBox Header="资源信息" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2" >
                                 <TextBlock Text="界面展示名称" Width="120"/>
-                                <TextBox Text="{Binding Config.Name}"/>
+                                <TextBox Text="{Binding Name}"/>
                             </DockPanel>
                             <DockPanel Margin="0,5" >
                                 <TextBlock Text="心跳时间(ms)"  Width="120"/>
-                                <TextBox Text="{Binding Config.HeartbeatTime}"/>
+                                <TextBox Text="{Binding HeartbeatTime}"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
@@ -40,17 +40,16 @@
 
                             <DockPanel Margin="0,2">
                                 <TextBlock  Text="数据目录"  Width="120"/>
-                                <TextBox  x:Name="TextBox_CIEImgPath" Text="{Binding Config.FileServerCfg.DataBasePath}"/>
+                                <TextBox  x:Name="TextBox_CIEImgPath" Text="{Binding FileServerCfg.DataBasePath}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock  Text="端口地址" Width="120"/>
-                                <TextBox  x:Name="TextBox_Endpoint" Text="{Binding Config.FileServerCfg.Endpoint}"/>
+                                <TextBox  x:Name="TextBox_Endpoint" Text="{Binding FileServerCfg.Endpoint}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock  Text="端口范围" Width="120"/>
-                                <TextBox  x:Name="TextBox_PortRange" Text="{Binding Config.FileServerCfg.PortRange}"/>
+                                <TextBox  x:Name="TextBox_PortRange" Text="{Binding FileServerCfg.PortRange}"/>
                             </DockPanel>
-
                         </StackPanel>
                     </GroupBox>
 

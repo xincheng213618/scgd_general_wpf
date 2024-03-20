@@ -246,7 +246,7 @@ namespace ColorVision.Services.Terminal
                     break;
                 case ServiceTypes.FileServer:
                     fromPort = (Math.Abs(new Random().Next()) % 99 + 6500);
-                    deviceConfig = new FileServerConfig
+                    deviceConfig = new ConfigFileServer
                     {
                         Id = CreatCode,
                         Name = CreatName,
