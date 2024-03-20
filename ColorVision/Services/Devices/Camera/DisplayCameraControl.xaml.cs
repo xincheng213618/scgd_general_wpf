@@ -41,25 +41,15 @@ namespace ColorVision.Services.Devices.Camera
 
         public ViewCamera View { get; set; }
 
-        private NetFileUtil netFileUtil;
-        private IPendingHandler? handler { get; set; }
-
 
         public DisplayCameraControl(DeviceCamera device)
         {
             Device = device;
             View = Device.View;
             InitializeComponent();
-
-            netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.FullName+"\\Cache");
-            netFileUtil.handler += NetFileUtil_handler;
-
-            DService.OnMessageRecved += CameraService_OnMessageRecved;
-
             _timer = new DispatcherTimer();
-            _timer.Interval = TimeSpan.FromMilliseconds(500); // 设置延时时间，这里是500毫秒
-            _timer.Tick += Timer_Tick; // 设置Tick事件处理程序
-
+            _timer.Interval = TimeSpan.FromMilliseconds(500);
+            _timer.Tick += Timer_Tick; 
             this.PreviewMouseDown += UserControl_PreviewMouseDown;
         }
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; 
@@ -76,163 +66,8 @@ namespace ColorVision.Services.Devices.Camera
                 IsSelected = true;
             }
         }
-        private MeasureImgResultDao measureImgResultDao = new MeasureImgResultDao();
 
-        private void CameraService_OnMessageRecved(object sender, MessageRecvArgs arg)
-        {
-            if (arg.ResultCode == 0)
-            {
-                switch (arg.EventName)
-                {
-                    case MQTTCameraEventEnum.Event_GetData:
-                        int masterId = Convert.ToInt32(arg.Data.MasterId);
-                        List<MeasureImgResultModel> resultMaster = null;
-                        if (masterId > 0)
-                        {
-                            resultMaster = new List<MeasureImgResultModel>();
-                            MeasureImgResultModel model = measureImgResultDao.GetById(masterId);
-                            if (model != null)
-                                resultMaster.Add(model);
-                        }
-                        else
-                        {
-                            resultMaster = measureImgResultDao.GetAllByBatchCode(arg.SerialNumber);
-                        }
-                        if (resultMaster != null)
-                        {
-                            foreach (MeasureImgResultModel result in resultMaster)
-                            {
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    View.ShowResult(result);
-                                });
-                            }
-                        }
-                        break;
-                    case MQTTFileServerEventEnum.Event_File_Download:
-                        break;
-                    case MQTTCameraEventEnum.Event_GetData_Channel:
-                        DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
-                        FileDownload(pm_dl_ch);
-                        break;
-                    case MQTTCameraEventEnum.Event_OpenLive:
-                        DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(arg.Data));
-                        string mapName = Device.Code;
-                        if (pm_live.IsLocal) mapName = pm_live.MapName;
-                        CameraVideoControl.Start(pm_live.IsLocal, mapName, pm_live.FrameInfo.width, pm_live.FrameInfo.height);
-                        break;
-                }
-            }
-            else if (arg.ResultCode == 102)
-            {
-                switch (arg.EventName)
-                {
-                    case MQTTFileServerEventEnum.Event_File_Upload:
-                        DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                        FileUpload(pm_up);
-                        break;
-                    case MQTTFileServerEventEnum.Event_File_Download:
-                        DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                        FileDownload(pm_dl);
-                        break;
-                    case MQTTCameraEventEnum.Event_GetData_Channel:
-                        DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
-                        FileDownload(pm_dl_ch);
-                        break;
-                }
-            }
-            else
-            {
-                switch (arg.EventName)
-                {
-                    case MQTTCameraEventEnum.Event_GetData:
-                        int masterId = Convert.ToInt32(arg.Data.MasterId);
-                        List<MeasureImgResultModel> resultMaster = null;
-                        if (masterId > 0)
-                        {
-                            resultMaster = new List<MeasureImgResultModel>();
-                            MeasureImgResultModel model = measureImgResultDao.GetById(masterId);
-                            if (model != null)
-                                resultMaster.Add(model);
-                        }
-                        else
-                        {
-                            resultMaster = measureImgResultDao.GetAllByBatchCode(arg.SerialNumber);
-                        }
-                        if (resultMaster != null)
-                        {
-                            foreach (MeasureImgResultModel result in resultMaster)
-                            {
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    Device.View.ShowResult(result);
-                                });
-                            }
-                        }
-                        break;
-                    case MQTTFileServerEventEnum.Event_File_Download:
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            MessageBox.Show("文件下载失败");
-                        });
-                        break;
-                    case MQTTCameraEventEnum.Event_GetData_Channel:
-                        break;
-                    case MQTTCameraEventEnum.Event_OpenLive:
-                        break;
-                }
-            }
-
-        }
-
-        private void FileDownload(DeviceGetChannelResult param)
-        {
-            netFileUtil.TaskStartDownloadFile(param);
-        }
-
-        private void FileUpload(DeviceFileUpdownParam param)
-        {
-            if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartUploadFile(param.IsLocal, param.ServerEndpoint, param.FileName);
-        }
-
-        private void FileDownload(DeviceFileUpdownParam param)
-        {
-            if (!string.IsNullOrWhiteSpace(param.FileName))
-            {
-                netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, param.FileExtType);
-            }
-        }
-
-
-        private void NetFileUtil_handler(object sender, NetFileEvent arg)
-        {
-            if (arg.Code == 0)
-            {
-                if (arg.EventName == FileEvent.FileDownload && arg.FileData.data != null)
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        View.OpenImage(arg.FileData);
-                    });
-                }
-
-                handler?.Close();
-            }
-            else
-            {
-                handler?.Close();
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MessageBox.Show(Application.Current.MainWindow, "文件打开失败", "ColorVision");
-                });
-            }
-        }
-
-        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; }
-
-
-
-        
+        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; }  
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -286,6 +121,26 @@ namespace ColorVision.Services.Devices.Camera
                     default:
                         break;
                 }
+            };
+
+
+            DService.OnMessageRecved += (s,e) =>
+            {
+                if (e.ResultCode == 0)
+                {
+                    switch (e.EventName)
+                    {
+                        case MQTTCameraEventEnum.Event_OpenLive:
+                            DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(e.Data));
+                            string mapName = Device.Code;
+                            if (pm_live.IsLocal) mapName = pm_live.MapName;
+                            CameraVideoControl.Start(pm_live.IsLocal, mapName, pm_live.FrameInfo.width, pm_live.FrameInfo.height);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
             };
         }
 
@@ -563,8 +418,6 @@ namespace ColorVision.Services.Devices.Camera
         {
             _timer.Stop();
             DService.SetExp();
-
-
         }
 
         private void PreviewSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
