@@ -62,9 +62,8 @@ namespace ColorVision.Services.Type
                     return;
                 }
                 SysResourceModel sysResource = new SysResourceModel(TextBox_Name.Text, TextBox_Code.Text, serviceKind.SysDictionaryModel.Value, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-               
-                DBTerminalServiceConfig dbCfg = new DBTerminalServiceConfig {  HeartbeatTime = 5000,};
-                sysResource.Value = JsonConvert.SerializeObject(dbCfg);
+
+                sysResource.Value = JsonConvert.SerializeObject(new TerminalServiceConfig() { HeartbeatTime = 5000 });
                 
                 VSysResourceDao resourceDao = new VSysResourceDao();
                 resourceDao.Save(sysResource);
