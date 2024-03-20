@@ -5,6 +5,8 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Threading.Channels;
+using System.Threading;
 
 
 namespace ColorVision.Net
@@ -63,6 +65,38 @@ namespace ColorVision.Net
             }
 
             return ret;
+        }
+
+        public static int SaveCVCIE(string FileName)
+        {
+            if (!File.Exists(FileName)) return -1;
+            FileInfo fileInfo = new FileInfo(FileName);
+            byte[] fileData = ReadFile(FileName);
+            CVCIEFile fileOut = new CVCIEFile();
+            if (ReadByte(fileData, ref fileOut))
+            {
+                if (fileOut.channels == 1)
+                {
+                    int len = (int)(fileOut.cols * fileOut.rows * fileOut.bpp / 8);
+                    byte[] data = new byte[len];
+                    Buffer.BlockCopy(fileOut.data, 0 * len, data, 0, len);
+                    OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileOut.rows, (int)fileOut.cols, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
+                    src.SaveImage(fileInfo.Name +"Y.tif");
+                }
+                else if (fileOut.channels == 3)
+                {
+                    for (int ch = 0; ch < 3; ch++)
+                    {
+                        int len = (int)(fileOut.cols * fileOut.rows * fileOut.bpp / 8);
+                        byte[] data = new byte[len];
+                        OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileOut.rows, (int)fileOut.cols, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
+                        src.SaveImage(fileInfo.Name + $"{ch}.tif");
+                    }
+                }
+            }
+            return 0;
+
+
         }
 
         public static int ReadCVCIESrc(string cieFileName, ref CVCIEFile fileOut)

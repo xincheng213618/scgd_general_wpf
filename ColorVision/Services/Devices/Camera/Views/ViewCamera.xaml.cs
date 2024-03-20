@@ -1,26 +1,25 @@
 ﻿#pragma warning disable CS8604,CS8629
+using ColorVision.Common.Sorts;
+using ColorVision.Common.Utilities;
 using ColorVision.Draw;
 using ColorVision.Media;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
-using ColorVision.Common.Utilities;
-using log4net;
+using ColorVision.Services.Templates;
+using ColorVision.Services.Templates.POI;
 using MQTTMessageLib.Camera;
+using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.Services.Templates;
-using ColorVision.Services.Templates.POI;
-using cvColorVision;
-using System.Linq;
-using ColorVision.Common.Sorts;
 
 namespace ColorVision.Services.Devices.Camera.Views
 {
@@ -29,7 +28,6 @@ namespace ColorVision.Services.Devices.Camera.Views
     /// </summary>
     public partial class ViewCamera : UserControl, IView
     {
-        private static readonly ILog logger = LogManager.GetLogger(typeof(ViewCamera));
         public View View { get; set; }
 
         public event ImgCurSelectionChanged OnCurSelectionChanged;
@@ -112,12 +110,14 @@ namespace ColorVision.Services.Devices.Camera.Views
                 MessageBox.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
                 return;
             }
+
             using var dialog = new System.Windows.Forms.SaveFileDialog();
             dialog.Filter = "CSV files (*.csv) | *.csv";
             dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
             CsvWriter.WriteToCsv(ViewResultCameras[listView1.SelectedIndex], dialog.FileName);
+
             ImageSource bitmapSource = ImageView.ImageShow.Source;
             ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
 
@@ -135,7 +135,37 @@ namespace ColorVision.Services.Devices.Camera.Views
         {
             if (listView1.SelectedIndex > -1)
             {
-                OnCurSelectionChanged?.Invoke(ViewResultCameras[listView1.SelectedIndex]);
+                var data = ViewResultCameras[listView1.SelectedIndex];
+                NetFileUtil netFileUtil = new NetFileUtil();
+
+                if (data.ResultCode == 0 && data.FilePath != null)
+                {
+                    string localName = netFileUtil.GetCacheFileFullName(data.FilePath);
+                    FileExtType fileExt = FileExtType.Src;
+                    switch (data.FileType)
+                    {
+                        case CameraFileType.SrcFile:
+                            fileExt = FileExtType.Src;
+                            break;
+                        case CameraFileType.RawFile:
+                            fileExt = FileExtType.Raw;
+                            break;
+                        case CameraFileType.CIEFile:
+                            fileExt = FileExtType.CIE;
+                            break;
+                        default:
+                            break;
+                    }
+                    if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
+                    {
+                        DeviceService.DownloadFile(data.FilePath, fileExt);
+                    }
+                    else
+                    {
+                        var FileData = netFileUtil.OpenLocalCVFile(localName, fileExt);
+                        OpenImage(FileData);
+                    }
+                }
             }
         }
 
@@ -147,7 +177,6 @@ namespace ColorVision.Services.Devices.Camera.Views
                 ViewResultCameras.RemoveAt(temp);
             }
         }
-
         public void OpenImage(CVCIEFile fileData)
         {
             ImageView.OpenImage(fileData);

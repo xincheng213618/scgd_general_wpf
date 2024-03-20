@@ -1,11 +1,11 @@
-﻿using ColorVision.Common.Extension;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Extension;
 using ColorVision.Net;
+using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.Devices.Camera.Views;
-using ColorVision.Services.Core;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
@@ -27,7 +27,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using ColorVision.Extension;
 
 namespace ColorVision.Services.Devices.Camera
 {
@@ -56,8 +55,6 @@ namespace ColorVision.Services.Devices.Camera
             netFileUtil.handler += NetFileUtil_handler;
 
             DService.OnMessageRecved += CameraService_OnMessageRecved;
-            View.OnCurSelectionChanged += View_OnCurSelectionChanged;
-
 
             _timer = new DispatcherTimer();
             _timer.Interval = TimeSpan.FromMilliseconds(500); // 设置延时时间，这里是500毫秒
@@ -80,39 +77,6 @@ namespace ColorVision.Services.Devices.Camera
             }
         }
         private MeasureImgResultDao measureImgResultDao = new MeasureImgResultDao();
-
-
-        private void View_OnCurSelectionChanged(ViewResultCamera data)
-        {
-            if (data.ResultCode == 0 && data.FilePath!=null)
-            {
-                string localName = netFileUtil.GetCacheFileFullName(data.FilePath);
-                FileExtType fileExt = FileExtType.Src;
-                switch (data.FileType)
-                {
-                    case CameraFileType.SrcFile:
-                        fileExt = FileExtType.Src;
-                        break;
-                    case CameraFileType.RawFile:
-                        fileExt = FileExtType.Raw;
-                        break;
-                    case CameraFileType.CIEFile:
-                        fileExt = FileExtType.CIE;
-                        break;
-                    default:
-                        break;
-                }
-                if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
-                {
-                    DService.DownloadFile(data.FilePath, fileExt);
-                }
-                else
-                {
-                    netFileUtil.OpenLocalFile(localName, fileExt);
-                }
-            }
-        }
-
 
         private void CameraService_OnMessageRecved(object sender, MessageRecvArgs arg)
         {
@@ -146,8 +110,6 @@ namespace ColorVision.Services.Devices.Camera
                         }
                         break;
                     case MQTTFileServerEventEnum.Event_File_Download:
-                        //DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                        //FileDownload(pm_dl);
                         break;
                     case MQTTCameraEventEnum.Event_GetData_Channel:
                         DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
