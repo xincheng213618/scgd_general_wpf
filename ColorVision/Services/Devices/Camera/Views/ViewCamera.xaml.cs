@@ -89,8 +89,9 @@ namespace ColorVision.Services.Devices.Camera.Views
             netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.FullName + "\\Cache");
             netFileUtil.handler += NetFileUtil_handler;
             DeviceService.OnMessageRecved += DeviceService_OnMessageRecved;
-
         }
+
+
         NetFileUtil netFileUtil;
         private IPendingHandler? handler { get; set; }
 
@@ -105,7 +106,6 @@ namespace ColorVision.Services.Devices.Camera.Views
                         OpenImage(arg.FileData);
                     });
                 }
-
                 handler?.Close();
             }
             else
@@ -154,7 +154,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                         break;
                     case MQTTCameraEventEnum.Event_GetData_Channel:
                         DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
-                        FileDownload(pm_dl_ch);
+                        netFileUtil.TaskStartDownloadFile(pm_dl_ch);
                         break;
                 }
             }
@@ -164,15 +164,15 @@ namespace ColorVision.Services.Devices.Camera.Views
                 {
                     case MQTTFileServerEventEnum.Event_File_Upload:
                         DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                        FileUpload(pm_up);
+                        if (!string.IsNullOrWhiteSpace(pm_up.FileName)) netFileUtil.TaskStartUploadFile(pm_up.IsLocal, pm_up.ServerEndpoint, pm_up.FileName);
                         break;
                     case MQTTFileServerEventEnum.Event_File_Download:
                         DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                        FileDownload(pm_dl);
+                        if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, pm_dl.FileExtType);
                         break;
                     case MQTTCameraEventEnum.Event_GetData_Channel:
                         DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
-                        FileDownload(pm_dl_ch);
+                        netFileUtil.TaskStartDownloadFile(pm_dl_ch);
                         break;
                 }
             }
@@ -216,24 +216,6 @@ namespace ColorVision.Services.Devices.Camera.Views
                     case MQTTCameraEventEnum.Event_OpenLive:
                         break;
                 }
-            }
-        }
-
-        private void FileDownload(DeviceGetChannelResult param)
-        {
-            netFileUtil.TaskStartDownloadFile(param);
-        }
-
-        private void FileUpload(DeviceFileUpdownParam param)
-        {
-            if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartUploadFile(param.IsLocal, param.ServerEndpoint, param.FileName);
-        }
-
-        private void FileDownload(DeviceFileUpdownParam param)
-        {
-            if (!string.IsNullOrWhiteSpace(param.FileName))
-            {
-                netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, param.FileExtType);
             }
         }
 

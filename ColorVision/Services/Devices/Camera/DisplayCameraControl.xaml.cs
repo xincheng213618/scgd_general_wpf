@@ -75,13 +75,12 @@ namespace ColorVision.Services.Devices.Camera
 
             this.AddViewConfig(View, ComboxView);
 
-            Device_ConfigChanged();
-            Device.ConfigChanged +=(s,e)=> Device_ConfigChanged();
+            CalibrationParamInit();
+            Device.ConfigChanged +=(s,e)=> CalibrationParamInit();
 
             StackPanelOpen.Visibility = Visibility.Visible;
             StackPanelImage.Visibility = Visibility.Collapsed;
             ButtonOpen.Visibility = Visibility.Collapsed;
-
 
             if (DService.DeviceStatus == DeviceStatusType.Unknown)
             {
@@ -146,7 +145,7 @@ namespace ColorVision.Services.Devices.Camera
 
 
 
-        private void Device_ConfigChanged()
+        private void CalibrationParamInit()
         {
             CalibrationParams = new ObservableCollection<TemplateModel<CalibrationParam>>();
             CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam() { Id = -1 }));
