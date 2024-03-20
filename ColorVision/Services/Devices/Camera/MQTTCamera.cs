@@ -318,7 +318,6 @@ namespace ColorVision.Services.Devices.Camera
                 EventName = "Open",
                 Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "CameraID", CameraID }, { "Bpp", ImageBpp },{ "remoteIp", Config.VideoConfig.Host },{ "remotePort", Config.VideoConfig.Port } }
             };
-
             return PublishAsyncClient(msg);
         }
 

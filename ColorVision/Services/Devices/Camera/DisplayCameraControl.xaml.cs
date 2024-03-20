@@ -382,6 +382,7 @@ namespace ColorVision.Services.Devices.Camera
             if (sender is Button button)
             {
                 var msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
+                Helpers.SendCommand(msgRecord, msgRecord.MsgRecordState.ToDescription());
             }
         }
 
@@ -395,7 +396,7 @@ namespace ColorVision.Services.Devices.Camera
                     if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
                     else expTime = new double[] { Device.Config.ExpTime };
                     MsgRecord msgRecord = DService.GetData(expTime, param);
-                    Helpers.SendCommand(msgRecord, msgRecord.MsgRecordState.ToDescription());
+                    Helpers.SendCommand(button,msgRecord);
                 }
             }
         }
