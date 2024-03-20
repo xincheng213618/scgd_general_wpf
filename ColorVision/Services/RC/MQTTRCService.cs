@@ -79,12 +79,11 @@ namespace ColorVision.RC
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
             MQTTControl.MQTTConnectChanged += (object? sender, EventArgs e) =>
             {
-                logger.InfoFormat("MQTTMsgChanged=>{0}", JsonConvert.SerializeObject(e));
+                logger.InfoFormat("MQTTConnectChanged=>{0}", JsonConvert.SerializeObject(e));
                 Task.Run(() =>
                 {
                     Thread.Sleep(2000);
-                    MQTTRCService.GetInstance().QueryServices();
-                    MQTTRCService.GetInstance().ReRegist();
+                    GetInstance().ReRegist();
                 });
             };
 
