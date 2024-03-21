@@ -102,20 +102,14 @@ namespace ColorVision.Services.Devices.Camera
                         ButtonInit.Visibility = Visibility.Collapsed;
                         StackPanelOpen.Visibility = Visibility.Visible;
                         ButtonOpen.Visibility = Visibility.Visible;
-                        StackPanelImage.Visibility = Visibility.Collapsed;
                         ButtonClose.Visibility = Visibility.Collapsed;
                         break;
                     case DeviceStatusType.Closing:
                         break;
                     case DeviceStatusType.LiveOpened:
                     case DeviceStatusType.Opened:
-                        ButtonInit.Visibility = Visibility.Collapsed;
                         ButtonOpen.Visibility = Visibility.Collapsed;
                         ButtonClose.Visibility = Visibility.Visible;
-                        if (!DService.IsVideoOpen)
-                        {
-                            StackPanelImage.Visibility = Visibility.Visible;
-                        }
                         break;
                     case DeviceStatusType.Opening:
                         break;
@@ -197,6 +191,16 @@ namespace ColorVision.Services.Devices.Camera
             {
                 var msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
                 Helpers.SendCommand(button,msgRecord);
+                MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
+                msgRecordStateChangedHandler = (e) =>
+                {
+                    ButtonOpen.Visibility = Visibility.Collapsed;
+                    ButtonClose.Visibility = Visibility.Visible;
+                    StackPanelImage.Visibility = Visibility.Visible;
+                    msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
+                };
+                msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+
             }
         }
 
@@ -221,6 +225,7 @@ namespace ColorVision.Services.Devices.Camera
             {
                 MsgRecord msgRecord = DService.GetAutoExpTime();
                 Helpers.SendCommand(button, msgRecord);
+
             }
         }
 
@@ -228,36 +233,45 @@ namespace ColorVision.Services.Devices.Camera
 
         private void Video_Click(object sender, RoutedEventArgs e)
         {
-            CameraVideoControl ??= new CameraVideoControl();
-            if (!DService.IsVideoOpen)
+            if (sender is Button button)
             {
-                DService.CurrentTakeImageMode = TakeImageMode.Live;
-                string host = ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Host;
-                int port = ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Port;
-                //bool IsLocal = (host == "127.0.0.1");
-                port = CameraVideoControl.Open(host, port);
-                if (port > 0)
+                CameraVideoControl ??= new CameraVideoControl();
+                if (!DService.IsVideoOpen)
                 {
-                    MsgRecord msg = DService.OpenVideo(host, port, DService.Config.ExpTime);
-                    msg.MsgRecordStateChanged += (s) =>
+                    DService.CurrentTakeImageMode = TakeImageMode.Live;
+                    string host = ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Host;
+                    int port = ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Port;
+                    //bool IsLocal = (host == "127.0.0.1");
+                    port = CameraVideoControl.Open(host, port);
+                    if (port > 0)
                     {
-                        if (s == MsgRecordState.Fail)
+                        MsgRecord msg = DService.OpenVideo(host, port, DService.Config.ExpTime);
+                        msg.MsgRecordStateChanged += (s) =>
                         {
-                            CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
-                            CameraVideoControl.Close();
-                            DService.Close();
-                        }
-                    };
-                    CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
-                    CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
-                    StackPanelImage.Visibility = Visibility.Collapsed;
-                }
-                else
-                {
-                    MessageBox.Show("视频模式下，本地端口打开失败");
-                    logger.ErrorFormat("Local socket open failed.{0}:{1}", host, ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Port);
+                            if (s == MsgRecordState.Fail)
+                            {
+                                CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
+                                CameraVideoControl.Close();
+                                DService.Close();
+                            }
+                            else
+                            {
+                                ButtonOpen.Visibility = Visibility.Collapsed;
+                                ButtonClose.Visibility = Visibility.Visible;
+                            }
+                        };
+                        Helpers.SendCommand(button, msg);
+                        CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
+                        CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
+                    }
+                    else
+                    {
+                        MessageBox.Show("视频模式下，本地端口打开失败");
+                        logger.ErrorFormat("Local socket open failed.{0}:{1}", host, ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Port);
+                    }
                 }
             }
+
         }
 
         public void CameraVideoFrameReceived(System.Drawing.Bitmap bmp)
@@ -413,6 +427,9 @@ namespace ColorVision.Services.Devices.Camera
                  msgRecordStateChangedHandler = (e) =>
                 {
                     DService.IsVideoOpen = false;
+                    ButtonOpen.Visibility = Visibility.Visible;
+                    ButtonClose.Visibility = Visibility.Collapsed;
+                    StackPanelImage.Visibility = Visibility.Collapsed;
                     msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
                 };
                 msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
