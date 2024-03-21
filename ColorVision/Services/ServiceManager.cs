@@ -140,18 +140,11 @@ namespace ColorVision.Services
                 var sysResourceModels = sysResourceModelServices.FindAll((x) => x.Type == (int)typeService1.ServiceTypes);
                 foreach (var sysResourceModel in sysResourceModels)
                 {
-                    
-                    TerminalService terminalService;
-                    switch (typeService1.ServiceTypes)
-                    {   
-                        case ServiceTypes.Camera:
-                            terminalService = new TerminalCamera(sysResourceModel);
-                            break;
-                        default:
-                            terminalService = new TerminalService(sysResourceModel);
-                            break;
-                    }
-
+                    TerminalService terminalService = typeService1.ServiceTypes switch
+                    {
+                        ServiceTypes.Camera => new TerminalCamera(sysResourceModel),
+                        _ => new TerminalService(sysResourceModel),
+                    };
                     string svrKey = GetServiceKey(sysResourceModel.TypeCode ?? string.Empty, sysResourceModel.Code ?? string.Empty);
                    
                     if (svrDevices.TryGetValue(svrKey, out var list ))

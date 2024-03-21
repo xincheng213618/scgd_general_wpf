@@ -64,14 +64,19 @@ namespace ColorVision.Services.Type
 
             if (TypeService.ServicesCodes.Contains(CreateCode.Text))
             {
-                MessageBox.Show("服务标识已存在,不允许重复添加");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "设备标识已存在,不允许重复添加");
                 return;
             }
 
 
             SysResourceModel sysResource = new SysResourceModel(CreateName.Text, CreateCode.Text, TypeService.SysDictionaryModel.Value, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
 
-            sysResource.Value = JsonConvert.SerializeObject(new TerminalServiceConfig() { HeartbeatTime = 5000 });
+            TerminalServiceConfig terminalServiceConfig = new TerminalServiceConfig() { HeartbeatTime = 5000 };
+
+            terminalServiceConfig.SendTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/CMD/{ConfigHandler.GetInstance().SoftwareConfig.RcServiceConfig.RCName}";
+            terminalServiceConfig.SubscribeTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/STATUS/{ConfigHandler.GetInstance().SoftwareConfig.RcServiceConfig.RCName}";
+
+            sysResource.Value = JsonConvert.SerializeObject(terminalServiceConfig);
 
             VSysResourceDao resourceDao = new VSysResourceDao();
             resourceDao.Save(sysResource);
@@ -79,9 +84,14 @@ namespace ColorVision.Services.Type
             int pkId = sysResource.PKId;
             if (pkId > 0 && resourceDao.GetById(pkId) is SysResourceModel model)
             {
-                var terminalService = new TerminalService(model);
+                TerminalService terminalService = TypeService.ServiceTypes switch
+                {
+                    ServiceTypes.Camera => new TerminalCamera(model),
+                    _ => new TerminalService(model),
+                };
                 TypeService.AddChild(terminalService);
                 ServiceManager.GetInstance().TerminalServices.Add(terminalService);
+
                 MQTTRCService.GetInstance().RestartServices(TypeService.ServiceTypes.ToString());
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "创建成功，正在重启服务", "ColorVision");
                 this.Close();

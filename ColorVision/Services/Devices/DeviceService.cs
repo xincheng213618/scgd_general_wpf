@@ -44,6 +44,8 @@ namespace ColorVision.Services.Devices
 
         public RelayCommand PropertyCommand { get; set; }
         public RelayCommand ExportCommand { get; set; }
+        public RelayCommand DeleteCommand { get; set; }
+
         public RelayCommand ImportCommand { get; set; }
         public RelayCommand CopyCommand { get; set; }
         public RelayCommand ResetCommand { get; set; }
@@ -122,12 +124,7 @@ namespace ColorVision.Services.Devices
         {
             SysResourceModel = sysResourceModel;
             ContextMenu = new ContextMenu();
-            MenuItem menuItem = new MenuItem() { Header = "删除资源" };
-            menuItem.Click += (s, e) =>
-            {
-                Delete();
-            };
-            ContextMenu.Items.Add(menuItem);
+
             ExportCommand = new RelayCommand(a => {
                 System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
                 ofd.Filter = "*.config|*.config";
@@ -135,26 +132,25 @@ namespace ColorVision.Services.Devices
                 ofd.RestoreDirectory = true;
                 if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                 Config.ToJsonNFile(ofd.FileName);
-                MessageBox.Show("导出成功", "ColorVision"); 
+                MessageBox.Show(WindowHelpers.GetActiveWindow(),"导出成功", "ColorVision"); 
             });
 
             CopyCommand = new RelayCommand(a => {
                 if (Config!=null)
                 {
                     NativeMethods.Clipboard.SetText(Config.ToJsonN());
-                    MessageBox.Show("复制成功", "ColorVision");
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(),"复制成功", "ColorVision");
                 }
             });
             ResetCommand = new RelayCommand(a => {
-                MessageBoxResult result = MessageBox.Show("确定要重置吗？", "ColorVision", MessageBoxButton.OKCancel);
+                MessageBoxResult result = MessageBox.Show(WindowHelpers.GetActiveWindow(), "确定要重置吗？", "ColorVision", MessageBoxButton.OKCancel);
                 if (result == MessageBoxResult.OK)
                     Config = new T();
             });
+            DeleteCommand = new RelayCommand(a => Delete());
+            EditCommand = new RelayCommand(a => { });
 
-            EditCommand = new RelayCommand(a =>
-            {
-                IsEditMode = true;
-            });
+
 
             ImportCommand = new RelayCommand(a => {
                 System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
@@ -174,39 +170,23 @@ namespace ColorVision.Services.Devices
                     MessageBox.Show("导入异常","ColorVision");
             });
 
-            MenuItem menuItemExport = new MenuItem() { Header = "导出配置", Command = ExportCommand };
-            ContextMenu.Items.Add(menuItemExport);
-
-            MenuItem menuItemImport = new MenuItem() { Header = "导入配置", Command = ImportCommand };
-            ContextMenu.Items.Add(menuItemImport);
-
             PropertyCommand = new RelayCommand((e) =>
             {
-                Window window = new Window() { Width = 600, Height= 400 , Title = Properties.Resource.Property};
+                Window window = new Window() { Width = 700, Height = 400, Icon = Icon,Title = Properties.Resource.Property };
                 window.Content = GetDeviceInfo();
                 window.Owner = WindowHelpers.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });
 
-            MenuItem menuItemProperty = new MenuItem() { Header = Properties.Resource.Property, Command = PropertyCommand };
-            ContextMenu.Items.Add(menuItemProperty);
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Delete, Command = DeleteCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Export, Command = ExportCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Import, Command = ImportCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Property, Command = PropertyCommand });
 
-            if (string.IsNullOrEmpty(SysResourceModel.Value))
-            {
-                Config = new T();
-            }
-            else
-            {
-                try
-                {
-                    Config = JsonConvert.DeserializeObject<T>(SysResourceModel.Value) ?? new T();
-                }
-                catch
-                {
-                    Config = new T();
-                }
-            }
+
+            Config = BaseResourceObjectExtensions.TryDeserializeConfig<T>(SysResourceModel.Value);
+
             Config.Code = SysResourceModel.Code ?? string.Empty;
             Config.Name = SysResourceModel.Name ?? string.Empty;
             QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");

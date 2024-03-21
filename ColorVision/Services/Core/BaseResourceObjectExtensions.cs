@@ -1,6 +1,10 @@
-﻿using ColorVision.Services.Devices;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Terminal;
+using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
+using System;
 
 namespace ColorVision.Services.Core
 {
@@ -18,6 +22,22 @@ namespace ColorVision.Services.Core
                 return null;
 
             return This.Parent.GetAncestor<T>();
+        }
+
+
+        public static T CreateDefaultConfig<T>() where T : ViewModelBase, new() => new();
+
+        public static T TryDeserializeConfig<T>(string? json) where T : ViewModelBase, new() 
+        {
+            if (string.IsNullOrEmpty(json)) return CreateDefaultConfig<T>();
+            try
+            {
+                return JsonConvert.DeserializeObject<T>(json) ?? CreateDefaultConfig<T>();
+            }
+            catch
+            {
+                return CreateDefaultConfig<T>();
+            }
         }
 
 

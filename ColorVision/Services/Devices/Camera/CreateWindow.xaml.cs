@@ -238,7 +238,7 @@ namespace ColorVision.Services.Devices.Camera
 
             if (TerminalService.ServicesCodes.Contains(CreateCode.Text))
             {
-                MessageBox.Show("设备标识已存在,不允许重复添加");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "设备标识已存在,不允许重复添加");
                 return;
             }
             SysDeviceModel sysDevModel = null;

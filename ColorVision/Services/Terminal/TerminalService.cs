@@ -2,30 +2,15 @@
 using ColorVision.RC;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.PG;
 using ColorVision.Services.Devices;
-using ColorVision.Services.Devices.Algorithm;
-using ColorVision.Services.Devices.Calibration;
-using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.Devices.Camera.Configs;
-using ColorVision.Services.Devices.CfwPort;
-using ColorVision.Services.Devices.FileServer;
-using ColorVision.Services.Devices.Motor;
-using ColorVision.Services.Devices.Sensor;
-using ColorVision.Services.Devices.SMU;
-using ColorVision.Services.Devices.SMU.Configs;
-using ColorVision.Services.Devices.Spectrum;
-using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Extension;
 using ColorVision.Services.Type;
-using ColorVision.Settings;
+using ColorVision.Utilities;
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using ColorVision.Utilities;
 
 namespace ColorVision.Services.Terminal
 {
@@ -67,27 +52,10 @@ namespace ColorVision.Services.Terminal
         public TerminalService(SysResourceModel sysResourceModel) : base()
         {
             SysResourceModel = sysResourceModel;
-            if (string.IsNullOrEmpty(SysResourceModel.Value))
-            {
-                Config ??= new TerminalServiceConfig();
-            }
-            else
-            {
-                try
-                {
-                    Config = JsonConvert.DeserializeObject<TerminalServiceConfig>(SysResourceModel.Value) ?? new TerminalServiceConfig();
-                }
-                catch
-                {
-                    Config = new TerminalServiceConfig();
-                }
-            }
+            Config = BaseResourceObjectExtensions.TryDeserializeConfig<TerminalServiceConfig>(SysResourceModel.Value);
 
-            Config.Code = SysResourceModel.Code ?? string.Empty;
+            Config.Code = Code;
             Config.Name = Name;
-
-            Config.SubscribeTopic = SysResourceModel.TypeCode + "/STATUS/" + SysResourceModel.Code;
-            Config.SendTopic = SysResourceModel.TypeCode + "/CMD/" + SysResourceModel.Code;
 
             RefreshCommand = new RelayCommand(a => MQTTRCService.GetInstance().RestartServices(Config.ServiceType.ToString(),sysResourceModel.Code ??string.Empty));
             EditCommand = new RelayCommand(a =>
@@ -109,6 +77,7 @@ namespace ColorVision.Services.Terminal
             switch (ServiceType)
             {
                 case ServiceTypes.Camera:
+                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.Algorithm:
                     this.SetIconResource("DrawingImageAlgorithm");
