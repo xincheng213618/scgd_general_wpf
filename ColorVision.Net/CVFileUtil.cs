@@ -81,7 +81,7 @@ namespace ColorVision.Net
                 {
                     if (fileOut.srcFileName != null)
                     {
-                        byte[] raw = ReadFile(Path.Combine(Path.GetDirectoryName(FileName), fileOut.srcFileName));
+                        byte[] raw = ReadFile(Path.Combine(Path.GetDirectoryName(FileName)??string.Empty, fileOut.srcFileName));
                         CVCIEFile cvraw = new CVCIEFile();
                         if (ReadByte(raw, ref cvraw))
                         {

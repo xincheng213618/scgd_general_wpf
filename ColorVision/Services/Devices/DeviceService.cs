@@ -44,8 +44,6 @@ namespace ColorVision.Services.Devices
 
         public RelayCommand PropertyCommand { get; set; }
         public RelayCommand ExportCommand { get; set; }
-        public RelayCommand DeleteCommand { get; set; }
-
         public RelayCommand ImportCommand { get; set; }
         public RelayCommand CopyCommand { get; set; }
         public RelayCommand ResetCommand { get; set; }
