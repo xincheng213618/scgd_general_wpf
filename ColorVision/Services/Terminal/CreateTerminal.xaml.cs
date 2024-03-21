@@ -240,7 +240,7 @@ namespace ColorVision.Services.Terminal
                 ServiceManager.GetInstance().DeviceServices.Add(deviceService);
                 if (sysDevModel != null && sysDevModel.TypeCode != null && sysDevModel.PCode != null && sysDevModel.Code != null)
                     RC.MQTTRCService.GetInstance().RestartServices(sysDevModel.TypeCode, sysDevModel.PCode, sysDevModel.Code);
-                MessageBox.Show(WindowHelpers.GetActiveWindow(),"创建成功，正在重启服务", "ColorVision");
+                //MessageBox.Show(WindowHelpers.GetActiveWindow(),"创建成功，正在重启服务", "ColorVision");
                 this.Close();
             }
             else

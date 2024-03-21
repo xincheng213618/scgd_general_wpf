@@ -48,7 +48,6 @@ namespace ColorVision.Services.Terminal
         public RelayCommand RefreshCommand { get; set; }
         public RelayCommand EditCommand { get; set; }
         public RelayCommand OpenCreateWindowCommand { get; set; }
-        public RelayCommand CreateCommand { get; set; }
         public TerminalService(SysResourceModel sysResourceModel) : base()
         {
             SysResourceModel = sysResourceModel;
