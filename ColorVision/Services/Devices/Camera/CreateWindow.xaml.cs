@@ -15,6 +15,12 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using ColorVision.Services.Core;
+using ColorVision.Services.Dao;
+using ColorVision.Services.Terminal;
+using ColorVision.Settings;
+using Newtonsoft.Json;
+using ColorVision.Services.Devices.Camera.Configs;
+using ColorVision.Utilities;
 
 namespace ColorVision.Services.Devices.Camera
 {
@@ -23,35 +29,48 @@ namespace ColorVision.Services.Devices.Camera
     /// </summary>
     public partial class CreateWindow : Window
     {
-        public TerminalCamera TerminalCamera { get; set; }
+        public TerminalCamera TerminalService { get; set; }
+
+        public ConfigCamera CreateConfig { get; set; }
+
         public CreateWindow(TerminalCamera terminalCamera)
         {
-            TerminalCamera = terminalCamera;
+            TerminalService = terminalCamera;
             InitializeComponent();
-        }
-        public string NewCreateFileName(string FileName)
-        {
-            if (!TerminalCamera.ExistsDevice(FileName))
-                return FileName;
-            for (int i = 1; i < 999; i++)
-            {
-                if (!TerminalCamera.ExistsDevice($"{FileName}{i}"))
-                    return $"{FileName}{i}";
-            }
-            return FileName;
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            TerminalCamera.CreatCode = NewCreateFileName("DevCamera");
-            TerminalCamera.CreatName = NewCreateFileName("DevCamera");
+            int fromPort = (Math.Abs(new Random().Next()) % 99 + 6800);
 
-            this.DataContext = TerminalCamera;
+            CreateConfig = new ConfigCamera
+            {
+                CameraType = CameraType.LV_Q,
+                TakeImageMode = TakeImageMode.Measure_Normal,
+                ImageBpp = ImageBpp.bpp8,
+                Channel = ImageChannel.One,
+                FileServerCfg = new FileServerCfg()
+                {
+                    Endpoint = "127.0.0.1",
+                    PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
+                    DataBasePath = "D:\\CVTest",
+                },
+                VideoConfig = new Video.CameraVideoConfig()
+                {
+                    Host = "127.0.0.1",
+                    Port = (Math.Abs(new Random().Next()) % 99 + 9000),
+                }
+            };
 
-            var Config = TerminalCamera.CreateConfig;
+            CreateCode.Text = TerminalService.NewCreateFileName("DevCamera");
+            CreateName.Text = TerminalService.NewCreateFileName("DevCamera");
+
+            this.DataContext = this;
+
+            var Config = CreateConfig;
 
 
-            CameraID.ItemsSource = TerminalCamera.MQTTServiceTerminalBase.DevicesSN;
+            CameraID.ItemsSource = TerminalService.MQTTServiceTerminalBase.DevicesSN;
 
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
@@ -62,7 +81,7 @@ namespace ColorVision.Services.Devices.Camera
             ComboxCameraImageBpp.ItemsSource = from e1 in Enum.GetValues(typeof(ImageBpp)).Cast<ImageBpp>()
                                                select new KeyValuePair<ImageBpp, string>(e1, e1.ToDescription());
 
-            var type = TerminalCamera.CreateConfig.CameraType;
+            var type = Config.CameraType;
 
             if (type == CameraType.LV_Q || type == CameraType.LV_H || type == CameraType.LV_MIL_CL || type == CameraType.MIL_CL)
             {
@@ -198,8 +217,61 @@ namespace ColorVision.Services.Devices.Camera
                         break;
                 }
             };
+        }
+        SysDeviceModel? saveDevConfigInfo(DeviceServiceConfig deviceConfig, SysResourceModel sysResource)
+        {
+            deviceConfig.Name = CreateCode.Text;
+            deviceConfig.Code = CreateName.Text;
+            deviceConfig.SendTopic = TerminalService.Config.SendTopic;
+            deviceConfig.SubscribeTopic = TerminalService.Config.SubscribeTopic;
+
+            sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
+            ServiceManager.GetInstance().VSysResourceDao.Save(sysResource);
+            int pkId = sysResource.PKId;
+            if (pkId > 0 && ServiceManager.GetInstance().VSysDeviceDao.GetById(pkId) is SysDeviceModel model) return model;
+            else return null;
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
 
 
+
+            if (!ServicesHelper.IsInvalidPath(CreateCode.Text, "资源标识") || !ServicesHelper.IsInvalidPath(CreateName.Text, "资源名称"))
+                return;
+
+            if (TerminalService.ServicesCodes.Contains(CreateCode.Text))
+            {
+                MessageBox.Show("设备标识已存在,不允许重复添加");
+                return;
+            }
+            SysDeviceModel sysDevModel = null;
+
+            SysResourceModel sysResource = new SysResourceModel(CreateName.Text, CreateCode.Text, TerminalService.SysResourceModel.Type, TerminalService.SysResourceModel.Id, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            CreateConfig.Id = CreateCode.Text;
+            CreateConfig.Name = CreateName.Text;
+            CreateConfig.SendTopic = TerminalService.Config.SendTopic;
+            CreateConfig.SubscribeTopic = TerminalService.Config.SubscribeTopic;
+            sysResource.Value = JsonConvert.SerializeObject(CreateConfig);
+
+            sysDevModel = saveDevConfigInfo(CreateConfig, sysResource);
+            if (sysDevModel != null)
+            {
+                if (TerminalService.MQTTServiceTerminalBase is MQTTTerminalCamera cameraService)
+                {
+                    var deviceService = new DeviceCamera(sysDevModel, cameraService);
+                    AddChild(deviceService);
+                    ServiceManager.GetInstance().DeviceServices.Add(deviceService);
+                }
+                if (sysDevModel != null && sysDevModel.TypeCode != null && sysDevModel.PCode != null && sysDevModel.Code != null)
+                    RC.MQTTRCService.GetInstance().RestartServices(sysDevModel.TypeCode, sysDevModel.PCode, sysDevModel.Code);
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "创建成功正在重启服务", "ColorVision");
+                this.Close();
+            }
+            else
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "创建失败", "ColorVision");
+            }
         }
     }
 }

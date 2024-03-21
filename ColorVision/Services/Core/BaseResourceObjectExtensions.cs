@@ -1,4 +1,5 @@
 ﻿using ColorVision.Services.Devices;
+using ColorVision.Services.Devices.Camera;
 
 namespace ColorVision.Services.Core
 {
@@ -19,7 +20,7 @@ namespace ColorVision.Services.Core
         }
 
 
-        public static bool ExistsDevice(this BaseResourceObject This,string Code)
+        public static bool ExistsDevice<T>(this T This,string Code) where T : BaseResourceObject
         {
             foreach (var item in This.VisualChildren)
             {
@@ -27,6 +28,18 @@ namespace ColorVision.Services.Core
                     return true;
             }
             return false;
+        }
+
+        public static string NewCreateFileName<T>(this T t ,string FileName) where T : BaseResourceObject
+        {
+            if (!t.ExistsDevice(FileName))
+                return FileName;
+            for (int i = 1; i < 999; i++)
+            {
+                if (!t.ExistsDevice($"{FileName}{i}"))
+                    return $"{FileName}{i}";
+            }
+            return FileName;
         }
     }
 }

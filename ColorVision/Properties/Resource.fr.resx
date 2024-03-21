@@ -654,4 +654,7 @@
   <data name="MenuFlow" xml:space="preserve">
     <value>_Processus</value>
   </data>
+  <data name="Create" xml:space="preserve">
+    <value>créer</value>
+  </data>
 </root>

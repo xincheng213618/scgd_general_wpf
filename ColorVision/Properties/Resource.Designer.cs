@@ -322,6 +322,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 创建 的本地化字符串。
+        /// </summary>
+        public static string Create {
+            get {
+                return ResourceManager.GetString("Create", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 注册一个 的本地化字符串。
         /// </summary>
         public static string Create_an_account {

@@ -34,7 +34,7 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel >
-                        <Border  Background ="{DynamicResource RegionBrush}" CornerRadius="5">
+                        <Border Background ="{DynamicResource RegionBrush}" CornerRadius="5">
                             <StackPanel Margin="5">
                                 <DockPanel Margin="5,0">
                                     <ToggleButton DockPanel.Dock="Right"  Style="{StaticResource ButtonMQTTConnect}"  Height="20" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
@@ -62,13 +62,6 @@
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.SubscribeTopic}"/>
                                     </DockPanel>
                                     <DockPanel >
-                                        <TextBlock Text="上次连接:" Width="120"/>
-                                        <TextBox x:Name="textBox" IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.LastAliveTime}" MouseDoubleClick="TextBox_MouseDoubleClick"/>
-                                        <Popup Name="popup" PlacementTarget="{Binding ElementName=textBox}" LostFocus="popup_LostFocus"  Placement="Bottom" Width="200"  Height="100">
-                                        </Popup>
-
-                                    </DockPanel>
-                                    <DockPanel >
                                         <TextBlock Text="心跳:" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.HeartbeatTime}"/>
                                     </DockPanel>
@@ -86,35 +79,11 @@
                         </Button>
                         <Grid Height="40" Margin="0,0,0,5">
                             <Image Source="{StaticResource DrawingImageAdd1}" Margin="5"/>
-                            <Button  Background="Transparent" Click="Button_Click_2" Command="{Binding OpenCreateWindowCommand}" VerticalAlignment="Stretch"/>
+                            <Button  Background="Transparent" Command="{Binding OpenCreateWindowCommand}" VerticalAlignment="Stretch"/>
                         </Grid>
-
                     </StackPanel>
                 </Grid>
             </Grid>
-            <GroupBox x:Name="MQTTCreate" Header="配置设备" Grid.Row="2" Visibility="Collapsed">
-                <Grid Margin="5">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <Button Grid.Column="2" Command="{Binding OpenCreateWindowCommand}" Margin="5" Content="导入设备"/>
-                    <Button  Grid.Column="1" Command="{Binding CreateCommand}" Click="Button_New_Click" Margin="5" Content="添加"/>
-                    <StackPanel x:Name="MQTTCreateStackPanel"  Margin="0,5" >
-                        <DockPanel Margin="2" >
-                            <TextBlock Text="标识" MinWidth="30"/>
-                            <hc:ComboBox  x:Name="TextBox_Code" IsEditable="True"  SelectedIndex="0" Text="{Binding CreatCode}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
-                        </DockPanel>
-                        <DockPanel Margin="2" >
-                            <TextBlock Text="名称" Width="30"/>
-                            <hc:ComboBox  x:Name="TextBox_Name" IsEditable="True" SelectedIndex="0" Text="{Binding CreatName}"   hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
-                        </DockPanel>
-                    </StackPanel>
-                </Grid>
-
-            </GroupBox>
-
             <ListView  x:Name="ListViewService" Background="Transparent" BorderThickness="0" SelectionChanged="ListViewService_SelectionChanged" Grid.Row="1">
                 <ListView.Resources >
                 </ListView.Resources>
