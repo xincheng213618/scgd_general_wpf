@@ -152,13 +152,13 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                 Wave = pOIDataCIExyuv.Wave;
 
                 //这里是因为输出不会小于0所以做一个置位
-                X = pOIDataCIExyuv.X > 0 ? pOIDataCIExyuv.X : 0;
-                Y = pOIDataCIExyuv.Y > 0 ? pOIDataCIExyuv.Y : 0;
-                Z = pOIDataCIExyuv.Z > 0 ? pOIDataCIExyuv.Z : 0;
-                u = pOIDataCIExyuv.u > 0 ? pOIDataCIExyuv.u : 0;
-                v = pOIDataCIExyuv.v > 0 ? pOIDataCIExyuv.v : 0;
-                x = pOIDataCIExyuv.x > 0 ? pOIDataCIExyuv.x : 0;
-                y = pOIDataCIExyuv.y > 0 ? pOIDataCIExyuv.y : 0;
+                X = pOIDataCIExyuv.X >= 0 ? pOIDataCIExyuv.X : 0.001;
+                Y = pOIDataCIExyuv.Y >= 0 ? pOIDataCIExyuv.Y : 0.001;
+                Z = pOIDataCIExyuv.Z >= 0 ? pOIDataCIExyuv.Z : 0.001;
+                u = pOIDataCIExyuv.u >= 0 ? pOIDataCIExyuv.u : 0.001;
+                v = pOIDataCIExyuv.v >= 0 ? pOIDataCIExyuv.v : 0.001;
+                x = pOIDataCIExyuv.x >= 0 ? pOIDataCIExyuv.x : 0.001;
+                y = pOIDataCIExyuv.y >= 0 ? pOIDataCIExyuv.y : 0.001;
             }
         }
 

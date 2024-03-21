@@ -16,7 +16,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             if (pOIPointResultModel.Value != null)
             {
                 POIDataCIEY pOIDataCIEY = JsonConvert.DeserializeObject<POIDataCIEY>(pOIPointResultModel.Value);
-                Y = pOIDataCIEY.Y > 0 ? pOIDataCIEY.Y : 0;
+                Y = pOIDataCIEY.Y >= 0 ? pOIDataCIEY.Y : 0.001;
             }
         }
 
