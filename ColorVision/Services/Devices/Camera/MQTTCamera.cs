@@ -519,7 +519,6 @@ namespace ColorVision.Services.Devices.Camera
 
         public MsgRecord Close()
         {
-            IsVideoOpen = false;
             MsgSend msg = new MsgSend {  EventName = "Close" };
             return PublishAsyncClient(msg);
         }

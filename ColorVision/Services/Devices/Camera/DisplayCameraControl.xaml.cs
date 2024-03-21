@@ -18,10 +18,12 @@ using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
+using ScottPlot.Drawing.Colormaps;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -242,8 +244,8 @@ namespace ColorVision.Services.Devices.Camera
                         if (s == MsgRecordState.Fail)
                         {
                             CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
-                            DService.Close();
                             CameraVideoControl.Close();
+                            DService.Close();
                         }
                     };
                     CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
@@ -407,6 +409,14 @@ namespace ColorVision.Services.Devices.Camera
                     CameraVideoControl.Close();
                 MsgRecord msgRecord = DService.Close();
                 Helpers.SendCommand(button,msgRecord);
+                MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
+                 msgRecordStateChangedHandler = (e) =>
+                {
+                    DService.IsVideoOpen = false;
+                    msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
+                };
+                msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+
 
             }
 
