@@ -27,7 +27,7 @@
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <TreeView x:Name="TreeView1" Loaded="TreeView1_Loaded"  ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5">
+                <TreeView x:Name="TreeView1" Style="{StaticResource TreeView.Small}" Loaded="TreeView1_Loaded"  ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5">
                     <TreeView.Resources>
                         <HierarchicalDataTemplate DataType="{x:Type type:TypeService}" ItemsSource="{Binding VisualChildren}" >
                             <StackPanel >

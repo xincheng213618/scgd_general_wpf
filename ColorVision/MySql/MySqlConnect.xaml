@@ -29,7 +29,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Border x:Name="ListViewMySqlBorder" Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Visibility="Collapsed" Width="170"  Margin="5" CornerRadius="10,10,5,5">
+                <Border x:Name="ListViewMySqlBorder" Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Visibility="Collapsed" Width="170"  Margin="5" CornerRadius="10,10,5,5">
                     <Grid>
                         <ListView x:Name="ListViewMySql"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
                             <ListView.Resources >

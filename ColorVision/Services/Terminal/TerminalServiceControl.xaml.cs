@@ -41,24 +41,6 @@ namespace ColorVision.Services.Terminal
             };
         }
 
-
-
-        private void Button_New_Click(object sender, RoutedEventArgs e)
-        {
-            MQTTCreate.Visibility = Visibility.Collapsed;
-        }
-
-        private void Button_Click_2(object sender, RoutedEventArgs e)
-        {
-            MQTTCreate.Visibility = MQTTCreate.Visibility == Visibility.Visible? Visibility.Collapsed : Visibility.Visible;
-            if (ServiceTerminal.MQTTServiceTerminalBase is MQTTServiceTerminalBase baseServiceBase)
-            {
-                TextBox_Code.ItemsSource = baseServiceBase.DevicesSN;
-                TextBox_Name.ItemsSource = baseServiceBase.DevicesSN;
-            }
-        }
-
-
         private void ListViewService_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
@@ -75,17 +57,5 @@ namespace ColorVision.Services.Terminal
             }
         }
 
-
-        private void TextBox_MouseDoubleClick(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            popup.IsOpen = true;
-        }
-
-        private void popup_LostFocus(object sender, RoutedEventArgs e)
-        {
-            if (sender is Popup popup)
-                popup.IsOpen = false;
-
-        }
     }
 }

@@ -654,4 +654,7 @@
   <data name="MenuFlow" xml:space="preserve">
     <value>プロセス(F)</value>
   </data>
+  <data name="Create" xml:space="preserve">
+    <value>作成する</value>
+  </data>
 </root>

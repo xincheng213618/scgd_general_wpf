@@ -9,14 +9,14 @@
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceAlgorithm}"
              Title="{x:Static properties:Resource.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="400" Initialized="Window_Initialized">
-    <Grid>
+    <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <ScrollViewer x:Name="EditContent" d:DataContext="{d:DesignInstance local:ConfigAlgorithm}" >
-            <StackPanel Margin="5,0" >
-                <GroupBox Header="资源信息" Margin="0,5">
+            <StackPanel>
+                <GroupBox Header="资源信息" Margin="0,0,0,5">
                     <StackPanel Margin="5">
                         <DockPanel Margin="0,2" >
                             <TextBlock Text="界面展示名称" Width="120"/>
@@ -28,7 +28,7 @@
                         </DockPanel>
                     </StackPanel>
                 </GroupBox>
-                <GroupBox Header="配置信息" Margin="0,5">
+                <GroupBox Header="配置信息" Margin="0,0,0,5">
                     <StackPanel Margin="5">
                         <DockPanel Margin="0,2">
                             <TextBlock Text="绑定设备"  Width="120"/>
@@ -51,7 +51,7 @@
                 </GroupBox>
             </StackPanel>
         </ScrollViewer>
-        <Border Grid.Row="1" Margin="5" Height="30">
+        <Border Grid.Row="1" Height="30">
             <Button  Content="{x:Static properties:Resource.Submit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding SaveCommand}" Click="Button_Click" />
         </Border>
     </Grid>

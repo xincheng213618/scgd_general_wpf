@@ -654,4 +654,7 @@
   <data name="MenuFlow" xml:space="preserve">
     <value>공정(F)</value>
   </data>
+  <data name="Create" xml:space="preserve">
+    <value>만들다</value>
+  </data>
 </root>
