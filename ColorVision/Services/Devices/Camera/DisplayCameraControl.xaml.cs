@@ -398,16 +398,16 @@ namespace ColorVision.Services.Devices.Camera
                 }
             }
         }
+
         private void Close_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
-            {  
+            {
+                if (DService.IsVideoOpen)
+                    CameraVideoControl.Close();
                 MsgRecord msgRecord = DService.Close();
                 Helpers.SendCommand(button,msgRecord);
-                if (DService.IsVideoOpen)
-                {
-                    CameraVideoControl.Close();
-                }
+
             }
 
         }

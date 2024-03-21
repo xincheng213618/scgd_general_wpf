@@ -205,16 +205,6 @@ namespace ColorVision.Services.Devices.Camera
             return PublishAsyncClient(msg,1000);
         }
 
-
-
-
-        public MsgRecord UnInit()
-        {
-            IsVideoOpen = false;
-            MsgSend msg = new MsgSend  {  EventName = "UnInit", };
-            return PublishAsyncClient(msg);
-        }
-
         public MsgRecord SetCfg(CameraConfigType configType)
         {
             MsgSend msg = new MsgSend { EventName = "SetCfg" };
