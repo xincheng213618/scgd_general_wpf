@@ -495,6 +495,7 @@ namespace ColorVision
         private void Wizard_Click(object sender, RoutedEventArgs e)
         {
             WizardWindow wizardWindow = new WizardWindow();
+            wizardWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
             wizardWindow.Show();
         }
     }
