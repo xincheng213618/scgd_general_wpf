@@ -8,7 +8,7 @@
              xmlns:properties="clr-namespace:ColorVision.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceAlgorithm}"
-             Title="{x:Static properties:Resource.Edit}" Icon="{Binding Icon}" Height="450" Width="400" Initialized="Window_Initialized">
+             Title="{x:Static properties:Resource.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="400" Initialized="Window_Initialized">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>

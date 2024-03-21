@@ -150,13 +150,15 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                 POIDataCIExyuv pOIDataCIExyuv = JsonConvert.DeserializeObject<POIDataCIExyuv>(pOIPointResultModel.Value);
                 CCT = pOIDataCIExyuv.CCT;
                 Wave = pOIDataCIExyuv.Wave;
-                X = pOIDataCIExyuv.X;
-                Y = pOIDataCIExyuv.Y;
-                Z = pOIDataCIExyuv.Z;
-                u = pOIDataCIExyuv.u;
-                v = pOIDataCIExyuv.v;
-                x = pOIDataCIExyuv.x;
-                y = pOIDataCIExyuv.y;
+
+                //这里是因为输出不会小于0所以做一个置位
+                X = pOIDataCIExyuv.X > 0 ? pOIDataCIExyuv.X : 0;
+                Y = pOIDataCIExyuv.Y > 0 ? pOIDataCIExyuv.Y : 0;
+                Z = pOIDataCIExyuv.Z > 0 ? pOIDataCIExyuv.Z : 0;
+                u = pOIDataCIExyuv.u > 0 ? pOIDataCIExyuv.u : 0;
+                v = pOIDataCIExyuv.v > 0 ? pOIDataCIExyuv.v : 0;
+                x = pOIDataCIExyuv.x > 0 ? pOIDataCIExyuv.x : 0;
+                y = pOIDataCIExyuv.y > 0 ? pOIDataCIExyuv.y : 0;
             }
         }
 

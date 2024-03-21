@@ -7,8 +7,14 @@
         xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:TerminalService}"
-        Title="{x:Static properties:Resource.Edit}" Icon="{Binding Icon}" Height="450" Width="400" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resource.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="400" Initialized="Window_Initialized">
     <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
         <Style TargetType="TextBox" BasedOn="{StaticResource TextBoxBaseBaseStyle}">
             <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
         </Style>
@@ -19,16 +25,22 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <ScrollViewer x:Name="EditContent" d:DataContext="{d:DesignInstance local:TerminalServiceConfig}">
-            <StackPanel >
-                <DockPanel Margin="5" >
-                    <TextBlock Text="服务名称" Width="120"/>
-                    <TextBox Text="{Binding Name}"/>
-                </DockPanel>
-                <DockPanel Margin="5">
-                    <TextBlock Text="心跳:" Width="120"/>
-                    <TextBox Text="{Binding HeartbeatTime}"/>
-                </DockPanel>
-            </StackPanel>
+            <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5" Margin="0,0,5,0">
+                <StackPanel>
+                    <GroupBox Header="资源信息">
+                        <StackPanel>
+                            <DockPanel Margin="5" >
+                                <TextBlock Text="服务名称" Width="120"/>
+                                <TextBox Text="{Binding Name}"/>
+                            </DockPanel>
+                            <DockPanel Margin="5">
+                                <TextBlock Text="心跳时间" Width="120"/>
+                                <TextBox Text="{Binding HeartbeatTime}"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
+            </Border>
         </ScrollViewer>
 
         <Border Grid.Row="1" Margin="5" Height="30">
