@@ -772,6 +772,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 流程(_F) 的本地化字符串。
+        /// </summary>
+        public static string MenuFlow {
+            get {
+                return ResourceManager.GetString("MenuFlow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 帮助(_H) 的本地化字符串。
         /// </summary>
         public static string MenuHelp {

@@ -651,4 +651,7 @@
   <data name="WorkflowEngineDebugWindow" xml:space="preserve">
     <value>プロセスエンジンのデバッグウィンドウ</value>
   </data>
+  <data name="MenuFlow" xml:space="preserve">
+    <value>プロセス(F)</value>
+  </data>
 </root>

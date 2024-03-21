@@ -651,4 +651,7 @@
   <data name="WorkflowEngineDebugWindow" xml:space="preserve">
     <value>Fenêtre de débogage du moteur de processus</value>
   </data>
+  <data name="MenuFlow" xml:space="preserve">
+    <value>_Processus</value>
+  </data>
 </root>

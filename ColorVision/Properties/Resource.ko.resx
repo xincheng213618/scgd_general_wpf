@@ -651,4 +651,7 @@
   <data name="WorkflowEngineDebugWindow" xml:space="preserve">
     <value>프로세스 엔진 디버그 창</value>
   </data>
+  <data name="MenuFlow" xml:space="preserve">
+    <value>공정(F)</value>
+  </data>
 </root>
