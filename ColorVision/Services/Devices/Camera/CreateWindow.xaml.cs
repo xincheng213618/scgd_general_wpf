@@ -61,8 +61,8 @@ namespace ColorVision.Services.Devices.Camera
                     Port = (Math.Abs(new Random().Next()) % 99 + 9000),
                 }
             };
-            CreateCode.Text = TerminalService.NewCreateFileName($"Dev.{TerminalService.ServiceType}.default");
-            CreateName.Text = TerminalService.NewCreateFileName($"Dev.{TerminalService.ServiceType}.default");
+            CreateCode.Text = TerminalService.NewCreateFileName($"DEV.{TerminalService.ServiceType}.Default");
+            CreateName.Text = TerminalService.NewCreateFileName($"DEV.{TerminalService.ServiceType}.Default");
 
             this.DataContext = this;
 
