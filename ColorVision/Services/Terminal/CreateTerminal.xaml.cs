@@ -49,8 +49,8 @@ namespace ColorVision.Services.Terminal
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            CreateCode.Text = TerminalService.NewCreateFileName("Dev");
-            CreateName.Text = TerminalService.NewCreateFileName("Dev");
+            CreateCode.Text = TerminalService.NewCreateFileName($"DEV.{TerminalService.ServiceType}.Default");
+            CreateName.Text = TerminalService.NewCreateFileName($"DEV.{TerminalService.ServiceType}.Default");
 
             this.DataContext = TerminalService;
         }
@@ -87,9 +87,9 @@ namespace ColorVision.Services.Terminal
             SysDeviceModel sysDevModel = null;
             DeviceServiceConfig deviceConfig;
             int fromPort;
-            switch (TerminalService.Type)
+            switch (TerminalService.ServiceType)
             {
-                case ServiceTypes.pg:
+                case ServiceTypes.PG:
                     ConfigPG pGConfig = new ConfigPG
                     {
                         Id = CreateCode.Text,
@@ -236,7 +236,7 @@ namespace ColorVision.Services.Terminal
             };
             if (deviceService != null)
             {
-                AddChild(deviceService);
+                TerminalService.AddChild(deviceService);
                 ServiceManager.GetInstance().DeviceServices.Add(deviceService);
                 if (sysDevModel != null && sysDevModel.TypeCode != null && sysDevModel.PCode != null && sysDevModel.Code != null)
                     RC.MQTTRCService.GetInstance().RestartServices(sysDevModel.TypeCode, sysDevModel.PCode, sysDevModel.Code);

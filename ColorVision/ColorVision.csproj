@@ -108,6 +108,9 @@
     <Compile Update="Services\Terminal\CreateTerminal.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Services\Type\CreateType.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>

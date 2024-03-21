@@ -108,7 +108,7 @@ namespace ColorVision.Services.Terminal
 
             switch (ServiceType)
             {
-                case ServiceTypes.camera:
+                case ServiceTypes.Camera:
                     break;
                 case ServiceTypes.Algorithm:
                     this.SetIconResource("DrawingImageAlgorithm");
@@ -157,8 +157,6 @@ namespace ColorVision.Services.Terminal
 
             ServiceManager.GetInstance().TerminalServices.Remove(this);
         }
-
-        public ServiceTypes Type { get => (ServiceTypes)SysResourceModel.Type; }
 
         public List<string> ServicesCodes
         {

@@ -144,7 +144,7 @@ namespace ColorVision.Services
                     TerminalService terminalService;
                     switch (typeService1.ServiceTypes)
                     {   
-                        case ServiceTypes.camera:
+                        case ServiceTypes.Camera:
                             terminalService = new TerminalCamera(sysResourceModel);
                             break;
                         default:
@@ -181,7 +181,7 @@ namespace ColorVision.Services
 
                     switch ((ServiceTypes)sysResourceModel.Type)
                     {
-                        case ServiceTypes.camera:
+                        case ServiceTypes.Camera:
 
                             if (terminalService.MQTTServiceTerminalBase is MQTTTerminalCamera cameraService)
                             {
@@ -191,7 +191,7 @@ namespace ColorVision.Services
                                 DeviceServices.Add(deviceCamera);
                             }
                             break;
-                        case ServiceTypes.pg:
+                        case ServiceTypes.PG:
                             DevicePG devicePG = new DevicePG(sysResourceModel);
                             svrObj = devicePG.DeviceService;
                             terminalService.AddChild(devicePG);

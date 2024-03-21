@@ -61,9 +61,8 @@ namespace ColorVision.Services.Devices.Camera
                     Port = (Math.Abs(new Random().Next()) % 99 + 9000),
                 }
             };
-
-            CreateCode.Text = TerminalService.NewCreateFileName("DevCamera");
-            CreateName.Text = TerminalService.NewCreateFileName("DevCamera");
+            CreateCode.Text = TerminalService.NewCreateFileName($"Dev.{TerminalService.ServiceType}.default");
+            CreateName.Text = TerminalService.NewCreateFileName($"Dev.{TerminalService.ServiceType}.default");
 
             this.DataContext = this;
 
@@ -234,9 +233,6 @@ namespace ColorVision.Services.Devices.Camera
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-
-
-
             if (!ServicesHelper.IsInvalidPath(CreateCode.Text, "资源标识") || !ServicesHelper.IsInvalidPath(CreateName.Text, "资源名称"))
                 return;
 
@@ -260,7 +256,7 @@ namespace ColorVision.Services.Devices.Camera
                 if (TerminalService.MQTTServiceTerminalBase is MQTTTerminalCamera cameraService)
                 {
                     var deviceService = new DeviceCamera(sysDevModel, cameraService);
-                    AddChild(deviceService);
+                    TerminalService.AddChild(deviceService);
                     ServiceManager.GetInstance().DeviceServices.Add(deviceService);
                 }
                 if (sysDevModel != null && sysDevModel.TypeCode != null && sysDevModel.PCode != null && sysDevModel.Code != null)

@@ -1,5 +1,6 @@
 ﻿using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Camera;
+using ColorVision.Services.Terminal;
 
 namespace ColorVision.Services.Core
 {
@@ -25,6 +26,8 @@ namespace ColorVision.Services.Core
             foreach (var item in This.VisualChildren)
             {
                 if (item is DeviceService t && t.Code == Code)
+                    return true;
+                if (item is TerminalService t1 && t1.Code == Code)
                     return true;
             }
             return false;
