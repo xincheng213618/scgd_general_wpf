@@ -122,6 +122,7 @@ namespace ColorVision.Net
                         {
                             int len = (int)(fileOut.cols * fileOut.rows * fileOut.bpp / 8);
                             byte[] data = new byte[len];
+                            Buffer.BlockCopy(fileOut.data, ch * len, data, 0, len);
                             OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileOut.cols, (int)fileOut.rows, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
                             src.SaveImage(SavePath + "\\" + fileInfo.Name + $"_{strings[ch]}.tif");
                         }
