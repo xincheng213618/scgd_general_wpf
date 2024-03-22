@@ -245,10 +245,12 @@ namespace ColorVision.Services.Devices.Camera.Views
                 return;
             }
             using var dialog = new System.Windows.Forms.SaveFileDialog();
-            dialog.Filter = "CSV files (*.csv) | *.csv";
+            //dialog.Filter = "files (*.csv) | *.csv";
             dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+            dialog.FileName = dialog.FileName + ".csv";
             CsvWriter.WriteToCsv(ViewResultCameras[listView1.SelectedIndex], dialog.FileName);
 
 
