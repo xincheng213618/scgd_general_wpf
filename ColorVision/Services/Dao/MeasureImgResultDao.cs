@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using ColorVision.MySql;
+using NPOI.SS.Formula.Functions;
 
 namespace ColorVision.Services.Dao
 {
@@ -57,6 +58,9 @@ namespace ColorVision.Services.Dao
             };
             return model;
         }
+
+        public List<MeasureImgResultModel> GetAllDevice(string devcode) => ConditionalQuery(new Dictionary<string, Object>() { { "device_code", devcode } });
+
 
         public List<MeasureImgResultModel> ConditionalQuery(string id, string batch_code, string file_url, string device_code,DateTime dateTimeSTART, DateTime dateTimeEnd)
         {

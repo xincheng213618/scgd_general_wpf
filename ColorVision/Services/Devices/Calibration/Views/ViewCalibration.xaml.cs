@@ -172,10 +172,10 @@ namespace ColorVision.Services.Devices.Calibration.Views
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && string.IsNullOrWhiteSpace(TbDeviceCode.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
+            if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
             {
                 ViewResultCalibrations.Clear();
-                foreach (var item in MeasureImgResultDao.GetAll())
+                foreach (var item in MeasureImgResultDao.GetAllDevice(Device.Code))
                 {
                     ViewResultCalibration algorithmResult = new ViewResultCalibration(item);
                     ViewResultCalibrations.AddUnique(algorithmResult);
@@ -185,7 +185,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
             else
             {
                 ViewResultCalibrations.Clear();
-                List<MeasureImgResultModel> algResults = MeasureImgResultDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, TextBoxFile.Text, TbDeviceCode.Text, SearchTimeSart.DisplayDateTime,SearchTimeEnd.DisplayDateTime);
+                List<MeasureImgResultModel> algResults = MeasureImgResultDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, TextBoxFile.Text, Device.Code, SearchTimeSart.DisplayDateTime,SearchTimeEnd.DisplayDateTime);
                 foreach (var item in algResults)
                 {
                     ViewResultCalibration algorithmResult = new ViewResultCalibration(item);
@@ -204,7 +204,6 @@ namespace ColorVision.Services.Devices.Calibration.Views
             TextBoxId.Text = string.Empty;
             TextBoxBatch.Text = string.Empty;
             TextBoxFile.Text = string.Empty;
-            TbDeviceCode.Text = string.Empty;
         }
 
         private void MenuItem_Delete_Click(object sender, RoutedEventArgs e)
@@ -214,36 +213,6 @@ namespace ColorVision.Services.Devices.Calibration.Views
                 ViewResultCalibrations.Remove(viewResult);
                 ImageView.Clear();
             }
-        }
-
-        private void Order_Click(object sender, RoutedEventArgs e)
-        {
-            OrderPopup.IsOpen = true;
-        }
-
-        private void Radio_Checked(object sender, RoutedEventArgs e)
-        {
-            if (RadioID?.IsChecked == true)
-            {
-                ViewResultCalibrations.SortByID(RadioUp?.IsChecked == false);
-            }
-
-            if (RadioBatch?.IsChecked == true)
-            {
-                ViewResultCalibrations.SortByBatch(RadioUp?.IsChecked == false);
-            }
-
-            if (RadioFilePath?.IsChecked == true)
-            {
-                ViewResultCalibrations.SortByFilePath(RadioUp?.IsChecked == false);
-            }
-
-            if (RadioCreateTime?.IsChecked == true)
-            {
-                ViewResultCalibrations.SortByCreateTime(RadioUp?.IsChecked == false);
-            }
-
-            OrderPopup.IsOpen = false;
         }
 
         private void Src_Click(object sender, RoutedEventArgs e)

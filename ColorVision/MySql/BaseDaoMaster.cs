@@ -155,6 +155,7 @@ namespace ColorVision.MySql
         }
 
         public List<T> GetAll()  => GetAllByParam(new Dictionary<string, object>());
+
         public List<T> GetAllByParam(Dictionary<string, object> param)
         {
             string whereClause = string.Empty;
