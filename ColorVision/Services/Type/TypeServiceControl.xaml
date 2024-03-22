@@ -9,6 +9,7 @@
              xmlns:hc ="https://handyorg.github.io/handycontrol"
              xmlns:properties ="clr-namespace:ColorVision.Properties"
              mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance local:TypeService}"
              d:DesignHeight="500" d:DesignWidth="800" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
@@ -19,98 +20,70 @@
         </Style>
     </UserControl.Resources>
     <Grid>
-        <Grid>
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-            </Grid.RowDefinitions>
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <StackPanel x:Name="MQTTCreate" d:DataContext="{d:DesignInstance services:ServiceManager}" Margin="5,0,0,0" >
-                    <DockPanel Margin="0,5" Visibility="Collapsed">
-                        <TextBlock Text="类型" MinWidth="60" />
-                        <ComboBox x:Name="TextBox_Type"  SelectedValuePath="Name" Style="{DynamicResource ComboBox.Small}"  DisplayMemberPath="Name" />
-                    </DockPanel>
-                    <DockPanel  Margin="0,5">
-                        <TextBlock Text="{x:Static properties:Resource.Code}" MinWidth="30"/>
-                        <hc:ComboBox  x:Name="TextBox_Code" IsEditable="True" SelectedIndex="0" Text=""  hc:InfoElement.ShowClearButton="True"   />
-                    </DockPanel>
-                    <DockPanel  Margin="0,5" >
-                        <TextBlock Text="{x:Static properties:Resource.Name}" MinWidth="30"/>
-                        <hc:ComboBox  x:Name="TextBox_Name" IsEditable="True" SelectedIndex="0" Text=""  hc:InfoElement.ShowClearButton="True" />
-                    </DockPanel>
-                </StackPanel>
-                <Border  Grid.Column="1" Margin="5" Background="Transparent">
-                    <Button  Click="Button_New_Click"  MinWidth="100" Content="{x:Static properties:Resource.Add}" HorizontalAlignment="Right" />
-                </Border>
-            </Grid>
-            <Grid Grid.Row="1">
-                <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
-                <ListView  x:Name="ListViewService" Background="Transparent" SelectionChanged="ListViewService_SelectionChanged" BorderThickness="0">
-                    <ListView.Resources >
-                    </ListView.Resources>
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
-                            <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
-                            <Setter Property="IsSelected" Value="{Binding IsSelected}"/>
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                    <ListView.View >
-                        <GridView>
-                            <GridViewColumn  Header="{x:Static properties:Resource.ServiceIdentifier}" Width="105">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type terminal:TerminalService}">
-                                        <TextBlock Text="{ Binding Code}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="{x:Static properties:Resource.ServiceName}" Width="105">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type terminal:TerminalService}">
-                                        <TextBlock Text="{ Binding Name}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="{x:Static properties:Resource.TransmitChannel}" Width="160">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type terminal:TerminalService}">
-                                        <TextBlock Text="{ Binding  Config.SendTopic}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="{x:Static properties:Resource.ReceiveChannel}" Width="160" >
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type terminal:TerminalService}">
-                                        <TextBlock Text="{ Binding  Config.SubscribeTopic}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="{x:Static properties:Resource.Status}" Width="50">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type terminal:TerminalService}">
-                                        <TextBlock Text="{ Binding  Config.IsAlive}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn   Width="60">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type terminal:TerminalService}">
-                                        <Grid Height="30">
-                                            <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
-                                            <Button Background="Transparent"  BorderThickness="0"  Command="{Binding DeleteCommand}"/>
-                                        </Grid>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                        </GridView>
-                    </ListView.View>
-                </ListView>
+        <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
 
-            </Grid>
-
+        <ListView  x:Name="ListViewService" Background="Transparent" SelectionChanged="ListViewService_SelectionChanged" BorderThickness="0">
+            <ListView.Resources >
+            </ListView.Resources>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
+                    <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                    <Setter Property="IsSelected" Value="{Binding IsSelected}"/>
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.View >
+                <GridView>
+                    <GridViewColumn  Header="{x:Static properties:Resource.ServiceIdentifier}" Width="105">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type terminal:TerminalService}">
+                                <TextBlock Text="{ Binding Code}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="{x:Static properties:Resource.ServiceName}" Width="105">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type terminal:TerminalService}">
+                                <TextBlock Text="{ Binding Name}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="{x:Static properties:Resource.TransmitChannel}" Width="160">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type terminal:TerminalService}">
+                                <TextBlock Text="{ Binding  Config.SendTopic}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="{x:Static properties:Resource.ReceiveChannel}" Width="160" >
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type terminal:TerminalService}">
+                                <TextBlock Text="{ Binding  Config.SubscribeTopic}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="{x:Static properties:Resource.Status}" Width="50">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type terminal:TerminalService}">
+                                <TextBlock Text="{ Binding  Config.IsAlive}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn   Width="60">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate DataType="{x:Type terminal:TerminalService}">
+                                <Grid Height="30">
+                                    <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
+                                    <Button Background="Transparent"  BorderThickness="0"  Command="{Binding DeleteCommand}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+        <Grid Height="40" Margin="0,0,0,5" HorizontalAlignment="Right" VerticalAlignment="Top">
+            <Image Source="{StaticResource DrawingImageAdd1}" Margin="5"/>
+            <Button  Background="Transparent" Command="{Binding OpenCreateWindowCommand}" VerticalAlignment="Stretch"/>
         </Grid>
     </Grid>
 

@@ -8,6 +8,14 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:AutoUpdater}"
         Title="{x:Static properties:Resource.ColorVisionUpdater}" Background="{DynamicResource GlobalBackground}" Height="90" Width="350" Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+    </Window.Resources>
     <Grid>
         <StackPanel>
             <ProgressBar Height="15"  Foreground="#B41515" Maximum="100" Minimum="0" Value="{Binding ProgressValue}" Background="#373B41" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />

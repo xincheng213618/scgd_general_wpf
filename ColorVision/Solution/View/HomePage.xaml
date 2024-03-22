@@ -10,9 +10,9 @@
     <Grid>
         <Image />
         <UniformGrid Columns="3" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <Button Content="综合查询" Background="{StaticResource PrimaryBrush}" Foreground="White"  FontSize="18"  Height="150" Width="100" Margin="20"  Click="Button_Click"/>
-            <Button Content="手动归档" Background="{StaticResource PrimaryBrush}" Foreground="White"  FontSize="18"  Height="150" Width="100" Margin="20"  Click="Button_Click"/>
-            <Button Content="归档查询" Background="{StaticResource PrimaryBrush}" Foreground="White"  FontSize="18"  Height="150" Width="100" Margin="20"  Click="Button_Click"/>
+            <Button Content="综合查询" Background="{DynamicResource PrimaryBrush}" Foreground="White"  FontSize="18"  Height="150" Width="100" Margin="20"  Click="Button_Click"/>
+            <Button Content="手动归档" Background="{DynamicResource PrimaryBrush}" Foreground="White"  FontSize="18"  Height="150" Width="100" Margin="20"  Click="Button_Click"/>
+            <Button Content="归档查询" Background="{DynamicResource PrimaryBrush}" Foreground="White"  FontSize="18"  Height="150" Width="100" Margin="20"  Click="Button_Click"/>
         </UniformGrid>
         
     </Grid>

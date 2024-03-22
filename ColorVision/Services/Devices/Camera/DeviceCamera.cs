@@ -27,6 +27,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using ColorVision.Services.Extension;
 using ColorVision.Utilities;
+using System.Linq;
 
 namespace ColorVision.Services.Devices.Camera
 {
@@ -105,35 +106,86 @@ namespace ColorVision.Services.Devices.Camera
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
             openFileDialog.RestoreDirectory = true;
+            openFileDialog.Multiselect = true; // 允许多选
+            openFileDialog.Filter = "All files (*.*)|*.zip;*.lic"; // 可以设置特定的文件类型过滤器
+            openFileDialog.Title = "请选择许可证文件";
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
+                string[] selectedFiles = openFileDialog.FileNames;
 
-                CameraLicenseModel cameraLicenseModel = new CameraLicenseModel();
-                cameraLicenseModel.RescourceId = SysResourceModel.Id;
-                cameraLicenseModel.MacAddress =  Path.GetFileNameWithoutExtension(openFileDialog.SafeFileName);
-                cameraLicenseModel.LicenseValue = File.ReadAllText(openFileDialog.FileName);
-                cameraLicenseModel.CusTomerName = cameraLicenseModel.ColorVisionLincense.Licensee;
-                cameraLicenseModel.Model = cameraLicenseModel.ColorVisionLincense.DeviceMode;
-                cameraLicenseModel.ExpiryDate = cameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
-
-                if (CameraLicenseDao.GetAllByMAC(cameraLicenseModel.MacAddress, SysResourceModel.Id).Count == 0)
+                foreach (string file in selectedFiles)
                 {
-                    int ret = CameraLicenseDao.Save(cameraLicenseModel);
-                    if (ret == -1)
+
+                    if (Path.GetExtension(file) == ".zip")
                     {
-                        MessageBox.Show("添加失败");
+                        try
+                        {
+                            using ZipArchive archive = ZipFile.OpenRead(file);
+                            var licFiles = archive.Entries.Where(entry => Path.GetExtension(entry.FullName).Equals(".lic", StringComparison.OrdinalIgnoreCase)).ToList();
+
+                            foreach (var item in licFiles)
+                            {
+                                CameraLicenseModel cameraLicenseModel = new CameraLicenseModel();
+                                cameraLicenseModel.RescourceId = SysResourceModel.Id;
+                                cameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(item.FullName);
+
+                                using var stream = item.Open();
+                                using var reader = new StreamReader(stream, Encoding.UTF8); // 假设文件编码为UTF-8
+                                cameraLicenseModel.LicenseValue = reader.ReadToEnd();
+
+                                cameraLicenseModel.CusTomerName = cameraLicenseModel.ColorVisionLincense.Licensee;
+                                cameraLicenseModel.Model = cameraLicenseModel.ColorVisionLincense.DeviceMode;
+                                cameraLicenseModel.ExpiryDate = cameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
+                                if (CameraLicenseDao.GetAllByMAC(cameraLicenseModel.MacAddress, SysResourceModel.Id).Count == 0)
+                                {
+                                    int ret = CameraLicenseDao.Save(cameraLicenseModel);
+
+                                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
+                                }
+                                else
+                                {
+                                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} 重复添加", "ColorVision");
+                                }
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"解压失败 :{ex.Message}", "ColorVision");
+                        }
+                    }
+                    else if (Path.GetExtension(file) == ".lic")
+                    {
+                        CameraLicenseModel cameraLicenseModel = new CameraLicenseModel();
+                        cameraLicenseModel.RescourceId = SysResourceModel.Id;
+                        cameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(openFileDialog.SafeFileName);
+                        cameraLicenseModel.LicenseValue = File.ReadAllText(file);
+                        cameraLicenseModel.CusTomerName = cameraLicenseModel.ColorVisionLincense.Licensee;
+                        cameraLicenseModel.Model = cameraLicenseModel.ColorVisionLincense.DeviceMode;
+                        cameraLicenseModel.ExpiryDate = cameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
+
+                        if (CameraLicenseDao.GetAllByMAC(cameraLicenseModel.MacAddress, SysResourceModel.Id).Count == 0)
+                        {
+                            int ret = CameraLicenseDao.Save(cameraLicenseModel);
+                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
+                        }
+                        else
+                        {
+                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} 重复添加", "ColorVision");
+                        }
+                        RefreshLincense();
+
                     }
                     else
                     {
-                        MessageBox.Show("添加成功");
+                        MessageBox.Show(WindowHelpers.GetActiveWindow(), "不支持的许可文件后缀", "ColorVision");
                     }
+
                 }
-                else
-                {
-                    MessageBox.Show("重复添加许可证文件");
-                }
-                RefreshLincense();
+
+
+
             }
         }
         #endregion

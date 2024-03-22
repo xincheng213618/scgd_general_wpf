@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Extension;
+using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Devices.Spectrum;
 using cvColorVision;
@@ -22,6 +23,7 @@ namespace ColorVision.Services.Devices.FileServer
     {
         public DeviceFileServer Device { get; set; }
 
+        public ConfigFileServer EditConfig { get; set; }
         public EditFileServer(DeviceFileServer deviceFileServer)
         {
             Device = deviceFileServer;
@@ -40,11 +42,15 @@ namespace ColorVision.Services.Devices.FileServer
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Device;
+
+            EditConfig = Device.Config.Clone();
+            EditContent.DataContext = EditConfig;
         }
 
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            EditConfig.CopyTo(Device.Config);
             this.Close();
         }
     }

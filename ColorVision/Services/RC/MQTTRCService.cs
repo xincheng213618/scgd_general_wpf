@@ -411,6 +411,15 @@ namespace ColorVision.RC
                 PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(reg));
             }
         }
+
+        public void RestartServices(string nodeType, string svrCode)
+        {
+            if (Token != null)
+            {
+                MQTTRCServicesRestartRequest reg = new MQTTRCServicesRestartRequest(AppId, NodeName, nodeType, Token.AccessToken, svrCode);
+                PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(reg));
+            }
+        }
         public void RestartServices(string nodeType, string svrCode, string devCode)
         {
             if (Token != null)

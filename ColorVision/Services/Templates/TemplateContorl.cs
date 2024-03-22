@@ -260,23 +260,15 @@ namespace ColorVision.Services.Templates
                     SaveDefault(FileNameLedJudgeParams, LedReusltParams);
                     break;
                 case TemplateType.PoiParam:
-                    Save(PoiParams, ModMasterType.POI);
-
-                    if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
+                    foreach (var item in PoiParams)
                     {
-                        foreach (var item in PoiParams)
+                        var modMasterModel = poiMaster.GetById(item.Id);
+                        if (modMasterModel != null)
                         {
-                            var modMasterModel = poiMaster.GetById(item.Id);
-                            if (modMasterModel != null)
-                            {
-                                modMasterModel.Name = item.Key;
-                                poiMaster.Save(modMasterModel);
-                            }
+                            modMasterModel.Name = item.Key;
+                            poiMaster.Save(modMasterModel);
                         }
                     }
-                    else
-                        SaveDefault($"{ModMasterType.POI}", PoiParams);
-
                     break;
                 case TemplateType.FlowParam:
                     Save(FlowParams, ModMasterType.Flow);

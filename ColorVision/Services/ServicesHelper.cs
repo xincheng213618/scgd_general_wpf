@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using ColorVision.Utilities;
+using System.Windows;
 
 namespace ColorVision.Services
 {
@@ -8,17 +9,17 @@ namespace ColorVision.Services
         {
             if (string.IsNullOrEmpty(Path))
             {
-                MessageBox.Show($"{Hint}不能为空", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(),$"{Hint}不能为空", "ColorVision");
                 return false;
             }
             if (string.IsNullOrWhiteSpace(Path))
             {
-                MessageBox.Show($"{Hint}不能为空白", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Hint}不能为空白", "ColorVision");
                 return false;
             }
             if (Path.IndexOfAny(System.IO.Path.GetInvalidFileNameChars()) >= 0)
             {
-                MessageBox.Show($"{Hint}不能包含特殊字符", "ColorVision");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{Hint}不能包含特殊字符", "ColorVision");
                 return false;
             }
             return true;

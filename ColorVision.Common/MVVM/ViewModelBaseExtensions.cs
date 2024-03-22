@@ -10,10 +10,10 @@ namespace ColorVision.Common.MVVM
     public static class ViewModeBaseExtensions
     {
         //复制一个新的对象
-        public static T CloneValuesTo<T>(this T source) where T : ViewModelBase, new()
+        public static T Clone<T>(this T source) where T : ViewModelBase, new()
         {
             T target = new T();
-            source.CloneValuesTo(target);
+            source.CopyTo(target);
             return target;
         }
 
@@ -28,8 +28,10 @@ namespace ColorVision.Common.MVVM
             #pragma warning restore SYSLIB0011
         }
 
+        public static void CopyFrom<T>(this T source, T target) where T : ViewModelBase => target.CopyTo(source);
+
         //复制一个新的对象
-        public static void CloneValuesTo<T>(this T source, T target) where T:ViewModelBase
+        public static void CopyTo<T>(this T source, T target) where T:ViewModelBase
         {
             if (source == null) throw new ArgumentNullException(nameof(source));
             if (target == null) throw new ArgumentNullException(nameof(target));

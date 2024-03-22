@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.Common.MVVM;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -15,7 +16,7 @@ namespace ColorVision.Services.Devices.Calibration
 
         public MQTTCalibration Service { get => DeviceCalibration.DeviceService; }
 
-
+        public ConfigCalibration EditConfig { get; set; }
         public EditCalibration(DeviceCalibration  deviceCalibration)
         {
             DeviceCalibration = deviceCalibration;
@@ -34,10 +35,13 @@ namespace ColorVision.Services.Devices.Calibration
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = DeviceCalibration;
+            EditConfig = DeviceCalibration.Config.Clone();
+            EditContent.DataContext = EditConfig;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            EditConfig.CopyTo(DeviceCalibration.Config);
             this.Close();
         }
     }

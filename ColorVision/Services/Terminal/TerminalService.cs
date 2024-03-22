@@ -2,25 +2,11 @@
 using ColorVision.RC;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.PG;
 using ColorVision.Services.Devices;
-using ColorVision.Services.Devices.Algorithm;
-using ColorVision.Services.Devices.Calibration;
-using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.Devices.Camera.Configs;
-using ColorVision.Services.Devices.CfwPort;
-using ColorVision.Services.Devices.FileServer;
-using ColorVision.Services.Devices.Motor;
-using ColorVision.Services.Devices.Sensor;
-using ColorVision.Services.Devices.SMU;
-using ColorVision.Services.Devices.SMU.Configs;
-using ColorVision.Services.Devices.Spectrum;
-using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Extension;
 using ColorVision.Services.Type;
-using ColorVision.Settings;
+using ColorVision.Utilities;
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
@@ -60,40 +46,37 @@ namespace ColorVision.Services.Terminal
         public ImageSource Icon { get; set; }
 
         public RelayCommand RefreshCommand { get; set; }
+        public RelayCommand EditCommand { get; set; }
         public RelayCommand OpenCreateWindowCommand { get; set; }
-        public RelayCommand CreateCommand { get; set; }
-        public EventHandler CreateDeviceOver { get; set; }
-
         public TerminalService(SysResourceModel sysResourceModel) : base()
         {
             SysResourceModel = sysResourceModel;
-            if (string.IsNullOrEmpty(SysResourceModel.Value))
-            {
-                Config ??= new TerminalServiceConfig();
-            }
-            else
-            {
-                try
-                {
-                    Config = JsonConvert.DeserializeObject<TerminalServiceConfig>(SysResourceModel.Value) ?? new TerminalServiceConfig();
-                }
-                catch
-                {
-                    Config = new TerminalServiceConfig();
-                }
-            }
+            Config = BaseResourceObjectExtensions.TryDeserializeConfig<TerminalServiceConfig>(SysResourceModel.Value);
 
-            Config.Code = SysResourceModel.Code ?? string.Empty;
+            Config.Code = Code;
             Config.Name = Name;
 
-            Config.SubscribeTopic = SysResourceModel.TypeCode + "/STATUS/" + SysResourceModel.Code;
-            Config.SendTopic = SysResourceModel.TypeCode + "/CMD/" + SysResourceModel.Code;
+            RefreshCommand = new RelayCommand(a => MQTTRCService.GetInstance().RestartServices(Config.ServiceType.ToString(),sysResourceModel.Code ??string.Empty));
+            EditCommand = new RelayCommand(a =>
+            {
+                EditTerminal window = new EditTerminal(this);
+                window.Owner = WindowHelpers.GetActiveWindow();
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                window.ShowDialog();
+            });
 
-            CreateCommand = new RelayCommand(a => Create());
-            OpenCreateWindowCommand = new RelayCommand(a => OpenCreateWindow());
+            OpenCreateWindowCommand = new RelayCommand(a =>
+            {
+                CreateTerminal createTerminal = new CreateTerminal(this);
+                createTerminal.Owner = WindowHelpers.GetActiveWindow();
+                createTerminal.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                createTerminal.ShowDialog();
+            });
+
             switch (ServiceType)
             {
-                case ServiceTypes.camera:
+                case ServiceTypes.Camera:
+                    MQTTServiceTerminalBase = new MQTTServiceTerminalBase<TerminalServiceConfig>(Config);
                     break;
                 case ServiceTypes.Algorithm:
                     this.SetIconResource("DrawingImageAlgorithm");
@@ -126,223 +109,9 @@ namespace ColorVision.Services.Terminal
 
             ContextMenu = new ContextMenu();
             MenuItem menuItem = new MenuItem() { Header = "删除服务" };
-            menuItem.Click += (s, e) =>
-            {
-                Delete();
-            };
+            menuItem.Click += (s, e) => Delete();
             ContextMenu.Items.Add(menuItem);
         }
-        public string CreatCode { get => _CreatCode; set { _CreatCode = value; NotifyPropertyChanged(); } }
-        private string _CreatCode;
-        public string CreatName { get => _CreatName; set { _CreatName = value; NotifyPropertyChanged(); } }
-        private string _CreatName;
-
-        public virtual void OpenCreateWindow()
-        {
-
-        }
-
-        public virtual void Create()
-        {
-
-            SysDeviceModel? saveDevConfigInfo(DeviceServiceConfig deviceConfig, SysResourceModel sysResource)
-            {
-                deviceConfig.Name = CreatName;
-                deviceConfig.Code = CreatCode;
-
-                deviceConfig.SendTopic = Config.SendTopic;
-                deviceConfig.SubscribeTopic = Config.SubscribeTopic;
-                sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
-                ServiceManager.GetInstance().VSysResourceDao.Save(sysResource);
-                int pkId = sysResource.PKId;
-                if (pkId > 0 && ServiceManager.GetInstance().VSysDeviceDao.GetById(pkId) is SysDeviceModel model) return model;
-                else return null;
-            }
-
-
-            if (!ServicesHelper.IsInvalidPath(CreatName, "资源名称") || !ServicesHelper.IsInvalidPath(CreatCode, "资源标识"))
-                return;
-
-            if (ServicesCodes.Contains(CreatCode))
-            {
-                MessageBox.Show("设备标识已存在,不允许重复添加");
-                return;
-            }
-            DeviceService deviceService = null;
-
-
-            SysResourceModel sysResource = new SysResourceModel(CreatName, CreatCode, SysResourceModel.Type, SysResourceModel.Id, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            SysDeviceModel sysDevModel = null;
-            DeviceServiceConfig deviceConfig;
-            int fromPort;
-            switch (Type)
-            {
-                case ServiceTypes.camera:
-                    //在拆干净之前先放在这里
-                    TerminalCamera terminalCamera = new TerminalCamera(sysResource);
-                    break;
-                case ServiceTypes.pg:
-                    ConfigPG pGConfig = new ConfigPG
-                    {
-                        Id = CreatCode,
-                        Name = CreatName,
-                    };
-                    sysDevModel = saveDevConfigInfo(pGConfig, sysResource);
-                    if (sysDevModel != null)
-                    {
-                        deviceService = new DevicePG(sysDevModel);
-                    }
-                    break;
-                case ServiceTypes.Spectrum:
-                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6700);
-                    deviceConfig = new ConfigSpectrum
-                    {
-                        Id = CreatCode,
-                        Name = CreatName,
-                        ShutterCfg = new ShutterConfig()
-                        {
-                            Addr = "COM1",
-                            BaudRate = 115200,
-                            DelayTime = 1000,
-                            OpenCmd = "a",
-                            CloseCmd = "b"
-                        },
-                        FileServerCfg = new FileServerCfg()
-                        {
-                            Endpoint = "127.0.0.1",
-                            PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
-                            DataBasePath = "D:\\CVTest",
-                        }
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                    {
-                        deviceService = new DeviceSpectrum(sysDevModel);
-                    }
-                    break;
-                case ServiceTypes.SMU:
-                    deviceConfig = new ConfigSMU
-                    {
-                        Id = CreatCode,
-                        Name = CreatName,
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                    {
-                        deviceService = new DeviceSMU(sysDevModel);
-                    }
-                    break;
-                case ServiceTypes.Sensor:
-                    deviceConfig = new ConfigSensor
-                    {
-                        Id = CreatCode,
-                        Name = CreatName,
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                        {
-                        deviceService = new DeviceSensor(sysDevModel);
-                    }
-                    break;
-                case ServiceTypes.FileServer:
-                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6500);
-                    deviceConfig = new FileServerConfig
-                    {
-                        Id = CreatCode,
-                        Name = CreatName,
-                        Endpoint = "127.0.0.1",
-                        PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
-                        FileBasePath = "D:\\CVTest",
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                    {
-                        deviceService = new DeviceFileServer(sysDevModel);
-                    }
-
-                    break;
-                case ServiceTypes.Algorithm:
-                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6600);
-                    deviceConfig = new ConfigAlgorithm
-                    {
-                        Id = CreatCode,
-                        Name = CreatName,
-                        FileServerCfg = new FileServerCfg()
-                        {
-                            Endpoint = "127.0.0.1",
-                            PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
-                            DataBasePath = "D:\\CVTest",
-                        }
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                        {
-                        deviceService = new DeviceAlgorithm(sysDevModel);
-                    }
-                    break;
-                case ServiceTypes.CfwPort:
-                    deviceConfig = new ConfigCfwPort
-                    {
-                        Id = CreatCode,
-                        Name = CreatName,
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                        {
-                        deviceService = new DeviceCfwPort(sysDevModel);
-                    }
-                    break;
-                case ServiceTypes.Calibration:
-                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6200);
-                    deviceConfig = new ConfigCalibration
-                    {
-                        Id = CreatCode,
-                        Name = CreatName,
-                        FileServerCfg = new FileServerCfg()
-                        {
-                            Endpoint = "127.0.0.1",
-                            PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
-                            DataBasePath = "D:\\CVTest",
-                        }
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                        {
-                        deviceService = new DeviceCalibration(sysDevModel);
-                    }
-                    break;
-                case ServiceTypes.Motor:
-                    deviceConfig = new ConfigMotor
-                    {
-                        Id = CreatCode,
-                        Name = CreatName,
-                    };
-                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
-                    if (sysDevModel != null)
-                    {
-                        deviceService = new DeviceMotor(sysDevModel);
-
-
-                    }
-                    break;
-                default:
-                    break;
-            };
-            if (deviceService != null)
-            {
-                AddChild(deviceService);
-                ServiceManager.GetInstance().DeviceServices.Add(deviceService);
-                if (sysDevModel != null && sysDevModel.TypeCode != null && sysDevModel.PCode != null && sysDevModel.Code != null)
-                    RC.MQTTRCService.GetInstance().RestartServices(sysDevModel.TypeCode, sysDevModel.PCode, sysDevModel.Code);
-                MessageBox.Show("添加资源成功");
-            }
-            else
-            {
-                MessageBox.Show("资源创建失败");
-            }
-
-        }
-
 
         public override void Delete()
         {
@@ -356,8 +125,6 @@ namespace ColorVision.Services.Terminal
 
             ServiceManager.GetInstance().TerminalServices.Remove(this);
         }
-
-        public ServiceTypes Type { get => (ServiceTypes)SysResourceModel.Type; }
 
         public List<string> ServicesCodes
         {
@@ -381,8 +148,9 @@ namespace ColorVision.Services.Terminal
         public override void Save()
         {
             base.Save();
-            DBTerminalServiceConfig dbCfg = new DBTerminalServiceConfig { HeartbeatTime = Config.HeartbeatTime, };
-            SysResourceModel.Value = JsonConvert.SerializeObject(dbCfg);
+            SysResourceModel.Name = Config.Name;
+            SysResourceModel.Code = Config.Code;
+            SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             ServiceManager.GetInstance().VSysResourceDao.Save(SysResourceModel);
            
             MQTTRCService.GetInstance().RestartServices(Config.ServiceType.ToString());

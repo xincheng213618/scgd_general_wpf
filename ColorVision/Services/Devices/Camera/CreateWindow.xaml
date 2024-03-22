@@ -8,9 +8,9 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance local:TerminalCamera}"
+        d:DataContext="{d:DesignInstance local:CreateWindow}"
         Title="创建设备" Height="400" Width="400" Initialized="Window_Initialized">
-    <Grid  Margin="5">
+    <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -20,11 +20,11 @@
             <StackPanel>
                 <DockPanel Margin="2" >
                     <TextBlock Text="标识" MinWidth="50" />
-                    <hc:ComboBox IsEditable="True" SelectedIndex="0" Text="{Binding CreatName}"  hc:InfoElement.ShowClearButton="True"   />
+                    <hc:ComboBox x:Name="CreateCode" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"   />
                 </DockPanel>
                 <DockPanel Margin="2" >
                     <TextBlock Text="名称" Width="50" />
-                    <hc:ComboBox  IsEditable="True" SelectedIndex="0" Text="{Binding CreatCode}"  hc:InfoElement.ShowClearButton="True"  />
+                    <hc:ComboBox  x:Name="CreateName" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"  />
                 </DockPanel>
             </StackPanel>
         </Border>
@@ -379,7 +379,7 @@
 
         </ScrollViewer>
         <Grid Grid.Row="2">
-            <Button  Content="{x:Static resx:Resource.Submit}" Height="30" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding CreateCommand}" />
+            <Button  Content="{x:Static resx:Resource.Submit}" Height="30" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click"  />
         </Grid>
 
     </Grid>

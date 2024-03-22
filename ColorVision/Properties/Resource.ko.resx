@@ -645,4 +645,16 @@
   <data name="TimeLeft" xml:space="preserve">
     <value>남은 시간:</value>
   </data>
+  <data name="SetupWizard" xml:space="preserve">
+    <value>구성 마법사</value>
+  </data>
+  <data name="WorkflowEngineDebugWindow" xml:space="preserve">
+    <value>프로세스 엔진 디버그 창</value>
+  </data>
+  <data name="MenuFlow" xml:space="preserve">
+    <value>공정(F)</value>
+  </data>
+  <data name="Create" xml:space="preserve">
+    <value>만들다</value>
+  </data>
 </root>

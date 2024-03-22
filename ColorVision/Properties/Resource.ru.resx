@@ -645,4 +645,16 @@
   <data name="TimeLeft" xml:space="preserve">
     <value>оставшееся время:</value>
   </data>
+  <data name="SetupWizard" xml:space="preserve">
+    <value>Мастер настройки</value>
+  </data>
+  <data name="WorkflowEngineDebugWindow" xml:space="preserve">
+    <value>Окно отладки механизма обработки</value>
+  </data>
+  <data name="MenuFlow" xml:space="preserve">
+    <value>Процесс(Ф)</value>
+  </data>
+  <data name="Create" xml:space="preserve">
+    <value>создавать</value>
+  </data>
 </root>

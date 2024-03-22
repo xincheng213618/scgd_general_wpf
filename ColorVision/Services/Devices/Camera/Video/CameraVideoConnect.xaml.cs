@@ -20,7 +20,7 @@ namespace ColorVision.Services.Devices.Camera.Video
         public CameraVideoConnect(CameraVideoConfig config)
         {
             CameraVideoConfig = config;
-            CameraVideoConfigCopy = config.CloneValuesTo();
+            CameraVideoConfigCopy = config.Clone();
             InitializeComponent();
         }
 
@@ -62,7 +62,7 @@ namespace ColorVision.Services.Devices.Camera.Video
             {
                 CameraVideoConfigCopy.Name = CameraVideoConfigCopy.Host +"_" + CameraVideoConfigCopy.Port;
             }
-            CameraVideoConfigCopy.CloneValuesTo(CameraVideoConfig);
+            CameraVideoConfigCopy.CopyTo(CameraVideoConfig);
             this.Close();
         }
 
@@ -102,7 +102,7 @@ namespace ColorVision.Services.Devices.Camera.Video
         private void Button_Click_Test2(object sender, RoutedEventArgs e)
         {
             CameraVideoConfig cameraVideoConfig = new CameraVideoConfig() {};
-            CameraVideoConfig.CloneValuesTo(cameraVideoConfig);
+            CameraVideoConfig.CopyTo(cameraVideoConfig);
             CameraVideoConfigs.Add(cameraVideoConfig);
 
         }

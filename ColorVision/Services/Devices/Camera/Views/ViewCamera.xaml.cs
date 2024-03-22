@@ -1,26 +1,30 @@
 ﻿#pragma warning disable CS8604,CS8629
+using ColorVision.Common.Sorts;
+using ColorVision.Common.Utilities;
 using ColorVision.Draw;
 using ColorVision.Media;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
-using ColorVision.Common.Utilities;
-using log4net;
+using ColorVision.Services.Devices.Camera.Video;
+using ColorVision.Services.Templates;
+using ColorVision.Services.Templates.POI;
+using ColorVision.Solution;
+using ColorVision.Utilities;
 using MQTTMessageLib.Camera;
+using MQTTMessageLib.FileServer;
+using Newtonsoft.Json;
+using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.Services.Templates;
-using ColorVision.Services.Templates.POI;
-using cvColorVision;
-using System.Linq;
-using ColorVision.Common.Sorts;
 
 namespace ColorVision.Services.Devices.Camera.Views
 {
@@ -29,10 +33,7 @@ namespace ColorVision.Services.Devices.Camera.Views
     /// </summary>
     public partial class ViewCamera : UserControl, IView
     {
-        private static readonly ILog logger = LogManager.GetLogger(typeof(ViewCamera));
         public View View { get; set; }
-
-        public event ImgCurSelectionChanged OnCurSelectionChanged;
         public ObservableCollection<ViewResultCamera> ViewResultCameras { get; set; } = new ObservableCollection<ViewResultCamera>();
         public MQTTCamera DeviceService{ get; set; }
         public DeviceCamera Device { get; set; }
@@ -86,6 +87,138 @@ namespace ColorVision.Services.Devices.Camera.Views
 
             ComboBoxLayers.ItemsSource  =from e1 in Enum.GetValues(typeof(ImageLayer)).Cast<ImageLayer>()
                                          select new KeyValuePair<string, ImageLayer>(e1.ToString(), e1);
+            netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.FullName + "\\Cache");
+            netFileUtil.handler += NetFileUtil_handler;
+            DeviceService.OnMessageRecved += DeviceService_OnMessageRecved;
+        }
+
+
+        NetFileUtil netFileUtil;
+        private IPendingHandler? handler { get; set; }
+
+        private void NetFileUtil_handler(object sender, NetFileEvent arg)
+        {
+            if (arg.Code == 0)
+            {
+                if (arg.EventName == FileEvent.FileDownload && arg.FileData.data != null)
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        OpenImage(arg.FileData);
+                    });
+                }
+                handler?.Close();
+            }
+            else
+            {
+                handler?.Close();
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show(Application.Current.MainWindow, "文件打开失败", "ColorVision");
+                });
+            }
+        }
+        private MeasureImgResultDao measureImgResultDao = new MeasureImgResultDao();
+        string LocalFileName;
+        private void DeviceService_OnMessageRecved(object sender, MessageRecvArgs arg)
+        {
+            if (arg.ResultCode == 0)
+            {
+                switch (arg.EventName)
+                {
+                    case MQTTCameraEventEnum.Event_GetData:
+                        int masterId = Convert.ToInt32(arg.Data.MasterId);
+                        List<MeasureImgResultModel> resultMaster = null;
+                        if (masterId > 0)
+                        {
+                            resultMaster = new List<MeasureImgResultModel>();
+                            MeasureImgResultModel model = measureImgResultDao.GetById(masterId);
+                            if (model != null)
+                                resultMaster.Add(model);
+                        }
+                        else
+                        {
+                            resultMaster = measureImgResultDao.GetAllByBatchCode(arg.SerialNumber);
+                        }
+                        if (resultMaster != null)
+                        {
+                            foreach (MeasureImgResultModel result in resultMaster)
+                            {
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    ShowResult(result);
+                                });
+                            }
+                        }
+                        break;
+                    case MQTTFileServerEventEnum.Event_File_Download:
+                        break;
+                    case MQTTCameraEventEnum.Event_GetData_Channel:
+                        DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
+                        netFileUtil.TaskStartDownloadFile(pm_dl_ch);
+                        break;
+                }
+            }
+            else if (arg.ResultCode == 102)
+            {
+                switch (arg.EventName)
+                {
+                    case MQTTFileServerEventEnum.Event_File_Upload:
+                        DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                        if (!string.IsNullOrWhiteSpace(pm_up.FileName)) netFileUtil.TaskStartUploadFile(pm_up.IsLocal, pm_up.ServerEndpoint, pm_up.FileName);
+                        break;
+                    case MQTTFileServerEventEnum.Event_File_Download:
+                        DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                        LocalFileName = pm_dl.FileName;
+                        if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, pm_dl.FileExtType);
+                        break;
+                    case MQTTCameraEventEnum.Event_GetData_Channel:
+                        DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
+                        netFileUtil.TaskStartDownloadFile(pm_dl_ch);
+                        break;
+                }
+            }
+            else
+            {
+                switch (arg.EventName)
+                {
+                    case MQTTCameraEventEnum.Event_GetData:
+                        int masterId = Convert.ToInt32(arg.Data.MasterId);
+                        List<MeasureImgResultModel> resultMaster = null;
+                        if (masterId > 0)
+                        {
+                            resultMaster = new List<MeasureImgResultModel>();
+                            MeasureImgResultModel model = measureImgResultDao.GetById(masterId);
+                            if (model != null)
+                                resultMaster.Add(model);
+                        }
+                        else
+                        {
+                            resultMaster = measureImgResultDao.GetAllByBatchCode(arg.SerialNumber);
+                        }
+                        if (resultMaster != null)
+                        {
+                            foreach (MeasureImgResultModel result in resultMaster)
+                            {
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    Device.View.ShowResult(result);
+                                });
+                            }
+                        }
+                        break;
+                    case MQTTFileServerEventEnum.Event_File_Download:
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            MessageBox.Show("文件下载失败");
+                        });
+                        break;
+                    case MQTTCameraEventEnum.Event_GetData_Channel:
+                        break;
+                    case MQTTCameraEventEnum.Event_OpenLive:
+                        break;
+                }
+            }
         }
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
@@ -113,13 +246,25 @@ namespace ColorVision.Services.Devices.Camera.Views
                 return;
             }
             using var dialog = new System.Windows.Forms.SaveFileDialog();
-            dialog.Filter = "CSV files (*.csv) | *.csv";
+            //dialog.Filter = "files (*.csv) | *.csv";
             dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+            dialog.FileName = dialog.FileName + ".csv";
             CsvWriter.WriteToCsv(ViewResultCameras[listView1.SelectedIndex], dialog.FileName);
-            ImageSource bitmapSource = ImageView.ImageShow.Source;
-            ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
+
+
+            if (File.Exists(LocalFileName))
+            {
+                CVFileUtil.SaveCVCIE(LocalFileName, Path.GetDirectoryName(dialog.FileName));
+            }
+            else
+            {
+                ImageSource bitmapSource = ImageView.ImageShow.Source;
+                ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
+            }
+
 
         }
 
@@ -135,7 +280,36 @@ namespace ColorVision.Services.Devices.Camera.Views
         {
             if (listView1.SelectedIndex > -1)
             {
-                OnCurSelectionChanged?.Invoke(ViewResultCameras[listView1.SelectedIndex]);
+                var data = ViewResultCameras[listView1.SelectedIndex];
+
+                if (data.ResultCode == 0 && data.FilePath != null)
+                {
+                    string localName = netFileUtil.GetCacheFileFullName(data.FilePath);
+                    FileExtType fileExt = FileExtType.Src;
+                    switch (data.FileType)
+                    {
+                        case CameraFileType.SrcFile:
+                            fileExt = FileExtType.Src;
+                            break;
+                        case CameraFileType.RawFile:
+                            fileExt = FileExtType.Raw;
+                            break;
+                        case CameraFileType.CIEFile:
+                            fileExt = FileExtType.CIE;
+                            break;
+                        default:
+                            break;
+                    }
+                    if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
+                    {
+                        DeviceService.DownloadFile(data.FilePath, fileExt);
+                    }
+                    else
+                    {
+                        var FileData = netFileUtil.OpenLocalCVFile(localName, fileExt);
+                        OpenImage(FileData);
+                    }
+                }
             }
         }
 
@@ -147,7 +321,6 @@ namespace ColorVision.Services.Devices.Camera.Views
                 ViewResultCameras.RemoveAt(temp);
             }
         }
-
         public void OpenImage(CVCIEFile fileData)
         {
             ImageView.OpenImage(fileData);
@@ -388,6 +561,17 @@ namespace ColorVision.Services.Devices.Camera.Views
         private void ClearImage_Click(object sender, RoutedEventArgs e)
         {
             ImageView.Clear();
+        }
+
+        private void MenuItem_Export_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCamera viewCamera)
+            {
+                ExportCamera exportCamera = new ExportCamera() { Icon = Device.Icon };
+                exportCamera.Owner = WindowHelpers.GetActiveWindow();
+                exportCamera.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                exportCamera.ShowDialog();
+            }
         }
     }
 }

@@ -322,6 +322,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 创建 的本地化字符串。
+        /// </summary>
+        public static string Create {
+            get {
+                return ResourceManager.GetString("Create", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 注册一个 的本地化字符串。
         /// </summary>
         public static string Create_an_account {
@@ -768,6 +777,15 @@ namespace ColorVision.Properties {
         public static string MenuFile {
             get {
                 return ResourceManager.GetString("MenuFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 流程(_F) 的本地化字符串。
+        /// </summary>
+        public static string MenuFlow {
+            get {
+                return ResourceManager.GetString("MenuFlow", resourceCulture);
             }
         }
         
@@ -1339,6 +1357,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 配置向导 的本地化字符串。
+        /// </summary>
+        public static string SetupWizard {
+            get {
+                return ResourceManager.GetString("SetupWizard", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 登录 的本地化字符串。
         /// </summary>
         public static string Sign_in {
@@ -1632,6 +1659,15 @@ namespace ColorVision.Properties {
         public static string WorkflowEngine_F {
             get {
                 return ResourceManager.GetString("WorkflowEngine_F", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 流程引擎调试窗口 的本地化字符串。
+        /// </summary>
+        public static string WorkflowEngineDebugWindow {
+            get {
+                return ResourceManager.GetString("WorkflowEngineDebugWindow", resourceCulture);
             }
         }
         

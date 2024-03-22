@@ -12,6 +12,7 @@ using ColorVision.Services.Core;
 using System.Windows.Input;
 using ColorVision.Services.Templates;
 using ColorVision.Extension;
+using System.Security.Cryptography.X509Certificates;
 
 namespace ColorVision.Services.Flow
 {
@@ -92,10 +93,32 @@ namespace ColorVision.Services.Flow
             FlowTemplate.SelectedIndex = 0;
 
             this.PreviewMouseDown += UserControl_PreviewMouseDown;
-        }
 
-        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");  } }
+            menuItem = new MenuItem() { Header = ColorVision.Properties.Resource.MenuFlow };
+            MenuItem menuItem1 = new MenuItem() { Header = ColorVision.Properties.Resource.ExecutionProcess };
+            menuItem1.Click +=(s,e)=> Button_FlowRun_Click(s, e);
+            menuItem.Items.Add(menuItem1);
+
+            MenuItem menuItem2 = new MenuItem() { Header = ColorVision.Properties.Resource.StopProcess };
+            menuItem2.Click += (s, e) => Button_FlowStop_Click(s, e);
+            menuItem.Items.Add(menuItem2);
+        }
+        MenuItem menuItem { get; set; }
+
         private bool _IsSelected;
+        public bool IsSelected { get => _IsSelected;
+            set 
+            { 
+                _IsSelected = value; 
+                if (value)
+                {
+                    MenuManager.GetInstance().AddMenuItem(menuItem,1);
+                }
+                else
+                {
+                    MenuManager.GetInstance().RemoveMenuItem(menuItem);
+                }
+                DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");  } }
 
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {

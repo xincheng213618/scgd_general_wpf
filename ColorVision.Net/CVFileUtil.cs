@@ -5,6 +5,12 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Threading.Channels;
+using System.Threading;
+using System.Linq;
+using OpenCvSharp;
+using static System.Net.Mime.MediaTypeNames;
+using System.Collections.Generic;
 
 
 namespace ColorVision.Net
@@ -63,6 +69,92 @@ namespace ColorVision.Net
             }
 
             return ret;
+        }
+
+        public static int SaveCVCIE(string FileName,string SavePath)
+        {
+            if (!File.Exists(FileName)) return -1;
+            FileInfo fileInfo = new FileInfo(FileName);
+            byte[] fileData = ReadFile(FileName);
+
+           
+            CVCIEFile fileOut = new CVCIEFile();
+            if (ReadByte(fileData, ref fileOut))
+            {
+                fileOut.FileExtType = FileName.Contains(".cvraw") ? FileExtType.Raw : FileName.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
+
+
+                if (fileOut.FileExtType == FileExtType.CIE)
+                {
+                    if (fileOut.srcFileName != null)
+                    {
+                        byte[] raw = ReadFile(Path.Combine(Path.GetDirectoryName(FileName)??string.Empty, fileOut.srcFileName));
+                        CVCIEFile cvraw = new CVCIEFile();
+                        if (ReadByte(raw, ref cvraw))
+                        {
+                            OpenCvSharp.Mat src = new OpenCvSharp.Mat(cvraw.cols, cvraw.rows, OpenCvSharp.MatType.MakeType(cvraw.Depth, cvraw.channels), cvraw.data);
+                            src.SaveImage(SavePath + "\\" + fileInfo.Name + "_Src.tif");
+                            //OpenCvSharp.Mat[] srces = src.Split();
+                            //if (srces.Length == 1)
+                            //{
+                            //    srces[0].SaveImage(SavePath + "\\" + fileInfo.Name + "G.tif");
+                            //}
+                            //else
+                            //{
+                            //    srces[0].SaveImage(SavePath + "\\" + fileInfo.Name + "R.tif");
+                            //    srces[1].SaveImage(SavePath + "\\" + fileInfo.Name + "G.tif");
+                            //    srces[2].SaveImage(SavePath + "\\" + fileInfo.Name + "B.tif");
+                            //}
+                        }
+                    }
+                    if (fileOut.channels == 1)
+                    {
+                        int len = (int)(fileOut.cols * fileOut.rows * fileOut.bpp / 8);
+                        byte[] data = new byte[len];
+                        Buffer.BlockCopy(fileOut.data, 0 * len, data, 0, len);
+                        OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileOut.cols, (int)fileOut.rows, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
+                        src.SaveImage(SavePath + "\\" + fileInfo.Name + "_Y.tif");
+                    }
+                    else if (fileOut.channels == 3)
+                    {
+                        List<string> strings = new List<string>() { "X", "Y", "Z" };
+                        for (int ch = 0; ch < 3; ch++)
+                        {
+                            int len = (int)(fileOut.cols * fileOut.rows * fileOut.bpp / 8);
+                            byte[] data = new byte[len];
+                            Buffer.BlockCopy(fileOut.data, ch * len, data, 0, len);
+                            OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileOut.cols, (int)fileOut.rows, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
+                            src.SaveImage(SavePath + "\\" + fileInfo.Name + $"_{strings[ch]}.tif");
+                        }
+                    }
+                }
+                else if (fileOut.FileExtType == FileExtType.Raw)
+                {
+                    var cvraw = fileOut;
+                    OpenCvSharp.Mat src = new OpenCvSharp.Mat(cvraw.cols, cvraw.rows, OpenCvSharp.MatType.MakeType(cvraw.Depth, cvraw.channels), cvraw.data);
+                    src.SaveImage(SavePath + "\\" + fileInfo.Name + "Src.tif");
+                    //OpenCvSharp.Mat[] srces = src.Split();
+                    //if (srces.Length == 1)
+                    //{
+                    //    srces[0].SaveImage(SavePath + "\\" + fileInfo.Name + "G.tif");
+                    //}
+                    //else
+                    //{
+                    //    srces[0].SaveImage(SavePath + "\\" + fileInfo.Name + "R.tif");
+                    //    srces[1].SaveImage(SavePath + "\\" + fileInfo.Name + "G.tif");
+                    //    srces[2].SaveImage(SavePath + "\\" + fileInfo.Name + "B.tif");
+                    //}
+                }
+                else
+                {
+
+                }
+
+
+            }
+            return 0;
+
+
         }
 
         public static int ReadCVCIESrc(string cieFileName, ref CVCIEFile fileOut)

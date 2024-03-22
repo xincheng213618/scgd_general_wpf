@@ -565,6 +565,7 @@
                                                     <Run Text="{Binding Path = Attribute.Center.X,StringFormat={}{0:F0}}"/>
                                                     <Run Text=","/>
                                                     <Run Text="{Binding Path = Attribute.Center.Y,StringFormat={}{0:F0}}"/>
+                                                   <Run Text=","/>
                                 </TextBlock>
                                 <TextBlock  Text="{Binding Path=Attribute.Radius}" />
                             </StackPanel>
@@ -645,7 +646,7 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="值">
+                            <GridViewColumn  Header="值"  Width="300">
                                 <GridViewColumn.CellTemplateSelector>
                                     <converter:DrawCanvasTemplateSelector  DrawingVisualRectangleTemplate ="{StaticResource DrawingVisualRectangleTemplate}" DrawingVisualCircleWordTemplate="{StaticResource DrawingVisualCircleWordTemplate}"  DrawingVisualRectangleWordTemplate="{StaticResource DrawingVisualRectangleWordTemplate}" DrawingVisualCircleTemplate ="{StaticResource DrawingVisualCircleTemplate}" />
                                 </GridViewColumn.CellTemplateSelector>

@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Services.Msg;
 using Panuon.WPF.UI;
+using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -60,7 +61,8 @@ namespace ColorVision.Services.Devices
         {
             var temp = button.Content;
             button.Content = msgRecord.MsgRecordState.ToDescription();
-            MsgRecordStateChangedHandler msgRecordStateChangedHandler = async (e) =>
+            MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
+            msgRecordStateChangedHandler = async (e) =>
             {
                 button.Content = e.ToDescription();
                 await Task.Delay(100);
@@ -68,6 +70,7 @@ namespace ColorVision.Services.Devices
                 {
                     button.Content = temp;
                 }
+                msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
             };
             if (Reserve)
                 msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;

@@ -43,7 +43,7 @@ namespace ColorVision.Services
         public ObservableCollection<TerminalService> TerminalServices { get; set; } = new ObservableCollection<TerminalService>();
         public ObservableCollection<DeviceService> DeviceServices { get; set; } = new ObservableCollection<DeviceService>();
 
-        public ObservableCollection<GroupResource> groupResources { get; set; } = new ObservableCollection<GroupResource>();
+        public ObservableCollection<GroupResource> GroupResources { get; set; } = new ObservableCollection<GroupResource>();
         public ObservableCollection<DeviceService> LastGenControl { get; set; } = new ObservableCollection<DeviceService>();
 
         public List<MQTTServiceInfo> ServiceTokens { get; set; }
@@ -140,18 +140,11 @@ namespace ColorVision.Services
                 var sysResourceModels = sysResourceModelServices.FindAll((x) => x.Type == (int)typeService1.ServiceTypes);
                 foreach (var sysResourceModel in sysResourceModels)
                 {
-                    
-                    TerminalService terminalService;
-                    switch (typeService1.ServiceTypes)
-                    {   
-                        case ServiceTypes.camera:
-                            terminalService = new TerminalCamera(sysResourceModel);
-                            break;
-                        default:
-                            terminalService = new TerminalService(sysResourceModel);
-                            break;
-                    }
-
+                    TerminalService terminalService = typeService1.ServiceTypes switch
+                    {
+                        ServiceTypes.Camera => new TerminalCamera(sysResourceModel),
+                        _ => new TerminalService(sysResourceModel),
+                    };
                     string svrKey = GetServiceKey(sysResourceModel.TypeCode ?? string.Empty, sysResourceModel.Code ?? string.Empty);
                    
                     if (svrDevices.TryGetValue(svrKey, out var list ))
@@ -181,7 +174,7 @@ namespace ColorVision.Services
 
                     switch ((ServiceTypes)sysResourceModel.Type)
                     {
-                        case ServiceTypes.camera:
+                        case ServiceTypes.Camera:
 
                             if (terminalService.MQTTServiceTerminalBase is MQTTTerminalCamera cameraService)
                             {
@@ -191,7 +184,7 @@ namespace ColorVision.Services
                                 DeviceServices.Add(deviceCamera);
                             }
                             break;
-                        case ServiceTypes.pg:
+                        case ServiceTypes.PG:
                             DevicePG devicePG = new DevicePG(sysResourceModel);
                             svrObj = devicePG.DeviceService;
                             terminalService.AddChild(devicePG);
@@ -260,7 +253,7 @@ namespace ColorVision.Services
                 }
             }
 
-            groupResources.Clear();
+            GroupResources.Clear();
             foreach (var deviceService in DeviceServices)
             {
                 List<SysResourceModel> sysResourceModels = sysResourceDao1.GetResourceItems(deviceService.SysResourceModel.Id, UserConfig.TenantId);
@@ -270,7 +263,7 @@ namespace ColorVision.Services
                     {
                         GroupResource groupResource = new GroupResource(sysResourceModel);
                         deviceService.AddChild(groupResource);
-                        groupResources.Add(groupResource);
+                        GroupResources.Add(groupResource);
                     }
                    else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
                     {
@@ -285,7 +278,7 @@ namespace ColorVision.Services
                 }
             }
 
-            foreach (var groupResource in groupResources)
+            foreach (var groupResource in GroupResources)
             {
                 LoadgroupResource(groupResource);
             }
@@ -303,7 +296,7 @@ namespace ColorVision.Services
                     GroupResource groupResource1 = new GroupResource(sysResourceModel);
                     LoadgroupResource(groupResource1);
                     groupResource.AddChild(groupResource);
-                    groupResources.Add(groupResource);
+                    GroupResources.Add(groupResource);
                 }
                 else if (30<=sysResourceModel.Type && sysResourceModel.Type <= 40)
                 {

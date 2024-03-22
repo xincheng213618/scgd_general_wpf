@@ -7,6 +7,7 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Settings;
 using ColorVision.Util.Draw.Rectangle;
+using ColorVision.Utilities;
 using cvColorVision;
 using cvColorVision.Util;
 using log4net;
@@ -180,43 +181,6 @@ namespace ColorVision.Services.Templates.POI
                     PoiParam.Height = 0;
                 }
                 PoiParam.PoiPoints.Clear();
-                foreach (var item in DrawingVisualLists)
-                {
-                    DrawBaseAttribute drawAttributeBase = item.BaseAttribute;
-                    if (drawAttributeBase is CircleAttribute circle)
-                    {
-                        PoiParamData poiParamData = new PoiParamData()
-                        {
-                            ID = circle.ID,
-                            Name = circle.Name,
-                            PointType = RiPointTypes.Circle,
-                            PixX = circle.Center.X,
-                            PixY = circle.Center.Y,
-                            PixWidth = circle.Radius * 2,
-                            PixHeight = circle.Radius * 2
-                        };
-                        PoiParam.PoiPoints.Add(poiParamData);
-                    }
-                    else if (drawAttributeBase is RectangleAttribute rectangle)
-                    {
-                        PoiParamData poiParamData = new PoiParamData()
-                        {
-                            ID = rectangle.ID,
-                            Name = rectangle.Name,
-                            PointType = RiPointTypes.Rect,
-                            PixX = rectangle.Rect.X,
-                            PixY = rectangle.Rect.Y,
-                            PixWidth = rectangle.Rect.Width,
-                            PixHeight = rectangle.Rect.Height,
-                        };
-                        PoiParam.PoiPoints.Add(poiParamData);
-                    }
-                }
-
-                if (SoftwareConfig.IsUseMySql)
-                {
-                    new PoiMasterDao().Save(new PoiMasterModel(PoiParam) { Name = PoiParam.PoiName });
-                }
             };
 
             this.PreviewKeyDown += (s, e) =>
@@ -1128,33 +1092,20 @@ namespace ColorVision.Services.Templates.POI
                     DrawBaseAttribute drawAttributeBase = item.BaseAttribute;
                     if (drawAttributeBase is CircleAttribute circle)
                     {
+                        PoiParamData poiParamData = new PoiParamData()
+                        {
+                            ID = circle.ID,
+                            PointType = RiPointTypes.Circle,
+                            PixX = circle.Center.X,
+                            PixY = circle.Center.Y,
+                            PixWidth = circle.Radius * 2,
+                            PixHeight = circle.Radius * 2,
+                        };
                         if (circle is CircleTextAttribute circleTextAttribute)
                         {
-                            PoiParamData poiParamData = new PoiParamData()
-                            {
-                                ID = circle.ID,
-                                Name = circleTextAttribute.Text,
-                                PointType = RiPointTypes.Circle,
-                                PixX = circle.Center.X,
-                                PixY = circle.Center.Y,
-                                PixWidth = circle.Radius*2,
-                                PixHeight = circle.Radius*2,
-                            };
-                            PoiParam.PoiPoints.Add(poiParamData);
+                            poiParamData.Name = circleTextAttribute.Text;
                         }
-                        else
-                        {
-                            PoiParamData poiParamData = new PoiParamData()
-                            {
-                                ID = circle.ID,
-                                PointType = RiPointTypes.Circle,
-                                PixX = circle.Center.X,
-                                PixY = circle.Center.Y,
-                                PixWidth = circle.Radius,
-                                PixHeight = circle.Radius,
-                            };
-                            PoiParam.PoiPoints.Add(poiParamData);
-                        }
+                        PoiParam.PoiPoints.Add(poiParamData);
                     }
                     else if (drawAttributeBase is RectangleAttribute rectangle)
                     {
@@ -1180,8 +1131,8 @@ namespace ColorVision.Services.Templates.POI
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         WaitControl.Visibility = Visibility.Collapsed;
+                        MessageBox.Show(WindowHelpers.GetActiveWindow(), "保存成功", "ColorVision");
                     });
-                    MessageBox.Show("保存成功", "ColorVision");
                 });
                 thread.Start();
             }

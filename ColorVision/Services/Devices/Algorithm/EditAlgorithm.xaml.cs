@@ -1,8 +1,7 @@
-﻿using ColorVision.Services.Devices.Calibration;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.Camera;
 using System.Collections.ObjectModel;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Algorithm
 {
@@ -12,6 +11,7 @@ namespace ColorVision.Services.Devices.Algorithm
     public partial class EditAlgorithm : Window
     {
         public DeviceAlgorithm Device { get; set; }
+        public ConfigAlgorithm EditConfig { get; set; }
 
         public EditAlgorithm(DeviceAlgorithm deviceAlgorithm)
         {
@@ -34,9 +34,12 @@ namespace ColorVision.Services.Devices.Algorithm
             TextBox_BindDevice.ItemsSource = Devices;
 
             this.DataContext = Device;
+            EditConfig = Device.Config.Clone();
+            EditContent.DataContext = EditConfig;
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            EditConfig.CopyTo(Device.Config);
             this.Close();
         }
 

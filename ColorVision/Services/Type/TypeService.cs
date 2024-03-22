@@ -1,14 +1,17 @@
-﻿using ColorVision.Services.Dao;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Services.Dao;
 using ColorVision.Services.Terminal;
+using ColorVision.Utilities;
 using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Services.Type
 {
     public enum ServiceTypes
     {
-        camera = 1,
-        pg = 2,
+        Camera = 1,
+        PG = 2,
         Spectrum = 3,
         SMU = 4,
         Sensor = 5,
@@ -32,10 +35,22 @@ namespace ColorVision.Services.Type
 
         public ServiceTypes ServiceTypes { get =>  (ServiceTypes)SysDictionaryModel.Value; }
 
+        public RelayCommand OpenCreateWindowCommand { get; set; }
+
+        public RelayCommand CreateCommand { get; set; }
         public TypeService() : base()
         {
 
+            OpenCreateWindowCommand = new RelayCommand(a =>
+            {
+                CreateType createType = new CreateType(this);
+                createType.Owner = WindowHelpers.GetActiveWindow();
+                createType.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                createType.ShowDialog();
+            });
         }
+
+
 
         public List<string> ServicesCodes
         { 

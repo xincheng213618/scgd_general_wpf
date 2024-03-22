@@ -89,7 +89,6 @@
                             <TextBox x:Name="AlgBatchCode" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="150" HorizontalAlignment="Left" />
                         </DockPanel>
                     </StackPanel>
-
                     <TabControl>
                         <TabItem Header="FOV">
                             <GroupBox  Header="FOV" ToolTip="Field of view">
