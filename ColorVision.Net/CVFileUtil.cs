@@ -9,6 +9,8 @@ using System.Threading.Channels;
 using System.Threading;
 using System.Linq;
 using OpenCvSharp;
+using static System.Net.Mime.MediaTypeNames;
+using System.Collections.Generic;
 
 
 namespace ColorVision.Net
@@ -74,9 +76,14 @@ namespace ColorVision.Net
             if (!File.Exists(FileName)) return -1;
             FileInfo fileInfo = new FileInfo(FileName);
             byte[] fileData = ReadFile(FileName);
+
+           
             CVCIEFile fileOut = new CVCIEFile();
             if (ReadByte(fileData, ref fileOut))
             {
+                fileOut.FileExtType = FileName.Contains(".cvraw") ? FileExtType.Raw : FileName.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
+
+
                 if (fileOut.FileExtType == FileExtType.CIE)
                 {
                     if (fileOut.srcFileName != null)
@@ -110,12 +117,13 @@ namespace ColorVision.Net
                     }
                     else if (fileOut.channels == 3)
                     {
+                        List<string> strings = new List<string>() { "X", "Y", "Z" };
                         for (int ch = 0; ch < 3; ch++)
                         {
                             int len = (int)(fileOut.cols * fileOut.rows * fileOut.bpp / 8);
                             byte[] data = new byte[len];
                             OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileOut.rows, (int)fileOut.cols, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
-                            src.SaveImage(SavePath + "\\" + fileInfo.Name + $"_{ch}.tif");
+                            src.SaveImage(SavePath + "\\" + fileInfo.Name + $"_{strings[ch]}.tif");
                         }
                     }
                 }
