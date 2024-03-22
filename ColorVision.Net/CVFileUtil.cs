@@ -112,7 +112,7 @@ namespace ColorVision.Net
                         int len = (int)(fileOut.cols * fileOut.rows * fileOut.bpp / 8);
                         byte[] data = new byte[len];
                         Buffer.BlockCopy(fileOut.data, 0 * len, data, 0, len);
-                        OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileOut.rows, (int)fileOut.cols, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
+                        OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileOut.cols, (int)fileOut.rows, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
                         src.SaveImage(SavePath + "\\" + fileInfo.Name + "_Y.tif");
                     }
                     else if (fileOut.channels == 3)
@@ -122,7 +122,7 @@ namespace ColorVision.Net
                         {
                             int len = (int)(fileOut.cols * fileOut.rows * fileOut.bpp / 8);
                             byte[] data = new byte[len];
-                            OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileOut.rows, (int)fileOut.cols, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
+                            OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileOut.cols, (int)fileOut.rows, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
                             src.SaveImage(SavePath + "\\" + fileInfo.Name + $"_{strings[ch]}.tif");
                         }
                     }
