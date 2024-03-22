@@ -1,6 +1,4 @@
 ﻿#pragma warning disable CA1806,CA1833,CA1401,CA2101,CA1838,CS8603,CA1051,CA1707,CS8625
-using MQTTMessageLib;
-using MQTTMessageLib.FileServer;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -11,15 +9,201 @@ using System.Linq;
 using OpenCvSharp;
 using static System.Net.Mime.MediaTypeNames;
 using System.Collections.Generic;
+using System.Text;
+using OpenCvSharp.Flann;
+using MQTTMessageLib.FileServer;
+using System.Security.Cryptography.Xml;
 
 
 namespace ColorVision.Net
 {
-
-
     public static class CVFileUtil
     {
-        private static System.Text.Encoding Encoding = System.Text.Encoding.GetEncoding("GBK");
+        const string MagicHeader = "CVCIE";
+        const int HeaderSize = 5;
+        const int MinimumFileSize = HeaderSize + 4; // Minimum file size to contain the header and version
+        const int ExpectedVersion = 1;
+
+        public static bool IsCIEFile(string filePath)
+        {
+            using FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            if (fs.Length < HeaderSize) return false;
+
+            using BinaryReader br = new BinaryReader(fs);
+            string fileHeader = new string(br.ReadChars(HeaderSize));
+            return fileHeader == MagicHeader;
+        }
+
+        public static bool IsCIEFile(byte[] fileData)
+        {
+            if (fileData == null || fileData.Length < HeaderSize) return false;
+            // Convert the first 5 bytes to a string
+            string fileHeader = Encoding.ASCII.GetString(fileData, 0, HeaderSize);
+            return fileHeader == MagicHeader;
+        }
+
+        public static int ReadCIEFileHeader(string filePath, out CVCIEFile cvcie)
+        {
+            cvcie = new CVCIEFile();
+
+            using FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            if (fs.Length < MinimumFileSize) return -1;
+
+            using BinaryReader br = new BinaryReader(fs);
+            string fileHeader = new string(br.ReadChars(HeaderSize));
+            if (fileHeader != MagicHeader) return -1;
+
+            cvcie.FileExtType = filePath.Contains(".cvraw") ? FileExtType.Raw : filePath.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
+
+            uint ver = br.ReadUInt32();
+            if (ver != ExpectedVersion) return -1;
+
+            int fileNameLen = br.ReadInt32();
+            if (fileNameLen > 0 && (fs.Position + fileNameLen) <= fs.Length)
+                cvcie.srcFileName = new string(br.ReadChars(fileNameLen));
+
+            cvcie.gain = br.ReadInt32();
+            cvcie.channels = br.ReadInt32();
+
+            if ((fs.Position + cvcie.channels * 4) > fs.Length) return -1; // Not enough data for channel exposure times
+
+            cvcie.exp = new float[cvcie.channels];
+            for (int i = 0; i < cvcie.channels; i++)
+            {
+                cvcie.exp[i] = br.ReadSingle();
+            }
+
+            cvcie.rows = br.ReadInt32();
+            cvcie.cols = br.ReadInt32();
+            cvcie.bpp = br.ReadInt32();
+
+            return (int)fs.Position;
+        }
+
+
+        public static int ReadCIEFileHeader(byte[] fileData, out CVCIEFile  cvcie)
+        {
+            cvcie = new CVCIEFile();
+
+            // Check if the data is null or does not meet the minimum required size.
+            if (fileData == null || fileData.Length < MinimumFileSize) return -1;
+
+            // Read and validate the file header.
+            string fileHeader = Encoding.ASCII.GetString(fileData, 0, HeaderSize);
+            if (fileHeader != MagicHeader) return -1;
+
+            int startIndex = HeaderSize;
+            uint version = BitConverter.ToUInt32(fileData, startIndex);
+            if (version != ExpectedVersion) return -1; // Replace with the expected version number.
+            startIndex += sizeof(uint);
+
+            // Read and validate the file name length.
+            int fileNameLength = BitConverter.ToInt32(fileData, startIndex);
+            startIndex += sizeof(int);
+            if (fileNameLength < 0 || startIndex + fileNameLength > fileData.Length) return -1;
+
+            // Read the file name.
+            cvcie.srcFileName = Encoding.ASCII.GetString(fileData, startIndex, fileNameLength);
+            startIndex += fileNameLength;
+
+            // Read additional fields with validation.
+            if (!TryReadInt32(fileData, ref startIndex, out cvcie.gain)) return -1;
+            if (!TryReadInt32(fileData, ref startIndex, out cvcie.channels)) return -1;
+            if (!TryReadInt32(fileData, ref startIndex, out cvcie.rows)) return -1;
+            if (!TryReadInt32(fileData, ref startIndex, out cvcie.cols)) return -1;
+            if (!TryReadInt32(fileData, ref startIndex, out cvcie.bpp)) return -1;
+
+            // Validate and read channel exposure times.
+            if (startIndex + cvcie.channels * sizeof(float) > fileData.Length) return -1;
+            cvcie.exp = new float[cvcie.channels];
+            for (int i = 0; i < cvcie.channels; i++)
+            {
+                cvcie.exp[i] = BitConverter.ToSingle(fileData, startIndex);
+                startIndex += sizeof(float);
+            }
+
+            return startIndex;
+        }
+
+        public static bool ReadCIEFileData(string filePath, ref CVCIEFile fileInfo, int dataStartIndex)
+        {
+            using FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            using BinaryReader br = new BinaryReader(fs);
+            if (fs.Length < dataStartIndex)
+            {
+                return false; // The data start index is beyond the file length
+            }
+
+            fs.Position = dataStartIndex; // Set the stream position to the start of the data
+            // Read the data length and data
+            int dataLen = br.ReadInt32();
+            if (dataLen > 0 && fs.Position + dataLen <= fs.Length)
+            {
+                fileInfo.data = br.ReadBytes(dataLen);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryReadInt32(byte[] data, ref int startIndex, out int value)
+        {
+            if (startIndex + sizeof(int) > data.Length)
+            {
+                value = 0;
+                return false;
+            }
+            value = BitConverter.ToInt32(data, startIndex);
+            startIndex += sizeof(int);
+            return true;
+        }
+
+        public static bool ReadCIEFileData(byte[] fileData, ref CVCIEFile fileInfo, int dataStartIndex)
+        {
+            if (fileData == null || fileData.Length < dataStartIndex)
+            {
+                return false; // The data start index is beyond the byte array length
+            }
+
+            using MemoryStream ms = new MemoryStream(fileData);
+            using BinaryReader br = new BinaryReader(ms);
+
+            ms.Position = dataStartIndex; // Set the stream position to the start of the data
+
+            // Ensure there is enough data remaining for reading the data length
+            if (ms.Length - ms.Position < sizeof(int))
+            {
+                return false; // Not enough data to read the data length
+            }
+
+            // Read the data length
+            int dataLen = br.ReadInt32();
+            if (dataLen <= 0 || ms.Position + dataLen > ms.Length)
+            {
+                return false; // Invalid data length or not enough data
+            }
+
+            // Read the data
+            fileInfo.data = br.ReadBytes(dataLen);
+            return true;
+        }
+
+        public static bool Read(byte[] fileData, out CVCIEFile fileInfo)
+        {
+            int index = ReadCIEFileHeader(fileData, out fileInfo);
+            if (index > 0)
+                return ReadCIEFileData(fileData, ref fileInfo, index);
+            return false;
+        }
+        public static bool Read(string filePath, out CVCIEFile fileInfo)
+        {
+            int index = ReadCIEFileHeader(filePath, out fileInfo);
+            if (index > 0)
+                return ReadCIEFileData(filePath, ref fileInfo, index);
+            return false;
+        }
+
+        private static Encoding Encoding1 = Encoding.GetEncoding("GBK");
         public static int WriteFile(string fileName, CVCIEFile fileInfo)
         {
 
@@ -29,7 +213,7 @@ namespace ColorVision.Net
             char[] hd = { 'C', 'V', 'C', 'I', 'E' };
             writer.Write(hd);
             writer.Write(ver);
-            byte[] srcFileNameBytes = Encoding.GetBytes(fileInfo.srcFileName);
+            byte[] srcFileNameBytes = Encoding1.GetBytes(fileInfo.srcFileName);
             writer.Write(srcFileNameBytes.Length);
             writer.Write(srcFileNameBytes);
             writer.Write(fileInfo.gain);
@@ -47,268 +231,100 @@ namespace ColorVision.Net
             return 0;
         }
 
-        public static int ReadCVRaw(string fileName, ref CVCIEFile fileInfo)
+        public static bool ReadCVRaw(string fileName, out CVCIEFile fileInfo) => Read(fileName, out fileInfo);
+
+        public static int ReadCVRawChannel(string fileName, int channel, out CVCIEFile fileInfo)
         {
-            byte[] fileData = ReadFile(fileName);
-            if (fileData == null) return -1;
-            if (ReadByte(fileData, ref fileInfo))
+            if (ReadCVRaw(fileName, out CVCIEFile fileIn))
             {
-                return 0;
+                return ReadCVChannel(channel, fileIn, out fileInfo);
             }
-
-            return -2;
-        }
-
-        public static int ReadCVRawChannel(string fileName, int channel, ref CVCIEFile fileInfo)
-        {
-            CVCIEFile fileIn = new CVCIEFile();
-            int ret = ReadCVRaw(fileName, ref fileIn);
-            if (ret == 0)
-            {
-                ret = ReadCVChannel(channel, fileIn, ref fileInfo);
-            }
-
-            return ret;
-        }
-
-        public static int SaveCVCIE(string FileName,string SavePath)
-        {
-            if (!File.Exists(FileName)) return -1;
-            FileInfo fileInfo = new FileInfo(FileName);
-            byte[] fileData = ReadFile(FileName);
-
-           
-            CVCIEFile fileOut = new CVCIEFile();
-            if (ReadByte(fileData, ref fileOut))
-            {
-                fileOut.FileExtType = FileName.Contains(".cvraw") ? FileExtType.Raw : FileName.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
-
-
-                if (fileOut.FileExtType == FileExtType.CIE)
-                {
-                    if (fileOut.srcFileName != null)
-                    {
-                        byte[] raw = ReadFile(Path.Combine(Path.GetDirectoryName(FileName)??string.Empty, fileOut.srcFileName));
-                        CVCIEFile cvraw = new CVCIEFile();
-                        if (ReadByte(raw, ref cvraw))
-                        {
-                            OpenCvSharp.Mat src = new OpenCvSharp.Mat(cvraw.cols, cvraw.rows, OpenCvSharp.MatType.MakeType(cvraw.Depth, cvraw.channels), cvraw.data);
-                            src.SaveImage(SavePath + "\\" + fileInfo.Name + "_Src.tif");
-                            //OpenCvSharp.Mat[] srces = src.Split();
-                            //if (srces.Length == 1)
-                            //{
-                            //    srces[0].SaveImage(SavePath + "\\" + fileInfo.Name + "G.tif");
-                            //}
-                            //else
-                            //{
-                            //    srces[0].SaveImage(SavePath + "\\" + fileInfo.Name + "R.tif");
-                            //    srces[1].SaveImage(SavePath + "\\" + fileInfo.Name + "G.tif");
-                            //    srces[2].SaveImage(SavePath + "\\" + fileInfo.Name + "B.tif");
-                            //}
-                        }
-                    }
-                    if (fileOut.channels == 1)
-                    {
-                        int len = (int)(fileOut.cols * fileOut.rows * fileOut.bpp / 8);
-                        byte[] data = new byte[len];
-                        Buffer.BlockCopy(fileOut.data, 0 * len, data, 0, len);
-                        OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileOut.cols, (int)fileOut.rows, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
-                        src.SaveImage(SavePath + "\\" + fileInfo.Name + "_Y.tif");
-                    }
-                    else if (fileOut.channels == 3)
-                    {
-                        List<string> strings = new List<string>() { "X", "Y", "Z" };
-                        for (int ch = 0; ch < 3; ch++)
-                        {
-                            int len = (int)(fileOut.cols * fileOut.rows * fileOut.bpp / 8);
-                            byte[] data = new byte[len];
-                            Buffer.BlockCopy(fileOut.data, ch * len, data, 0, len);
-                            OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileOut.cols, (int)fileOut.rows, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
-                            src.SaveImage(SavePath + "\\" + fileInfo.Name + $"_{strings[ch]}.tif");
-                        }
-                    }
-                }
-                else if (fileOut.FileExtType == FileExtType.Raw)
-                {
-                    var cvraw = fileOut;
-                    OpenCvSharp.Mat src = new OpenCvSharp.Mat(cvraw.cols, cvraw.rows, OpenCvSharp.MatType.MakeType(cvraw.Depth, cvraw.channels), cvraw.data);
-                    src.SaveImage(SavePath + "\\" + fileInfo.Name + "Src.tif");
-                    //OpenCvSharp.Mat[] srces = src.Split();
-                    //if (srces.Length == 1)
-                    //{
-                    //    srces[0].SaveImage(SavePath + "\\" + fileInfo.Name + "G.tif");
-                    //}
-                    //else
-                    //{
-                    //    srces[0].SaveImage(SavePath + "\\" + fileInfo.Name + "R.tif");
-                    //    srces[1].SaveImage(SavePath + "\\" + fileInfo.Name + "G.tif");
-                    //    srces[2].SaveImage(SavePath + "\\" + fileInfo.Name + "B.tif");
-                    //}
-                }
-                else
-                {
-
-                }
-
-
-            }
-            return 0;
-
-
-        }
-
-        public static int ReadCVCIESrc(string cieFileName, ref CVCIEFile fileOut)
-        {
-            if (string.IsNullOrWhiteSpace(cieFileName)) return -1;
-            if (File.Exists(cieFileName))
-            {
-                byte[] fileData = ReadFile(cieFileName);
-                if (fileData == null) return -1;
-                if (ReadByte(fileData, ref  fileOut))
-                {
-                    int ret = -1;
-                    if (File.Exists(fileOut.srcFileName))
-                    {
-                        if (fileOut.srcFileName.EndsWith(".cvraw", StringComparison.OrdinalIgnoreCase))
-                        {
-                            ret = ReadCVRaw(fileOut.srcFileName, ref fileOut);
-                            fileOut.FileExtType = FileExtType.Raw;
-                        }
-                        else
-                        {
-                            fileOut.data = ReadFile(fileOut.srcFileName);
-                            fileOut.FileExtType = FileExtType.Tif;
-                        }
-                    }
-                    return ret;
-                }
-            }
-            return -2;
-        }
-
-        public static int ReadCVCIEXYZ(string cieFileName, int channel, ref CVCIEFile fileOut)
-        {
-            if (string.IsNullOrWhiteSpace(cieFileName)) return -1;
-            if (File.Exists(cieFileName))
-            {
-                byte[] fileData = ReadFile(cieFileName);
-                if (fileData == null) return -1;
-                if (ReadByte(fileData, ref fileOut))
-                {
-                    int ret = -1;
-                    if (fileOut.channels > 1)
-                    {
-                        fileOut.channels = 1;
-                        int len = (int)(fileOut.cols * fileOut.rows * fileOut.bpp / 8);
-                        byte[] data = new byte[len];
-                        Buffer.BlockCopy(fileOut.data, channel * len, data, 0, len);
-                        fileOut.data = data;
-                    }
-                    else
-                    {
-                        ret = -1;
-                    }
-                    return ret;
-                }
-            }
-            return -2;
-        }
-
-        public static int ReadCVChannel(int channel, CVCIEFile fileIn, ref CVCIEFile fileOut)
-        {
-            if (fileIn.data == null || fileIn.data.Length == 0) return -1;
-            if (fileIn.FileExtType != FileExtType.Raw) return -1;
-            if (fileIn.channels > channel)
-            {
-                fileOut.exp = fileIn.exp;
-                fileOut.rows = fileIn.rows;
-                fileOut.cols = fileIn.cols;
-                fileOut.bpp = fileIn.bpp;
-                fileOut.channels = 1;
-                if (fileIn.channels > 1)
-                {
-                    OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileIn.cols, fileIn.rows, OpenCvSharp.MatType.MakeType(fileOut.Depth, (int)fileIn.channels), fileIn.data);
-                    OpenCvSharp.Mat[] srces = src.Split();
-                    int len = (int)(fileOut.cols * fileOut.rows * fileOut.bpp / 8);
-                    fileOut.data = new byte[len];
-                    Marshal.Copy(srces[channel].Data, fileOut.data, 0, len);
-                }
-                else
-                {
-                    fileOut.data = fileIn.data;
-                }
-                return 0;
-            }
-
-            return -2;
-        }
-
-        public static int ReadCIEFileHeader(byte[] fileData, ref CVCIEFile cVCIEFileInfo)
-        {
-            int startIndex = 0;
-            if (fileData != null && fileData.Length > 5 && fileData[0] == 'C' && fileData[1] == 'V' && fileData[2] == 'C' && fileData[3] == 'I' && fileData[4] == 'E')
-            {
-                startIndex += 5;
-                uint ver = BitConverter.ToUInt32(fileData, startIndex);
-                startIndex += 4;
-                if (ver == 1)
-                {
-                    int fileNameLen = BitConverter.ToInt32(fileData, startIndex);
-                    startIndex += 4;
-                    if (fileNameLen > 0)
-                    {
-                        byte[] fileNameBytes = new byte[fileNameLen];
-                        Buffer.BlockCopy(fileData, startIndex, fileNameBytes, 0, fileNameLen);
-                        startIndex += fileNameLen;
-                        cVCIEFileInfo.srcFileName = Encoding.GetString(fileNameBytes);
-                    }
-                    cVCIEFileInfo.gain = (int)BitConverter.ToUInt32(fileData, startIndex);
-                    startIndex += 4;
-                    cVCIEFileInfo.channels = (int)BitConverter.ToUInt32(fileData, startIndex);
-                    startIndex += 4;
-                    cVCIEFileInfo.exp = new float[cVCIEFileInfo.channels];
-                    for (int i = 0; i < cVCIEFileInfo.channels; i++)
-                    {
-                        cVCIEFileInfo.exp[i] = BitConverter.ToSingle(fileData, startIndex);
-                        startIndex += 4;
-                    }
-                    cVCIEFileInfo.rows = (int)BitConverter.ToUInt32(fileData, startIndex);
-                    startIndex += 4;
-                    cVCIEFileInfo.cols = (int)BitConverter.ToUInt32(fileData, startIndex);
-                    startIndex += 4;
-                    cVCIEFileInfo.bpp = (int)BitConverter.ToUInt32(fileData, startIndex);
-                    startIndex += 4;
-                    return startIndex;
-                }
-            }
-
+            fileInfo = new CVCIEFile();
             return -1;
         }
 
-        public static bool ReadByte(byte[] fileData, ref CVCIEFile fileInfo)
+        public static int SaveToTif(string FileName,string SavePath)
         {
-            int startIndex = ReadCIEFileHeader(fileData,ref fileInfo);
-            if (startIndex > 0)
-            {
-                int dataLen = BitConverter.ToInt32(fileData, startIndex);
-                startIndex += 4;
-                if (dataLen > 0)
-                {
-                    byte[] bytes = new byte[dataLen];
-                    Buffer.BlockCopy(fileData, startIndex, bytes, 0, dataLen);
-                    fileInfo.data = bytes;
-                    return true;
-                }
-            }
+            if (!File.Exists(FileName)) return -1;
+            FileInfo fileInfo = new FileInfo(FileName);
 
-            return false;
+            int index = ReadCIEFileHeader(FileName, out CVCIEFile cvcie);
+            if (index < 0) return -1;
+            cvcie.FileExtType = FileName.Contains(".cvraw") ? FileExtType.Raw : FileName.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
+
+            Mat src;
+            switch (cvcie.FileExtType)
+            {
+                case FileExtType.Raw:
+                    if (string.IsNullOrEmpty(cvcie.srcFileName))
+                        cvcie.srcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.srcFileName);
+                    if (File.Exists(cvcie.srcFileName))
+                    {
+                        if (Read(cvcie.srcFileName ,out CVCIEFile cvraw))
+                        {
+                            src = new Mat(cvraw.cols, cvraw.rows, MatType.MakeType(cvraw.Depth, cvraw.channels), cvraw.data);
+                            src.SaveImage(SavePath + "\\" + fileInfo.Name + "_Src.tif");
+                        }
+                    }
+                    if (ReadCIEFileData(FileName, ref cvcie, index))
+                    {
+                        if (cvcie.channels == 1)
+                        {
+                            src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(MatType.CV_32F, 1), cvcie.data);
+                            src.SaveImage(SavePath + "\\" + fileInfo.Name + "_Y.tif");
+                        }
+                        else if (cvcie.channels == 3)
+                        {
+                            List<string> strings = new List<string>() { "X", "Y", "Z" };
+                            for (int ch = 0; ch < 3; ch++)
+                            {
+                                int len = cvcie.cols * cvcie.rows * cvcie.bpp / 8;
+                                byte[] data = new byte[len];
+                                Buffer.BlockCopy(cvcie.data, ch * len, data, 0, len);
+                                src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(MatType.CV_32F, 1), data);
+                                src.SaveImage(SavePath + "\\" + fileInfo.Name + $"_{strings[ch]}.tif");
+                            }
+                        }
+                    }
+                    break;
+                case FileExtType.Src:
+                    ReadCIEFileData(FileName, ref cvcie, index);
+                    src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
+                    src.SaveImage(SavePath + "\\" + fileInfo.Name + "Src.tif");
+                    break;
+                case FileExtType.CIE:
+                    break;
+                case FileExtType.Calibration:
+                    break;
+                case FileExtType.Tif:
+                    break;
+                default:
+                    break;
+            }
+            return 0;
         }
 
-        public static bool ReadFile(string fileName, ref CVCIEFile fileInfo)
+        public static bool ReadCVCIESrc(string FileName, out CVCIEFile fileOut)
         {
-            byte[] fileData = ReadFile(fileName);
-            if (fileData == null) return false;
-            return ReadByte(fileData, ref fileInfo);
+            fileOut = new CVCIEFile();
+            int index = ReadCIEFileHeader(FileName, out CVCIEFile cvcie);
+            if (index < 0) return false;
+            if (!string.IsNullOrEmpty(cvcie.srcFileName))
+                cvcie.srcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.srcFileName);
+            if (File.Exists(cvcie.srcFileName))
+            {
+                if (cvcie.srcFileName.EndsWith(".cvraw", StringComparison.OrdinalIgnoreCase))
+                {
+                    fileOut.FileExtType = FileExtType.Raw;
+                    return Read(cvcie.srcFileName, out fileOut);
+                }
+                else
+                {
+                    fileOut.data = ReadFile(fileOut.srcFileName);
+                    fileOut.FileExtType = FileExtType.Tif;
+                }
+            }
+            return false;
         }
 
         public static byte[] ReadFile(string fileName)
@@ -325,6 +341,54 @@ namespace ColorVision.Net
                 return bytes;
             }
             return null;
+        }
+
+        public static int ReadCVCIEXYZ(string FileName, int channel, out CVCIEFile fileOut)
+        {
+            int index = ReadCIEFileHeader(FileName, out fileOut);
+            if (index < 0) return -1;
+            ReadCIEFileData(FileName, ref fileOut, index);
+
+            if (fileOut.channels > 1)
+            {
+                fileOut.channels = 1;
+                int len = fileOut.cols * fileOut.rows * fileOut.bpp / 8;
+                byte[] data = new byte[len];
+                Buffer.BlockCopy(fileOut.data, channel * len, data, 0, len);
+                fileOut.data = data;
+                return 0;
+            }
+            return  -2;
+        }
+
+        public static int ReadCVChannel(int channel, CVCIEFile fileIn, out CVCIEFile fileOut)
+        {
+            fileOut = new CVCIEFile();
+            if (fileIn.data == null || fileIn.data.Length == 0) return -1;
+            if (fileIn.FileExtType != FileExtType.Raw) return -1;
+            if (fileIn.channels > channel)
+            {
+                fileOut.exp = fileIn.exp;
+                fileOut.rows = fileIn.rows;
+                fileOut.cols = fileIn.cols;
+                fileOut.bpp = fileIn.bpp;
+                fileOut.channels = 1;
+                if (fileIn.channels > 1)
+                {
+                    Mat src = new Mat(fileIn.cols, fileIn.rows, MatType.MakeType(fileOut.Depth, fileIn.channels), fileIn.data);
+                    Mat[] srces = src.Split();
+                    int len = fileOut.cols * fileOut.rows * fileOut.bpp / 8;
+                    fileOut.data = new byte[len];
+                    Marshal.Copy(srces[channel].Data, fileOut.data, 0, len);
+                }
+                else
+                {
+                    fileOut.data = fileIn.data;
+                }
+                return 0;
+            }
+
+            return -2;
         }
     }
 }

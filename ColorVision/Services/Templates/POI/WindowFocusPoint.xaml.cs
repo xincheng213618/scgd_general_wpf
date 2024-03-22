@@ -287,10 +287,7 @@ namespace ColorVision.Services.Templates.POI
 
                 if (ext == ".cvraw")
                 {
-                    CVCIEFile fileInfo = new CVCIEFile();
-                    fileInfo.FileExtType = FileExtType.Raw;
-                    int ret = CVFileUtil.ReadCVRaw(filePath, ref fileInfo);
-                    if (ret == 0)
+                    if (CVFileUtil.ReadCVRaw(filePath, out CVCIEFile fileInfo))
                     {
                         OpenCvSharp.Mat src;
                         if (fileInfo.bpp != 8)

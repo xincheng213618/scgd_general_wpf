@@ -257,7 +257,7 @@ namespace ColorVision.Services.Devices.Camera.Views
 
             if (File.Exists(LocalFileName))
             {
-                CVFileUtil.SaveCVCIE(LocalFileName, Path.GetDirectoryName(dialog.FileName));
+                CVFileUtil.SaveToTif(LocalFileName, Path.GetDirectoryName(dialog.FileName));
             }
             else
             {
