@@ -86,18 +86,18 @@ namespace ColorVision.Net
                         if (ReadByte(raw, ref cvraw))
                         {
                             OpenCvSharp.Mat src = new OpenCvSharp.Mat(cvraw.cols, cvraw.rows, OpenCvSharp.MatType.MakeType(cvraw.Depth, cvraw.channels), cvraw.data);
-                            src.SaveImage(SavePath + "\\" + fileInfo.Name + "Src.tif");
-                            OpenCvSharp.Mat[] srces = src.Split();
-                            if (srces.Length == 1)
-                            {
-                                srces[0].SaveImage(SavePath + "\\" + fileInfo.Name + "G.tif");
-                            }
-                            else
-                            {
-                                srces[0].SaveImage(SavePath + "\\" + fileInfo.Name + "R.tif");
-                                srces[1].SaveImage(SavePath + "\\" + fileInfo.Name + "G.tif");
-                                srces[2].SaveImage(SavePath + "\\" + fileInfo.Name + "B.tif");
-                            }
+                            src.SaveImage(SavePath + "\\" + fileInfo.Name + "_Src.tif");
+                            //OpenCvSharp.Mat[] srces = src.Split();
+                            //if (srces.Length == 1)
+                            //{
+                            //    srces[0].SaveImage(SavePath + "\\" + fileInfo.Name + "G.tif");
+                            //}
+                            //else
+                            //{
+                            //    srces[0].SaveImage(SavePath + "\\" + fileInfo.Name + "R.tif");
+                            //    srces[1].SaveImage(SavePath + "\\" + fileInfo.Name + "G.tif");
+                            //    srces[2].SaveImage(SavePath + "\\" + fileInfo.Name + "B.tif");
+                            //}
                         }
                     }
                     if (fileOut.channels == 1)
@@ -106,7 +106,7 @@ namespace ColorVision.Net
                         byte[] data = new byte[len];
                         Buffer.BlockCopy(fileOut.data, 0 * len, data, 0, len);
                         OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileOut.rows, (int)fileOut.cols, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
-                        src.SaveImage(SavePath + "\\" + fileInfo.Name + "Y.tif");
+                        src.SaveImage(SavePath + "\\" + fileInfo.Name + "_Y.tif");
                     }
                     else if (fileOut.channels == 3)
                     {
@@ -115,7 +115,7 @@ namespace ColorVision.Net
                             int len = (int)(fileOut.cols * fileOut.rows * fileOut.bpp / 8);
                             byte[] data = new byte[len];
                             OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileOut.rows, (int)fileOut.cols, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
-                            src.SaveImage(SavePath + "\\" + fileInfo.Name + $"{ch}.tif");
+                            src.SaveImage(SavePath + "\\" + fileInfo.Name + $"_{ch}.tif");
                         }
                     }
                 }
@@ -124,17 +124,17 @@ namespace ColorVision.Net
                     var cvraw = fileOut;
                     OpenCvSharp.Mat src = new OpenCvSharp.Mat(cvraw.cols, cvraw.rows, OpenCvSharp.MatType.MakeType(cvraw.Depth, cvraw.channels), cvraw.data);
                     src.SaveImage(SavePath + "\\" + fileInfo.Name + "Src.tif");
-                    OpenCvSharp.Mat[] srces = src.Split();
-                    if (srces.Length == 1)
-                    {
-                        srces[0].SaveImage(SavePath + "\\" + fileInfo.Name + "G.tif");
-                    }
-                    else
-                    {
-                        srces[0].SaveImage(SavePath + "\\" + fileInfo.Name + "R.tif");
-                        srces[1].SaveImage(SavePath + "\\" + fileInfo.Name + "G.tif");
-                        srces[2].SaveImage(SavePath + "\\" + fileInfo.Name + "B.tif");
-                    }
+                    //OpenCvSharp.Mat[] srces = src.Split();
+                    //if (srces.Length == 1)
+                    //{
+                    //    srces[0].SaveImage(SavePath + "\\" + fileInfo.Name + "G.tif");
+                    //}
+                    //else
+                    //{
+                    //    srces[0].SaveImage(SavePath + "\\" + fileInfo.Name + "R.tif");
+                    //    srces[1].SaveImage(SavePath + "\\" + fileInfo.Name + "G.tif");
+                    //    srces[2].SaveImage(SavePath + "\\" + fileInfo.Name + "B.tif");
+                    //}
                 }
                 else
                 {
