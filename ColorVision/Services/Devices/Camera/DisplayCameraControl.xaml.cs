@@ -218,6 +218,14 @@ namespace ColorVision.Services.Devices.Camera
                     MsgRecord msgRecord = DService.GetData(expTime, param);
                     Helpers.SendCommand(button,msgRecord);
                 }
+                else
+                {
+                    double[] expTime = null;
+                    if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
+                    else expTime = new double[] { Device.Config.ExpTime };
+                    MsgRecord msgRecord = DService.GetData(expTime, new CalibrationParam() { Id = -1,Name ="Empty" });
+                    Helpers.SendCommand(button, msgRecord);
+                }
             }
         }
 
