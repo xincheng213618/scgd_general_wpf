@@ -9,6 +9,7 @@ using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.Templates;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Solution;
+using ColorVision.Utilities;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
@@ -560,6 +561,17 @@ namespace ColorVision.Services.Devices.Camera.Views
         private void ClearImage_Click(object sender, RoutedEventArgs e)
         {
             ImageView.Clear();
+        }
+
+        private void MenuItem_Export_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCamera viewCamera)
+            {
+                ExportCamera exportCamera = new ExportCamera() { Icon = Device.Icon };
+                exportCamera.Owner = WindowHelpers.GetActiveWindow();
+                exportCamera.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                exportCamera.ShowDialog();
+            }
         }
     }
 }
