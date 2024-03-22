@@ -9,8 +9,14 @@
         Title="ColorVisiionSetup"  Height="120" Width="400" Initialized="Window_Initialized" Closing="Window_Closing">
     <Grid>
         <StackPanel>
-            <ProgressBar Height="15"  Foreground="#B41515" Maximum="100" Minimum="0" Value="{Binding ProgressValue}" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
-            <TextBlock Text="{Binding Status}" HorizontalAlignment="Center"/>
+            <Grid>
+                <ProgressBar Height="15"  Foreground="#B41515" Maximum="100" Minimum="0" Value="{Binding ProgressValue}" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
+                <TextBlock Text="{Binding LatestVersion}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Grid>
+            <DockPanel Margin="5">
+                <TextBlock Text="{Binding SpeedValue}"/>
+                <TextBlock HorizontalAlignment="Right" Text="{Binding RemainingTimeValue}"/>
+            </DockPanel>        
         </StackPanel>
    
     </Grid>

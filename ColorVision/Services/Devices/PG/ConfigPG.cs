@@ -1,7 +1,6 @@
-﻿using ColorVision.Services;
-using ColorVision.Services.Devices;
+﻿using ColorVision.Services.Core;
 
-namespace ColorVision.Device.PG
+namespace ColorVision.Services.Devices.PG
 {
     public class ConfigPG : DeviceServiceConfig, IServiceConfig
     {

@@ -1,4 +1,4 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Common.MVVM;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -20,7 +20,7 @@ namespace ColorVision.Services.Devices.Camera.Video
         public CameraVideoConnect(CameraVideoConfig config)
         {
             CameraVideoConfig = config;
-            CameraVideoConfigCopy = config.CopyTo();
+            CameraVideoConfigCopy = config.Clone();
             InitializeComponent();
         }
 

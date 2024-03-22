@@ -1,4 +1,5 @@
-﻿using ColorVision.MVVM;
+﻿#pragma warning disable CS8629
+using ColorVision.Common.MVVM;
 using ColorVision.Services.Dao;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
@@ -15,7 +16,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             if (pOIPointResultModel.Value != null)
             {
                 POIDataCIEY pOIDataCIEY = JsonConvert.DeserializeObject<POIDataCIEY>(pOIPointResultModel.Value);
-                Y = pOIDataCIEY.Y;
+                Y = pOIDataCIEY.Y >= 0 ? pOIDataCIEY.Y : 0.001;
             }
         }
 

@@ -23,6 +23,7 @@ namespace ColorVision.Services.Devices.Calibration
 
         private void ProcessingReceived(MsgReturn msg)
         {
+            if (msg.DeviceCode != Config.Code) return;
             if (msg.Code == 0)
             {
                 switch (msg.EventName)
@@ -44,6 +45,9 @@ namespace ColorVision.Services.Devices.Calibration
                     case "Calibration":
                         Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, "校准失败"));
                         break;
+                    default:
+                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
+                        break;
                 }
             }
 
@@ -51,12 +55,12 @@ namespace ColorVision.Services.Devices.Calibration
         }
 
 
-        public MsgRecord Calibration(CalibrationParam item, string fileName, int pid, string tempName, string serialNumber, float R, float G, float B)
+        public MsgRecord Calibration(CalibrationParam item, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber, float R, float G, float B)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
             Params.Add("DeviceParam", new DeviceParamCalibration() { exp = new float[] { R, G, B }, gain = 1, });
 

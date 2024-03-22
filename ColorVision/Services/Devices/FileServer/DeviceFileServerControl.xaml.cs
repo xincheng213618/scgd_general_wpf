@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Device.FileServer
+namespace ColorVision.Services.Devices.FileServer
 {
     /// <summary>
     /// DeviceImageControl.xaml 的交互逻辑
@@ -10,7 +10,7 @@ namespace ColorVision.Device.FileServer
     public partial class DeviceFileServerControl : UserControl
     {
         public DeviceFileServer DeviceFileServer { get; set; }
-        public MQTTService DService { get => DeviceFileServer.DeviceService; }
+        public MQTTFileServer DService { get => DeviceFileServer.MQTTFileServer; }
 
         public bool IsCanEdit { get; set; }
         public DeviceFileServerControl(DeviceFileServer device, bool isCanEdit = true)

@@ -1,4 +1,4 @@
-﻿using ColorVision.Services.Interfaces;
+﻿using ColorVision.Services.Core;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;

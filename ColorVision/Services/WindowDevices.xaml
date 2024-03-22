@@ -4,11 +4,13 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Services"
-        xmlns:mqtt="clr-namespace:ColorVision.Services.Devices"
+        xmlns:devices="clr-namespace:ColorVision.Services.Devices"
+        xmlns:terminal="clr-namespace:ColorVision.Services.Terminal"
+        xmlns:type="clr-namespace:ColorVision.Services.Type"
         xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         xmlns:set="clr-namespace:ColorVision.Settings"
-        Title="服务配置" Height="800" Width="1000" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized" >
+        Title="{x:Static properties:Resource.ServiceConfiguration}" Height="800" Width="1000" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized" >
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -42,18 +44,18 @@
             </Grid.ColumnDefinitions>
             <TreeView x:Name="TreeView1" Loaded="TreeView1_Loaded" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged " Margin="5,0,5,0">
                 <TreeView.Resources>
-                    <HierarchicalDataTemplate DataType="{x:Type local:TypeService}" ItemsSource="{Binding VisualChildren}" >
+                    <HierarchicalDataTemplate DataType="{x:Type type:TypeService}" ItemsSource="{Binding VisualChildren}" >
                         <StackPanel >
                             <TextBlock Text="{Binding Name}"/>
                         </StackPanel>
                     </HierarchicalDataTemplate>
-                    <HierarchicalDataTemplate DataType="{x:Type local:TerminalService}" ItemsSource="{Binding VisualChildren}" >
+                    <HierarchicalDataTemplate DataType="{x:Type terminal:TerminalService}" ItemsSource="{Binding VisualChildren}" >
                         <DockPanel>
                             <Image Source="{Binding Icon}" Height="18" HorizontalAlignment="Left"  Margin="0,0,4,0"/>
                             <TextBlock Text="{Binding Name}"/>
                         </DockPanel>
                     </HierarchicalDataTemplate>
-                    <HierarchicalDataTemplate DataType="{x:Type mqtt:DeviceService}">
+                    <HierarchicalDataTemplate DataType="{x:Type devices:DeviceService}">
                         <DockPanel>
                             <Image Source="{Binding Icon}" Height="18" HorizontalAlignment="Left"  Margin="0,0,4,0"/>
                             <TextBlock Text="{Binding Name}"/>
@@ -62,6 +64,9 @@
                 </TreeView.Resources>
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="{x:Type TreeViewItem}" BasedOn="{StaticResource TreeViewItemBaseStyle}">
+                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                        <Setter Property="IsExpanded" Value="{Binding IsExpanded}"/>
+                        <Setter Property="IsSelected" Value="{Binding IsSelected}"/>
                     </Style>
                 </TreeView.ItemContainerStyle>
             </TreeView>
@@ -70,7 +75,7 @@
         </Grid>
 
         <Border  Grid.Row="2" Margin="5" >
-            <Button x:Name="ButtonOK"  Height="40"  Content="{x:Static properties:Resource.OK}" Background="{StaticResource PrimaryBrush}" Foreground="White"  FontSize="18"  Click="Button_Click"/>
+            <Button x:Name="ButtonOK"  Height="40"  Content="{x:Static properties:Resource.Loading}" Background="{DynamicResource PrimaryBrush}" Foreground="White"  FontSize="18"  Click="Button_Click"/>
         </Border>
     </Grid>
 

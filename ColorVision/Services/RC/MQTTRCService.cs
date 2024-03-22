@@ -1,8 +1,11 @@
 ﻿#pragma warning disable CS8603
 using ColorVision.MQTT;
 using ColorVision.Services;
+using ColorVision.Services.Core;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Camera;
+using ColorVision.Services.Terminal;
+using ColorVision.Services.Type;
 using ColorVision.Settings;
 using log4net;
 using MQTTMessageLib;
@@ -74,7 +77,15 @@ namespace ColorVision.RC
 
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
-
+            MQTTControl.MQTTConnectChanged += (object? sender, EventArgs e) =>
+            {
+                logger.InfoFormat("MQTTConnectChanged=>{0}", JsonConvert.SerializeObject(e));
+                Task.Run(() =>
+                {
+                    Thread.Sleep(2000);
+                    GetInstance().ReRegist();
+                });
+            };
 
             int heartbeatTime = 2 * 1000;
             System.Timers.Timer hbTimer = new System.Timers.Timer(heartbeatTime);
@@ -213,7 +224,34 @@ namespace ColorVision.RC
         }
         public static void UpdateServices(Dictionary<CVServiceType, List<MQTTNodeService>> services)
         {
+            DoUpdateServiceTokens(services);
             DoUpdateServices(services);
+        }
+
+        private static void DoUpdateServiceTokens(Dictionary<CVServiceType, List<MQTTNodeService>> services)
+        {
+            var tokens = ServiceManager.GetInstance().ServiceTokens;
+            tokens.Clear();
+            foreach (var itemService in services.Values)
+            {
+                foreach (var nodeService in itemService)
+                {
+                    FlowEngineLib.MQTTServiceInfo serviceInfo = new FlowEngineLib.MQTTServiceInfo()
+                    {
+                        ServiceType = nodeService.ServiceType,
+                        ServiceCode = nodeService.ServiceCode,
+                        PublishTopic = nodeService.UpChannel,
+                        SubscribeTopic = nodeService.DownChannel,
+                        Token = nodeService.ServiceToken,
+                    };
+                    foreach (var dev in nodeService.Devices)
+                    {
+                        serviceInfo.AddDevice(dev.Key, dev.Value.Code);
+                    }
+
+                    tokens.Add(serviceInfo);
+                }
+            }
         }
 
         private static TypeService GetTypeService(List<TypeService> svrs, CVServiceType serviceTypes)
@@ -242,8 +280,6 @@ namespace ColorVision.RC
         public static void DoUpdateServices(Dictionary<CVServiceType, List<MQTTNodeService>> data)
         {
             List<TypeService> svrs = new List<TypeService>(ServiceManager.GetInstance().TypeServices);
-            Dictionary<string, string> tokens = ServiceManager.GetInstance().ServiceTokens;
-
             foreach (var itemService in data)
             {
                 var serviceKind = GetTypeService(svrs, itemService.Key);
@@ -254,10 +290,9 @@ namespace ColorVision.RC
                     {
                         var nodeService = GetNodeService(itemService.Value, serviceTerminal.Code);
                         if (nodeService == null) { continue; }
-                        tokens[nodeService.ServiceCode] = nodeService.ServiceToken;
                         serviceTerminal.Config.SendTopic = nodeService.UpChannel;
                         serviceTerminal.Config.SubscribeTopic = nodeService.DownChannel;
-                        if(nodeService.OverTime > 0) serviceTerminal.Config.HeartbeatTime = nodeService.OverTime;
+                        if (nodeService.OverTime > 0) serviceTerminal.Config.HeartbeatTime = nodeService.OverTime;
                         serviceTerminal.MQTTServiceTerminalBase.ServiceToken = nodeService.ServiceToken;
 
                         foreach (var deviceObj in serviceTerminal.VisualChildren)
@@ -267,6 +302,7 @@ namespace ColorVision.RC
                                 baseDeviceConfig.ServiceToken = nodeService.ServiceToken;
                                 baseDeviceConfig.SendTopic = nodeService.UpChannel;
                                 baseDeviceConfig.SubscribeTopic = nodeService.DownChannel;
+                                baseChannel.GetMQTTService()?.SubscribeCache();
                             }
                         }
                     }
@@ -375,6 +411,15 @@ namespace ColorVision.RC
                 PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(reg));
             }
         }
+
+        public void RestartServices(string nodeType, string svrCode)
+        {
+            if (Token != null)
+            {
+                MQTTRCServicesRestartRequest reg = new MQTTRCServicesRestartRequest(AppId, NodeName, nodeType, Token.AccessToken, svrCode);
+                PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(reg));
+            }
+        }
         public void RestartServices(string nodeType, string svrCode, string devCode)
         {
             if (Token != null)
@@ -382,6 +427,11 @@ namespace ColorVision.RC
                 MQTTRCServicesRestartRequest reg = new MQTTRCServicesRestartRequest(AppId, NodeName, nodeType, Token.AccessToken, svrCode, devCode);
                 PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(reg));
             }
+
+            Task.Factory.StartNew(() => {
+                Thread.Sleep(2000);
+                QueryServices();
+            });
         }
         public bool TryRegist(RCServiceConfig cfg)
         {

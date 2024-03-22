@@ -1,7 +1,8 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Extension;
 using ColorVision.Media;
 using ColorVision.Net;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Core;
 using ColorVision.Settings;
 using ColorVision.Themes;
 using log4net;
@@ -17,7 +18,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 
 
-namespace ColorVision.Device.FileServer
+namespace ColorVision.Services.Devices.FileServer
 {
     /// <summary>
     /// ImageDisplayControl.xaml 的交互逻辑
@@ -25,21 +26,23 @@ namespace ColorVision.Device.FileServer
     public partial class FileServerDisplayControl : UserControl,IDisPlayControl
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(FileServerDisplayControl));
-        public DeviceFileServer DeviceImg { get; set; }
+        public DeviceFileServer DeviceFileServer { get; set; }
 
-        public ImageView View { get => DeviceImg.View; }
+        public MQTTFileServer MQTTFileServer { get => DeviceFileServer.MQTTFileServer; }
+
+        public ImageView View { get => DeviceFileServer.View; }
 
         private NetFileUtil netFileUtil;
 
-        public FileServerDisplayControl(DeviceFileServer deviceImg)
+        public FileServerDisplayControl(DeviceFileServer deviceFileServer)
         {
-            DeviceImg = deviceImg;
+            DeviceFileServer = deviceFileServer;
             InitializeComponent();
 
             netFileUtil = new NetFileUtil(string.Empty);
             netFileUtil.handler += NetFileUtil_handler;
 
-            DeviceImg.DeviceService.OnImageData += Service_OnImageData;
+            DeviceFileServer.MQTTFileServer.OnImageData += Service_OnImageData;
 
             this.PreviewMouseDown += UserControl_PreviewMouseDown;
         }
@@ -106,70 +109,18 @@ namespace ColorVision.Device.FileServer
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = DeviceImg;
+            this.DataContext = DeviceFileServer;
 
-            ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
-            ViewGridManager.GetInstance().ViewMaxChangedEvent += ViewMaxChangedEvent;
+            this.AddViewConfig(View, ComboxView);
 
-            void ViewMaxChangedEvent(int max)
-            {
-                List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
-                KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowSingle, -2));
-                KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowHidden, -1));
-                for (int i = 0; i < max; i++)
-                {
-                    KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));
-                }
-                ComboxView.ItemsSource = KeyValues;
-                ComboxView.SelectedValue = View.View.ViewIndex;
-            }
-            View.View.ViewIndexChangedEvent += (e1, e2) =>
-            {
-                ComboxView.SelectedIndex = e2 + 2;
-            };
-            ComboxView.SelectionChanged += (s, e) =>
-            {
-                if (ComboxView.SelectedItem is KeyValuePair<string, int> KeyValue)
-                {
-                    View.View.ViewIndex = KeyValue.Value;
-                    ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
-                }
-            };
-            View.View.ViewIndex = -1;
-
-            if (ViewGridManager.GetInstance().ViewMax > 4 || ViewGridManager.GetInstance().ViewMax == 3)
-            {
-                ViewGridManager.GetInstance().SetViewNum(-1);
-            }
-
-            View.View.ViewIndex = -1;
-
-            this.PreviewMouseLeftButtonDown += (s, e) =>
-            {
-                if (ViewConfig.GetInstance().IsAutoSelect)
-                {
-                    if (ViewGridManager.GetInstance().ViewMax == 1)
-                    {
-                        View.View.ViewIndex = 0;
-                        ViewGridManager.GetInstance().SetViewIndex(View, 0);
-                    }
-                }
-            };
-
-            Task t = new(() => { DeviceImg.DeviceService.GetAllFiles(); });
-            t.Start();
+            Task.Run(() => { MQTTFileServer.GetAllFiles(); });
         }
 
         IPendingHandler handler { get; set; }
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
-            doOpen(FilesView.Text);
-        }
-
-        private void doOpen(string fileName)
-        {
-            DeviceImg.DeviceService.Open(fileName);
+            MQTTFileServer.Open(FilesView.Text);
 
             handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
             handler.Cancelling += delegate
@@ -180,7 +131,7 @@ namespace ColorVision.Device.FileServer
 
         private void Button_Click_Refresh(object sender, RoutedEventArgs e)
         {
-            DeviceImg.DeviceService.GetAllFiles();
+            MQTTFileServer.GetAllFiles();
         }
 
         private void Button_Click_Upload(object sender, RoutedEventArgs e)
@@ -191,8 +142,7 @@ namespace ColorVision.Device.FileServer
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-               // DeviceImg.DeviceService.UploadFile(Path.GetFileName(openFileDialog.FileName));
-                DeviceImg.DeviceService.UploadFile(openFileDialog.FileName);
+                MQTTFileServer.UploadFile(openFileDialog.FileName);
                 handler = PendingBox.Show(Application.Current.MainWindow, "", "上传", true);
                 handler.Cancelling += delegate
                 {
@@ -201,7 +151,7 @@ namespace ColorVision.Device.FileServer
             }
         }
 
-        private static byte[] readFile(string path)
+        private static byte[] ReadFile(string path)
         {
             FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read);
             BinaryReader binaryReader = new BinaryReader(fileStream);

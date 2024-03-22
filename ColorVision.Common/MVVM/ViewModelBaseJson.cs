@@ -1,11 +1,12 @@
-﻿using System;
+﻿using ColorVision.Common.MVVM;
+using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
 
-namespace ColorVision.MVVM.Json
+namespace ColorVision.Common.MVVM.Json
 {
     public static class Extensions
     {

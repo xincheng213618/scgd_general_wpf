@@ -1,6 +1,5 @@
-﻿using ColorVision.Device.FileServer;
-using ColorVision.Device.PG;
-using ColorVision.MySql;
+﻿using ColorVision.MySql;
+using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.DAO;
 using ColorVision.Services.Devices;
@@ -8,7 +7,9 @@ using ColorVision.Services.Devices.Algorithm;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Devices.CfwPort;
+using ColorVision.Services.Devices.FileServer;
 using ColorVision.Services.Devices.Motor;
+using ColorVision.Services.Devices.PG;
 using ColorVision.Services.Devices.Sensor;
 using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Devices.SMU.Dao;
@@ -16,9 +17,11 @@ using ColorVision.Services.Devices.Spectrum;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Dao;
 using ColorVision.Services.Flow;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Terminal;
+using ColorVision.Services.Type;
 using ColorVision.Settings;
 using ColorVision.UserSpace;
+using FlowEngineLib;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -40,10 +43,10 @@ namespace ColorVision.Services
         public ObservableCollection<TerminalService> TerminalServices { get; set; } = new ObservableCollection<TerminalService>();
         public ObservableCollection<DeviceService> DeviceServices { get; set; } = new ObservableCollection<DeviceService>();
 
-        public ObservableCollection<GroupService> GroupServices { get; set; } = new ObservableCollection<GroupService>();
+        public ObservableCollection<GroupResource> GroupResources { get; set; } = new ObservableCollection<GroupResource>();
         public ObservableCollection<DeviceService> LastGenControl { get; set; } = new ObservableCollection<DeviceService>();
 
-        public Dictionary<string, string> ServiceTokens { get; set; } = new Dictionary<string, string>();
+        public List<MQTTServiceInfo> ServiceTokens { get; set; }
 
 
         public ObservableCollection<IDisPlayControl> DisPlayControls { get; set; } = new ObservableCollection<IDisPlayControl>();
@@ -57,7 +60,7 @@ namespace ColorVision.Services
             UserConfig = ConfigHandler.GetInstance().SoftwareConfig.UserConfig;
 
             svrDevices = new Dictionary<string, List<MQTTServiceBase>>();
-            ServiceTokens = new Dictionary<string,string>();
+            ServiceTokens = new List<MQTTServiceInfo>();
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadServices();
             LoadServices();
         }
@@ -137,18 +140,11 @@ namespace ColorVision.Services
                 var sysResourceModels = sysResourceModelServices.FindAll((x) => x.Type == (int)typeService1.ServiceTypes);
                 foreach (var sysResourceModel in sysResourceModels)
                 {
-                    
-                    TerminalService terminalService;
-                    switch (typeService1.ServiceTypes)
-                    {   
-                        case ServiceTypes.camera:
-                            terminalService = new TerminalCamera(sysResourceModel);
-                            break;
-                        default:
-                            terminalService = new TerminalService(sysResourceModel);
-                            break;
-                    }
-
+                    TerminalService terminalService = typeService1.ServiceTypes switch
+                    {
+                        ServiceTypes.Camera => new TerminalCamera(sysResourceModel),
+                        _ => new TerminalService(sysResourceModel),
+                    };
                     string svrKey = GetServiceKey(sysResourceModel.TypeCode ?? string.Empty, sysResourceModel.Code ?? string.Empty);
                    
                     if (svrDevices.TryGetValue(svrKey, out var list ))
@@ -159,9 +155,6 @@ namespace ColorVision.Services
                     {
                         svrDevices.Add(svrKey, new List<MQTTServiceBase>());
                     }
-
-                    if (sysResourceModel.Code != null && !ServiceTokens.ContainsKey(sysResourceModel.Code))
-                        ServiceTokens.TryAdd(sysResourceModel.Code, string.Empty);
 
                     typeService1.AddChild(terminalService);
                     TerminalServices.Add(terminalService);
@@ -181,7 +174,7 @@ namespace ColorVision.Services
 
                     switch ((ServiceTypes)sysResourceModel.Type)
                     {
-                        case ServiceTypes.camera:
+                        case ServiceTypes.Camera:
 
                             if (terminalService.MQTTServiceTerminalBase is MQTTTerminalCamera cameraService)
                             {
@@ -191,7 +184,7 @@ namespace ColorVision.Services
                                 DeviceServices.Add(deviceCamera);
                             }
                             break;
-                        case ServiceTypes.pg:
+                        case ServiceTypes.PG:
                             DevicePG devicePG = new DevicePG(sysResourceModel);
                             svrObj = devicePG.DeviceService;
                             terminalService.AddChild(devicePG);
@@ -217,7 +210,7 @@ namespace ColorVision.Services
                             break;
                         case ServiceTypes.FileServer:
                             DeviceFileServer img = new DeviceFileServer(sysResourceModel);
-                            svrObj = img.DeviceService;
+                            svrObj = img.MQTTFileServer;
                             terminalService.AddChild(img);
                             DeviceServices.Add(img);
                             break;
@@ -260,7 +253,7 @@ namespace ColorVision.Services
                 }
             }
 
-            GroupServices.Clear();
+            GroupResources.Clear();
             foreach (var deviceService in DeviceServices)
             {
                 List<SysResourceModel> sysResourceModels = sysResourceDao1.GetResourceItems(deviceService.SysResourceModel.Id, UserConfig.TenantId);
@@ -268,9 +261,9 @@ namespace ColorVision.Services
                 {
                     if (sysResourceModel.Type == (int)ResourceType.Group)
                     {
-                        GroupService groupService = new GroupService(sysResourceModel);
-                        deviceService.AddChild(groupService);
-                        GroupServices.Add(groupService);
+                        GroupResource groupResource = new GroupResource(sysResourceModel);
+                        deviceService.AddChild(groupResource);
+                        GroupResources.Add(groupResource);
                     }
                    else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
                     {
@@ -285,35 +278,35 @@ namespace ColorVision.Services
                 }
             }
 
-            foreach (var groupService in GroupServices)
+            foreach (var groupResource in GroupResources)
             {
-                LoadGroupService(groupService);
+                LoadgroupResource(groupResource);
             }
         }
         SysResourceDao sysResourceDao1 = new SysResourceDao();
 
-        public void LoadGroupService(GroupService groupService)
+        public void LoadgroupResource(GroupResource groupResource)
         {
             sysResourceDao1.CreatResourceGroup();
-            List<SysResourceModel> sysResourceModels = sysResourceDao1.GetGroupResourceItems(groupService.SysResourceModel.Id);
+            List<SysResourceModel> sysResourceModels = sysResourceDao1.GetGroupResourceItems(groupResource.SysResourceModel.Id);
             foreach (var sysResourceModel in sysResourceModels)
             {
                 if (sysResourceModel.Type == (int)ResourceType.Group)
                 {
-                    GroupService groupService1 = new GroupService(sysResourceModel);
-                    LoadGroupService(groupService1);
-                    groupService.AddChild(groupService);
-                    GroupServices.Add(groupService);
+                    GroupResource groupResource1 = new GroupResource(sysResourceModel);
+                    LoadgroupResource(groupResource1);
+                    groupResource.AddChild(groupResource);
+                    GroupResources.Add(groupResource);
                 }
                 else if (30<=sysResourceModel.Type && sysResourceModel.Type <= 40)
                 {
                     CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
-                    groupService.AddChild(calibrationResource);
+                    groupResource.AddChild(calibrationResource);
                 }
                 else
                 {
                     BaseResource calibrationResource = new BaseResource(sysResourceModel);
-                    groupService.AddChild(calibrationResource);
+                    groupResource.AddChild(calibrationResource);
                 }
             }
         }

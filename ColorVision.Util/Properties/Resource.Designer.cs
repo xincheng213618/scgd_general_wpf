@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace ColorVision.Common.Utilities.Properties {
+namespace ColorVision.Util.Properties {
     using System;
     
     
@@ -75,6 +75,15 @@ namespace ColorVision.Common.Utilities.Properties {
         public static string en {
             get {
                 return ResourceManager.GetString("en", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 法语 的本地化字符串。
+        /// </summary>
+        public static string fr {
+            get {
+                return ResourceManager.GetString("fr", resourceCulture);
             }
         }
         

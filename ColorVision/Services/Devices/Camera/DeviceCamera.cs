@@ -1,12 +1,12 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.MVVM;
+using ColorVision.Common.MVVM;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Devices.Camera.Dao;
 using ColorVision.Services.Devices.Camera.Views;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Core;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Solution;
@@ -25,13 +25,15 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ColorVision.Services.Extension;
+using ColorVision.Utilities;
+using System.Linq;
 
 namespace ColorVision.Services.Devices.Camera
 {
     public class DeviceCamera : DeviceService<ConfigCamera>, IUploadMsg, ICalibrationService<BaseResourceObject>
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCamera));
-        public MQTTCamera DeviceService { get; set; }
 
         public DeviceCalibration? DeviceCalibration
         {
@@ -47,7 +49,7 @@ namespace ColorVision.Services.Devices.Camera
         }
 
         public ViewCamera View { get; set; }
-
+        public MQTTCamera DeviceService { get; set; }
         public MQTTTerminalCamera Service { get; set; }
 
         public RelayCommand UploadCalibrationCommand { get; set; }
@@ -58,24 +60,19 @@ namespace ColorVision.Services.Devices.Camera
         {
             Service = cameraService;
             DeviceService = new MQTTCamera(Config, Service);
-            this.Config.SendTopic = Service.SendTopic;
-            this.Config.SubscribeTopic = Service.SubscribeTopic;
 
             View = new ViewCamera(this);
-            if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage drawingImage)
-                Icon = drawingImage;
+            View.View.Title = $"相机视图 - {Config.Code}";
+            this.SetIconResource("DrawingImageCamera", View.View);
 
-            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+
+            EditCommand = new RelayCommand(a =>
             {
-                if (Application.Current.TryFindResource("DrawingImageCamera") is DrawingImage drawingImage)
-                    Icon = drawingImage;
-                View.View.Icon = Icon;
-            };
-
-            View.View.Title = "相机视图";
-            View.View.Icon = Icon;
-
-            EditCameraLazy = new Lazy<EditCamera>(() => { EditCamera ??= new EditCamera(this); return EditCamera; });
+                EditCamera window = new EditCamera(this);
+                window.Owner = WindowHelpers.GetActiveWindow();
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                window.ShowDialog();
+            });
 
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
 
@@ -86,6 +83,8 @@ namespace ColorVision.Services.Devices.Camera
 
             UploadLincenseCommand = new RelayCommand(a => UploadLincense());
             RefreshLincenseCommand = new RelayCommand(a => RefreshLincense());
+
+            DisplayCameraControlLazy = new Lazy<DisplayCameraControl>(() => new DisplayCameraControl(this));
         }
         #region License
         public RelayCommand UploadLincenseCommand { get; set; }
@@ -107,35 +106,86 @@ namespace ColorVision.Services.Devices.Camera
         {
             using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
             openFileDialog.RestoreDirectory = true;
+            openFileDialog.Multiselect = true; // 允许多选
+            openFileDialog.Filter = "All files (*.*)|*.zip;*.lic"; // 可以设置特定的文件类型过滤器
+            openFileDialog.Title = "请选择许可证文件";
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
+                string[] selectedFiles = openFileDialog.FileNames;
 
-                CameraLicenseModel cameraLicenseModel = new CameraLicenseModel();
-                cameraLicenseModel.RescourceId = SysResourceModel.Id;
-                cameraLicenseModel.MacAddress =  Path.GetFileNameWithoutExtension(openFileDialog.SafeFileName);
-                cameraLicenseModel.LicenseValue = File.ReadAllText(openFileDialog.FileName);
-                cameraLicenseModel.CusTomerName = cameraLicenseModel.ColorVisionLincense.Licensee;
-                cameraLicenseModel.Model = cameraLicenseModel.ColorVisionLincense.DeviceMode;
-                cameraLicenseModel.ExpiryDate = cameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
-
-                if (CameraLicenseDao.GetAllByMAC(cameraLicenseModel.MacAddress, SysResourceModel.Id).Count == 0)
+                foreach (string file in selectedFiles)
                 {
-                    int ret = CameraLicenseDao.Save(cameraLicenseModel);
-                    if (ret == -1)
+
+                    if (Path.GetExtension(file) == ".zip")
                     {
-                        MessageBox.Show("添加失败");
+                        try
+                        {
+                            using ZipArchive archive = ZipFile.OpenRead(file);
+                            var licFiles = archive.Entries.Where(entry => Path.GetExtension(entry.FullName).Equals(".lic", StringComparison.OrdinalIgnoreCase)).ToList();
+
+                            foreach (var item in licFiles)
+                            {
+                                CameraLicenseModel cameraLicenseModel = new CameraLicenseModel();
+                                cameraLicenseModel.RescourceId = SysResourceModel.Id;
+                                cameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(item.FullName);
+
+                                using var stream = item.Open();
+                                using var reader = new StreamReader(stream, Encoding.UTF8); // 假设文件编码为UTF-8
+                                cameraLicenseModel.LicenseValue = reader.ReadToEnd();
+
+                                cameraLicenseModel.CusTomerName = cameraLicenseModel.ColorVisionLincense.Licensee;
+                                cameraLicenseModel.Model = cameraLicenseModel.ColorVisionLincense.DeviceMode;
+                                cameraLicenseModel.ExpiryDate = cameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
+                                if (CameraLicenseDao.GetAllByMAC(cameraLicenseModel.MacAddress, SysResourceModel.Id).Count == 0)
+                                {
+                                    int ret = CameraLicenseDao.Save(cameraLicenseModel);
+
+                                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
+                                }
+                                else
+                                {
+                                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} 重复添加", "ColorVision");
+                                }
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"解压失败 :{ex.Message}", "ColorVision");
+                        }
+                    }
+                    else if (Path.GetExtension(file) == ".lic")
+                    {
+                        CameraLicenseModel cameraLicenseModel = new CameraLicenseModel();
+                        cameraLicenseModel.RescourceId = SysResourceModel.Id;
+                        cameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(openFileDialog.SafeFileName);
+                        cameraLicenseModel.LicenseValue = File.ReadAllText(file);
+                        cameraLicenseModel.CusTomerName = cameraLicenseModel.ColorVisionLincense.Licensee;
+                        cameraLicenseModel.Model = cameraLicenseModel.ColorVisionLincense.DeviceMode;
+                        cameraLicenseModel.ExpiryDate = cameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
+
+                        if (CameraLicenseDao.GetAllByMAC(cameraLicenseModel.MacAddress, SysResourceModel.Id).Count == 0)
+                        {
+                            int ret = CameraLicenseDao.Save(cameraLicenseModel);
+                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
+                        }
+                        else
+                        {
+                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} 重复添加", "ColorVision");
+                        }
+                        RefreshLincense();
+
                     }
                     else
                     {
-                        MessageBox.Show("添加成功");
+                        MessageBox.Show(WindowHelpers.GetActiveWindow(), "不支持的许可文件后缀", "ColorVision");
                     }
+
                 }
-                else
-                {
-                    MessageBox.Show("重复添加许可证文件");
-                }
-                RefreshLincense();
+
+
+
             }
         }
         #endregion
@@ -155,14 +205,12 @@ namespace ColorVision.Services.Devices.Camera
             }
         }
 
-        public static void ExtractToDirectoryWithOverwrite(string zipPath, string extractPath)
+        public static bool ExtractToDirectoryWithOverwrite(string zipPath, string extractPath)
         {
-            // 确保解压目录存在
             Directory.CreateDirectory(extractPath);
-
-            // 打开ZIP文件
-            using (ZipArchive archive = ZipFile.Open(zipPath,ZipArchiveMode.Read))
+            try
             {
+                using ZipArchive archive = ZipFile.Open(zipPath, ZipArchiveMode.Read);
                 foreach (ZipArchiveEntry entry in archive.Entries)
                 {
                     // 获取在目标路径中的完整路径
@@ -190,6 +238,11 @@ namespace ColorVision.Services.Devices.Camera
                         entry.ExtractToFile(destinationPath);
                     }
                 }
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -229,7 +282,14 @@ namespace ColorVision.Services.Devices.Camera
                 Directory.CreateDirectory(path);
                 await Task.Delay(10);
                 Msg = "正在解析校正文件：" + " 请稍后...";
-                ExtractToDirectoryWithOverwrite(UploadFilePath, path);
+                bool sss = ExtractToDirectoryWithOverwrite(UploadFilePath, path);
+                if (!sss)
+                {
+                    Msg = "解压失败";
+                    await Task.Delay(100);
+                    Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
+                    return;
+                }
 
                 string Cameracfg = path + "\\Camera.cfg";
 
@@ -402,7 +462,7 @@ namespace ColorVision.Services.Devices.Camera
                             bool IsExist = false;
                             foreach (var item in VisualChildren)
                             {
-                                if (item is GroupService groupService1 && groupService1.Name == filePath)
+                                if (item is GroupResource groupResource1 && groupResource1.Name == filePath)
                                 {
                                     log.Info($"{filePath} Exit");
                                     IsExist = true;
@@ -413,17 +473,17 @@ namespace ColorVision.Services.Devices.Camera
                             {
                                 continue;
                             }
-                            GroupService groupService = GroupService.AddGroupService(this, filePath);
-                            if (groupService != null)
+                            GroupResource groupResource = GroupResource.AddGroupResource(this, filePath);
+                            if (groupResource != null)
                             {
                                 foreach (var item1 in keyValuePairs)
                                 {
                                     if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
                                     {
-                                        groupService.AddChild(colorVisionVCalibratioItems);
+                                        groupResource.AddChild(colorVisionVCalibratioItems);
                                     }
                                 }
-                                groupService.SetCalibrationResource(this);
+                                groupResource.SetCalibrationResource(this);
                             }
                         }
                     }
@@ -445,12 +505,14 @@ namespace ColorVision.Services.Devices.Camera
         public override UserControl GetDeviceControl() => new DeviceCameraControl(this);
         public override UserControl GetDeviceInfo() => new DeviceCameraControl(this, false);
         
-        public override UserControl GetDisplayControl() => new DisplayCameraControl(this);
-        readonly Lazy<EditCamera> EditCameraLazy;
-        public EditCamera EditCamera { get; set; }
-        public override UserControl GetEditControl() => EditCameraLazy.Value;
+        private Lazy<DisplayCameraControl> DisplayCameraControlLazy { get; set; }
 
+        public override UserControl GetDisplayControl() => DisplayCameraControlLazy.Value;
 
+        public override MQTTServiceBase? GetMQTTService()
+        {
+            return DeviceService;
+        }
         public override void Dispose()
         {
             Service.Dispose();

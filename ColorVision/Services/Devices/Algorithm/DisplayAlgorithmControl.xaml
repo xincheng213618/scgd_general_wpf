@@ -36,7 +36,13 @@
             <StackPanel Margin="5" >
                 <GroupBox  Header="关注点">
                     <StackPanel Margin="2" >
-                        <GroupBox  Header="CIE图像数据区">
+                        <GroupBox>
+                            <GroupBox.Header>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="CIE图像数据区"/>
+                                    <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="需要矫正后的数据才可以计算"/>
+                                </StackPanel>
+                            </GroupBox.Header>
                             <StackPanel  Margin="5" >
                                 <DockPanel Margin="0,2">
                                     <RadioButton IsChecked="True" GroupName="CIESrc"/>
@@ -64,25 +70,25 @@
                     </StackPanel>
                 </GroupBox>
                 <StackPanel >
-                    <GroupBox  Header="图片文件">
-                        <StackPanel  Margin="5" >
-                            <DockPanel Margin="0,2">
-                                <RadioButton Content="本地" IsChecked="True" GroupName="alg_src"/>
-                                <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
-                                <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" HorizontalAlignment="Left" Width="170" />
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
+                    <StackPanel>
+                        <DockPanel Margin="0,2">
+                            <RadioButton Content="本地" IsChecked="True" GroupName="alg_src" Width="80"/>
+                            <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
+                            <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="150" HorizontalAlignment="Left" />
+                        </DockPanel>
+                        <DockPanel Margin="0,2">
+                            <StackPanel Orientation="Horizontal" Width="80">
                                 <RadioButton x:Name="AlgRawSelect" GroupName="alg_src"/>
                                 <Button Content="刷新" Click="Button_Click_RawRefresh" />
-                                <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_RawOpen" />
-                                <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}" Width="150" />
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <RadioButton x:Name="AlgBatchSelect" Content="批次号" GroupName="alg_src"/>
-                                <TextBox x:Name="AlgBatchCode" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" />
-                            </DockPanel>
-                        </StackPanel>
-                    </GroupBox>
+                            </StackPanel>
+                            <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_RawOpen" />
+                            <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}"  Width="150" HorizontalAlignment="Left" />
+                        </DockPanel>
+                        <DockPanel Margin="0,2">
+                            <RadioButton x:Name="AlgBatchSelect" Content="批次号" GroupName="alg_src" Width="80"/>
+                            <TextBox x:Name="AlgBatchCode" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="150" HorizontalAlignment="Left" />
+                        </DockPanel>
+                    </StackPanel>
                     <TabControl>
                         <TabItem Header="FOV">
                             <GroupBox  Header="FOV" ToolTip="Field of view">

@@ -3,7 +3,7 @@ using System.IO;
 using ColorVision.Extension;
 using System.Windows.Media;
 using System.Windows.Controls;
-using ColorVision.MVVM;
+using ColorVision.Common.MVVM;
 
 namespace ColorVision.Solution.V.Folders
 {

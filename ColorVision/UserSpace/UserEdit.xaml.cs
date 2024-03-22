@@ -1,6 +1,6 @@
 ﻿using ColorVision.Themes.Controls;
 using System;
-using ColorVision.MVVM;
+using ColorVision.Common.MVVM;
 using System.Windows;
 
 namespace ColorVision.UserSpace

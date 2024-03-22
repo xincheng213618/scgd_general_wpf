@@ -1,13 +1,10 @@
 ﻿#pragma warning disable CS8604,CS8629
-using ColorVision.Common.MVVM;
 using ColorVision.Draw;
 using ColorVision.Media;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
-using ColorVision.Sorts;
 using ColorVision.Common.Utilities;
 using log4net;
-using MQTTMessageLib.Camera;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -20,6 +17,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Services.Templates;
 using ColorVision.Services.Templates.POI;
+using ColorVision.Common.Sorts;
+
 
 namespace ColorVision.Services.Devices.Calibration.Views
 {
@@ -29,9 +28,10 @@ namespace ColorVision.Services.Devices.Calibration.Views
     public partial class ViewCalibration : UserControl, IView
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(ViewCalibration));
+
         public View View { get; set; }
 
-        public ObservableCollection<ViewResultCalibration> ViewResultCameras { get; set; } = new ObservableCollection<ViewResultCalibration>();
+        public ObservableCollection<ViewResultCalibration> ViewResultCalibrations { get; set; } = new ObservableCollection<ViewResultCalibration>();
         public MQTTCalibration DeviceService{ get; set; }
         public DeviceCalibration Device { get; set; }
         public ViewCalibration(DeviceCalibration device)
@@ -45,10 +45,9 @@ namespace ColorVision.Services.Devices.Calibration.Views
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            View= new View();
-            ViewGridManager.GetInstance().AddView(this);
+            View = new View();
 
-            listView1.ItemsSource = ViewResultCameras;
+            listView1.ItemsSource = ViewResultCalibrations;
 
             ComboxPOITemplates = new ObservableCollection<TemplateModel<PoiParam>>();
             ComboxPOITemplates.Insert(0, new TemplateModel<PoiParam>("Empty", new PoiParam() { Id=-1}));
@@ -81,19 +80,19 @@ namespace ColorVision.Services.Devices.Calibration.Views
 
             if (listView1.View is GridView gridView)
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-            GridViewColumnVisibilityListView.ItemsSource = GridViewColumnVisibilitys;
+        }
+
+
+        public void ShowResult(MeasureImgResultModel model)
+        {
+            ViewResultCalibration result = new ViewResultCalibration(model);
+            ViewResultCalibrations.AddUnique(result);
+
+            if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
+            listView1.ScrollIntoView(listView1.SelectedItem);
         }
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-        private void OpenColumnVisibilityPopupButton_Click(object sender, RoutedEventArgs e)
-        {
-            ColumnVisibilityPopup.IsOpen = true;    
-        }
-        private void CheckBox_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.View is GridView gridView)
-                GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-        }
 
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
@@ -122,7 +121,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
             dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            CsvWriter.WriteToCsv(ViewResultCameras[listView1.SelectedIndex], dialog.FileName);
+            CsvWriter.WriteToCsv(ViewResultCalibrations[listView1.SelectedIndex], dialog.FileName);
             ImageSource bitmapSource = ImageView.ImageShow.Source;
             ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
 
@@ -132,7 +131,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
 
         private void Button_Click_Clear(object sender, RoutedEventArgs e)
         {
-            ViewResultCameras.Clear();
+            ViewResultCalibrations.Clear();
         }
 
 
@@ -149,11 +148,11 @@ namespace ColorVision.Services.Devices.Calibration.Views
             if (e.Key == Key.Delete && listView1.SelectedIndex > -1)
             {
                 int temp = listView1.SelectedIndex;
-                ViewResultCameras.RemoveAt(temp);
+                ViewResultCalibrations.RemoveAt(temp);
             }
         }
 
-        public void OpenImage(CVCIEFileInfo fileData)
+        public void OpenImage(CVCIEFile fileData)
         {
             ImageView.OpenImage(fileData);
         }
@@ -162,12 +161,12 @@ namespace ColorVision.Services.Devices.Calibration.Views
 
         private void Search_Click(object sender, RoutedEventArgs e)
         {
-            ViewResultCameras.Clear();
+            ViewResultCalibrations.Clear();
             List<MeasureImgResultModel> algResults = MeasureImgResultDao.GetAll();
             foreach (var item in algResults)
             {
                 ViewResultCalibration CameraImgResult = new ViewResultCalibration(item);
-                ViewResultCameras.Add(CameraImgResult);
+                ViewResultCalibrations.AddUnique(CameraImgResult);
             }
         }
 
@@ -175,22 +174,22 @@ namespace ColorVision.Services.Devices.Calibration.Views
         {
             if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && string.IsNullOrWhiteSpace(TbDeviceCode.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
             {
-                ViewResultCameras.Clear();
+                ViewResultCalibrations.Clear();
                 foreach (var item in MeasureImgResultDao.GetAll())
                 {
                     ViewResultCalibration algorithmResult = new ViewResultCalibration(item);
-                    ViewResultCameras.Add(algorithmResult);
+                    ViewResultCalibrations.AddUnique(algorithmResult);
                 }
                 return;
             }
             else
             {
-                ViewResultCameras.Clear();
+                ViewResultCalibrations.Clear();
                 List<MeasureImgResultModel> algResults = MeasureImgResultDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, TextBoxFile.Text, TbDeviceCode.Text, SearchTimeSart.DisplayDateTime,SearchTimeEnd.DisplayDateTime);
                 foreach (var item in algResults)
                 {
                     ViewResultCalibration algorithmResult = new ViewResultCalibration(item);
-                    ViewResultCameras.Add(algorithmResult);
+                    ViewResultCalibrations.AddUnique(algorithmResult);
                 }
 
             }
@@ -212,7 +211,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
         {
             if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCalibration viewResult)
             {
-                ViewResultCameras.Remove(viewResult);
+                ViewResultCalibrations.Remove(viewResult);
                 ImageView.Clear();
             }
         }
@@ -226,22 +225,22 @@ namespace ColorVision.Services.Devices.Calibration.Views
         {
             if (RadioID?.IsChecked == true)
             {
-                ViewResultCameras.SortByID(RadioUp?.IsChecked == false);
+                ViewResultCalibrations.SortByID(RadioUp?.IsChecked == false);
             }
 
             if (RadioBatch?.IsChecked == true)
             {
-                ViewResultCameras.SortByBatch(RadioUp?.IsChecked == false);
+                ViewResultCalibrations.SortByBatch(RadioUp?.IsChecked == false);
             }
 
             if (RadioFilePath?.IsChecked == true)
             {
-                ViewResultCameras.SortByFilePath(RadioUp?.IsChecked == false);
+                ViewResultCalibrations.SortByFilePath(RadioUp?.IsChecked == false);
             }
 
             if (RadioCreateTime?.IsChecked == true)
             {
-                ViewResultCameras.SortByCreateTime(RadioUp?.IsChecked == false);
+                ViewResultCalibrations.SortByCreateTime(RadioUp?.IsChecked == false);
             }
 
             OrderPopup.IsOpen = false;
@@ -250,42 +249,42 @@ namespace ColorVision.Services.Devices.Calibration.Views
         private void Src_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+            var ViewResultCamera = ViewResultCalibrations[listView1.SelectedIndex];
         }
 
         private void X_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+            var ViewResultCamera = ViewResultCalibrations[listView1.SelectedIndex];
         }
 
         private void Z_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+            var ViewResultCamera = ViewResultCalibrations[listView1.SelectedIndex];
         }
         private void Y_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+            var ViewResultCamera = ViewResultCalibrations[listView1.SelectedIndex];
 
         }
         private void B_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+            var ViewResultCamera = ViewResultCalibrations[listView1.SelectedIndex];
         }
 
         private void R_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+            var ViewResultCamera = ViewResultCalibrations[listView1.SelectedIndex];
         }
 
         private void G_Click(object sender, RoutedEventArgs e)
         {
             if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
+            var ViewResultCamera = ViewResultCalibrations[listView1.SelectedIndex];
         }
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
@@ -300,19 +299,19 @@ namespace ColorVision.Services.Devices.Calibration.Views
                         {
                             case "序号":
                                 item.IsSortD = !item.IsSortD;
-                                ViewResultCameras.SortByID(item.IsSortD);
+                                ViewResultCalibrations.SortByID(item.IsSortD);
                                 break;
                             case "测量时间":
                                 item.IsSortD = !item.IsSortD;
-                                ViewResultCameras.SortByCreateTime(item.IsSortD);
+                                ViewResultCalibrations.SortByCreateTime(item.IsSortD);
                                 break;
                             case "批次号":
                                 item.IsSortD = !item.IsSortD;
-                                ViewResultCameras.SortByBatch(item.IsSortD);
+                                ViewResultCalibrations.SortByBatch(item.IsSortD);
                                 break;
                             case "图像数据文件":
                                 item.IsSortD = !item.IsSortD;
-                                ViewResultCameras.SortByFilePath(item.IsSortD);
+                                ViewResultCalibrations.SortByFilePath(item.IsSortD);
                                 break;
                             default:
                                 break;

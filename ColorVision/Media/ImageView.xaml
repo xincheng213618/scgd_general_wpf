@@ -137,8 +137,8 @@
                 <draw:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </draw:ZoomboxSub>
 
-            <ToolBarTray DockPanel.Dock="Top" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Center">
-                <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"  Style="{StaticResource ToolBarBaseStyle}"  Loaded="ToolBar1_Loaded" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" >
+            <ToolBarTray x:Name="ToolBar1"  DockPanel.Dock="Top" DataContext="{Binding ToolBarTop}" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Center">
+                <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Loaded="ToolBar1_Loaded" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" >
                     <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding Activate}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
                     </ToggleButton>
@@ -157,7 +157,6 @@
                     <Button Command="{Binding ZoomNone}"  Margin="1,0">
                         <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageexpend}"  Margin="-5"/>
                     </Button>
-
                     <ToggleButton Click="Button8_Click" Margin="1,0" >
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMax}"  Margin="-5"/>
                     </ToggleButton>
@@ -193,17 +192,22 @@
                     <ToggleButton IsChecked="{Binding DrawPolygon}"  Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}"  >
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}"  Margin="-5"/>
                     </ToggleButton>
-
                 </ToolBar>
                 
             </ToolBarTray>
-            <ToolBarTray DockPanel.Dock="Left" Orientation="Vertical" Margin="0,30,0,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <ToolBarTray x:Name="ToolBar2"  DockPanel.Dock="Left" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="0,30,0,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Left" VerticalAlignment="Top">
                 <ToolBar ToolBarTray.IsLocked="True" >
                     <Button Click="Button_Click">
-                        <Image  Source="{DynamicResource openDrawingImage}" Margin="-5"/>
+                        <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource openDrawingImage}" Margin="-5"/>
                     </Button>
-                    <ToggleButton x:Name="Pseudo" Click="ToggleButton_Click">
-                        <Image  Source="/Assets/png/PowerToy.png" Margin="-5"/>
+                    <Button Command="{Binding SaveCommand}">
+                        <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageSave}"  Margin="-5"/>
+                    </Button>
+                    <Button x:Name="ButtonCIE1931"  Visibility="{Binding CIEVisible}" Click="ButtonCIE1931_Click">
+                        <Image  Style="{StaticResource ToolBarImage}"  Source="/Assets/Image/CIE1931xy1.png" Margin="-5"/>
+                    </Button>
+                    <ToggleButton x:Name="Pseudo"  Visibility="{Binding PseudoVisible}" Click="ToggleButton_Click">
+                        <Image Style="{StaticResource ToolBarImage}"   Source="/Assets/png/PowerToy.png" Margin="-5"/>
                     </ToggleButton>
                     <Grid  Height="200" Visibility="{Binding ElementName=Pseudo,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                         <Grid.RowDefinitions>
@@ -211,8 +215,8 @@
                             <RowDefinition Height="*"/>
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
-                        <TextBox Grid.Row="0" Width="28" Text="{Binding ValueEnd, ElementName=RangeSlider1, StringFormat=#0}" Style="{StaticResource BaseStyle}"  Background="Transparent"  BorderThickness="0"  HorizontalContentAlignment="Center" />
-                        <TextBox Grid.Row="2" Width="28" Text="{Binding ValueStart, ElementName=RangeSlider1, StringFormat=#0}" Style="{StaticResource BaseStyle}" Background="Transparent"  BorderThickness="0" HorizontalContentAlignment="Center"/>
+                        <TextBox Grid.Row="0" Width="28" Text="{Binding ValueEnd, ElementName=PseudoSlider, StringFormat=#0}" Style="{StaticResource BaseStyle}"  Background="Transparent"  BorderThickness="0"  HorizontalContentAlignment="Center" />
+                        <TextBox Grid.Row="2" Width="28" Text="{Binding ValueStart, ElementName=PseudoSlider, StringFormat=#0}" Style="{StaticResource BaseStyle}" Background="Transparent"  BorderThickness="0" HorizontalContentAlignment="Center"/>
                         <Grid Grid.Row="1"   Width="18">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="0"  x:Name="RowDefinitionStart"/>
@@ -225,8 +229,9 @@
                             </Border>
                             <Border Grid.Row="2" Background="Black" CornerRadius="0,0,10,10 "/>
                         </Grid>
-                        <hc:RangeSlider Grid.Row="1"  x:Name="RangeSlider1" FocusVisualStyle="{x:Null}"  Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="RangeSlider1_ValueChanged"/>
+                        <hc:RangeSlider Grid.Row="1"  x:Name="PseudoSlider" FocusVisualStyle="{x:Null}"  Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical" HorizontalAlignment="Center" ValueChanged="RangeSlider1_ValueChanged"/>
                     </Grid>
+
 
                 </ToolBar>
             </ToolBarTray>

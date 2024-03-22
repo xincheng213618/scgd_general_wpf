@@ -4,13 +4,13 @@ using ColorVision.HotKey;
 using ColorVision.Language;
 using ColorVision.MQTT;
 using ColorVision.MySql;
-using ColorVision.OnlineLicensing;
 using ColorVision.RC;
 using ColorVision.Services;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Flow;
 using ColorVision.Services.Msg;
+using ColorVision.Services.OnlineLicensing;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Solution;
@@ -29,6 +29,39 @@ using System.Windows.Input;
 
 namespace ColorVision
 {
+    public class MenuManager
+    {
+        private static readonly ILog log = LogManager.GetLogger(typeof(MenuManager));
+        private static MenuManager _instance;
+        private static readonly object _locker = new();
+        public static MenuManager GetInstance() { lock (_locker) { return _instance ??= new MenuManager(); } }
+
+        public Menu Menu { get; set; }
+
+        public MenuManager()
+        {
+
+        }
+
+        public void AddMenuItem(MenuItem menuItem, int index = -1)
+        {
+            if (index < 0 || index > Menu.Items.Count)
+            {
+                Menu.Items.Add(menuItem);
+            }
+            else
+            {
+                Menu.Items.Insert(index, menuItem);
+            }
+        }
+
+        public void RemoveMenuItem(MenuItem menuItem)
+        {
+            Menu.Items.Remove(menuItem);
+        }
+    }
+
+
     /// <summary>
     /// 这里写的是菜单栏的事件
     /// </summary>
@@ -188,6 +221,8 @@ namespace ColorVision
 
         private void Menu_Initialized(object sender, EventArgs e)
         {
+            MenuManager.GetInstance().Menu = Menu1;
+
             Application.Current.MainWindow = this;
             Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.Settings, new Hotkey(Key.I, ModifierKeys.Control), OpenSetting));
             Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.About, new Hotkey(Key.F1, ModifierKeys.Control), AboutMsg));
@@ -235,8 +270,7 @@ namespace ColorVision
 
         private void Update_Click(object sender, RoutedEventArgs e)
         {
-            AutoUpdater AutoUpdater = new AutoUpdater();
-            AutoUpdater.CheckAndUpdate();
+            AutoUpdater.GetInstance().CheckAndUpdate();
         }
         private void License_Click(object sender, RoutedEventArgs e)
         {

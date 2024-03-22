@@ -1,5 +1,4 @@
-﻿using ColorVision.MVVM;
-using ColorVision.Common.Extension;
+﻿using ColorVision.Common.Extension;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -8,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.Common.MVVM;
 
 namespace ColorVision.Solution.V
 {

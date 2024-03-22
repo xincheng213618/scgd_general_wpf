@@ -18,7 +18,7 @@ namespace ColorVision.Services.Dao
         public sbyte? FileType { get; set; }
         public int ResultCode { get; set; }
         public int TotalTime { get; set; }
-        public string? ResultDesc { get; set; }
+        public string? ResultMsg { get; set; }
 
         public string? FileData { get; set; }
         public string? FileUrl { get; set; }
@@ -44,11 +44,11 @@ namespace ColorVision.Services.Dao
                 BatchId = item.Field<int?>("batch_id") ?? -1,
                 BatchCode = item.Field<string?>("batch_code"),
                 RawFile = item.Field<string?>("raw_file"),
-                FileType = item.Field<sbyte>("file_type"),
+                FileType = item.Field<sbyte?>("file_type"),
                 FileData = item.Field<string?>("file_data"),
                 ResultCode = item.Field<int>("result_code"),
                 TotalTime = item.Field<int>("total_time"),
-                ResultDesc = item.Field<string?>("result"),
+                ResultMsg = item.Field<string?>("result"),
                 ReqParams = item.Field<string?>("params"),
                 ImgFrameInfo = item.Field<string?>("file_data"),
                 FileUrl = item.Field<string?>("file_url"),
@@ -65,9 +65,10 @@ namespace ColorVision.Services.Dao
             keyValuePairs.Add("batch_code", batch_code);
             keyValuePairs.Add("raw_file", file_url);
             keyValuePairs.Add("device_code", device_code);
-
             keyValuePairs.Add(">create_date", dateTimeSTART);
             keyValuePairs.Add("<create_date", dateTimeEnd);
+            //业务要求，取图失败的时候的记录不显示
+            //keyValuePairs.Add("result_code", "0");
             return ConditionalQuery(keyValuePairs);
         }
     }

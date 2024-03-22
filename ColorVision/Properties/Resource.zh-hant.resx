@@ -630,4 +630,31 @@
   <data name="ColorVisionUpdater" xml:space="preserve">
     <value>ColorVision 更新程式</value>
   </data>
+  <data name="Loading" xml:space="preserve">
+    <value>載入</value>
+  </data>
+  <data name="ServiceConfiguration" xml:space="preserve">
+    <value>服務配置</value>
+  </data>
+  <data name="ConfigurationComplete" xml:space="preserve">
+    <value>配置結束</value>
+  </data>
+  <data name="CurrentSpeed" xml:space="preserve">
+    <value>目前速度：</value>
+  </data>
+  <data name="TimeLeft" xml:space="preserve">
+    <value>剩餘時間：</value>
+  </data>
+  <data name="SetupWizard" xml:space="preserve">
+    <value>配置精靈</value>
+  </data>
+  <data name="WorkflowEngineDebugWindow" xml:space="preserve">
+    <value>流程引擎調試視窗</value>
+  </data>
+  <data name="MenuFlow" xml:space="preserve">
+    <value>流程(F)</value>
+  </data>
+  <data name="Create" xml:space="preserve">
+    <value>創建</value>
+  </data>
 </root>

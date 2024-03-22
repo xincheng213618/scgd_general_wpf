@@ -4,17 +4,49 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Wizards"
+        xmlns:properties ="clr-namespace:ColorVision.Properties"
+        xmlns:settings ="clr-namespace:ColorVision.Settings"
         mc:Ignorable="d"
-        Title="向导"  Height="450" Width="800">
-    <Grid>
-        <StackPanel>
-            <Button x:Name="MysqlButton" Content="Mysql配置" Click="MysqlButton_Click" />
-            <Button x:Name="MQTTButton" Content="MQTT配置" Click="MQTTButton_Click" />
-            <Button x:Name="RCButton" Content="RC配置" Click="RCButton_Click" />
-            
-            
-
-            <Button Content="配置结束" Click="Button_Click" />
+        d:DataContext="{d:DesignInstance Type=settings:SoftwareConfig}"
+        Title="{x:Static properties:Resource.Wizard}"  Height="300" Width="400" Initialized="Window_Initialized">
+    <Window.Resources>
+    <PathGeometry x:Key="CheckMarkGeometry" Figures="M 1,3 C1,3 1,6 1,6 1,6 4,9 4,9 4,9 9,3 9,3 9,3 9,0 9,0 9,0 4,6 4,6 4,6 1,3 1,3 z" />
+<PathGeometry x:Key="CrossMarkGeometry">
+    <PathFigure StartPoint="1,1">
+        <BezierSegment Point1="1,1" Point2="3,3" Point3="4,4"/>
+        <BezierSegment Point1="5,5" Point2="7,7" Point3="9,9"/>
+    </PathFigure>
+    <PathFigure StartPoint="9,1">
+        <BezierSegment Point1="9,1" Point2="7,3" Point3="6,4"/>
+        <BezierSegment Point1="5,5" Point2="3,7" Point3="1,9"/>
+    </PathFigure>
+</PathGeometry>    </Window.Resources>
+    <Grid Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Border Height="30">
+            <TextBlock Grid.Row="0" Text="{x:Static properties:Resource.SetupWizard}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        </Border>
+        <StackPanel Grid.Row="1" Margin="10">
+            <DockPanel Margin="2">
+                <Path  Visibility="{Binding MySqlControl.IsConnect,Converter={StaticResource bool2VisibilityConverter}}" DockPanel.Dock="Right" Width="15" Height="15" Stretch="Fill" Fill="Green" Data="{StaticResource CheckMarkGeometry}"/>
+                <Button x:Name="MysqlButton" Content="Mysql配置" Click="MysqlButton_Click" Margin="10,0" />
+            </DockPanel>
+            <DockPanel Margin="2">
+                <Path Visibility="{Binding MQTTControl.IsConnect,Converter={StaticResource bool2VisibilityConverter}}" DockPanel.Dock="Right" Width="15" Height="15" Stretch="Fill" Fill="Green" Data="{StaticResource CheckMarkGeometry}"/>
+                <Button x:Name="MQTTButton" Content="MQTT配置" Click="MQTTButton_Click" Margin="10,0" />
+            </DockPanel>
+            <DockPanel Margin="2">
+                <Path Visibility="{Binding RCService.IsConnect,Converter={StaticResource bool2VisibilityConverter}}" DockPanel.Dock="Right" Width="15" Height="15" Stretch="Fill" Fill="Green" Data="{StaticResource CheckMarkGeometry}"/>
+                <Button x:Name="RCButton" Content="RC配置" Click="RCButton_Click" Margin="10,0" />
+            </DockPanel>
         </StackPanel>
+
+        <Grid Grid.Row="2">
+            <Button  Content="{x:Static properties:Resource.ConfigurationComplete}" Height="30" Foreground="White" Background="{StaticResource PrimaryBrush}"  Click="Button_Click"/>
+        </Grid>
     </Grid>
 </Window>

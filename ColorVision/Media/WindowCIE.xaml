@@ -4,9 +4,59 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Media"
+          xmlns:draw ="clr-namespace:ColorVision.Draw;assembly=ColorVision.Util" d:DataContext="{d:DesignInstance Type=draw:ToolBarTop}"
         mc:Ignorable="d"
-        Title="WindowCIE" Height="450" Width="800">
+        Title="WindowCIE" Height="450" Width="800" Icon="/Assets/Image/CIE1931xy.ico" Initialized="Window_Initialized">
     <Grid>
-        <Image Source="/Assets/Image/CIE1931xy.png"/>
+        <Grid x:Name="ZoomGrid"  Grid.Column="0" Background="#c3c3c3">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0" Height="0.5" Background="#BCBCBC"/>
+            <draw:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10"  MinZoom="0.01" Grid.Row="1" Grid.RowSpan="2">
+                <draw:DrawCanvas x:Name="ImageShow" Source="/Assets/Image/CIE1931xy.png" Stretch="UniformToFill"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
+            </draw:ZoomboxSub>
+            <ToolBarTray DockPanel.Dock="Top" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Center">
+                <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"  Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" >
+                    <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding Activate}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
+                        <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
+                    </ToggleButton>
+                    <ToggleButton x:Name="ToggleButtonMouse"  IsChecked="{Binding CrosshairFunction}" >
+                        <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMouse}"  Margin="-5"/>
+                    </ToggleButton>
+                    <Button Command="{Binding ZoomUniform}"  Margin="1,0">
+                        <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImage1_1}"  Margin="-5"/>
+                    </Button>
+                    <Button Command="{Binding ZoomIncrease}"  Margin="1,0">
+                        <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagezoom_in}"   Margin="-5"/>
+                    </Button>
+                    <Button  Command="{Binding ZoomDecrease}"  Margin="1,0">
+                        <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagezoom_out}"  Margin="-5"/>
+                    </Button>
+                    <Button Command="{Binding ZoomNone}"  Margin="1,0">
+                        <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageexpend}"  Margin="-5"/>
+                    </Button>
+                    <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
+                    <ToggleButton  IsChecked="{Binding Measure}" Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}">
+                        <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageruler}"  Margin="-5"/>
+                    </ToggleButton>
+                    <ToggleButton  IsChecked="{Binding EraseVisual}" Margin="1,0" Click="Button7_Click" Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}">
+                        <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageeraser}"  Margin="-5"/>
+                    </ToggleButton>
+
+                    <ToggleButton IsChecked="{Binding DrawCircle}" Margin="1,0" Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}">
+                        <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageCircle}"  Margin="-5"/>
+                    </ToggleButton>
+                    <ToggleButton IsChecked="{Binding DrawRect}" Margin="1,0" Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}">
+                        <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageRect}"  Margin="-5"/>
+                    </ToggleButton>
+                    <ToggleButton IsChecked="{Binding DrawPolygon}"  Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}"  >
+                        <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}"  Margin="-5"/>
+                    </ToggleButton>
+                </ToolBar>
+            </ToolBarTray>
+        </Grid>
+
     </Grid>
 </Window>

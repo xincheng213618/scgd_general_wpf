@@ -2,7 +2,7 @@
 using System;
 using System.Windows.Input;
 
-namespace ColorVision.MVVM
+namespace ColorVision.Common.MVVM
 {
     /// <summary>
     ///  Implements the <see cref="ICommand"/> interface

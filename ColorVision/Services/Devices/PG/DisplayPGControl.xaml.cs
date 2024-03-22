@@ -2,12 +2,12 @@
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Common.Utilities;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Core;
 using System.Windows.Input;
 using MQTTMessageLib;
 using ColorVision.Themes;
 
-namespace ColorVision.Device.PG
+namespace ColorVision.Services.Devices.PG
 {
     /// <summary>
     /// DisplayPGControl.xaml 的交互逻辑

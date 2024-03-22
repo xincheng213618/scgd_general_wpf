@@ -7,6 +7,7 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Settings;
 using ColorVision.Util.Draw.Rectangle;
+using ColorVision.Utilities;
 using cvColorVision;
 using cvColorVision.Util;
 using log4net;
@@ -180,43 +181,6 @@ namespace ColorVision.Services.Templates.POI
                     PoiParam.Height = 0;
                 }
                 PoiParam.PoiPoints.Clear();
-                foreach (var item in DrawingVisualLists)
-                {
-                    DrawBaseAttribute drawAttributeBase = item.BaseAttribute;
-                    if (drawAttributeBase is CircleAttribute circle)
-                    {
-                        PoiParamData poiParamData = new PoiParamData()
-                        {
-                            ID = circle.ID,
-                            Name = circle.Name,
-                            PointType = RiPointTypes.Circle,
-                            PixX = circle.Center.X,
-                            PixY = circle.Center.Y,
-                            PixWidth = circle.Radius * 2,
-                            PixHeight = circle.Radius * 2
-                        };
-                        PoiParam.PoiPoints.Add(poiParamData);
-                    }
-                    else if (drawAttributeBase is RectangleAttribute rectangle)
-                    {
-                        PoiParamData poiParamData = new PoiParamData()
-                        {
-                            ID = rectangle.ID,
-                            Name = rectangle.Name,
-                            PointType = RiPointTypes.Rect,
-                            PixX = rectangle.Rect.X,
-                            PixY = rectangle.Rect.Y,
-                            PixWidth = rectangle.Rect.Width,
-                            PixHeight = rectangle.Rect.Height,
-                        };
-                        PoiParam.PoiPoints.Add(poiParamData);
-                    }
-                }
-
-                if (SoftwareConfig.IsUseMySql)
-                {
-                    new PoiMasterDao().Save(new PoiMasterModel(PoiParam) { Name = PoiParam.PoiName });
-                }
             };
 
             this.PreviewKeyDown += (s, e) =>
@@ -288,23 +252,13 @@ namespace ColorVision.Services.Templates.POI
             {
                 string filePath = openFileDialog.FileName;
 
-
-                if (Path.GetExtension(filePath).Contains("cvraw"))
+                string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
+                if (ext.Contains("cvraw")|| ext.Contains("cvsrc") || ext.Contains("cvcie"))
                 {
+                    FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
                     try
                     {
-                        OpenImage(new NetFileUtil("1").OpenLocalCVFile(filePath, FileExtType.Raw));
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show(ex.Message);
-                    }
-                }
-                else if (Path.GetExtension(filePath).Contains("cvcie"))
-                {
-                    try
-                    {
-                        OpenImage(new NetFileUtil("1").OpenLocalCVFile(filePath, FileExtType.CIE));
+                        OpenImage(new NetFileUtil().OpenLocalCVFile(filePath, fileExtType));
                     }
                     catch (Exception ex)
                     {
@@ -333,22 +287,22 @@ namespace ColorVision.Services.Templates.POI
 
                 if (ext == ".cvraw")
                 {
-                    CVCIEFileInfo fileInfo = new CVCIEFileInfo();
-                    fileInfo.fileType = FileExtType.Raw;
-                    int ret = CVFileUtils.ReadCVFile_Raw(filePath, ref fileInfo);
+                    CVCIEFile fileInfo = new CVCIEFile();
+                    fileInfo.FileExtType = FileExtType.Raw;
+                    int ret = CVFileUtil.ReadCVRaw(filePath, ref fileInfo);
                     if (ret == 0)
                     {
                         OpenCvSharp.Mat src;
                         if (fileInfo.bpp != 8)
                         {
-                            OpenCvSharp.Mat temp = new OpenCvSharp.Mat(fileInfo.height, fileInfo.width, OpenCvSharp.MatType.MakeType(fileInfo.depth, fileInfo.channels), fileInfo.data);
+                            OpenCvSharp.Mat temp = new OpenCvSharp.Mat(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
                             src = new OpenCvSharp.Mat();
                             temp.ConvertTo(src, OpenCvSharp.MatType.CV_8U, 1.0 / 256.0);
                             temp.Dispose();
                         }
                         else
                         {
-                             src = new OpenCvSharp.Mat(fileInfo.height, fileInfo.width, OpenCvSharp.MatType.MakeType(fileInfo.depth, fileInfo.channels), fileInfo.data);
+                             src = new OpenCvSharp.Mat(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
                         }
 
                         BitmapSource bitmapSource = src.ToBitmapSource();
@@ -1138,33 +1092,20 @@ namespace ColorVision.Services.Templates.POI
                     DrawBaseAttribute drawAttributeBase = item.BaseAttribute;
                     if (drawAttributeBase is CircleAttribute circle)
                     {
+                        PoiParamData poiParamData = new PoiParamData()
+                        {
+                            ID = circle.ID,
+                            PointType = RiPointTypes.Circle,
+                            PixX = circle.Center.X,
+                            PixY = circle.Center.Y,
+                            PixWidth = circle.Radius * 2,
+                            PixHeight = circle.Radius * 2,
+                        };
                         if (circle is CircleTextAttribute circleTextAttribute)
                         {
-                            PoiParamData poiParamData = new PoiParamData()
-                            {
-                                ID = circle.ID,
-                                Name = circleTextAttribute.Text,
-                                PointType = RiPointTypes.Circle,
-                                PixX = circle.Center.X,
-                                PixY = circle.Center.Y,
-                                PixWidth = circle.Radius*2,
-                                PixHeight = circle.Radius*2,
-                            };
-                            PoiParam.PoiPoints.Add(poiParamData);
+                            poiParamData.Name = circleTextAttribute.Text;
                         }
-                        else
-                        {
-                            PoiParamData poiParamData = new PoiParamData()
-                            {
-                                ID = circle.ID,
-                                PointType = RiPointTypes.Circle,
-                                PixX = circle.Center.X,
-                                PixY = circle.Center.Y,
-                                PixWidth = circle.Radius,
-                                PixHeight = circle.Radius,
-                            };
-                            PoiParam.PoiPoints.Add(poiParamData);
-                        }
+                        PoiParam.PoiPoints.Add(poiParamData);
                     }
                     else if (drawAttributeBase is RectangleAttribute rectangle)
                     {
@@ -1190,8 +1131,8 @@ namespace ColorVision.Services.Templates.POI
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         WaitControl.Visibility = Visibility.Collapsed;
+                        MessageBox.Show(WindowHelpers.GetActiveWindow(), "保存成功", "ColorVision");
                     });
-                    MessageBox.Show("保存成功", "ColorVision");
                 });
                 thread.Start();
             }
@@ -1499,7 +1440,14 @@ namespace ColorVision.Services.Templates.POI
             {
                 try
                 {
-                    OpenImage(new NetFileUtil("1").OpenLocalCVFile(measureImgResultModel.FileUrl, FileExtType.Raw));
+                    if (measureImgResultModel.FileUrl != null)
+                    {
+                        OpenImage(new NetFileUtil().OpenLocalCVFile(measureImgResultModel.FileUrl, FileExtType.Raw));
+                    }
+                    else
+                    {
+                        MessageBox.Show("打开最近服务拍摄的图像失败,找不到文件地址" );
+                    }
                 }
                 catch(Exception ex)
                 {
@@ -1513,18 +1461,18 @@ namespace ColorVision.Services.Templates.POI
         }
 
 
-        public void OpenImage(CVCIEFileInfo fileInfo)
+        public void OpenImage(CVCIEFile fileInfo)
         {
-            if (fileInfo.fileType == FileExtType.Src) OpenImage(fileInfo.data);
-            else if (fileInfo.fileType == FileExtType.Raw)
+            if (fileInfo.FileExtType == FileExtType.Src) OpenImage(fileInfo.data);
+            else if (fileInfo.FileExtType == FileExtType.Raw)
             {
                 ShowImage(fileInfo);
             }
         }
 
-        private void ShowImage(CVCIEFileInfo fileInfo)
+        private void ShowImage(CVCIEFile fileInfo)
         {
-            OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.height, fileInfo.width, OpenCvSharp.MatType.MakeType(fileInfo.depth, fileInfo.channels), fileInfo.data);
+            OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
             OpenCvSharp.Mat dst = null;
             if (fileInfo.bpp == 32)
             {
@@ -1559,7 +1507,8 @@ namespace ColorVision.Services.Templates.POI
             imgs.Reverse();
             foreach (var item in imgs)
             {
-                MeasureImgResultModels.Add(item);
+                if (!string.IsNullOrWhiteSpace(item.RawFile) &&!item.RawFile.ToLower(CultureInfo.CurrentCulture).Contains(".cvcie"))
+                    MeasureImgResultModels.Add(item);
             }
             ComboBoxImg.ItemsSource = MeasureImgResultModels;
             ComboBoxImg.DisplayMemberPath = "RawFile";
@@ -1571,7 +1520,14 @@ namespace ColorVision.Services.Templates.POI
             {
                 try
                 {
-                    OpenImage(new NetFileUtil("1").OpenLocalCVFile(MeasureImgResultModels[ComboBoxImg.SelectedIndex].FileUrl, FileExtType.Raw));
+                    if (MeasureImgResultModels[ComboBoxImg.SelectedIndex] is MeasureImgResultModel model && model.FileUrl != null)
+                    {
+                        OpenImage(new NetFileUtil().OpenLocalCVFile(model.FileUrl, FileExtType.Raw));
+                    }
+                    else
+                    {
+                        MessageBox.Show("打开最近服务拍摄的图像失败");
+                    }
                 }
                 catch (Exception ex)
                 {

@@ -46,6 +46,7 @@ namespace ColorVision
             if (!SoftwareSetting.WizardCompletionKey)
             {
                 WizardWindow wizardWindow = new WizardWindow();
+                wizardWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 wizardWindow.Show();
             }
             else if (!IsReStart)

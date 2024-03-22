@@ -172,6 +172,7 @@ namespace ColorVision
                     if (!ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.IsDefaultOpenService)
                     {
                         TextBoxMsg.Text += $"{Environment.NewLine}初始化服务";
+                        ServiceManager.GenDeviceDisplayControl();
                         new WindowDevices() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                     }
                     else

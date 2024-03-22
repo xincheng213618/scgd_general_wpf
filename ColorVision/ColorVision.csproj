@@ -15,16 +15,12 @@
 
   <ItemGroup>
     <Compile Remove="Commands\**" />
-    <Compile Remove="Extension\**" />
     <Compile Remove="Services\Flow\新文件夹\**" />
     <EmbeddedResource Remove="Commands\**" />
-    <EmbeddedResource Remove="Extension\**" />
     <EmbeddedResource Remove="Services\Flow\新文件夹\**" />
     <None Remove="Commands\**" />
-    <None Remove="Extension\**" />
     <None Remove="Services\Flow\新文件夹\**" />
     <Page Remove="Commands\**" />
-    <Page Remove="Extension\**" />
     <Page Remove="Services\Flow\新文件夹\**" />
   </ItemGroup>
 
@@ -38,7 +34,9 @@
   </ItemGroup>
 	
   <ItemGroup>
+    <None Remove="Assets\Image\CIE1931xy.ico" />
     <None Remove="Assets\Image\CIE1931xy.png" />
+    <None Remove="Assets\Image\CIE1931xy1.png" />
     <None Remove="Assets\Image\ColorVision.ico" />
     <None Remove="Assets\Image\ColorVision.png" />
     <None Remove="Assets\Image\ColorVision1.ico" />
@@ -107,6 +105,12 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resource.resx</DependentUpon>
     </Compile>
+    <Compile Update="Services\Terminal\CreateTerminal.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Services\Type\CreateType.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -137,7 +141,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="Assets\Image\CIE1931xy.ico" />
     <Resource Include="Assets\Image\CIE1931xy.png" />
+    <Resource Include="Assets\Image\CIE1931xy1.png" />
     <Resource Include="Assets\Image\ColorVision.ico" />
   </ItemGroup>
   <ItemGroup>

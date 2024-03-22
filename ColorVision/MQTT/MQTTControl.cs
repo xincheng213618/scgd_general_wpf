@@ -1,4 +1,4 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Settings;
 using log4net;
 using MQTTnet;
@@ -61,10 +61,12 @@ namespace ColorVision.MQTT
 
             MQTTClient = new MqttFactory().CreateMqttClient();
             MQTTClient.ConnectedAsync += (arg) => {
+                log.Info($"{DateTime.Now:HH:mm:ss.fff} MQTT连接成功");
                 MQTTMsgChanged?.Invoke(new MQMsg(1, $"{DateTime.Now:HH:mm:ss.fff} MQTT连接成功"));
                 IsConnect = true; return Task.CompletedTask; }; 
             MQTTClient.DisconnectedAsync += (arg) => {
-                MQTTMsgChanged?.Invoke(new MQMsg(-1, $"{DateTime.Now:HH:mm:ss.fff} MQTT失去连接"));
+                log.Info($"{DateTime.Now:HH:mm:ss.fff} MQTT失去连接");
+                MQTTMsgChanged?.Invoke(new MQMsg(-1, $"{DateTime.Now:HH:mm:ss.fff} MQTT失去连接")); RunReconnectTask();
                 IsConnect = false; return Task.CompletedTask; };
             MQTTClient.ApplicationMessageReceivedAsync += (arg) => {
                 MQTTMsgChanged?.Invoke(new MQMsg(1,
@@ -89,7 +91,22 @@ namespace ColorVision.MQTT
                 return IsConnect;
             }
         }
+        private void RunReconnectTask()
+        {
+            Task.Run(async () => { Thread.Sleep(3000); await ReConnectAsync(); });
+        }
 
+
+        private async Task ReConnectAsync()
+        {
+            MqttClientOptionsBuilder mqttClientOptionsBuilder = new MqttClientOptionsBuilder();
+            mqttClientOptionsBuilder.WithTcpServer(Config.Host, Config.Port);          // 设置MQTT服务器地址
+            if (!string.IsNullOrEmpty(Config.UserName))
+                mqttClientOptionsBuilder.WithCredentials(Config.UserName, Config.UserPwd);  // 设置鉴权参数
+            mqttClientOptionsBuilder.WithClientId(Guid.NewGuid().ToString("N"));  // 设置客户端序列号
+            MqttClientOptions options = mqttClientOptionsBuilder.Build();
+            await MQTTClient.ConnectAsync(options);
+        }
         public static async Task<bool> TestConnect(MQTTConfig MQTTConfig)
         {
             MqttClientOptionsBuilder mqttClientOptionsBuilder = new MqttClientOptionsBuilder();

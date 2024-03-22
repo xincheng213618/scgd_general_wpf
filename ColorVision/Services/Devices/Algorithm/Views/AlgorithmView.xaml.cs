@@ -1,9 +1,7 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
-using ColorVision.Common.MVVM;
 using ColorVision.Draw;
 using ColorVision.Net;
 using ColorVision.Services.Devices.Algorithm.Dao;
-using ColorVision.Sorts;
 using ColorVision.Common.Utilities;
 using log4net;
 using MQTTMessageLib.Algorithm;
@@ -21,6 +19,7 @@ using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Services.Dao;
+using ColorVision.Common.Sorts;
 
 namespace ColorVision.Services.Devices.Algorithm.Views
 {
@@ -52,7 +51,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             };
 
             View = new View();
-            ViewGridManager.GetInstance().AddView(this);
 
             listView1.ItemsSource = AlgResults;
 
@@ -64,18 +62,9 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
             if (listView1.View is GridView gridView)
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-            GridViewColumnVisibilityListView.ItemsSource = GridViewColumnVisibilitys;
         }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-        private void OpenColumnVisibilityPopupButton_Click(object sender, RoutedEventArgs e)
-        {
-            ColumnVisibilityPopup.IsOpen = true;
-        }
-        private void CheckBox_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.View is GridView gridView)
-                GridViewColumnVisibility.AdjustGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-        }
+
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
             if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && listView1.View is GridView gridView)
@@ -599,7 +588,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
         }
 
-        internal void OpenImage(CVCIEFileInfo fileInfo)
+        internal void OpenImage(CVCIEFile fileInfo)
         {
             ImageView.OpenImage(fileInfo);
         }
@@ -771,27 +760,32 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
         private void ButtonChart_Click(object sender, RoutedEventArgs e)
         {
-            if (listView1.Items[listView1.SelectedIndex] is AlgorithmResult result)
+            if (listView1.SelectedIndex > -1)
             {
-                if (result.ResultType == AlgorithmResultType.POI_XY_UV)
+                if (listView1.Items[listView1.SelectedIndex] is AlgorithmResult result)
                 {
-                    if(result.PoiResultCIExyuvDatas.Count != 0)
+                    if (result.ResultType == AlgorithmResultType.POI_XY_UV)
                     {
-                        WindowChart windowChart = new WindowChart(result.PoiResultCIExyuvDatas);
-                        windowChart.Show();
+                        if (result.PoiResultCIExyuvDatas.Count != 0)
+                        {
+                            WindowChart windowChart = new WindowChart(result.PoiResultCIExyuvDatas);
+                            windowChart.Show();
+                        }
+                        else
+                        {
+                            MessageBox.Show("结果为空");
+                        }
                     }
                     else
                     {
-                        MessageBox.Show("结果为空");
+                        MessageBox.Show("暂不支持其他");
                     }
                 }
-                else
-                {
-                    MessageBox.Show("暂不支持其他");
-                }
+            }
+            else
+            {
+                MessageBox.Show("没有选择条目");
             }
         }
-
-     
     }
 }

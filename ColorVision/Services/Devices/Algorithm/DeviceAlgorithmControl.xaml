@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Services.Devices.Algorithm"
-             xmlns:resx="clr-namespace:ColorVision.Properties"
+             xmlns:properties="clr-namespace:ColorVision.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceAlgorithm}"
              d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized">
@@ -52,7 +52,7 @@
             </Grid>
             <Border  Grid.Row="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
                 <Grid x:Name="MQTTShow">
-                    <Grid  x:Name="MQTTShowContent" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}">
+                    <Grid  x:Name="MQTTShowContent">
                         <StackPanel Margin="5,0">
                             <GroupBox Header="基本信息" Margin="0,5">
                                 <StackPanel Margin="5">
@@ -78,57 +78,7 @@
                                     </DockPanel>
                                 </StackPanel>
                             </GroupBox>
-
                         </StackPanel>
-
-                    </Grid>
-                    <Grid x:Name="MQTTEditContent"  Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="60"/>
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Margin="5,0" >
-                            <GroupBox Header="资源信息" Margin="0,5">
-                                <StackPanel Margin="5">
-                                    <DockPanel Margin="0,2" >
-                                        <TextBlock Text="Code" Width="120"/>
-                                        <TextBox Text="{Binding Config.Code}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2" >
-                                        <TextBlock Text="界面展示名称" Width="120"/>
-                                        <TextBox Text="{Binding Config.Name}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,5" >
-                                        <TextBlock Text="心跳时间(ms)"  Width="120"/>
-                                        <TextBox Text="{Binding Config.HeartbeatTime}"/>
-                                    </DockPanel>
-                                </StackPanel>
-                            </GroupBox>
-                            <GroupBox Header="配置信息" Margin="0,5">
-                                <StackPanel Margin="5">
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock  Text="绑定设备"  Width="120"/>
-                                        <TextBox  x:Name="TextBox_BindDevice" Text="{Binding Config.BindDeviceCode}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock  Text="数据目录"  Width="120"/>
-                                        <TextBox  x:Name="TextBox_CIEImgPath" Text="{Binding Config.FileServerCfg.DataBasePath}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock  Text="端口地址" Width="120"/>
-                                        <TextBox  x:Name="TextBox_Endpoint" Text="{Binding Config.FileServerCfg.Endpoint}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <TextBlock  Text="端口范围" Width="120"/>
-                                        <TextBox  x:Name="TextBox_PortRange" Text="{Binding Config.FileServerCfg.PortRange}"/>
-                                    </DockPanel>
-
-                                </StackPanel>
-                            </GroupBox>
-                        </StackPanel>
-                        <Border Grid.Column="1" Margin="5">
-                            <Button  Content="{x:Static resx:Resource.Submit}" Command="{Binding SaveCommand}" />
-                        </Border>
                     </Grid>
                 </Grid>
             </Border>

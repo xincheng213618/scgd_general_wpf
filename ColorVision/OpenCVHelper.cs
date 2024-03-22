@@ -4,22 +4,23 @@ using System.Runtime.InteropServices;
 using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows;
+using System.Runtime.CompilerServices;
 
 namespace ColorVision
 {
-    public struct HImage
+    public struct HImage : IDisposable
     {
         public int rows;
         public int cols;
         public int channels;
-        public int depth; //Bpp
+        public int depth; //bpp
 
-        public readonly int Type
+        public  int Type
         {
             get { return (((depth & ((1 << 3) - 1)) + ((channels - 1) << 3))); }
         }
 
-        public readonly int ElemSize
+        public  int ElemSize
         {
             get
             {
@@ -29,6 +30,17 @@ namespace ColorVision
         }
 
         public IntPtr pData;
+
+        public void Dispose()
+        {
+            // 使用 Marshal.FreeHGlobal 来释放由 Marshal.AllocHGlobal 分配的内存
+            if (pData != IntPtr.Zero)
+            {
+                Marshal.FreeHGlobal(pData);
+                pData = IntPtr.Zero;
+            }
+        }
+
     }
 
 
@@ -54,22 +66,45 @@ namespace ColorVision
             writeableBitmap.Unlock();
             return writeableBitmap;
         }
-        public static HImage BitmapImageToHImage(this BitmapImage bitmapImage)
-        {
-            // Convert the BitmapImage to a WriteableBitmap first
-            WriteableBitmap writeableBitmap = new WriteableBitmap(bitmapImage);
+        public static HImage ToHImage(this BitmapImage bitmapImage) => bitmapImage.ToWriteableBitmap().ToHImage();
 
-            // Now convert the WriteableBitmap to an HImage
-            return writeableBitmap.ToHImage();
-        }
+        public static WriteableBitmap ToWriteableBitmap(this BitmapImage bitmapImage) => new WriteableBitmap(bitmapImage);
 
         public static HImage ToHImage(this WriteableBitmap writeableBitmap)
         {
-            // Determine the number of channels and depth based on the pixel format
-            int channels = writeableBitmap.Format.BitsPerPixel / 8;
-            int depth = 8; // Assuming 8 bits per channel, this may need to be adjusted based on actual format
-
-            // Create a new HImage instance
+            // Determine the number of channels and Depth based on the pixel format
+            int channels;
+            int depth;
+            switch (writeableBitmap.Format.ToString())
+            {
+                case "Bgr32":
+                case "Bgra32":
+                case "Pbgra32":
+                    channels = 4; // BGRA format has 4 channels
+                    depth = 8; // 8 bits per channel
+                    break;
+                case "Bgr24":
+                case "Rgb24":
+                    channels = 3; // RGB format has 3 channels
+                    depth = 8; // 8 bits per channel
+                    break;
+                case "Rgb48":
+                    channels = 3; // RGB format has 3 channels
+                    depth = 16; // 8 bits per channel
+                    break;
+                case "Gray8":
+                    channels = 1; // Gray scale has 1 channel
+                    depth = 8; // 8 bits per channel
+                    break;
+                case "Gray16":
+                    channels = 1; // Gray scale has 1 channel
+                    depth = 16; // 16 bits per channel
+                    break;
+                default:
+                    MessageBox.Show($"{writeableBitmap.Format}暂不支持的格式,请联系开发人员");
+                    throw new NotSupportedException("The pixel format is not supported.");
+            }
+            // Create a new HImageCache instance
             HImage hImage = new HImage
             {
                 rows = writeableBitmap.PixelHeight,
@@ -79,7 +114,7 @@ namespace ColorVision
                 pData = Marshal.AllocHGlobal(writeableBitmap.PixelWidth * writeableBitmap.PixelHeight * channels)
             };
 
-            // Copy the pixel data from the WriteableBitmap to the HImage
+            // Copy the pixel data from the WriteableBitmap to the HImageCache
             writeableBitmap.Lock();
             RtlMoveMemory(hImage.pData, writeableBitmap.BackBuffer, (uint)(hImage.cols * hImage.rows * hImage.channels));
             writeableBitmap.Unlock();
@@ -109,7 +144,11 @@ namespace ColorVision
         public static extern int ReadGhostImage([MarshalAs(UnmanagedType.LPStr)] string FilePath, int singleLedPixelNum, int[] LEDPixelX, int[] LEDPixelY, int singleGhostPixelNum, int[] GhostPixelX, int[] GhostPixelY, out HImage hImage);
 
         [DllImport("OpenCVHelper.dll", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int ReadGhostHImage(HImage image, out HImage hImage);
+        public static extern int PseudoColor(HImage image, out HImage hImage, uint min, uint max);
+
+        [DllImport("OpenCVHelper.dll", CallingConvention = CallingConvention.Cdecl)]
+        public static extern void FreeHImageData(IntPtr data);
+
 
 
         [DllImport("OpenCVHelper.dll")]

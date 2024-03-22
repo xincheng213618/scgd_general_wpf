@@ -8,10 +8,5 @@ namespace ColorVision.Draw
 
         public abstract Pen Pen { get; set; }
         public abstract void Render();
-
-
     }
-
-
-
 }

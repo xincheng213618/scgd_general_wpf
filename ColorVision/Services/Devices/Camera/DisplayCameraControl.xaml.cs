@@ -1,11 +1,11 @@
-﻿using ColorVision.Common.Extension;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Extension;
 using ColorVision.Net;
+using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.Devices.Camera.Views;
-using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
@@ -18,10 +18,12 @@ using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
+using ScottPlot.Drawing.Colormaps;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -41,27 +43,15 @@ namespace ColorVision.Services.Devices.Camera
 
         public ViewCamera View { get; set; }
 
-        private NetFileUtil netFileUtil;
-        private IPendingHandler? handler { get; set; }
-
 
         public DisplayCameraControl(DeviceCamera device)
         {
             Device = device;
             View = Device.View;
             InitializeComponent();
-
-            netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.FullName+"\\Cache");
-            netFileUtil.handler += NetFileUtil_handler;
-
-            DService.OnMessageRecved += CameraService_OnMessageRecved;
-            View.OnCurSelectionChanged += View_OnCurSelectionChanged;
-
-
             _timer = new DispatcherTimer();
-            _timer.Interval = TimeSpan.FromMilliseconds(500); // 设置延时时间，这里是500毫秒
-            _timer.Tick += Timer_Tick; // 设置Tick事件处理程序
-
+            _timer.Interval = TimeSpan.FromMilliseconds(500);
+            _timer.Tick += Timer_Tick; 
             this.PreviewMouseDown += UserControl_PreviewMouseDown;
         }
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; 
@@ -79,275 +69,20 @@ namespace ColorVision.Services.Devices.Camera
             }
         }
 
-
-        private void View_OnCurSelectionChanged(ViewResultCamera data)
-        {
-            if (data.ResultCode == 0 && data.FilePath!=null)
-            {
-                string localName = netFileUtil.GetCacheFileFullName(data.FilePath);
-                FileExtType fileExt = FileExtType.Src;
-                switch (data.FileType)
-                {
-                    case CameraFileType.SrcFile:
-                        fileExt = FileExtType.Src;
-                        break;
-                    case CameraFileType.RawFile:
-                        fileExt = FileExtType.Raw;
-                        break;
-                    case CameraFileType.CIEFile:
-                        fileExt = FileExtType.CIE;
-                        break;
-                    default:
-                        break;
-                }
-                if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
-                {
-                    DService.DownloadFile(data.FilePath, fileExt);
-                }
-                else
-                {
-                    netFileUtil.OpenLocalFile(localName, fileExt);
-                }
-            }
-        }
-
-
-        private void CameraService_OnMessageRecved(object sender, MessageRecvArgs arg)
-        {
-            if (arg.ResultCode == 0)
-            {
-                switch (arg.EventName)
-                {
-                    case MQTTCameraEventEnum.Event_GetData:
-                        ShowResultFromDB(arg.SerialNumber, Convert.ToInt32(arg.Data.MasterId));
-                        break;
-                    case MQTTFileServerEventEnum.Event_File_Download:
-                        //DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                        //FileDownload(pm_dl);
-                        break;
-                    case MQTTCameraEventEnum.Event_GetData_Channel:
-                        DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
-                        FileDownload(pm_dl_ch);
-                        break;
-                    case MQTTCameraEventEnum.Event_OpenLive:
-                        DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(arg.Data));
-                        string mapName = Device.Code;
-                        if (pm_live.IsLocal) mapName = pm_live.MapName;
-                        CameraVideoControl.Start(pm_live.IsLocal, mapName, pm_live.FrameInfo.width, pm_live.FrameInfo.height);
-                        break;
-                }
-            }
-            else if (arg.ResultCode == 102)
-            {
-                switch (arg.EventName)
-                {
-                    case MQTTFileServerEventEnum.Event_File_Upload:
-                        DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                        FileUpload(pm_up);
-                        break;
-                    case MQTTFileServerEventEnum.Event_File_Download:
-                        DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                        FileDownload(pm_dl);
-                        break;
-                    case MQTTCameraEventEnum.Event_GetData_Channel:
-                        DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
-                        FileDownload(pm_dl_ch);
-                        break;
-                }
-            }
-            else
-            {
-                switch (arg.EventName)
-                {
-                    case MQTTCameraEventEnum.Event_GetData:
-                        ShowResultFromDB(arg.SerialNumber, Convert.ToInt32(arg.Data.MasterId));
-                        break;
-                    case MQTTFileServerEventEnum.Event_File_Download:
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            MessageBox.Show("文件下载失败");
-                        });
-                        break;
-                    case MQTTCameraEventEnum.Event_GetData_Channel:
-                        break;
-                    case MQTTCameraEventEnum.Event_OpenLive:
-                        break;
-                }
-            }
-
-        }
-
-        private void FileDownload(DeviceGetChannelResult param)
-        {
-            netFileUtil.TaskStartDownloadFile(param);
-        }
-
-        private void FileUpload(DeviceFileUpdownParam param)
-        {
-            if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartUploadFile(param.IsLocal, param.ServerEndpoint, param.FileName);
-        }
-
-        private void FileDownload(DeviceFileUpdownParam param)
-        {
-            if (!string.IsNullOrWhiteSpace(param.FileName))
-            {
-                netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, param.FileExtType);
-            }
-        }
-        private MeasureImgResultDao measureImgResultDao = new MeasureImgResultDao();
-
-        private void ShowResultFromDB(string serialNumber, int masterId)
-        {
-            List<MeasureImgResultModel> resultMaster = null;
-            if (masterId > 0)
-            {
-                resultMaster = new List<MeasureImgResultModel>();
-                MeasureImgResultModel model = measureImgResultDao.GetById(masterId);
-                resultMaster.Add(model);
-            }
-            else
-            {
-                resultMaster = measureImgResultDao.GetAllByBatchCode(serialNumber);
-            }
-            if (resultMaster != null)
-            {
-                foreach (MeasureImgResultModel result in resultMaster)
-                {
-                    ShowResult(result);
-                }
-            }
-
-            handler?.Close();
-        }
-
-        private void ShowResult(MeasureImgResultModel result)
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                Device.View.ShowResult(result);
-            });
-        }
-
-        private void NetFileUtil_handler(object sender, NetFileEvent arg)
-        {
-            if (arg.Code == 0)
-            {
-                if (arg.EventName == FileEvent.FileDownload && arg.FileData.data != null)
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        View.OpenImage(arg.FileData);
-                    });
-                }
-
-                handler?.Close();
-            }
-            else
-            {
-                handler?.Close();
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MessageBox.Show(Application.Current.MainWindow, "文件打开失败", "ColorVision");
-                });
-            }
-        }
-
-        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; }
+        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; }  
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Device;
 
-            CalibrationParams = new ObservableCollection<TemplateModel<CalibrationParam>>();
-            CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam() { Id = -1}));
+            this.AddViewConfig(View, ComboxView);
 
-            if (Device.DeviceCalibration != null)
-            {
-                foreach (var item in Device.DeviceCalibration.CalibrationParams)
-                    CalibrationParams.Add(item);
-
-                Device.DeviceCalibration.CalibrationParams.CollectionChanged += (s, e) =>
-                {
-                    switch (e.Action)
-                    {
-                        case NotifyCollectionChangedAction.Add:
-                            // 处理添加项
-                            if (e.NewItems != null)
-                                foreach (TemplateModel<CalibrationParam> newItem in e.NewItems)
-                                    CalibrationParams.Add(newItem);
-                            break;
-                        case NotifyCollectionChangedAction.Remove:
-                            // 处理移除项
-                            if (e.OldItems != null)
-                                foreach (TemplateModel<CalibrationParam> newItem in e.OldItems)
-                                    CalibrationParams.Remove(newItem);
-                            break;
-                        case NotifyCollectionChangedAction.Replace:
-                            // 处理替换项
-                            // ...
-                            break;
-                        case NotifyCollectionChangedAction.Move:
-                            // 处理移动项
-                            // ...
-                            break;
-                        case NotifyCollectionChangedAction.Reset:
-                            // 处理清空集合
-                            CalibrationParams.Clear();
-                            CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()) { Id = -1 });
-                            break;
-                    }
-                };
-            }
-
-
-            ComboxCalibrationTemplate.ItemsSource = CalibrationParams;
-            ComboxCalibrationTemplate.SelectedIndex = 0;  
+            CalibrationParamInit();
+            Device.ConfigChanged +=(s,e)=> CalibrationParamInit();
 
             StackPanelOpen.Visibility = Visibility.Visible;
             StackPanelImage.Visibility = Visibility.Collapsed;
             ButtonOpen.Visibility = Visibility.Collapsed;
-
-
-            ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
-            ViewGridManager.GetInstance().ViewMaxChangedEvent += ViewMaxChangedEvent;
-
-            void ViewMaxChangedEvent(int max)
-            {
-                List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
-                KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowSingle, -2));
-                KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowHidden, -1));
-                for (int i = 0; i < max; i++)
-                {
-                    KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));
-                }
-                ComboxView.ItemsSource = KeyValues;
-                ComboxView.SelectedValue = View.View.ViewIndex;
-            }
-            View.View.ViewIndexChangedEvent += (e1, e2) =>
-            {
-                ComboxView.SelectedIndex = e2 + 2;
-            };
-            ComboxView.SelectionChanged += (s, e) =>
-            {
-                if (ComboxView.SelectedItem is KeyValuePair<string, int> KeyValue)
-                {
-                    View.View.ViewIndex = KeyValue.Value;
-                    ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
-                }
-            };
-            View.View.ViewIndex = -1;
-
-            this.PreviewMouseLeftButtonDown += (s, e) =>
-            {
-                if (ViewConfig.GetInstance().IsAutoSelect)
-                {
-                    if (ViewGridManager.GetInstance().ViewMax == 1)
-                    {
-                        View.View.ViewIndex = 0;
-                        ViewGridManager.GetInstance().SetViewIndex(View, 0);
-                    }
-                }
-            };
 
             if (DService.DeviceStatus == DeviceStatusType.Unknown)
             {
@@ -367,7 +102,6 @@ namespace ColorVision.Services.Devices.Camera
                         ButtonInit.Visibility = Visibility.Collapsed;
                         StackPanelOpen.Visibility = Visibility.Visible;
                         ButtonOpen.Visibility = Visibility.Visible;
-                        StackPanelImage.Visibility = Visibility.Collapsed;
                         ButtonClose.Visibility = Visibility.Collapsed;
                         break;
                     case DeviceStatusType.Closing:
@@ -375,12 +109,9 @@ namespace ColorVision.Services.Devices.Camera
                     case DeviceStatusType.LiveOpened:
                     case DeviceStatusType.Opened:
                         ButtonInit.Visibility = Visibility.Collapsed;
+                        StackPanelImage.Visibility = Visibility.Visible;
                         ButtonOpen.Visibility = Visibility.Collapsed;
                         ButtonClose.Visibility = Visibility.Visible;
-                        if (!DService.IsVideoOpen)
-                        {
-                            StackPanelImage.Visibility = Visibility.Visible;
-                        }
                         break;
                     case DeviceStatusType.Opening:
                         break;
@@ -388,22 +119,90 @@ namespace ColorVision.Services.Devices.Camera
                         break;
                 }
             };
+
+
+            DService.OnMessageRecved += (s,e) =>
+            {
+                if (e.ResultCode == 0)
+                {
+                    switch (e.EventName)
+                    {
+                        case MQTTCameraEventEnum.Event_OpenLive:
+                            DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(e.Data));
+                            string mapName = Device.Code;
+                            if (pm_live.IsLocal) mapName = pm_live.MapName;
+                            CameraVideoControl.Start(pm_live.IsLocal, mapName, pm_live.FrameInfo.width, pm_live.FrameInfo.height);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+            };
+        }
+
+
+
+        private void CalibrationParamInit()
+        {
+            CalibrationParams = new ObservableCollection<TemplateModel<CalibrationParam>>();
+            CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam() { Id = -1 }));
+
+            if (Device.DeviceCalibration != null)
+            {
+                foreach (var item in Device.DeviceCalibration.CalibrationParams)
+                    CalibrationParams.Add(item);
+
+                Device.DeviceCalibration.CalibrationParams.CollectionChanged -= CalibrationParams_CollectionChanged;
+                Device.DeviceCalibration.CalibrationParams.CollectionChanged += CalibrationParams_CollectionChanged;
+            }
+
+            ComboxCalibrationTemplate.ItemsSource = CalibrationParams;
+            ComboxCalibrationTemplate.SelectedIndex = 0;
+        }
+
+        private void CalibrationParams_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            switch (e.Action)
+            {
+                case NotifyCollectionChangedAction.Add:
+                    if (e.NewItems != null)
+                        foreach (TemplateModel<CalibrationParam> newItem in e.NewItems)
+                            CalibrationParams.Add(newItem);
+                    break;
+                case NotifyCollectionChangedAction.Remove:
+                    if (e.OldItems != null)
+                        foreach (TemplateModel<CalibrationParam> newItem in e.OldItems)
+                            CalibrationParams.Remove(newItem);
+                    break;
+                case NotifyCollectionChangedAction.Reset:
+                    CalibrationParams.Clear();
+                    CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()) { Id = -1 });
+                    break;
+            }
         }
 
         private void CameraInit_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
-            {
-                DService.GetAllCameraID();
-            }
-
+            DService.GetAllCameraID();
         }
 
         private void Open_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
-                var msgRecord = DService.Open(DService.Config.Id, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
+                var msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
+                Helpers.SendCommand(button,msgRecord);
+                MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
+                msgRecordStateChangedHandler = (e) =>
+                {
+                    ButtonOpen.Visibility = Visibility.Collapsed;
+                    ButtonClose.Visibility = Visibility.Visible;
+                    StackPanelImage.Visibility = Visibility.Visible;
+                    msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
+                };
+                msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+
             }
         }
 
@@ -417,7 +216,7 @@ namespace ColorVision.Services.Devices.Camera
                     if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
                     else expTime = new double[] { Device.Config.ExpTime };
                     MsgRecord msgRecord = DService.GetData(expTime, param);
-                    Helpers.SendCommand(msgRecord, msgRecord.MsgRecordState.ToDescription());
+                    Helpers.SendCommand(button,msgRecord);
                 }
             }
         }
@@ -428,6 +227,7 @@ namespace ColorVision.Services.Devices.Camera
             {
                 MsgRecord msgRecord = DService.GetAutoExpTime();
                 Helpers.SendCommand(button, msgRecord);
+
             }
         }
 
@@ -435,36 +235,45 @@ namespace ColorVision.Services.Devices.Camera
 
         private void Video_Click(object sender, RoutedEventArgs e)
         {
-            CameraVideoControl ??= new CameraVideoControl();
-            if (!DService.IsVideoOpen)
+            if (sender is Button button)
             {
-                DService.CurrentTakeImageMode = TakeImageMode.Live;
-                string host = ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Host;
-                int port = ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Port;
-                //bool IsLocal = (host == "127.0.0.1");
-                port = CameraVideoControl.Open(host, port);
-                if (port > 0)
+                CameraVideoControl ??= new CameraVideoControl();
+                if (!DService.IsVideoOpen)
                 {
-                    MsgRecord msg = DService.OpenVideo(host, port, DService.Config.ExpTime);
-                    msg.MsgRecordStateChanged += (s) =>
+                    DService.CurrentTakeImageMode = TakeImageMode.Live;
+                    string host = ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Host;
+                    int port = ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Port;
+                    //bool IsLocal = (host == "127.0.0.1");
+                    port = CameraVideoControl.Open(host, port);
+                    if (port > 0)
                     {
-                        if (s == MsgRecordState.Fail)
+                        MsgRecord msg = DService.OpenVideo(host, port, DService.Config.ExpTime);
+                        msg.MsgRecordStateChanged += (s) =>
                         {
-                            CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
-                            DService.Close();
-                            CameraVideoControl.Close();
-                        }
-                    };
-                    CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
-                    CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
-                    StackPanelImage.Visibility = Visibility.Collapsed;
-                }
-                else
-                {
-                    MessageBox.Show("视频模式下，本地端口打开失败");
-                    logger.ErrorFormat("Local socket open failed.{0}:{1}", host, ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Port);
+                            if (s == MsgRecordState.Fail)
+                            {
+                                CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
+                                CameraVideoControl.Close();
+                                DService.Close();
+                            }
+                            else
+                            {
+                                ButtonOpen.Visibility = Visibility.Collapsed;
+                                ButtonClose.Visibility = Visibility.Visible;
+                            }
+                        };
+                        Helpers.SendCommand(button, msg);
+                        CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
+                        CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
+                    }
+                    else
+                    {
+                        MessageBox.Show("视频模式下，本地端口打开失败");
+                        logger.ErrorFormat("Local socket open failed.{0}:{1}", host, ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Port);
+                    }
                 }
             }
+
         }
 
         public void CameraVideoFrameReceived(System.Drawing.Bitmap bmp)
@@ -497,22 +306,6 @@ namespace ColorVision.Services.Devices.Camera
                 Helpers.SendCommand(button, msgRecord);
             }
         }
-
-        private void Calibration_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button)
-            {
-                //if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
-                //{
-                //    MsgRecord msgRecord = DeviceService.CalibrationControl(param);
-                //    Helpers.SendCommand(button, msgRecord);
-
-                //}
-
-                DService.UploadCalibrationFile("111","D:\\img\\20230407175926_1_src.tif", 38);
-            }
-        }
-
 
         private void SetChannel()
         {
@@ -555,7 +348,7 @@ namespace ColorVision.Services.Devices.Camera
                         {
                             if (Device.DeviceCalibration.CalibrationParams.Count > 0)
                             {
-                                calibration = new CalibrationControl(Device.DeviceCalibration, Device.CalibrationParams[0].Value);
+                                calibration = new CalibrationControl(Device.DeviceCalibration, Device.DeviceCalibration.CalibrationParams[0].Value);
                             }
                             else
                             {
@@ -623,17 +416,29 @@ namespace ColorVision.Services.Devices.Camera
                 }
             }
         }
+
         private void Close_Click(object sender, RoutedEventArgs e)
         {
-            if (DService.IsVideoOpen)
+            if (sender is Button button)
             {
-                DService.Close();
-                CameraVideoControl.Close();
+                if (DService.IsVideoOpen)
+                    CameraVideoControl.Close();
+                MsgRecord msgRecord = DService.Close();
+                Helpers.SendCommand(button,msgRecord);
+                MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
+                 msgRecordStateChangedHandler = (e) =>
+                {
+                    DService.IsVideoOpen = false;
+                    ButtonOpen.Visibility = Visibility.Visible;
+                    ButtonClose.Visibility = Visibility.Collapsed;
+                    StackPanelImage.Visibility = Visibility.Collapsed;
+                    msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
+                };
+                msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+
+
             }
-            else
-            {
-                DService.Close();
-            }
+
         }
         private DispatcherTimer _timer;
 
@@ -641,8 +446,6 @@ namespace ColorVision.Services.Devices.Camera
         {
             _timer.Stop();
             DService.SetExp();
-
-
         }
 
         private void PreviewSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)

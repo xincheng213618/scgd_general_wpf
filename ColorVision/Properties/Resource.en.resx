@@ -630,4 +630,31 @@
   <data name="ColorVisionUpdater" xml:space="preserve">
     <value>ColorVision Updater</value>
   </data>
+  <data name="Loading" xml:space="preserve">
+    <value>Loading</value>
+  </data>
+  <data name="ServiceConfiguration" xml:space="preserve">
+    <value>Service configuration</value>
+  </data>
+  <data name="ConfigurationComplete" xml:space="preserve">
+    <value>Configuration completed</value>
+  </data>
+  <data name="CurrentSpeed" xml:space="preserve">
+    <value>Current Speed:</value>
+  </data>
+  <data name="TimeLeft" xml:space="preserve">
+    <value>Time Left:</value>
+  </data>
+  <data name="SetupWizard" xml:space="preserve">
+    <value>Configuration wizard</value>
+  </data>
+  <data name="WorkflowEngineDebugWindow" xml:space="preserve">
+    <value>Process engine debug window</value>
+  </data>
+  <data name="MenuFlow" xml:space="preserve">
+    <value>_Process</value>
+  </data>
+  <data name="Create" xml:space="preserve">
+    <value>Create</value>
+  </data>
 </root>

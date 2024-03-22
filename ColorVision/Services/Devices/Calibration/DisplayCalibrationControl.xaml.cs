@@ -2,7 +2,7 @@
 using ColorVision.Net;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Calibration.Views;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Core;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
@@ -17,6 +17,9 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ColorVision.Services.Dao;
+using MQTTMessageLib.Camera;
+using ColorVision.Extension;
 
 namespace ColorVision.Services.Devices.Calibration
 {
@@ -44,7 +47,7 @@ namespace ColorVision.Services.Devices.Calibration
 
         }
 
-        public ViewCalibration View { get; set; }
+        public ViewCalibration View { get=> Device.View; }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Device;
@@ -53,51 +56,13 @@ namespace ColorVision.Services.Devices.Calibration
             ComboxCalibrationTemplate.ItemsSource = Device.CalibrationParams;
             ComboxCalibrationTemplate.SelectedIndex = 0;
 
-            View = Device.View;
-            ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
-            ViewGridManager.GetInstance().ViewMaxChangedEvent += ViewMaxChangedEvent;
 
-            void ViewMaxChangedEvent(int max)
-            {
-                List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
-                KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowSingle, -2));
-                KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowHidden, -1));
-                for (int i = 0; i < max; i++)
-                {
-                    KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));
-                }
-                ComboxView.ItemsSource = KeyValues;
-                ComboxView.SelectedValue = View.View.ViewIndex;
-            }
-            View.View.ViewIndexChangedEvent += (e1, e2) =>
-            {
-                ComboxView.SelectedIndex = e2 + 2;
-            };
-            ComboxView.SelectionChanged += (s, e) =>
-            {
-                if (ComboxView.SelectedItem is KeyValuePair<string, int> KeyValue)
-                {
-                    View.View.ViewIndex = KeyValue.Value;
-                    ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
-                }
-            };
-            View.View.ViewIndex = -1;
+            this.AddViewConfig(View, ComboxView);
 
-            this.PreviewMouseLeftButtonDown += (s, e) =>
-            {
-                if (ViewConfig.GetInstance().IsAutoSelect)
-                {
-                    if (ViewGridManager.GetInstance().ViewMax == 1)
-                    {
-                        View.View.ViewIndex = 0;
-                        ViewGridManager.GetInstance().SetViewIndex(View, 0);
-                    }
-                }
-            };
         }
 
 
-
+        MeasureImgResultDao measureImgResultDao = new MeasureImgResultDao();
         private void Service_OnCalibrationEvent(object sender, MessageRecvArgs arg)
         {
             switch (arg.EventName)
@@ -106,7 +71,41 @@ namespace ColorVision.Services.Devices.Calibration
                     DeviceListAllFilesParam data = JsonConvert.DeserializeObject<DeviceListAllFilesParam>(JsonConvert.SerializeObject(arg.Data));
                     DoShowFileList(data);
                     break;
+                case MQTTFileServerEventEnum.Event_File_Download:
+                    DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                    if (pm_dl != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, FileExtType.CIE);
+                    }
+                    break;
+                case MQTTCameraEventEnum.Event_GetData:
+                    int masterId = Convert.ToInt32(arg.Data.MasterId);
+                    List<MeasureImgResultModel> resultMaster = null;
+                    if (masterId > 0)
+                    {
+                        resultMaster = new List<MeasureImgResultModel>();
+                        MeasureImgResultModel model = measureImgResultDao.GetById(masterId);
+                        if (model != null)
+                            resultMaster.Add(model);
+                    }
+                    else
+                    {
+                        resultMaster = measureImgResultDao.GetAllByBatchCode(arg.SerialNumber);
+                    }
+                    if (resultMaster != null)
+                    {
+                        foreach (MeasureImgResultModel result in resultMaster)
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                Device.View.ShowResult(result);
+                            });
+                        }
+                    }
+                    break;
             }
+
+
         }
         private void DoShowFileList(DeviceListAllFilesParam data)
         {
@@ -115,6 +114,7 @@ namespace ColorVision.Services.Devices.Calibration
                 case FileExtType.Raw:
                     Application.Current.Dispatcher.Invoke(() =>
                     {
+                        data.Files.Reverse();
                         CB_RawImageFiles.ItemsSource = data.Files;
                         CB_RawImageFiles.SelectedIndex = 0;
                     });
@@ -142,7 +142,7 @@ namespace ColorVision.Services.Devices.Calibration
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    //View.OpenImage(arg.FileData);
+                    View.OpenImage(arg.FileData);
                 });
                 handler?.Close();
             }
@@ -151,7 +151,7 @@ namespace ColorVision.Services.Devices.Calibration
                 handler?.Close();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    //MessageBox.IsShow(Application.Current.MainWindow, "文件打开失败", "ColorVision");
+                    MessageBox.Show(Application.Current.MainWindow, "文件打开失败", "ColorVision");
                 });
             }
         }
@@ -186,7 +186,7 @@ namespace ColorVision.Services.Devices.Calibration
                     {
                         var pm = CalibrationParams[ComboxCalibrationTemplate.SelectedIndex].Value;
 
-                        MsgRecord msgRecord = DeviceService.Calibration(param, imgFileName, pm.Id, ComboxCalibrationTemplate.Text, sn, (float)Device.Config.ExpTimeR, (float)Device.Config.ExpTimeG, (float)Device.Config.ExpTimeB);
+                        MsgRecord msgRecord = DeviceService.Calibration(param, imgFileName, fileExtType, pm.Id, ComboxCalibrationTemplate.Text, sn, (float)Device.Config.ExpTimeR, (float)Device.Config.ExpTimeG, (float)Device.Config.ExpTimeB);
                         Helpers.SendCommand(button, msgRecord);
                     }
 
@@ -219,12 +219,18 @@ namespace ColorVision.Services.Devices.Calibration
         }
         private void Button_Click_RawOpen(object sender, RoutedEventArgs e)
         {
+            if (string.IsNullOrWhiteSpace(CB_RawImageFiles.Text))
+            {
+                MessageBox.Show("请先选中图片");
+                return;
+            }
             handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
             handler.Cancelling += delegate
             {
                 handler?.Close();
             };
             doOpen(CB_RawImageFiles.Text, FileExtType.Raw);
+
         }
 
         private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
@@ -294,12 +300,17 @@ namespace ColorVision.Services.Devices.Calibration
                 fileExtType = FileExtType.Tif;
                 sn = string.Empty;
             }
-            if (string.IsNullOrWhiteSpace(imgFileName))
+            if (string.IsNullOrWhiteSpace(sn) && string.IsNullOrWhiteSpace(imgFileName))
             {
                 MessageBox.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
                 return false;
             }
             return true;
+        }
+
+        private void Grid_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
         }
     }
 }

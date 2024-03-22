@@ -75,7 +75,6 @@ namespace ColorVision
             animation.FillBehavior = FillBehavior.Stop;
             animation.Completed += OnAnimationCompleted;
             LeftMainContent.RenderTransform.BeginAnimation(TranslateTransform.XProperty, animation);
-
             void OnAnimationCompleted(object? _, EventArgs args)
             {
                 animation.Completed -= OnAnimationCompleted;
@@ -83,9 +82,8 @@ namespace ColorVision
 
                 Grid.SetColumn(MainContent, 0);
                 Grid.SetColumnSpan(MainContent, 2);
-
                 ColumnDefinitionLeft.MinWidth = 0;
-                ColumnDefinitionLeft.Width = new GridLength();
+                ColumnDefinitionLeft.Width = new GridLength(0);
                 ButtonShiftIn.Show();
             }
         }
@@ -93,6 +91,7 @@ namespace ColorVision
         private void OnLeftMainContentShiftIn(object sender, RoutedEventArgs e)
         {
             ButtonShiftIn.Collapse();
+            
             GridSplitter.IsEnabled = true;
 
             double targetValue = ColumnDefinitionLeft.Width.Value;

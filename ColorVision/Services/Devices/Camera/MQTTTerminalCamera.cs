@@ -1,5 +1,6 @@
-﻿using ColorVision.OnlineLicensing;
-using ColorVision.Services.Msg;
+﻿using ColorVision.Services.Msg;
+using ColorVision.Services.OnlineLicensing;
+using ColorVision.Services.Terminal;
 using MQTTMessageLib;
 using Newtonsoft.Json.Linq;
 using System;
@@ -20,7 +21,6 @@ namespace ColorVision.Services.Devices.Camera
                 Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value)); NotifyPropertyChanged();
             } 
         }
-
 
 
         private DeviceStatusType _DeviceStatus;

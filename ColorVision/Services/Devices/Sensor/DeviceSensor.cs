@@ -1,4 +1,5 @@
-﻿using ColorVision.Services.Dao;
+﻿using ColorVision.Services.Core;
+using ColorVision.Services.Dao;
 using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Sensor
@@ -16,6 +17,9 @@ namespace ColorVision.Services.Devices.Sensor
         public override UserControl GetDeviceInfo() => new DeviceSensorControl(this, false);
         public override UserControl GetDisplayControl() => new DisplaySensorControl(this);
 
-
+        public override MQTTServiceBase? GetMQTTService()
+        {
+            return DeviceService;
+        }
     }
 }

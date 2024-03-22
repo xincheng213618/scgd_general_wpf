@@ -1,10 +1,9 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.MVVM;
+using ColorVision.Common.MVVM;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Calibration.Views;
-using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Core;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Solution;
@@ -20,6 +19,12 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.Themes;
+using System.Windows.Media;
+using ColorVision.Services.Devices.Camera.Views;
+using ColorVision.Services.Extension;
+using ColorVision.Services.Devices.Camera;
+using ColorVision.Utilities;
 
 namespace ColorVision.Services.Devices.Calibration
 {
@@ -35,21 +40,30 @@ namespace ColorVision.Services.Devices.Calibration
 
         public DeviceCalibration(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
-            View = new ViewCalibration(this);
             DeviceService = new MQTTCalibration(Config);
-            EditLazy = new Lazy<EditCalibration>(() => { EditCalibration ??= new EditCalibration(this); return EditCalibration; });
+            View = new ViewCalibration(this);
+            View.View.Title = $"校正视图 - {Config.Code}";
+            this.SetIconResource("DICalibrationIcon", View.View);;
+
+            EditCommand = new RelayCommand(a =>
+            {
+                EditCalibration window = new EditCalibration(this);
+                window.Owner = WindowHelpers.GetActiveWindow();
+                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                window.ShowDialog();
+            });
+
+            DisplayLazy = new Lazy<DisplayCalibrationControl>(() => new DisplayCalibrationControl(this));
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
             TemplateControl.GetInstance().LoadModCabParam(CalibrationParams, SysResourceModel.Id, ModMasterType.Calibration);
         }
 
-        public static void ExtractToDirectoryWithOverwrite(string zipPath, string extractPath)
+        public static bool ExtractToDirectoryWithOverwrite(string zipPath, string extractPath)
         {
-            // 确保解压目录存在
             Directory.CreateDirectory(extractPath);
-
-            // 打开ZIP文件
-            using (ZipArchive archive = ZipFile.Open(zipPath, ZipArchiveMode.Read))
+            try
             {
+                using ZipArchive archive = ZipFile.Open(zipPath, ZipArchiveMode.Read);
                 foreach (ZipArchiveEntry entry in archive.Entries)
                 {
                     // 获取在目标路径中的完整路径
@@ -77,6 +91,11 @@ namespace ColorVision.Services.Devices.Calibration
                         entry.ExtractToFile(destinationPath);
                     }
                 }
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -116,11 +135,20 @@ namespace ColorVision.Services.Devices.Calibration
                 Directory.CreateDirectory(path);
                 await Task.Delay(10);
                 Msg = "正在解析校正文件：" + " 请稍后...";
-                ExtractToDirectoryWithOverwrite(UploadFilePath, path);
+
+                bool  sss = ExtractToDirectoryWithOverwrite(UploadFilePath, path);
+                if (!sss)
+                {
+                    Msg = "解压失败";
+                    await Task.Delay(100);
+                    Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
+                    return;
+                }
 
                 string Cameracfg = path + "\\Camera.cfg";
 
                 string Calibrationcfg = path + "\\Calibration.cfg";
+
                 Dictionary<string, List<ColorVisionVCalibratioItem>> keyValuePairs1 = JsonConvert.DeserializeObject<Dictionary<string, List<ColorVisionVCalibratioItem>>>(File.ReadAllText(Calibrationcfg, Encoding.GetEncoding("gbk")));
 
                 Dictionary<string, CalibrationResource> keyValuePairs2 = new Dictionary<string, CalibrationResource>();
@@ -289,7 +317,7 @@ namespace ColorVision.Services.Devices.Calibration
                             bool IsExist = false;
                             foreach (var item in VisualChildren)
                             {
-                                if (item is GroupService groupService1 && groupService1.Name == filePath)
+                                if (item is GroupResource groupResource1 && groupResource1.Name == filePath)
                                 {
                                     log.Info($"{filePath} Exit");
                                     IsExist = true;
@@ -300,17 +328,17 @@ namespace ColorVision.Services.Devices.Calibration
                             {
                                 continue;
                             }
-                            GroupService groupService = GroupService.AddGroupService(this, filePath);
-                            if (groupService != null)
+                            GroupResource groupResource = GroupResource.AddGroupResource(this, filePath);
+                            if (groupResource != null)
                             {
                                 foreach (var item1 in keyValuePairs)
                                 {
                                     if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
                                     {
-                                        groupService.AddChild(colorVisionVCalibratioItems);
+                                        groupResource.AddChild(colorVisionVCalibratioItems);
                                     }
                                 }
-                                groupService.SetCalibrationResource(this);
+                                groupResource.SetCalibrationResource(this);
                             }
                         }
                     }
@@ -323,7 +351,6 @@ namespace ColorVision.Services.Devices.Calibration
                 await Task.Delay(100);
                 Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
             }
-
         }
 
 
@@ -332,13 +359,14 @@ namespace ColorVision.Services.Devices.Calibration
 
         public override UserControl GetDeviceInfo() => new DeviceCalibrationControl(this,false);
 
-        public override UserControl GetDisplayControl() => new DisplayCalibrationControl(this);
+        readonly Lazy<DisplayCalibrationControl> DisplayLazy;
+
+        public override UserControl GetDisplayControl() => DisplayLazy.Value;
 
 
-        readonly Lazy<EditCalibration> EditLazy;
-        public EditCalibration EditCalibration { get; set; }
-        public override UserControl GetEditControl() => EditLazy.Value;
-
-
+        public override MQTTServiceBase? GetMQTTService()
+        {
+            return DeviceService;
+        }
     }
 }

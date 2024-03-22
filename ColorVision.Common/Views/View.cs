@@ -1,4 +1,4 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Common.MVVM;
 using System.Windows.Media;
 
 namespace ColorVision
@@ -20,10 +20,14 @@ namespace ColorVision
 
     public class View : ViewModelBase
     {
-        public event ViewIndexChangedHandler ViewIndexChangedEvent;
+        public event ViewIndexChangedHandler? ViewIndexChangedEvent;
 
-        public int ViewIndex { get => 
-                _ViewIndex; set {
+        public void ClearViewIndexChangedSubscribers()
+        {
+            ViewIndexChangedEvent = null;
+        }
+
+        public int ViewIndex { get =>   _ViewIndex; set {
                 if (_ViewIndex == value)
                     return;
                 PreViewIndex = _ViewIndex;

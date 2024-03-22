@@ -1,11 +1,15 @@
-﻿using ColorVision.MVVM;
-using System;
-using System.Windows;
-using System.Windows.Media;
-using System.Windows.Input;
-using Gu.Wpf.Geometry;
-using System.Reflection;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Draw.Ruler;
+using ColorVision.Draw.Special;
+using ColorVision.Util.Draw.Special;
+using Gu.Wpf.Geometry;
+using System;
+using System.IO;
+using System.Reflection;
+using System.Windows;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.Draw
 {
@@ -18,13 +22,18 @@ namespace ColorVision.Draw
         public RelayCommand ZoomIncrease { get; set; }
         public RelayCommand ZoomDecrease { get; set; }
         public RelayCommand ZoomNone { get; set; }
+        public RelayCommand SaveCommand { get; set; }
 
         public RelayCommand OpenProperty { get; set; }
 
         private ZoomboxSub ZoomboxSub { get; set; }
+
         private DrawCanvas Image { get; set; }
 
-        private ToolShowImage ShowImage { get; set; }
+        public MouseMagnifier MouseMagnifier { get; set; }
+
+        public Crosshair Crosshair { get; set; }
+
         private ToolBarMeasure ToolBarMeasure { get; set; }
 
         private FrameworkElement Parent { get; set; }
@@ -40,8 +49,8 @@ namespace ColorVision.Draw
             ZoomboxSub = zombox ?? throw new ArgumentNullException(nameof(zombox));
             Image = drawCanvas ?? throw new ArgumentNullException(nameof(drawCanvas));
 
-
-            ShowImage = new ToolShowImage(zombox, drawCanvas);
+            MouseMagnifier = new MouseMagnifier(zombox, drawCanvas);
+            Crosshair = new Crosshair(zombox, drawCanvas);
             ToolBarMeasure = new ToolBarMeasure(Parent, zombox, drawCanvas);
             ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zombox, drawCanvas);
             ToolConcentricCircle = new ToolReferenceLine(zombox, drawCanvas);
@@ -55,7 +64,30 @@ namespace ColorVision.Draw
             OpenProperty = new RelayCommand(a => new DrawProperties() {Owner = Window.GetWindow(Parent),WindowStartupLocation =WindowStartupLocation.CenterOwner }.Show());
             this.Parent.PreviewKeyDown += PreviewKeyDown;
             zombox.Cursor = Cursors.Hand;
+
+            SaveCommand = new RelayCommand(a => Save());
         }
+
+        public void Save()
+        {
+            using var dialog = new System.Windows.Forms.SaveFileDialog();
+            dialog.Filter = "Png (*.png) | *.png";
+            dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
+            dialog.RestoreDirectory = true;
+            if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+            RenderTargetBitmap renderTargetBitmap = new RenderTargetBitmap((int)Image.ActualWidth, (int)Image.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+            renderTargetBitmap.Render(Image);
+
+            // 创建一个PngBitmapEncoder对象来保存位图为PNG文件
+            PngBitmapEncoder pngEncoder = new PngBitmapEncoder();
+            pngEncoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
+
+            // 将PNG内容保存到文件
+            using FileStream fileStream = new FileStream(dialog.FileName, FileMode.Create);
+            pngEncoder.Save(fileStream);
+        }
+
 
         public void OpenImage()
         {
@@ -104,6 +136,24 @@ namespace ColorVision.Draw
             {
                 ZoomboxSub.Zoom(0.9);
             }
+            else if (e.Key == Key.C && (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+            {
+                // 确保imageControl已经加载了内容
+                if (Image.Source == null)
+                {
+                    return;
+                }
+                if (Image.Source is BitmapSource bitmapSource)
+                {
+                    Clipboard.Clear();
+                    Clipboard.SetImage(bitmapSource);
+                }
+                // 可选：强制垃圾回收
+                // GC.Collect();
+                // GC.WaitForPendingFinalizers();
+                // 将图像复制到剪贴板
+                MessageBox.Show("图像已经复制到粘贴板中,该操作目前存在内存泄露");
+            }
         }
 
         public bool ScaleRulerShow
@@ -116,8 +166,11 @@ namespace ColorVision.Draw
                 NotifyPropertyChanged();
             }
         }
+        public Visibility PseudoVisible { get => _PseudoVisible; set { _PseudoVisible = value; NotifyPropertyChanged(); } }
+        private Visibility _PseudoVisible = Visibility.Visible;
 
-
+        public Visibility CIEVisible { get => _CIEVisible; set { _CIEVisible = value; NotifyPropertyChanged(); } }
+        private Visibility _CIEVisible = Visibility.Visible;
 
 
         /// <summary>
@@ -129,6 +182,19 @@ namespace ColorVision.Draw
             set => ZoomboxSub.Zoom(value);
         }
 
+        private bool _Crosshair;
+        public bool CrosshairFunction
+        {
+            get => _Crosshair;
+            set
+            {
+                if (_Crosshair == value) return;
+                _Crosshair = value;
+                Crosshair.IsShow = value;
+                NotifyPropertyChanged();
+            }
+        }
+
         private bool _ShowImageInfo;
         public bool ShowImageInfo
         {
@@ -138,7 +204,7 @@ namespace ColorVision.Draw
                 if (value) Activate = false;
                 _ShowImageInfo = value;
 
-                ShowImage.IsShow = value;
+                MouseMagnifier.IsShow = value;
                 NotifyPropertyChanged();
             }
         }

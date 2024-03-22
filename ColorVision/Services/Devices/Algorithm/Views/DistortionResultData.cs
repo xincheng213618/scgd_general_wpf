@@ -1,5 +1,5 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
-using ColorVision.MVVM;
+using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
@@ -9,16 +9,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 {
     public class DistortionResultData : ViewModelBase
     {
-        public DistortionResultData(DistortionType disType, DisSlopeType slopeType, DisLayoutType layoutType, DisCornerType cornerType, double maxRatio, PointFloat[] finalPoint)
-        {
-            DisType = disType;
-            SlopeType = slopeType;
-            LayoutType = layoutType;
-            CornerType = cornerType;
-            MaxRatio = maxRatio;
-            FinalPoints = finalPoint;
-        }
-
         public DistortionResultData(AlgResultDistortionModel algResultDistortionModel)
         {
             DisType = algResultDistortionModel.Type;
@@ -32,26 +22,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
         public DistortionType DisType { get; set; }
         public string DisTypeDesc
         {
-            get
-            {
-                string result = DisType.ToString();
-                switch (DisType)
-                {
-                    case DistortionType.OpticsDist:
-                        result = DisType.ToString();
-                        break;
-                    case DistortionType.TVDistH:
-                        result = DisType.ToString();
-                        break;
-                    case DistortionType.TVDistV:
-                        result = DisType.ToString();
-                        break;
-                    default:
-                        result = DisType.ToString();
-                        break;
-                }
-                return result;
-            }
+            get => DisType.ToString();
         }
         public DisSlopeType SlopeType { get; set; }
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Windows.Media.Imaging;
 
 namespace ColorVision.NativeMethods
 {
@@ -28,6 +29,10 @@ namespace ColorVision.NativeMethods
         [DllImport("User32", CharSet = CharSet.Unicode)]
         private static extern IntPtr SetClipboardData(int uFormat, IntPtr hMem);
 
+        public static void SetImage(BitmapSource image)
+        {
+            System.Windows.Clipboard.SetImage(image);
+        }
 
         public static string? GetText()
         {
@@ -40,6 +45,7 @@ namespace ColorVision.NativeMethods
                 CloseClipboard();
                 return System.Windows.Clipboard.GetText();
             }
+
             IntPtr handle = GetClipboardData(13);
             string text = Marshal.PtrToStringUni(handle);
             CloseClipboard();

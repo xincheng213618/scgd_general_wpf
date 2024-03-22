@@ -4,11 +4,12 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
+        xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
-        Title="变更日志" Background="{StaticResource GlobalBackground}" Height="450" Width="800">
+        Title="{x:Static properties:Resource.ChangeLog}" Background="{StaticResource GlobalBackground}" Height="450" Width="800">
     <Grid>
         <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="10,0">
-            <TextBlock x:Name="ChangelogTextBlock" Foreground="{DynamicResource GlobalTextBrush}" TextWrapping="WrapWithOverflow"/>
+            <TextBlock x:Name="ChangelogTextBlock" ToolTip="" Foreground="{DynamicResource GlobalTextBrush}" TextWrapping="WrapWithOverflow"/>
         </ScrollViewer>
     </Grid>
 </Window>

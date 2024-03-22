@@ -1,13 +1,25 @@
 ﻿#pragma warning disable CS8604,CS8629
-using ColorVision.MVVM;
+using ColorVision.Common.Sorts;
+using ColorVision.Common.MVVM;
 using ColorVision.Services.Dao;
-using ColorVision.Sorts;
 using MQTTMessageLib.Camera;
 using System;
 
 namespace ColorVision.Services.Devices.Camera.Views
 {
     public delegate void ImgCurSelectionChanged(ViewResultCamera data);
+
+
+    public enum ImageLayer
+    {
+        Src,
+        R,
+        G,
+        B,
+        X,
+        Y,
+        Z
+    }
 
     public class ViewResultCamera : ViewModelBase,ISortID,ISortBatch, ISortCreateTime, ISortFilePath
     {
@@ -16,12 +28,13 @@ namespace ColorVision.Services.Devices.Camera.Views
             Id = measureImgResultModel.Id;
             Batch = measureImgResultModel.BatchCode ?? string.Empty;
             FilePath = measureImgResultModel.RawFile ?? string.Empty;
-            FileType = (CameraFileType)measureImgResultModel.FileType;
+            FileType = (CameraFileType)(measureImgResultModel.FileType ?? 0);
             ReqParams = measureImgResultModel.ReqParams ?? string.Empty;
             ImgFrameInfo = measureImgResultModel.ImgFrameInfo ?? string.Empty;
             CreateTime = measureImgResultModel.CreateDate;
             ResultCode = measureImgResultModel.ResultCode;
-            ResultDesc = measureImgResultModel.ResultDesc ?? string.Empty;
+            ResultMsg = measureImgResultModel.ResultMsg;
+            ResultDesc = measureImgResultModel.ResultMsg ?? string.Empty;
             _totalTime = measureImgResultModel.TotalTime;
         }
 
@@ -46,27 +59,18 @@ namespace ColorVision.Services.Devices.Camera.Views
         public DateTime? CreateTime { get { return _RecvTime; } set { _RecvTime = value; NotifyPropertyChanged(); } }
         private DateTime? _RecvTime;
 
-        public string Result
-        {
-            get
-            {
-                return ResultCode == 0 ? "成功" : "失败";
-            }
-        }
+        public string? ResultMsg { get => _ResultMsg; set { _ResultMsg = value; NotifyPropertyChanged(); } }
+        private string? _ResultMsg;
+        public int ResultCode { get { return _resultCode; } set { _resultCode = value; NotifyPropertyChanged(); } }
         private int _resultCode;
 
-        public string TotalTime
-        {
-            get
-            {
-                return string.Format("{0}", TimeSpan.FromMilliseconds(_totalTime).ToString().TrimEnd('0'));
-            }
-        }
+        public string TotalTime => string.Format("{0}", TimeSpan.FromMilliseconds(_totalTime).ToString(@"mm\:ss\:fff"));
         private long _totalTime;
 
         private string _resultDesc;
 
-        public int ResultCode { get { return _resultCode; } set { _resultCode = value; NotifyPropertyChanged(); } }
+
+
         public string ResultDesc { get { return _resultDesc; } set { _resultDesc = value; NotifyPropertyChanged(); } }
     }
 

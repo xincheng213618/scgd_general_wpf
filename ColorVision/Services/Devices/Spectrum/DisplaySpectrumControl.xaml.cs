@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Core;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Themes;
@@ -15,6 +15,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using static cvColorVision.GCSDLL;
+using ColorVision.Extension;
 
 namespace ColorVision.Services.Devices.Spectrum
 {
@@ -36,50 +37,8 @@ namespace ColorVision.Services.Devices.Spectrum
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = DeviceSpectrum;
-            ViewGridManager.GetInstance().AddView(View);
 
-            ViewMaxChangedEvent(ViewGridManager.GetInstance().ViewMax);
-            ViewGridManager.GetInstance().ViewMaxChangedEvent += ViewMaxChangedEvent;
-
-            void ViewMaxChangedEvent(int max)
-            {
-                List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
-                KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowSingle, -2));
-                KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowHidden, -1));
-                for (int i = 0; i < max; i++)
-                {
-                    KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));
-                }
-                ComboxView.ItemsSource = KeyValues;
-                ComboxView.SelectedValue = View.View.ViewIndex;
-            }
-            View.View.ViewIndexChangedEvent += (e1, e2) =>
-            {
-                ComboxView.SelectedIndex = e2 + 2;
-            };
-
-            ComboxView.SelectionChanged += (s, e) =>
-            {
-                if (ComboxView.SelectedItem is KeyValuePair<string, int> KeyValue)
-                {
-                    View.View.ViewIndex = KeyValue.Value;
-                    ViewGridManager.GetInstance().SetViewIndex(View, KeyValue.Value);
-                }
-            };
-            View.View.ViewIndex = -1;
-
-            this.PreviewMouseLeftButtonUp += (s, e) =>
-            {
-                if (ViewConfig.GetInstance().IsAutoSelect)
-                {
-                    if (ViewGridManager.GetInstance().ViewMax == 1)
-                    {
-                        View.View.ViewIndex = 0;
-                        ViewGridManager.GetInstance().SetViewIndex(View, 0);
-                    }
-                }
-            };
-
+            this.AddViewConfig(View,ComboxView);
 
             SpectrumService.DataHandlerEvent += e =>
             {
@@ -246,7 +205,7 @@ namespace ColorVision.Services.Devices.Spectrum
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
-            //DeviceService.SetParam();
+            //MQTTFileServer.SetParam();
         }
 
         private void Button_Click_OneTest(object sender, RoutedEventArgs e)
@@ -257,7 +216,7 @@ namespace ColorVision.Services.Devices.Spectrum
         private void Button_Click_Close(object sender, RoutedEventArgs e)
         {
             SpectrumService.Close();
-            //DeviceService.UnInit();
+            //MQTTFileServer.UnInit();
         }
         private void Button_Click_AutoTest(object sender, RoutedEventArgs e)
         {

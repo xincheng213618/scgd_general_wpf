@@ -1,14 +1,13 @@
-﻿using ColorVision.NativeMethods;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Extension;
-
-using System.IO;
-using System.Windows.Media;
-using ColorVision.MVVM;
-using System.Windows.Controls;
-using System.Windows;
-using System.Threading.Tasks;
-using System.Diagnostics;
 using ColorVision.Media;
+using ColorVision.NativeMethods;
+using System.Diagnostics;
+using System.IO;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision.Solution.V.Files
 {

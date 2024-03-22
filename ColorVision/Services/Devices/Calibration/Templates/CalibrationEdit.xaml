@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:local="clr-namespace:ColorVision.Services.Devices.Calibration.Templates"
-        xmlns:group="clr-namespace:ColorVision.Services.Devices"
+        xmlns:group="clr-namespace:ColorVision.Services.Core"
         mc:Ignorable="d"
         Title="CalibrationEdit"  Background="{DynamicResource GlobalBackground}"  Closed="Window_Closed" Height="350" Width="1200" Initialized="Window_Initialized" >
     <Window.Resources>
@@ -34,14 +34,14 @@
                     <GridView>
                         <GridViewColumn Header="序号">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate DataType="{x:Type group:GroupService}">
+                                <DataTemplate DataType="{x:Type group:GroupResource}">
                                     <TextBlock  Text="{Binding SysResourceModel.Id}" Tag="{Binding .}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
                         <GridViewColumn Header="名称">
                             <GridViewColumn.CellTemplate>
-                                <DataTemplate DataType="{x:Type group:GroupService}">
+                                <DataTemplate DataType="{x:Type group:GroupResource}">
                                     <TextBox  Text="{Binding Name}" Tag="{Binding .}"  Width="100"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
@@ -50,7 +50,7 @@
                 </ListView.View>
             </ListView>
         </Grid>
-        <StackPanel x:Name="StackPanelCab" Grid.Column="1" d:DataContext="{d:DesignInstance group:GroupService}">
+        <StackPanel x:Name="StackPanelCab" Grid.Column="1" d:DataContext="{d:DesignInstance group:GroupResource}">
             <Border  BorderThickness="1" BorderBrush="{DynamicResource  BorderBrush}" CornerRadius="5" Margin="5">
                 <StackPanel Margin="5">
                     <DockPanel  Margin="0,2">

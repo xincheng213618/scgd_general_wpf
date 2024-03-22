@@ -1,4 +1,4 @@
-﻿using ColorVision.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Services.Msg;
 using ColorVision.Settings;
 using Newtonsoft.Json;

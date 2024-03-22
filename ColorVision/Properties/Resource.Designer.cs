@@ -268,6 +268,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 配置结束 的本地化字符串。
+        /// </summary>
+        public static string ConfigurationComplete {
+            get {
+                return ResourceManager.GetString("ConfigurationComplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 配置新工程 的本地化字符串。
         /// </summary>
         public static string ConfigureNewProject {
@@ -313,6 +322,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 创建 的本地化字符串。
+        /// </summary>
+        public static string Create {
+            get {
+                return ResourceManager.GetString("Create", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 注册一个 的本地化字符串。
         /// </summary>
         public static string Create_an_account {
@@ -345,6 +363,15 @@ namespace ColorVision.Properties {
         public static string CreateProject {
             get {
                 return ResourceManager.GetString("CreateProject", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 当前速度： 的本地化字符串。
+        /// </summary>
+        public static string CurrentSpeed {
+            get {
+                return ResourceManager.GetString("CurrentSpeed", resourceCulture);
             }
         }
         
@@ -646,6 +673,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 加载 的本地化字符串。
+        /// </summary>
+        public static string Loading {
+            get {
+                return ResourceManager.GetString("Loading", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 日志 的本地化字符串。
         /// </summary>
         public static string Log {
@@ -741,6 +777,15 @@ namespace ColorVision.Properties {
         public static string MenuFile {
             get {
                 return ResourceManager.GetString("MenuFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 流程(_F) 的本地化字符串。
+        /// </summary>
+        public static string MenuFlow {
+            get {
+                return ResourceManager.GetString("MenuFlow", resourceCulture);
             }
         }
         
@@ -1276,6 +1321,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 服务配置 的本地化字符串。
+        /// </summary>
+        public static string ServiceConfiguration {
+            get {
+                return ResourceManager.GetString("ServiceConfiguration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 服务标识 的本地化字符串。
         /// </summary>
         public static string ServiceIdentifier {
@@ -1299,6 +1353,15 @@ namespace ColorVision.Properties {
         public static string Settings {
             get {
                 return ResourceManager.GetString("Settings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 配置向导 的本地化字符串。
+        /// </summary>
+        public static string SetupWizard {
+            get {
+                return ResourceManager.GetString("SetupWizard", resourceCulture);
             }
         }
         
@@ -1492,6 +1555,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 剩余时间： 的本地化字符串。
+        /// </summary>
+        public static string TimeLeft {
+            get {
+                return ResourceManager.GetString("TimeLeft", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 发送信道 的本地化字符串。
         /// </summary>
         public static string TransmitChannel {
@@ -1587,6 +1659,15 @@ namespace ColorVision.Properties {
         public static string WorkflowEngine_F {
             get {
                 return ResourceManager.GetString("WorkflowEngine_F", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 流程引擎调试窗口 的本地化字符串。
+        /// </summary>
+        public static string WorkflowEngineDebugWindow {
+            get {
+                return ResourceManager.GetString("WorkflowEngineDebugWindow", resourceCulture);
             }
         }
         

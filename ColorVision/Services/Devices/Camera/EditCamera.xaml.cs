@@ -1,8 +1,15 @@
 ﻿using ColorVision.Common.Extension;
+using ColorVision.Common.MVVM;
+using ColorVision.Services.Devices.Calibration;
+using ColorVision.Services.Devices.Camera.Configs;
 using cvColorVision;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Drawing.Text;
 using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
@@ -12,12 +19,13 @@ namespace ColorVision.Services.Devices.Camera
     /// <summary>
     /// EditCamera.xaml 的交互逻辑
     /// </summary>
-    public partial class EditCamera : UserControl
+    public partial class EditCamera : Window
     {
         public DeviceCamera DeviceCamera { get; set; }
 
         public MQTTCamera Service { get => DeviceCamera.DeviceService; }
 
+        public ConfigCamera EditConfig { get; set; }
 
         public EditCamera(DeviceCamera mQTTDeviceCamera)
         {
@@ -36,7 +44,6 @@ namespace ColorVision.Services.Devices.Camera
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = DeviceCamera;
 
             CameraID.ItemsSource = DeviceCamera.Service.DevicesSN;
 
@@ -101,6 +108,16 @@ namespace ColorVision.Services.Devices.Camera
             };
 
 
+            ObservableCollection<string> Calibrations = new ObservableCollection<string>();
+            foreach (var item in ServiceManager.GetInstance().DeviceServices)
+            {
+                if (item is DeviceCalibration calibration)
+                {
+                    if (!Calibrations.Contains(calibration.Code))
+                        Calibrations.Add(calibration.Code);
+                }
+            }
+            TextBox_BindDevice.ItemsSource = Calibrations;
 
             var ImageChannelTypeList = new[]{
                  new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, "Channel_R"),
@@ -185,7 +202,16 @@ namespace ColorVision.Services.Devices.Camera
                         break;
                 }
             };
+
+            EditConfig = DeviceCamera.Config.Clone();
+            this.DataContext = DeviceCamera;
+            EditContent.DataContext = EditConfig;
         }
 
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            EditConfig.CopyTo(DeviceCamera.Config);
+            this.Close();
+        }
     }
 }

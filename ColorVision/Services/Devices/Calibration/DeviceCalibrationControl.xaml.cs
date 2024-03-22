@@ -30,13 +30,6 @@ namespace ColorVision.Services.Devices.Calibration
         {
             this.DataContext = this.Device;
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
-            if (IsCanEdit)
-            {
-                UserControl userControl = Device.GetEditControl();
-                if (userControl.Parent is Panel grid)
-                    grid.Children.Remove(userControl);
-                MQTTEditContent.Children.Add(userControl);
-            }
         }
         public void Dispose()
         {
