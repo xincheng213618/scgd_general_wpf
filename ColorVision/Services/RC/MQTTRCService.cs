@@ -22,7 +22,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.RC
+namespace ColorVision.Services.RC
 {
     public class RCServiceStatusChangedEvent
     {

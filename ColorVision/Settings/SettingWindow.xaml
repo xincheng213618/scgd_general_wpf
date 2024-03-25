@@ -158,10 +158,6 @@
                                         <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.TransparentWindow}"/>
                                         <TextBlock Text="{x:Static properties:Resource.DisableHardwareAcceleration}"/>
                                     </DockPanel>
-                                    <DockPanel  Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.IsOpenLoaclService}"/>
-                                        <TextBlock Text="{x:Static properties:Resource.LaunchSoftwareWithLocalService}"/>
-                                    </DockPanel>
 
                                     <DockPanel  Margin="5">
                                         <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.WizardCompletionKey,Converter={StaticResource Boolean2BooleanReConverter}}"/>

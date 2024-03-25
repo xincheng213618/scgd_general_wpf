@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 
-namespace ColorVision.RC
+namespace ColorVision.Services.RC
 {
     public class RCServiceConfig : ViewModelBase
     {
