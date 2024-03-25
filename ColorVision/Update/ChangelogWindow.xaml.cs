@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -99,7 +100,7 @@ namespace ColorVision.Update
                     currentEntry.Version = headerParts[0].Trim();
                     currentEntry.ReleaseDate = DateTime.Parse(headerParts[1].Trim());
                 }
-                else if (currentEntry != null && line.StartsWith("1.", StringComparison.CurrentCulture) || line.StartsWith("2.", StringComparison.CurrentCulture) || line.StartsWith("3.", StringComparison.CurrentCulture))
+                else if (currentEntry != null && Regex.IsMatch(line, @"^\d+\.", RegexOptions.CultureInvariant))
                 {
                     currentEntry?.Changes.Add(line.Trim());
                 }
