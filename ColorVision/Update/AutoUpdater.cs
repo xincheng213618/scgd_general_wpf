@@ -9,6 +9,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -91,8 +92,8 @@ namespace ColorVision.Update
         {
             return true;
         }
-        public void Update(string Version) => Update(new Version(Version.Trim()));
-        public void Update(Version Version)
+        public void Update(string Version, string DownloadPath) => Update(new Version(Version.Trim()), DownloadPath);
+        public void Update(Version Version, string DownloadPath)
         {
             CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
             WindowUpdate windowUpdate = new WindowUpdate() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner };
@@ -104,7 +105,7 @@ namespace ColorVision.Update
             SpeedValue = string.Empty;
             RemainingTimeValue = string.Empty;
             ProgressValue = 0;
-            Task.Run(() => DownloadAndUpdate(Version, _cancellationTokenSource.Token));
+            Task.Run(() => DownloadAndUpdate(Version, DownloadPath, _cancellationTokenSource.Token));
             windowUpdate.Show();
         }
 
@@ -123,7 +124,7 @@ namespace ColorVision.Update
                     {
                         if (MessageBox.Show($"{Properties.Resource.NewVersionFound}{LatestVersion},{Properties.Resource.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                         {
-                            Update(LatestVersion);
+                            Update(LatestVersion, Path.GetTempPath());
                         }
                     });              
                 }
@@ -184,14 +185,15 @@ namespace ColorVision.Update
         public string RemainingTimeValue { get => _RemainingTimeValue; set { _RemainingTimeValue = value; NotifyPropertyChanged(); } }
         private string _RemainingTimeValue;
 
+        public string DownloadPath { get; set; }
 
-        private async Task DownloadAndUpdate(Version latestVersion,CancellationToken cancellationToken)
+        private async Task DownloadAndUpdate(Version latestVersion,string DownloadPath,CancellationToken cancellationToken)
         {
             // 构建下载URL，这里假设下载路径与版本号相关
             string downloadUrl = $"{GlobalConst.UpdatePath}/ColorVision/ColorVision-{latestVersion}.exe";
 
+            string downloadPath = Path.Combine(DownloadPath, $"ColorVision-{latestVersion}.exe");
             // 指定下载路径
-            string downloadPath = Path.Combine(Path.GetTempPath(), $"ColorVision-{latestVersion}.exe");
 
             using (var client = new HttpClient())
             {

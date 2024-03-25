@@ -266,8 +266,7 @@ namespace ColorVision.Net
                     src.SaveImage(SavePath + "\\" + fileInfo.Name + "Src.tif");
                     break;
                 case FileExtType.CIE:
-                    if (string.IsNullOrEmpty(cvcie.srcFileName))
-                        cvcie.srcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.srcFileName);
+                    cvcie.srcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.srcFileName);
                     if (File.Exists(cvcie.srcFileName))
                     {
                         if (Read(cvcie.srcFileName, out CVCIEFile cvraw))

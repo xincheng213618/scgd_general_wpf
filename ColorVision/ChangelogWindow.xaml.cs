@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Update;
+using ColorVision.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -19,17 +20,16 @@ namespace ColorVision
 
         public bool IsUpdateAvailable => AutoUpdater.GetInstance().IsUpdateAvailable(Version);
 
-        public bool IsCurrentVision 
-            => 
-            Version.Trim() == AutoUpdater.CurrentVersion?.ToString();
+        public bool IsCurrentVision  =>   Version.Trim() == AutoUpdater.CurrentVersion?.ToString();
 
         public ChangeLogEntry()
         {
             Changes = new List<string>();
             UpdateCommand = new RelayCommand(a =>
             {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "回退软件需要先卸载在安装，或者是安装后重新运行安装包；");
                 if (Version!=null)
-                    AutoUpdater.GetInstance().Update(Version);
+                    AutoUpdater.GetInstance().Update(Version, Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
             });
         }
     }
