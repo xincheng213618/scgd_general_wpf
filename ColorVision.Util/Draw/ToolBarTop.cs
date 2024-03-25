@@ -22,7 +22,10 @@ namespace ColorVision.Draw
         public RelayCommand ZoomIncrease { get; set; }
         public RelayCommand ZoomDecrease { get; set; }
         public RelayCommand ZoomNone { get; set; }
-        public RelayCommand SaveCommand { get; set; }
+        public RelayCommand SaveImageCommand { get; set; }
+        public RelayCommand ClearImageCommand { get; set; }
+        public EventHandler ClearImageEventHandler { get; set; }
+
 
         public RelayCommand OpenProperty { get; set; }
 
@@ -65,7 +68,14 @@ namespace ColorVision.Draw
             this.Parent.PreviewKeyDown += PreviewKeyDown;
             zombox.Cursor = Cursors.Hand;
 
-            SaveCommand = new RelayCommand(a => Save());
+            SaveImageCommand = new RelayCommand(a => Save());
+            ClearImageCommand = new RelayCommand(a => ClearImage());
+        }
+
+        public void ClearImage()
+        {
+            Image.Source = null;
+            ClearImageEventHandler?.Invoke(this, new EventArgs());
         }
 
         public void Save()

@@ -118,6 +118,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                 });
             }
         }
+
         private MeasureImgResultDao measureImgResultDao = new MeasureImgResultDao();
         string LocalFileName;
         private void DeviceService_OnMessageRecved(object sender, MessageRecvArgs arg)
@@ -202,7 +203,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                             {
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    Device.View.ShowResult(result);
+                                    ShowResult(result);
                                 });
                             }
                         }
@@ -461,14 +462,6 @@ namespace ColorVision.Services.Devices.Camera.Views
             }
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void POI_Click(object sender, RoutedEventArgs e)
-        {
-        }
 
         private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -558,10 +551,6 @@ namespace ColorVision.Services.Devices.Camera.Views
 
         }
 
-        private void ClearImage_Click(object sender, RoutedEventArgs e)
-        {
-            ImageView.Clear();
-        }
 
         private void MenuItem_Export_Click(object sender, RoutedEventArgs e)
         {

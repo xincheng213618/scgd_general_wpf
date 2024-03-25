@@ -200,8 +200,11 @@
                     <Button Click="Button_Click">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource openDrawingImage}" Margin="-5"/>
                     </Button>
-                    <Button Command="{Binding SaveCommand}">
+                    <Button Command="{Binding SaveImageCommand}">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageSave}"  Margin="-5"/>
+                    </Button>
+                    <Button Command="{Binding ClearImageCommand}">
+                        <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageClear}"  Margin="-5"/>
                     </Button>
                     <Button x:Name="ButtonCIE1931"  Visibility="{Binding CIEVisible}" Click="ButtonCIE1931_Click">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="/Assets/Image/CIE1931xy1.png" Margin="-5"/>

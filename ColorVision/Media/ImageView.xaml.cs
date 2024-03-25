@@ -60,6 +60,8 @@ namespace ColorVision.Media
             ToolBarTop.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             ListView1.ItemsSource = DrawingVisualLists;
 
+            ToolBarTop.ClearImageEventHandler += (s, e) => Clear();
+
             this.Focusable = true;
             Zoombox1.LayoutUpdated += Zoombox1_LayoutUpdated;
 

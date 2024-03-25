@@ -22,15 +22,14 @@
                 <RowDefinition Height="38"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <ToolBarTray>
-                <ToolBar Grid.Row="0">
+            <ToolBarTray IsLocked="True">
+                <ToolBar Band="0" BandIndex="0">
                     <Button Click="Button_Click_Export" Margin="2,0,0,0" >
                         <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
                     </Button>
                     <Button Click="Button_Click_Clear" Margin="2,0,0,0"  >
                         <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
                     </Button>
-
                     <Button Content="搜索" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
 
                     <Button x:Name="Search" Content="高级查询" Click="Search1_Click" Margin="2,0,0,0"/>
@@ -50,6 +49,10 @@
                                     <TextBox  x:Name="TextBoxFile" Style="{StaticResource TextBox.Small}"  Text=""/>
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
+                                    <TextBlock Text="设备码" Width="60"/>
+                                    <TextBox  x:Name="TbDeviceCode" Style="{StaticResource TextBox.Small}"  Text=""/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
                                     <TextBlock Text="开始时间" Width="60"/>
                                     <hc:DateTimePicker x:Name="SearchTimeSart" SelectedDateTime="{x:Static sys:DateTime.MinValue}" Style="{StaticResource DateTimePicker.Small}" />
                                 </DockPanel>
@@ -61,21 +64,19 @@
                             </StackPanel>
                         </Border>
                     </Popup>
-
                 </ToolBar>
-                <ToolBar>
-                    <Button Content="Src"  Click="Src_Click"/>
-                    <Button Content="R"  Click="R_Click"/>
-                    <Button Content="G"  Click="G_Click"/>
-                    <Button Content="B"  Click="B_Click"/>
-
-                    <Button Content="X"  Click="X_Click"/>
-                    <Button Content="Y"  Click="Y_Click"/>
-                    <Button Content="Z"  Click="Z_Click"/>
-                    <ComboBox x:Name="ComboxPOITemplate" Width="130" HorizontalAlignment="Left"  SelectedValuePath="Value"  DisplayMemberPath="Key"/>
-                    <Button Content="在图像中绘制关注点" Click="POI_Click"/>
+                <ToolBar Band="0" BandIndex="1" >
+                    <StackPanel Orientation="Horizontal" Margin="5,0">
+                        <TextBlock Text="图层" MinWidth="40"/>
+                        <ComboBox x:Name="ComboBoxLayers" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" SelectionChanged="ComboBoxLayers_SelectionChanged"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="5,0">
+                        <TextBlock Text="关注点" MinWidth="40"/>
+                        <ComboBox x:Name="ComboxPOITemplate" Width="130" Style="{StaticResource ComboBox.Small}" HorizontalAlignment="Left"  SelectionChanged="ComboxPOITemplate_SelectionChanged" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
+                    </StackPanel>
                 </ToolBar>
             </ToolBarTray>
+
             <ListView Height="250" Grid.Row="1" x:Name="listView1" Background="Transparent" BorderThickness="0"  Margin="-5" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
                 <ListView.Resources >
                     <ContextMenu x:Key="ContextMenuItem">
@@ -109,7 +110,7 @@
                         <GridViewColumn  Header="批次号" Width="160">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:ViewResultCalibration}">
-                                    <TextBlock Text="{ Binding  Batch}"/>
+                                    <TextBlock Text="{ Binding Batch}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
