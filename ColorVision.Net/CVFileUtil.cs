@@ -256,11 +256,21 @@ namespace ColorVision.Net
             switch (cvcie.FileExtType)
             {
                 case FileExtType.Raw:
+                    ReadCIEFileData(FileName, ref cvcie, index);
+                    src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
+                    src.SaveImage(SavePath + "\\" + fileInfo.Name + "Src.tif");
+                    break;
+                case FileExtType.Src:
+                    ReadCIEFileData(FileName, ref cvcie, index);
+                    src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
+                    src.SaveImage(SavePath + "\\" + fileInfo.Name + "Src.tif");
+                    break;
+                case FileExtType.CIE:
                     if (string.IsNullOrEmpty(cvcie.srcFileName))
                         cvcie.srcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.srcFileName);
                     if (File.Exists(cvcie.srcFileName))
                     {
-                        if (Read(cvcie.srcFileName ,out CVCIEFile cvraw))
+                        if (Read(cvcie.srcFileName, out CVCIEFile cvraw))
                         {
                             src = new Mat(cvraw.cols, cvraw.rows, MatType.MakeType(cvraw.Depth, cvraw.channels), cvraw.data);
                             src.SaveImage(SavePath + "\\" + fileInfo.Name + "_Src.tif");
@@ -286,13 +296,6 @@ namespace ColorVision.Net
                             }
                         }
                     }
-                    break;
-                case FileExtType.Src:
-                    ReadCIEFileData(FileName, ref cvcie, index);
-                    src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
-                    src.SaveImage(SavePath + "\\" + fileInfo.Name + "Src.tif");
-                    break;
-                case FileExtType.CIE:
                     break;
                 case FileExtType.Calibration:
                     break;
