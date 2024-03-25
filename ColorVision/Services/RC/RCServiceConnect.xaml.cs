@@ -8,7 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 
 
-namespace ColorVision.RC
+namespace ColorVision.Services.RC
 {
     /// <summary>
     /// RCServiceConnect.xaml 的交互逻辑

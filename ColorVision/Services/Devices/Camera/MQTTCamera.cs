@@ -570,25 +570,14 @@ namespace ColorVision.Services.Devices.Camera
             return PublishAsyncClient(msg);
         }
 
-        public void DownloadFile(string fileName, FileExtType extType)
+        public MsgRecord DownloadFile(string fileName, FileExtType extType)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = MQTTFileServerEventEnum.Event_File_Download,
-                //ServiceName = Config.Code,
                 Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", extType } }
             };
-            PublishAsyncClient(msg);
-        }
-
-        public MsgRecord UploadCalibrationFile(string name, string fileName,int fileType)
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = MQTTFileServerEventEnum.Event_File_Upload,
-                Params = new Dictionary<string, object> { { "Name", name }, { "FileName", fileName }, { "FileExtType", FileExtType.Calibration } }
-            };
-             return PublishAsyncClient(msg);
+            return PublishAsyncClient(msg);
         }
 
         public async Task<MsgRecord> UploadCalibrationFileAsync(string name, string fileName, int fileType, int timeout = 50000)

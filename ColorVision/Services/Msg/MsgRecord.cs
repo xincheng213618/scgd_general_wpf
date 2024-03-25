@@ -7,10 +7,12 @@ using System.Windows;
 namespace ColorVision.Services.Msg
 {
     public delegate void MsgRecordStateChangedHandler(MsgRecordState msgRecordState);
+    public delegate void MsgRecordSucessChangedHandler(MsgReturn msgReturn);
 
     public class MsgRecord : ViewModelBase, IServiceConfig
     {
         public event MsgRecordStateChangedHandler MsgRecordStateChanged;
+        public event MsgRecordSucessChangedHandler? MsgSucessed;
 
         public string SubscribeTopic { get; set; }
         public string SendTopic { get; set; }
@@ -29,11 +31,20 @@ namespace ColorVision.Services.Msg
             {
                 _MsgRecordState = value;
                 NotifyPropertyChanged();
+
                 Application.Current.Dispatcher.Invoke(() => MsgRecordStateChanged?.Invoke(MsgRecordState));
                 if (value == MsgRecordState.Success || value == MsgRecordState.Fail)
                 {
                     NotifyPropertyChanged(nameof(IsRecive));
                     NotifyPropertyChanged(nameof(MsgReturn));
+                    if (value == MsgRecordState.Success)
+                    {
+                        Application.Current.Dispatcher.Invoke(() => MsgSucessed?.Invoke(MsgReturn));
+                    }
+                    else
+                    {
+                        MsgSucessed = null;
+                    }
                 }
                 else if (value == MsgRecordState.Timeout)
                 {

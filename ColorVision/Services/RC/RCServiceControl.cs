@@ -3,7 +3,7 @@ using ColorVision.MQTT;
 using System;
 using System.Threading.Tasks;
 
-namespace ColorVision.RC
+namespace ColorVision.Services.RC
 {
     public class RCServiceControl : ViewModelBase
     {

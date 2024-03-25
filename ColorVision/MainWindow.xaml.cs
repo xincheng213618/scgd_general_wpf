@@ -182,10 +182,7 @@ namespace ColorVision
                 Thread thread1 = new Thread(async () => await CheckUpdate()) { IsBackground = true };
                 thread1.Start();
             }
-            if (ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.IsOpenLoaclService)
-            {
-                Task.Run(CheckLocalService);
-            }
+
 
             string? RegistrationCenterServicePath = Tool.GetServicePath("RegistrationCenterService");
 
@@ -325,41 +322,7 @@ namespace ColorVision
             }
         }
 
-        public static async Task CheckLocalService()
-        {
-            await Task.Delay(2000);
-            try
-            {
-                string excmd = string.Empty;
-                ServiceController sc = new ServiceController("RegistrationCenterService");
-                if (sc.Status == ServiceControllerStatus.Stopped)
-                {
-                    excmd += "net start RegistrationCenterService&&";
-                }
 
-                ServiceController sc1 = new ServiceController("CVMainService_x86");
-                if (sc1.Status == ServiceControllerStatus.Stopped)
-                {
-                    excmd += "net start CVMainService_x86&&";
-                }
-                ServiceController sc2 = new ServiceController("CVMainService_x64");
-                if (sc2.Status == ServiceControllerStatus.Stopped)
-                {
-                    excmd += "net start CVMainService_x64&&";
-                }
-                if (!string.IsNullOrEmpty(excmd))
-                {
-                    excmd += "1";
-                    Tool.ExecuteCommandAsAdmin(excmd);
-                }
-                ///非管理员模式无法直接通过sc启动程序
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-
-        }
 
         public static async Task CheckUpdate()
         {

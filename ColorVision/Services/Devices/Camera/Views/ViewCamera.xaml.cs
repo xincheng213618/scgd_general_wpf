@@ -6,6 +6,7 @@ using ColorVision.Media;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera.Video;
+using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Solution;
@@ -301,7 +302,19 @@ namespace ColorVision.Services.Devices.Camera.Views
                     }
                     if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
                     {
-                        DeviceService.DownloadFile(data.FilePath, fileExt);
+                        MsgRecord msgRecord = DeviceService.DownloadFile(data.FilePath, fileExt);
+
+                        //msgRecord.MsgSucessed += (arg) =>
+                        //{
+                        //    switch (arg.EventName)
+                        //    {
+                        //        case MQTTFileServerEventEnum.Event_File_Download:
+                        //            DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                        //            LocalFileName = pm_dl.FileName;
+                        //            if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, pm_dl.FileExtType);
+                        //            break;
+                        //    }
+                        //};
                     }
                     else
                     {

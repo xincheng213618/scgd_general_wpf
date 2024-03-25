@@ -13,6 +13,7 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
+        
 
         <Border Grid.Row="2" Height="30">
             <Button  Content="{x:Static properties:Resource.Export}" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click" />

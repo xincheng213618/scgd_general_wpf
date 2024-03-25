@@ -4,7 +4,7 @@ using ColorVision.HotKey;
 using ColorVision.Language;
 using ColorVision.MQTT;
 using ColorVision.MySql;
-using ColorVision.RC;
+using ColorVision.Services.RC;
 using ColorVision.Services;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Calibration;

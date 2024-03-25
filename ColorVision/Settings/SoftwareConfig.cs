@@ -1,9 +1,9 @@
-﻿using ColorVision.MQTT;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.MQTT;
 using ColorVision.MySql;
-using ColorVision.RC;
 using ColorVision.Services;
 using ColorVision.Services.Devices.Camera.Video;
+using ColorVision.Services.RC;
 using ColorVision.Services.Templates;
 using ColorVision.Solution;
 using ColorVision.Update;

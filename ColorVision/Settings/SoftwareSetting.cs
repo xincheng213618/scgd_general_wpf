@@ -87,9 +87,6 @@ namespace ColorVision.Settings
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; NotifyPropertyChanged(); } }
         private bool _IsAutoUpdate = true;
 
-        public bool IsOpenLoaclService { get => _IsOpenLoaclService; set { _IsOpenLoaclService = value; NotifyPropertyChanged(); } }
-        private bool _IsOpenLoaclService;
-
         /// <summary>
         /// 是否默认配置
         /// </summary>

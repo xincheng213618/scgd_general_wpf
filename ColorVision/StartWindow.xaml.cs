@@ -8,12 +8,13 @@ using ColorVision.MySql;
 using ColorVision.MQTT;
 using System.Reflection;
 using ColorVision.Services;
-using ColorVision.RC;
+using ColorVision.Services.RC;
 using System.Threading;
 using ColorVision.Themes;
 using System.Windows.Media.Imaging;
 using System.Runtime.Versioning;
 using ColorVision.Settings;
+using ColorVision.Services.RC;
 
 namespace ColorVision
 {
@@ -118,6 +119,21 @@ namespace ColorVision
                     TextBoxMsg.Text += $"{Environment.NewLine}MQTT服务器连接{(MQTTControl.GetInstance().IsConnect ? Properties.Resource.Success : Properties.Resource.Failure)}";
                     if (!IsConnect)
                     {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            TextBoxMsg.Text += $"{Environment.NewLine}检测是否本地服务";
+                        });
+
+                        if (!RCManager.GetInstance().IsLocalServiceRunning())
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                TextBoxMsg.Text += $"{Environment.NewLine}打开本地服务管理";
+                            });
+                            RCManager.GetInstance().OpenCVWinSMS();
+                        }
+
+                        RCManager.GetInstance();
                         MQTTConnect mQTTConnect = new MQTTConnect() { Owner = this };
                         mQTTConnect.ShowDialog();
                     }
@@ -143,6 +159,20 @@ namespace ColorVision
                         TextBoxMsg.Text += $"{Environment.NewLine}注册中心: {(IsConnect ? Properties.Resource.Success : Properties.Resource.Failure)}";
                         if (!IsConnect)
                         {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                TextBoxMsg.Text += $"{Environment.NewLine}检测是否本地服务";
+                            });
+
+                            if (!RCManager.GetInstance().IsLocalServiceRunning())
+                            {
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    TextBoxMsg.Text += $"{Environment.NewLine}打开本地服务管理";
+                                });
+                                RCManager.GetInstance().OpenCVWinSMS();
+                            }
+
                             RCServiceConnect rcServiceConnect = new RCServiceConnect() { Owner = this };
                             rcServiceConnect.ShowDialog();
                         }
