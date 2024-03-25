@@ -4,6 +4,7 @@ using ColorVision.MySql;
 using ColorVision.Services;
 using ColorVision.Services.Core;
 using ColorVision.Services.Flow;
+using ColorVision.Services.RC;
 using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.Solution.View;
@@ -168,10 +169,10 @@ namespace ColorVision
             Menu1.Items.Add(menuItem);
 
 
-            MenuItem menuItem3 = new MenuItem() { Header = Properties.Resource.RestartService, Tag = "CalibrationUpload" };
+            MenuItem menuItem3 = new MenuItem() { Header = Properties.Resource.RestartService };
             menuItem3.Click += (s, e) =>
             {
-                Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&&net start RegistrationCenterService");
+                RCManager.GetInstance().OpenCVWinSMS();
             };
             menuItem.Items.Add(menuItem3);
 
@@ -449,9 +450,6 @@ namespace ColorVision
         private void ChangeLog_Clik(object sender, RoutedEventArgs e)
         {
             ChangelogWindow changelogWindow = new ChangelogWindow();
-            string changelogPath = "CHANGELOG.md";
-            string changelogContent = File.ReadAllText(changelogPath);
-            changelogWindow.SetChangelogText(changelogContent);
             changelogWindow.ShowDialog();
         }
 

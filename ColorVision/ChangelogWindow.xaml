@@ -6,10 +6,41 @@
         xmlns:local="clr-namespace:ColorVision"
         xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resource.ChangeLog}" Background="{StaticResource GlobalBackground}" Height="450" Width="800">
+        d:DataContext="{d:DesignInstance local:ChangelogWindow}"
+        Title="{x:Static properties:Resource.ChangeLog}" Background="{StaticResource GlobalBackground}" Height="450" Width="800" Initialized="Window_Initialized">
     <Grid>
-        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="10,0">
-            <TextBlock x:Name="ChangelogTextBlock" ToolTip="" Foreground="{DynamicResource GlobalTextBrush}" TextWrapping="WrapWithOverflow"/>
-        </ScrollViewer>
+        <ListView x:Name="ChangeLogListView">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="操作" >
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:ChangeLogEntry}">
+                                <Grid>
+                                    <TextBlock Text="当前版本" Visibility="{Binding IsCurrentVision,Converter={StaticResource bool2VisibilityConverter}}"/>
+                                    <Button Content="回退" Visibility="{Binding IsCurrentVision,Converter={StaticResource bool2VisibilityConverter1}}" Command="{Binding UpdateCommand}"/>
+                                </Grid>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <GridViewColumn Header="Version" DisplayMemberBinding="{Binding Version}" />
+                    <GridViewColumn Header="Date">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:ChangeLogEntry}">
+                                <TextBlock Text="{Binding ReleaseDate,StringFormat=yyyy/MM/dd}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="Changes" >
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:ChangeLogEntry}">
+                                <TextBlock Text="{Binding ChangeLog}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
     </Grid>
 </Window>

@@ -57,7 +57,7 @@ namespace ColorVision.Update
                 {
                     //这里先注释掉，逻辑有些问题
                     //FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(updateFile);
-                    //if (localVersion < new Version(fileVersionInfo.FileVersion??string.Empty))
+                    //if (CurrentVersion < new Version(fileVersionInfo.FileVersion??string.Empty))
                     //{
                     //    Application.Current.Dispatcher.Invoke(() =>
                     //    {
@@ -86,33 +86,44 @@ namespace ColorVision.Update
             }
         }
 
+        public static Version? CurrentVersion { get => Assembly.GetExecutingAssembly().GetName().Version; }
+        public bool IsUpdateAvailable(string Version)
+        {
+            return true;
+        }
+        public void Update(string Version) => Update(new Version(Version.Trim()));
+        public void Update(Version Version)
+        {
+            CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+            WindowUpdate windowUpdate = new WindowUpdate() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            windowUpdate.Title += $" {Version}" ;
+            windowUpdate.Closed += (s, e) =>
+            {
+                _cancellationTokenSource.Cancel();
+            };
+            SpeedValue = string.Empty;
+            RemainingTimeValue = string.Empty;
+            ProgressValue = 0;
+            Task.Run(() => DownloadAndUpdate(Version, _cancellationTokenSource.Token));
+            windowUpdate.Show();
+        }
+
         // 调用函数以删除所有更新文件
         public async void CheckAndUpdate(bool detection = true)
         {
             // 获取本地版本
-            var localVersion = Assembly.GetExecutingAssembly().GetName().Version;
             try
             {
                 // 获取服务器版本
                 LatestVersion = await GetLatestVersionNumber(UpdateUrl);
 
-                if (LatestVersion > localVersion)
+                if (LatestVersion > CurrentVersion)
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         if (MessageBox.Show($"{Properties.Resource.NewVersionFound}{LatestVersion},{Properties.Resource.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                         {
-                            CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-                            WindowUpdate windowUpdate = new WindowUpdate() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                            windowUpdate.Closed += (s, e) =>
-                            {
-                                _cancellationTokenSource.Cancel();
-                            };
-                            SpeedValue = string.Empty ;
-                            RemainingTimeValue = string.Empty;
-                            ProgressValue = 0;
-                            Task.Run(() => DownloadAndUpdate(LatestVersion, _cancellationTokenSource.Token));
-                            windowUpdate.Show();
+                            Update(LatestVersion);
                         }
                     });              
                 }
@@ -128,7 +139,7 @@ namespace ColorVision.Update
             }
             catch (Exception ex)
             {
-                LatestVersion = localVersion??new Version();
+                LatestVersion = CurrentVersion??new Version();
                 Console.WriteLine("An error occurred while updating: " + ex.Message);
             }
         }

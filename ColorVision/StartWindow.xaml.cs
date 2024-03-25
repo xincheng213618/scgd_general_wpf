@@ -1,20 +1,19 @@
-﻿using System;
+﻿using ColorVision.MQTT;
+using ColorVision.MySql;
+using ColorVision.Services;
+using ColorVision.Services.RC;
+using ColorVision.Settings;
+using ColorVision.Themes;
+using System;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
+using System.Runtime.Versioning;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.MySql;
-using ColorVision.MQTT;
-using System.Reflection;
-using ColorVision.Services;
-using ColorVision.Services.RC;
-using System.Threading;
-using ColorVision.Themes;
 using System.Windows.Media.Imaging;
-using System.Runtime.Versioning;
-using ColorVision.Settings;
-using ColorVision.Services.RC;
 
 namespace ColorVision
 {
