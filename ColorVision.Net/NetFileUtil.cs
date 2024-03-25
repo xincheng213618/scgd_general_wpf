@@ -399,7 +399,6 @@ namespace ColorVision.Net
                 {
                     dst = src;
                 }
-                fileInfo.data = null;
                 int len = (int)(fileInfo.rows * fileInfo.cols * fileInfo.channels);
                 fileInfo.data = new byte[len];
                 Marshal.Copy(dst.Data, fileInfo.data, 0, len);

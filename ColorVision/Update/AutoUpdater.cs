@@ -23,13 +23,15 @@ namespace ColorVision.Update
     public class AutoUpdater : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AutoUpdater));
-
         private static AutoUpdater _instance;
         private static readonly object _locker = new();
         public static AutoUpdater GetInstance() { lock (_locker) { return _instance ??= new AutoUpdater(); } }
 
         public string UpdateUrl { get => _UpdateUrl; set { _UpdateUrl = value; NotifyPropertyChanged(); } }
         private string _UpdateUrl = GlobalConst.UpdatePath + "/LATEST_RELEASE";
+
+        public string CHANGELOG { get => _CHANGELOG; set { _CHANGELOG = value; NotifyPropertyChanged(); } }
+        private string _CHANGELOG = GlobalConst.UpdatePath + "/CHANGELOG.md";
 
         public Version LatestVersion { get => _LatestVersion; set { _LatestVersion = value; NotifyPropertyChanged(); } }
         private Version _LatestVersion;
@@ -88,7 +90,7 @@ namespace ColorVision.Update
         }
 
         public static Version? CurrentVersion { get => Assembly.GetExecutingAssembly().GetName().Version; }
-        public bool IsUpdateAvailable(string Version)
+        public static bool IsUpdateAvailable(string Version)
         {
             return true;
         }
@@ -146,6 +148,35 @@ namespace ColorVision.Update
         }
         bool IsPassWorld;
 
+
+        public async Task<string?> GetChangeLog(string url)
+        {
+            using HttpClient _httpClient = new HttpClient();
+            string versionString = null;
+            try
+            {
+                // First attempt to get the string without authentication
+                versionString = await _httpClient.GetStringAsync(url);
+            }
+            catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                IsPassWorld = true;
+                // If the request is unauthorized, add the authentication header and try again
+                var byteArray = System.Text.Encoding.ASCII.GetBytes("1:1");
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+
+                // You should also consider handling other potential issues here, such as network errors
+                versionString = await _httpClient.GetStringAsync(url);
+            }
+
+            // If versionString is still null, it means there was an issue with getting the version number
+            if (versionString == null)
+            {
+                return null;
+            }
+
+            return versionString;
+        }
 
         private async Task<Version> GetLatestVersionNumber(string url)
         {

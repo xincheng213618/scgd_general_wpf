@@ -657,4 +657,10 @@
   <data name="Create" xml:space="preserve">
     <value>créer</value>
   </data>
+  <data name="Upgrade" xml:space="preserve">
+    <value>mise à niveau</value>
+  </data>
+  <data name="Rollback" xml:space="preserve">
+    <value>retourner</value>
+  </data>
 </root>

@@ -1240,6 +1240,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 回退 的本地化字符串。
+        /// </summary>
+        public static string Rollback {
+            get {
+                return ResourceManager.GetString("Rollback", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 以管理员身份运行 的本地化字符串。
         /// </summary>
         public static string RunAsAdmin {
@@ -1587,6 +1596,15 @@ namespace ColorVision.Properties {
         public static string UnderDevelopment {
             get {
                 return ResourceManager.GetString("UnderDevelopment", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 升级 的本地化字符串。
+        /// </summary>
+        public static string Upgrade {
+            get {
+                return ResourceManager.GetString("Upgrade", resourceCulture);
             }
         }
         
