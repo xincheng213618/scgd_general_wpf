@@ -290,7 +290,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
                 if (data.ResultCode == 0 && data.FilePath != null)
                 {
                     string localName = netFileUtil.GetCacheFileFullName(data.FilePath);
-                    FileExtType fileExt = FileExtType.Src;z
+                    FileExtType fileExt = FileExtType.Src;
                     switch (data.FileType)
                     {
                         case CameraFileType.SrcFile:

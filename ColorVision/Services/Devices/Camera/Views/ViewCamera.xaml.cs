@@ -265,8 +265,6 @@ namespace ColorVision.Services.Devices.Camera.Views
                 ImageSource bitmapSource = ImageView.ImageShow.Source;
                 ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
             }
-
-
         }
 
 
