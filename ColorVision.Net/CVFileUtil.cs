@@ -322,10 +322,11 @@ namespace ColorVision.Net
                 }
                 else
                 {
-                    if (fileOut.srcFileName!=null)
+                    if (cvcie.srcFileName!=null)
                     {
-                        fileOut.data = ReadFile(fileOut.srcFileName);
+                        fileOut.data = ReadFile(cvcie.srcFileName);
                         fileOut.FileExtType = FileExtType.Tif;
+                        return true;
                     }
                 }
             }
