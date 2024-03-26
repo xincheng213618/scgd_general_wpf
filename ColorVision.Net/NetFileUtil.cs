@@ -429,8 +429,9 @@ namespace ColorVision.Net
 
             if (!string.IsNullOrEmpty(fileInfo.srcFileName))
             {
-                if (CVFileUtil.ReadCVCIESrc(fileName, out fileInfo))
+                if (CVFileUtil.ReadCVCIESrc(fileName, out CVCIEFile fileInf))
                 {
+                    fileInfo = fileInf;
                     return 0;
                 }
             }
