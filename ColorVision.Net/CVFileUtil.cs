@@ -311,8 +311,9 @@ namespace ColorVision.Net
             fileOut = new CVCIEFile();
             int index = ReadCIEFileHeader(FileName, out CVCIEFile cvcie);
             if (index < 0) return false;
-            if (!string.IsNullOrEmpty(cvcie.srcFileName))
+            if (!File.Exists(cvcie.srcFileName))
                 cvcie.srcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.srcFileName);
+
             if (File.Exists(cvcie.srcFileName))
             {
                 if (cvcie.srcFileName.EndsWith(".cvraw", StringComparison.OrdinalIgnoreCase))
