@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Settings;
+using ColorVision.Utilities;
 using log4net;
 using Org.BouncyCastle.Asn1.Ocsp;
 using System;
@@ -98,7 +99,7 @@ namespace ColorVision.Update
         public void Update(Version Version, string DownloadPath)
         {
             CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-            WindowUpdate windowUpdate = new WindowUpdate() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            WindowUpdate windowUpdate = new WindowUpdate() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             windowUpdate.Title += $" {Version}" ;
             windowUpdate.Closed += (s, e) =>
             {

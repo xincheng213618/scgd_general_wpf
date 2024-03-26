@@ -18,6 +18,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
             FilePath = measureImgResultModel.RawFile ?? string.Empty;
             FileType = (CameraFileType)(measureImgResultModel.FileType??0);
             ReqParams = measureImgResultModel.ReqParams ?? string.Empty;
+            FileUrl =measureImgResultModel.FileUrl ?? string.Empty;
             ImgFrameInfo = measureImgResultModel.ImgFrameInfo ?? string.Empty;
             CreateTime = measureImgResultModel.CreateDate;
             ResultCode = measureImgResultModel.ResultCode;
@@ -27,37 +28,39 @@ namespace ColorVision.Services.Devices.Calibration.Views
         }
 
 
-        public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
+        public int Id { get => _Id;  set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
 
-        public string? Batch { get { return _Batch; } set { _Batch = value; NotifyPropertyChanged(); } }
+        public string? Batch { get => _Batch;  set { _Batch = value; NotifyPropertyChanged(); } }
         private string? _Batch;
 
-        public string? FilePath { get { return _FilePath; } set { _FilePath = value; NotifyPropertyChanged(); } }
+        public string? FileUrl { get => _FileUrl;  set { _FileUrl = value; NotifyPropertyChanged(); } }
+        private string? _FileUrl;
+        public string? FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); } }
         private string? _FilePath;
 
-        public CameraFileType FileType { get { return _FileType; } set { _FileType = value; NotifyPropertyChanged(); } }
+        public CameraFileType FileType { get => _FileType; set { _FileType = value; NotifyPropertyChanged(); } }
         private CameraFileType _FileType;
 
-        public string ReqParams { get { return _Params; } set { _Params = value; NotifyPropertyChanged(); } }
+        public string ReqParams { get => _Params; set { _Params = value; NotifyPropertyChanged(); } }
         private string _Params;
 
-        public string ImgFrameInfo { get { return _ImgFrameInfo; } set { _ImgFrameInfo = value; NotifyPropertyChanged(); } }
+        public string ImgFrameInfo { get => _ImgFrameInfo; set { _ImgFrameInfo = value; NotifyPropertyChanged(); } }
         private string _ImgFrameInfo;
 
-        public DateTime? CreateTime { get { return _RecvTime; } set { _RecvTime = value; NotifyPropertyChanged(); } }
+        public DateTime? CreateTime { get => _RecvTime; set { _RecvTime = value; NotifyPropertyChanged(); } }
         private DateTime? _RecvTime;
 
         public string? ResultMsg { get => _ResultMsg; set { _ResultMsg = value; NotifyPropertyChanged(); } }
         private string? _ResultMsg;
-        public int ResultCode { get { return _resultCode; } set { _resultCode = value; NotifyPropertyChanged(); } }
+        public int ResultCode { get => _resultCode; set { _resultCode = value; NotifyPropertyChanged(); } }
         private int _resultCode;
 
         public string TotalTime => string.Format("{0}", TimeSpan.FromMilliseconds(_totalTime).ToString().TrimEnd('0'));
         private long _totalTime;
 
 
-        public string ResultDesc { get { return _resultDesc; } set { _resultDesc = value; NotifyPropertyChanged(); } }
+        public string ResultDesc { get => _resultDesc; set { _resultDesc = value; NotifyPropertyChanged(); } }
         private string _resultDesc;
 
     }

@@ -663,4 +663,7 @@
   <data name="Rollback" xml:space="preserve">
     <value>돌아가다</value>
   </data>
+  <data name="Manager" xml:space="preserve">
+    <value>관리하다</value>
+  </data>
 </root>

@@ -268,9 +268,15 @@ namespace ColorVision.Services.Devices.Calibration.Views
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
             CsvWriter.WriteToCsv(ViewResultCalibrations[listView1.SelectedIndex], dialog.FileName);
-            ImageSource bitmapSource = ImageView.ImageShow.Source;
-            ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
-
+            if (File.Exists(LocalFileName))
+            {
+                CVFileUtil.SaveToTif(LocalFileName, Path.GetDirectoryName(dialog.FileName));
+            }
+            else
+            {
+                ImageSource bitmapSource = ImageView.ImageShow.Source;
+                ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
+            }
         }
 
 
@@ -286,35 +292,45 @@ namespace ColorVision.Services.Devices.Calibration.Views
             if (listView1.SelectedIndex > -1)
             {
                 var data = ViewResultCalibrations[listView1.SelectedIndex];
-
-                if (data.ResultCode == 0 && data.FilePath != null)
+                if (File.Exists(data.FileUrl))
                 {
-                    string localName = netFileUtil.GetCacheFileFullName(data.FilePath);
-                    FileExtType fileExt = FileExtType.Src;
-                    switch (data.FileType)
-                    {
-                        case CameraFileType.SrcFile:
-                            fileExt = FileExtType.Src;
-                            break;
-                        case CameraFileType.RawFile:
-                            fileExt = FileExtType.Raw;
-                            break;
-                        case CameraFileType.CIEFile:
-                            fileExt = FileExtType.CIE;
-                            break;
-                        default:
-                            break;
-                    }
-                    if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
-                    {
-                        DeviceService.Open(data.FilePath, fileExt);
-                    }
-                    else
-                    {
-                        var FileData = netFileUtil.OpenLocalCVFile(localName, fileExt);
-                        OpenImage(FileData);
-                    }
+                    LocalFileName = data.FileUrl;
+                    var FileData = netFileUtil.OpenLocalCVFile(data.FileUrl);
+                    OpenImage(FileData);
                 }
+                else
+                {
+                    if (data.ResultCode == 0 && data.FilePath != null)
+                    {
+                        string localName = netFileUtil.GetCacheFileFullName(data.FilePath);
+                        FileExtType fileExt = FileExtType.Src;
+                        switch (data.FileType)
+                        {
+                            case CameraFileType.SrcFile:
+                                fileExt = FileExtType.Src;
+                                break;
+                            case CameraFileType.RawFile:
+                                fileExt = FileExtType.Raw;
+                                break;
+                            case CameraFileType.CIEFile:
+                                fileExt = FileExtType.CIE;
+                                break;
+                            default:
+                                break;
+                        }
+                        if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
+                        {
+                            DeviceService.Open(data.FilePath, fileExt);
+                        }
+                        else
+                        {
+                            var FileData = netFileUtil.OpenLocalCVFile(localName, fileExt);
+                            OpenImage(FileData);
+                        }
+                    }
+
+                }
+
             }
         }
 

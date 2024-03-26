@@ -663,4 +663,7 @@
   <data name="Rollback" xml:space="preserve">
     <value>Rollback</value>
   </data>
+  <data name="Manager" xml:space="preserve">
+    <value>Manage</value>
+  </data>
 </root>

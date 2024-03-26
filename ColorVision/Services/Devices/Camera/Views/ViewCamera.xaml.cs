@@ -281,45 +281,41 @@ namespace ColorVision.Services.Devices.Camera.Views
             if (listView1.SelectedIndex > -1)
             {
                 var data = ViewResultCameras[listView1.SelectedIndex];
-
-                if (data.ResultCode == 0 && data.FilePath != null)
+                if (File.Exists(data.FileUrl))
                 {
-                    string localName = netFileUtil.GetCacheFileFullName(data.FilePath);
-                    FileExtType fileExt = FileExtType.Src;
-                    switch (data.FileType)
+                    LocalFileName = data.FileUrl;
+                    var FileData = netFileUtil.OpenLocalCVFile(data.FileUrl);
+                    OpenImage(FileData);
+                }
+                else
+                {
+                    if (data.ResultCode == 0 && data.FilePath != null)
                     {
-                        case CameraFileType.SrcFile:
-                            fileExt = FileExtType.Src;
-                            break;
-                        case CameraFileType.RawFile:
-                            fileExt = FileExtType.Raw;
-                            break;
-                        case CameraFileType.CIEFile:
-                            fileExt = FileExtType.CIE;
-                            break;
-                        default:
-                            break;
-                    }
-                    if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
-                    {
-                        MsgRecord msgRecord = DeviceService.DownloadFile(data.FilePath, fileExt);
-
-                        //msgRecord.MsgSucessed += (arg) =>
-                        //{
-                        //    switch (arg.EventName)
-                        //    {
-                        //        case MQTTFileServerEventEnum.Event_File_Download:
-                        //            DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                        //            LocalFileName = pm_dl.FileName;
-                        //            if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, pm_dl.FileExtType);
-                        //            break;
-                        //    }
-                        //};
-                    }
-                    else
-                    {
-                        var FileData = netFileUtil.OpenLocalCVFile(localName, fileExt);
-                        OpenImage(FileData);
+                        string localName = netFileUtil.GetCacheFileFullName(data.FilePath);
+                        FileExtType fileExt = FileExtType.Src;
+                        switch (data.FileType)
+                        {
+                            case CameraFileType.SrcFile:
+                                fileExt = FileExtType.Src;
+                                break;
+                            case CameraFileType.RawFile:
+                                fileExt = FileExtType.Raw;
+                                break;
+                            case CameraFileType.CIEFile:
+                                fileExt = FileExtType.CIE;
+                                break;
+                            default:
+                                break;
+                        }
+                        if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
+                        {
+                            MsgRecord msgRecord = DeviceService.DownloadFile(data.FilePath, fileExt);
+                        }
+                        else
+                        {
+                            var FileData = netFileUtil.OpenLocalCVFile(localName, fileExt);
+                            OpenImage(FileData);
+                        }
                     }
                 }
             }

@@ -663,4 +663,7 @@
   <data name="Rollback" xml:space="preserve">
     <value>戻る</value>
   </data>
+  <data name="Manager" xml:space="preserve">
+    <value>管理</value>
+  </data>
 </root>

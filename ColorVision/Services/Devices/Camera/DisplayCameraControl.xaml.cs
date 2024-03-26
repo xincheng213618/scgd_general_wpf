@@ -194,15 +194,15 @@ namespace ColorVision.Services.Devices.Camera
             {
                 var msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
                 Helpers.SendCommand(button,msgRecord);
-                MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
+                MsgRecordSucessChangedHandler msgRecordStateChangedHandler = null;
                 msgRecordStateChangedHandler = (e) =>
                 {
                     ButtonOpen.Visibility = Visibility.Collapsed;
                     ButtonClose.Visibility = Visibility.Visible;
                     StackPanelImage.Visibility = Visibility.Visible;
-                    msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
+                    msgRecord.MsgSucessed -= msgRecordStateChangedHandler;
                 };
-                msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+                msgRecord.MsgSucessed += msgRecordStateChangedHandler;
 
             }
         }

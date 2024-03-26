@@ -16,8 +16,6 @@ namespace ColorVision.Services
     {
         public ObservableCollection<DeviceService> MQTTDevices { get; set; }
         public ObservableCollection<DeviceService> MQTTDevices1 { get; set; }
-
-        AdornerLayer mAdornerLayer { get; set; }
         public WindowDevicesSetting(ObservableCollection<DeviceService> Devices)
         {
             MQTTDevices = new ObservableCollection<DeviceService>();
@@ -37,8 +35,6 @@ namespace ColorVision.Services
 
         private void Window_Initialied(object sender, EventArgs e)
         {
-
-
             SeriesExportTreeView1.ItemsSource = MQTTDevices;
             SeriesExportTreeView2.ItemsSource = MQTTDevices1;
         }

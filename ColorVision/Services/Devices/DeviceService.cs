@@ -15,6 +15,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ColorVision.Services.Devices.Calibration;
 
 namespace ColorVision.Services.Devices
 {
@@ -47,6 +48,7 @@ namespace ColorVision.Services.Devices
         public RelayCommand ImportCommand { get; set; }
         public RelayCommand CopyCommand { get; set; }
         public RelayCommand ResetCommand { get; set; }
+        public RelayCommand ResourceManagerCommand { get; set; }
 
         public RelayCommand EditCommand { get; set; }
         public bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
@@ -116,7 +118,6 @@ namespace ColorVision.Services.Devices
         public override string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; NotifyPropertyChanged(); } }
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set{ SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
-        public int MySqlId { get => SysResourceModel.Id; }
 
         public DeviceService(SysDeviceModel sysResourceModel) : base()
         {
@@ -148,7 +149,12 @@ namespace ColorVision.Services.Devices
             DeleteCommand = new RelayCommand(a => Delete());
             EditCommand = new RelayCommand(a => { });
 
-
+            ResourceManagerCommand = new RelayCommand(a => 
+            {
+                ResourceManager resourceManager = new ResourceManager(this) { Owner = WindowHelpers.GetActiveWindow() };
+                resourceManager.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                resourceManager.ShowDialog();
+            });
 
             ImportCommand = new RelayCommand(a => {
                 System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();

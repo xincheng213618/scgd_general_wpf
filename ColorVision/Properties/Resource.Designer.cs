@@ -709,6 +709,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 管理 的本地化字符串。
+        /// </summary>
+        public static string Manager {
+            get {
+                return ResourceManager.GetString("Manager", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 最大化 的本地化字符串。
         /// </summary>
         public static string Maximize {
