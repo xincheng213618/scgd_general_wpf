@@ -330,7 +330,6 @@ namespace ColorVision.Services.Devices.Calibration.Views
                     }
 
                 }
-
             }
         }
 
