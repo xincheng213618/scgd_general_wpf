@@ -163,13 +163,14 @@ namespace ColorVision.Services.Flow
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
                     handler.Cancelling += delegate
                     {
-                        flowControl?.Stop();
-                        handler?.Close();
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             ButtonRun.Visibility = Visibility.Visible;
                             ButtonStop.Visibility = Visibility.Collapsed;
                         });
+
+                        flowControl?.Stop();
+                        handler?.Close();
                     };
 
                     flowControl.FlowData += (s, e) =>
