@@ -28,7 +28,7 @@ namespace ColorVision.Services.Devices.Algorithm
             EditCommand = new RelayCommand(a =>
             {
                 EditAlgorithm window = new EditAlgorithm(this);
-                window.Owner = WindowHelpers.GetActiveWindow();
+                window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });

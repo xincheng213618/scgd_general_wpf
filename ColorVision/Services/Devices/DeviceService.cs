@@ -178,7 +178,7 @@ namespace ColorVision.Services.Devices
             {
                 Window window = new Window() { Width = 700, Height = 400, Icon = Icon,Title = Properties.Resource.Property };
                 window.Content = GetDeviceInfo();
-                window.Owner = WindowHelpers.GetActiveWindow();
+                window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });

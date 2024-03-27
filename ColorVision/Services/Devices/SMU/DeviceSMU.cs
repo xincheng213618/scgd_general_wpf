@@ -31,7 +31,7 @@ namespace ColorVision.Services.Devices.SMU
             {
                 EditSMU window = new EditSMU(this);
                 window.Icon = Icon;
-                window.Owner = WindowHelpers.GetActiveWindow();
+                window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });

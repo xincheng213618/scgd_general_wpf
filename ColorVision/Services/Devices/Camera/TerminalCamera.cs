@@ -20,7 +20,7 @@ namespace ColorVision.Services.Devices.Camera
         {
             OpenCreateWindowCommand = new RelayCommand(a => {
                 CreateWindow createWindow = new CreateWindow(this);
-                createWindow.Owner = WindowHelpers.GetActiveWindow();
+                createWindow.Owner = Application.Current.GetActiveWindow();
                 createWindow.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 createWindow.ShowDialog();
             });

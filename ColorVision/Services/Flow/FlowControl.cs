@@ -90,18 +90,24 @@ namespace ColorVision.Services.Flow
         {
             var serviceInfo = ServiceManager.GetInstance().GetServiceInfo(ServiceTypes.Flow, string.Empty);
             SerialNumber = sn;
-            devName = serviceInfo?.Devices.First().Key;
-            DeviceFlowRunParam<MQTTServiceInfo> data = new DeviceFlowRunParam<MQTTServiceInfo>()
+            if (serviceInfo != null && serviceInfo.Devices.First().Key is string key)
             {
-                Services = ServiceManager.GetInstance().GetServiceJsonList(),
-                TemplateParam = new MQTTMessageLib.CVTemplateParam() { ID = flowParam.Id, Name = flowParam.Name }
-            };
-            MQTTFlowRun<MQTTServiceInfo> req = new MQTTFlowRun<MQTTServiceInfo>(serviceInfo?.ServiceCode, devName, sn, data);
-            req.Token = serviceInfo?.Token;
-            string Msg = JsonConvert.SerializeObject(req);
-            Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
-            Task.Run(() => MQTTControl.PublishAsyncClient(serviceInfo.PublishTopic, Msg, false));
-
+                devName = key;
+                DeviceFlowRunParam<MQTTServiceInfo> data = new DeviceFlowRunParam<MQTTServiceInfo>()
+                {
+                    Services = ServiceManager.GetInstance().GetServiceJsonList(),
+                    TemplateParam = new MQTTMessageLib.CVTemplateParam() { ID = flowParam.Id, Name = flowParam.Name }
+                };
+                MQTTFlowRun<MQTTServiceInfo> req = new MQTTFlowRun<MQTTServiceInfo>(serviceInfo?.ServiceCode, devName, sn, data);
+                req.Token = serviceInfo?.Token;
+                string Msg = JsonConvert.SerializeObject(req);
+                Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
+                Task.Run(() => MQTTControl.PublishAsyncClient(serviceInfo?.PublishTopic??string.Empty, Msg, false));
+            }
+            else
+            {
+                MessageBox.Show(Application.Current.MainWindow,"相机打不开", "ColorVision");
+            }
         }
 
         public event EventHandler FlowCompleted;

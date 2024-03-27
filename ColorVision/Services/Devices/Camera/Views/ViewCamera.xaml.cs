@@ -564,7 +564,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                 if (File.Exists(viewCamera.FileUrl))
                 {
                     ExportCamera exportCamera = new ExportCamera(viewCamera.FileUrl) { Icon = Device.Icon };
-                    exportCamera.Owner = WindowHelpers.GetActiveWindow();
+                    exportCamera.Owner = Application.Current.GetActiveWindow();
                     exportCamera.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                     exportCamera.ShowDialog();
                 }

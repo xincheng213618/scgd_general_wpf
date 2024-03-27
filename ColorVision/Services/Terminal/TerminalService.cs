@@ -60,7 +60,7 @@ namespace ColorVision.Services.Terminal
             EditCommand = new RelayCommand(a =>
             {
                 EditTerminal window = new EditTerminal(this);
-                window.Owner = WindowHelpers.GetActiveWindow();
+                window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });
@@ -68,7 +68,7 @@ namespace ColorVision.Services.Terminal
             OpenCreateWindowCommand = new RelayCommand(a =>
             {
                 CreateTerminal createTerminal = new CreateTerminal(this);
-                createTerminal.Owner = WindowHelpers.GetActiveWindow();
+                createTerminal.Owner = Application.Current.GetActiveWindow();
                 createTerminal.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 createTerminal.ShowDialog();
             });

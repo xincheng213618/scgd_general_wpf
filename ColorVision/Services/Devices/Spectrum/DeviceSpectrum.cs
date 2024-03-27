@@ -37,7 +37,7 @@ namespace ColorVision.Services.Devices.Spectrum
             EditCommand = new RelayCommand(a =>
             {
                 EditSpectrum window = new EditSpectrum(this);
-                window.Owner = WindowHelpers.GetActiveWindow();
+                window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });

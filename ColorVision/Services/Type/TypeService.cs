@@ -45,7 +45,7 @@ namespace ColorVision.Services.Type
             OpenCreateWindowCommand = new RelayCommand(a =>
             {
                 CreateType createType = new CreateType(this);
-                createType.Owner = WindowHelpers.GetActiveWindow();
+                createType.Owner = Application.Current.GetActiveWindow();
                 createType.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 createType.ShowDialog();
             });

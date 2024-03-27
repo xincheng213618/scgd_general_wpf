@@ -66,7 +66,7 @@ namespace ColorVision.Services.Devices.Camera
             EditCommand = new RelayCommand(a =>
             {
                 EditCamera window = new EditCamera(this);
-                window.Owner = WindowHelpers.GetActiveWindow();
+                window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });

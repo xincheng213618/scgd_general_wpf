@@ -23,7 +23,7 @@ namespace ColorVision.Services.Devices.FileServer
             EditCommand = new RelayCommand(a =>
             {
                 EditFileServer window = new EditFileServer(this);
-                window.Owner = WindowHelpers.GetActiveWindow();
+                window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });
