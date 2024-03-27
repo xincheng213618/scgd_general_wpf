@@ -17,6 +17,7 @@ namespace ColorVision.Services.Devices
     public partial class ResourceManager : Window
     {
         public DeviceService DeviceService { get;set;}
+
         public ResourceManager(DeviceService deviceService)
         {
             DeviceService = deviceService;

@@ -14,7 +14,6 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-
         <ListView  x:Name="ListViewService" Background="Transparent" BorderThickness="0" SelectionChanged="ListViewService_SelectionChanged" Grid.Row="1">
             <ListView.Resources >
             </ListView.Resources>

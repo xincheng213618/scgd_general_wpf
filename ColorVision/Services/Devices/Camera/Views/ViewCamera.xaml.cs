@@ -563,10 +563,18 @@ namespace ColorVision.Services.Devices.Camera.Views
         {
             if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCamera viewCamera)
             {
-                ExportCamera exportCamera = new ExportCamera() { Icon = Device.Icon };
-                exportCamera.Owner = WindowHelpers.GetActiveWindow();
-                exportCamera.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                exportCamera.ShowDialog();
+                if (File.Exists(viewCamera.FileUrl))
+                {
+                    ExportCamera exportCamera = new ExportCamera(viewCamera.FileUrl) { Icon = Device.Icon };
+                    exportCamera.Owner = WindowHelpers.GetActiveWindow();
+                    exportCamera.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                    exportCamera.ShowDialog();
+                }
+                else
+                {
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到原始文件", "ColorVision");
+                }
+
             }
         }
     }

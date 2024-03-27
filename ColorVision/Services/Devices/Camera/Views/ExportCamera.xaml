@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Services.Devices.Camera.Views"
         xmlns:properties ="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:VExportCIE}"
         Title="{x:Static properties:Resource.Export}" Height="450" Width="400" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.RowDefinitions>
@@ -13,8 +14,25 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        
+        <StackPanel>
+            <DockPanel>
+                <TextBlock Text="导出文件:"/>
+                <TextBlock Text="{Binding FilePath}"/>
+            </DockPanel>
+      
+            <StackPanel Visibility="{Binding IsExportSrc ,Converter={StaticResource bool2VisibilityConverter}}">
+                <CheckBox Content="原图" IsChecked="{Binding IsExportSrc}"/>
+                <CheckBox Content="R通道" IsChecked="{Binding IsExportChannelR}"/>
+                <CheckBox Content="G通道" IsChecked="{Binding IsExportChannelG}"/>
+                <CheckBox Content="B通道" IsChecked="{Binding IsExportChannelB}"/>
+            </StackPanel>
+            <StackPanel Visibility="{Binding IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}">
+                <CheckBox Content="X通道" IsChecked="{Binding IsExportChannelX}"/>
+                <CheckBox Content="Y通道" IsChecked="{Binding IsExportChannelY}"/>
+                <CheckBox Content="Z通道" IsChecked="{Binding IsExportChannelZ}"/>
+            </StackPanel>
 
+        </StackPanel>
         <Border Grid.Row="2" Height="30">
             <Button  Content="{x:Static properties:Resource.Export}" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click" />
         </Border>
