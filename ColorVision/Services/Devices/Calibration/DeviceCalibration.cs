@@ -291,7 +291,10 @@ namespace ColorVision.Services.Devices.Calibration
                                 if (sysResourceModel != null)
                                 {
                                     CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
-                                    this.AddChild(calibrationResource);
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        this.AddChild(calibrationResource);
+                                    });
                                     keyValuePairs2.Add(item1.Title, calibrationResource);
                                 }
                             }
