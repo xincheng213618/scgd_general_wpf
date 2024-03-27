@@ -1,5 +1,5 @@
-﻿using ColorVision.MQTT;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.MQTT;
 using log4net;
 using Newtonsoft.Json;
 using System;
@@ -15,33 +15,10 @@ using FlowEngineLib;
 
 namespace ColorVision.Services.Flow
 {
-    public class FlowControlData : ViewModelBase
+
+    public class FlowControl  :ViewModelBase
     {
-        public string Version { get => _Version; set { _Version = value; NotifyPropertyChanged(); } }
-        private string _Version;
-        public string ServiceName { get => _ServiceName; set { _ServiceName = value; NotifyPropertyChanged(); } }
-        private string _ServiceName;
-
-        public string EventName { get => _EventName; set { _EventName = value; NotifyPropertyChanged(); } }
-        private string _EventName;
-
-        public int ServiceID { get => _ServiceID; set { _ServiceID = value; NotifyPropertyChanged(); } }
-        private int _ServiceID;
-
-        public string SerialNumber { get => _SerialNumber; set { _SerialNumber = value; NotifyPropertyChanged(); } }
-        private string _SerialNumber;
-
-        public string MsgID { get => _MsgID; set { _MsgID = value; NotifyPropertyChanged(); } }
-        private string _MsgID;
-
-        [JsonProperty("params")]
-        public dynamic Params { get => _Params; set { _Params = value; NotifyPropertyChanged(); } }
-        private dynamic _Params;
-    }
-
-    public class FlowControl
-    {
-        private static readonly ILog logger = LogManager.GetLogger(typeof(FlowControl));
+        private static readonly ILog log = LogManager.GetLogger(typeof(FlowControl));
 
         string svrName = "FlowControl";
         string devName = "DEV01";
@@ -69,8 +46,12 @@ namespace ColorVision.Services.Flow
             this.flowEngine = flowEngine;
         }
 
+        public bool IsFlowRun { get => _IsFlowRun;set { _IsFlowRun = value; NotifyPropertyChanged(); } }
+        private bool _IsFlowRun;
+
         public void Stop()
         {
+            IsFlowRun = false;
             if (flowEngine == null)
             {
                 FlowEngineLib.Base.CVBaseDataFlow baseEvent = new FlowEngineLib.Base.CVBaseDataFlow(svrName, devName, "Stop", SerialNumber, string.Empty);
@@ -88,6 +69,7 @@ namespace ColorVision.Services.Flow
 
         public void Start(string sn)
         {
+            IsFlowRun = true;
             SerialNumber = sn;
             if (flowEngine == null)
             {
@@ -152,6 +134,7 @@ namespace ColorVision.Services.Flow
                     if (json == null)
                         return Task.CompletedTask;
                     FlowControlData = json;
+                    IsFlowRun = false;
                     Application.Current.Dispatcher.Invoke(() => FlowData?.Invoke(FlowControlData, new EventArgs()));
                     if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                     {

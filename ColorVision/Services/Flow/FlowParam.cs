@@ -14,10 +14,6 @@ namespace ColorVision.Services.Flow
         {
 
         }
-        public FlowParam(ModMasterModel dbModel, List<ModDetailModel> flowDetail) : base(dbModel.Id, dbModel.Name ?? string.Empty, flowDetail)
-        {
-
-        }
 
         public FlowParam(ModMasterModel dbModel, List<ModFlowDetailModel> flowDetail) : base()
         {

@@ -30,9 +30,8 @@
                     <ComboBox  x:Name="FlowTemplate" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                 </DockPanel>
                 <StackPanel Margin="0,2" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Margin="0,0,10,0" Content="{x:Static properties:Resource.ExecutionProcess}"  Click="Button_RCFlowRun_Click"/>
-                    <Button Margin="0,0,5,0" Content="{x:Static properties:Resource.ExecutionProcess}"  Click="Button_FlowRun_Click"/>
-                    <Button Margin="5,0,0,0" Content="{x:Static properties:Resource.StopProcess}"  Click="Button_FlowStop_Click"/>
+                    <Button Margin="0,0,5,0" Content="{x:Static properties:Resource.ExecutionProcess}"  x:Name="ButtonRun" Click="Button_FlowRun_Click"/>
+                    <Button Margin="5,0,0,0" Content="{x:Static properties:Resource.StopProcess}"  x:Name="ButtonStop" Visibility="Collapsed"  Click="Button_FlowStop_Click"/>
                 </StackPanel>
                 <DockPanel Margin="0,3" >
                     <TextBlock Text="{x:Static properties:Resource.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0" />

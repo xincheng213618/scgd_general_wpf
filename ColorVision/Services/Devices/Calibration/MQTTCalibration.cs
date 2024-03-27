@@ -3,6 +3,7 @@ using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Msg;
 using MQTTMessageLib;
 using MQTTMessageLib.Calibration;
+using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
@@ -136,6 +137,15 @@ namespace ColorVision.Services.Devices.Calibration
             return PublishAsyncClient(msg);
         }
 
+        public MsgRecord GetChannel(int recId, CVImageChannelType chType)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTCameraEventEnum.Event_GetData_Channel,
+                Params = new Dictionary<string, object> { { "RecID", recId }, { "ChannelType", chType } }
+            };
+            return PublishAsyncClient(msg);
+        }
         public void GetRawFiles()
         {
             MsgSend msg = new MsgSend

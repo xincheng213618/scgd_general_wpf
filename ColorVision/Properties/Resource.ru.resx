@@ -657,4 +657,13 @@
   <data name="Create" xml:space="preserve">
     <value>создавать</value>
   </data>
+  <data name="Upgrade" xml:space="preserve">
+    <value>обновление</value>
+  </data>
+  <data name="Rollback" xml:space="preserve">
+    <value>возвращаться</value>
+  </data>
+  <data name="Manager" xml:space="preserve">
+    <value>управлять</value>
+  </data>
 </root>

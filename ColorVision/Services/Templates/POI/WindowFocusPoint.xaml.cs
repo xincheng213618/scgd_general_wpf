@@ -1439,7 +1439,7 @@ namespace ColorVision.Services.Templates.POI
                 {
                     if (measureImgResultModel.FileUrl != null)
                     {
-                        OpenImage(new NetFileUtil().OpenLocalCVFile(measureImgResultModel.FileUrl, FileExtType.Raw));
+                        OpenImage(new NetFileUtil().OpenLocalCVFile(measureImgResultModel.FileUrl));
                     }
                     else
                     {

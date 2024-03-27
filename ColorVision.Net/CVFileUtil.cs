@@ -266,8 +266,7 @@ namespace ColorVision.Net
                     src.SaveImage(SavePath + "\\" + fileInfo.Name + "Src.tif");
                     break;
                 case FileExtType.CIE:
-                    if (string.IsNullOrEmpty(cvcie.srcFileName))
-                        cvcie.srcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.srcFileName);
+                    cvcie.srcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.srcFileName);
                     if (File.Exists(cvcie.srcFileName))
                     {
                         if (Read(cvcie.srcFileName, out CVCIEFile cvraw))
@@ -312,8 +311,9 @@ namespace ColorVision.Net
             fileOut = new CVCIEFile();
             int index = ReadCIEFileHeader(FileName, out CVCIEFile cvcie);
             if (index < 0) return false;
-            if (!string.IsNullOrEmpty(cvcie.srcFileName))
+            if (!File.Exists(cvcie.srcFileName))
                 cvcie.srcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.srcFileName);
+
             if (File.Exists(cvcie.srcFileName))
             {
                 if (cvcie.srcFileName.EndsWith(".cvraw", StringComparison.OrdinalIgnoreCase))
@@ -323,8 +323,12 @@ namespace ColorVision.Net
                 }
                 else
                 {
-                    fileOut.data = ReadFile(fileOut.srcFileName);
-                    fileOut.FileExtType = FileExtType.Tif;
+                    if (cvcie.srcFileName!=null)
+                    {
+                        fileOut.data = ReadFile(cvcie.srcFileName);
+                        fileOut.FileExtType = FileExtType.Tif;
+                        return true;
+                    }
                 }
             }
             return false;
@@ -354,6 +358,7 @@ namespace ColorVision.Net
 
             if (fileOut.channels > 1)
             {
+                fileOut.FileExtType = FileExtType.Raw;
                 fileOut.channels = 1;
                 int len = fileOut.cols * fileOut.rows * fileOut.bpp / 8;
                 byte[] data = new byte[len];

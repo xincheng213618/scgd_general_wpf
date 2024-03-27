@@ -156,9 +156,8 @@ namespace ColorVision.Services.Devices.Camera
                         DeviceStatus = DeviceStatusType.Closed;
                         break;
                     case "Open":
-                        if (DeviceStatus == DeviceStatusType.Closed)
-                            Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, "打开失败", "ColorVision"));
                         DeviceStatus = DeviceStatusType.Closed;
+                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, "打开失败", "ColorVision"));
                         break;
                     case "Init":
                         break;

@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Settings;
+using ColorVision.Utilities;
 using log4net;
 using Org.BouncyCastle.Asn1.Ocsp;
 using System;
@@ -9,6 +10,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,13 +24,15 @@ namespace ColorVision.Update
     public class AutoUpdater : ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AutoUpdater));
-
         private static AutoUpdater _instance;
         private static readonly object _locker = new();
         public static AutoUpdater GetInstance() { lock (_locker) { return _instance ??= new AutoUpdater(); } }
 
         public string UpdateUrl { get => _UpdateUrl; set { _UpdateUrl = value; NotifyPropertyChanged(); } }
         private string _UpdateUrl = GlobalConst.UpdatePath + "/LATEST_RELEASE";
+
+        public string CHANGELOG { get => _CHANGELOG; set { _CHANGELOG = value; NotifyPropertyChanged(); } }
+        private string _CHANGELOG = GlobalConst.UpdatePath + "/CHANGELOG.md";
 
         public Version LatestVersion { get => _LatestVersion; set { _LatestVersion = value; NotifyPropertyChanged(); } }
         private Version _LatestVersion;
@@ -57,7 +61,7 @@ namespace ColorVision.Update
                 {
                     //这里先注释掉，逻辑有些问题
                     //FileVersionInfo fileVersionInfo = FileVersionInfo.GetVersionInfo(updateFile);
-                    //if (localVersion < new Version(fileVersionInfo.FileVersion??string.Empty))
+                    //if (CurrentVersion < new Version(fileVersionInfo.FileVersion??string.Empty))
                     //{
                     //    Application.Current.Dispatcher.Invoke(() =>
                     //    {
@@ -86,33 +90,44 @@ namespace ColorVision.Update
             }
         }
 
+        public static Version? CurrentVersion { get => Assembly.GetExecutingAssembly().GetName().Version; }
+        public static bool IsUpdateAvailable(string Version)
+        {
+            return true;
+        }
+        public void Update(string Version, string DownloadPath) => Update(new Version(Version.Trim()), DownloadPath);
+        public void Update(Version Version, string DownloadPath)
+        {
+            CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+            WindowUpdate windowUpdate = new WindowUpdate() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            windowUpdate.Title += $" {Version}" ;
+            windowUpdate.Closed += (s, e) =>
+            {
+                _cancellationTokenSource.Cancel();
+            };
+            SpeedValue = string.Empty;
+            RemainingTimeValue = string.Empty;
+            ProgressValue = 0;
+            Task.Run(() => DownloadAndUpdate(Version, DownloadPath, _cancellationTokenSource.Token));
+            windowUpdate.Show();
+        }
+
         // 调用函数以删除所有更新文件
         public async void CheckAndUpdate(bool detection = true)
         {
             // 获取本地版本
-            var localVersion = Assembly.GetExecutingAssembly().GetName().Version;
             try
             {
                 // 获取服务器版本
                 LatestVersion = await GetLatestVersionNumber(UpdateUrl);
 
-                if (LatestVersion > localVersion)
+                if (LatestVersion > CurrentVersion)
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         if (MessageBox.Show($"{Properties.Resource.NewVersionFound}{LatestVersion},{Properties.Resource.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                         {
-                            CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-                            WindowUpdate windowUpdate = new WindowUpdate() { Owner = Application.Current.MainWindow, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                            windowUpdate.Closed += (s, e) =>
-                            {
-                                _cancellationTokenSource.Cancel();
-                            };
-                            SpeedValue = string.Empty ;
-                            RemainingTimeValue = string.Empty;
-                            ProgressValue = 0;
-                            Task.Run(() => DownloadAndUpdate(LatestVersion, _cancellationTokenSource.Token));
-                            windowUpdate.Show();
+                            Update(LatestVersion, Path.GetTempPath());
                         }
                     });              
                 }
@@ -128,12 +143,41 @@ namespace ColorVision.Update
             }
             catch (Exception ex)
             {
-                LatestVersion = localVersion??new Version();
+                LatestVersion = CurrentVersion??new Version();
                 Console.WriteLine("An error occurred while updating: " + ex.Message);
             }
         }
         bool IsPassWorld;
 
+
+        public async Task<string?> GetChangeLog(string url)
+        {
+            using HttpClient _httpClient = new HttpClient();
+            string versionString = null;
+            try
+            {
+                // First attempt to get the string without authentication
+                versionString = await _httpClient.GetStringAsync(url);
+            }
+            catch (HttpRequestException e) when (e.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                IsPassWorld = true;
+                // If the request is unauthorized, add the authentication header and try again
+                var byteArray = System.Text.Encoding.ASCII.GetBytes("1:1");
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
+
+                // You should also consider handling other potential issues here, such as network errors
+                versionString = await _httpClient.GetStringAsync(url);
+            }
+
+            // If versionString is still null, it means there was an issue with getting the version number
+            if (versionString == null)
+            {
+                return null;
+            }
+
+            return versionString;
+        }
 
         private async Task<Version> GetLatestVersionNumber(string url)
         {
@@ -173,14 +217,15 @@ namespace ColorVision.Update
         public string RemainingTimeValue { get => _RemainingTimeValue; set { _RemainingTimeValue = value; NotifyPropertyChanged(); } }
         private string _RemainingTimeValue;
 
+        public string DownloadPath { get; set; }
 
-        private async Task DownloadAndUpdate(Version latestVersion,CancellationToken cancellationToken)
+        private async Task DownloadAndUpdate(Version latestVersion,string DownloadPath,CancellationToken cancellationToken)
         {
             // 构建下载URL，这里假设下载路径与版本号相关
             string downloadUrl = $"{GlobalConst.UpdatePath}/ColorVision/ColorVision-{latestVersion}.exe";
 
+            string downloadPath = Path.Combine(DownloadPath, $"ColorVision-{latestVersion}.exe");
             // 指定下载路径
-            string downloadPath = Path.Combine(Path.GetTempPath(), $"ColorVision-{latestVersion}.exe");
 
             using (var client = new HttpClient())
             {

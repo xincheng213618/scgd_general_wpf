@@ -13,6 +13,7 @@ using System.Linq;
 using System.Windows.Navigation;
 using System.Windows.Markup;
 using OpenCvSharp;
+using System.Drawing.Imaging;
 
 namespace ColorVision.Net
 {
@@ -351,9 +352,9 @@ namespace ColorVision.Net
             int code = ReadLocalFile(fileName, extType, out CVCIEFile fileInfo);
             handler?.Invoke(this, new NetFileEvent(FileEvent.FileDownload, code, fileName, fileInfo));
         }
-
-        public CVCIEFile OpenLocalCVFile(string fileName, FileExtType extType)
+        public CVCIEFile OpenLocalCVFile(string fileName)
         {
+            FileExtType extType = FileExtType.Src;
             if (Path.GetExtension(fileName).Contains("cvraw"))
             {
                 extType = FileExtType.Raw;
@@ -362,6 +363,11 @@ namespace ColorVision.Net
             {
                 extType = FileExtType.CIE;
             }
+            return OpenLocalCVFile(fileName, extType);
+        }
+
+        public CVCIEFile OpenLocalCVFile(string fileName, FileExtType extType)
+        {
             ReadLocalFile(fileName, extType, out CVCIEFile fileInfo);
             return fileInfo;
         }
@@ -399,7 +405,6 @@ namespace ColorVision.Net
                 {
                     dst = src;
                 }
-                fileInfo.data = null;
                 int len = (int)(fileInfo.rows * fileInfo.cols * fileInfo.channels);
                 fileInfo.data = new byte[len];
                 Marshal.Copy(dst.Data, fileInfo.data, 0, len);
@@ -424,8 +429,9 @@ namespace ColorVision.Net
 
             if (!string.IsNullOrEmpty(fileInfo.srcFileName))
             {
-                if (CVFileUtil.ReadCVCIESrc(fileName, out fileInfo))
+                if (CVFileUtil.ReadCVCIESrc(fileName, out CVCIEFile fileInf))
                 {
+                    fileInfo = fileInf;
                     return 0;
                 }
             }
