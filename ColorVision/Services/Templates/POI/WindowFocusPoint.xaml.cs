@@ -1222,7 +1222,7 @@ namespace ColorVision.Services.Templates.POI
 
                 if (toggleButton.IsChecked == true)
                 {
-                    if (ImageContentGrid.Parent is Grid p)
+                    if (ImageContentGrid.Parent is Panel p)
                     {
                         OldWindowStatus = new WindowStatus();
                         OldWindowStatus.Parent = p;
@@ -1234,7 +1234,7 @@ namespace ColorVision.Services.Templates.POI
                         window.WindowState = WindowState.Maximized;
                         OldWindowStatus.Parent.Children.Remove(ImageContentGrid);
                         window.Content = ImageContentGrid;
-                    }
+                      }
                     else
                     {
                         return;

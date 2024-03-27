@@ -7,13 +7,25 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Controls.Primitives;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.Draw
 {
+    public class WindowStatus
+    {
+        public object Root { get; set; }
+        public Panel Parent { get; set; }
 
+        public WindowStyle WindowStyle { get; set; }
+
+        public WindowState WindowState { get; set; }
+
+        public ResizeMode ResizeMode { get; set; }
+    }
 
     public class ToolBarTop : ViewModelBase
     {
@@ -22,6 +34,8 @@ namespace ColorVision.Draw
         public RelayCommand ZoomIncrease { get; set; }
         public RelayCommand ZoomDecrease { get; set; }
         public RelayCommand ZoomNone { get; set; }
+        public RelayCommand MaxCommand { get; set; }
+
         public RelayCommand SaveImageCommand { get; set; }
         public RelayCommand ClearImageCommand { get; set; }
         public EventHandler ClearImageEventHandler { get; set; }
@@ -70,6 +84,46 @@ namespace ColorVision.Draw
 
             SaveImageCommand = new RelayCommand(a => Save());
             ClearImageCommand = new RelayCommand(a => ClearImage());
+            MaxCommand = new RelayCommand(a => MaxImage());
+        }
+
+        private WindowStatus OldWindowStatus { get; set; }
+        public bool IsMax { get; set; }
+        public void MaxImage()
+        {
+            var window = Window.GetWindow(Parent);
+            if (!IsMax)
+            {
+                IsMax = true;
+                if (Parent.Parent is Grid p)
+                {
+                    OldWindowStatus = new WindowStatus();
+                    OldWindowStatus.Parent = p;
+                    OldWindowStatus.WindowState = window.WindowState;
+                    OldWindowStatus.WindowStyle = window.WindowStyle;
+                    OldWindowStatus.ResizeMode = window.ResizeMode;
+                    OldWindowStatus.Root = window.Content;
+                    window.WindowStyle = WindowStyle.None;
+                    window.WindowState = WindowState.Maximized;
+
+                    OldWindowStatus.Parent.Children.Remove(Parent);
+                    window.Content = Parent;
+                }
+                else
+                {
+                    return;
+                }
+            }
+            else
+            {
+                IsMax =false;
+                window.WindowStyle = OldWindowStatus.WindowStyle;
+                window.WindowState = OldWindowStatus.WindowState;
+                window.ResizeMode = OldWindowStatus.ResizeMode;
+
+                window.Content = OldWindowStatus.Root;
+                OldWindowStatus.Parent.Children.Add(Parent);
+            }
         }
 
         public void ClearImage()
