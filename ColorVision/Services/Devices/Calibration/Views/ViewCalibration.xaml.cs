@@ -160,7 +160,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
                         break;
                     case MQTTFileServerEventEnum.Event_File_Download:
                         break;
-                    case MQTTCameraEventEnum.Event_GetData_Channel:
+                    case MQTTFileServerEventEnum.Event_File_GetChannel:
                         DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
                         netFileUtil.TaskStartDownloadFile(pm_dl_ch);
                         break;
@@ -179,7 +179,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
                         LocalFileName = pm_dl.FileName;
                         if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, pm_dl.FileExtType);
                         break;
-                    case MQTTCameraEventEnum.Event_GetData_Channel:
+                    case MQTTFileServerEventEnum.Event_File_GetChannel:
                         DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
                         netFileUtil.TaskStartDownloadFile(pm_dl_ch);
                         break;
@@ -220,7 +220,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
                             MessageBox.Show("文件下载失败");
                         });
                         break;
-                    case MQTTCameraEventEnum.Event_GetData_Channel:
+                    case MQTTFileServerEventEnum.Event_File_GetChannel:
                         break;
                     case MQTTCameraEventEnum.Event_OpenLive:
                         break;

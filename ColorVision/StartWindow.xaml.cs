@@ -14,7 +14,6 @@ using ColorVision.Themes;
 using System.Windows.Media.Imaging;
 using System.Runtime.Versioning;
 using ColorVision.Settings;
-using ColorVision.Services.RC;
 
 namespace ColorVision
 {

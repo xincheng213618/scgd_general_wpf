@@ -637,7 +637,7 @@ namespace ColorVision.Services.Devices.Camera
         {
             MsgSend msg = new MsgSend
             {
-                EventName = MQTTCameraEventEnum.Event_GetData_Channel,
+                EventName = MQTTFileServerEventEnum.Event_File_GetChannel,
                 Params = new Dictionary<string, object> { { "RecID", recId }, { "ChannelType", chType } }
             };
             return PublishAsyncClient(msg);

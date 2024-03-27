@@ -21,6 +21,7 @@ namespace ColorVision.Services.Type
         Calibration = 9,
         Motor = 10,
         Flowtime = 101,
+        Flow = 12,
     }
 
 
