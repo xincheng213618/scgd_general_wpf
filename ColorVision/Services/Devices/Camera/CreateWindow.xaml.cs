@@ -20,7 +20,7 @@ using ColorVision.Services.Terminal;
 using ColorVision.Settings;
 using Newtonsoft.Json;
 using ColorVision.Services.Devices.Camera.Configs;
-using ColorVision.Utilities;
+using ColorVision.Common.Utilities;
 
 namespace ColorVision.Services.Devices.Camera
 {

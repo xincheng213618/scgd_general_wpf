@@ -2,13 +2,11 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
 using ColorVision.Services.Extension;
 using ColorVision.Services.Templates;
 using ColorVision.Themes.Controls;
-using ColorVision.Utilities;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;

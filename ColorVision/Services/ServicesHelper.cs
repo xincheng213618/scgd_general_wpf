@@ -1,4 +1,4 @@
-﻿using ColorVision.Utilities;
+﻿using ColorVision.Common.Utilities;
 using System.Windows;
 
 namespace ColorVision.Services

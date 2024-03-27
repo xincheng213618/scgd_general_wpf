@@ -6,7 +6,7 @@ using ColorVision.Services.Devices.SMU.Configs;
 using ColorVision.Services.Devices.SMU.Views;
 using ColorVision.Services.Extension;
 using ColorVision.Themes;
-using ColorVision.Utilities;
+using ColorVision.Common.Utilities;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;

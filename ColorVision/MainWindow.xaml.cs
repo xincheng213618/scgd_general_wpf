@@ -449,7 +449,7 @@ namespace ColorVision
 
         private void ChangeLog_Clik(object sender, RoutedEventArgs e)
         {
-            ChangelogWindow changelogWindow = new ChangelogWindow();
+            ChangelogWindow changelogWindow = new ChangelogWindow() { Owner = WindowHelpers.GetActiveWindow() ,WindowStartupLocation =WindowStartupLocation.CenterOwner };
             changelogWindow.ShowDialog();
         }
 

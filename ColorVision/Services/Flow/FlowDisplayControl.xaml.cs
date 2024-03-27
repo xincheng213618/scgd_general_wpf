@@ -1,21 +1,18 @@
-﻿using ColorVision.MQTT;
-using System;
-using System.Collections.Generic;
-using System.Windows;
-using System.Windows.Controls;
-using Panuon.WPF.UI;
-using ColorVision.Themes;
-using System.Windows.Media;
-using ColorVision.Settings;
-using ColorVision.Common.Utilities;
-using ColorVision.Services.Core;
-using System.Windows.Input;
-using ColorVision.Services.Templates;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Extension;
-using System.Security.Cryptography.X509Certificates;
-using ColorVision.Utilities;
+using ColorVision.MQTT;
+using ColorVision.Services.Core;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Extension;
+using ColorVision.Services.Templates;
+using ColorVision.Settings;
+using ColorVision.Themes;
+using Panuon.WPF.UI;
+using System;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.Services.Flow
 {

@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Terminal;
-using ColorVision.Utilities;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;

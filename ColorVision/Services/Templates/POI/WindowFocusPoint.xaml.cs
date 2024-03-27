@@ -1,13 +1,10 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.Utilities;
 using ColorVision.Draw;
-using ColorVision.Media;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Settings;
 using ColorVision.Util.Draw.Rectangle;
-using ColorVision.Utilities;
 using cvColorVision;
 using cvColorVision.Util;
 using log4net;

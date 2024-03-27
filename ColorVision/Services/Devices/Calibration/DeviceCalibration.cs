@@ -1,9 +1,10 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Calibration.Views;
-using ColorVision.Services.Core;
+using ColorVision.Services.Extension;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Solution;
@@ -19,12 +20,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.Themes;
-using System.Windows.Media;
-using ColorVision.Services.Devices.Camera.Views;
-using ColorVision.Services.Extension;
-using ColorVision.Services.Devices.Camera;
-using ColorVision.Utilities;
 
 namespace ColorVision.Services.Devices.Calibration
 {

@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Update;
-using ColorVision.Utilities;
+using ColorVision.Common.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

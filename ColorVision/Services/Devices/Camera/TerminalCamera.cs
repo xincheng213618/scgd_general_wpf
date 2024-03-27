@@ -5,7 +5,7 @@ using ColorVision.Services.Extension;
 using ColorVision.Services.Terminal;
 using ColorVision.Settings;
 using ColorVision.Themes;
-using ColorVision.Utilities;
+using ColorVision.Common.Utilities;
 using cvColorVision;
 using Newtonsoft.Json;
 using System;

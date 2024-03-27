@@ -2,7 +2,7 @@
 using ColorVision.Media;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
-using ColorVision.Utilities;
+using ColorVision.Common.Utilities;
 using System.Windows;
 using System.Windows.Controls;
 
