@@ -666,4 +666,13 @@
   <data name="Manager" xml:space="preserve">
     <value>관리하다</value>
   </data>
+  <data name="Send" xml:space="preserve">
+    <value>보내다</value>
+  </data>
+  <data name="Subscribe" xml:space="preserve">
+    <value>신청</value>
+  </data>
+  <data name="Unsubscribe" xml:space="preserve">
+    <value>구독 취소</value>
+  </data>
 </root>

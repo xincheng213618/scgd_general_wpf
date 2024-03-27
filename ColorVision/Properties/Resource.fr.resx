@@ -666,4 +666,13 @@
   <data name="Manager" xml:space="preserve">
     <value>gérer</value>
   </data>
+  <data name="Send" xml:space="preserve">
+    <value>envoyer</value>
+  </data>
+  <data name="Subscribe" xml:space="preserve">
+    <value>abonnement</value>
+  </data>
+  <data name="Unsubscribe" xml:space="preserve">
+    <value>Se désabonner</value>
+  </data>
 </root>

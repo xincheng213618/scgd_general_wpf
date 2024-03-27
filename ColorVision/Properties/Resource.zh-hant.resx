@@ -666,4 +666,13 @@
   <data name="Manager" xml:space="preserve">
     <value>管理</value>
   </data>
+  <data name="Send" xml:space="preserve">
+    <value>傳送</value>
+  </data>
+  <data name="Subscribe" xml:space="preserve">
+    <value>訂閱</value>
+  </data>
+  <data name="Unsubscribe" xml:space="preserve">
+    <value>退訂</value>
+  </data>
 </root>

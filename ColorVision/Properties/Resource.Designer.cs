@@ -1312,6 +1312,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 发送 的本地化字符串。
+        /// </summary>
+        public static string Send {
+            get {
+                return ResourceManager.GetString("Send", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 序列号 的本地化字符串。
         /// </summary>
         public static string SerialNumber {
@@ -1474,6 +1483,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 订阅 的本地化字符串。
+        /// </summary>
+        public static string Subscribe {
+            get {
+                return ResourceManager.GetString("Subscribe", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 成功 的本地化字符串。
         /// </summary>
         public static string Success {
@@ -1605,6 +1623,15 @@ namespace ColorVision.Properties {
         public static string UnderDevelopment {
             get {
                 return ResourceManager.GetString("UnderDevelopment", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 退订 的本地化字符串。
+        /// </summary>
+        public static string Unsubscribe {
+            get {
+                return ResourceManager.GetString("Unsubscribe", resourceCulture);
             }
         }
         

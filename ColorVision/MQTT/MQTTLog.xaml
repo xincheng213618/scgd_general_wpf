@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:ColorVision"
         mc:Ignorable="d"
         xmlns:SettingUp ="clr-namespace:ColorVision.Settings"
+        xmlns:properties ="clr-namespace:ColorVision.Properties"
         d:DataContext="{d:DesignInstance SettingUp:ConfigHandler}"
         Title="MQTT日志" Height="550" Width="800" Background="{StaticResource GlobalBackground}" >
     <Window.Resources>
@@ -50,28 +51,28 @@
                     <Border  Grid.Row="0"  BorderThickness="1" Margin="0" CornerRadius="5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="2">
-                                <TextBlock Text="主题:" VerticalAlignment="Center" Width="50"/>
+                                <TextBlock Text="主题" VerticalAlignment="Center" Width="50"/>
                                 <TextBox x:Name="TextBoxSubscribe"  ToolTip="订阅的主题"  VerticalAlignment="Center" TextWrapping="Wrap" Text="topic1"  />
                             </DockPanel>
                             <UniformGrid Columns="3">
                                 <Grid/>
-                                <Button  Content="订阅" Click="Subscribe_Click" Width="80" Margin="2"/>
-                                <Button  Content="退订" Click="UnSubscribe_Click" Width="80" Margin="2"/>
+                                <Button  Content="{x:Static properties:Resource.Subscribe}" Click="Subscribe_Click" Width="80" Margin="2"/>
+                                <Button  Content="{x:Static properties:Resource.Unsubscribe}" Click="UnSubscribe_Click" Width="80" Margin="2"/>
                             </UniformGrid>
                         </StackPanel>
                     </Border>
                     <Border  Grid.Row="1" BorderThickness="1" CornerRadius="5">
                         <StackPanel Orientation="Vertical" Margin="5">
                             <DockPanel Margin="5,2">
-                                <TextBlock Text="主题:" VerticalAlignment="Center" Width="50"/>
+                                <TextBlock Text="{x:Static properties:Resource.Theme}" VerticalAlignment="Center" Width="50"/>
                                 <TextBox x:Name="TextBoxSubscribe1" ToolTip="发送的主题" TextWrapping="NoWrap" AcceptsReturn="True" Text="topic1"  />
                             </DockPanel>
                             <DockPanel Margin="5,2">
-                                <TextBlock Text="发送:" VerticalAlignment="Center" Width="50"/>
+                                <TextBlock Text="{x:Static properties:Resource.Send}" VerticalAlignment="Center" Width="50"/>
                                 <TextBox x:Name="TextBoxSend"  TextWrapping="NoWrap" AcceptsReturn="True" Text="topic1"  />
                             </DockPanel>
                             <CheckBox x:Name="CheckBoxRetained" IsEnabled="False"  HorizontalAlignment="Right" Margin="5,2" Content="消息保留" VerticalAlignment="Center" ToolTip="是否保留"/>
-                            <Button  Content="发送" Click="Send_Click" HorizontalAlignment="Right"  Margin="2"  Width="80"/>
+                            <Button  Content="{x:Static properties:Resource.Send}" Click="Send_Click" HorizontalAlignment="Right"  Margin="2"  Width="80"/>
                         </StackPanel>
                     </Border>
 
