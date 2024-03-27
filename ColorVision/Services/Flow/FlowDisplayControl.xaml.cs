@@ -225,10 +225,20 @@ namespace ColorVision.Services.Flow
         FlowControl rcflowControl;
         private void Button_RCFlowRun_Click(object sender, RoutedEventArgs e)
         {
-           if(rcflowControl==null) rcflowControl = new FlowControl(MQTTControl.GetInstance(),"");
-            string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            ServiceManager.GetInstance().ResultBatchSave(sn);
-            rcflowControl.Start(sn, (FlowTemplate.SelectedItem as TemplateModel<FlowParam>).Value);
+            if (FlowTemplate.SelectedItem is TemplateModel<FlowParam> flowParam)
+            {
+                rcflowControl ??= new FlowControl(MQTTControl.GetInstance(), "");
+                string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+                ServiceManager.GetInstance().ResultBatchSave(sn);
+                rcflowControl.Start(sn, flowParam.Value);
+
+                ButtonRun.Visibility = Visibility.Collapsed;
+                ButtonStop.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(),"没有选择流程","ColorVision");
+            }
         }
     }
 }
