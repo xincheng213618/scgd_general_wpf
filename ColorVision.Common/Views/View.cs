@@ -50,7 +50,8 @@ namespace ColorVision
 
         private int _PreViewIndex = -1;
 
-        public ImageSource Icon { get; set; }
+        public ImageSource Icon { get => _Icon; set { _Icon = value; NotifyPropertyChanged(); } }
+        private ImageSource _Icon;
 
         public string Title { get; set; } = string.Empty;
 

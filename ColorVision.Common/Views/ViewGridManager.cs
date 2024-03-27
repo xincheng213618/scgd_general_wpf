@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Media;
 
 namespace ColorVision
@@ -287,7 +288,12 @@ namespace ColorVision
 
             if (control is IView view)
             {
-                Window window = new Window() { Owner = Application.Current.MainWindow,Icon = view.View.Icon,Title = view.View.Title};
+                Window window = new Window() { Owner = Application.Current.MainWindow};
+                Binding binding = new Binding("Title") { Source = view.View };
+                window.SetBinding(Window.TitleProperty, binding);
+                Binding binding1 = new Binding("Icon") { Source = view.View };
+                window.SetBinding(Window.IconProperty, binding1);
+
                 view.View.ViewIndex = -2;
 
                 ViewIndexChangedHandler eventHandler = null;
