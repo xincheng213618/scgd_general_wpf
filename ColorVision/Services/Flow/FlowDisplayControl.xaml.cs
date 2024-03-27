@@ -13,13 +13,16 @@ using System.Windows.Input;
 using ColorVision.Services.Templates;
 using ColorVision.Extension;
 using System.Security.Cryptography.X509Certificates;
+using ColorVision.Utilities;
+using ColorVision.Services.Devices;
+using ColorVision.Services.Extension;
 
 namespace ColorVision.Services.Flow
 {
     /// <summary>
     /// FlowDisplayControl.xaml 的交互逻辑
     /// </summary>
-    public partial class FlowDisplayControl : UserControl, IDisPlayControl
+    public partial class FlowDisplayControl : UserControl, IDisPlayControl, IIcon
     {
         public IFlowView View { get; set; }
 
@@ -37,26 +40,10 @@ namespace ColorVision.Services.Flow
             FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
 
             using System.Drawing.Graphics graphics = System.Drawing.Graphics.FromHwnd(IntPtr.Zero);
-            bool result = graphics.DpiX > 96;
-            if (result)
-            {
-                View = new CVFlowView1();
-            }
-            else
-            {
-                View = new CVFlowView();
+            View = graphics.DpiX > 96 ? new CVFlowView1() : new CVFlowView();
 
-            }
-
-            if (Application.Current.TryFindResource("DrawingImageFlow") is DrawingImage DrawingImageAlgorithm)
-                View.View.Icon = DrawingImageAlgorithm;
-
-            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-            {
-                if (Application.Current.TryFindResource("DrawingImageFlow") is DrawingImage DrawingImageAlgorithm)
-                    View.View.Icon = DrawingImageAlgorithm;
-            };
-            View.View.Title = "流程窗口";
+            View.View.Title = $"流程窗口 ";
+            this.SetIconResource("DrawingImageFlow", View.View);
 
             this.AddViewConfig(View, ComboxView);
             View.View.ViewIndex = 0;
@@ -91,7 +78,7 @@ namespace ColorVision.Services.Flow
                 }
             };
             FlowTemplate.SelectedIndex = 0;
-
+            this.DataContext = flowControl;
             this.PreviewMouseDown += UserControl_PreviewMouseDown;
 
             menuItem = new MenuItem() { Header = ColorVision.Properties.Resource.MenuFlow };
@@ -118,7 +105,9 @@ namespace ColorVision.Services.Flow
                 {
                     MenuManager.GetInstance().RemoveMenuItem(menuItem);
                 }
-                DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");  } }
+                DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
+            }
+        }
 
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -147,6 +136,10 @@ namespace ColorVision.Services.Flow
             if (sender != null)
             {
                 FlowControlData FlowControlData = (FlowControlData)sender;
+
+                ButtonRun.Visibility = Visibility.Visible;
+                ButtonStop.Visibility = Visibility.Collapsed;
+
                 if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                 {
                     MessageBox.Show("流程计算" + FlowControlData.EventName, "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
@@ -155,6 +148,8 @@ namespace ColorVision.Services.Flow
         }
 
         IPendingHandler handler { get; set; }
+        public ImageSource Icon { get => _Icon; set { _Icon = value; } }
+        private ImageSource _Icon;
 
         private  void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
@@ -170,6 +165,11 @@ namespace ColorVision.Services.Flow
                     {
                         flowControl?.Stop();
                         handler?.Close();
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            ButtonRun.Visibility = Visibility.Visible;
+                            ButtonStop.Visibility = Visibility.Collapsed;
+                        });
                     };
 
                     flowControl.FlowData += (s, e) =>
@@ -192,17 +192,21 @@ namespace ColorVision.Services.Flow
                     flowControl.FlowCompleted += FlowControl_FlowCompleted;
                     string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
                     ServiceManager.GetInstance().ResultBatchSave(sn);
+                    ButtonRun.Visibility = Visibility.Collapsed;
+                    ButtonStop.Visibility = Visibility.Visible;
                     flowControl.Start(sn);
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.MainWindow, "找不到完整流程，运行失败");
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败","ColorVision");
                 }
             }
         }
 
         private void Button_FlowStop_Click(object sender, RoutedEventArgs e)
         {
+            ButtonRun.Visibility = Visibility.Visible;
+            ButtonStop.Visibility = Visibility.Collapsed;
             Application.Current.Dispatcher.Invoke(() =>
             {
                 flowControl?.Stop();
@@ -219,6 +223,14 @@ namespace ColorVision.Services.Flow
         {
             TemplateControl.GetInstance().LoadFlowParam();
             FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
+        }
+        FlowControl rcflowControl;
+        private void Button_RCFlowRun_Click(object sender, RoutedEventArgs e)
+        {
+           if(rcflowControl==null) rcflowControl = new FlowControl(MQTTControl.GetInstance(),"");
+            string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            ServiceManager.GetInstance().ResultBatchSave(sn);
+            rcflowControl.Start(sn, (FlowTemplate.SelectedItem as TemplateModel<FlowParam>).Value);
         }
     }
 }

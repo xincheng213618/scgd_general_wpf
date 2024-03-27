@@ -100,6 +100,10 @@ namespace ColorVision
                     channels = 1; // Gray scale has 1 channel
                     depth = 16; // 16 bits per channel
                     break;
+                case "Gray32Float":
+                    channels = 1; // Gray scale has 1 channel
+                    depth = 32; // 16 bits per channel
+                    break;
                 default:
                     MessageBox.Show($"{writeableBitmap.Format}暂不支持的格式,请联系开发人员");
                     throw new NotSupportedException("The pixel format is not supported.");

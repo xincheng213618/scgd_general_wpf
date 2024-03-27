@@ -358,6 +358,7 @@ namespace ColorVision.Net
 
             if (fileOut.channels > 1)
             {
+                fileOut.FileExtType = FileExtType.Raw;
                 fileOut.channels = 1;
                 int len = fileOut.cols * fileOut.rows * fileOut.bpp / 8;
                 byte[] data = new byte[len];

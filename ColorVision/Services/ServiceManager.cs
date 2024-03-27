@@ -80,7 +80,33 @@ namespace ColorVision.Services
                 }
             }
         }
-
+        public MQTTServiceInfo GetServiceInfo(ServiceTypes serviceType,string serviceCode)
+        {
+            foreach (var item in ServiceTokens)
+            {
+                if(item.ServiceType == serviceType.ToString())
+                {
+                    if(string.IsNullOrEmpty(serviceCode)) return item;
+                    else if(serviceCode == item.ServiceCode) return item;
+                }
+            }
+            return null;
+        }
+        public List<MQTTServiceInfo> GetServiceJsonList()
+        {
+            List<MQTTServiceInfo> result = new List<MQTTServiceInfo>();
+            foreach (var item in ServiceTokens)
+            {
+                MQTTServiceInfo serviceInfo = new MQTTServiceInfo() { PublishTopic = item.PublishTopic, ServiceCode = item.ServiceCode, ServiceType = item.ServiceType, Token = item.Token, SubscribeTopic = item.SubscribeTopic };
+                result.Add(serviceInfo);
+                foreach (var dev in item.Devices)
+                {
+                    MQTTDeviceInfo device = new MQTTDeviceInfo() { ID = dev.Value.ID, DeviceCode = dev.Value.DeviceCode };
+                    serviceInfo.Devices.Add(dev.Key, device);
+                }
+            }
+            return result;
+        }
         /// <summary>
         /// 生成显示空间
         /// </summary>

@@ -160,7 +160,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
                         break;
                     case MQTTFileServerEventEnum.Event_File_Download:
                         break;
-                    case MQTTCameraEventEnum.Event_GetData_Channel:
+                    case MQTTFileServerEventEnum.Event_File_GetChannel:
                         DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
                         netFileUtil.TaskStartDownloadFile(pm_dl_ch);
                         break;
@@ -179,7 +179,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
                         LocalFileName = pm_dl.FileName;
                         if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, pm_dl.FileExtType);
                         break;
-                    case MQTTCameraEventEnum.Event_GetData_Channel:
+                    case MQTTFileServerEventEnum.Event_File_GetChannel:
                         DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
                         netFileUtil.TaskStartDownloadFile(pm_dl_ch);
                         break;
@@ -220,7 +220,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
                             MessageBox.Show("文件下载失败");
                         });
                         break;
-                    case MQTTCameraEventEnum.Event_GetData_Channel:
+                    case MQTTFileServerEventEnum.Event_File_GetChannel:
                         break;
                     case MQTTCameraEventEnum.Event_OpenLive:
                         break;
@@ -330,7 +330,6 @@ namespace ColorVision.Services.Devices.Calibration.Views
                     }
 
                 }
-
             }
         }
 
@@ -442,11 +441,6 @@ namespace ColorVision.Services.Devices.Calibration.Views
             }
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
         private void POI_Click(object sender, RoutedEventArgs e)
         {
             if (ComboxPOITemplate.SelectedValue is PoiParam poiParams)
@@ -490,52 +484,47 @@ namespace ColorVision.Services.Devices.Calibration.Views
             }
         }
 
-        private void ClearImage_Click(object sender, RoutedEventArgs e)
-        {
-            ImageView.Clear();
-        }
-
         private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            //if (sender is ComboBox comboBox && comboBox.SelectedValue is ImageLayer imageLayer)
-            //{
-            //    if (listView1.SelectedIndex > -1)
-            //    {
-            //        var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-            //        switch (imageLayer)
-            //        {
-            //            case ImageLayer.Src:
-            //                DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.SRC);
-            //                break;
-            //            case ImageLayer.R:
-            //                DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_R);
-            //                break;
-            //            case ImageLayer.G:
-            //                DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_G);
-            //                break;
-            //            case ImageLayer.B:
-            //                DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_B);
-            //                break;
-            //            case ImageLayer.X:
-            //                DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_X);
-            //                break;
-            //            case ImageLayer.Y:
-            //                DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Y);
-            //                break;
-            //            case ImageLayer.Z:
-            //                DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Z);
-            //                break;
-            //            default:
-            //                break;
-            //        }
+            if (sender is ComboBox comboBox && comboBox.SelectedValue is ImageLayer imageLayer)
+            {
+                if (listView1.SelectedIndex > -1)
+                {
+                    var ViewResultCamera = ViewResultCalibrations[listView1.SelectedIndex];
+                    switch (imageLayer)
+                    {
+                        case ImageLayer.Src:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.SRC);
+                            break;
+                        case ImageLayer.R:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_R);
+                            break;
+                        case ImageLayer.G:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_G);
+                            break;
+                        case ImageLayer.B:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_B);
+                            break;
+                        case ImageLayer.X:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_X);
+                            break;
+                        case ImageLayer.Y:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Y);
+                            break;
+                        case ImageLayer.Z:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Z);
+                            break;
+                        default:
+                            break;
+                    }
 
-            //    }
-            //    else
-            //    {
-            //        MessageBox.Show("请先选择您要切换的图像");
-            //    }
+                }
+                else
+                {
+                    MessageBox.Show("请先选择您要切换的图像");
+                }
 
-            //}
+            }
 
         }
 
