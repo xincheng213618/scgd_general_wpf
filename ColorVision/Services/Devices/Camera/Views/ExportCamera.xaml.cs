@@ -110,6 +110,21 @@ namespace ColorVision.Services.Devices.Camera.Views
             this.DataContext = VExportCIE;
 
         }
+        private void Save_Click(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog();
+            dialog.UseDescriptionForTitle = true;
+            dialog.Description = "为新项目选择位置";
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                if (string.IsNullOrEmpty(dialog.SelectedPath))
+                {
+                    MessageBox.Show("文件夹路径不能为空", "提示");
+                    return;
+                }
+                TextBoxSave.Text = dialog.SelectedPath;
+            }
+        }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -117,5 +132,7 @@ namespace ColorVision.Services.Devices.Camera.Views
             CVFileUtil.SaveToTif(CIEFilePath,"");
             this.Close();
         }
+
+
     }
 }

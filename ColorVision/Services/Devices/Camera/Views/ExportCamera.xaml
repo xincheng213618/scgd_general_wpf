@@ -7,7 +7,7 @@
         xmlns:properties ="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:VExportCIE}"
-        Title="{x:Static properties:Resource.Export}" Height="450" Width="400" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resource.Export}" Background="{StaticResource BackgroundBrush}" Height="250" Width="400" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -15,22 +15,23 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <StackPanel>
-            <DockPanel>
-                <TextBlock Text="导出文件:"/>
-                <TextBlock Text="{Binding FilePath}"/>
+            <DockPanel  Margin="0,3">
+                <TextBlock Text="到目录" MinWidth="60"/>
+                <Button Content="..." DockPanel.Dock="Right" VerticalAlignment="Bottom" Margin="2,0,0,0" Click="Save_Click"/>
+                <TextBox x:Name="TextBoxSave" Text="{Binding  SavePath}" Style="{StaticResource TextBox.Small}"/>
             </DockPanel>
-      
-            <StackPanel Visibility="{Binding IsExportSrc ,Converter={StaticResource bool2VisibilityConverter}}">
-                <CheckBox Content="原图" IsChecked="{Binding IsExportSrc}"/>
-                <CheckBox Content="R通道" IsChecked="{Binding IsExportChannelR}"/>
-                <CheckBox Content="G通道" IsChecked="{Binding IsExportChannelG}"/>
-                <CheckBox Content="B通道" IsChecked="{Binding IsExportChannelB}"/>
-            </StackPanel>
-            <StackPanel Visibility="{Binding IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}">
-                <CheckBox Content="X通道" IsChecked="{Binding IsExportChannelX}"/>
-                <CheckBox Content="Y通道" IsChecked="{Binding IsExportChannelY}"/>
-                <CheckBox Content="Z通道" IsChecked="{Binding IsExportChannelZ}"/>
-            </StackPanel>
+
+            <UniformGrid  Columns="4" Visibility="{Binding IsExportSrc ,Converter={StaticResource bool2VisibilityConverter}}">
+                <CheckBox Margin="2" Content="原图" IsChecked="{Binding IsExportSrc}"/>
+                <CheckBox Margin="2" Content="R通道" IsChecked="{Binding IsExportChannelR}"/>
+                <CheckBox Margin="2" Content="G通道" IsChecked="{Binding IsExportChannelG}"/>
+                <CheckBox Margin="2" Content="B通道" IsChecked="{Binding IsExportChannelB}"/>
+            </UniformGrid>
+            <UniformGrid Columns="4" Visibility="{Binding IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}">
+                <CheckBox Margin="2" Content="X通道" IsChecked="{Binding IsExportChannelX}"/>
+                <CheckBox Margin="2" Content="Y通道" IsChecked="{Binding IsExportChannelY}"/>
+                <CheckBox Margin="2" Content="Z通道" IsChecked="{Binding IsExportChannelZ}"/>
+            </UniformGrid>
 
         </StackPanel>
         <Border Grid.Row="2" Height="30">
