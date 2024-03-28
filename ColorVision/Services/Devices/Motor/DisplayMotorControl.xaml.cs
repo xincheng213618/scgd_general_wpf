@@ -65,12 +65,12 @@ namespace ColorVision.Services.Devices.Motor
                 if (DeviceService.DeviceStatus == DeviceStatusType.Closed && button.Content.ToString() == "连接")
                 {
                     var msgRecord = DeviceService.Open();
-                    Helpers.SendCommand(button, msgRecord);
+                    ServicesHelper.SendCommand(button, msgRecord);
                 }
                 else if (DeviceService.DeviceStatus == DeviceStatusType.Opened && button.Content.ToString() == "关闭")
                 {
                     var msgRecord = DeviceService.Close();
-                    Helpers.SendCommand(button, msgRecord);
+                    ServicesHelper.SendCommand(button, msgRecord);
                 }
                 else
                 {
@@ -86,7 +86,7 @@ namespace ColorVision.Services.Devices.Motor
                 if (int.TryParse(TextPos.Text ,out int pos))
                 {
                     var msgRecord = DeviceService.Move(pos,CheckBoxIsAbs.IsChecked??true);
-                    Helpers.SendCommand(button, msgRecord);
+                    ServicesHelper.SendCommand(button, msgRecord);
                 }
             }
         }
@@ -98,7 +98,7 @@ namespace ColorVision.Services.Devices.Motor
                 if (int.TryParse(TextPos.Text, out int pos))
                 {
                     var msgRecord = DeviceService.GoHome();
-                    Helpers.SendCommand(button, msgRecord);
+                    ServicesHelper.SendCommand(button, msgRecord);
                 }
             }
         }
@@ -108,7 +108,7 @@ namespace ColorVision.Services.Devices.Motor
             if (sender is Button button)
             {
                 var msgRecord = DeviceService.GetPosition();
-                Helpers.SendCommand(button, msgRecord);
+                ServicesHelper.SendCommand(button, msgRecord);
             }
         }
 
@@ -119,7 +119,7 @@ namespace ColorVision.Services.Devices.Motor
                 if (double.TryParse(TextDiaphragm.Text, out double pos))
                 {
                     var msgRecord = DeviceService.MoveDiaphragm(pos);
-                    Helpers.SendCommand(button, msgRecord);
+                    ServicesHelper.SendCommand(button, msgRecord);
                 }
             }
         }
@@ -129,7 +129,7 @@ namespace ColorVision.Services.Devices.Motor
             if (sender is Button button)
             {
                 var msgRecord = DeviceService.Close();
-                Helpers.SendCommand(button, msgRecord);
+                ServicesHelper.SendCommand(button, msgRecord);
             }
         }
 

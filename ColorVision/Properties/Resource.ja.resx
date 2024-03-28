@@ -675,4 +675,10 @@
   <data name="Unsubscribe" xml:space="preserve">
     <value>購読を解除する</value>
   </data>
+  <data name="OpenSolution" xml:space="preserve">
+    <value>プロジェクトを開く</value>
+  </data>
+  <data name="NewSolution" xml:space="preserve">
+    <value>新築</value>
+  </data>
 </root>

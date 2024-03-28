@@ -675,4 +675,10 @@
   <data name="Unsubscribe" xml:space="preserve">
     <value>Se désabonner</value>
   </data>
+  <data name="OpenSolution" xml:space="preserve">
+    <value>Projet ouvert</value>
+  </data>
+  <data name="NewSolution" xml:space="preserve">
+    <value>Nouvelle construction</value>
+  </data>
 </root>

@@ -3,7 +3,7 @@ using System.Windows;
 
 namespace ColorVision.Services
 {
-    internal static class ServicesHelper
+    internal static partial class ServicesHelper
     {
         public static bool IsInvalidPath(string Path, string Hint = "名称")
         {

@@ -1024,6 +1024,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 新建工程 的本地化字符串。
+        /// </summary>
+        public static string NewSolution {
+            get {
+                return ResourceManager.GetString("NewSolution", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 发现新版本 的本地化字符串。
         /// </summary>
         public static string NewVersionFound {
@@ -1083,6 +1092,15 @@ namespace ColorVision.Properties {
         public static string OpenLocalProjectOrFile {
             get {
                 return ResourceManager.GetString("OpenLocalProjectOrFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开工程 的本地化字符串。
+        /// </summary>
+        public static string OpenSolution {
+            get {
+                return ResourceManager.GetString("OpenSolution", resourceCulture);
             }
         }
         

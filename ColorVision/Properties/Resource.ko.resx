@@ -675,4 +675,10 @@
   <data name="Unsubscribe" xml:space="preserve">
     <value>구독 취소</value>
   </data>
+  <data name="OpenSolution" xml:space="preserve">
+    <value>프로젝트 열기</value>
+  </data>
+  <data name="NewSolution" xml:space="preserve">
+    <value>신조</value>
+  </data>
 </root>

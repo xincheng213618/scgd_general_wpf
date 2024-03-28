@@ -5,6 +5,7 @@ using ColorVision.Services.Terminal;
 using Newtonsoft.Json;
 using NPOI.SS.Formula.Functions;
 using System;
+using System.Linq;
 
 namespace ColorVision.Services.Core
 {
@@ -50,6 +51,10 @@ namespace ColorVision.Services.Core
                 if (item is TerminalService t1 && t1.Code == Code)
                     return true;
             }
+            //这里追加一个规则，所有服务下设备名称均不允许相同
+            var deviceS = ServiceManager.GetInstance().DeviceServices.FirstOrDefault(x => x.Code == Code);
+            if (deviceS != null)
+                return true;
             return false;
         }
 

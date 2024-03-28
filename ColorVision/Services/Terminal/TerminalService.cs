@@ -108,7 +108,7 @@ namespace ColorVision.Services.Terminal
             }
 
             ContextMenu = new ContextMenu();
-            MenuItem menuItem = new MenuItem() { Header = "删除服务" };
+            MenuItem menuItem = new MenuItem() { Header = ColorVision.Properties.Resource.Delete };
             menuItem.Click += (s, e) => Delete();
             ContextMenu.Items.Add(menuItem);
         }

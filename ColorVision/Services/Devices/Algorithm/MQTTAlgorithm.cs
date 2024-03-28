@@ -396,9 +396,9 @@ namespace ColorVision.Services.Devices.Algorithm
             PublishAsyncClient(msg);
         }
 
-        public void CacheClear()
+        public MsgRecord CacheClear()
         {
-            PublishAsyncClient(new MsgSend { EventName = "" });
+            return PublishAsyncClient(new MsgSend { EventName = "" });
         }
 
 

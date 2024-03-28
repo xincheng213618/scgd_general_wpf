@@ -103,9 +103,5 @@ namespace ColorVision.Services.Devices.FileServer
             PublishAsyncClient(msg);
         }
 
-        public void CacheClear()
-        {
-            PublishAsyncClient(new MsgSend { EventName = "" });
-        }
     }
 }

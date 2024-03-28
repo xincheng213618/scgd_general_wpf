@@ -233,12 +233,13 @@ namespace ColorVision.Services.Devices.Camera
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (!ServicesHelper.IsInvalidPath(CreateCode.Text, "资源标识") || !ServicesHelper.IsInvalidPath(CreateName.Text, "资源名称"))
+            if (!Services.ServicesHelper.IsInvalidPath(CreateCode.Text, "资源标识") || !Services.ServicesHelper.IsInvalidPath(CreateName.Text, "资源名称"))
                 return;
 
-            if (TerminalService.ServicesCodes.Contains(CreateCode.Text))
+            var deviceS= ServiceManager.GetInstance().DeviceServices.FirstOrDefault(x => x.Code == CreateCode.Text);
+            if (deviceS != null)
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "设备标识已存在,不允许重复添加");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "设备标识已存在,不允许重复添加", "ColorVision");
                 return;
             }
             SysDeviceModel sysDevModel = null;

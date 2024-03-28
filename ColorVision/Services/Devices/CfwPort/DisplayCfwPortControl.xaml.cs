@@ -49,7 +49,7 @@ namespace ColorVision.Services.Devices.CfwPort
             if (sender is Button button)
             {
                 var msgRecord = DeviceService.GetPort();
-                Helpers.SendCommand(button, msgRecord);
+                ServicesHelper.SendCommand(button, msgRecord);
             }
         }
 
@@ -58,7 +58,7 @@ namespace ColorVision.Services.Devices.CfwPort
             if (sender is Button button)
             {
                 var msgRecord = DeviceService.Open();
-                Helpers.SendCommand(button, msgRecord);
+                ServicesHelper.SendCommand(button, msgRecord);
             }
 
         }
@@ -70,7 +70,7 @@ namespace ColorVision.Services.Devices.CfwPort
                 if (int.TryParse(TextPort.Text,out int port))
                 {
                     var msgRecord = DeviceService.SetPort(port);
-                    Helpers.SendCommand(button, msgRecord);
+                    ServicesHelper.SendCommand(button, msgRecord);
                 }
             }
         }

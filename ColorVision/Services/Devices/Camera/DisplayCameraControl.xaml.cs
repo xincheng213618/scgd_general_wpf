@@ -193,7 +193,7 @@ namespace ColorVision.Services.Devices.Camera
             if (sender is Button button)
             {
                 var msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
-                Helpers.SendCommand(button,msgRecord);
+                ServicesHelper.SendCommand(button,msgRecord);
                 MsgRecordSucessChangedHandler msgRecordStateChangedHandler = null;
                 msgRecordStateChangedHandler = (e) =>
                 {
@@ -217,7 +217,7 @@ namespace ColorVision.Services.Devices.Camera
                     if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
                     else expTime = new double[] { Device.Config.ExpTime };
                     MsgRecord msgRecord = DService.GetData(expTime, param);
-                    Helpers.SendCommand(button,msgRecord);
+                    ServicesHelper.SendCommand(button,msgRecord);
                 }
                 else
                 {
@@ -225,7 +225,7 @@ namespace ColorVision.Services.Devices.Camera
                     if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
                     else expTime = new double[] { Device.Config.ExpTime };
                     MsgRecord msgRecord = DService.GetData(expTime, new CalibrationParam() { Id = -1,Name ="Empty" });
-                    Helpers.SendCommand(button, msgRecord);
+                    ServicesHelper.SendCommand(button, msgRecord);
                 }
             }
         }
@@ -235,7 +235,7 @@ namespace ColorVision.Services.Devices.Camera
             if (sender is Button button)
             {
                 MsgRecord msgRecord = DService.GetAutoExpTime();
-                Helpers.SendCommand(button, msgRecord);
+                ServicesHelper.SendCommand(button, msgRecord);
 
             }
         }
@@ -271,7 +271,7 @@ namespace ColorVision.Services.Devices.Camera
                                 ButtonClose.Visibility = Visibility.Visible;
                             }
                         };
-                        Helpers.SendCommand(button, msg);
+                        ServicesHelper.SendCommand(button, msg);
                         CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
                         CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
                     }
@@ -312,7 +312,7 @@ namespace ColorVision.Services.Devices.Camera
             if (sender is Button button)
             {
                 MsgRecord msgRecord = DService.AutoFocus();
-                Helpers.SendCommand(button, msgRecord);
+                ServicesHelper.SendCommand(button, msgRecord);
             }
         }
 
@@ -387,7 +387,7 @@ namespace ColorVision.Services.Devices.Camera
                 if (int.TryParse(TextPos.Text, out int pos))
                 {
                     var msgRecord = DService.Move(pos, CheckBoxIsAbs.IsChecked ?? true);
-                    Helpers.SendCommand(button, msgRecord);
+                    ServicesHelper.SendCommand(button, msgRecord);
                 }
             }
         }
@@ -400,7 +400,7 @@ namespace ColorVision.Services.Devices.Camera
                 if (int.TryParse(TextPos.Text, out int pos))
                 {
                     var msgRecord = DService.GoHome();
-                    Helpers.SendCommand(button, msgRecord);
+                    ServicesHelper.SendCommand(button, msgRecord);
                 }
             }
         }
@@ -410,7 +410,7 @@ namespace ColorVision.Services.Devices.Camera
             if (sender is Button button)
             {
                 var msgRecord = DService.GetPosition();
-                Helpers.SendCommand(button, msgRecord);
+                ServicesHelper.SendCommand(button, msgRecord);
             }
         }
 
@@ -421,7 +421,7 @@ namespace ColorVision.Services.Devices.Camera
                 if (double.TryParse(TextDiaphragm.Text, out double pos))
                 {
                     var msgRecord = DService.MoveDiaphragm(pos);
-                    Helpers.SendCommand(button, msgRecord);
+                    ServicesHelper.SendCommand(button, msgRecord);
                 }
             }
         }
@@ -433,7 +433,7 @@ namespace ColorVision.Services.Devices.Camera
                 if (DService.IsVideoOpen)
                     CameraVideoControl.Close();
                 MsgRecord msgRecord = DService.Close();
-                Helpers.SendCommand(button,msgRecord);
+                ServicesHelper.SendCommand(button,msgRecord);
                 MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
                  msgRecordStateChangedHandler = (e) =>
                 {
