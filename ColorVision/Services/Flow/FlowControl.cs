@@ -89,24 +89,25 @@ namespace ColorVision.Services.Flow
         public void Start(string sn, FlowParam flowParam)
         {
             var serviceInfo = ServiceManager.GetInstance().GetServiceInfo(ServiceTypes.Flow, string.Empty);
-            SerialNumber = sn;
-            if (serviceInfo != null && serviceInfo.Devices.First().Key is string key)
+            //if (serviceInfo != null)
             {
-                devName = key;
-                DeviceFlowRunParam<MQTTServiceInfo> data = new DeviceFlowRunParam<MQTTServiceInfo>()
+                SerialNumber = sn;
+                //if (flowEngine == null)
                 {
-                    Services = ServiceManager.GetInstance().GetServiceJsonList(),
-                    TemplateParam = new MQTTMessageLib.CVTemplateParam() { ID = flowParam.Id, Name = flowParam.Name }
-                };
-                MQTTFlowRun<MQTTServiceInfo> req = new MQTTFlowRun<MQTTServiceInfo>(serviceInfo?.ServiceCode, devName, sn, data);
-                req.Token = serviceInfo?.Token;
-                string Msg = JsonConvert.SerializeObject(req);
-                Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
-                Task.Run(() => MQTTControl.PublishAsyncClient(serviceInfo?.PublishTopic??string.Empty, Msg, false));
-            }
-            else
-            {
-                MessageBox.Show(Application.Current.MainWindow,"相机打不开", "ColorVision");
+                    devName = serviceInfo?.Devices.First().Key;
+                    DeviceFlowRunParam<MQTTServiceInfo> data = new DeviceFlowRunParam<MQTTServiceInfo>() {
+                        Services = ServiceManager.GetInstance().GetServiceJsonList(), 
+                        TemplateParam = new MQTTMessageLib.CVTemplateParam() { ID = flowParam.Id, Name = flowParam.Name } };
+                    MQTTFlowRun<MQTTServiceInfo> req = new MQTTFlowRun<MQTTServiceInfo>(serviceInfo?.ServiceCode, devName, sn, serviceInfo?.Token, data);
+                    string Msg = JsonConvert.SerializeObject(req);
+                    Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
+                    Task.Run(() => MQTTControl.PublishAsyncClient(serviceInfo.PublishTopic, Msg, false));
+                    //Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, Msg, false));
+                }
+                //else
+                //{
+                //    flowEngine.StartNode(sn, ServiceManager.GetInstance().ServiceTokens);
+                //}
             }
         }
 
