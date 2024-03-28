@@ -155,11 +155,11 @@ namespace ColorVision.Services.Devices.SMU
             {
                 if (Config.DeviceStatus != DeviceStatusType.Opening)
                 {
-                    Helpers.SendCommand(button, DService.Open(Config.IsNet, Config.DevName));
+                    ServicesHelper.SendCommand(button, DService.Open(Config.IsNet, Config.DevName));
                 }
                 else
                 {
-                    Helpers.SendCommand(button, DService.Close());
+                    ServicesHelper.SendCommand(button, DService.Close());
                 }
             }
         }

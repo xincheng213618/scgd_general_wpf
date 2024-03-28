@@ -109,7 +109,6 @@ namespace ColorVision.Services.Flow
                 //    flowEngine.StartNode(sn, ServiceManager.GetInstance().ServiceTokens);
                 //}
             }
-
         }
 
         public event EventHandler FlowCompleted;

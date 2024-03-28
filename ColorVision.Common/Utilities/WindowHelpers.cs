@@ -5,10 +5,18 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.Utilities
+namespace ColorVision.Common.Utilities
 {
-    public class WindowHelpers
+    public static class WindowHelpers
     {
+
+        public static Window? GetActiveWindow(this Application application)
+        {
+            foreach (Window window in application.Windows)
+                if (window.IsActive) return window;
+            return null;
+        }
+
         public static Window? GetActiveWindow()
         {
             foreach (Window window in Application.Current.Windows)

@@ -7,12 +7,12 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Devices
+namespace ColorVision.Services
 {
-    internal static class Helpers
+    internal static partial class ServicesHelper
     {
         static IPendingHandler handler { get; set; }
-        public static IPendingHandler SendCommand(MsgRecord msgRecord,string Msg)
+        public static IPendingHandler SendCommand(MsgRecord msgRecord, string Msg)
         {
             handler = PendingBox.Show(Application.Current.MainWindow, Msg, true);
             var temp = Application.Current.MainWindow.Cursor;
@@ -57,7 +57,7 @@ namespace ColorVision.Services.Devices
         }
 
 
-        public static void SendCommand(Button button, MsgRecord msgRecord,bool Reserve = true)
+        public static void SendCommand(Button button, MsgRecord msgRecord, bool Reserve = true)
         {
             var temp = button.Content;
             button.Content = msgRecord.MsgRecordState.ToDescription();

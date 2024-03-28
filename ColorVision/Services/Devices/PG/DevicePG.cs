@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
-using ColorVision.Utilities;
+using ColorVision.Common.Utilities;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -18,7 +18,7 @@ namespace ColorVision.Services.Devices.PG
             EditCommand = new RelayCommand(a =>
             {
                 EditPG window = new EditPG(this);
-                window.Owner = WindowHelpers.GetActiveWindow();
+                window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });

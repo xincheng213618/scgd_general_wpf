@@ -121,7 +121,7 @@ namespace ColorVision.Services.Devices.Calibration
                         var pm = CalibrationParams[ComboxCalibrationTemplate.SelectedIndex].Value;
 
                         MsgRecord msgRecord = DeviceService.Calibration(param, imgFileName, fileExtType, pm.Id, ComboxCalibrationTemplate.Text, sn, (float)Device.Config.ExpTimeR, (float)Device.Config.ExpTimeG, (float)Device.Config.ExpTimeB);
-                        Helpers.SendCommand(button, msgRecord);
+                        ServicesHelper.SendCommand(button, msgRecord);
                     }
                 }
             }

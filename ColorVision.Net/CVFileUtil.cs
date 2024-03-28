@@ -26,6 +26,8 @@ namespace ColorVision.Net
 
         public static bool IsCIEFile(string filePath)
         {
+            if (!File.Exists(filePath)) return false;
+
             using FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read);
             if (fs.Length < HeaderSize) return false;
 
@@ -45,7 +47,7 @@ namespace ColorVision.Net
         public static int ReadCIEFileHeader(string filePath, out CVCIEFile cvcie)
         {
             cvcie = new CVCIEFile();
-
+            if (!File.Exists(filePath)) return -1;
             using FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read);
             if (fs.Length < MinimumFileSize) return -1;
 
@@ -79,7 +81,6 @@ namespace ColorVision.Net
 
             return (int)fs.Position;
         }
-
 
         public static int ReadCIEFileHeader(byte[] fileData, out CVCIEFile  cvcie)
         {

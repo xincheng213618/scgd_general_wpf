@@ -1,15 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;
-using ColorVision.Services.Devices.Calibration.Views;
 using ColorVision.Services.Extension;
-using ColorVision.Themes;
-using ColorVision.Utilities;
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 
 namespace ColorVision.Services.Devices.Algorithm
 {
@@ -31,7 +28,7 @@ namespace ColorVision.Services.Devices.Algorithm
             EditCommand = new RelayCommand(a =>
             {
                 EditAlgorithm window = new EditAlgorithm(this);
-                window.Owner = WindowHelpers.GetActiveWindow();
+                window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });

@@ -666,4 +666,19 @@
   <data name="Manager" xml:space="preserve">
     <value>管理</value>
   </data>
+  <data name="Send" xml:space="preserve">
+    <value>送信</value>
+  </data>
+  <data name="Subscribe" xml:space="preserve">
+    <value>サブスクリプション</value>
+  </data>
+  <data name="Unsubscribe" xml:space="preserve">
+    <value>購読を解除する</value>
+  </data>
+  <data name="OpenSolution" xml:space="preserve">
+    <value>プロジェクトを開く</value>
+  </data>
+  <data name="NewSolution" xml:space="preserve">
+    <value>新築</value>
+  </data>
 </root>

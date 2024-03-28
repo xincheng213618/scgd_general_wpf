@@ -1,13 +1,10 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.Utilities;
 using ColorVision.Draw;
-using ColorVision.Media;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Settings;
 using ColorVision.Util.Draw.Rectangle;
-using ColorVision.Utilities;
 using cvColorVision;
 using cvColorVision.Util;
 using log4net;
@@ -1222,7 +1219,7 @@ namespace ColorVision.Services.Templates.POI
 
                 if (toggleButton.IsChecked == true)
                 {
-                    if (ImageContentGrid.Parent is Grid p)
+                    if (ImageContentGrid.Parent is Panel p)
                     {
                         OldWindowStatus = new WindowStatus();
                         OldWindowStatus.Parent = p;
@@ -1234,7 +1231,7 @@ namespace ColorVision.Services.Templates.POI
                         window.WindowState = WindowState.Maximized;
                         OldWindowStatus.Parent.Children.Remove(ImageContentGrid);
                         window.Content = ImageContentGrid;
-                    }
+                      }
                     else
                     {
                         return;

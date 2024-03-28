@@ -80,7 +80,7 @@ namespace ColorVision.Services
                 }
             }
         }
-        public MQTTServiceInfo GetServiceInfo(ServiceTypes serviceType,string serviceCode)
+        public MQTTServiceInfo? GetServiceInfo(ServiceTypes serviceType,string serviceCode)
         {
             foreach (var item in ServiceTokens)
             {

@@ -5,12 +5,10 @@ using ColorVision.Draw;
 using ColorVision.Media;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Solution;
-using ColorVision.Utilities;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
@@ -563,10 +561,18 @@ namespace ColorVision.Services.Devices.Camera.Views
         {
             if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCamera viewCamera)
             {
-                ExportCamera exportCamera = new ExportCamera() { Icon = Device.Icon };
-                exportCamera.Owner = WindowHelpers.GetActiveWindow();
-                exportCamera.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                exportCamera.ShowDialog();
+                if (File.Exists(viewCamera.FileUrl))
+                {
+                    ExportCamera exportCamera = new ExportCamera(viewCamera.FileUrl) { Icon = Device.Icon };
+                    exportCamera.Owner = Application.Current.GetActiveWindow();
+                    exportCamera.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                    exportCamera.ShowDialog();
+                }
+                else
+                {
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到原始文件", "ColorVision");
+                }
+
             }
         }
     }

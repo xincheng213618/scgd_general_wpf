@@ -666,4 +666,19 @@
   <data name="Manager" xml:space="preserve">
     <value>管理</value>
   </data>
+  <data name="Send" xml:space="preserve">
+    <value>发送</value>
+  </data>
+  <data name="Subscribe" xml:space="preserve">
+    <value>订阅</value>
+  </data>
+  <data name="Unsubscribe" xml:space="preserve">
+    <value>退订</value>
+  </data>
+  <data name="OpenSolution" xml:space="preserve">
+    <value>打开工程</value>
+  </data>
+  <data name="NewSolution" xml:space="preserve">
+    <value>新建工程</value>
+  </data>
 </root>

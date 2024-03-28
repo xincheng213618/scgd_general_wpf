@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Terminal;
-using ColorVision.Utilities;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
@@ -45,7 +45,7 @@ namespace ColorVision.Services.Type
             OpenCreateWindowCommand = new RelayCommand(a =>
             {
                 CreateType createType = new CreateType(this);
-                createType.Owner = WindowHelpers.GetActiveWindow();
+                createType.Owner = Application.Current.GetActiveWindow();
                 createType.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 createType.ShowDialog();
             });

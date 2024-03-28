@@ -49,7 +49,7 @@ namespace ColorVision.Services.RC
                 {
                     string Dir = Path.GetDirectoryName(RegistrationCenterServicePath);
                     Dir = Path.GetDirectoryName(Dir);
-                    string FilePath = Dir + "//InstallTool//CVWinSMS.exe";
+                    string FilePath = Dir + "\\InstallTool\\CVWinSMS.exe";
                     PlatformHelper.Open(FilePath);
                 }
             }

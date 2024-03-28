@@ -1,21 +1,18 @@
-﻿using ColorVision.MQTT;
-using System;
-using System.Collections.Generic;
-using System.Windows;
-using System.Windows.Controls;
-using Panuon.WPF.UI;
-using ColorVision.Themes;
-using System.Windows.Media;
-using ColorVision.Settings;
-using ColorVision.Common.Utilities;
-using ColorVision.Services.Core;
-using System.Windows.Input;
-using ColorVision.Services.Templates;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Extension;
-using System.Security.Cryptography.X509Certificates;
-using ColorVision.Utilities;
+using ColorVision.MQTT;
+using ColorVision.Services.Core;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Extension;
+using ColorVision.Services.Templates;
+using ColorVision.Settings;
+using ColorVision.Themes;
+using Panuon.WPF.UI;
+using System;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.Services.Flow
 {
@@ -163,13 +160,14 @@ namespace ColorVision.Services.Flow
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
                     handler.Cancelling += delegate
                     {
-                        flowControl?.Stop();
-                        handler?.Close();
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             ButtonRun.Visibility = Visibility.Visible;
                             ButtonStop.Visibility = Visibility.Collapsed;
                         });
+
+                        flowControl?.Stop();
+                        handler?.Close();
                     };
 
                     flowControl.FlowData += (s, e) =>
@@ -227,10 +225,20 @@ namespace ColorVision.Services.Flow
         FlowControl rcflowControl;
         private void Button_RCFlowRun_Click(object sender, RoutedEventArgs e)
         {
-           if(rcflowControl==null) rcflowControl = new FlowControl(MQTTControl.GetInstance(),"");
-            string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            ServiceManager.GetInstance().ResultBatchSave(sn);
-            rcflowControl.Start(sn, (FlowTemplate.SelectedItem as TemplateModel<FlowParam>).Value);
+            if (FlowTemplate.SelectedItem is TemplateModel<FlowParam> flowParam)
+            {
+                rcflowControl ??= new FlowControl(MQTTControl.GetInstance(), "");
+                string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+                ServiceManager.GetInstance().ResultBatchSave(sn);
+                rcflowControl.Start(sn, flowParam.Value);
+
+                ButtonRun.Visibility = Visibility.Collapsed;
+                ButtonStop.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(),"没有选择流程","ColorVision");
+            }
         }
     }
 }

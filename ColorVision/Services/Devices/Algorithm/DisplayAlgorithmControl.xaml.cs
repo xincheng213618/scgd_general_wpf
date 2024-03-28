@@ -279,7 +279,7 @@ namespace ColorVision.Services.Devices.Algorithm
             if (sender is Button button)
             {
                 var msg = Service.Init();
-                Helpers.SendCommand(button, msg);
+                ServicesHelper.SendCommand(button, msg);
             }
         }
         private void MTF_Click(object sender, RoutedEventArgs e)
@@ -303,7 +303,7 @@ namespace ColorVision.Services.Devices.Algorithm
                 var pm = TemplateControl.GetInstance().MTFParams[ComboxMTFTemplate.SelectedIndex].Value;
                 var poi_pm = TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value;
                 var ss = Service.MTF(imgFileName, fileExtType, pm.Id, ComboxMTFTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate.Text);
-                Helpers.SendCommand(ss, "MTF");
+                ServicesHelper.SendCommand(ss, "MTF");
             }
         }
 
@@ -323,7 +323,7 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 var pm = TemplateControl.GetInstance().SFRParams[ComboxSFRTemplate.SelectedIndex].Value;
                 var msg = Service.SFR(imgFileName, fileExtType, pm.Id, ComboxSFRTemplate.Text, sn);
-                Helpers.SendCommand(msg, "SFR");
+                ServicesHelper.SendCommand(msg, "SFR");
             }
         }
 
@@ -374,7 +374,7 @@ namespace ColorVision.Services.Devices.Algorithm
                     POILayoutReq = POILayoutTypes.Mask;
                 }
                 MsgRecord msg = Service.BuildPoi(POILayoutReq, Params, imgFileName, pm.Id, ComboxBuildPoiTemplate.Text, sn);
-                Helpers.SendCommand(msg, "BuildPoi");
+                ServicesHelper.SendCommand(msg, "BuildPoi");
             }
         }
 
@@ -393,7 +393,7 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 var pm = TemplateControl.GetInstance().GhostParams[ComboxGhostTemplate.SelectedIndex].Value;
                 var msg = Service.Ghost(imgFileName, fileExtType, pm.Id, ComboxGhostTemplate.Text, sn);
-                Helpers.SendCommand(msg, "Ghost");
+                ServicesHelper.SendCommand(msg, "Ghost");
             }
         }
 
@@ -412,7 +412,7 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 var pm = TemplateControl.GetInstance().DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value;
                 var msg = Service.Distortion(imgFileName, fileExtType, pm.Id, ComboxDistortionTemplate.Text, sn);
-                Helpers.SendCommand(msg, "Distortion");
+                ServicesHelper.SendCommand(msg, "Distortion");
             }
         }
 
@@ -465,7 +465,7 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 var pm = TemplateControl.GetInstance().FOVParams[ComboxFOVTemplate.SelectedIndex].Value;
                 var msg = Service.FOV(imgFileName, fileExtType, pm.Id, ComboxFOVTemplate.Text, sn);
-                Helpers.SendCommand(msg, "FOV");
+                ServicesHelper.SendCommand(msg, "FOV");
             }
         }
 
@@ -624,7 +624,7 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 var pm = TemplateControl.GetInstance().FocusPointsParams[ComboxFocusPointsTemplate.SelectedIndex].Value;
                 var ss = Service.FocusPoints(ImageFile.Text, fileExtType, pm.Id, ComboxFocusPointsTemplate.Text, sn);
-                Helpers.SendCommand(ss, "FocusPoints");
+                ServicesHelper.SendCommand(ss, "FocusPoints");
             }
         }
 
@@ -644,7 +644,7 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 var pm = TemplateControl.GetInstance().LedCheckParams[ComboxLedCheckTemplate.SelectedIndex].Value;
                 var ss = Service.LedCheck(ImageFile.Text, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn);
-                Helpers.SendCommand(ss, "正在计算灯珠");
+                ServicesHelper.SendCommand(ss, "正在计算灯珠");
             }
         }
 

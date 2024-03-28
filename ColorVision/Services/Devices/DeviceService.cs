@@ -7,7 +7,7 @@ using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Templates;
-using ColorVision.Utilities;
+using ColorVision.Common.Utilities;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
@@ -178,7 +178,7 @@ namespace ColorVision.Services.Devices
             {
                 Window window = new Window() { Width = 700, Height = 400, Icon = Icon,Title = Properties.Resource.Property };
                 window.Content = GetDeviceInfo();
-                window.Owner = WindowHelpers.GetActiveWindow();
+                window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });
@@ -224,13 +224,19 @@ namespace ColorVision.Services.Devices
         public override void Delete()
         {
             base.Delete();
-            if (SysResourceModel != null)
-                ServiceManager.GetInstance().VSysResourceDao.DeleteById(SysResourceModel.Id);
             Parent.RemoveChild(this);
 
+            //删除数据库
+            if (SysResourceModel != null)
+                ServiceManager.GetInstance().VSysResourceDao.DeleteById(SysResourceModel.Id);
+            //删除设备服务
             ServiceManager.GetInstance().DeviceServices.Remove(this);
+            //删除前台显示
             if (GetDisplayControl() is IDisPlayControl disPlayControl)
                 ServiceManager.GetInstance().DisPlayControls.Remove(disPlayControl);
+            //删除资源
+
+
             this.Dispose();
         }
     }

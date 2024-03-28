@@ -238,9 +238,6 @@ namespace ColorVision.Media
             }
         }
 
-
-
-
         private void ImageShow_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (DrawingVisualPolygonCache != null)
@@ -496,51 +493,6 @@ namespace ColorVision.Media
                 }
             }
         }
-
-
-
-        private WindowStatus OldWindowStatus { get; set; }
-
-        private void Button8_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is ToggleButton toggleButton)
-            {
-                var window = Window.GetWindow(this);
-
-                if (toggleButton.IsChecked == true)
-                {
-                    if (this.VisualParent is Grid p)
-                    {
-                        OldWindowStatus = new WindowStatus();
-                        OldWindowStatus.Parent = p;
-                        OldWindowStatus.WindowState = window.WindowState;
-                        OldWindowStatus.WindowStyle = window.WindowStyle;
-                        OldWindowStatus.ResizeMode = window.ResizeMode;
-                        OldWindowStatus.Root = window.Content;
-                        window.WindowStyle = WindowStyle.None;
-                        window.WindowState = WindowState.Maximized;
-
-                        OldWindowStatus.Parent.Children.Remove(this);
-                        window.Content = this;
-                    }
-                    else
-                    {
-                        return;
-                    }
-                }
-                else
-                {
-
-                    window.WindowStyle = OldWindowStatus.WindowStyle;
-                    window.WindowState = OldWindowStatus.WindowState;
-                    window.ResizeMode = OldWindowStatus.ResizeMode;
-
-                    window.Content = OldWindowStatus.Root;
-                    OldWindowStatus.Parent.Children.Add(this);
-                }
-            }
-        }
-
         public void OpenImage(CVCIEFile fileInfo)
         {
             if (fileInfo.FileExtType == FileExtType.Tif)

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.Common.Utilities;
 
 namespace ColorVision.Services.Devices.FileServer
 {
@@ -24,11 +25,6 @@ namespace ColorVision.Services.Devices.FileServer
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             this.DataContext = DeviceFileServer;
-        }
-
-        private void ServiceCache_Click(object sender, RoutedEventArgs e)
-        {
-            DService.CacheClear();
         }
     }
 }

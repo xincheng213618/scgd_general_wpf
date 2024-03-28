@@ -2,7 +2,7 @@
 using ColorVision.Media;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
-using ColorVision.Utilities;
+using ColorVision.Common.Utilities;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -23,7 +23,7 @@ namespace ColorVision.Services.Devices.FileServer
             EditCommand = new RelayCommand(a =>
             {
                 EditFileServer window = new EditFileServer(this);
-                window.Owner = WindowHelpers.GetActiveWindow();
+                window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });

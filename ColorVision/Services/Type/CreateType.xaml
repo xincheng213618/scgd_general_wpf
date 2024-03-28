@@ -28,11 +28,11 @@
         <Border Grid.Row="0" Background ="{DynamicResource RegionBrush}" CornerRadius="4">
             <StackPanel>
                 <DockPanel Margin="2" >
-                    <TextBlock Text="标识" MinWidth="50" />
+                    <TextBlock Text="{x:Static properties:Resource.Code}" MinWidth="50" />
                     <hc:ComboBox x:Name="CreateCode" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"   />
                 </DockPanel>
                 <DockPanel Margin="2" >
-                    <TextBlock Text="名称" Width="50" />
+                    <TextBlock Text="{x:Static properties:Resource.Name}" Width="50" />
                     <hc:ComboBox  x:Name="CreateName" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"  />
                 </DockPanel>
             </StackPanel>

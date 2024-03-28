@@ -484,11 +484,6 @@ namespace ColorVision.Services.Devices.Calibration.Views
             }
         }
 
-        private void ClearImage_Click(object sender, RoutedEventArgs e)
-        {
-            ImageView.Clear();
-        }
-
         private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (sender is ComboBox comboBox && comboBox.SelectedValue is ImageLayer imageLayer)

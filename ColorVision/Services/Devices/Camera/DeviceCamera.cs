@@ -1,16 +1,16 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Devices.Camera.Dao;
 using ColorVision.Services.Devices.Camera.Views;
-using ColorVision.Services.Core;
+using ColorVision.Services.Extension;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Solution;
-using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using cvColorVision;
 using log4net;
@@ -20,14 +20,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
-using ColorVision.Services.Extension;
-using ColorVision.Utilities;
-using System.Linq;
 
 namespace ColorVision.Services.Devices.Camera
 {
@@ -69,7 +66,7 @@ namespace ColorVision.Services.Devices.Camera
             EditCommand = new RelayCommand(a =>
             {
                 EditCamera window = new EditCamera(this);
-                window.Owner = WindowHelpers.GetActiveWindow();
+                window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });

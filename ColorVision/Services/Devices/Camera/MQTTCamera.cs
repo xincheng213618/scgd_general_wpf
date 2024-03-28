@@ -5,7 +5,6 @@ using ColorVision.Extension;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Msg;
-using ColorVision.Utilities;
 using cvColorVision;
 using MQTTMessageLib;
 using MQTTMessageLib.Camera;
