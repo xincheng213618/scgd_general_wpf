@@ -21,6 +21,7 @@ namespace ColorVision.Solution.View
         }
         public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
+        public int IdShow { get; set; }
 
         public string? Batch { get { return _Batch; } set { _Batch = value; NotifyPropertyChanged(); } }
         private string? _Batch;

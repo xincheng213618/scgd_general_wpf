@@ -44,6 +44,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             _resultDesc = resultDesc;
         }
 
+        public int IdShow { get; set; }
 
         private AlgorithmResultType _ResultType;
         private int _resultCode;

@@ -137,7 +137,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
         public void AlgResultMasterModelDataDraw(AlgResultMasterModel result)
         {
             AlgorithmResult algorithmResult = new AlgorithmResult(result);
-            AlgResults.Add(algorithmResult);
+            AlgResults.AddUnique(algorithmResult);
             RefreshResultListView();
         }
 
@@ -626,7 +626,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                 foreach (var item in algResults)
                 {
                     AlgorithmResult algorithmResult = new AlgorithmResult(item);
-                    AlgResults.Add(algorithmResult);
+                    AlgResults.AddUnique(algorithmResult);
                 }
                 SerchPopup.IsOpen = false;
                 return;
@@ -642,7 +642,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                 foreach (var item in algResults)
                 {
                     AlgorithmResult algorithmResult = new AlgorithmResult(item);
-                    AlgResults.Add(algorithmResult);
+                    AlgResults.AddUnique(algorithmResult);
                 }
             }
             SerchPopup.IsOpen = false;
