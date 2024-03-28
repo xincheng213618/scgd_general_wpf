@@ -224,13 +224,19 @@ namespace ColorVision.Services.Devices
         public override void Delete()
         {
             base.Delete();
-            if (SysResourceModel != null)
-                ServiceManager.GetInstance().VSysResourceDao.DeleteById(SysResourceModel.Id);
             Parent.RemoveChild(this);
 
+            //删除数据库
+            if (SysResourceModel != null)
+                ServiceManager.GetInstance().VSysResourceDao.DeleteById(SysResourceModel.Id);
+            //删除设备服务
             ServiceManager.GetInstance().DeviceServices.Remove(this);
+            //删除前台显示
             if (GetDisplayControl() is IDisPlayControl disPlayControl)
                 ServiceManager.GetInstance().DisPlayControls.Remove(disPlayControl);
+            //删除资源
+
+
             this.Dispose();
         }
     }
