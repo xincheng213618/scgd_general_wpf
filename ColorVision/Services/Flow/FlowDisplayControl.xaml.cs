@@ -76,7 +76,7 @@ namespace ColorVision.Services.Flow
                     View.FlowEngineControl.LoadFromBase64(string.Empty);
                 }
             };
-            FlowTemplate.SelectedIndex = 0;
+            FlowTemplate.SelectedIndex = -1;
             this.DataContext = flowControl;
             this.PreviewMouseDown += UserControl_PreviewMouseDown;
 
