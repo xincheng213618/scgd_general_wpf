@@ -158,7 +158,7 @@
             </Grid>
             <GridSplitter  Grid.Row="1"  Panel.ZIndex="999" Background="#EEF4F9"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
         </Grid>
-        <ListView x:Name="listViewSide" Background="Transparent" BorderThickness="0"  Margin="-5" Grid.Column="1" Visibility="Collapsed">
+        <ListView x:Name="listViewSide" Background="Transparent" BorderThickness="0"  Margin="-3" Grid.Column="1" Visibility="Collapsed">
             <ListView.Resources >
                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" />
             </ListView.Resources>

@@ -108,7 +108,7 @@ namespace ColorVision.Services.Devices.Spectrum
         {
             foreach (SpectrumDeviceHeartbeatParam devheartbeat in devsheartbeat)
             {
-                if (devheartbeat.DeviceName.Equals(Config.Code, StringComparison.Ordinal))
+                if (devheartbeat.DeviceName!=null && devheartbeat.DeviceName.Equals(Config.Code, StringComparison.Ordinal))
                 {
                     SpectrumHeartbeatParam heartbeat = new SpectrumHeartbeatParam();
                     heartbeat.DeviceStatus = devheartbeat.DeviceStatus;
