@@ -274,6 +274,7 @@ namespace ColorVision.Services.Templates.POI
         private void OpenCAD_Click(object sender, RoutedEventArgs e)
         {
             CreateImage(PoiParam.Width, PoiParam.Height, Colors.White,false);
+
         }
 
         public void OpenImage(string? filePath)
@@ -400,6 +401,7 @@ namespace ColorVision.Services.Templates.POI
             PoiParam.DatumArea.Polygon3Y = height;
             PoiParam.DatumArea.Polygon4X = 0;
             PoiParam.DatumArea.Polygon4Y = height;
+            Application.Current.Dispatcher.Invoke(() => PoiParam.DatumArea.IsShowDatumArea = true);
             RenderDatumArea();
             DatumSet();
         }
