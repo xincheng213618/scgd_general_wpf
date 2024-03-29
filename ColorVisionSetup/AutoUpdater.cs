@@ -60,7 +60,7 @@ namespace ColorVision.Update
                     // First attempt to get the string without authentication
                     versionString = await _httpClient.GetStringAsync(url);
                 }
-                catch (HttpRequestException e)
+                catch (HttpRequestException)
                 {
                     IsPassWorld = true;
                     // If the request is unauthorized, add the authentication header and try again
