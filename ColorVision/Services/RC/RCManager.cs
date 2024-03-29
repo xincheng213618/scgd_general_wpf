@@ -32,7 +32,7 @@ namespace ColorVision.Services.RC
         {
             try
             {
-                return ServiceController != null && ServiceController.Status == ServiceControllerStatus.Running
+                return ServiceController != null && ServiceController.Status == ServiceControllerStatus.Running;
 
             }
             catch (Exception ex)
