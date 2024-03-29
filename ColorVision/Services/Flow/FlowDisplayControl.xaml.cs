@@ -60,7 +60,8 @@ namespace ColorVision.Services.Flow
                             }
                             else
                             {
-                                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, ServiceManager.GetInstance().ServiceTokens);
+                                var tokens = ServiceManager.GetInstance().ServiceTokens;
+                                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, tokens);
                             }
                         }
                         catch (Exception ex)

@@ -66,6 +66,15 @@ namespace ColorVision.Services.Flow
                 flowEngine.StopNode(SerialNumber);
             }
         }
+        public void Stop(FlowParam flowParam)
+        {
+            var serviceInfo = ServiceManager.GetInstance().GetServiceInfo(ServiceTypes.Flow, string.Empty);
+            devName = serviceInfo?.Devices.First().Key;
+            MQTTFlowStop req = new MQTTFlowStop(serviceInfo?.ServiceCode, devName, SerialNumber, serviceInfo?.Token);
+            string Msg = JsonConvert.SerializeObject(req);
+            Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
+            Task.Run(() => MQTTControl.PublishAsyncClient(serviceInfo.PublishTopic, Msg, false));
+        }
 
         public void Start(string sn)
         {

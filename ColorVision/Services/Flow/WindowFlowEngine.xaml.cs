@@ -91,13 +91,15 @@ namespace ColorVision.Services.Flow
             TextBoxsn.Text = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
         }
 
-        private string startNodeName;
+        //private string startNodeName;
+        private BaseStartNode nodeStart;
         private void StNodeEditor1_NodeAdded(object sender, STNodeEditorEventArgs e)
         {
             STNode node = e.Node;
             if (e.Node != null && e.Node is BaseStartNode nodeStart)
             {
-                startNodeName = nodeStart.NodeName;
+                //this.startNodeName = nodeStart.NodeName;
+                this.nodeStart = nodeStart;
             }
             node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
             node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditorMain.Nodes.Remove(node));
@@ -146,7 +148,7 @@ namespace ColorVision.Services.Flow
             STNodeEditorMain.LoadCanvas(flowName);
             svrName = "";
            
-            flowControl = new FlowControl(MQTTControl.GetInstance(), startNodeName);
+            flowControl = new FlowControl(MQTTControl.GetInstance(), nodeStart?.NodeName);
             flowControl.FlowCompleted += (s, e) =>
             {
                 ButtonFlowOpen.Content = "开始流程";
@@ -167,7 +169,7 @@ namespace ColorVision.Services.Flow
             }
             svrName = "";
 
-            flowControl = new FlowControl(MQTTControl.GetInstance(), startNodeName);
+            flowControl = new FlowControl(MQTTControl.GetInstance(), nodeStart?.NodeName);
             flowControl.FlowCompleted += (s, e) =>
             {
                 ButtonFlowOpen.Content = "开始流程";
@@ -180,6 +182,7 @@ namespace ColorVision.Services.Flow
 
         private void SaveFlow(string flowName)
         {
+            if (nodeStart != null) { if (!nodeStart.Ready) { MessageBox.Show("保存失败！流程存在错误!!!"); return; } }
             var data = STNodeEditorMain.GetCanvasData();
 
             if (FlowParam != null)
@@ -194,7 +197,7 @@ namespace ColorVision.Services.Flow
 
         private string GetTopic()
         {
-            return "FLOW/CMD/" + startNodeName;
+            return "FLOW/CMD/" + nodeStart?.NodeName;
         }
 
 
