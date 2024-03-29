@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Drawing;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
@@ -23,12 +24,6 @@ namespace ColorVision.Draw.Ruler
             if (Zoombox1.Parent is Grid grid)
             {
                 GridEx = grid;
-                ScalRuler.ParentWidth = GridEx.ActualWidth;
-                ScalRuler.ParentHeight = GridEx.ActualHeight;
-                grid.Children.Add(ScalRuler);
-                drawCanvas.ImageInitialized += (s, e) => Render();
-                GridEx.SizeChanged += GridEx_SizeChanged;
-                drawCanvas.MouseWheel += DrawCanvas_MouseWheel;
             }
         }
 
@@ -48,7 +43,13 @@ namespace ColorVision.Draw.Ruler
         {
             if (drawCanvas.Source is BitmapSource bitmapSource)
             {
-                double X = 1 / Zoombox1.ContentMatrix.M11 * bitmapSource.PixelWidth / 100;
+                ///未知原因
+                double X = 1 / Zoombox1.ContentMatrix.M11 * bitmapSource.PixelWidth / 100 ;
+
+                var controlWidth = drawCanvas.ActualWidth;
+                int imageWidth = bitmapSource.PixelWidth;
+                X = X / controlWidth * imageWidth;
+
                 ScalRuler.Render(X);
             }
         }
@@ -56,7 +57,7 @@ namespace ColorVision.Draw.Ruler
         public DrawingVisualScaleHost ScalRuler { get; set; }
 
 
-        private bool _IsShow = true;
+        private bool _IsShow;
         public bool IsShow
         {
             get => _IsShow;
@@ -67,6 +68,9 @@ namespace ColorVision.Draw.Ruler
                 if (value)
                 {
                     GridEx.Children.Add(ScalRuler);
+                    ScalRuler.ParentWidth = GridEx.ActualWidth;
+                    ScalRuler.ParentHeight = GridEx.ActualHeight;
+                    Render();
                     drawCanvas.MouseWheel += DrawCanvas_MouseWheel;
                     GridEx.SizeChanged -= GridEx_SizeChanged;
 

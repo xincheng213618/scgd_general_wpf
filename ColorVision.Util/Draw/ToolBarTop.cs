@@ -70,7 +70,6 @@ namespace ColorVision.Draw
             Crosshair = new Crosshair(zombox, drawCanvas);
             ToolBarMeasure = new ToolBarMeasure(Parent, zombox, drawCanvas);
             ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zombox, drawCanvas);
-            ToolBarScaleRuler.IsShow = true;
             ToolConcentricCircle = new ToolReferenceLine(zombox, drawCanvas);
 
             ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill());
