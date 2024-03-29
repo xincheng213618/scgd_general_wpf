@@ -72,7 +72,10 @@
                                         <TextBlock Text="端口范围" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.FileServerCfg.PortRange}"/>
                                     </DockPanel>
-   
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="色温波长" Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.IsCCTWave}"/>
+                                    </DockPanel>
                                 </StackPanel>
                             </GroupBox>
                         </StackPanel>
