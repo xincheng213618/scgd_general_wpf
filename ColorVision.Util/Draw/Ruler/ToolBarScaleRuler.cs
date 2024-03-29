@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using ColorVision.Common.Utilities;
+using System.Drawing;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -20,10 +21,16 @@ namespace ColorVision.Draw.Ruler
             Zoombox1 = zombox;
             this.drawCanvas = drawCanvas;
             ScalRuler = new DrawingVisualScaleHost();
+
             //ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             if (Zoombox1.Parent is Grid grid)
             {
                 GridEx = grid;
+                ScalRuler.PreviewMouseDown += (s, e) =>
+                {
+                    EditScaleRuler editScaleRuler = new EditScaleRuler(ScalRuler) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                    editScaleRuler.ShowDialog();
+                };
             }
         }
 
@@ -39,16 +46,14 @@ namespace ColorVision.Draw.Ruler
             Render();
         }
 
-        private void Render()
+        public void Render()
         {
             if (drawCanvas.Source is BitmapSource bitmapSource)
             {
+                ScalRuler.ParentWidth = GridEx.ActualWidth;
+                ScalRuler.ParentHeight = GridEx.ActualHeight;
                 ///未知原因
                 double X = 1 / Zoombox1.ContentMatrix.M11 * bitmapSource.PixelWidth / 100 ;
-
-                var controlWidth = drawCanvas.ActualWidth;
-                int imageWidth = bitmapSource.PixelWidth;
-                X = X / controlWidth * imageWidth;
 
                 ScalRuler.Render(X);
             }
@@ -70,10 +75,9 @@ namespace ColorVision.Draw.Ruler
                     GridEx.Children.Add(ScalRuler);
                     ScalRuler.ParentWidth = GridEx.ActualWidth;
                     ScalRuler.ParentHeight = GridEx.ActualHeight;
-                    Render();
                     drawCanvas.MouseWheel += DrawCanvas_MouseWheel;
                     GridEx.SizeChanged -= GridEx_SizeChanged;
-
+                    Render();
                 }
                 else
                 {

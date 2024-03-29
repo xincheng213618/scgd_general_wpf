@@ -629,6 +629,7 @@ namespace ColorVision.Media
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     Zoombox1.ZoomUniform();
+                    ToolBarTop.ToolBarScaleRuler.Render();
                 });
             });
             ToolBar1.Visibility = Visibility.Visible;
