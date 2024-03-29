@@ -88,7 +88,7 @@ namespace ColorVision
         private void Window_Initialized(object sender, EventArgs e)
         {
             ConfigHandler = ConfigHandler.GetInstance();
-            SolutionManager.GetInstance();
+            SolutionManager.GetInstance().AddHotKeys();
 
             if (MySqlControl.GetInstance().IsConnect)
             {

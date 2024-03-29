@@ -681,4 +681,7 @@
   <data name="NewSolution" xml:space="preserve">
     <value>新建工程</value>
   </data>
+  <data name="MsgList" xml:space="preserve">
+    <value>訊息清單</value>
+  </data>
 </root>

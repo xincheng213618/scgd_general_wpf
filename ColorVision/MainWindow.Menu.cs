@@ -43,6 +43,19 @@ namespace ColorVision
 
         }
 
+        public MenuItem? FileMenuItem { get
+            {
+                foreach (var item in Menu.Items)
+                {
+                    if (item is MenuItem menuItem && menuItem.Header.ToString() == Properties.Resource.MenuFile)
+                    {
+                        return menuItem;
+                    }
+                }
+                return null;
+            } 
+        }
+
         public void AddMenuItem(MenuItem menuItem, int index = -1)
         {
             if (index < 0 || index > Menu.Items.Count)
@@ -197,7 +210,6 @@ namespace ColorVision
         }
         private DateTime lastClickTime = DateTime.MinValue;
 
-
         private void MenuItem_Click_2(object sender, RoutedEventArgs e)
         {
             OpenSetting();
@@ -222,50 +234,10 @@ namespace ColorVision
         private void Menu_Initialized(object sender, EventArgs e)
         {
             MenuManager.GetInstance().Menu = Menu1;
-
             Application.Current.MainWindow = this;
             Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.Settings, new Hotkey(Key.I, ModifierKeys.Control), OpenSetting));
             Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.About, new Hotkey(Key.F1, ModifierKeys.Control), AboutMsg));
-            Application.Current.MainWindow.AddHotKeys(new HotKeys("MsgList", new Hotkey(Key.M, ModifierKeys.Control), MsgList));
-
-            MenuItem RecentListMenuItem = null;
-
-            RecentListMenuItem ??= new MenuItem();
-            RecentListMenuItem.Header = Properties.Resource.RecentFiles;
-            RecentListMenuItem.SubmenuOpened += (s, e) =>
-            {
-                var firstMenuItem = RecentListMenuItem.Items[0];
-                foreach (var item in  SolutionManager.GetInstance().SolutionHistory.RecentFiles)
-                {
-                    if (Directory.Exists(item))
-                    {
-                        MenuItem menuItem = new MenuItem();
-                        menuItem.Header = item;
-                        menuItem.Click += (sender, e) =>
-                        {
-                            SolutionManager.GetInstance().OpenSolutionDirectory(item);
-                        };
-                        RecentListMenuItem.Items.Add(menuItem);
-                    }
-                    else
-                    {
-                        SolutionManager.GetInstance().SolutionHistory.RecentFiles.Remove(item);
-                    }
-
-
-
-                };
-                RecentListMenuItem.Items.Remove(firstMenuItem);
-
-            };
-            RecentListMenuItem.SubmenuClosed += (s, e) => {
-                RecentListMenuItem.Items.Clear();
-                RecentListMenuItem.Items.Add(new MenuItem());
-            };
-            RecentListMenuItem.Items.Add(new MenuItem());
-
-            FileMenuItem.Items.Insert(FileMenuItem.Items.Count-2, RecentListMenuItem);
-
+            Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.MsgList, new Hotkey(Key.M, ModifierKeys.Control), MsgList));
         }
 
         private void Update_Click(object sender, RoutedEventArgs e)

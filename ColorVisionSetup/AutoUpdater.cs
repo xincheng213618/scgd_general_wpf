@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using ColorVision.Common.MVVM;
 
-namespace ColorVision.Update
+namespace ColorVisionSetup
 {
     public class AutoUpdater : ViewModelBase
     {

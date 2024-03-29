@@ -334,7 +334,7 @@
     <value>启用数据库</value>
   </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
-    <value>启动恢复界面布局</value>
+    <value>恢复上次退出时窗口的大小和位置</value>
   </data>
   <data name="AutoSwitchSelectedView" xml:space="preserve">
     <value>自动切换选中视图</value>
@@ -680,5 +680,8 @@
   </data>
   <data name="NewSolution" xml:space="preserve">
     <value>新建工程</value>
+  </data>
+  <data name="MsgList" xml:space="preserve">
+    <value>消息列表</value>
   </data>
 </root>

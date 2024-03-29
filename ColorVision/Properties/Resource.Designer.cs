@@ -952,6 +952,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 消息列表 的本地化字符串。
+        /// </summary>
+        public static string MsgList {
+            get {
+                return ResourceManager.GetString("MsgList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Msg记录窗口 的本地化字符串。
         /// </summary>
         public static string MsgLogWindow {
@@ -1465,7 +1474,7 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 启动恢复界面布局 的本地化字符串。
+        ///   查找类似 恢复上次退出时窗口的大小和位置 的本地化字符串。
         /// </summary>
         public static string StartRecoverUILayout {
             get {

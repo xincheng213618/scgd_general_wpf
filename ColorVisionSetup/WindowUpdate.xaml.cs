@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows;
 
-namespace ColorVision.Update
+namespace ColorVisionSetup
 {
     /// <summary>
     /// WindowUpdate.xaml 的交互逻辑
