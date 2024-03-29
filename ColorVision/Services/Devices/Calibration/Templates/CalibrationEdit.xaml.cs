@@ -6,6 +6,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Common.Utilities;
+using ColorVision.Services.Type;
 
 namespace ColorVision.Services.Devices.Calibration.Templates
 {
@@ -46,36 +47,36 @@ namespace ColorVision.Services.Devices.Calibration.Templates
                 }
                 if (item is CalibrationResource calibrationResource)
                 {
-                    switch ((ResouceType)calibrationResource.SysResourceModel.Type)
+                    switch ((ServiceTypes)calibrationResource.SysResourceModel.Type)
                     {
-                        case ResouceType.DarkNoise:
+                        case ServiceTypes.DarkNoise:
                             DarkNoiseList.Add(calibrationResource);
                             break;
-                        case ResouceType.DefectPoint:
+                        case ServiceTypes.DefectPoint:
                             DefectPointList.Add(calibrationResource);
                             break;
-                        case ResouceType.DSNU:
+                        case ServiceTypes.DSNU:
                             DSNUList.Add(calibrationResource);
                             break;
-                        case ResouceType.Uniformity:
+                        case ServiceTypes.Uniformity:
                             UniformityList.Add(calibrationResource);
                             break;
-                        case ResouceType.Distortion:
+                        case ServiceTypes.Distortion:
                             DistortionList.Add(calibrationResource);
                             break;
-                        case ResouceType.ColorShift:
+                        case ServiceTypes.ColorShift:
                             ColorShiftList.Add(calibrationResource);
                             break;
-                        case ResouceType.Luminance:
+                        case ServiceTypes.Luminance:
                             LuminanceList.Add(calibrationResource);
                             break;
-                        case ResouceType.LumOneColor:
+                        case ServiceTypes.LumOneColor:
                             LumOneColorList.Add(calibrationResource);
                             break;
-                        case ResouceType.LumFourColor:
+                        case ServiceTypes.LumFourColor:
                             LumFourColorList.Add(calibrationResource);
                             break;
-                        case ResouceType.LumMultiColor:
+                        case ServiceTypes.LumMultiColor:
                             LumMultiColorList.Add(calibrationResource);
                             break;
                         default:

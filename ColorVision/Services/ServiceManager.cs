@@ -285,7 +285,7 @@ namespace ColorVision.Services
                 List<SysResourceModel> sysResourceModels = sysResourceDao1.GetResourceItems(deviceService.SysResourceModel.Id, UserConfig.TenantId);
                 foreach (var sysResourceModel in sysResourceModels)
                 {
-                    if (sysResourceModel.Type == (int)ResourceType.Group)
+                    if (sysResourceModel.Type == (int)ServiceTypes.Group)
                     {
                         GroupResource groupResource = new GroupResource(sysResourceModel);
                         deviceService.AddChild(groupResource);
@@ -317,7 +317,7 @@ namespace ColorVision.Services
             List<SysResourceModel> sysResourceModels = sysResourceDao1.GetGroupResourceItems(groupResource.SysResourceModel.Id);
             foreach (var sysResourceModel in sysResourceModels)
             {
-                if (sysResourceModel.Type == (int)ResourceType.Group)
+                if (sysResourceModel.Type == (int)ServiceTypes.Group)
                 {
                     GroupResource groupResource1 = new GroupResource(sysResourceModel);
                     LoadgroupResource(groupResource1);

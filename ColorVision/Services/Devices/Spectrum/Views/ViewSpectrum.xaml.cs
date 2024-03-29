@@ -23,15 +23,9 @@ namespace ColorVision.Services.Devices.Spectrum.Views
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewSpectrum : UserControl,IView,INotifyPropertyChanged
+    public partial class ViewSpectrum : UserControl,IView
     {
-        public event PropertyChangedEventHandler? PropertyChanged;
-        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
         public ObservableCollection<ViewResultSpectrum> ViewResultSpectrums { get; set; } = new ObservableCollection<ViewResultSpectrum>();
-
-
-
         public View View { get; set; }
         public DeviceSpectrum Device { get; set; }
 
