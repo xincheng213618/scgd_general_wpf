@@ -16,6 +16,7 @@ namespace ColorVision.Services.Devices.Spectrum.Views
     {
         private static int No;
         public int Id { get; set; }
+        public int IdShow { get; set; }
 
         public DateTime? CreateTime { get; set; }
         public string? Batch { get; set; }

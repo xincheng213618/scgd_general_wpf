@@ -30,6 +30,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
 
         public int Id { get => _Id;  set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
+        public int IdShow { get; set; }
 
         public string? Batch { get => _Batch;  set { _Batch = value; NotifyPropertyChanged(); } }
         private string? _Batch;

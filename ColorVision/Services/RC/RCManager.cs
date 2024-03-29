@@ -24,10 +24,24 @@ namespace ColorVision.Services.RC
         private RCManager()
         {
             ServiceController = new ServiceController("RegistrationCenterService");
-        }
-        private ServiceController ServiceController { get; set; } = new ServiceController("RegistrationCenterService");
 
-        public bool IsLocalServiceRunning() => ServiceController.Status == ServiceControllerStatus.Running;
+        }
+        private ServiceController ServiceController { get; set; }
+
+        public bool IsLocalServiceRunning() 
+        {
+            try
+            {
+                return ServiceController != null && ServiceController.Status == ServiceControllerStatus.Running
+
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex);
+                return false;
+            }
+        }
+
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]

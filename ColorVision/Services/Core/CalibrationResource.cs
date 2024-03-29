@@ -9,7 +9,6 @@ namespace ColorVision.Services.Core
         { 
         }
 
-
-
+        public int IdShow { get; set; }
     }
 }

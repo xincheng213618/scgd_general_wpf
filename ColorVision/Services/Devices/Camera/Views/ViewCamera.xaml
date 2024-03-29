@@ -119,7 +119,7 @@
                         <GridViewColumn  Header="序号" Width="50">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
-                                    <TextBlock Text="{Binding Id}"/>
+                                    <TextBlock Text="{Binding IdShow}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>

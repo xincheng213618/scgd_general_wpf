@@ -102,7 +102,7 @@
                             <GridViewColumn   Header="序号" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSpectrum}">
-                                        <TextBlock Text="{Binding Id}"/>
+                                        <TextBlock Text="{Binding IdShow}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

@@ -40,6 +40,7 @@ namespace ColorVision.Services.Devices.Camera.Dao
     {
         public int Id { get; set; }
         public int PKId { get => Id; set => Id = value; }
+        public int IdShow { get; set; }
 
 
         public CameraLicenseModel()
