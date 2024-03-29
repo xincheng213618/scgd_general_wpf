@@ -173,6 +173,7 @@ namespace ColorVision.Services.Terminal
                     {
                         Id = CreateCode.Text,
                         Name = CreateName.Text,
+                        IsCCTWave = true,
                         FileServerCfg = new FileServerCfg()
                         {
                             Endpoint = "127.0.0.1",
