@@ -1211,48 +1211,6 @@ namespace ColorVision.Services.Templates.POI
 
         }
 
-        private WindowStatus OldWindowStatus { get; set; }
-
-        private void Button8_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is ToggleButton toggleButton)
-            {
-                var window = GetWindow(ImageContentGrid);
-
-                if (toggleButton.IsChecked == true)
-                {
-                    if (ImageContentGrid.Parent is Panel p)
-                    {
-                        OldWindowStatus = new WindowStatus();
-                        OldWindowStatus.Parent = p;
-                        OldWindowStatus.WindowState = window.WindowState;
-                        OldWindowStatus.WindowStyle = window.WindowStyle;
-                        OldWindowStatus.ResizeMode = window.ResizeMode;
-                        OldWindowStatus.Root = window.Content;
-                        window.WindowStyle = WindowStyle.None;
-                        window.WindowState = WindowState.Maximized;
-                        OldWindowStatus.Parent.Children.Remove(ImageContentGrid);
-                        window.Content = ImageContentGrid;
-                      }
-                    else
-                    {
-                        return;
-                    }
-                }
-                else
-                {
-
-                    window.WindowStyle = OldWindowStatus.WindowStyle;
-                    window.WindowState = OldWindowStatus.WindowState;
-                    window.ResizeMode = OldWindowStatus.ResizeMode;
-
-                    window.Content = OldWindowStatus.Root;
-                    OldWindowStatus.Parent.Children.Add(ImageContentGrid);
-                }
-            }
-        }
-
-
 
         private void DatumAreaImport_Click(object sender, RoutedEventArgs e)
         {

@@ -526,9 +526,10 @@
                     <Button Command="{Binding ZoomNone}"  Margin="1,0">
                         <Image  Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageexpend}"/>
                     </Button>
-                    <ToggleButton Click="Button8_Click" Margin="1,0" >
+                    <ToggleButton Command="{Binding MaxCommand}" Margin="1,0" >
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMax}"/>
                     </ToggleButton>
+                    <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
                     <Button Content="属性" Command="{Binding OpenProperty}" />
                     <ToggleButton  IsChecked="{Binding EraseVisual}" Margin="1,0" >
                         <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageeraser}"/>

@@ -634,7 +634,9 @@ namespace ColorVision.Media
             });
             ToolBar1.Visibility = Visibility.Visible;
             ImageShow.ImageInitialize();
-        }
+
+            ToolBarTop.ToolBarScaleRuler.IsShow = true;
+        }  
 
 
         public ImageSource PseudoImage { get; set; }

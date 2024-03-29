@@ -31,6 +31,10 @@ namespace ColorVision.Services.Devices.Camera.Configs
         public int Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
         private int _Gain = 10;
 
+        public double ScaleFactor { get => _ScaleFactor;set { _ScaleFactor = value; NotifyPropertyChanged(); } }
+        private double _ScaleFactor = 1.0;
+
+
         [JsonIgnore]
         public bool IsExpThree
         {
