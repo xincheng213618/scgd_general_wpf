@@ -70,8 +70,8 @@ namespace ColorVision.Draw
             Crosshair = new Crosshair(zombox, drawCanvas);
             ToolBarMeasure = new ToolBarMeasure(Parent, zombox, drawCanvas);
             ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zombox, drawCanvas);
-            ToolConcentricCircle = new ToolReferenceLine(zombox, drawCanvas);
             ToolBarScaleRuler.IsShow = true;
+            ToolConcentricCircle = new ToolReferenceLine(zombox, drawCanvas);
 
             ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill());
             ZoomUniform = new RelayCommand(a => ZoomboxSub.ZoomUniform());
@@ -129,7 +129,7 @@ namespace ColorVision.Draw
         public void ClearImage()
         {
             Image.Source = null;
-            ToolBarScaleRuler.IsShow = true;
+            ToolBarScaleRuler.IsShow = false;
             ClearImageEventHandler?.Invoke(this, new EventArgs());
         }
 

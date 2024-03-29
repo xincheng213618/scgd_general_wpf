@@ -58,6 +58,7 @@ namespace ColorVision.Media
             ToolBar1.DataContext = ToolBarTop;
             ToolBar2.DataContext = ToolBarTop;
             ToolBarTop.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
+            ToolBarTop.ToolBarScaleRuler.IsShow = true;
             ListView1.ItemsSource = DrawingVisualLists;
 
             ToolBarTop.ClearImageEventHandler += (s, e) => Clear();
@@ -537,7 +538,6 @@ namespace ColorVision.Media
                 }
                 SetImageSource(dst.ToWriteableBitmap());
                 dst.Dispose();
-
             }
         }
 

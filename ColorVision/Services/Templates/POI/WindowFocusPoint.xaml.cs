@@ -75,6 +75,7 @@ namespace ColorVision.Services.Templates.POI
             };
 
             ToolBarTop = new ToolBarTop(ImageContentGrid, Zoombox1, ImageShow);
+            ToolBarTop.ToolBarScaleRuler.IsShow = false;
             ToolBarTop.Activate = true;
             ToolBar1.DataContext = ToolBarTop;
 
@@ -308,7 +309,6 @@ namespace ColorVision.Services.Templates.POI
                 {
                     BitmapSource bitmapImage = new BitmapImage(new Uri(filePath));
                     SetImageSource(bitmapImage);
-                    Zoombox1.ZoomUniform();
                 }
             }
         }
@@ -323,6 +323,7 @@ namespace ColorVision.Services.Templates.POI
                 InitDatumAreaValue(bitmapSource.PixelWidth, bitmapSource.PixelHeight);
             }
             ImageShow.ImageInitialize();
+            Zoombox1.ZoomUniform();
         }
 
         private bool Init; 

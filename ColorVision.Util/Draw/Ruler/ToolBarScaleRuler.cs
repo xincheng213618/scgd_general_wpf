@@ -76,7 +76,6 @@ namespace ColorVision.Draw.Ruler
                     GridEx.Children.Remove(ScalRuler);
                     drawCanvas.MouseWheel -= DrawCanvas_MouseWheel;
                     GridEx.SizeChanged -= GridEx_SizeChanged;
-
                 }
 
             }
