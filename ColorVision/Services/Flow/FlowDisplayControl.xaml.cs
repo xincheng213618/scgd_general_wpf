@@ -9,6 +9,7 @@ using ColorVision.Settings;
 using ColorVision.Themes;
 using Panuon.WPF.UI;
 using System;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -149,6 +150,7 @@ namespace ColorVision.Services.Flow
         public ImageSource Icon { get => _Icon; set { _Icon = value; } }
         private ImageSource _Icon;
 
+
         private  void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
             if (FlowTemplate.SelectedValue is FlowParam flowParam)
@@ -159,33 +161,17 @@ namespace ColorVision.Services.Flow
                     flowControl = new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
 
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
-                    handler.Cancelling += delegate
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            ButtonRun.Visibility = Visibility.Visible;
-                            ButtonStop.Visibility = Visibility.Collapsed;
-                        });
 
-                        flowControl?.Stop();
-                        handler?.Close();
-                    };
+                    handler.Cancelling += Handler_Cancelling; ;
 
                     flowControl.FlowData += (s, e) =>
                     {
                         if (s is FlowControlData msg)
                         {
-                            try
+                            Application.Current.Dispatcher.Invoke(() =>
                             {
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
-                                });
-                            }
-                            catch 
-                            {
-
-                            }
+                                handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
+                            });
                         }
                     };
                     flowControl.FlowCompleted += FlowControl_FlowCompleted;
@@ -199,6 +185,23 @@ namespace ColorVision.Services.Flow
                 {
                     MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败","ColorVision");
                 }
+            }
+        }
+
+        private void Handler_Cancelling(object? sender, CancelEventArgs e)
+        {
+            if (sender is IPendingHandler pendingHandler)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ButtonRun.Visibility = Visibility.Visible;
+                    ButtonStop.Visibility = Visibility.Collapsed;
+                });
+
+                flowControl?.Stop();
+
+                pendingHandler.Cancelling -= Handler_Cancelling;
+                pendingHandler?.Close();
             }
         }
 
