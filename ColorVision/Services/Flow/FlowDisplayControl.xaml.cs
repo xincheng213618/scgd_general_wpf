@@ -30,6 +30,7 @@ namespace ColorVision.Services.Flow
         }
 
         public ConfigHandler ConfigHandler { get; set; }
+        MenuItem menuItem { get; set; }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -76,7 +77,7 @@ namespace ColorVision.Services.Flow
                     View.FlowEngineControl.LoadFromBase64(string.Empty);
                 }
             };
-            FlowTemplate.SelectedIndex = -1;
+            FlowTemplate.SelectedIndex = 0;
             this.DataContext = flowControl;
             this.PreviewMouseDown += UserControl_PreviewMouseDown;
 
@@ -88,25 +89,31 @@ namespace ColorVision.Services.Flow
             MenuItem menuItem2 = new MenuItem() { Header = ColorVision.Properties.Resource.StopProcess };
             menuItem2.Click += (s, e) => Button_FlowStop_Click(s, e);
             menuItem.Items.Add(menuItem2);
-        }
-        MenuItem menuItem { get; set; }
 
-        private bool _IsSelected;
-        public bool IsSelected { get => _IsSelected;
-            set 
-            { 
-                _IsSelected = value; 
-                if (value)
-                {
-                    MenuManager.GetInstance().AddMenuItem(menuItem,1);
-                }
-                else
-                {
-                    MenuManager.GetInstance().RemoveMenuItem(menuItem);
-                }
-                DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
-            }
+            Selected += (s, e) =>
+            {
+                MenuManager.GetInstance().AddMenuItem(menuItem, 1);
+            };
+            Unselected += (s, e) =>
+            {
+                MenuManager.GetInstance().RemoveMenuItem(menuItem);
+            };
+            SelectChanged += (s, e) =>
+            {
+                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
+            };
+            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+            {
+                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
+            };
         }
+
+        public event RoutedEventHandler Selected;
+        public event RoutedEventHandler Unselected;
+        public event EventHandler SelectChanged;
+        private bool _IsSelected;
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
+
 
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -227,6 +234,9 @@ namespace ColorVision.Services.Flow
             FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
         }
         FlowControl rcflowControl;
+
+
+
         private void Button_RCFlowRun_Click(object sender, RoutedEventArgs e)
         {
             if (FlowTemplate.SelectedItem is TemplateModel<FlowParam> flowParam)
