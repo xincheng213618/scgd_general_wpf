@@ -129,7 +129,7 @@ namespace ColorVision.Solution
         }
 
 
-        public DirectoryInfo SolutionDirectory { get; private set; }
+        public DirectoryInfo? SolutionDirectory { get; private set; }
 
         public bool OpenSolutionDirectory(string SolutionFullPath)
         {
@@ -145,8 +145,20 @@ namespace ColorVision.Solution
             }
 
             CurrentSolution.FullName = SolutionFullPath;
-            SolutionDirectory = new DirectoryInfo(CurrentSolution.FullName);
-            SolutionHistory.InsertFile(SolutionDirectory.FullName);
+
+            if (Directory.Exists(SolutionFullPath))
+            {
+                SolutionDirectory = new DirectoryInfo(CurrentSolution.FullName);
+            }
+
+            if (File.Exists(SolutionFullPath))
+            {
+                FileInfo fileInfo = new FileInfo(SolutionFullPath);
+                SolutionDirectory = fileInfo.Directory;
+            }
+
+
+            SolutionHistory.InsertFile(CurrentSolution.FullName);
             SolutionLoaded?.Invoke(CurrentSolution, new EventArgs());
 
             SolutionExplorers.Clear();
