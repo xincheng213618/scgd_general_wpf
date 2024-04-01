@@ -88,8 +88,6 @@ namespace ColorVision.Solution.Views
             {
                 ViewBatchResults.AddUnique(new ViewBatchResult(item));
             }
-            string FileName = "C:\\Users\\17917\\Desktop\\20240305T134730.0736284.cvraw";
-            Common.NativeMethods.ShortcutCreator.CreateShortcut(Path.GetFileName(FileName),SolutionManager.GetInstance().SolutionDirectory.FullName, FileName);
         }
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)

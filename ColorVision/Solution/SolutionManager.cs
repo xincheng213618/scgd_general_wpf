@@ -200,6 +200,12 @@ namespace ColorVision.Solution
             SolutionCreated?.Invoke(CurrentSolution, new EventArgs());
         }
 
+        public void CreateShortcut(string FileName)
+        {
+            if (SolutionDirectory!=null)
+                Common.NativeMethods.ShortcutCreator.CreateShortcut(Path.GetFileName(FileName),SolutionDirectory.FullName +"\\Image", FileName);
+        }
+
         public void OpenSolutionWindow()
         {
             OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
