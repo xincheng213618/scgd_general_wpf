@@ -20,7 +20,7 @@ using System.Windows.Media.Media3D;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ColorVision.Solution.View
+namespace ColorVision.Solution.Views
 {
     /// <summary>
     /// BatchShowPage.xaml 的交互逻辑
