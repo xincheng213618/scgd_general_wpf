@@ -56,10 +56,6 @@ IDI_ICON1               ICON                    "ColorVision1.ico"
 
 IDI_ICON2               ICON                    "raw.ico"
 
-IDI_ICON3               ICON                    "Grid.ico"
-
-IDI_ICON4               ICON                    "grif.ico"
-
 #endif    // 中文(简体，中国) resources
 /////////////////////////////////////////////////////////////////////////////
 
