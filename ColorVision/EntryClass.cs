@@ -81,9 +81,9 @@ namespace ColorVision
                 IntPtr hWnd = CheckAppRunning.Check("ColorVision");
                 if (hWnd != IntPtr.Zero)
                 {
-                    if (args.Length > 0 && File.Exists(SolutionPath))
+                    if (args.Length > 0)
                     {
-                        ushort atom = GlobalAddAtom(SolutionPath);
+                        ushort atom = GlobalAddAtom(args[0]);
                         SendMessage(hWnd, WM_USER + 1, (IntPtr)atom, IntPtr.Zero);  // 发送消息
                     }
                     log.Info("程序已经打开");
