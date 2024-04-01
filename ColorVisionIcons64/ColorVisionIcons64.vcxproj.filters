@@ -36,6 +36,12 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
+    <Image Include="ColorVision1.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="raw.ico">
+      <Filter>资源文件</Filter>
+    </Image>
     <Image Include="Grid.ico">
       <Filter>资源文件</Filter>
     </Image>

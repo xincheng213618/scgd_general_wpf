@@ -148,8 +148,10 @@
     <ResourceCompile Include="ColorVisionIcons64.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="ColorVision1.ico" />
     <Image Include="Grid.ico" />
     <Image Include="grif.ico" />
+    <Image Include="raw.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
