@@ -31,7 +31,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="GridIcons64.rc">
+    <ResourceCompile Include="ColorVisionIcons64.rc">
       <Filter>资源文件</Filter>
     </ResourceCompile>
   </ItemGroup>
@@ -40,9 +40,6 @@
       <Filter>资源文件</Filter>
     </Image>
     <Image Include="grif.ico">
-      <Filter>资源文件</Filter>
-    </Image>
-    <Image Include="..\..\C#\ToolHash\Paomedia-Small-N-Flat-Key.ico">
       <Filter>资源文件</Filter>
     </Image>
   </ItemGroup>

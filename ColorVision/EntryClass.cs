@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Windows;
 
 namespace ColorVision
 {
@@ -53,6 +54,7 @@ namespace ColorVision
                     if (args[i].EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
                     {
                         SolutionPath = args[i];
+                        MessageBox.Show(SolutionPath);
                     }
                 }
             }

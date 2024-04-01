@@ -25,7 +25,13 @@ namespace ColorVision.Solution
 
         private static SolutionManager _instance;
         private static readonly object _locker = new();
-        public static SolutionManager GetInstance() { lock (_locker) { return _instance ??= new SolutionManager(); } }
+        public static SolutionManager GetInstance() { 
+            lock (_locker)
+            { 
+                if (_instance == null)
+                    _instance = new SolutionManager();
+                return _instance;
+            } }
 
         //工程配置文件
         public SolutionConfig CurrentSolution { get => SoftwareConfig.SolutionConfig; }
@@ -56,19 +62,16 @@ namespace ColorVision.Solution
             SolutionExplorers = new ObservableCollection<SolutionExplorer>();
 
             SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-
             if (File.Exists(App.SolutionPath))
             {
                 CurrentSolution.FullName = App.SolutionPath;
+                OpenSolution(CurrentSolution.FullName);
             }
             else
             {
                 SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
+                OpenSolutionDirectory(CurrentSolution.FullName);
             }
-
-            //ClearCache();
-            OpenSolutionDirectory(CurrentSolution.FullName);
-
 
             SolutionOpenCommand = new RelayCommand((a) => OpenSolutionWindow());
             SolutionCreateCommand = new RelayCommand((a) => NewCreateWindow());
@@ -132,7 +135,7 @@ namespace ColorVision.Solution
         {
             log.Debug("正在打开工程:" + SolutionFullPath);
 
-            if (!Directory.Exists(SolutionFullPath))
+            if (!Directory.Exists(SolutionFullPath) && !File.Exists(SolutionFullPath))
             {
                 string DefaultPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision\\默认工程";
                 if (!Directory.Exists(DefaultPath))
@@ -140,6 +143,7 @@ namespace ColorVision.Solution
                 CreateSolution(new DirectoryInfo(DefaultPath));
                 SolutionFullPath = DefaultPath;
             }
+
             CurrentSolution.FullName = SolutionFullPath;
             SolutionDirectory = new DirectoryInfo(CurrentSolution.FullName);
             SolutionHistory.InsertFile(SolutionDirectory.FullName);
@@ -155,13 +159,18 @@ namespace ColorVision.Solution
         {
             if (File.Exists(FullPath)&& FullPath.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
             {
+                FileInfo fileInfo = new FileInfo(FullPath);
                 CurrentSolution.FullName = FullPath;
-                SolutionHistory.InsertFile(SolutionDirectory.FullName);
+                SolutionDirectory = fileInfo.Directory;
+                SolutionHistory.InsertFile(FullPath);
                 SolutionLoaded?.Invoke(CurrentSolution, new EventArgs());
-
                 SolutionExplorers.Clear();
                 CurrentSolutionExplorer = new SolutionExplorer(FullPath);
                 SolutionExplorers.Add(CurrentSolutionExplorer);
+            }
+            else
+            {
+                MessageBox.Show("打开工程失败");
             }
             return true;
         }
