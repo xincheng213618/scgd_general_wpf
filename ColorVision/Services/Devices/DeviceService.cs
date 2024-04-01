@@ -205,13 +205,18 @@ namespace ColorVision.Services.Devices
 
         public event EventHandler ConfigChanged;
 
-        public override void Save()
+        public void SaveConfig()
         {
-            base.Save();
             SysResourceModel.Code = Config.Code;
             SysResourceModel.Name = Config.Name;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             ServiceManager.GetInstance().VSysResourceDao.Save(new SysResourceModel(SysResourceModel));
+        }
+
+        public override void Save()
+        {
+            base.Save();
+            SaveConfig();
             IsEditMode = false;
             ///每次提交之后重启服务
             MQTTRCService.GetInstance().RestartServices(SysResourceModel.TypeCode, SysResourceModel.PCode, Config.Code);

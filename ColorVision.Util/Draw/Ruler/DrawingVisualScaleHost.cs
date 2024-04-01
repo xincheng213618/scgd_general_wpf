@@ -54,7 +54,7 @@ namespace ColorVision.Draw.Ruler
             {
                 if (ParentWidth > 200 && ParentHeight>200)
                 {
-                    double result = length < 10 ? 5 : length < 20 ? 10 : length < 50 ? 20 : length < 100 ? 50 : length < 200 ? 100 : length < 500 ? 200 : length < 1000 ? 500 : length < 2000 ? 1000 : length < 4000 ? 2000 : length < 8000 ? 4000 : 8000;
+                    double result = length < 2 ? 1: length < 5 ? 2 : length < 10 ? 5 : length < 20 ? 10 : length < 50 ? 20 : length < 100 ? 50 : length < 200 ? 100 : length < 500 ? 200 : length < 1000 ? 500 : length < 2000 ? 1000 : length < 4000 ? 2000 : length < 8000 ? 4000 : 8000;
 
                     double X = 60;
                     double Y = 50;

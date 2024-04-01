@@ -190,10 +190,10 @@ namespace ColorVision
                 await Task.Delay(200);
             }
 
-            await Task.Delay(100);
+            await Task.Delay(50);
             Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}正在加载工程"; });
             SolutionManager.GetInstance();
-            await Task.Delay(200);
+            await Task.Delay(50);
             Application.Current.Dispatcher.Invoke(() =>
             {
 
