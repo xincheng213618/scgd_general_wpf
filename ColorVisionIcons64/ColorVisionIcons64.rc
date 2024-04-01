@@ -56,6 +56,8 @@ IDI_ICON1               ICON                    "ColorVision1.ico"
 
 IDI_ICON2               ICON                    "raw.ico"
 
+IDI_ICON3               ICON                    "cie.ico"
+
 #endif    // 中文(简体，中国) resources
 /////////////////////////////////////////////////////////////////////////////
 
