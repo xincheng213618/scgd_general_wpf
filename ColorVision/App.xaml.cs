@@ -34,6 +34,8 @@ namespace ColorVision
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
+
             var SoftwareSetting = ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting;
             this.ApplyTheme(SoftwareSetting.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(SoftwareSetting.UICulture);
