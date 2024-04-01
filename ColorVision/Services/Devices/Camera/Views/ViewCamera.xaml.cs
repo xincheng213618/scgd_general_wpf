@@ -2,6 +2,7 @@
 using ColorVision.Common.Sorts;
 using ColorVision.Common.Utilities;
 using ColorVision.Draw;
+using ColorVision.Draw.Ruler;
 using ColorVision.Media;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
@@ -48,6 +49,17 @@ namespace ColorVision.Services.Devices.Camera.Views
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             View= new View();
+
+            ImageView.ToolBarTop.ToolBarScaleRuler.ScalRuler.PropertyChanged += (s, e) =>
+            {
+                if (s is DrawingVisualScaleHost host)
+                {
+                    if (e.PropertyName == "ActualLength")
+                        Device.Config.ScaleFactor = host.ActualLength;
+                    else if (e.PropertyName == "PhysicalUnit")
+                        Device.Config.ScaleFactorUnit = host.PhysicalUnit;
+                }
+            };
 
             listView1.ItemsSource = ViewResultCameras;
 
