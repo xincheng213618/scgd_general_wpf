@@ -30,6 +30,8 @@ namespace ColorVision
 
         public static string SolutionPath { get; set; } = string.Empty;
 
+        public static string CVRAWPath { get; set; } = string.Empty;
+
         [STAThread]
         [DebuggerNonUserCode]
         [GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
@@ -54,7 +56,11 @@ namespace ColorVision
                     if (args[i].EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
                     {
                         SolutionPath = args[i];
-                        MessageBox.Show(SolutionPath);
+                    }
+
+                    if (args[i].EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
+                    {
+                        CVRAWPath = args[i];
                     }
                 }
             }
