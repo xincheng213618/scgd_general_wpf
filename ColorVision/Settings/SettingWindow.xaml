@@ -160,7 +160,6 @@
                                     </DockPanel>
                                 </StackPanel>
                             </Border>
-
                         </ScrollViewer>
                     </GroupBox>
                 </Grid>

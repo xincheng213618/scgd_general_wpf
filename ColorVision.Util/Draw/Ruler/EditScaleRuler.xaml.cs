@@ -31,10 +31,22 @@ namespace ColorVision.Draw.Ruler
         {
             this.DataContext = DrawingVisualScaleHost1;
         }
-
+        private void Cal_Click(object sender, RoutedEventArgs e)
+        {
+            if (double.TryParse(TextPiel.Text,out double piex) && double.TryParse(TextActual.Text, out double actual))
+            {
+                DrawingVisualScaleHost1.ActualLength =  actual/ piex;
+            }
+            CalPopup.IsOpen = false;
+        }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
+        }
+
+        private void Calculate_Click(object sender, RoutedEventArgs e)
+        {
+            CalPopup.IsOpen = true;
         }
     }
 }
