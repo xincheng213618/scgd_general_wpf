@@ -424,13 +424,6 @@ namespace ColorVision.Services
             }
         }
 
-        public BatchResultMasterModel BatchSave(string sn)
-        {
-            BatchResultMasterModel model = new BatchResultMasterModel(sn, UserConfig.TenantId);
-            batchDao.Save(model);
-            return model;
-        }
-
         public int ResultBatchSave(string sn)
         {
             BatchResultMasterModel model = new BatchResultMasterModel(sn, UserConfig.TenantId);

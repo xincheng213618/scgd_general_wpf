@@ -59,6 +59,9 @@ namespace ColorVision.Draw
 
         public ToolReferenceLine ToolConcentricCircle { get; set; }
 
+        public double ActualLength { get; set; } = 1;
+        public string PhysicalUnit { get; set; } = "Px";
+
 
         public ToolBarTop(FrameworkElement Parent,ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
@@ -70,6 +73,20 @@ namespace ColorVision.Draw
             Crosshair = new Crosshair(zombox, drawCanvas);
             ToolBarMeasure = new ToolBarMeasure(Parent, zombox, drawCanvas);
             ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zombox, drawCanvas);
+
+            ToolBarScaleRuler.ScalRuler.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(ToolBarScaleRuler.ScalRuler.ActualLength))
+                {
+
+                }
+                else if (e.PropertyName == nameof(ToolBarScaleRuler.ScalRuler.PhysicalUnit))
+                {
+
+                }
+
+            };
+
             ToolConcentricCircle = new ToolReferenceLine(zombox, drawCanvas);
 
             ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill());

@@ -364,7 +364,6 @@ namespace ColorVision.Services.Devices.Camera
         public MsgRecord GetData(double[] expTime, CalibrationParam param)
         {
             string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            var model = ServiceManager.GetInstance().BatchSave(SerialNumber);
             var Params = new Dictionary<string, object>() { };
             MsgSend msg;
             msg = new MsgSend
@@ -387,86 +386,6 @@ namespace ColorVision.Services.Devices.Camera
             for (int i = 0; i < expTime.Length; i++) timeout += expTime[i];
             return PublishAsyncClient(msg, timeout + 10000);
         }  
-        public MsgRecord GetData_Old(double expTime, double gain)
-        {
-            string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            var model = ServiceManager.GetInstance().BatchSave(SerialNumber);
-
-            MsgSend msg;
-
-            if ((!Config.IsExpThree) && (Config.CameraType == CameraType.CV_Q || Config.CameraType == CameraType.MIL_CL))
-            {
-                List<Dictionary<string, object>> Param = new List<Dictionary<string, object>>();
-                foreach (var item in Config.CFW.ChannelCfgs)
-                {
-                    Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
-                    keyValuePairs.Add("eImgChlType", (int)item.Chtype);
-                    keyValuePairs.Add("nPort", item.Cfwport);
-
-                    if (item.Chtype == ImageChannelType.Gray_X)
-                        keyValuePairs.Add("dExp", Config.ExpTime);
-                    if (item.Chtype == ImageChannelType.Gray_Y)
-                        keyValuePairs.Add("dExp", Config.ExpTime);
-                    if (item.Chtype == ImageChannelType.Gray_Z)
-                        keyValuePairs.Add("dExp", Config.ExpTime);
-
-                    Param.Add(keyValuePairs);
-                }
-
-                msg = new MsgSend
-                {
-                    EventName = "GetData",
-                    Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "Param", Param }, { "gain", gain } }
-                };
-
-            }
-            else if (Config.IsExpThree)
-            {
-                List<Dictionary<string,object>> Param = new List<Dictionary<string,object>>();
-
-
-                foreach (var item in Config.CFW.ChannelCfgs)
-                {
-                    Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
-                    keyValuePairs.Add("eImgChlType", (int)item.Chtype);
-                    keyValuePairs.Add("nPort", item.Cfwport);
-
-                    if (item.Chtype == ImageChannelType.Gray_X)
-                        keyValuePairs.Add("dExp", Config.ExpTimeR);
-                    if (item.Chtype == ImageChannelType.Gray_Y)
-                        keyValuePairs.Add("dExp", Config.ExpTimeG);
-                    if (item.Chtype == ImageChannelType.Gray_Z)
-                        keyValuePairs.Add("dExp", Config.ExpTimeB);
-
-                    Param.Add(keyValuePairs);
-                }
-
-                msg = new MsgSend
-                {
-                    EventName = "GetData",
-                    Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "Param", Param }, { "gain", gain } }
-                };
-            }
-            else
-            {
-
-                List<Dictionary<string, object>> Param = new List<Dictionary<string, object>>();
-                Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
-                keyValuePairs.Add("eImgChlType", (int)ImageChannelType.Gray_Y);
-                keyValuePairs.Add("nPort", -1);
-                keyValuePairs.Add("dExp", expTime);
-                Param.Add(keyValuePairs);
-
-                msg = new MsgSend
-                {
-                    EventName = "GetData",
-                    Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "Param", Param }, { "gain", gain } }
-                };
-            }
-
-            return PublishAsyncClient(msg, (Config.IsExpThree? expTime*3 : expTime) + 10000);
-        }
-
         public MsgRecord GetAllCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
 
         public MsgRecord AutoFocus()
