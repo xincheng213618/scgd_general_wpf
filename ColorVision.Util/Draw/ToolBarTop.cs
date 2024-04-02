@@ -108,6 +108,15 @@ namespace ColorVision.Draw
 
             RotateLeftCommand = new RelayCommand(a => RotateLeft());
             RotateRightCommand = new RelayCommand(a => RotateRight());
+
+            Parent.PreviewKeyDown += (s, e) =>
+            {
+                if (e.Key == Key.F11)
+                {
+                    if (!IsMax)
+                        MaxImage();
+                }
+            };
         }
 
         public void RotateRight()
@@ -142,6 +151,15 @@ namespace ColorVision.Draw
         public bool IsMax { get; set; }
         public void MaxImage()
         {
+            KeyEventHandler PreviewKeyDown =(s,e)=>
+            {
+                if (e.Key == Key.Escape)
+                {
+                    if (IsMax)
+                        MaxImage();
+                }
+            };
+
             var window = Window.GetWindow(Parent);
             if (!IsMax)
             {
@@ -159,6 +177,9 @@ namespace ColorVision.Draw
 
                     OldWindowStatus.Parent.Children.Remove(Parent);
                     window.Content = Parent;
+
+                    window.PreviewKeyDown -= PreviewKeyDown;
+                    window.PreviewKeyDown += PreviewKeyDown;
                 }
                 else if (Parent.Parent is ContentControl content)
                 {
@@ -173,6 +194,8 @@ namespace ColorVision.Draw
 
                     content.Content = null;
                     window.Content = Parent;
+                    window.PreviewKeyDown -= PreviewKeyDown;
+                    window.PreviewKeyDown += PreviewKeyDown;
                     return;
                 }
             }
@@ -197,7 +220,7 @@ namespace ColorVision.Draw
                     OldWindowStatus.ContentParent.Content = Parent;
                 }
 
-
+                window.PreviewKeyDown -= PreviewKeyDown;
             }
         }
 
