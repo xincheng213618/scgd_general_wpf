@@ -116,6 +116,14 @@ namespace ColorVision.Draw
                     if (!IsMax)
                         MaxImage();
                 }
+                if (e.Key == Key.Add)
+                {
+                    ZoomIncrease.RaiseExecute(e);
+                }
+                if (e.Key == Key.Subtract)
+                {
+                    ZoomDecrease.RaiseExecute(e);
+                }
             };
         }
 
