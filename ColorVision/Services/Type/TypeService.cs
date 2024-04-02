@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Terminal;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -10,6 +11,7 @@ namespace ColorVision.Services.Type
 {
     public enum ServiceTypes
     {
+        None = 0,
         Camera = 1,
         PG = 2,
         Spectrum = 3,
@@ -22,12 +24,27 @@ namespace ColorVision.Services.Type
         Motor = 10,
         Flowtime = 101,
         Flow = 12,
-    }
-
-
-    public enum ResourceType
-    {
-        Group = 1000
+        [Description("暗噪声")]
+        DarkNoise = 31,
+        [Description("缺陷点")]
+        DefectPoint = 32,
+        [Description("DSNU")]
+        DSNU = 33,
+        [Description("均匀场")]
+        Uniformity = 34,
+        [Description("畸变")]
+        Distortion = 35,
+        [Description("色偏")]
+        ColorShift = 36,
+        [Description("亮度")]
+        Luminance = 37,
+        [Description("单色")]
+        LumOneColor = 38,
+        [Description("四色")]
+        LumFourColor = 39,
+        [Description("多色")]
+        LumMultiColor = 40,
+        Group = 1000,
     }
 
     public class TypeService : TerminalServiceBase

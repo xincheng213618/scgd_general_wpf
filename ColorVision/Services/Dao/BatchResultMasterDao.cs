@@ -1,4 +1,5 @@
 ﻿using ColorVision.MySql;
+using ColorVision.Services.Dao;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -67,6 +68,12 @@ namespace ColorVision.Services.DAO
             return row;
         }
 
+        public List<BatchResultMasterModel> ConditionalQuery(string batch_code)
+        {
+            Dictionary<string, object> keyValuePairs = new Dictionary<string, object>(0);
+            keyValuePairs.Add("code", batch_code);
+            return ConditionalQuery(keyValuePairs);
+        }
         public BatchResultMasterModel? GetByCode(string code)
         {
             string sql = $"select * from {GetTableName()} where code=@code";

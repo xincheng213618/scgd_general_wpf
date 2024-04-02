@@ -46,6 +46,7 @@ namespace ColorVision.Services.Dao
         public string? Code { get; set; }
         public string? TypeCode { get; set; }
         public int Type { get; set; }
+
         public int? Pid { get; set; }
         public string? Value { get; set; }
         public DateTime CreateDate { get; set; }

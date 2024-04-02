@@ -54,7 +54,22 @@ namespace ColorVision.Services.Devices.Calibration
             ComboxCalibrationTemplate.ItemsSource = Device.CalibrationParams;
             ComboxCalibrationTemplate.SelectedIndex = 0;
             this.AddViewConfig(View, ComboxView);
+            SelectChanged += (s, e) =>
+            {
+                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
+            };
+            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+            {
+                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
+            };
         }
+
+        public event RoutedEventHandler Selected;
+        public event RoutedEventHandler Unselected;
+        public event EventHandler SelectChanged;
+        private bool _IsSelected;
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
+
         private void Service_OnCalibrationEvent(object sender, MessageRecvArgs arg)
         {
             switch (arg.EventName)
@@ -90,10 +105,6 @@ namespace ColorVision.Services.Devices.Calibration
                     break;
             }
         }
-
-
-        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");  } }
-        private bool _IsSelected;
 
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {

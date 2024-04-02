@@ -78,6 +78,7 @@ namespace ColorVision
 
             if (control is IView view)
             {
+                view.View.ViewGridManager = this;
                 if (IsGridEmpty(view.View.ViewIndex))
                 {
                     Grids[view.View.ViewIndex].Children.Add(control);
@@ -104,6 +105,7 @@ namespace ColorVision
 
             if (control is IView view)
             {
+                view.View.ViewGridManager = this;
                 if (IsGridEmpty(view.View.ViewIndex))
                 {
                     Grids[view.View.ViewIndex].Children.Add(control);

@@ -681,4 +681,7 @@
   <data name="NewSolution" xml:space="preserve">
     <value>Новое строительство</value>
   </data>
+  <data name="MsgList" xml:space="preserve">
+    <value>Список сообщений</value>
+  </data>
 </root>

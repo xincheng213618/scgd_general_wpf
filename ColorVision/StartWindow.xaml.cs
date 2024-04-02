@@ -3,6 +3,7 @@ using ColorVision.MySql;
 using ColorVision.Services;
 using ColorVision.Services.RC;
 using ColorVision.Settings;
+using ColorVision.Solution;
 using ColorVision.Themes;
 using System;
 using System.Diagnostics;
@@ -189,11 +190,13 @@ namespace ColorVision
                 await Task.Delay(200);
             }
 
-            await Task.Delay(100);
+            await Task.Delay(50);
             Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}正在加载工程"; });
-            await Task.Delay(200);
+            SolutionManager.GetInstance();
+            await Task.Delay(50);
             Application.Current.Dispatcher.Invoke(() =>
             {
+
                 MainWindow mainWindow = new MainWindow();
                 ServiceManager ServiceManager = ServiceManager.GetInstance();
                 try

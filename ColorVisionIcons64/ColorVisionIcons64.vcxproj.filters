@@ -31,18 +31,24 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="GridIcons64.rc">
+    <ResourceCompile Include="ColorVisionIcons64.rc">
       <Filter>资源文件</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
+    <Image Include="ColorVision1.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="raw.ico">
+      <Filter>资源文件</Filter>
+    </Image>
     <Image Include="Grid.ico">
       <Filter>资源文件</Filter>
     </Image>
     <Image Include="grif.ico">
       <Filter>资源文件</Filter>
     </Image>
-    <Image Include="..\..\C#\ToolHash\Paomedia-Small-N-Flat-Key.ico">
+    <Image Include="cie.ico">
       <Filter>资源文件</Filter>
     </Image>
   </ItemGroup>

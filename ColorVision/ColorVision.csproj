@@ -44,6 +44,7 @@
     <None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <None Remove="Assets\Image\pictureBox1.Image.png" />
     <None Remove="Assets\Image\uploadbg.avif" />
+    <None Remove="Assets\png\background0.png" />
     <None Remove="Assets\png\PowerToy.png" />
   </ItemGroup>  
 
@@ -81,18 +82,23 @@
   <ItemGroup>
     <Reference Include="CVImageChannelLib">
       <HintPath>..\DLL\CVImageChannelLib.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="FlowEngineLib">
       <HintPath>..\DLL\FlowEngineLib.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="MQTTMessageLib">
       <HintPath>..\DLL\MQTTMessageLib.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="OpenH264Lib">
       <HintPath>..\DLL\OpenH264Lib.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="ST.Library.UI">
       <HintPath>..\DLL\ST.Library.UI.dll</HintPath>
+      <Private>True</Private>
     </Reference>
   </ItemGroup>
 
@@ -165,6 +171,9 @@
     <Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <Resource Include="Assets\Image\pictureBox1.Image.png" />
     <Resource Include="Assets\Image\uploadbg.avif" />
+    <Resource Include="Assets\png\background0.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
     <Resource Include="Assets\png\PowerToy.png" />
   </ItemGroup>
 

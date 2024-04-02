@@ -31,6 +31,12 @@ namespace ColorVision.Services.Devices.Camera.Configs
         public int Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
         private int _Gain = 10;
 
+        public double ScaleFactor { get => _ScaleFactor;set { _ScaleFactor = value; NotifyPropertyChanged(); } }
+        private double _ScaleFactor = 1.0;
+
+        public string  ScaleFactorUnit { get => _ScaleFactorUnit; set { _ScaleFactorUnit = value; NotifyPropertyChanged(); } }
+        private string _ScaleFactorUnit = "Px";
+
         [JsonIgnore]
         public bool IsExpThree
         {
@@ -89,6 +95,5 @@ namespace ColorVision.Services.Devices.Camera.Configs
 
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 
-        public bool IsSaveSrcPic { get; set; }
     }
 }

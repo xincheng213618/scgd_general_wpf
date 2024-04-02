@@ -1,4 +1,6 @@
-﻿using ColorVision.Solution;
+﻿using ColorVision.Media;
+using ColorVision.Net;
+using ColorVision.Solution;
 using HandyControl.Tools;
 using HandyControl.Tools.Extension;
 using System;
@@ -44,7 +46,19 @@ namespace ColorVision
 
                             if (File.Exists(result))
                             {
-                                SolutionManager.GetInstance().OpenSolution(result);
+                                if (result.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    SolutionManager.GetInstance().OpenSolution(result);
+                                }
+                                if (result.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    ImageView imageView = new ImageView();
+                                    CVFileUtil.ReadCVRaw(result, out CVCIEFile fileInfo);
+                                    Window window = new Window() { Title = "快速预览" };
+                                    window.Content = imageView;
+                                    imageView.OpenImage(fileInfo);
+                                    window.Show();
+                                }
                             }
                             else
                             {

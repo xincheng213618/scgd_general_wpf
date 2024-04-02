@@ -9,6 +9,7 @@ using ColorVision.Settings;
 using ColorVision.Themes;
 using Panuon.WPF.UI;
 using System;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -29,6 +30,7 @@ namespace ColorVision.Services.Flow
         }
 
         public ConfigHandler ConfigHandler { get; set; }
+        MenuItem menuItem { get; set; }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -87,25 +89,31 @@ namespace ColorVision.Services.Flow
             MenuItem menuItem2 = new MenuItem() { Header = ColorVision.Properties.Resource.StopProcess };
             menuItem2.Click += (s, e) => Button_FlowStop_Click(s, e);
             menuItem.Items.Add(menuItem2);
-        }
-        MenuItem menuItem { get; set; }
 
-        private bool _IsSelected;
-        public bool IsSelected { get => _IsSelected;
-            set 
-            { 
-                _IsSelected = value; 
-                if (value)
-                {
-                    MenuManager.GetInstance().AddMenuItem(menuItem,1);
-                }
-                else
-                {
-                    MenuManager.GetInstance().RemoveMenuItem(menuItem);
-                }
-                DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
-            }
+            Selected += (s, e) =>
+            {
+                MenuManager.GetInstance().AddMenuItem(menuItem, 1);
+            };
+            Unselected += (s, e) =>
+            {
+                MenuManager.GetInstance().RemoveMenuItem(menuItem);
+            };
+            SelectChanged += (s, e) =>
+            {
+                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
+            };
+            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+            {
+                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
+            };
         }
+
+        public event RoutedEventHandler Selected;
+        public event RoutedEventHandler Unselected;
+        public event EventHandler SelectChanged;
+        private bool _IsSelected;
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
+
 
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -149,6 +157,7 @@ namespace ColorVision.Services.Flow
         public ImageSource Icon { get => _Icon; set { _Icon = value; } }
         private ImageSource _Icon;
 
+
         private  void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
             if (FlowTemplate.SelectedValue is FlowParam flowParam)
@@ -159,33 +168,17 @@ namespace ColorVision.Services.Flow
                     flowControl = new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
 
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
-                    handler.Cancelling += delegate
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            ButtonRun.Visibility = Visibility.Visible;
-                            ButtonStop.Visibility = Visibility.Collapsed;
-                        });
 
-                        flowControl?.Stop();
-                        handler?.Close();
-                    };
+                    handler.Cancelling += Handler_Cancelling; ;
 
                     flowControl.FlowData += (s, e) =>
                     {
                         if (s is FlowControlData msg)
                         {
-                            try
+                            Application.Current.Dispatcher.Invoke(() =>
                             {
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
-                                });
-                            }
-                            catch 
-                            {
-
-                            }
+                                handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
+                            });
                         }
                     };
                     flowControl.FlowCompleted += FlowControl_FlowCompleted;
@@ -199,6 +192,23 @@ namespace ColorVision.Services.Flow
                 {
                     MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败","ColorVision");
                 }
+            }
+        }
+
+        private void Handler_Cancelling(object? sender, CancelEventArgs e)
+        {
+            if (sender is IPendingHandler pendingHandler)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ButtonRun.Visibility = Visibility.Visible;
+                    ButtonStop.Visibility = Visibility.Collapsed;
+                });
+
+                flowControl?.Stop();
+
+                pendingHandler.Cancelling -= Handler_Cancelling;
+                pendingHandler?.Close();
             }
         }
 
@@ -224,6 +234,9 @@ namespace ColorVision.Services.Flow
             FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
         }
         FlowControl rcflowControl;
+
+
+
         private void Button_RCFlowRun_Click(object sender, RoutedEventArgs e)
         {
             if (FlowTemplate.SelectedItem is TemplateModel<FlowParam> flowParam)

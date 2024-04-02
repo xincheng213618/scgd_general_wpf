@@ -6,8 +6,9 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.IO;
 
-namespace ColorVision.Solution.View
+namespace ColorVision.Solution.Views
 {
     public class ViewBatchResult : ViewModelBase,ISortID,ISortCreateTime, ISortBatch
     {
@@ -65,6 +66,29 @@ namespace ColorVision.Solution.View
             if (listView1.View is GridView gridView)
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilities);
         }
+        private void KeyEnter(object sender, KeyEventArgs e)
+        {
+
+        }
+        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var BatchResultMasterModels = batchResultMasterDao.ConditionalQuery(SearchBox.Text);
+            ViewBatchResults.Clear();
+            foreach (var item in BatchResultMasterModels)
+            {
+                ViewBatchResults.AddUnique(new ViewBatchResult(item));
+            }
+        }
+
+        private void Query_Click(object sender, RoutedEventArgs e)
+        {
+            var BatchResultMasterModels = batchResultMasterDao.ConditionalQuery(SearchBox.Text);
+            ViewBatchResults.Clear();
+            foreach (var item in BatchResultMasterModels)
+            {
+                ViewBatchResults.AddUnique(new ViewBatchResult(item));
+            }
+        }
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -117,5 +141,7 @@ namespace ColorVision.Solution.View
         {
 
         }
+
+
     }
 }

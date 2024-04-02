@@ -11,6 +11,8 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision.Solution
 {
@@ -23,7 +25,13 @@ namespace ColorVision.Solution
 
         private static SolutionManager _instance;
         private static readonly object _locker = new();
-        public static SolutionManager GetInstance() { lock (_locker) { return _instance ??= new SolutionManager(); } }
+        public static SolutionManager GetInstance() { 
+            lock (_locker)
+            { 
+                if (_instance == null)
+                    _instance = new SolutionManager();
+                return _instance;
+            } }
 
         //工程配置文件
         public SolutionConfig CurrentSolution { get => SoftwareConfig.SolutionConfig; }
@@ -46,37 +54,88 @@ namespace ColorVision.Solution
         public SolutionExplorer CurrentSolutionExplorer { get => _CurrentSolutionExplorer; set { _CurrentSolutionExplorer = value; NotifyPropertyChanged(); } }
         private SolutionExplorer _CurrentSolutionExplorer;
 
+        public RelayCommand SolutionOpenCommand { get; set; }
+        public RelayCommand SolutionCreateCommand { get; set; }
 
         public SolutionManager()
         {
             SolutionExplorers = new ObservableCollection<SolutionExplorer>();
 
             SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-
             if (File.Exists(App.SolutionPath))
             {
                 CurrentSolution.FullName = App.SolutionPath;
+                OpenSolution(CurrentSolution.FullName);
             }
             else
             {
                 SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
+                OpenSolutionDirectory(CurrentSolution.FullName);
             }
-            Application.Current.MainWindow.AddHotKeys(new HotKeys(ColorVision.Properties.Resource.OpenSolution, new Hotkey(Key.O, ModifierKeys.Control), OpenSolutionWindow));
-            Application.Current.MainWindow.AddHotKeys(new HotKeys(ColorVision.Properties.Resource.NewSolution, new Hotkey(Key.N, ModifierKeys.Control), NewCreateWindow));
 
-            //ClearCache();
+            SolutionOpenCommand = new RelayCommand((a) => OpenSolutionWindow());
+            SolutionCreateCommand = new RelayCommand((a) => NewCreateWindow());
+        }
 
-            OpenSolutionDirectory(CurrentSolution.FullName);
+
+
+        public void InitMenu()
+        {
+            var FileMenuItem = MenuManager.GetInstance().FileMenuItem;       
+            MenuItem RecentListMenuItem = null;
+
+            RecentListMenuItem ??= new MenuItem();
+            RecentListMenuItem.Header = Properties.Resource.RecentFiles;
+            RecentListMenuItem.SubmenuOpened += (s, e) =>
+            {
+                var firstMenuItem = RecentListMenuItem.Items[0];
+                foreach (var item in SolutionHistory.RecentFiles)
+                {
+                    if (Directory.Exists(item))
+                    {
+                        MenuItem menuItem = new MenuItem();
+                        menuItem.Header = item;
+                        menuItem.Click += (sender, e) =>
+                        {
+                            OpenSolutionDirectory(item);
+                        };
+                        RecentListMenuItem.Items.Add(menuItem);
+                    }
+                    else
+                    {
+                        SolutionHistory.RecentFiles.Remove(item);
+                    }
+                };
+                RecentListMenuItem.Items.Remove(firstMenuItem);
+
+            };
+            RecentListMenuItem.SubmenuClosed += (s, e) => {
+                RecentListMenuItem.Items.Clear();
+                RecentListMenuItem.Items.Add(new MenuItem());
+            };
+            RecentListMenuItem.Items.Add(new MenuItem());
+
+            FileMenuItem?.Items.Insert(3, RecentListMenuItem);
 
         }
 
-        public DirectoryInfo SolutionDirectory { get; private set; }
+
+
+        public void AddHotKeys()
+        {
+            InitMenu();
+            Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.OpenSolution, new Hotkey(Key.O, ModifierKeys.Control), OpenSolutionWindow));
+            Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.NewSolution, new Hotkey(Key.N, ModifierKeys.Control), NewCreateWindow));
+        }
+
+
+        public DirectoryInfo? SolutionDirectory { get; private set; }
 
         public bool OpenSolutionDirectory(string SolutionFullPath)
         {
             log.Debug("正在打开工程:" + SolutionFullPath);
 
-            if (!Directory.Exists(SolutionFullPath))
+            if (!Directory.Exists(SolutionFullPath) && !File.Exists(SolutionFullPath))
             {
                 string DefaultPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision\\默认工程";
                 if (!Directory.Exists(DefaultPath))
@@ -84,9 +143,22 @@ namespace ColorVision.Solution
                 CreateSolution(new DirectoryInfo(DefaultPath));
                 SolutionFullPath = DefaultPath;
             }
+
             CurrentSolution.FullName = SolutionFullPath;
-            SolutionDirectory = new DirectoryInfo(CurrentSolution.FullName);
-            SolutionHistory.InsertFile(SolutionDirectory.FullName);
+
+            if (Directory.Exists(SolutionFullPath))
+            {
+                SolutionDirectory = new DirectoryInfo(CurrentSolution.FullName);
+            }
+
+            if (File.Exists(SolutionFullPath))
+            {
+                FileInfo fileInfo = new FileInfo(SolutionFullPath);
+                SolutionDirectory = fileInfo.Directory;
+            }
+
+
+            SolutionHistory.InsertFile(CurrentSolution.FullName);
             SolutionLoaded?.Invoke(CurrentSolution, new EventArgs());
 
             SolutionExplorers.Clear();
@@ -99,13 +171,18 @@ namespace ColorVision.Solution
         {
             if (File.Exists(FullPath)&& FullPath.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
             {
+                FileInfo fileInfo = new FileInfo(FullPath);
                 CurrentSolution.FullName = FullPath;
-                SolutionHistory.InsertFile(SolutionDirectory.FullName);
+                SolutionDirectory = fileInfo.Directory;
+                SolutionHistory.InsertFile(FullPath);
                 SolutionLoaded?.Invoke(CurrentSolution, new EventArgs());
-
                 SolutionExplorers.Clear();
                 CurrentSolutionExplorer = new SolutionExplorer(FullPath);
                 SolutionExplorers.Add(CurrentSolutionExplorer);
+            }
+            else
+            {
+                MessageBox.Show("打开工程失败");
             }
             return true;
         }
@@ -123,10 +200,15 @@ namespace ColorVision.Solution
             SolutionCreated?.Invoke(CurrentSolution, new EventArgs());
         }
 
-        public void OpenSolutionWindow() => OpenSolutionWindow(Application.Current.MainWindow);
-        public void OpenSolutionWindow(Window window)
+        public void CreateShortcut(string FileName)
         {
-            OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = window, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            if (SolutionDirectory!=null)
+                Common.NativeMethods.ShortcutCreator.CreateShortcut(Path.GetFileName(FileName),SolutionDirectory.FullName +"\\Image", FileName);
+        }
+
+        public void OpenSolutionWindow()
+        {
+            OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             openSolutionWindow.Closed += delegate
             {
                 if (!string.IsNullOrWhiteSpace(openSolutionWindow.FullName))
@@ -140,11 +222,9 @@ namespace ColorVision.Solution
             };
             openSolutionWindow.Show();
         }
-        public void NewCreateWindow() => NewCreateWindow(Application.Current.MainWindow);
-
-        public void NewCreateWindow(Window window)
+        public void NewCreateWindow()
         {
-            NewCreateWindow newCreatWindow = new NewCreateWindow() { Owner = window, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            NewCreateWindow newCreatWindow = new NewCreateWindow() { Owner = WindowHelpers.GetActiveWindow() , WindowStartupLocation = WindowStartupLocation.CenterOwner };
             newCreatWindow.Closed += delegate
             {
                 if (newCreatWindow.IsCreate)

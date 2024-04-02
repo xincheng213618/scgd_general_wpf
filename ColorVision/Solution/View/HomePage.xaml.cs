@@ -13,7 +13,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace ColorVision.Solution.View
+namespace ColorVision.Solution.Views
 {
     /// <summary>
     /// HomePage.xaml 的交互逻辑

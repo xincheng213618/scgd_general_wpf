@@ -681,4 +681,7 @@
   <data name="NewSolution" xml:space="preserve">
     <value>신조</value>
   </data>
+  <data name="MsgList" xml:space="preserve">
+    <value>메시지 목록</value>
+  </data>
 </root>

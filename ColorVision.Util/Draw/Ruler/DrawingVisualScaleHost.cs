@@ -1,6 +1,10 @@
 ﻿using System.Windows.Media;
 using System.Windows;
 using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.ComponentModel;
+using Newtonsoft.Json.Linq;
+using YamlDotNet.Core.Tokens;
 
 namespace ColorVision.Draw.Ruler
 {
@@ -14,8 +18,12 @@ namespace ColorVision.Draw.Ruler
 
 
 
-    public class DrawingVisualScaleHost : FrameworkElement
+    public class DrawingVisualScaleHost : FrameworkElement,INotifyPropertyChanged
     {
+        public event PropertyChangedEventHandler? PropertyChanged;
+        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+
         private readonly DrawingVisual visual;
 
         public DrawingVisualScaleHost()
@@ -26,11 +34,13 @@ namespace ColorVision.Draw.Ruler
         public double ParentWidth { get; set; }
         public double ParentHeight { get; set; }
 
-
         public ScaleLocation ScaleLocation { get; set; } = ScaleLocation.upperleft;
 
-        public double ActualLength { get; set; } = 1;
-        public string PhysicalUnit { get; set; } = "Px";
+        public double ActualLength { get => _ActualLength; set { _ActualLength = value; NotifyPropertyChanged(); } }
+        private double _ActualLength = 1;
+
+        public string PhysicalUnit { get => _PhysicalUnit; set { _PhysicalUnit = value; NotifyPropertyChanged(); } }
+        private string _PhysicalUnit = "Px";
 
         private double Lastlength = 1;
         public void Render() => Render(Lastlength);
@@ -44,8 +54,7 @@ namespace ColorVision.Draw.Ruler
             {
                 if (ParentWidth > 200 && ParentHeight>200)
                 {
-                    double result = length < 10 ? 5 : length < 20 ? 10 : length < 50 ? 20 : length < 100 ? 50 : length < 200 ? 100 : length < 500 ? 200 : length < 1000 ? 500 : length < 2000 ? 1000 : length < 4000 ? 2000 : length < 8000 ? 4000 : 8000;
-
+                    double result = length < 2 ? 1: length < 5 ? 2 : length < 10 ? 5 : length < 20 ? 10 : length < 50 ? 20 : length < 100 ? 50 : length < 200 ? 100 : length < 500 ? 200 : length < 1000 ? 500 : length < 2000 ? 1000 : length < 4000 ? 2000 : length < 8000 ? 4000 : 8000;
 
                     double X = 60;
                     double Y = 50;
@@ -54,6 +63,7 @@ namespace ColorVision.Draw.Ruler
                         X = ParentWidth - 120;
                         Y = ParentHeight - 30;
                     }
+                    dc.DrawRectangle(new SolidColorBrush(new Color() { A=1,R=0,G =0,B=0  }), new Pen(Brushes.White, 0), new Rect(new Point(X, Y - 20), new Point(X + 2 + 100 * result / length, Y+5)));
 
                     dc.DrawLine(new Pen(Brushes.White, 4), new Point(X, Y), new Point(X + 2 + 100 * result / length, Y));
                     dc.DrawLine(new Pen(Brushes.White, 4), new Point(X, Y + 2), new Point(X, Y - 8 - 1));

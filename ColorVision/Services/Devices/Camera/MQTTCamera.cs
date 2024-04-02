@@ -382,7 +382,7 @@ namespace ColorVision.Services.Devices.Camera
             {
                 Params.Add("Calibration", new CVTemplateParam() { ID = param.Id, Name = param.Name });
             }
-
+            Params.Add("ScaleFactor", Config.ScaleFactor);
             double timeout = 0;
             for (int i = 0; i < expTime.Length; i++) timeout += expTime[i];
             return PublishAsyncClient(msg, timeout + 10000);

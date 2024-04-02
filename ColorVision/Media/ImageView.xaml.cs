@@ -537,7 +537,6 @@ namespace ColorVision.Media
                 }
                 SetImageSource(dst.ToWriteableBitmap());
                 dst.Dispose();
-
             }
         }
 
@@ -630,11 +629,14 @@ namespace ColorVision.Media
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     Zoombox1.ZoomUniform();
+                    ToolBarTop.ToolBarScaleRuler.Render();
                 });
             });
             ToolBar1.Visibility = Visibility.Visible;
             ImageShow.ImageInitialize();
-        }
+
+            ToolBarTop.ToolBarScaleRuler.IsShow = true;
+        }  
 
 
         public ImageSource PseudoImage { get; set; }

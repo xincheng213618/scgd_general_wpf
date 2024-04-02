@@ -1,4 +1,6 @@
-﻿using System.Windows;
+﻿using ColorVision.Common.Utilities;
+using System.Drawing;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
@@ -19,16 +21,16 @@ namespace ColorVision.Draw.Ruler
             Zoombox1 = zombox;
             this.drawCanvas = drawCanvas;
             ScalRuler = new DrawingVisualScaleHost();
+
             //ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             if (Zoombox1.Parent is Grid grid)
             {
                 GridEx = grid;
-                ScalRuler.ParentWidth = GridEx.ActualWidth;
-                ScalRuler.ParentHeight = GridEx.ActualHeight;
-                grid.Children.Add(ScalRuler);
-                drawCanvas.ImageInitialized += (s, e) => Render();
-                GridEx.SizeChanged += GridEx_SizeChanged;
-                drawCanvas.MouseWheel += DrawCanvas_MouseWheel;
+                ScalRuler.PreviewMouseDown += (s, e) =>
+                {
+                    EditScaleRuler editScaleRuler = new EditScaleRuler(ScalRuler) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                    editScaleRuler.ShowDialog();
+                };
             }
         }
 
@@ -44,11 +46,15 @@ namespace ColorVision.Draw.Ruler
             Render();
         }
 
-        private void Render()
+        public void Render()
         {
             if (drawCanvas.Source is BitmapSource bitmapSource)
             {
-                double X = 1 / Zoombox1.ContentMatrix.M11 * bitmapSource.PixelWidth / 100;
+                ScalRuler.ParentWidth = GridEx.ActualWidth;
+                ScalRuler.ParentHeight = GridEx.ActualHeight;
+                ///未知原因
+                double X = 1 / Zoombox1.ContentMatrix.M11 * bitmapSource.PixelWidth / 100 ;
+
                 ScalRuler.Render(X);
             }
         }
@@ -56,7 +62,7 @@ namespace ColorVision.Draw.Ruler
         public DrawingVisualScaleHost ScalRuler { get; set; }
 
 
-        private bool _IsShow = true;
+        private bool _IsShow;
         public bool IsShow
         {
             get => _IsShow;
@@ -67,16 +73,17 @@ namespace ColorVision.Draw.Ruler
                 if (value)
                 {
                     GridEx.Children.Add(ScalRuler);
+                    ScalRuler.ParentWidth = GridEx.ActualWidth;
+                    ScalRuler.ParentHeight = GridEx.ActualHeight;
                     drawCanvas.MouseWheel += DrawCanvas_MouseWheel;
                     GridEx.SizeChanged -= GridEx_SizeChanged;
-
+                    Render();
                 }
                 else
                 {
                     GridEx.Children.Remove(ScalRuler);
                     drawCanvas.MouseWheel -= DrawCanvas_MouseWheel;
                     GridEx.SizeChanged -= GridEx_SizeChanged;
-
                 }
 
             }

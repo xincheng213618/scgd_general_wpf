@@ -12,6 +12,7 @@ using MQTTMessageLib.Flow;
 using ColorVision.Services.Type;
 using System.Linq;
 using FlowEngineLib;
+using ColorVision.Common.Utilities;
 
 namespace ColorVision.Services.Flow
 {
@@ -25,7 +26,7 @@ namespace ColorVision.Services.Flow
         public FlowControlData FlowControlData { get; set; }
 
         private MQTTControl MQTTControl;
-        private FlowEngineLib.FlowEngineControl flowEngine;
+        private FlowEngineControl flowEngine;
 
         public string SubscribeTopic { get; set; }
         public string SendTopic { get; set; }
@@ -65,6 +66,7 @@ namespace ColorVision.Services.Flow
             {
                 flowEngine.StopNode(SerialNumber);
             }
+            ClearEventHandler();
         }
         public void Stop(FlowParam flowParam)
         {
@@ -120,9 +122,16 @@ namespace ColorVision.Services.Flow
             }
         }
 
-        public event EventHandler FlowCompleted;
-        public event EventHandler FlowMsg;
-        public event EventHandler FlowData;
+        public event EventHandler? FlowCompleted;
+        public event EventHandler? FlowMsg;
+        public event EventHandler? FlowData;
+
+        public void ClearEventHandler()
+        {
+            FlowCompleted = null;
+            FlowMsg = null;
+            FlowData = null;
+        }
 
         private Task MQTTControl_ApplicationMessageReceivedAsync(MQTTnet.Client.MqttApplicationMessageReceivedEventArgs arg)
         {
@@ -146,7 +155,8 @@ namespace ColorVision.Services.Flow
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(Application.Current.MainWindow, ex.Message, "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+
+                    MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
                 }
             }
 

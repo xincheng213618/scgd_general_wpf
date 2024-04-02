@@ -1,5 +1,7 @@
-﻿using ColorVision.MQTT;
+﻿using ColorVision.Media;
+using ColorVision.MQTT;
 using ColorVision.MySql;
+using ColorVision.Net;
 using ColorVision.Services;
 using ColorVision.Services.RC;
 using ColorVision.Settings;
@@ -8,6 +10,7 @@ using ColorVision.Wizards;
 using log4net;
 using log4net.Config;
 using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -31,6 +34,8 @@ namespace ColorVision
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
+
             var SoftwareSetting = ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting;
             this.ApplyTheme(SoftwareSetting.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(SoftwareSetting.UICulture);
@@ -42,15 +47,24 @@ namespace ColorVision
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
 
             //代码先进入启动窗口
-
             if (!SoftwareSetting.WizardCompletionKey)
             {
                 WizardWindow wizardWindow = new WizardWindow();
                 wizardWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 wizardWindow.Show();
             }
+            else if (File.Exists(CVRAWPath))
+            {
+                ImageView imageView = new ImageView();
+                CVFileUtil.ReadCVRaw(CVRAWPath, out CVCIEFile fileInfo);
+                Window window = new Window() { Title ="快速预览" };
+                window.Content = imageView;
+                imageView.OpenImage(fileInfo);
+                window.Show();
+            }
             else if (!IsReStart)
             {
+                ///正常进入窗口
                 StartWindow StartWindow = new StartWindow();
                 StartWindow.Show();
             }

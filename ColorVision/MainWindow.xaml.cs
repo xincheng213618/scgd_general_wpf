@@ -7,7 +7,7 @@ using ColorVision.Services.Flow;
 using ColorVision.Services.RC;
 using ColorVision.Settings;
 using ColorVision.Solution;
-using ColorVision.Solution.View;
+using ColorVision.Solution.Views;
 using ColorVision.Themes;
 using ColorVision.Update;
 using ColorVision.UserSpace;
@@ -88,7 +88,7 @@ namespace ColorVision
         private void Window_Initialized(object sender, EventArgs e)
         {
             ConfigHandler = ConfigHandler.GetInstance();
-            SolutionManager.GetInstance();
+            SolutionManager.GetInstance().AddHotKeys();
 
             if (MySqlControl.GetInstance().IsConnect)
             {
@@ -116,9 +116,12 @@ namespace ColorVision
                     this.Icon = WindowConfig.Icon;
                 this.Title = WindowConfig.Title ?? this.Title;
             }
-
-            SolutionGrid.Children.Add(new SolutionView());
-
+            ViewGridManager SolutionViewGridManager = new ViewGridManager();
+            SolutionViewGridManager.MainView = SolutionGrid;
+            SolutionView solutionView = new SolutionView();
+            SolutionViewGridManager.AddView(0, solutionView);
+            solutionView.View.ViewIndex = 0;
+            SolutionViewGridManager.SetViewNum(-1);
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;
 
