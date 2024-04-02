@@ -9,10 +9,7 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800" Background="{DynamicResource GlobalBackground}" Initialized="UserControl_Initialized" >
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        <Frame x:Name="MainFrame" Grid.Row="1" Style="{StaticResource FrameBaseStyle}" NavigationUIVisibility="Visible"/>
+        <Frame x:Name="MainFrame" Style="{StaticResource FrameBaseStyle}" NavigationUIVisibility="Visible"/>
+        <Image x:Name="MainSetting"  Source="/Assets/Image/ColorVision.png"  Height="40" Margin="2" HorizontalAlignment="Right" VerticalAlignment="Top"/>
     </Grid>
 </UserControl>

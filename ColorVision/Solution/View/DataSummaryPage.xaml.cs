@@ -93,10 +93,7 @@ namespace ColorVision.Solution.Views
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ListView listView && listView.SelectedIndex > -1)
-            {
-                Frame.Navigate(new BatchShowPage(Frame, ViewBatchResults[listView.SelectedIndex]));
-            }
+
         }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilities { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
@@ -137,12 +134,12 @@ namespace ColorVision.Solution.Views
             }
 
         }
-
-        private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
+        private void listView1_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-
+            if (sender is ListView listView && listView.SelectedIndex > -1)
+            {
+                Frame.Navigate(new BatchShowPage(Frame, ViewBatchResults[listView.SelectedIndex]));
+            }
         }
-
-
     }
 }

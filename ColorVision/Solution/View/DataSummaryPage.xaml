@@ -21,7 +21,7 @@
                 </DockPanel>
             </Grid>
             <Border  Grid.Row="1"  CornerRadius="10" >
-                <ListView x:Name="listView1"  SelectionChanged="listView1_SelectionChanged" Background="Transparent" BorderThickness="0"    PreviewKeyDown="listView1_PreviewKeyDown" >
+                <ListView x:Name="listView1"  SelectionChanged="listView1_SelectionChanged" Background="Transparent" BorderThickness="0"    MouseDoubleClick="listView1_MouseDoubleClick" >
                     <ListView.Resources>
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
                         </ContextMenu>

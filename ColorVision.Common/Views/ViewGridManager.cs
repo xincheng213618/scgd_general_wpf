@@ -296,8 +296,6 @@ namespace ColorVision
                 Binding binding1 = new Binding("Icon") { Source = view.View };
                 window.SetBinding(Window.IconProperty, binding1);
 
-                view.View.ViewIndex = -2;
-
                 ViewIndexChangedHandler eventHandler = null;
                 eventHandler = (e1,e2) =>
                 {

@@ -21,8 +21,7 @@ namespace ColorVision.Solution.Views
             View.ViewIndexChangedEvent += View_ViewIndexChangedEvent;
             MainFrame.Navigate(new HomePage(MainFrame));
             ContextMenu contextMenu = new ContextMenu();
-            this.ContextMenu = contextMenu;
-
+            MainSetting.ContextMenu = contextMenu;
             MenuItem menuItem = new MenuItem() { Header = "独立窗口" };
             menuItem.Click += (s, e) =>
             {
@@ -42,7 +41,7 @@ namespace ColorVision.Solution.Views
                     View.ViewIndex = 0;
                 };
                 contextMenu.Items.Add(menuItem);
-                this.ContextMenu = contextMenu;
+                MainSetting.ContextMenu = contextMenu;
                 View.ViewGridManager?.SetViewIndex(this,-2);
             }
             if (index == 0)
@@ -54,7 +53,7 @@ namespace ColorVision.Solution.Views
                     View.ViewIndex = -2;
                 };
                 contextMenu.Items.Add(menuItem);
-                this.ContextMenu = contextMenu;
+                MainSetting.ContextMenu = contextMenu;
                 View.ViewGridManager?.SetViewIndex(this, 0);
 
             }
