@@ -243,15 +243,24 @@ namespace ColorVision.Services.Flow
             {
                 rcflowControl ??= new FlowControl(MQTTControl.GetInstance(), "");
                 string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-                ServiceManager.GetInstance().ResultBatchSave(sn);
                 rcflowControl.Start(sn, flowParam.Value);
-
-                ButtonRun.Visibility = Visibility.Collapsed;
-                ButtonStop.Visibility = Visibility.Visible;
             }
             else
             {
                 MessageBox.Show(WindowHelpers.GetActiveWindow(),"没有选择流程","ColorVision");
+            }
+        }
+
+        private void Button_RCFlowStop_Click(object sender, RoutedEventArgs e)
+        {
+            if (FlowTemplate.SelectedItem is TemplateModel<FlowParam> flowParam)
+            {
+                rcflowControl ??= new FlowControl(MQTTControl.GetInstance(), "");
+                rcflowControl.Stop(flowParam.Value);
+            }
+            else
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "没有选择流程", "ColorVision");
             }
         }
     }
