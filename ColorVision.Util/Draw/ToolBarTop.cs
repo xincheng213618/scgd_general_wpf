@@ -19,7 +19,7 @@ namespace ColorVision.Draw
     {
         public object Root { get; set; }
         public Panel Parent { get; set; }
-
+        public ContentControl ContentParent { get; set; }
         public WindowStyle WindowStyle { get; set; }
 
         public WindowState WindowState { get; set; }
@@ -146,7 +146,7 @@ namespace ColorVision.Draw
             if (!IsMax)
             {
                 IsMax = true;
-                if (Parent.Parent is Grid p)
+                if (Parent.Parent is Panel p)
                 {
                     OldWindowStatus = new WindowStatus();
                     OldWindowStatus.Parent = p;
@@ -160,20 +160,44 @@ namespace ColorVision.Draw
                     OldWindowStatus.Parent.Children.Remove(Parent);
                     window.Content = Parent;
                 }
-                else
+                else if (Parent.Parent is ContentControl content)
                 {
+                    OldWindowStatus = new WindowStatus();
+                    OldWindowStatus.ContentParent = content;
+                    OldWindowStatus.WindowState = window.WindowState;
+                    OldWindowStatus.WindowStyle = window.WindowStyle;
+                    OldWindowStatus.ResizeMode = window.ResizeMode;
+                    OldWindowStatus.Root = window.Content;
+                    window.WindowStyle = WindowStyle.None;
+                    window.WindowState = WindowState.Maximized;
+
+                    content.Content = null;
+                    window.Content = Parent;
                     return;
                 }
             }
             else
             {
                 IsMax =false;
-                window.WindowStyle = OldWindowStatus.WindowStyle;
-                window.WindowState = OldWindowStatus.WindowState;
-                window.ResizeMode = OldWindowStatus.ResizeMode;
+                if (OldWindowStatus.Parent != null)
+                {
+                    window.WindowStyle = OldWindowStatus.WindowStyle;
+                    window.WindowState = OldWindowStatus.WindowState;
+                    window.ResizeMode = OldWindowStatus.ResizeMode;
 
-                window.Content = OldWindowStatus.Root;
-                OldWindowStatus.Parent.Children.Add(Parent);
+                    window.Content = OldWindowStatus.Root;
+                    OldWindowStatus.Parent.Children.Add(Parent);
+                }
+                else
+                {
+                    window.WindowStyle = OldWindowStatus.WindowStyle;
+                    window.WindowState = OldWindowStatus.WindowState;
+                    window.ResizeMode = OldWindowStatus.ResizeMode;
+
+                    OldWindowStatus.ContentParent.Content = Parent;
+                }
+
+
             }
         }
 
