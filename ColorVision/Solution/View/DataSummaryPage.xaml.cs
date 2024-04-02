@@ -52,17 +52,18 @@ namespace ColorVision.Solution.Views
         BatchResultMasterDao batchResultMasterDao = new BatchResultMasterDao();
 
         public ObservableCollection<ViewBatchResult> ViewBatchResults { get; set; } = new ObservableCollection<ViewBatchResult>();
-
-        private void UserControl_Initialized(object sender, EventArgs e)
+        private void Page_Loaded(object sender, RoutedEventArgs e)
         {
+            ViewBatchResults.Clear();
             var BatchResultMasterModels = batchResultMasterDao.GetAll();
             foreach (var item in BatchResultMasterModels)
             {
                 ViewBatchResults.Add(new ViewBatchResult(item));
             }
-
+        }
+        private void UserControl_Initialized(object sender, EventArgs e)
+        {
             listView1.ItemsSource = ViewBatchResults;
-
             if (listView1.View is GridView gridView)
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilities);
         }

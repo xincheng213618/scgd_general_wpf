@@ -580,10 +580,5 @@ namespace ColorVision.Services.Devices.Spectrum.Views
                 }
             }
         }
-
-        private void ButtonSave_Click(object sender, RoutedEventArgs e)
-        {
-            wpfplot1.SaveAsImage();
-        }
     }
 }

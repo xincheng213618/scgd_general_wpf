@@ -514,13 +514,5 @@ namespace ColorVision.Services.Devices.SMU.Views
                 }
             }
         }
-
-        private void ButtonSave_Click(object sender, RoutedEventArgs e)
-        {
-            if (wpfplot1.Visibility ==Visibility.Visible)
-                wpfplot1.SaveAsImage();
-            if (wpfplot2.Visibility ==Visibility.Visible)
-                wpfplot2.SaveAsImage();
-        }
     }
 }

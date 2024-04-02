@@ -27,8 +27,8 @@
                 <RowDefinition x:Name="ListRow1" Height="*"/>
                 <RowDefinition x:Name="ListRow2" Height="Auto"/>
             </Grid.RowDefinitions>
-            <ScottPlot:WpfPlot  x:Name="wpfplot1" Visibility="{Binding ElementName=ToggleButtonChoice,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}" />
-            <ScottPlot:WpfPlot  x:Name="wpfplot2" Visibility="{Binding ElementName=ToggleButtonChoice,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" />
+            <ScottPlot:WpfPlot  x:Name="wpfplot1"  Panel.ZIndex="9" Visibility="{Binding ElementName=ToggleButtonChoice,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}" />
+            <ScottPlot:WpfPlot  x:Name="wpfplot2"  Panel.ZIndex="9" Visibility="{Binding ElementName=ToggleButtonChoice,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" />
 
             <Grid x:Name="Grid1" Grid.Row="1">
                 <Grid.RowDefinitions>
@@ -93,12 +93,11 @@
                                 </StackPanel>
                             </Border>
                         </Popup>
-                        <Button x:Name="ButtonSave" Content="Save"   Click="ButtonSave_Click"/>
                     </ToolBar>
                 </ToolBarTray>
 
                
-                <ListView  Height="250" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" BorderThickness="0" Background="Transparent" Margin="-5" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                <ListView  Height="250" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" BorderThickness="0" Margin="-5" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.Resources>
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
                         </ContextMenu>

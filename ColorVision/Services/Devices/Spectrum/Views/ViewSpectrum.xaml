@@ -29,7 +29,7 @@
                 <RowDefinition x:Name="ListRow1" Height="*"/>
                 <RowDefinition x:Name="ListRow2" Height="Auto"/>
             </Grid.RowDefinitions>
-            <ScottPlot:WpfPlot  x:Name="wpfplot1" />
+            <ScottPlot:WpfPlot  x:Name="wpfplot1" Panel.ZIndex="9" />
             <Grid x:Name="Grid1" Grid.Row="1">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="38"/>
@@ -88,10 +88,9 @@
                                 </StackPanel>
                             </Border>
                         </Popup>
-                        <Button x:Name="ButtonSave" Content="Save"   Click="ButtonSave_Click"/>
                     </ToolBar>
                 </ToolBarTray>
-                <ListView  Height="250" Grid.Row="1"  d:DataContext="{d:DesignInstance local:SpectralData}"  BorderThickness="0" Background="Transparent" x:Name="listView1" Margin="-5" SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                <ListView  Height="250" Grid.Row="1"  d:DataContext="{d:DesignInstance local:SpectralData}"  BorderThickness="0"     x:Name="listView1" Margin="-5" SelectionChanged="listView1_SelectionChanged" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.Resources>
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
                     </ListView.Resources>
@@ -238,7 +237,7 @@
             </Grid>
             <GridSplitter  Grid.Row="1" Background="#EEF4F9"  Height="2" Panel.ZIndex="999" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
         </Grid>
-        <ListView x:Name="listView2"  Grid.Column="1" Margin="-5" Background="Transparent" BorderThickness="0" SelectionChanged="listView2_SelectionChanged">
+        <ListView x:Name="listView2"  Grid.Column="1" Margin="-5" BorderThickness="0" SelectionChanged="listView2_SelectionChanged">
             <ListView.Resources>
                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" >
                 </ContextMenu>
