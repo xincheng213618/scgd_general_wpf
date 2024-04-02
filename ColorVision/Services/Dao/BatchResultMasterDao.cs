@@ -68,10 +68,10 @@ namespace ColorVision.Services.DAO
             return row;
         }
 
-        public List<BatchResultMasterModel> ConditionalQuery(string batch_code)
+        public List<BatchResultMasterModel> ConditionalQuery(string batchCode)
         {
             Dictionary<string, object> keyValuePairs = new Dictionary<string, object>(0);
-            keyValuePairs.Add("code", batch_code);
+            keyValuePairs.Add("code", batchCode);
             return ConditionalQuery(keyValuePairs);
         }
         public BatchResultMasterModel? GetByCode(string code)
