@@ -31,6 +31,7 @@ namespace ColorVision.Draw.Ruler
         {
             this.DataContext = DrawingVisualScaleHost1;
         }
+
         private void Cal_Click(object sender, RoutedEventArgs e)
         {
             if (double.TryParse(TextPiel.Text,out double piex) && double.TryParse(TextActual.Text, out double actual))

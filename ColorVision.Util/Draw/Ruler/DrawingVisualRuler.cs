@@ -58,25 +58,26 @@ namespace ColorVision.Draw
                 for (int i = 1; i < Points.Count-1; i++)
                 {
                     double len = GetDistance(Points[i], Points[i - 1]);
+                    len = len * ActualLength;
                     lenAll += len;
-                    FormattedText formattedText2 = new FormattedText(len.ToString("F2") + "Px", CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                    FormattedText formattedText2 = new FormattedText(len.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                     dc.DrawText(formattedText2, Points[i]);
                 }
 
                 if (Points.Count > 1)
                 {
                     double Lastlen = GetDistance(Points[^1], Points[^2]);
-
+                    Lastlen = Lastlen * ActualLength;
                     if (MovePoints == null)
                     {
                         lenAll += Lastlen;
 
-                        FormattedText formattedText2 = new FormattedText("总长" + lenAll.ToString("F2") + "Px", CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                        FormattedText formattedText2 = new FormattedText("总长" + lenAll.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                         dc.DrawText(formattedText2, Points[^1]);
                     }
                     else
                     {
-                        FormattedText formattedText2 = new FormattedText(GetDistance(Points[^1], Points[^2]).ToString("F2") + "Px", CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                        FormattedText formattedText2 = new FormattedText(Lastlen.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                         dc.DrawText(formattedText2, Points[^1]);
                     }
                 }
