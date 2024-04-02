@@ -138,7 +138,7 @@
             </draw:ZoomboxSub>
 
             <ToolBarTray x:Name="ToolBar1"  DockPanel.Dock="Top" DataContext="{Binding ToolBarTop}" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Center">
-                <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Loaded="ToolBar1_Loaded" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" >
+                <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Loaded="ToolBar1_Loaded" Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
                     <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding Activate}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
                     </ToggleButton>

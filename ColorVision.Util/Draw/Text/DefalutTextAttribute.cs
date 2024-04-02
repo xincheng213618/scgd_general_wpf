@@ -20,6 +20,9 @@ namespace ColorVision.Draw
         private double _ActualLength = 1;
         public string PhysicalUnit { get => _PhysicalUnit; set { _PhysicalUnit = value; NotifyPropertyChanged(); } }
         private string _PhysicalUnit = "Px";
+        
+        public bool IsUsePhysicalUnit { get => _IsUsePhysicalUnit; set { _IsUsePhysicalUnit = value; NotifyPropertyChanged(); } }
+        private bool _IsUsePhysicalUnit;
 
         public string Text { get => _Text; set { _Text = value; NotifyPropertyChanged(); } }
         private string _Text;

@@ -6,13 +6,22 @@
         xmlns:local="clr-namespace:ColorVision.Draw.Ruler"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:DrawingVisualScaleHost}"
-        Title="EditScaleRuler" Height="200" Width="400" Initialized="Window_Initialized">
-    <Grid Margin="5">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <StackPanel Margin="0,2">
+        Title="EditScaleRuler" Background="{DynamicResource GlobalBackground}"  Height="200" Width="400" Initialized="Window_Initialized">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/HandyControl;component/Themes/basic/colors/colors.xaml"/>
+                <ResourceDictionary Source="/HandyControl;component/Themes/Theme.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Util;component/Themes/White.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Util;component/Themes/Base.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Util;component/Themes/Menu.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Util;component/Themes/GroupBox.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Util;component/Themes/Icons.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <Border  Style="{DynamicResource BorderModuleArea}" Margin="0">
+        <StackPanel Margin="5">
             <DockPanel Margin="0,2">
                 <Button Name="Calculate" DockPanel.Dock="Right" Content="计算" Click="Calculate_Click" Margin="0,0,5,0"/>
                 <TextBlock Text="物理比例" MinWidth="60"/>
@@ -22,10 +31,9 @@
                 <TextBlock Text="物理单位" MinWidth="60"/>
                 <TextBox Text="{Binding PhysicalUnit}"/>
             </DockPanel>
-        </StackPanel>
-        <Popup  x:Name="CalPopup"  AllowsTransparency="True"  Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Calculate}">
-            <Grid Width="200" Height="150" Background="White">
-                <Border Margin="5">
+            <Button Content="关闭"  Click="Button_Click" />
+            <Popup  x:Name="CalPopup"  AllowsTransparency="True" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Left" StaysOpen="false" PlacementTarget="{Binding ElementName=Calculate}">
+                <Border Margin="5"  Width="200" Height="120" Style="{StaticResource BorderModuleArea}">
                     <StackPanel Margin="5">
                         <DockPanel Margin="0,2">
                             <TextBlock Text="像素" MinWidth="60"/>
@@ -35,16 +43,10 @@
                             <TextBlock Text="实际距离" MinWidth="60"/>
                             <TextBox x:Name="TextActual" Text=""/>
                         </DockPanel>
+                        <Button  HorizontalAlignment="Center" VerticalAlignment="Bottom" Content="计算"  Click="Cal_Click" Margin="5"/>
                     </StackPanel>
                 </Border>
-                <Button  HorizontalAlignment="Center" VerticalAlignment="Bottom" Content="计算"  Click="Cal_Click" Margin="5"/>
-            </Grid>
-        </Popup>
-
-
-
-        <StackPanel Grid.Row="2" >
-            <Button Content="关闭"  Click="Button_Click" />
+            </Popup>
         </StackPanel>
-    </Grid>
+    </Border>
 </Window>
