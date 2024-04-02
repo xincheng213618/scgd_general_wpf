@@ -183,7 +183,6 @@ namespace ColorVision.Services.Flow
                     };
                     flowControl.FlowCompleted += FlowControl_FlowCompleted;
                     string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-                    ServiceManager.GetInstance().ResultBatchSave(sn);
                     ButtonRun.Visibility = Visibility.Collapsed;
                     ButtonStop.Visibility = Visibility.Visible;
                     flowControl.Start(sn);
