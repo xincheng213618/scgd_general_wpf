@@ -875,16 +875,7 @@ namespace ColorVision.Media
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            if (ImageShow.RenderTransform is RotateTransform rotateTransform)
-            {
-                rotateTransform.Angle += 90;
-            }
-            else
-            {
-                RotateTransform rotateTransform1 = new RotateTransform() { Angle = 90};
-                ImageShow.RenderTransform = rotateTransform1;
-                ImageShow.RenderTransformOrigin = new Point(0.5, 0.5);
-            }
+
            
         }
     }

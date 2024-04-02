@@ -36,6 +36,10 @@ namespace ColorVision.Draw
         public RelayCommand ZoomNone { get; set; }
         public RelayCommand MaxCommand { get; set; }
 
+        public RelayCommand RotateLeftCommand { get; set; }
+        public RelayCommand RotateRightCommand { get; set; }
+
+
         public RelayCommand SaveImageCommand { get; set; }
         public RelayCommand ClearImageCommand { get; set; }
         public EventHandler ClearImageEventHandler { get; set; }
@@ -101,6 +105,37 @@ namespace ColorVision.Draw
             SaveImageCommand = new RelayCommand(a => Save());
             ClearImageCommand = new RelayCommand(a => ClearImage());
             MaxCommand = new RelayCommand(a => MaxImage());
+
+            RotateLeftCommand = new RelayCommand(a => RotateLeft());
+            RotateRightCommand = new RelayCommand(a => RotateRight());
+        }
+
+        public void RotateRight()
+        {
+            if (Image.RenderTransform is RotateTransform rotateTransform)
+            {
+                rotateTransform.Angle += 90;
+            }
+            else
+            {
+                RotateTransform rotateTransform1 = new RotateTransform() { Angle = 90 };
+                Image.RenderTransform = rotateTransform1;
+                Image.RenderTransformOrigin = new Point(0.5, 0.5);
+            }
+        }
+
+        public void RotateLeft()
+        {
+            if (Image.RenderTransform is RotateTransform rotateTransform)
+            {
+                rotateTransform.Angle -= 90;
+            }
+            else
+            {
+                RotateTransform rotateTransform1 = new RotateTransform() { Angle = -90 };
+                Image.RenderTransform = rotateTransform1;
+                Image.RenderTransformOrigin = new Point(0.5, 0.5);
+            }
         }
 
         private WindowStatus OldWindowStatus { get; set; }
