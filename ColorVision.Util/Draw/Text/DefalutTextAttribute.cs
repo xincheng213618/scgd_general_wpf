@@ -16,6 +16,10 @@ namespace ColorVision.Draw
             FontWeight = FontWeights.Normal,
             FontSize = 10,
         };
+        public double ActualLength { get => _ActualLength; set { _ActualLength = value; NotifyPropertyChanged(); } }
+        private double _ActualLength = 1;
+        public string PhysicalUnit { get => _PhysicalUnit; set { _PhysicalUnit = value; NotifyPropertyChanged(); } }
+        private string _PhysicalUnit = "Px";
 
         public string Text { get => _Text; set { _Text = value; NotifyPropertyChanged(); } }
         private string _Text;

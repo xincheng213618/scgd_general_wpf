@@ -574,10 +574,16 @@ namespace ColorVision.Media
                 }
                 else
                 {
-                    BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
+                    try
+                    {
+                        BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
+                        SetImageSource(bitmapImage.ToWriteableBitmap());
+                    }
+                    catch(Exception ex)
+                    {
+                        MessageBox.Show(ex.Message);
+                    }
 
-
-                    SetImageSource(bitmapImage.ToWriteableBitmap());
                 }
             }
         }

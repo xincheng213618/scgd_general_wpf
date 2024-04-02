@@ -20,10 +20,8 @@ namespace ColorVision.Draw
         public DrawBaseAttribute BaseAttribute => Attribute;
         public bool AutoAttributeChanged { get; set; }
 
-        public double ActualLength { get => _ActualLength; set { _ActualLength = value; NotifyPropertyChanged(); } }
-        private double _ActualLength = 1;
-        public string PhysicalUnit { get => _PhysicalUnit; set { _PhysicalUnit = value; NotifyPropertyChanged(); } }
-        private string _PhysicalUnit = "Px";
+        public static double ActualLength { get => DefalutTextAttribute.Defalut.ActualLength; set { DefalutTextAttribute.Defalut.ActualLength = value;} }
+        public static string PhysicalUnit { get => DefalutTextAttribute.Defalut.PhysicalUnit; set { DefalutTextAttribute.Defalut.PhysicalUnit = value; } }
 
         public List<Point> Points { get => Attribute.Points;}
 

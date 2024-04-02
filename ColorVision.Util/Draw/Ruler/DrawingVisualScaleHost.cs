@@ -36,11 +36,8 @@ namespace ColorVision.Draw.Ruler
 
         public ScaleLocation ScaleLocation { get; set; } = ScaleLocation.upperleft;
 
-        public double ActualLength { get => _ActualLength; set { _ActualLength = value; NotifyPropertyChanged(); } }
-        private double _ActualLength = 1;
-
-        public string PhysicalUnit { get => _PhysicalUnit; set { _PhysicalUnit = value; NotifyPropertyChanged(); } }
-        private string _PhysicalUnit = "Px";
+        public double ActualLength { get => DefalutTextAttribute.Defalut.ActualLength; set { DefalutTextAttribute.Defalut.ActualLength = value;  NotifyPropertyChanged(); } }
+        public string PhysicalUnit { get => DefalutTextAttribute.Defalut.PhysicalUnit; set { DefalutTextAttribute.Defalut.PhysicalUnit = value; NotifyPropertyChanged(); } }
 
         private double Lastlength = 1;
         public void Render() => Render(Lastlength);
