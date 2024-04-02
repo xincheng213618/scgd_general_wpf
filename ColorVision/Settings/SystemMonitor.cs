@@ -84,7 +84,6 @@ namespace ColorVision.Settings
         }
         public ObservableCollection<DriveInfo> DriveInfos { get; set; } = new ObservableCollection<DriveInfo>();
 
-
         private void TimeRun(object? state)
         {
             if (PerformanceCounterIsOpen)

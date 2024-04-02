@@ -68,11 +68,6 @@ namespace ColorVision.Settings
                         item.UserPwd = Cryptography.AESDecrypt(item.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
                     foreach (var item in config.MQTTConfigs)
                         item.UserPwd = Cryptography.AESDecrypt(item.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
-
-                    //if (config.VideoConfig.Port == 0)
-                    //{
-                    //    config.VideoConfig.Port = Math.Abs(new Random().Next()) % 999 + 19000;
-                    //}
                     return config;
                 }
                 else
@@ -89,7 +84,6 @@ namespace ColorVision.Settings
             {
                 SaveConfig();
             };
-
             PerformanceControlLazy = new Lazy<SystemMonitor>(() => SystemMonitor.GetInstance());
         }
 
@@ -100,7 +94,7 @@ namespace ColorVision.Settings
         [JsonIgnore]
         readonly Lazy<SystemMonitor> PerformanceControlLazy;
         [JsonIgnore]
-        public SystemMonitor PerformanceControl { get => PerformanceControlLazy.Value; }
+        public SystemMonitor SystemMonitor { get => PerformanceControlLazy.Value; }
         
 
         readonly Lazy<SoftwareConfig> SoftwareConfigLazy;
