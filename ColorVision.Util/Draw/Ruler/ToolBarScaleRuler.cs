@@ -21,7 +21,6 @@ namespace ColorVision.Draw.Ruler
             Zoombox1 = zombox;
             this.drawCanvas = drawCanvas;
             ScalRuler = new DrawingVisualScaleHost();
-
             //ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             if (Zoombox1.Parent is Grid grid)
             {
@@ -30,6 +29,7 @@ namespace ColorVision.Draw.Ruler
                 {
                     EditScaleRuler editScaleRuler = new EditScaleRuler(ScalRuler) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                     editScaleRuler.ShowDialog();
+                    Render();
                 };
             }
         }
@@ -77,6 +77,13 @@ namespace ColorVision.Draw.Ruler
                     ScalRuler.ParentHeight = GridEx.ActualHeight;
                     drawCanvas.MouseWheel += DrawCanvas_MouseWheel;
                     GridEx.SizeChanged -= GridEx_SizeChanged;
+
+                    if (Window.GetWindow(Parent) is Window window)
+                    {
+                        window.SizeChanged -= GridEx_SizeChanged;
+                        window.SizeChanged += GridEx_SizeChanged;
+                    }
+
                     Render();
                 }
                 else
@@ -84,6 +91,11 @@ namespace ColorVision.Draw.Ruler
                     GridEx.Children.Remove(ScalRuler);
                     drawCanvas.MouseWheel -= DrawCanvas_MouseWheel;
                     GridEx.SizeChanged -= GridEx_SizeChanged;
+
+                    if (Window.GetWindow(Parent) is Window window)
+                    {
+                        Window.GetWindow(Parent).SizeChanged -= GridEx_SizeChanged;
+                    }
                 }
 
             }
