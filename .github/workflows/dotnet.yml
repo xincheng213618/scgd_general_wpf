@@ -1,7 +1,7 @@
 # This workflow will build a .NET project
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
 
-name: .NET and C++ CI
+name: .NET
 
 on:
   push:
@@ -16,22 +16,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 6.0.x
-    - name: Install C++ build tools
-      run: sudo apt-get update && sudo apt-get install -y build-essential
-      
+        
     - name: Restore dependencies
       run: dotnet restore build.sln
-      
-     - name: Build C++ project with MSBuild
-      run: |
-        # 安装MSBuild
-        sudo apt-get install -y msbuild
-        # 构建C++项目
-        msbuild build.sln /p:Configuration=Release /p:Platform=x64
       
     - name: Build
       run: dotnet build /p:Platform=x64 build.sln
