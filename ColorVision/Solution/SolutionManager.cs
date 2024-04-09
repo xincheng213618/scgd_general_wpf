@@ -66,15 +66,32 @@ namespace ColorVision.Solution
             SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
             SolutionLoaded += SolutionManager_SolutionLoaded;
 
+            bool su = false;
             if (File.Exists(App.SolutionPath))
             {
                 CurrentSolution.FullPath = App.SolutionPath;
-                OpenSolution(CurrentSolution.FullPath);
+                su =OpenSolution(CurrentSolution.FullPath);
             }
             else if (SolutionHistory.RecentFiles.Count > 0)
             {
-                OpenSolution(SolutionHistory.RecentFiles[0]);
+                su =OpenSolution(SolutionHistory.RecentFiles[0]);
             }
+
+            if (!su)
+            {
+                string Default = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision";
+                if (!Directory.Exists(Default))
+                    Directory.CreateDirectory(Default);
+
+                string DefaultSolution = Default + "\\" + "Default";
+                if (Directory.Exists(DefaultSolution))
+                    Directory.CreateDirectory(DefaultSolution);
+                DirectoryInfo directoryInfo = new DirectoryInfo(DefaultSolution);
+                var SolutionPath = CreateSolution(directoryInfo);
+                OpenSolution(SolutionPath);
+            }
+
+
             SolutionOpenCommand = new RelayCommand((a) => OpenSolutionWindow());
             SolutionCreateCommand = new RelayCommand((a) => NewCreateWindow());
         }
@@ -150,13 +167,13 @@ namespace ColorVision.Solution
                 SolutionDirectory = fileInfo.Directory;
                 SolutionHistory.InsertFile(FullPath);
                 SolutionLoaded?.Invoke(CurrentSolution, new EventArgs());
+                return true;
             }
             else
             {
                 SolutionHistory.RemoveFile(FullPath);
-                MessageBox.Show("打开工程失败","ColorVision");
+                return false;
             }
-            return true;
         }
 
         public string CreateSolution(DirectoryInfo Info)

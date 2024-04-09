@@ -45,7 +45,6 @@ namespace ColorVision.Solution
             }
             SolutionInfosShow = new ObservableCollection<SolutionInfo>(SolutionInfos);
             ListView1.ItemsSource = SolutionInfosShow;
-
         }
 
 
