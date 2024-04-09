@@ -25,6 +25,10 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore build.sln
       
-    - name: Build
-      run: dotnet build /p:Platform=x64 build.sln
+    - name: Build C++ project with MSBuild
+      run: |
+        # 安装MSBuild
+        sudo apt-get install -y msbuild
+        # 构建C++项目
+        msbuild path/to/cpp/project.vcxproj /p:Configuration=Release /p:Platform=x64
  
