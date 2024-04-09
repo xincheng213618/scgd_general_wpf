@@ -28,7 +28,6 @@ namespace ColorVision.Settings
             SoftwareSetting = new SoftwareSetting();
 
             UserConfig = new UserConfig();
-            SolutionConfig = new SolutionConfig();
             SystemMonitorSetting = new SystemMonitorSetting();
             SystemMonitorLazy = new Lazy<SystemMonitor>(() => SystemMonitor.GetInstance());
             TemplateControlLazy = new Lazy<TemplateControl>(() => TemplateControl.GetInstance());
@@ -117,8 +116,6 @@ namespace ColorVision.Settings
         public MySqlControl MySqlControl { get => MySqlControlLazy.Value; }
 
         public UserConfig UserConfig { get; set; }
-
-        public SolutionConfig SolutionConfig { get; set; }
 
         public SolutionSetting SolutionSetting { get; set; } = new SolutionSetting();
 

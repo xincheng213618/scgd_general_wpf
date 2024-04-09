@@ -30,9 +30,7 @@
         </Grid>
 
 
-        <Frame x:Name="MainFrame" Grid.Row="1" Style="{StaticResource FrameBaseStyle}" NavigationUIVisibility="Hidden"/>
-
-       
+        <Frame x:Name="MainFrame" Grid.Row="1" Style="{StaticResource FrameBaseStyle}" BorderThickness="0" NavigationUIVisibility="Hidden"/>
 
     </Grid>
 </UserControl>

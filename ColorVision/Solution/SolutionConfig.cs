@@ -8,15 +8,15 @@ namespace ColorVision.Solution
     /// </summary>
     public class SolutionConfig : ViewModelBase
     {
-        public string FullName 
+        public string FullPath 
         { 
-            get =>  _SolutionFullName;
+            get =>  _FullPath;
             set
             {
-                _SolutionFullName = value;
+                _FullPath = value;
                 NotifyPropertyChanged();
             }
         }
-        private string _SolutionFullName;
+        private string _FullPath;
     }
 }
