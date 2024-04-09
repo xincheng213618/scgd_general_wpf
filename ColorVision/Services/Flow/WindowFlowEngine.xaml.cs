@@ -147,14 +147,16 @@ namespace ColorVision.Services.Flow
             STNodeEditorMain.Nodes.Clear();
             STNodeEditorMain.LoadCanvas(flowName);
             svrName = "";
-           
-            flowControl = new FlowControl(MQTTControl.GetInstance(), nodeStart?.NodeName);
-            flowControl.FlowCompleted += (s, e) =>
+            if (nodeStart != null)
             {
-                ButtonFlowOpen.Content = "开始流程";
-                ButtonFlowPause.IsEnabled = false;
-                ButtonFlowPause.Visibility = Visibility.Collapsed;
-            };
+                flowControl = new FlowControl(MQTTControl.GetInstance(), nodeStart.NodeName);
+                flowControl.FlowCompleted += (s, e) =>
+                {
+                    ButtonFlowOpen.Content = "开始流程";
+                    ButtonFlowPause.IsEnabled = false;
+                    ButtonFlowPause.Visibility = Visibility.Collapsed;
+                };
+            }
             OperateGrid.Visibility = Visibility.Visible;
             this.Title = "流程编辑器 - " + new FileInfo(flowName).Name;
         }

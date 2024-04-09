@@ -15,8 +15,6 @@ namespace ColorVision.Services.Devices.Algorithm
     {
         public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();
 
-        public string DeviceID { get => Config.Id; }
-
         public event MessageRecvHandler OnMessageRecved;
 
         public DeviceAlgorithm DeviceAlgorithm { get; set; }
@@ -36,12 +34,6 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 switch (msg.EventName)
                 {
-                    //case "Init":
-                    //    DeviceStatus = DeviceStatusType.Init;
-                    //    break;
-                    //case "UnInit":
-                    //    DeviceStatus = DeviceStatusType.UnInit;
-                    //    break;
                     case "SetParam":
                         break;
                     case "Close":
@@ -84,18 +76,6 @@ namespace ColorVision.Services.Devices.Algorithm
                         OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         DeviceStatus = DeviceStatusType.Opened;
                         break;
-                    //case "Close":
-                    //    DeviceStatus = DeviceStatusType.UnInit;
-                    //    break;
-                    //case "Open":
-                    //    DeviceStatus = DeviceStatusType.UnInit;
-                    //    break;
-                    //case "Init":
-                    //    DeviceStatus = DeviceStatusType.UnInit;
-                    //    break;
-                    //case "UnInit":
-                    //    DeviceStatus = DeviceStatusType.UnInit;
-                    //    break;
                     case "Calibrations":
                         break;
                     default:
@@ -112,7 +92,6 @@ namespace ColorVision.Services.Devices.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "Init",
-                //Params = new Dictionary<string, object>() { { "SnID", SnID } , {"CodeID",Config.Code } }
             };
             return PublishAsyncClient(msg);
         }
