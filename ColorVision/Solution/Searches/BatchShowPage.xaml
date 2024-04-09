@@ -10,7 +10,11 @@
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       Title="BatchShowPage" Initialized="Page_Initialized">
-
+    <Page.Resources>
+        <Style TargetType="TextBlock" >
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+        </Style>
+    </Page.Resources>
     <Grid>
         <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="5" Margin="5">
             <Grid>

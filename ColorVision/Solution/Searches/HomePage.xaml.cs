@@ -1,4 +1,7 @@
-﻿using System;
+﻿using LiveChartsCore.VisualElements;
+using Microsoft.Xaml.Behaviors;
+using Microsoft.Xaml.Behaviors.Layout;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,6 +15,8 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using ColorVision.Adorners;
+
 
 namespace ColorVision.Solution.Searches
 {
@@ -28,7 +33,28 @@ namespace ColorVision.Solution.Searches
             InitializeComponent();
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void Page_Initialized(object sender, EventArgs e) 
+        {
+            FluidMoveBehavior fluidMoveBehavior = new FluidMoveBehavior
+            {
+                AppliesTo = FluidMoveScope.Children,
+                Duration = TimeSpan.FromSeconds(0.1)
+            };
+
+            Interaction.GetBehaviors(ContentStackPanel).Add(fluidMoveBehavior);
+            //ContentStackPanel.AddAdorners(this);
+
+        }
+        private void Page_Loaded(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void UserControl_PreviewKeyUp(object sender, KeyEventArgs e)
+        {
+        }
+
+        private void UserControl_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             Frame.Navigate(new DataSummaryPage(Frame));
         }

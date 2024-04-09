@@ -38,7 +38,7 @@ namespace ColorVision.Adorners
         /// <param name="draggedControl">ドラッグするコントロール</param>
         /// <param name="offset">固定オフセット量</param>
         public DragUserControlAdorner(UIElement adornedElement,
-                                  UserControl draggedControl,
+                                  FrameworkElement draggedControl,
                                   Point offset) : base(adornedElement)
         {
             // ドラッグするコントロールをイメージに変換

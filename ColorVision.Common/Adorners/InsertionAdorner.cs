@@ -29,7 +29,7 @@ namespace ColorVision.Adorners
         /// <summary>コンストラクター</summary>
         /// <param name="adornedElement">装飾エレメント</param>
         /// <param name="showInRightSide">挿入位置が右側の場合true、左側の場合falseを指定する</param>
-        public InsertionAdorner(UserControl adornedElement,
+        public InsertionAdorner(FrameworkElement adornedElement,
                                 bool showInRightSide = false) : base(adornedElement)
         {
             // 装飾エレメントの高さを取得
