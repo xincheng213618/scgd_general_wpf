@@ -170,8 +170,9 @@ namespace ColorVision.Services.Flow
                 STNodeEditorMain.LoadCanvas(Convert.FromBase64String(flowParam.DataBase64));
             }
             svrName = "";
+            
 
-            flowControl = new FlowControl(MQTTControl.GetInstance(), nodeStart?.NodeName);
+            flowControl = new FlowControl(MQTTControl.GetInstance(), nodeStart.NodeName);
             flowControl.FlowCompleted += (s, e) =>
             {
                 ButtonFlowOpen.Content = "开始流程";

@@ -8,7 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.IO;
 
-namespace ColorVision.Solution.Views
+namespace ColorVision.Solution.Searches
 {
     public class ViewBatchResult : ViewModelBase,ISortID,ISortCreateTime, ISortBatch
     {
@@ -20,6 +20,10 @@ namespace ColorVision.Solution.Views
             CreateTime = batchResultMasterModel.CreateDate;
             TotalTime = TimeSpan.FromMilliseconds((double)(batchResultMasterModel.TotalTime??0));
         }
+
+        public RelayCommand ExPortCommand { get; set; }
+
+
         public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
         public int IdShow { get; set; }
