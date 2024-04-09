@@ -87,7 +87,8 @@ namespace ColorVision.Services.DAO
 
         public int UpdateEnd(string bid, int totalTime, string result)
         {
-            string sql = $"update {TableName} set result='{result}',total_time={totalTime} where code='{bid}'";
+            int result_code = (result == "Completed") ? 0 : -1;
+            string sql = $"update {TableName} set result='{result}',result_code={result_code},total_time={totalTime} where code='{bid}'";
             return ExecuteNonQuery(sql);
         }
     }
