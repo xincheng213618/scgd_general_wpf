@@ -194,6 +194,7 @@ namespace ColorVision
             Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}正在加载工程"; });
             Application.Current.Dispatcher.Invoke(() => SolutionManager.GetInstance());
             await Task.Delay(50);
+            Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}正在打开主窗口"; });
             Application.Current.Dispatcher.Invoke(() =>
             {
 
