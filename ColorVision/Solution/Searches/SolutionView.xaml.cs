@@ -36,9 +36,6 @@ namespace ColorVision.Solution.Searches
             }
 
 
-
-
-
             ContextMenu contextMenu = new ContextMenu();
             MainSetting.ContextMenu = contextMenu;
             MenuItem menuItem = new MenuItem() { Header = "独立窗口" };
@@ -46,8 +43,7 @@ namespace ColorVision.Solution.Searches
             {
                 View.ViewIndex = -2;
             };
-            contextMenu.Items.Add(menuItem);
-            ;
+            contextMenu.Items.Add(menuItem);;
         }
 
         private void View_ViewIndexChangedEvent(int oindex, int index)
