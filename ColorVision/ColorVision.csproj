@@ -46,6 +46,8 @@
     <None Remove="Assets\Image\uploadbg.avif" />
     <None Remove="Assets\png\background0.png" />
     <None Remove="Assets\png\PowerToy.png" />
+    <None Remove="Assets\png\归档查询.png" />
+    <None Remove="Assets\png\综合查询.png" />
   </ItemGroup>  
 
   <ItemGroup>
@@ -175,6 +177,8 @@
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Resource>
     <Resource Include="Assets\png\PowerToy.png" />
+    <Resource Include="Assets\png\归档查询.png" />
+    <Resource Include="Assets\png\综合查询.png" />
   </ItemGroup>
 
   <ItemGroup>

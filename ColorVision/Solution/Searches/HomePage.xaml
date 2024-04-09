@@ -7,9 +7,12 @@
       mc:Ignorable="d" 
       d:DesignHeight="450" d:DesignWidth="800"
       Title="HomePage" Loaded="Page_Loaded" Initialized="Page_Initialized">
+    <Page.Resources>
+        <Style TargetType="TextBlock" >
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+        </Style>
+    </Page.Resources>
     <Grid>
-
-
         <UniformGrid x:Name="ContentStackPanel"  Columns="3" VerticalAlignment="Center">
             <UserControl Width="200" MouseLeftButtonUp="UserControl_MouseLeftButtonUp">
                 <Grid >
@@ -28,6 +31,7 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <Image Source="/Assets/png/background0.png"/>
+                    <Image Source="/Assets/png/综合查询.png" Margin="30"/>
                     <TextBlock Grid.Row="1" Text="综合查询" HorizontalAlignment="Center" FontSize="18"/>
                 </Grid>
             </UserControl>
@@ -38,6 +42,7 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
                     <Image Source="/Assets/png/background0.png"/>
+                    <Image Source="/Assets/png/归档查询.png" Margin="50"/>
                     <TextBlock Grid.Row="1" Text="归档查询" HorizontalAlignment="Center" FontSize="18"/>
                 </Grid>
             </UserControl>
