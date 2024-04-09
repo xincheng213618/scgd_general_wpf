@@ -7,7 +7,7 @@ using ColorVision.Services.Flow;
 using ColorVision.Services.RC;
 using ColorVision.Settings;
 using ColorVision.Solution;
-using ColorVision.Solution.Views;
+using ColorVision.Solution.Searches;
 using ColorVision.Themes;
 using ColorVision.Update;
 using ColorVision.UserSpace;
