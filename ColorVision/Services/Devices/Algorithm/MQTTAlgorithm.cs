@@ -29,6 +29,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {
+            if (msg.DeviceCode != Config.Code) return;
             IsRun = false;
             if (msg.Code == 0)
             {

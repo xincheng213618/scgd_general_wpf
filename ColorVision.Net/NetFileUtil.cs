@@ -36,14 +36,18 @@ namespace ColorVision.Net
 
         public string GetCacheFileFullName(string fileName)
         {
-            if (string.IsNullOrWhiteSpace(fileName) || string.IsNullOrWhiteSpace(FileCachePath)) return string.Empty;
-            DirectoryInfo directoryInfo = new DirectoryInfo(FileCachePath);
-            if (!directoryInfo.Exists) return string.Empty;
-            directoryInfo.GetFiles();
-            foreach (var item in directoryInfo.GetFiles())
+            if (File.Exists(fileName)) return fileName;
+            if (!string.IsNullOrWhiteSpace(FileCachePath))
             {
-                if (item.Name.Contains(fileName))
-                    return item.FullName;
+                DirectoryInfo directoryInfo = new DirectoryInfo(FileCachePath);
+                if (!directoryInfo.Exists) return string.Empty;
+                directoryInfo.GetFiles();
+                foreach (var item in directoryInfo.GetFiles())
+                {
+                    if (item.Name.Contains(fileName))
+                        return item.FullName;
+                }
+                return string.Empty;
             }
             return string.Empty;
         }
