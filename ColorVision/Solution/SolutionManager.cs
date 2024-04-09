@@ -153,7 +153,8 @@ namespace ColorVision.Solution
             }
             else
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(),"打开工程失败","ColorVision");
+                SolutionHistory.RemoveFile(FullPath);
+                MessageBox.Show("打开工程失败","ColorVision");
             }
             return true;
         }
