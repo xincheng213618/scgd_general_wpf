@@ -57,6 +57,7 @@ namespace ColorVision.Services.RC
         private string RCHeartbeatTopic;
         private string RCPublicTopic;
         private string RCAdminTopic;
+        private string ArchivedTopic;
         private NodeToken? Token;
         private bool TryTestRegist;
         public ServiceNodeStatus RegStatus { get=> _RegStatus; set { _RegStatus = value; NotifyPropertyChanged();NotifyPropertyChanged(nameof(IsConnect)); } }
@@ -108,6 +109,7 @@ namespace ColorVision.Services.RC
             this.RCHeartbeatTopic = MQTTRCServiceTypeConst.BuildHeartbeatTopic(RCNodeName);
             this.RCPublicTopic = MQTTRCServiceTypeConst.BuildPublicTopic(RCNodeName);
             this.RCAdminTopic = MQTTRCServiceTypeConst.BuildAdminTopic(RCNodeName);
+            this.ArchivedTopic = MQTTRCServiceTypeConst.BuildArchivedTopic(RCNodeName);
 
             MQTTControl.SubscribeCache(SubscribeTopic);
         }
@@ -457,5 +459,10 @@ namespace ColorVision.Services.RC
             return RegStatus == ServiceNodeStatus.Registered;
         }
 
+        public void Archived(string sn)
+        {
+            MQTTArchivedRequest request = new MQTTArchivedRequest(sn);
+            PublishAsyncClient(ArchivedTopic, JsonConvert.SerializeObject(request));
+        }
     }
 }
