@@ -511,7 +511,7 @@
                     <ToolBar.Resources>
                         <ResourceDictionary Source="/ColorVision.Util;component/Themes/Icons.xaml"/>
                     </ToolBar.Resources>
-                    <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding Activate}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
+                    <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding ImageEditMode}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
                         <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagedrag}"/>
                     </ToggleButton>
                     <Button Command="{Binding ZoomUniform}"  Margin="1,0">

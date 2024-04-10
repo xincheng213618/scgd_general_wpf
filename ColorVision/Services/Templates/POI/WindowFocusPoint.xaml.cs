@@ -76,7 +76,7 @@ namespace ColorVision.Services.Templates.POI
 
             ToolBarTop = new ToolBarTop(ImageContentGrid, Zoombox1, ImageShow);
             ToolBarTop.ToolBarScaleRuler.IsShow = false;
-            ToolBarTop.Activate = true;
+            ToolBarTop.ImageEditMode = true;
             ToolBar1.DataContext = ToolBarTop;
 
 

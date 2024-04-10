@@ -217,7 +217,7 @@ namespace ColorVision.Services.Templates.POI
                     ListView1.ScrollIntoView(drawingVisual);
                     ListView1.SelectedIndex = DrawingVisualLists.IndexOf(drawingVisual);
 
-                    if (ToolBarTop.Activate == true)
+                    if (ToolBarTop.ImageEditMode == true)
                     {
                         if (drawingVisual is DrawingVisual visual)
                             SelectDrawingVisual = visual;

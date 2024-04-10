@@ -12,9 +12,19 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Security.Cryptography.X509Certificates;
+using Newtonsoft.Json.Bson;
 
 namespace ColorVision.Draw
 {
+
+    public class EditModeChangedEventArgs : EventArgs
+    {
+        public EditModeChangedEventArgs() { }   
+        public EditModeChangedEventArgs(bool isEditMode) { IsEditMode = isEditMode; }
+        public bool IsEditMode { get; set; }
+    }
+
     public class WindowStatus
     {
         public object Root { get; set; }
@@ -65,7 +75,6 @@ namespace ColorVision.Draw
 
         public double ActualLength { get; set; } = 1;
         public string PhysicalUnit { get; set; } = "Px";
-
 
         public ToolBarTop(FrameworkElement Parent,ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
@@ -125,7 +134,48 @@ namespace ColorVision.Draw
                     ZoomDecrease.RaiseExecute(e);
                 }
             };
+
+            EditModeChanged += (s, e) =>
+            {
+                if (e.IsEditMode)
+                {
+                    Parent.ContextMenu = null;
+                }
+                else
+                {
+                    ContextMenu contextMenu = new ContextMenu();
+
+
+                    MenuItem menuItemZoom = new MenuItem() { Header = "缩放工具", Command = SaveImageCommand };
+                    menuItemZoom.Items.Add(new MenuItem() { Header ="放大",Command =ZoomIncrease});
+                    menuItemZoom.Items.Add(new MenuItem() { Header = "缩小", Command = ZoomIncrease });
+                    menuItemZoom.Items.Add(new MenuItem() { Header = "原始大小", Command = ZoomNone });
+                    menuItemZoom.Items.Add(new MenuItem() { Header = "适应屏幕", Command = ZoomUniform });
+
+                    contextMenu.Items.Add(menuItemZoom);
+
+                    MenuItem menuItemScalingMode = new MenuItem() { Header = "BitmapScalingMode" };
+                    contextMenu.Items.Add(menuItemScalingMode);
+
+
+
+                    contextMenu.Items.Add(new MenuItem() { Header = "左旋转", Command = RotateLeftCommand });
+                    contextMenu.Items.Add(new MenuItem() { Header = "右旋转", Command = RotateRightCommand });
+                    contextMenu.Items.Add(new MenuItem() { Header = "全屏", Command = MaxCommand ,InputGestureText ="F11" });
+                    contextMenu.Items.Add(new MenuItem() { Header = "清空", Command = ClearImageCommand });
+
+                    contextMenu.Items.Add(new Separator());
+                    contextMenu.Items.Add(new MenuItem() { Header = "保存到", Command = SaveImageCommand });
+
+                    contextMenu.Items.Add(new Separator());
+                    contextMenu.Items.Add(new MenuItem() { Header = "清空", Command = ClearImageCommand });
+
+
+                    Parent.ContextMenu = contextMenu;
+                }
+            };
         }
+
 
         public void RotateRight()
         {
@@ -367,7 +417,7 @@ namespace ColorVision.Draw
             get => _ShowImageInfo; set
             {
                 if (_ShowImageInfo == value) return;
-                if (value) Activate = false;
+                if (value) ImageEditMode = false;
                 _ShowImageInfo = value;
 
                 MouseMagnifier.IsShow = value;
@@ -375,18 +425,22 @@ namespace ColorVision.Draw
             }
         }
 
+        public EventHandler<EditModeChangedEventArgs> EditModeChanged { get; set; }
 
-        private bool _Activate;
+        private bool _ImageEditMode;
 
-        public bool Activate
+        public bool ImageEditMode
         {
-            get => _Activate;
+            get => _ImageEditMode;
             set
             {
-                if (_Activate == value) return;
+                if (_ImageEditMode == value) return;
                 if (value) ShowImageInfo = false;
-                _Activate = value;
-                if (_Activate)
+                _ImageEditMode = value;
+
+                EditModeChanged?.Invoke(this, new EditModeChangedEventArgs() { IsEditMode = value });
+
+                if (_ImageEditMode)
                 {
                     ZoomboxSub.ActivateOn = ModifierKeys.Control;
                     ZoomboxSub.Cursor = Cursors.Cross;
@@ -413,7 +467,7 @@ namespace ColorVision.Draw
                 _DrawCircle = value;
                 if (value)
                 {
-                    Activate = true;
+                    ImageEditMode = true;
                     LastChoice = nameof(DrawCircle);
                 }
                 NotifyPropertyChanged(); 
@@ -433,7 +487,7 @@ namespace ColorVision.Draw
                 _DrawRect = value;
                 if (value)
                 {
-                    Activate = true;
+                    ImageEditMode = true;
                     LastChoice = nameof(DrawRect);
                 }
                 NotifyPropertyChanged();
@@ -448,7 +502,7 @@ namespace ColorVision.Draw
                 _Measure = value;
                 if (value)
                 {
-                    Activate = true;
+                    ImageEditMode = true;
                     LastChoice = nameof(Measure);
                 }
                 ToolBarMeasure.Measure = value;
@@ -470,7 +524,7 @@ namespace ColorVision.Draw
                 _DrawPolygon = value;
                 if (value)
                 {
-                    Activate = true;
+                    ImageEditMode = true;
                     LastChoice = nameof(DrawPolygon);
                 }
 
@@ -528,7 +582,7 @@ namespace ColorVision.Draw
                 }
                 if (value)
                 {
-                    Activate = true;
+                    ImageEditMode = true;
                     LastChoice = nameof(EraseVisual);
                 }
 
