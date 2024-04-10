@@ -42,7 +42,7 @@ namespace ColorVision.Solution.V.Files
             //window.Content = imageView;
             ////Task.Run(async () => {
             ////    await Task.Delay(10);
-            ////    Application.Current.Dispatcher.Invoke(() => { imageView.OpenCVCIE(FileInfo.FullName); });
+            ////    Application.Current.Dispatcher.Invoke(() => { imageView.OpenCVCIE(FileInfo.FullPath); });
             ////});
             //window.IsShow();
 

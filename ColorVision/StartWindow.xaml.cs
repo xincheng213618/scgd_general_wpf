@@ -194,29 +194,37 @@ namespace ColorVision
             Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}正在加载工程"; });
             Application.Current.Dispatcher.Invoke(() => SolutionManager.GetInstance());
             await Task.Delay(50);
+            Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}正在打开主窗口"; });
             Application.Current.Dispatcher.Invoke(() =>
             {
 
                 MainWindow mainWindow = new MainWindow();
                 ServiceManager ServiceManager = ServiceManager.GetInstance();
-                try
+                if (MySqlControl.GetInstance().IsConnect)
                 {
-                    if (!ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.IsDefaultOpenService)
+                    try
                     {
-                        TextBoxMsg.Text += $"{Environment.NewLine}初始化服务";
-                        ServiceManager.GenDeviceDisplayControl();
-                        new WindowDevices() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        if (!ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.IsDefaultOpenService)
+                        {
+                            TextBoxMsg.Text += $"{Environment.NewLine}初始化服务";
+                            ServiceManager.GenDeviceDisplayControl();
+                            new WindowDevices() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        }
+                        else
+                        {
+                            TextBoxMsg.Text += $"{Environment.NewLine}自动配置服务中";
+                            ServiceManager.GenDeviceDisplayControl();
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        TextBoxMsg.Text += $"{Environment.NewLine}自动配置服务中";
-                        ServiceManager.GenDeviceDisplayControl();
+                        MessageBox.Show("窗口创建错误:" + ex.Message);
+                        Environment.Exit(-1);
                     }
                 }
-                catch (Exception ex)
+                else
                 {
-                    MessageBox.Show("窗口创建错误:" + ex.Message);
-                    Environment.Exit(-1);
+                    TextBoxMsg.Text += $"{Environment.NewLine}数据库连接失败，跳过服务配置";
                 }
                 mainWindow.Show();
                 this.Close();

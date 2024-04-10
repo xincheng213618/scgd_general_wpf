@@ -221,9 +221,9 @@ namespace ColorVision.Services.Templates
         {
             foreach (var item in DicTemplate)
             {
-                if (Directory.Exists(SolutionManager.GetInstance().CurrentSolution.FullName))
+                if (Directory.Exists(SolutionManager.GetInstance().CurrentSolution.FullPath))
                 {
-                    CfgFile.Save(SolutionManager.GetInstance().CurrentSolution.FullName + "\\CFG\\" + item.Key + ".cfg", item.Value);
+                    CfgFile.Save(SolutionManager.GetInstance().CurrentSolution.FullPath + "\\CFG\\" + item.Key + ".cfg", item.Value);
                 }
                 else
                 {

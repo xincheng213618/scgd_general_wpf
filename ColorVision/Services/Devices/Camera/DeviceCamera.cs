@@ -274,7 +274,7 @@ namespace ColorVision.Services.Devices.Camera
             if (File.Exists(UploadFilePath))
             {
                 Msg ="正在解压文件：" +" 请稍后...";
-                string path = SolutionManager.GetInstance().CurrentSolution.FullName + "\\Cache\\Cal";
+                string path = SolutionManager.GetInstance().CurrentSolution.FullPath + "\\Cache\\Cal";
                 if (Directory.Exists(path))
                     Directory.Delete(path, true);
                 Directory.CreateDirectory(path);

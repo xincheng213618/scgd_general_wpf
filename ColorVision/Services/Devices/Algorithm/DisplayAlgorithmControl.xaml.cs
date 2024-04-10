@@ -76,10 +76,6 @@ namespace ColorVision.Services.Devices.Algorithm
             else
             {
                 handler?.Close();
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    //MessageBox.IsShow(Application.Current.MainWindow, "文件打开失败", "ColorVision");
-                });
             }
         }
 
@@ -99,7 +95,6 @@ namespace ColorVision.Services.Devices.Algorithm
                     break;
                 case AlgorithmResultType.Ghost:
                     doOpenLocal(data.FilePath, FileExtType.Tif);
-                    //doOpen(data.FilePath, FileExtType.Src);
                     break;
                 default:
                     break;
@@ -534,7 +529,7 @@ namespace ColorVision.Services.Devices.Algorithm
         private void doOpen(string fileName, FileExtType extType)
         {
             string localName = netFileUtil.GetCacheFileFullName(fileName);
-            if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
+            if (!System.IO.File.Exists(localName))
             {
                 Service.Open(fileName, extType);
             }

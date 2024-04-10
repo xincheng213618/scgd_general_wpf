@@ -34,7 +34,7 @@ namespace ColorVision.Solution
             } }
 
         //工程配置文件
-        public SolutionConfig CurrentSolution { get => SoftwareConfig.SolutionConfig; }
+        public SolutionConfig CurrentSolution { get; set; }
         public SolutionSetting Setting { get => SoftwareConfig.SolutionSetting; }
         public SoftwareConfig SoftwareConfig { get; private set; }
         public RecentFileList SolutionHistory { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
@@ -61,23 +61,50 @@ namespace ColorVision.Solution
         {
             SolutionExplorers = new ObservableCollection<SolutionExplorer>();
 
+            CurrentSolution = new SolutionConfig();
+
             SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
+            SolutionLoaded += SolutionManager_SolutionLoaded;
+
+            bool su = false;
             if (File.Exists(App.SolutionPath))
             {
-                CurrentSolution.FullName = App.SolutionPath;
-                OpenSolution(CurrentSolution.FullName);
+                CurrentSolution.FullPath = App.SolutionPath;
+                su =OpenSolution(CurrentSolution.FullPath);
             }
-            else
+            else if (SolutionHistory.RecentFiles.Count > 0)
             {
-                SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-                OpenSolutionDirectory(CurrentSolution.FullName);
+                su =OpenSolution(SolutionHistory.RecentFiles[0]);
             }
+
+            if (!su)
+            {
+                string Default = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision";
+                if (!Directory.Exists(Default))
+                    Directory.CreateDirectory(Default);
+
+                string DefaultSolution = Default + "\\" + "Default";
+                if (Directory.Exists(DefaultSolution))
+                    Directory.CreateDirectory(DefaultSolution);
+                DirectoryInfo directoryInfo = new DirectoryInfo(DefaultSolution);
+                var SolutionPath = CreateSolution(directoryInfo);
+                OpenSolution(SolutionPath);
+            }
+
 
             SolutionOpenCommand = new RelayCommand((a) => OpenSolutionWindow());
             SolutionCreateCommand = new RelayCommand((a) => NewCreateWindow());
         }
 
-
+        private void SolutionManager_SolutionLoaded(object? sender, EventArgs e)
+        {
+            if (sender is SolutionConfig solutionConfig)
+            {
+                SolutionExplorers.Clear();
+                CurrentSolutionExplorer = new SolutionExplorer(solutionConfig.FullPath);
+                SolutionExplorers.Add(CurrentSolutionExplorer);
+            }
+        }
 
         public void InitMenu()
         {
@@ -97,7 +124,7 @@ namespace ColorVision.Solution
                         menuItem.Header = item;
                         menuItem.Click += (sender, e) =>
                         {
-                            OpenSolutionDirectory(item);
+                            OpenSolution(item);
                         };
                         RecentListMenuItem.Items.Add(menuItem);
                     }
@@ -131,73 +158,35 @@ namespace ColorVision.Solution
 
         public DirectoryInfo? SolutionDirectory { get; private set; }
 
-        public bool OpenSolutionDirectory(string SolutionFullPath)
-        {
-            log.Debug("正在打开工程:" + SolutionFullPath);
-
-            if (!Directory.Exists(SolutionFullPath) && !File.Exists(SolutionFullPath))
-            {
-                string DefaultPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision\\默认工程";
-                if (!Directory.Exists(DefaultPath))
-                    Directory.CreateDirectory(DefaultPath);
-                CreateSolution(new DirectoryInfo(DefaultPath));
-                SolutionFullPath = DefaultPath;
-            }
-
-            CurrentSolution.FullName = SolutionFullPath;
-
-            if (Directory.Exists(SolutionFullPath))
-            {
-                SolutionDirectory = new DirectoryInfo(CurrentSolution.FullName);
-            }
-
-            if (File.Exists(SolutionFullPath))
-            {
-                FileInfo fileInfo = new FileInfo(SolutionFullPath);
-                SolutionDirectory = fileInfo.Directory;
-            }
-
-
-            SolutionHistory.InsertFile(CurrentSolution.FullName);
-            SolutionLoaded?.Invoke(CurrentSolution, new EventArgs());
-
-            SolutionExplorers.Clear();
-            CurrentSolutionExplorer = new SolutionExplorer(SolutionFullPath);
-            SolutionExplorers.Add(CurrentSolutionExplorer);
-            return true;
-        }
-
         public bool OpenSolution(string FullPath)
         {
             if (File.Exists(FullPath)&& FullPath.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
             {
                 FileInfo fileInfo = new FileInfo(FullPath);
-                CurrentSolution.FullName = FullPath;
+                CurrentSolution.FullPath = FullPath;
                 SolutionDirectory = fileInfo.Directory;
                 SolutionHistory.InsertFile(FullPath);
                 SolutionLoaded?.Invoke(CurrentSolution, new EventArgs());
-                SolutionExplorers.Clear();
-                CurrentSolutionExplorer = new SolutionExplorer(FullPath);
-                SolutionExplorers.Add(CurrentSolutionExplorer);
+                return true;
             }
             else
             {
-                MessageBox.Show("打开工程失败");
+                SolutionHistory.RemoveFile(FullPath);
+                return false;
             }
-            return true;
         }
 
-        public void CreateSolution(DirectoryInfo Info)
+        public string CreateSolution(DirectoryInfo Info)
         {
-            Tool.CreateDirectoryMax(Info.FullName +"\\Cache");
-            Tool.CreateDirectoryMax(Info.FullName + "\\Cfg");
-            Tool.CreateDirectoryMax(Info.FullName + "\\Image");
-            Tool.CreateDirectoryMax(Info.FullName + "\\Flow");
+            SolutionConfig solutionConfig = new SolutionConfig();
+            Tool.CreateDirectoryMax(Info.FullName +"\\.cache");
 
-            CurrentSolution.FullName = Info.FullName;
-
-            CurrentSolution.ToJsonNFile(Info.FullName + "\\" + Info.Name + ".cvsln");
-            SolutionCreated?.Invoke(CurrentSolution, new EventArgs());
+            CurrentSolution.FullPath = Info.FullName;
+            string slnName = Info.FullName + "\\" + Info.Name + ".cvsln";
+            CurrentSolution.ToJsonNFile(slnName);
+            SolutionCreated?.Invoke(slnName, new EventArgs());
+            
+            return slnName;
         }
 
         public void CreateShortcut(string FileName)
@@ -214,7 +203,7 @@ namespace ColorVision.Solution
                 if (!string.IsNullOrWhiteSpace(openSolutionWindow.FullName))
                 {
                     if (Directory.Exists(openSolutionWindow.FullName))
-                        OpenSolutionDirectory(openSolutionWindow.FullName);
+                        OpenSolution(openSolutionWindow.FullName);
                     else
                         MessageBox.Show("找不到工程");
                 }
@@ -230,8 +219,8 @@ namespace ColorVision.Solution
                 if (newCreatWindow.IsCreate)
                 {
                     string SolutionDirectoryPath = newCreatWindow.NewCreateViewMode.DirectoryPath + "\\" + newCreatWindow.NewCreateViewMode.Name;
-                    CreateSolution(new DirectoryInfo(SolutionDirectoryPath));
-                    OpenSolutionDirectory(SolutionDirectoryPath);
+                    string name = CreateSolution(new DirectoryInfo(SolutionDirectoryPath));
+                    OpenSolution(name);
                 }
             };
             newCreatWindow.ShowDialog();
@@ -239,10 +228,10 @@ namespace ColorVision.Solution
 
         public void ClearCache()
         {
-            Directory.Delete(CurrentSolution.FullName+ "\\Flow",true);
-            Directory.Delete(CurrentSolution.FullName+ "\\Cache", true);
-            Tool.CreateDirectoryMax(CurrentSolution.FullName+ "\\Cache");
-            Tool.CreateDirectoryMax(CurrentSolution.FullName+ "\\Flow");
+            Directory.Delete(CurrentSolution.FullPath+ "\\Flow",true);
+            Directory.Delete(CurrentSolution.FullPath+ "\\Cache", true);
+            Tool.CreateDirectoryMax(CurrentSolution.FullPath+ "\\Cache");
+            Tool.CreateDirectoryMax(CurrentSolution.FullPath+ "\\Flow");
         }
     }
 }

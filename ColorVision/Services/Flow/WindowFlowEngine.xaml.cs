@@ -133,7 +133,7 @@ namespace ColorVision.Services.Flow
         {
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
             ofd.Filter = "*.stn|*.stn";
-            ofd.InitialDirectory = SolutionManager.GetInstance().CurrentSolution.FullName;
+            ofd.InitialDirectory = SolutionManager.GetInstance().CurrentSolution.FullPath;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
             ButtonSave.Visibility = Visibility.Visible;

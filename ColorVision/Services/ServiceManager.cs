@@ -62,7 +62,8 @@ namespace ColorVision.Services
             svrDevices = new Dictionary<string, List<MQTTServiceBase>>();
             ServiceTokens = new List<MQTTServiceInfo>();
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadServices();
-            LoadServices();
+            if (MySqlControl.GetInstance().IsConnect)
+                LoadServices();
         }
 
         public void GenControl(ObservableCollection<DeviceService> MQTTDevices)
