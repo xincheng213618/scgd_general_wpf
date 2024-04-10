@@ -19,5 +19,10 @@ namespace ColorVision.Services.Devices.Camera.Configs
         /// </summary>
         public string PortRange { get => _PortRange; set { _PortRange = value; NotifyPropertyChanged(); } }
         private string _PortRange;
+        /// <summary>
+        /// 保存天数
+        /// </summary>
+        public uint SaveDays { get => _SaveDays; set { _SaveDays = value; NotifyPropertyChanged(); } }
+        private uint _SaveDays;
     }
 }
