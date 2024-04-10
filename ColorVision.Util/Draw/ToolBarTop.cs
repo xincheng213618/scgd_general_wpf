@@ -54,6 +54,7 @@ namespace ColorVision.Draw
         public RelayCommand ClearImageCommand { get; set; }
         public EventHandler ClearImageEventHandler { get; set; }
 
+        public RelayCommand PrintImageCommand { get; set; }
 
         public RelayCommand OpenProperty { get; set; }
 
@@ -112,6 +113,8 @@ namespace ColorVision.Draw
             zombox.Cursor = Cursors.Hand;
 
             SaveImageCommand = new RelayCommand(a => Save());
+            PrintImageCommand = new RelayCommand(a => Print());
+
             ClearImageCommand = new RelayCommand(a => ClearImage());
             MaxCommand = new RelayCommand(a => MaxImage());
 
@@ -143,39 +146,57 @@ namespace ColorVision.Draw
                 }
                 else
                 {
-                    ContextMenu contextMenu = new ContextMenu();
-
-
-                    MenuItem menuItemZoom = new MenuItem() { Header = "缩放工具", Command = SaveImageCommand };
-                    menuItemZoom.Items.Add(new MenuItem() { Header ="放大",Command =ZoomIncrease});
-                    menuItemZoom.Items.Add(new MenuItem() { Header = "缩小", Command = ZoomIncrease });
-                    menuItemZoom.Items.Add(new MenuItem() { Header = "原始大小", Command = ZoomNone });
-                    menuItemZoom.Items.Add(new MenuItem() { Header = "适应屏幕", Command = ZoomUniform });
-
-                    contextMenu.Items.Add(menuItemZoom);
-
-                    MenuItem menuItemScalingMode = new MenuItem() { Header = "BitmapScalingMode" };
-                    contextMenu.Items.Add(menuItemScalingMode);
-
-
-
-                    contextMenu.Items.Add(new MenuItem() { Header = "左旋转", Command = RotateLeftCommand });
-                    contextMenu.Items.Add(new MenuItem() { Header = "右旋转", Command = RotateRightCommand });
-                    contextMenu.Items.Add(new MenuItem() { Header = "全屏", Command = MaxCommand ,InputGestureText ="F11" });
-                    contextMenu.Items.Add(new MenuItem() { Header = "清空", Command = ClearImageCommand });
-
-                    contextMenu.Items.Add(new Separator());
-                    contextMenu.Items.Add(new MenuItem() { Header = "保存到", Command = SaveImageCommand });
-
-                    contextMenu.Items.Add(new Separator());
-                    contextMenu.Items.Add(new MenuItem() { Header = "清空", Command = ClearImageCommand });
-
-
-                    Parent.ContextMenu = contextMenu;
+                    AddContextMenu();
                 }
             };
+            AddContextMenu();
         }
 
+        public void Print()
+        {
+            PrintDialog printDialog = new PrintDialog();
+            if (printDialog.ShowDialog() == true)
+            {
+                // 创建一个可打印的区域
+                Size pageSize = new Size(printDialog.PrintableAreaWidth, printDialog.PrintableAreaHeight);
+                Image.Measure(pageSize);
+                Image.Arrange(new Rect(5, 5, pageSize.Width, pageSize.Height));
+
+                // 开始打印
+                printDialog.PrintVisual(Image, "Printing");
+            }
+
+        }
+        public void AddContextMenu()
+        {
+            ContextMenu contextMenu = new ContextMenu();
+            MenuItem menuItemZoom = new MenuItem() { Header = "缩放工具", Command = SaveImageCommand };
+            menuItemZoom.Items.Add(new MenuItem() { Header = "放大", Command = ZoomIncrease });
+            menuItemZoom.Items.Add(new MenuItem() { Header = "缩小", Command = ZoomIncrease });
+            menuItemZoom.Items.Add(new MenuItem() { Header = "原始大小", Command = ZoomNone });
+            menuItemZoom.Items.Add(new MenuItem() { Header = "适应屏幕", Command = ZoomUniform });
+
+            contextMenu.Items.Add(menuItemZoom);
+
+            MenuItem menuItemScalingMode = new MenuItem() { Header = "BitmapScalingMode" };
+            contextMenu.Items.Add(menuItemScalingMode);
+
+
+
+            contextMenu.Items.Add(new MenuItem() { Header = "左旋转", Command = RotateLeftCommand });
+            contextMenu.Items.Add(new MenuItem() { Header = "右旋转", Command = RotateRightCommand });
+            contextMenu.Items.Add(new MenuItem() { Header = "全屏", Command = MaxCommand, InputGestureText = "F11" });
+            contextMenu.Items.Add(new MenuItem() { Header = "清空", Command = ClearImageCommand });
+
+            contextMenu.Items.Add(new Separator());
+            contextMenu.Items.Add(new MenuItem() { Header = "另存为", Command = SaveImageCommand });
+            contextMenu.Items.Add(new MenuItem() { Header = "Print", Command = PrintImageCommand });
+
+            contextMenu.Items.Add(new MenuItem() { Header = "清空", Command = ClearImageCommand });
+
+
+            Parent.ContextMenu = contextMenu;
+        }
 
         public void RotateRight()
         {
