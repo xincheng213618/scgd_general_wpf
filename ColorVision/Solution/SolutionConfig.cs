@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using System.IO;
 
 namespace ColorVision.Solution
 {
@@ -8,6 +9,7 @@ namespace ColorVision.Solution
     /// </summary>
     public class SolutionConfig : ViewModelBase
     {
+
         public string FullPath 
         { 
             get =>  _FullPath;

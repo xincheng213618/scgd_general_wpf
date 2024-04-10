@@ -48,6 +48,10 @@
                             <TextBox  x:Name="TextBox_PortRange" Text="{Binding FileServerCfg.PortRange}"/>
                         </DockPanel>
                         <DockPanel Margin="0,2">
+                            <TextBlock Text="保存天数:" Width="120"/>
+                            <TextBox Text="{Binding FileServerCfg.SaveDays}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,2">
                             <TextBlock  Text="色温波长" Width="120"/>
                             <ui:ToggleSwitch IsChecked="{Binding IsCCTWave}"/>
                         </DockPanel>

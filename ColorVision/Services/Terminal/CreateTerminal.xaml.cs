@@ -118,6 +118,7 @@ namespace ColorVision.Services.Terminal
                             Endpoint = "127.0.0.1",
                             PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
                             DataBasePath = "D:\\CVTest",
+                            SaveDays = 7,
                         }
                     };
                     sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
@@ -179,6 +180,7 @@ namespace ColorVision.Services.Terminal
                             Endpoint = "127.0.0.1",
                             PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
                             DataBasePath = "D:\\CVTest",
+                            SaveDays = 7,
                         }
                     };
                     sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
@@ -210,6 +212,7 @@ namespace ColorVision.Services.Terminal
                             Endpoint = "127.0.0.1",
                             PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
                             DataBasePath = "D:\\CVTest",
+                            SaveDays = 7,
                         }
                     };
                     sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);

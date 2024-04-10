@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.IO;
+using ColorVision.Services.RC;
 
 namespace ColorVision.Solution.Searches
 {
@@ -144,6 +145,11 @@ namespace ColorVision.Solution.Searches
             {
                 Frame.Navigate(new BatchShowPage(Frame, ViewBatchResults[listView.SelectedIndex]));
             }
+        }
+        private void Arch_Click(object sender, RoutedEventArgs e)
+        {
+            ViewBatchResult sel = (ViewBatchResult)listView1.SelectedValue;
+            MQTTRCService.GetInstance().Archived(sel.BatchCode);
         }
     }
 }

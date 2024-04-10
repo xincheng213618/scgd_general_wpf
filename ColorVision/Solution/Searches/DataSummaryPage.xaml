@@ -22,6 +22,7 @@
             <Grid>
                 <DockPanel Margin="5" >
                     <Button  Content="搜索" DockPanel.Dock="Right" Click="Query_Click" Margin="10,0"/>
+                    <Button  Content="归档" DockPanel.Dock="Right" Click="Arch_Click" Margin="10,0"/>
                     <TextBox x:Name="SearchBox" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="0"  VerticalContentAlignment="Center"  VerticalAlignment="Center" Text="" TextChanged="SearchBox_TextChanged"  InputMethod.IsInputMethodEnabled="True"  KeyDown="KeyEnter"  />
                 </DockPanel>
             </Grid>
