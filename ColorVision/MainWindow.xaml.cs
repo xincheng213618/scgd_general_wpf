@@ -187,7 +187,6 @@ namespace ColorVision
                 thread1.Start();
             }
 
-
             string? RegistrationCenterServicePath = Tool.GetServicePath("RegistrationCenterService");
 
             if (RegistrationCenterServicePath != null)
