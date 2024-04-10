@@ -6,6 +6,9 @@ using System.Collections.Generic;
 using System.IO;
 using OpenCvSharp;
 using System.Windows.Markup;
+using System.Collections.ObjectModel;
+using ColorVision.RecentFile;
+using ColorVision.Solution.V.Files;
 
 namespace ColorVision.Services.Devices.Camera.Views
 {
@@ -15,7 +18,7 @@ namespace ColorVision.Services.Devices.Camera.Views
         {
             string FileName = export.FilePath;
             string SavePath = export.SavePath;
-            string Name =Path.GetFileName(FileName);
+            string Name = export.Name;
 
             int index = CVFileUtil.ReadCIEFileHeader(FileName, out CVCIEFile cvcie);
             if (index < 0) return -1;
@@ -30,6 +33,9 @@ namespace ColorVision.Services.Devices.Camera.Views
                         CVFileUtil.ReadCIEFileData(FileName, ref cvcie, index);
                         src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
                         src.SaveImage(SavePath + "\\" + Name + "Src.tif");
+                        
+
+
                     }
                     break;
                 case FileExtType.Src:
@@ -120,23 +126,53 @@ namespace ColorVision.Services.Devices.Camera.Views
                         cVCIEFile.srcFileName = Path.Combine(Path.GetDirectoryName(filePath)??string.Empty, Path.GetFileNameWithoutExtension(filePath) + ".cvraw");
                     if (File.Exists(cVCIEFile.srcFileName))
                     {
-                        IsExportSrc = CVFileUtil.ReadCIEFileHeader(cVCIEFile.srcFileName ,out CVCIEFile cvraw) > 0;
+                        IsCanExportSrc = CVFileUtil.ReadCIEFileHeader(cVCIEFile.srcFileName ,out _CVCIEFile) > 0;
+                        IsChannelOne = _CVCIEFile.channels == 0;
                     }
                 }
-            }else if (FileExtType == FileExtType.Raw)
-            {
-                IsExportSrc = CVFileUtil.ReadCIEFileHeader(filePath, out CVCIEFile cvraw) > 0;
-            }
-        }
 
+            }
+            else if (FileExtType == FileExtType.Raw)
+            {
+                IsCanExportSrc = CVFileUtil.ReadCIEFileHeader(filePath, out _CVCIEFile) > 0;
+                IsChannelOne = CVCIEFile.channels == 0;
+            }
+
+            if (RecentImage.RecentFiles.Count == 0)
+            {
+                RecentImage.InsertFile(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory));
+            }
+            SavePath = RecentImage.RecentFiles[0];
+            RecentImageSaveList = new ObservableCollection<string>(RecentImage.RecentFiles);
+
+            Name = Path.GetFileNameWithoutExtension(FilePath);
+        }
+        public int Rows { get => _CVCIEFile.rows; }
+        public int Cols { get => _CVCIEFile.cols; }
+        public int Channels { get => _CVCIEFile.channels; }
+        public int Gain { get => _CVCIEFile.gain; }
+        public float[] Exp { get => _CVCIEFile.exp; }
+
+
+
+        public CVCIEFile CVCIEFile { get => _CVCIEFile; }
+        private CVCIEFile _CVCIEFile;
+
+        public RecentFileList RecentImage { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\RecentImageSaveList") };
+
+        public ObservableCollection<string> RecentImageSaveList { get; set; }
         public bool IsCVRaw { get => FileExtType == FileExtType.Raw; }
 
         public bool IsCVCIE { get => FileExtType == FileExtType.CIE; }
 
+        public bool IsChannelOne { get; set; }
 
 
         public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); } }
         private string _FilePath;
+
+        public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        private string _Name;
 
         public string SavePath { get => _SavePath; set { _SavePath = value; NotifyPropertyChanged(); } }
         private string _SavePath;
@@ -152,8 +188,10 @@ namespace ColorVision.Services.Devices.Camera.Views
         public bool IsExportChannelZ { get => _IsExportChannelZ; set { _IsExportChannelZ = value; NotifyPropertyChanged(); } }
         private bool _IsExportChannelZ;
 
+        public bool IsCanExportSrc { get; set; }
+
         public bool IsExportSrc { get => _IsExportSrc; set { _IsExportSrc = value; NotifyPropertyChanged(); } }
-        private bool _IsExportSrc;
+        private bool _IsExportSrc = true;
         public bool IsExportChannelR { get => _IsExportChannelR; set { _IsExportChannelR = value; NotifyPropertyChanged(); } }
         private bool _IsExportChannelR;
 

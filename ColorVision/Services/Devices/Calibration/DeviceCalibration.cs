@@ -125,13 +125,12 @@ namespace ColorVision.Services.Devices.Calibration
             if (File.Exists(UploadFilePath))
             {
                 Msg = "正在解压文件：" + " 请稍后...";
-                string path = SolutionManager.GetInstance().CurrentSolution.FullPath + "\\Cache\\Cal";
+                string path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)+ "\\ColorVision\\Cacahe";
                 if (Directory.Exists(path))
                     Directory.Delete(path, true);
                 Directory.CreateDirectory(path);
                 await Task.Delay(10);
                 Msg = "正在解析校正文件：" + " 请稍后...";
-
                 bool  sss = ExtractToDirectoryWithOverwrite(UploadFilePath, path);
                 if (!sss)
                 {
