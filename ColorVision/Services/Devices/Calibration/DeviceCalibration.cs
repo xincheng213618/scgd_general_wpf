@@ -125,7 +125,7 @@ namespace ColorVision.Services.Devices.Calibration
             if (File.Exists(UploadFilePath))
             {
                 Msg = "正在解压文件：" + " 请稍后...";
-                string path = SolutionManager.GetInstance().CurrentSolution.FullPath + "\\Cache\\Cal";
+                string path = SolutionManager.GetInstance().SolutionDirectory?.FullName + "\\Cache\\Cal";
                 if (Directory.Exists(path))
                     Directory.Delete(path, true);
                 Directory.CreateDirectory(path);
