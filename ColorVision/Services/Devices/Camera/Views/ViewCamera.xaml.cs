@@ -272,17 +272,6 @@ namespace ColorVision.Services.Devices.Camera.Views
 
             dialog.FileName = dialog.FileName + ".csv";
             CsvWriter.WriteToCsv(ViewResultCameras[listView1.SelectedIndex], dialog.FileName);
-
-
-            if (File.Exists(LocalFileName))
-            {
-                CVFileUtil.SaveToTif(LocalFileName, Path.GetDirectoryName(dialog.FileName));
-            }
-            else
-            {
-                ImageSource bitmapSource = ImageView.ImageShow.Source;
-                ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
-            }
         }
 
 
