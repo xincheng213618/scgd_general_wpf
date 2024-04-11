@@ -206,9 +206,6 @@ namespace ColorVision.Services.Devices.Algorithm
             ComboxPoiTemplate2.ItemsSource = TemplateControl.GetInstance().PoiParams;
             ComboxPoiTemplate2.SelectedIndex = 0;
 
-
-
-
             ComboxSFRTemplate.ItemsSource = TemplateControl.GetInstance().SFRParams;
             ComboxSFRTemplate.SelectedIndex = 0;
 
@@ -223,8 +220,8 @@ namespace ColorVision.Services.Devices.Algorithm
 
             ComboxLedCheckTemplate.ItemsSource = TemplateControl.GetInstance().LedCheckParams;  
             ComboxLedCheckTemplate.SelectedIndex = 0;
-            ComboxPoiTemplate1.ItemsSource = TemplateControl.GetInstance().PoiParams;
-            ComboxPoiTemplate1.SelectedIndex = -1;
+            ComboxPoiTemplate1.ItemsSource = TemplateHelpers.CreatTemplateModelEmpty(TemplateControl.GetInstance().PoiParams);
+            ComboxPoiTemplate1.SelectedIndex = 0;
 
             ComboxFocusPointsTemplate.ItemsSource = TemplateControl.GetInstance().FocusPointsParams;
             ComboxFocusPointsTemplate.SelectedIndex = 0;

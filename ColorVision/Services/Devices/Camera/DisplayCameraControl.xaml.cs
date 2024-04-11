@@ -1,31 +1,24 @@
-﻿using ColorVision.Common.Extension;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Extension;
-using ColorVision.Net;
 using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.Devices.Camera.Views;
+using ColorVision.Services.Devices.PG;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
-using ColorVision.Solution;
 using ColorVision.Themes;
 using cvColorVision;
 using log4net;
 using MQTTMessageLib;
 using MQTTMessageLib.Camera;
-using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
-using Panuon.WPF.UI;
-using ScottPlot.Drawing.Colormaps;
+using Panuon.WPF;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -164,42 +157,10 @@ namespace ColorVision.Services.Devices.Camera
 
         private void CalibrationParamInit()
         {
-            CalibrationParams = new ObservableCollection<TemplateModel<CalibrationParam>>();
-            CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam() { Id = -1 }));
-
-            if (Device.DeviceCalibration != null)
-            {
-                foreach (var item in Device.DeviceCalibration.CalibrationParams)
-                    CalibrationParams.Add(item);
-
-                Device.DeviceCalibration.CalibrationParams.CollectionChanged -= CalibrationParams_CollectionChanged;
-                Device.DeviceCalibration.CalibrationParams.CollectionChanged += CalibrationParams_CollectionChanged;
-            }
-
-            ComboxCalibrationTemplate.ItemsSource = CalibrationParams;
+            ComboxCalibrationTemplate.ItemsSource = TemplateHelpers.CreatTemplateModelEmpty(Device.DeviceCalibration?.CalibrationParams);
             ComboxCalibrationTemplate.SelectedIndex = 0;
         }
 
-        private void CalibrationParams_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        {
-            switch (e.Action)
-            {
-                case NotifyCollectionChangedAction.Add:
-                    if (e.NewItems != null)
-                        foreach (TemplateModel<CalibrationParam> newItem in e.NewItems)
-                            CalibrationParams.Add(newItem);
-                    break;
-                case NotifyCollectionChangedAction.Remove:
-                    if (e.OldItems != null)
-                        foreach (TemplateModel<CalibrationParam> newItem in e.OldItems)
-                            CalibrationParams.Remove(newItem);
-                    break;
-                case NotifyCollectionChangedAction.Reset:
-                    CalibrationParams.Clear();
-                    CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()) { Id = -1 });
-                    break;
-            }
-        }
 
         private void CameraInit_Click(object sender, RoutedEventArgs e)
         {

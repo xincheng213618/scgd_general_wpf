@@ -14,13 +14,11 @@ namespace ColorVision.Services
     internal static partial class ServicesHelper
     {
 
-        static IPendingHandler handler { get; set; }
         public static IPendingHandler SendCommand(MsgRecord msgRecord, string Msg)
         {
-            handler = PendingBox.Show(Application.Current.MainWindow, Msg, true);
+            IPendingHandler handler = PendingBox.Show(Application.Current.MainWindow, Msg, true);
             var temp = Application.Current.MainWindow.Cursor;
             Application.Current.MainWindow.Cursor = Cursors.Wait;
-
             MsgRecordStateChangedHandler msgRecordStateChangedHandler;
             msgRecordStateChangedHandler = (e) =>
             {
