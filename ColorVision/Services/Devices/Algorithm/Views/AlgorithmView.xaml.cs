@@ -136,9 +136,12 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
         public void AlgResultMasterModelDataDraw(AlgResultMasterModel result)
         {
-            AlgorithmResult algorithmResult = new AlgorithmResult(result);
-            AlgResults.AddUnique(algorithmResult);
-            RefreshResultListView();
+            if (result != null)
+            {
+                AlgorithmResult algorithmResult = new AlgorithmResult(result);
+                AlgResults.AddUnique(algorithmResult);
+                RefreshResultListView();
+            }
         }
 
         private void RefreshResultListView()
