@@ -144,6 +144,10 @@ namespace ColorVision.MySql
             {
                 return GetModelFromDataRow(dataTable.Rows[0]) ;
             }
+            else if (dataTable.Rows.Count >= 1)
+            {
+                return GetModelFromDataRow(dataTable.Rows[0]);
+            }
             return default;
         }
 
