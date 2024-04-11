@@ -182,20 +182,20 @@
                     <ToggleButton  Click="Button5_Click">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImagegridlines}"  Margin="-5"/>
                     </ToggleButton>
-                    <ToggleButton  IsChecked="{Binding Measure}" Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}">
+                    <ToggleButton  IsChecked="{Binding Measure}" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageruler}"  Margin="-5"/>
                     </ToggleButton>
-                    <ToggleButton  IsChecked="{Binding EraseVisual}" Margin="1,0" Click="Button7_Click" Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}">
+                    <ToggleButton  IsChecked="{Binding EraseVisual}" Margin="1,0" Click="Button7_Click" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageeraser}"  Margin="-5"/>
                     </ToggleButton>
 
-                    <ToggleButton IsChecked="{Binding DrawCircle}" Margin="1,0" Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}">
+                    <ToggleButton IsChecked="{Binding DrawCircle}" Margin="1,0" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageCircle}"  Margin="-5"/>
                     </ToggleButton>
-                    <ToggleButton IsChecked="{Binding DrawRect}" Margin="1,0" Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}">
+                    <ToggleButton IsChecked="{Binding DrawRect}" Margin="1,0" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageRect}"  Margin="-5"/>
                     </ToggleButton>
-                    <ToggleButton IsChecked="{Binding DrawPolygon}"  Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}"  >
+                    <ToggleButton IsChecked="{Binding DrawPolygon}"  Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}"  >
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}"  Margin="-5"/>
                     </ToggleButton>
                 </ToolBar>
