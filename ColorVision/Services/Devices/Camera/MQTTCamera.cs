@@ -105,9 +105,8 @@ namespace ColorVision.Services.Devices.Camera
                                     Config.Saturation = (int)msg.Data[0].resultSaturation;
 
                                     string Msg = "Saturation:" + Config.Saturation.ToString();
-                                    Application.Current.Dispatcher.Invoke(() => MessageBox.Show(Application.Current.GetActiveWindow(), Msg));
+                                    MessageBox.Show(Application.Current.GetActiveWindow(), Msg);
                                 }
-
                             } );
                         }   
                         break;
