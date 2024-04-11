@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace ColorVision.Services.Devices.Camera
 {
@@ -69,43 +70,46 @@ namespace ColorVision.Services.Devices.Camera
                     case "GetAutoExpTime":
                         if (msg.Data != null && msg.Data[0].result != null)
                         {
-                            if (Config.IsExpThree)
+                            Application.Current.Dispatcher.Invoke(() =>
                             {
-                                for (int i = 0; i < 3; i++)
+                                if (Config.IsExpThree)
                                 {
-                                    if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_X)
+                                    for (int i = 0; i < 3; i++)
                                     {
-                                        Config.ExpTimeR = (int)msg.Data[i].result;
-                                        Config.SaturationR = (int)msg.Data[i].resultSaturation;
-                                    }
-                                    if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Y)
-                                    {
-                                        Config.ExpTimeG = (int)msg.Data[i].result;
-                                        Config.SaturationG = (int)msg.Data[i].resultSaturation;
+                                        if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_X)
+                                        {
+                                            Config.ExpTimeR = (int)msg.Data[i].result;
+                                            Config.SaturationR = (int)msg.Data[i].resultSaturation;
+                                        }
+                                        if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Y)
+                                        {
+                                            Config.ExpTimeG = (int)msg.Data[i].result;
+                                            Config.SaturationG = (int)msg.Data[i].resultSaturation;
+                                        }
+
+                                        if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Z)
+                                        {
+                                            Config.ExpTimeB = (int)msg.Data[i].result;
+                                            Config.SaturationB = (int)msg.Data[i].resultSaturation;
+                                        }
                                     }
 
-                                    if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Z)
-                                    {
-                                        Config.ExpTimeB = (int)msg.Data[i].result;
-                                        Config.SaturationB = (int)msg.Data[i].resultSaturation;
-                                    }
+                                    string Msg = "SaturationR:" + Config.SaturationR.ToString() + Environment.NewLine +
+                                                 "SaturationG:" + Config.SaturationG.ToString() + Environment.NewLine +
+                                                 "SaturationB:" + Config.SaturationB.ToString() + Environment.NewLine;
+                                    MessageBox.Show(Application.Current.GetActiveWindow(), Msg);
+                                }
+                                else
+                                {
+                                    Config.ExpTime = (int)msg.Data[0].result;
+                                    Config.Saturation = (int)msg.Data[0].resultSaturation;
+
+                                    string Msg = "Saturation:" + Config.Saturation.ToString();
+                                    Application.Current.Dispatcher.Invoke(() => MessageBox.Show(Application.Current.GetActiveWindow(), Msg));
                                 }
 
-                                string Msg = "SaturationR:" + Config.SaturationR.ToString() + Environment.NewLine +
-                                             "SaturationG:" + Config.SaturationG.ToString() + Environment.NewLine +
-                                             "SaturationB:" + Config.SaturationB.ToString() + Environment.NewLine;
-
-                                Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, Msg));
-                            }
-                            else
-                            {
-                                Config.ExpTime = (int)msg.Data[0].result;
-                                Config.Saturation = (int)msg.Data[0].resultSaturation;
-
-                                string Msg = "Saturation:" + Config.Saturation.ToString();
-                                Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, Msg));
-                            }
-                        } 
+                            } );
+                        }   
                         break;
                     case "SaveLicense":
                         log.Debug($"SaveLicense:{msg.Data}");
