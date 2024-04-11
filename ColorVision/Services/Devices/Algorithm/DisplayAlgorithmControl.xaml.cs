@@ -663,7 +663,7 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 var pm = TemplateControl.GetInstance().LedCheckParams[ComboxLedCheckTemplate.SelectedIndex].Value;
                 var poi_pm = TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate1.SelectedIndex].Value;
-                var ss = Service.LedCheck(ImageFile.Text, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn);
+                var ss = Service.LedCheck(ImageFile.Text, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate1.Text);
                 ServicesHelper.SendCommand(ss, "正在计算灯珠");
             }
         }

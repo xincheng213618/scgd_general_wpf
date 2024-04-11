@@ -328,7 +328,7 @@ namespace ColorVision.Services.Devices.Algorithm
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord LedCheck(string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
+        public MsgRecord LedCheck(string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber, int poiId, string poiTempName)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
@@ -336,6 +336,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
+            Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiId, Name = poiTempName });
 
             MsgSend msg = new MsgSend
             {
