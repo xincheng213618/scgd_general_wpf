@@ -4,6 +4,8 @@ using ColorVision.Common.MVVM;
 using ColorVision.Services.Dao;
 using MQTTMessageLib.Camera;
 using System;
+using System.IO;
+using ColorVision.Services.Export;
 
 namespace ColorVision.Services.Devices.Camera.Views
 {
@@ -37,7 +39,18 @@ namespace ColorVision.Services.Devices.Camera.Views
             ResultMsg = measureImgResultModel.ResultMsg;
             ResultDesc = measureImgResultModel.ResultMsg ?? string.Empty;
             _totalTime = measureImgResultModel.TotalTime;
+
+            ExportCVCIECommand = new RelayCommand(a => Export(), a => File.Exists(FileUrl) );
         }
+
+        public void Export()
+        {
+            ExportCVCIE exportCVCIE = new ExportCVCIE(FileUrl);
+            exportCVCIE.Show();
+        }
+
+        public RelayCommand ExportCVCIECommand { get; set; }
+
 
         public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;

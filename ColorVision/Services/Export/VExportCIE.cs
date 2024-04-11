@@ -10,7 +10,7 @@ using System.Collections.ObjectModel;
 using ColorVision.RecentFile;
 using ColorVision.Solution.V.Files;
 
-namespace ColorVision.Services.Devices.Camera.Views
+namespace ColorVision.Services.Export
 {
     public class VExportCIE : ViewModelBase
     {
@@ -33,7 +33,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                         CVFileUtil.ReadCIEFileData(FileName, ref cvcie, index);
                         src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
                         src.SaveImage(SavePath + "\\" + Name + "Src.tif");
-                        
+
 
 
                     }
@@ -108,8 +108,6 @@ namespace ColorVision.Services.Devices.Camera.Views
             return 0;
         }
 
-
-
         public VExportCIE(string filePath)
         {
             FilePath = filePath;
@@ -123,10 +121,10 @@ namespace ColorVision.Services.Devices.Camera.Views
                 if (CVFileUtil.ReadCIEFileHeader(filePath, out CVCIEFile cVCIEFile) > 0 && !string.IsNullOrEmpty(cVCIEFile.srcFileName))
                 {
                     if (!File.Exists(cVCIEFile.srcFileName))
-                        cVCIEFile.srcFileName = Path.Combine(Path.GetDirectoryName(filePath)??string.Empty, Path.GetFileNameWithoutExtension(filePath) + ".cvraw");
+                        cVCIEFile.srcFileName = Path.Combine(Path.GetDirectoryName(filePath) ?? string.Empty, Path.GetFileNameWithoutExtension(filePath) + ".cvraw");
                     if (File.Exists(cVCIEFile.srcFileName))
                     {
-                        IsCanExportSrc = CVFileUtil.ReadCIEFileHeader(cVCIEFile.srcFileName ,out _CVCIEFile) > 0;
+                        IsCanExportSrc = CVFileUtil.ReadCIEFileHeader(cVCIEFile.srcFileName, out _CVCIEFile) > 0;
                         IsChannelOne = _CVCIEFile.channels == 0;
                     }
                 }

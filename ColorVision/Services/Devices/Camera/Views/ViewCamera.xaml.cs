@@ -6,6 +6,7 @@ using ColorVision.Draw.Ruler;
 using ColorVision.Media;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Export;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Services.Templates.POI;
@@ -571,7 +572,7 @@ namespace ColorVision.Services.Devices.Camera.Views
             {
                 if (File.Exists(viewCamera.FileUrl))
                 {
-                    ExportCamera exportCamera = new ExportCamera(viewCamera.FileUrl) { Icon = Device.Icon };
+                    ExportCVCIE exportCamera = new ExportCVCIE(viewCamera.FileUrl) { Icon = Device.Icon };
                     exportCamera.Owner = Application.Current.GetActiveWindow();
                     exportCamera.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                     exportCamera.ShowDialog();
