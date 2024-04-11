@@ -104,7 +104,7 @@
                             </GroupBox>
                         </TabItem>
                         <TabItem Header="MTF">
-                            <GroupBox  Header="MTF" ToolTip="Modulation Transfer Function">
+                            <StackPanel >
                                 <DockPanel Margin="0,2">
                                     <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="MTF_Click" />
                                     <ComboBox  x:Name="ComboxMTFTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
@@ -114,7 +114,11 @@
                                         <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="MTFParam" Click="MenuItem_Template"/>
                                     </Grid>
                                 </DockPanel>
-                            </GroupBox>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="POI" Width="30"/>
+                                    <ComboBox  x:Name="ComboxPoiTemplate2"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                </DockPanel>
+                            </StackPanel>
                         </TabItem>
                         <TabItem Header="SFR">
                             <GroupBox  Header="SFR" ToolTip="计算空间频率响应">
@@ -156,7 +160,7 @@
                             </GroupBox>
                         </TabItem>
                         <TabItem Header="灯珠检测">
-                            <GroupBox  Header="灯珠检测">
+                            <StackPanel>
                                 <DockPanel Margin="0,2">
                                     <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="LedCheck_Click" />
                                     <ComboBox  x:Name="ComboxLedCheckTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
@@ -165,7 +169,11 @@
                                         <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="LedCheckParam" Click="MenuItem_Template"/>
                                     </Grid>
                                 </DockPanel>
-                            </GroupBox>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="POI" Width="30"/>
+                                    <ComboBox  x:Name="ComboxPoiTemplate1"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                </DockPanel>
+                            </StackPanel>
                         </TabItem>
                         <TabItem Header="发光区检测">
                             <GroupBox  Header="发光区检测">

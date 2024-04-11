@@ -203,6 +203,11 @@ namespace ColorVision.Services.Devices.Algorithm
 
             ComboxMTFTemplate.ItemsSource = TemplateControl.GetInstance().MTFParams;
             ComboxMTFTemplate.SelectedIndex = 0;
+            ComboxPoiTemplate2.ItemsSource = TemplateControl.GetInstance().PoiParams;
+            ComboxPoiTemplate2.SelectedIndex = 0;
+
+
+
 
             ComboxSFRTemplate.ItemsSource = TemplateControl.GetInstance().SFRParams;
             ComboxSFRTemplate.SelectedIndex = 0;
@@ -218,6 +223,8 @@ namespace ColorVision.Services.Devices.Algorithm
 
             ComboxLedCheckTemplate.ItemsSource = TemplateControl.GetInstance().LedCheckParams;  
             ComboxLedCheckTemplate.SelectedIndex = 0;
+            ComboxPoiTemplate1.ItemsSource = TemplateControl.GetInstance().PoiParams;
+            ComboxPoiTemplate1.SelectedIndex = -1;
 
             ComboxFocusPointsTemplate.ItemsSource = TemplateControl.GetInstance().FocusPointsParams;
             ComboxFocusPointsTemplate.SelectedIndex = 0;
@@ -295,7 +302,7 @@ namespace ColorVision.Services.Devices.Algorithm
                 MessageBox.Show(Application.Current.MainWindow, "请先选择MTF模板", "ColorVision");
                 return;
             }
-            if (ComboxPoiTemplate.SelectedIndex == -1)
+            if (ComboxPoiTemplate2.SelectedIndex == -1)
             {
                 MessageBox.Show(Application.Current.MainWindow, "请先选择关注点模板", "ColorVision");
                 return;
@@ -307,8 +314,8 @@ namespace ColorVision.Services.Devices.Algorithm
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().MTFParams[ComboxMTFTemplate.SelectedIndex].Value;
-                var poi_pm = TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value;
-                var ss = Service.MTF(imgFileName, fileExtType, pm.Id, ComboxMTFTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate.Text);
+                var poi_pm = TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate2.SelectedIndex].Value;
+                var ss = Service.MTF(imgFileName, fileExtType, pm.Id, ComboxMTFTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate2.Text);
                 ServicesHelper.SendCommand(ss, "MTF");
             }
         }
@@ -642,6 +649,12 @@ namespace ColorVision.Services.Devices.Algorithm
                 return;
             }
 
+            if (ComboxPoiTemplate1.SelectedIndex == -1)
+            {
+                MessageBox.Show(Application.Current.MainWindow, "请先选择关注点模板", "ColorVision");
+                return;
+            }
+
             string sn = string.Empty;
             string imgFileName = ImageFile.Text;
             FileExtType fileExtType = FileExtType.Tif;
@@ -649,6 +662,7 @@ namespace ColorVision.Services.Devices.Algorithm
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().LedCheckParams[ComboxLedCheckTemplate.SelectedIndex].Value;
+                var poi_pm = TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate1.SelectedIndex].Value;
                 var ss = Service.LedCheck(ImageFile.Text, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn);
                 ServicesHelper.SendCommand(ss, "正在计算灯珠");
             }
