@@ -22,9 +22,6 @@ namespace ColorVision.Solution.Searches
             TotalTime = TimeSpan.FromMilliseconds((double)(batchResultMasterModel.TotalTime??0));
         }
 
-        public RelayCommand ExPortCommand { get; set; }
-
-
         public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
         public int IdShow { get; set; }

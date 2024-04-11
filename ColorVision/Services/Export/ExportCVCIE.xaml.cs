@@ -14,20 +14,21 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Threading;
-namespace ColorVision.Services.Devices.Camera.Views
+using ColorVision.Services.Export;
+namespace ColorVision.Services.Export
 {
 
 
     /// <summary>
-    /// ExportCamera.xaml 的交互逻辑
+    /// ExportCVCIE.xaml 的交互逻辑
     /// </summary>
-    public partial class ExportCamera : Window
+    public partial class ExportCVCIE : Window
     {
 
         public string CIEFilePath { get; set; }
         public VExportCIE VExportCIE { get; set; }
 
-        public ExportCamera(string cIEFilePath)
+        public ExportCVCIE(string cIEFilePath)
         {
             VExportCIE = new VExportCIE(cIEFilePath);
             InitializeComponent();
