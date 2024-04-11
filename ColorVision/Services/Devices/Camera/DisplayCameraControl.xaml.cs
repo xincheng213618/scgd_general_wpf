@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Extension;
+using ColorVision.Common.Utilities;
 using ColorVision.Extension;
 using ColorVision.Net;
 using ColorVision.Services.Core;
@@ -250,9 +251,13 @@ namespace ColorVision.Services.Devices.Camera
         {
             if (sender is Button button)
             {
+                if (button.Content.ToString() == MsgRecordState.Send.ToDescription())
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(),"请耐心等待");
+                    return;
+                }
                 MsgRecord msgRecord = DService.GetAutoExpTime();
                 ServicesHelper.SendCommand(button, msgRecord);
-
             }
         }
 
@@ -327,8 +332,9 @@ namespace ColorVision.Services.Devices.Camera
         {
             if (sender is Button button)
             {
-                MsgRecord msgRecord = DService.AutoFocus();
-                ServicesHelper.SendCommand(button, msgRecord);
+
+                    MsgRecord msgRecord = DService.AutoFocus();
+                    ServicesHelper.SendCommand(button, msgRecord);
             }
         }
 
