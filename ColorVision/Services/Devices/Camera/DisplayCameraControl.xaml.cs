@@ -129,6 +129,7 @@ namespace ColorVision.Services.Devices.Camera
                             DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(e.Data));
                             string mapName = Device.Code;
                             if (pm_live.IsLocal) mapName = pm_live.MapName;
+                            CameraVideoControl ??= new CameraVideoControl();
                             CameraVideoControl.Start(pm_live.IsLocal, mapName, pm_live.FrameInfo.width, pm_live.FrameInfo.height);
                             break;
                         default:
