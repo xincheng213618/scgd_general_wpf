@@ -65,7 +65,7 @@ namespace ColorVision.Services
             {
                 if (button.Content.ToString() == MsgRecordState.Send.ToDescription())
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), "请耐心等待");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "已经发送,请耐心等待","ColorVison");
                     return null;
                 }
                 MsgRecord msgRecord = action.Invoke();
