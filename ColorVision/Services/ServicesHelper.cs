@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Msg;
 using Panuon.WPF.UI;
+using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -57,6 +58,23 @@ namespace ColorVision.Services
             };
             return handler;
         }
+
+        public static MsgRecord? SendCommandEx(object sender, Func<MsgRecord> action)
+        {
+            if (sender is Button button)
+            {
+                if (button.Content.ToString() == MsgRecordState.Send.ToDescription())
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "请耐心等待");
+                    return null;
+                }
+                MsgRecord msgRecord = action.Invoke();
+                SendCommand(button, msgRecord);
+                return msgRecord;
+            }
+            return null;
+        }
+
 
 
         public static void SendCommand(Button button, MsgRecord msgRecord, bool Reserve = true)

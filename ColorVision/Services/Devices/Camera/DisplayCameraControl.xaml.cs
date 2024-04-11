@@ -18,6 +18,7 @@ using MQTTMessageLib;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using Panuon.WPF.UI;
 using ScottPlot.Drawing.Colormaps;
 using System;
@@ -202,7 +203,7 @@ namespace ColorVision.Services.Devices.Camera
 
         private void CameraInit_Click(object sender, RoutedEventArgs e)
         {
-            DService.GetAllCameraID();
+            ServicesHelper.SendCommandEx(sender, DService.GetAllCameraID);
         }
 
         private void Open_Click(object sender, RoutedEventArgs e)
@@ -243,22 +244,14 @@ namespace ColorVision.Services.Devices.Camera
                     else expTime = new double[] { Device.Config.ExpTime };
                     MsgRecord msgRecord = DService.GetData(expTime, new CalibrationParam() { Id = -1,Name ="Empty" });
                     ServicesHelper.SendCommand(button, msgRecord);
-                }
+                }  
+
             }
         }
 
         private void AutoExplose_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
-            {
-                if (button.Content.ToString() == MsgRecordState.Send.ToDescription())
-                {
-                    MessageBox.Show(Application.Current.GetActiveWindow(),"请耐心等待");
-                    return;
-                }
-                MsgRecord msgRecord = DService.GetAutoExpTime();
-                ServicesHelper.SendCommand(button, msgRecord);
-            }
+            ServicesHelper.SendCommandEx(sender, DService.GetAutoExpTime);
         }
 
         public CameraVideoControl CameraVideoControl { get; set; }
@@ -330,12 +323,7 @@ namespace ColorVision.Services.Devices.Camera
 
         private void AutoFocus_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
-            {
-
-                    MsgRecord msgRecord = DService.AutoFocus();
-                    ServicesHelper.SendCommand(button, msgRecord);
-            }
+            ServicesHelper.SendCommandEx(sender, DService.AutoFocus);
         }
 
         private void SetChannel()
@@ -417,47 +405,31 @@ namespace ColorVision.Services.Devices.Camera
 
         private void GoHome_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
-            {
-                if (int.TryParse(TextPos.Text, out int pos))
-                {
-                    var msgRecord = DService.GoHome();
-                    ServicesHelper.SendCommand(button, msgRecord);
-                }
-            }
+            ServicesHelper.SendCommandEx(sender, DService.GoHome);
         }
 
         private void GetPosition_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
-            {
-                var msgRecord = DService.GetPosition();
-                ServicesHelper.SendCommand(button, msgRecord);
-            }
+            ServicesHelper.SendCommandEx(sender, DService.GetPosition);
         }
 
         private void Move1_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
+            if (double.TryParse(TextDiaphragm.Text, out double pos))
             {
-                if (double.TryParse(TextDiaphragm.Text, out double pos))
-                {
-                    var msgRecord = DService.MoveDiaphragm(pos);
-                    ServicesHelper.SendCommand(button, msgRecord);
-                }
+                ServicesHelper.SendCommandEx(sender, () => DService.MoveDiaphragm(pos));
             }
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
+            if (DService.IsVideoOpen)
+                CameraVideoControl.Close();
+            MsgRecord msgRecord = ServicesHelper.SendCommandEx(sender, () => DService.Close());
+            if (msgRecord != null)
             {
-                if (DService.IsVideoOpen)
-                    CameraVideoControl.Close();
-                MsgRecord msgRecord = DService.Close();
-                ServicesHelper.SendCommand(button,msgRecord);
                 MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
-                 msgRecordStateChangedHandler = (e) =>
+                msgRecordStateChangedHandler = (e) =>
                 {
                     DService.IsVideoOpen = false;
                     ButtonOpen.Visibility = Visibility.Visible;
@@ -466,11 +438,9 @@ namespace ColorVision.Services.Devices.Camera
                     msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
                 };
                 msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
-
-
             }
-
         }
+
         private DispatcherTimer _timer;
 
         private void Timer_Tick(object? sender, EventArgs e)
