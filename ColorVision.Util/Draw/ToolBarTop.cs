@@ -74,9 +74,6 @@ namespace ColorVision.Draw
 
         public ToolReferenceLine ToolConcentricCircle { get; set; }
 
-        public double ActualLength { get; set; } = 1;
-        public string PhysicalUnit { get; set; } = "Px";
-
         public ToolBarTop(FrameworkElement Parent,ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             this.Parent = Parent;

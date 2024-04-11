@@ -14,14 +14,18 @@ namespace ColorVision.Common.Utilities
         {
             foreach (Window window in application.Windows)
                 if (window.IsActive) return window;
-            return null;
+            return Application.Current.MainWindow; ;
         }
 
+        /// <summary>
+        /// 这里修改一下
+        /// </summary>
+        /// <returns></returns>
         public static Window? GetActiveWindow()
         {
             foreach (Window window in Application.Current.Windows)
                 if (window.IsActive) return window;
-            return null;
+            return Application.Current.MainWindow;
         }
     }
 }

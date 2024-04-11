@@ -244,69 +244,6 @@ namespace ColorVision.Net
             return -1;
         }
 
-        public static int SaveToTif(string FileName,string SavePath)
-        {
-            if (!File.Exists(FileName)) return -1;
-            FileInfo fileInfo = new FileInfo(FileName);
-
-            int index = ReadCIEFileHeader(FileName, out CVCIEFile cvcie);
-            if (index < 0) return -1;
-            cvcie.FileExtType = FileName.Contains(".cvraw") ? FileExtType.Raw : FileName.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
-
-            Mat src;
-            switch (cvcie.FileExtType)
-            {
-                case FileExtType.Raw:
-                    ReadCIEFileData(FileName, ref cvcie, index);
-                    src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
-                    src.SaveImage(SavePath + "\\" + fileInfo.Name + "Src.tif");
-                    break;
-                case FileExtType.Src:
-                    ReadCIEFileData(FileName, ref cvcie, index);
-                    src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
-                    src.SaveImage(SavePath + "\\" + fileInfo.Name + "Src.tif");
-                    break;
-                case FileExtType.CIE:
-                    cvcie.srcFileName = Path.Combine(Path.GetDirectoryName(FileName) ?? string.Empty, cvcie.srcFileName);
-                    if (File.Exists(cvcie.srcFileName))
-                    {
-                        if (Read(cvcie.srcFileName, out CVCIEFile cvraw))
-                        {
-                            src = new Mat(cvraw.cols, cvraw.rows, MatType.MakeType(cvraw.Depth, cvraw.channels), cvraw.data);
-                            src.SaveImage(SavePath + "\\" + fileInfo.Name + "_Src.tif");
-                        }
-                    }
-                    if (ReadCIEFileData(FileName, ref cvcie, index))
-                    {
-                        if (cvcie.channels == 1)
-                        {
-                            src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(MatType.CV_32F, 1), cvcie.data);
-                            src.SaveImage(SavePath + "\\" + fileInfo.Name + "_Y.tif");
-                        }
-                        else if (cvcie.channels == 3)
-                        {
-                            List<string> strings = new List<string>() { "X", "Y", "Z" };
-                            for (int ch = 0; ch < 3; ch++)
-                            {
-                                int len = cvcie.cols * cvcie.rows * cvcie.bpp / 8;
-                                byte[] data = new byte[len];
-                                Buffer.BlockCopy(cvcie.data, ch * len, data, 0, len);
-                                src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(MatType.CV_32F, 1), data);
-                                src.SaveImage(SavePath + "\\" + fileInfo.Name + $"_{strings[ch]}.tif");
-                            }
-                        }
-                    }
-                    break;
-                case FileExtType.Calibration:
-                    break;
-                case FileExtType.Tif:
-                    break;
-                default:
-                    break;
-            }
-            return 0;
-        }
-
         public static bool ReadCVCIESrc(string FileName, out CVCIEFile fileOut)
         {
             fileOut = new CVCIEFile();

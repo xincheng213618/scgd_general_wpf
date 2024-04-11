@@ -270,7 +270,6 @@ namespace ColorVision.Services.Devices.Calibration.Views
             CsvWriter.WriteToCsv(ViewResultCalibrations[listView1.SelectedIndex], dialog.FileName);
             if (File.Exists(LocalFileName))
             {
-                CVFileUtil.SaveToTif(LocalFileName, Path.GetDirectoryName(dialog.FileName));
             }
             else
             {

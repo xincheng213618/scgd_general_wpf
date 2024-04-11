@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Extension;
+using ColorVision.Common.Utilities;
 using ColorVision.Extension;
 using ColorVision.Net;
 using ColorVision.Services.Core;
@@ -107,9 +108,12 @@ namespace ColorVision.Services.Devices.Camera
                     case DeviceStatusType.LiveOpened:
                     case DeviceStatusType.Opened:
                         ButtonInit.Visibility = Visibility.Collapsed;
-                        StackPanelImage.Visibility = Visibility.Visible;
+                        if (!DService.IsVideoOpen)
+                            StackPanelImage.Visibility = Visibility.Visible;
+
                         ButtonOpen.Visibility = Visibility.Collapsed;
                         ButtonClose.Visibility = Visibility.Visible;
+
                         break;
                     case DeviceStatusType.Opening:
                         break;
@@ -129,6 +133,7 @@ namespace ColorVision.Services.Devices.Camera
                             DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(e.Data));
                             string mapName = Device.Code;
                             if (pm_live.IsLocal) mapName = pm_live.MapName;
+                            CameraVideoControl ??= new CameraVideoControl();
                             CameraVideoControl.Start(pm_live.IsLocal, mapName, pm_live.FrameInfo.width, pm_live.FrameInfo.height);
                             break;
                         default:
@@ -246,9 +251,13 @@ namespace ColorVision.Services.Devices.Camera
         {
             if (sender is Button button)
             {
+                if (button.Content.ToString() == MsgRecordState.Send.ToDescription())
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(),"请耐心等待");
+                    return;
+                }
                 MsgRecord msgRecord = DService.GetAutoExpTime();
                 ServicesHelper.SendCommand(button, msgRecord);
-
             }
         }
 
@@ -323,8 +332,9 @@ namespace ColorVision.Services.Devices.Camera
         {
             if (sender is Button button)
             {
-                MsgRecord msgRecord = DService.AutoFocus();
-                ServicesHelper.SendCommand(button, msgRecord);
+
+                    MsgRecord msgRecord = DService.AutoFocus();
+                    ServicesHelper.SendCommand(button, msgRecord);
             }
         }
 

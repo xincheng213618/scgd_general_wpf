@@ -13,17 +13,7 @@
         </Style>
     </Page.Resources>
     <Grid>
-        <UniformGrid x:Name="ContentStackPanel"  Columns="3" VerticalAlignment="Center">
-            <UserControl Width="200" MouseLeftButtonUp="UserControl_MouseLeftButtonUp">
-                <Grid >
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <Image Source="/Assets/png/background0.png"/>
-                    <TextBlock Grid.Row="1" Text="手动归档" HorizontalAlignment="Center" FontSize="18"/>
-                </Grid>
-            </UserControl>
+        <UniformGrid x:Name="ContentStackPanel"  Columns="2" VerticalAlignment="Center">
             <UserControl Width="200" MouseLeftButtonUp="UserControl_MouseLeftButtonUp">
                 <Grid >
                     <Grid.RowDefinitions>
