@@ -157,7 +157,26 @@ namespace ColorVision.Services.Devices.Algorithm
                     }
                     break;
                 default:
-                    ShowResultFromDB(arg.SerialNumber, Convert.ToInt32(arg.Data.MasterId));
+                    List<AlgResultMasterModel> resultMaster = null;
+                    if (arg.Data.MasterId > 0)
+                    {
+                        resultMaster = new List<AlgResultMasterModel>();
+                        AlgResultMasterModel model = algResultMasterDao.GetById(arg.Data.MasterId);
+                        resultMaster.Add(model);
+                    }
+                    else
+                    {
+                        resultMaster = algResultMasterDao.GetAllByBatchCode(arg.SerialNumber);
+                    }
+
+                    foreach (AlgResultMasterModel result in resultMaster)
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            Device.View.AlgResultMasterModelDataDraw(result);
+                        });
+                    }
+                    handler?.Close();
                     break;
             }
         }
@@ -171,29 +190,6 @@ namespace ColorVision.Services.Devices.Algorithm
         }
 
         private AlgResultMasterDao algResultMasterDao = new AlgResultMasterDao();
-        private void ShowResultFromDB(string serialNumber, int masterId)
-        {
-            List<AlgResultMasterModel> resultMaster = null;
-            if (masterId > 0)
-            {
-                resultMaster = new List<AlgResultMasterModel>();
-                AlgResultMasterModel model = algResultMasterDao.GetById(masterId);
-                resultMaster.Add(model);
-            }
-            else
-            {
-                resultMaster = algResultMasterDao.GetAllByBatchCode(serialNumber);
-            }
-           
-            foreach (AlgResultMasterModel result in resultMaster)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    Device.View.AlgResultMasterModelDataDraw(result);
-                });
-            }
-            handler?.Close();
-        }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
