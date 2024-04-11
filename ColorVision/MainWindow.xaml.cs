@@ -187,16 +187,16 @@ namespace ColorVision
                 thread1.Start();
             }
 
-            string? RegistrationCenterServicePath = Tool.GetServicePath("RegistrationCenterService");
+            //string? RegistrationCenterServicePath = Tool.GetServicePath("RegistrationCenterService");
 
-            if (RegistrationCenterServicePath != null)
+            //if (RegistrationCenterServicePath != null)
             {
-                string Dir = Path.GetDirectoryName(RegistrationCenterServicePath);
-                string FilePath = Dir + "//Log//" + DateTime.Now.ToString("yyyyMMdd") + ".log";
-                MenuItem menulogs1 = new MenuItem() { Header = "RegistrationCenterServiceLog" };
+                //string Dir = Path.GetDirectoryName(RegistrationCenterServicePath);
+                //string FilePath = Dir + "//Log//" + DateTime.Now.ToString("yyyyMMdd") + ".log";
+                MenuItem menulogs1 = new MenuItem() { Header = "RC服务日志" };
                 menulogs1.Click += (s, e) =>
                 {
-                    PlatformHelper.Open(FilePath);
+                    PlatformHelper.OpenFolder("http://localhost:8080/system/log");
                 };
                 menulogs.Items.Insert(0, menulogs1);
             }
