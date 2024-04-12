@@ -112,7 +112,7 @@ namespace ColorVision.Services.Devices.Camera.Dao
                 Config = item.Field<string?>("phy_camera_cfg"),
                 CameraMode = item.Field<string?>("phy_camera_model"),
                 CreateDate = item.Field<DateTime>("create_date"),
-                ExpiryDate = item.Field<DateTime>("expired")
+                ExpiryDate = item.Field<DateTime?>("expired")
             };
             return model;
         }
