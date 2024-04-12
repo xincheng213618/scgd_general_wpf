@@ -56,7 +56,20 @@ namespace ColorVision.Solution.Searches
 
         private void UserControl_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            Frame.Navigate(new DataSummaryPage(Frame));
+            if (sender is UserControl userControl)
+            {
+                switch (userControl.Tag)
+                {
+                    case "ArchivePage":
+                        Frame.Navigate(new ArchivePage(Frame));
+                        break;
+                    case "DataSummaryPage":
+                        Frame.Navigate(new DataSummaryPage(Frame));
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
     }
 }

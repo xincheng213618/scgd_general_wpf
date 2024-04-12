@@ -14,7 +14,7 @@
     </Page.Resources>
     <Grid>
         <UniformGrid x:Name="ContentStackPanel"  Columns="2" VerticalAlignment="Center">
-            <UserControl Width="200" MouseLeftButtonUp="UserControl_MouseLeftButtonUp">
+            <UserControl Width="200" MouseLeftButtonUp="UserControl_MouseLeftButtonUp" Tag="DataSummaryPage">
                 <Grid >
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
@@ -25,7 +25,7 @@
                     <TextBlock Grid.Row="1" Text="综合查询" HorizontalAlignment="Center" FontSize="18"/>
                 </Grid>
             </UserControl>
-            <UserControl Width="200" MouseLeftButtonUp="UserControl_MouseLeftButtonUp">
+            <UserControl Width="200" MouseLeftButtonUp="UserControl_MouseLeftButtonUp" Tag="ArchivePage">
                 <Grid >
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
