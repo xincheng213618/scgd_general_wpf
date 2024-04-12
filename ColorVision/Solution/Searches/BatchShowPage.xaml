@@ -31,6 +31,8 @@
                             <ContextMenu x:Key="ContextMenuItem">
                                 <MenuItem Header="{x:Static resx:Resource.Delete}"  Click="MenuItem_Delete_Click" Tag="{Binding .}"  />
                                 <MenuItem Header="导出"  Command="{Binding ExportCVCIECommand}" Tag="{Binding .}"  />
+                                <MenuItem Header="导出"  Command="{Binding OpenCVCIECommand}" Tag="{Binding .}"  />
+
                             </ContextMenu>
                             <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                         </ListView.Resources>
