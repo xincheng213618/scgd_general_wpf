@@ -109,8 +109,8 @@ namespace ColorVision.Services.Devices.Camera.Dao
                 MacAddress = item.Field<string?>("mac_sn"),
                 CusTomerName = item.Field<string?>("customer_name"),
                 CamerID = item.Field<string?>("phy_camera_id"),
-                Config = item.Field<string>("phy_camera_cfg"),
-                CameraMode = item.Field<string>("phy_camera_model"),
+                Config = item.Field<string?>("phy_camera_cfg"),
+                CameraMode = item.Field<string?>("phy_camera_model"),
                 CreateDate = item.Field<DateTime>("create_date"),
                 ExpiryDate = item.Field<DateTime>("expired")
             };
