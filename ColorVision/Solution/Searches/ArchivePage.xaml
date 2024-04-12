@@ -49,6 +49,13 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
+                            <GridViewColumn  Header="code">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:ViewArchiveResult}"  >
+                                        <TextBlock Text="{Binding ArchivedMasterModel.Code}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
 
                             <GridViewColumn  Header="名称">
                                 <GridViewColumn.CellTemplate>
