@@ -44,35 +44,40 @@
                             </GridView.ColumnHeaderContainerStyle>
                             <GridViewColumn  Header="序号">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:ViewBatchResult}"  >
+                                    <DataTemplate  DataType="{x:Type local:ViewArchiveResult}"  >
                                         <TextBlock Text="{Binding Id}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="批次号">
+
+                            <GridViewColumn  Header="名称">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:ViewBatchResult}"  >
-                                        <TextBlock Text="{Binding Batch}"/>
+                                    <DataTemplate DataType="{x:Type local:ViewArchiveResult}"  >
+                                        <TextBlock Text="{Binding ArchivedMasterModel.Name}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="BatchCode">
+
+
+                            <GridViewColumn  Header="Data">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:ViewBatchResult}"  >
-                                        <TextBlock Text="{Binding BatchCode}"/>
+                                    <DataTemplate DataType="{x:Type local:ViewArchiveResult}"  >
+                                        <TextBlock Text="{Binding ArchivedMasterModel.Data}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="用时">
+
+                            <GridViewColumn  Header="归档日期">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ViewBatchResult}"  >
-                                        <TextBlock Text="{Binding TotalTime}"/>
+                                    <DataTemplate DataType="{x:Type local:ViewArchiveResult}"  >
+                                        <TextBlock Text="{Binding ArchivedMasterModel.ArchDate}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="测量时间">
+
+                            <GridViewColumn  Header="创建日期">
                                 <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ViewBatchResult}"  >
+                                    <DataTemplate DataType="{x:Type local:ViewArchiveResult}"  >
                                         <TextBlock Text="{Binding CreateTime}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>

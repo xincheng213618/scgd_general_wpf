@@ -1,4 +1,5 @@
 ﻿using log4net;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -34,6 +35,26 @@ namespace ColorVision.MySql
             return ret;
         }
 
+        public T? GetById(int id) => GetByParam(new Dictionary<string, object> { { "id", id } });
+
+        public T? GetByParam(Dictionary<string, object> param)
+        {
+            string whereClause = string.Empty;
+            if (param != null && param.Count > 0)
+                whereClause = "WHERE " + string.Join(" AND ", param.Select(p => $"{p.Key} = @{p.Key}"));
+            string sql = $"SELECT * FROM {TableName} {whereClause}";
+
+            DataTable dataTable = GetData(sql, param);
+            if (dataTable.Rows.Count == 1)
+            {
+                return GetModelFromDataRow(dataTable.Rows[0]);
+            }
+            else if (dataTable.Rows.Count >= 1)
+            {
+                return GetModelFromDataRow(dataTable.Rows[0]);
+            }
+            return default;
+        }
 
 
 
@@ -61,5 +82,51 @@ namespace ColorVision.MySql
             }
             return list;
         }
+
+
+
+        public List<T> ConditionalQuery(Dictionary<string, object> param)
+        {
+            List<T> list = new List<T>();
+            string sql = $"select * from {TableName} where 1=1";
+            // 遍历字典，为每个键值对构建查询条件
+            foreach (var pair in param)
+            {
+                // 这假设字典的键是数据库列的名称
+                // 并且值是你想要匹配的模式
+                if (pair.Value != null && !string.IsNullOrEmpty(pair.Value.ToString()))
+                {
+                    // 对于安全起见，应该使用参数化查询来避免SQL注入
+
+                    if (pair.Key.StartsWith(">", StringComparison.CurrentCulture))
+                    {
+                        sql += $" AND `{pair.Key[1..]}` > '{pair.Value.ToString()}'";
+                    }
+                    else if (pair.Key.StartsWith("<", StringComparison.CurrentCulture))
+                    {
+                        sql += $" AND `{pair.Key.Substring(1)}` < '{pair.Value.ToString()}'";
+                    }
+                    else
+                    {
+                        sql += $" AND `{pair.Key}` LIKE '%{pair.Value}%'";
+                    }
+
+
+                }
+            }
+
+            DataTable d_info = GetData(sql, param);
+            foreach (var item in d_info.AsEnumerable())
+            {
+                T? model = GetModelFromDataRow(item);
+                if (model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
+        }
+
+
     }
 }
