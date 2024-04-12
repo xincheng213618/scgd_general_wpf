@@ -64,7 +64,7 @@
                         <MenuItem Header="Msg列表(_L)" Click="MenuItem12_Click"/>
                         <MenuItem Header="管理员服务配置(_S)"  Tag="ServiceParam" Click="MenuItem_Template"/>
                         <MenuItem Header="设备配置(_D)"  Tag="DeviceParam" Click="MenuItem_Template"/>
-
+                        <MenuItem Header="校正生成工具"  Tag="CalibrationCorrection" Click="MenuItem_Template"/>
                         <MenuItem Header="{x:Static properties:Resource.Sign_in}"  Click="Login_Click"/>
                         <Separator/>
                         <MenuItem x:Name="MenuLanguage" Header="{x:Static properties:Resource.MenuLanguage}" Initialized="MenuLanguage_Initialized" Loaded="MenuLanguage_Loaded"/>

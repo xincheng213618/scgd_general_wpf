@@ -33,6 +33,7 @@ namespace ColorVision.Services.Devices.Algorithm
                 window.ShowDialog();
             });
         }
+
         readonly Lazy<DisplayAlgorithmControl> DisplayAlgorithmControlLazy;
         public DisplayAlgorithmControl DisplayAlgorithmControl { get; set; }
 

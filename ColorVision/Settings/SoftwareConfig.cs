@@ -51,6 +51,9 @@ namespace ColorVision.Settings
             ViewConfig = new ViewConfig();
         }
 
+        public string CalibToolsPath { get=>_CalibToolsPath; set=> _CalibToolsPath = value; }
+        private string _CalibToolsPath = string.Empty;
+
         public ServicesSetting ServicesSetting { get; set; } = new ServicesSetting();
 
         [JsonIgnore]

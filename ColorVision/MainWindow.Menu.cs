@@ -180,6 +180,34 @@ namespace ColorVision
                         windowTemplate.Owner = GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;
+                    case "CalibrationCorrection":
+                        if (!File.Exists(ConfigHandler.GetInstance().SoftwareConfig.CalibToolsPath))
+                        {
+                            using (System.Windows.Forms.OpenFileDialog openFileDialog = new System.Windows.Forms.OpenFileDialog())
+                            {
+                                openFileDialog.Title = "Select CalibTools.exe";
+                                openFileDialog.Filter = "CalibTools.exe|CalibTools.exe";
+                                openFileDialog.RestoreDirectory = true;
+
+                                if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                                {
+                                    ConfigHandler.GetInstance().SoftwareConfig.CalibToolsPath = openFileDialog.FileName;
+                                }
+                                else
+                                {
+                                    return;
+                                }
+                            }
+                        }
+                        try
+                        {
+                            Process.Start(ConfigHandler.GetInstance().SoftwareConfig.CalibToolsPath);
+
+                        }catch(Exception ex)
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(),ex.Message);
+                        }
+                        break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
                         break;
