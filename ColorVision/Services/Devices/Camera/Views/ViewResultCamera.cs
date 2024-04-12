@@ -9,6 +9,7 @@ using ColorVision.Services.Export;
 using ColorVision.Media;
 using ColorVision.Net;
 using System.Windows;
+using ColorVision.Common.Utilities;
 
 namespace ColorVision.Services.Devices.Camera.Views
 {
@@ -57,7 +58,7 @@ namespace ColorVision.Services.Devices.Camera.Views
         {
             ImageView imageView = new ImageView();
             CVFileUtil.ReadCVRaw(FileUrl, out CVCIEFile fileInfo);
-            Window window = new Window() { Title = "快速预览" };
+            Window window = new Window() { Title = "快速预览", Owner = Application.Current.GetActiveWindow() ,WindowStartupLocation = WindowStartupLocation.CenterOwner};
             window.Content = imageView;
             imageView.OpenImage(fileInfo);
             window.Show();

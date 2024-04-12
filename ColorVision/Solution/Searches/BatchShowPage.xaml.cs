@@ -61,6 +61,14 @@ namespace ColorVision.Solution.Searches
 
         }
 
+        private void listView1_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is ListView listView && listView.SelectedIndex > -1)
+            {
+                ViewResultCameras[listView.SelectedIndex].Open();
+            }
+        }
+
         private void MenuItem_Delete_Click(object sender, RoutedEventArgs e)
         {
 
@@ -85,5 +93,7 @@ namespace ColorVision.Solution.Searches
         {
 
         }
+
+
     }
 }
