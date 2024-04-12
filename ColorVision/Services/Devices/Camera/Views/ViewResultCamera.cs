@@ -61,6 +61,10 @@ namespace ColorVision.Services.Devices.Camera.Views
             Window window = new Window() { Title = "快速预览", Owner = Application.Current.GetActiveWindow() ,WindowStartupLocation = WindowStartupLocation.CenterOwner};
             window.Content = imageView;
             imageView.OpenImage(fileInfo);
+            window.Closing += (s, e) =>
+            {
+                imageView.Clear();
+            };
             window.Show();
         }
 
