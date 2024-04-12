@@ -26,6 +26,7 @@ namespace ColorVision.Solution.Searches
         {
 
         }
+
         public override ArchivedMasterModel GetModelFromDataRow(DataRow item) => new ArchivedMasterModel()
         {
             Id = item.Field<int>("id"),
