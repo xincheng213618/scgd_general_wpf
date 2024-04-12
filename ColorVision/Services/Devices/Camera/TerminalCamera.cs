@@ -16,6 +16,8 @@ namespace ColorVision.Services.Devices.Camera
 {
     public class TerminalCamera : TerminalService
     {
+        public MQTTTerminalCamera MQTTTerminalCamera { get; set; }
+
         public TerminalCamera(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             OpenCreateWindowCommand = new RelayCommand(a => {
@@ -27,7 +29,8 @@ namespace ColorVision.Services.Devices.Camera
 
             MQTTTerminalCamera cameraService = new MQTTTerminalCamera(Config);
             MQTTServiceTerminalBase = cameraService;
-            RefreshCommand = new RelayCommand(a => cameraService.GetAllDevice());
+            MQTTTerminalCamera = cameraService;
+            RefreshCommand = new RelayCommand(a => cameraService.GetAllSnID());
 
             this.SetIconResource("DrawingImageCamera");
         }

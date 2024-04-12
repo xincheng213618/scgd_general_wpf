@@ -32,8 +32,10 @@ namespace ColorVision.Services.Devices.Camera
             Devices = new List<MQTTCamera>();
             Connected += (s, e) =>
             {
-                GetAllDevice();
+                GetAllSnID();
             };
+            if (MQTTControl.IsConnect)
+                GetAllSnID();
             MsgReturnReceived += (msg) => Application.Current.Dispatcher.Invoke(()=> MQTTCamera_MsgReturnChanged(msg));
         }
 
@@ -73,7 +75,6 @@ namespace ColorVision.Services.Devices.Camera
                             {
                                 DevicesSNMD5.Add(SnIDs[i].ToString(), MD5IDs[i].ToString());
                             }
-                            LicenseManager.GetInstance().AddLicense(new LicenseConfig() { Name = SnIDs[i].ToString(), Sn = MD5IDs[i].ToString(), IsCanImport = true });
                         }
                     }
                     catch (Exception ex)
@@ -85,7 +86,7 @@ namespace ColorVision.Services.Devices.Camera
             }
 
         }
-        public MsgRecord GetAllDevice()
+        public MsgRecord GetAllSnID()
         {
             return PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
         }
