@@ -13,7 +13,28 @@ static void MatToHImage(cv::Mat& mat, HImage* outImage)
 	outImage->rows = mat.rows;
 	outImage->cols = mat.cols;
 	outImage->channels = mat.channels();
-	outImage->depth = mat.depth(); // 设置每像素位数
+	int bitsPerElement = 0;
+
+	switch (mat.depth()) {
+	case CV_8U:
+	case CV_8S:
+		bitsPerElement = 8;
+		break;
+	case CV_16U:
+	case CV_16S:
+		bitsPerElement = 16;
+		break;
+	case CV_32S:
+	case CV_32F:
+		bitsPerElement = 32;
+		break;
+	case CV_64F:
+		bitsPerElement = 64;
+		break;
+	default:
+		break;
+	}
+	outImage->depth = bitsPerElement; // 设置每像素位数
 }
 
 int PseudoColor(HImage img, HImage* outImage, uint min1, uint max1)
@@ -41,10 +62,11 @@ int PseudoColor(HImage img, HImage* outImage, uint min1, uint max1)
 	scaledMat.setTo(cv::Scalar(0, 0, 0), maskLess);
 
 	cv::applyColorMap(scaledMat, scaledMat, cv::COLORMAP_JET);
+	int i  = mat.depth(); // 设置每像素位数
 
 	///这里不分配的话，局部内存会在运行结束之后清空
 	MatToHImage(scaledMat, outImage);
-	return 0;
+	return i;
 }
 void FreeHImageData(unsigned char* data)
 {

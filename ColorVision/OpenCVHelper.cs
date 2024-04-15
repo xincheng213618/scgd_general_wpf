@@ -15,12 +15,12 @@ namespace ColorVision
         public int channels;
         public int depth; //bpp
 
-        public  int Type
+        public int Type
         {
             get { return (((depth & ((1 << 3) - 1)) + ((channels - 1) << 3))); }
         }
 
-        public  int ElemSize
+        public int ElemSize
         {
             get
             {
@@ -28,6 +28,9 @@ namespace ColorVision
                         ((0x28442211 >> (((((depth & ((1 << 3) - 1)) + ((channels - 1) << 3))) & ((1 << 3) - 1)) * 4)) & 15)));
             }
         }
+
+        public readonly uint Size { get => (uint)(rows * cols * channels * (depth / 8)); }
+
 
         public IntPtr pData;
 
@@ -39,6 +42,7 @@ namespace ColorVision
                 Marshal.FreeHGlobal(pData);
                 pData = IntPtr.Zero;
             }
+            GC.SuppressFinalize(this);
         }
 
     }
@@ -54,18 +58,26 @@ namespace ColorVision
             PixelFormat format = hImage.channels switch
             {
                 1 => PixelFormats.Gray8,
-                3 => PixelFormats.Bgr24,
+                3 => hImage.depth switch
+                {
+                    8 => PixelFormats.Bgr24,
+                    16 => PixelFormats.Rgb48,
+                     _=> PixelFormats.Bgr24,
+                },
                 4 => PixelFormats.Bgr32,
                 _ => PixelFormats.Default,
             };
 
             WriteableBitmap writeableBitmap = new WriteableBitmap(hImage.cols, hImage.rows, 96.0, 96.0, format, null);
-            RtlMoveMemory(writeableBitmap.BackBuffer, hImage.pData, (uint)(hImage.cols * hImage.rows * hImage.channels));
+            RtlMoveMemory(writeableBitmap.BackBuffer, hImage.pData, (uint)(hImage.cols * hImage.rows * hImage.channels* (hImage.depth/8)));
             writeableBitmap.Lock();
             writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
             writeableBitmap.Unlock();
+            writeableBitmap.Freeze();
             return writeableBitmap;
         }
+
+
         public static HImage ToHImage(this BitmapImage bitmapImage) => bitmapImage.ToWriteableBitmap().ToHImage();
 
         public static WriteableBitmap ToWriteableBitmap(this BitmapImage bitmapImage) => new WriteableBitmap(bitmapImage);
@@ -108,6 +120,7 @@ namespace ColorVision
                     MessageBox.Show($"{writeableBitmap.Format}暂不支持的格式,请联系开发人员");
                     throw new NotSupportedException("The pixel format is not supported.");
             }
+
             // Create a new HImageCache instance
             HImage hImage = new HImage
             {
@@ -115,12 +128,12 @@ namespace ColorVision
                 cols = writeableBitmap.PixelWidth,
                 channels = channels,
                 depth = depth, // You might need to adjust this based on the actual bits per pixel
-                pData = Marshal.AllocHGlobal(writeableBitmap.PixelWidth * writeableBitmap.PixelHeight * channels)
+                pData = Marshal.AllocHGlobal(writeableBitmap.PixelWidth * writeableBitmap.PixelHeight * channels* (depth/8))
             };
 
             // Copy the pixel data from the WriteableBitmap to the HImageCache
             writeableBitmap.Lock();
-            RtlMoveMemory(hImage.pData, writeableBitmap.BackBuffer, (uint)(hImage.cols * hImage.rows * hImage.channels));
+            RtlMoveMemory(hImage.pData, writeableBitmap.BackBuffer, (uint)(hImage.cols * hImage.rows * hImage.channels*(depth / 8)));
             writeableBitmap.Unlock();
 
             return hImage;
