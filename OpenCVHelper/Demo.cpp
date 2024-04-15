@@ -37,7 +37,8 @@ static void MatToHImage(cv::Mat& mat, HImage* outImage)
 	outImage->depth = bitsPerElement; // 设置每像素位数
 }
 
-int PseudoColor(HImage img, HImage* outImage, uint min1, uint max1)
+
+int PseudoColor(HImage img, HImage* outImage, uint min1, uint max1 , cv::ColormapTypes types)
 {
 	 cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 
@@ -61,7 +62,7 @@ int PseudoColor(HImage img, HImage* outImage, uint min1, uint max1)
 	cv::Mat maskLess = scaledMat < min1; // Change minVal to your specific threshold
 	scaledMat.setTo(cv::Scalar(0, 0, 0), maskLess);
 
-	cv::applyColorMap(scaledMat, scaledMat, cv::COLORMAP_JET);
+	cv::applyColorMap(scaledMat, scaledMat, types);
 	int i  = mat.depth(); // 设置每像素位数
 
 	///这里不分配的话，局部内存会在运行结束之后清空

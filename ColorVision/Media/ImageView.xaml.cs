@@ -34,6 +34,8 @@ namespace ColorVision.Media
         private static readonly ILog logger = LogManager.GetLogger(typeof(ImageView));
         public ToolBarTop ToolBarTop { get; set; }
 
+        public ColormapTypes ColormapTypes { get; set; } = ColormapTypes.COLORMAP_JET;
+
         public View View { get; set; }
      
         public ImageView()
@@ -650,16 +652,23 @@ namespace ColorVision.Media
             ToolBarTop.ToolBarScaleRuler.IsShow = true;
         }
 
-
         public ImageSource PseudoImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
-
 
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
         {
             RenderPseudo();
-        }
 
+        }
+        private void Pseudo_MouseDoubleClick(object sender, RoutedEventArgs e)
+        {
+            PseudoColor pseudoColor = new PseudoColor();
+            pseudoColor.Closed += (s, e) =>
+            {
+                ColormapTypes = pseudoColor.ColormapTypes;
+            };
+            pseudoColor.Show();
+        }
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
         {
@@ -806,7 +815,7 @@ namespace ColorVision.Media
                     logger.Info($"ImagePath，正在执行PseudoColor,min:{min},max:{max}");
                     Task.Run(() =>
                     {
-                        int ret = OpenCVHelper.PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max);
+                        int ret = OpenCVHelper.PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max, ColormapTypes);
 
                         var image = hImageProcessed.ToWriteableBitmap();
                         OpenCVHelper.FreeHImageData(hImageProcessed.pData);
@@ -855,7 +864,6 @@ namespace ColorVision.Media
             };
             windowCIE.Show();
         }
-
 
 
     }
