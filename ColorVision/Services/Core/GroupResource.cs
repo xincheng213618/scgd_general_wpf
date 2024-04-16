@@ -13,11 +13,10 @@ namespace ColorVision.Services.Core
             sysResourceModel.Pid = deviceService.SysResourceModel.Id;
             sysResourceModel.TenantId = deviceService.SysResourceModel.TenantId;
 
-            SysResourceDao sysResourceDao = new SysResourceDao();
-            sysResourceDao.Save(sysResourceModel);
+            SysResourceDao.Instance.Save(sysResourceModel);
 
             int pkId = sysResourceModel.PKId;
-            if (pkId > 0 && sysResourceDao.GetById(pkId) is SysResourceModel model)
+            if (pkId > 0 && SysResourceDao.Instance.GetById(pkId) is SysResourceModel model)
             {
                 GroupResource groupResource = new GroupResource(model);
                 deviceService.AddChild(groupResource);
@@ -32,14 +31,13 @@ namespace ColorVision.Services.Core
             Name = sysResourceModel.Name ?? sysResourceModel.Id.ToString();
         }
 
-        SysResourceDao SysResourceDao = new SysResourceDao();
         public override void Save()
         {
             SysResourceModel.Name = Name;
-            SysResourceDao.Save(SysResourceModel);
+            SysResourceDao.Instance.Save(SysResourceModel);
 
             ///这里后面再优化，先全部删除在添加
-            SysResourceDao.DeleteGroupRelate(SysResourceModel.Id);
+            SysResourceDao.Instance.DeleteGroupRelate(SysResourceModel.Id);
 
             VisualChildren.Clear();
 
@@ -58,7 +56,7 @@ namespace ColorVision.Services.Core
             {
                 if (item is CalibrationResource calibrationResource)
                 {
-                    SysResourceDao.ADDGroup(SysResourceModel.Id, calibrationResource.SysResourceModel.Id);
+                    SysResourceDao.Instance.ADDGroup(SysResourceModel.Id, calibrationResource.SysResourceModel.Id);
                 }
             }
             base.Save();

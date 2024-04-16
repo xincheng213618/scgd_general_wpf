@@ -14,6 +14,8 @@ namespace ColorVision.Services.Dao
     }
     public class SysDictionaryDao : BaseDaoMaster<SysDictionaryModel>
     {
+        public static SysDictionaryDao Instance { get; set; } = new SysDictionaryDao();
+
         public SysDictionaryDao() : base("v_scgd_sys_dictionary", "t_scgd_sys_dictionary", "id", true)
         {
         }

@@ -20,9 +20,8 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
     }
     public class AlgResultDistortionDao : BaseTableDao<AlgResultDistortionModel>
     {
-        public AlgResultDistortionDao() : base("t_scgd_algorithm_result_detail_distortion", "id")
-        {
-        }
+        public static AlgResultDistortionDao Instance { get;set; } = new AlgResultDistortionDao();
+        public AlgResultDistortionDao() : base("t_scgd_algorithm_result_detail_distortion", "id") { }
 
         public override AlgResultDistortionModel GetModelFromDataRow(DataRow item)
         {

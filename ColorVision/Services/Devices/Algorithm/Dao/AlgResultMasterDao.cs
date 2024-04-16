@@ -40,6 +40,8 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
     }
     public class AlgResultMasterDao : BaseDaoMaster<AlgResultMasterModel>
     {
+        public static AlgResultMasterDao Instance { get; set; } = new AlgResultMasterDao();
+
         public AlgResultMasterDao() : base("v_scgd_algorithm_result_master", "t_scgd_algorithm_result_master", "id", false)
         {
         }

@@ -72,14 +72,13 @@ namespace ColorVision.Services.Devices.Spectrum
 
             string md5 = Tool.CalculateMD5(UploadFilePath);
             var msgRecord = await DeviceService.UploadFileAsync(UploadFileName, UploadFilePath,201);
-            SysResourceDao sysResourceDao = new SysResourceDao();
             SysResourceModel sysResourceModel = new SysResourceModel();
             sysResourceModel.Name = UploadFileName;
             sysResourceModel.Code = md5;
             sysResourceModel.Type = 201;
             sysResourceModel.Pid = this.SysResourceModel.Id;
             sysResourceModel.Value = Path.GetFileName(UploadFilePath);
-            sysResourceDao.Save(sysResourceModel);
+            SysResourceDao.Instance.Save(sysResourceModel);
             if (sysResourceModel != null)
             {
                 BaseResource calibrationResource = new BaseResource(sysResourceModel);

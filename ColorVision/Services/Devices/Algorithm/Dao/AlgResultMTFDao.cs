@@ -19,6 +19,8 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
     }
     public class AlgResultMTFDao : BaseTableDao<AlgResultMTFModel>
     {
+        public static AlgResultMTFDao Instance { get; set; } = new AlgResultMTFDao();
+
         public AlgResultMTFDao() : base("t_scgd_algorithm_result_detail_poi_mtf", "id")
         {
         }

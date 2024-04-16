@@ -55,10 +55,9 @@ namespace ColorVision.Services.Dao
 
     public class SysResourceDao : BaseTableDao<SysResourceModel>
     {
-        public SysResourceDao() : base("t_scgd_sys_resource", "id")
-        {
+        public static SysResourceDao Instance { get; set; } =  new SysResourceDao();
+        public SysResourceDao() : base("t_scgd_sys_resource", "id") { }
 
-        }
 
         public override SysResourceModel GetModelFromDataRow(DataRow item)
         {
