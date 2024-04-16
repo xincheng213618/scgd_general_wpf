@@ -68,8 +68,8 @@ namespace ColorVision.Common.Utilities
         public static void WriteToCsv<T>(IEnumerable<T> data, string filePath)
         {
             // 确保有数据要写入
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
+
 
             // 创建StringBuilder用于写入CSV数据
             var csvBuilder = new StringBuilder();

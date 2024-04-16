@@ -33,8 +33,8 @@ namespace ColorVision.Common.MVVM
         //复制一个新的对象
         public static void CopyTo<T>(this T source, T target) where T:ViewModelBase
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (target == null) throw new ArgumentNullException(nameof(target));
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(target);
 
             Type type = source.GetType();
 

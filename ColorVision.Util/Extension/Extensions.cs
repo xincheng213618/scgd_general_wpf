@@ -22,8 +22,7 @@ namespace ColorVision.Extension
     {
         public static T? CloneViaJson<T>(this T source) where T : ViewModelBase
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-
+            ArgumentNullException.ThrowIfNull(source);
             // 序列化source对象到JSON字符串
             string serialized = JsonConvert.SerializeObject(source);
 
