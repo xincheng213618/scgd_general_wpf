@@ -277,7 +277,7 @@ namespace ColorVision
             }
         }
 
-        public async Task CheckVersion()
+        public static async Task CheckVersion()
         {
             await Task.Delay(500);
             if (System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() != ConfigHandler.SoftwareConfig.Version)
