@@ -24,21 +24,17 @@ namespace ColorVision.Services.Devices.Camera
     {
         public event MessageRecvHandler OnMessageRecved;
 
-        public MQTTTerminalCamera CameraService { get; set; }
 
         public override bool IsAlive {get =>  Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); }}
 
-        public MQTTCamera(ConfigCamera CameraConfig, MQTTTerminalCamera cameraService) : base(CameraConfig)
+        public MQTTCamera(ConfigCamera CameraConfig) : base(CameraConfig)
         {
-            CameraService = cameraService;
-            CameraService.Devices.Add(this);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatusType.OffLine;
         }
 
         public override void Dispose()
         {
-            CameraService.Devices.Remove(this);
             base.Dispose();
             GC.SuppressFinalize(this);     
         }
@@ -287,7 +283,7 @@ namespace ColorVision.Services.Devices.Camera
         private bool _IsVideoOpen ;
         public bool IsVideoOpen { get => _IsVideoOpen; set { _IsVideoOpen = value;NotifyPropertyChanged(); } }
 
-        public MsgRecord OpenVideo(string host, int port,double expTime)
+        public MsgRecord OpenVideo(string host, int port)
         {
             CurrentTakeImageMode = TakeImageMode.Live;
             IsVideoOpen = true;
@@ -295,7 +291,7 @@ namespace ColorVision.Services.Devices.Camera
             MsgSend msg = new MsgSend
             {
                 EventName = "OpenLive",
-                Params = new Dictionary<string, object>() { { "RemoteIp", host }, { "RemotePort", port }, { "ExpTime", expTime }, { "IsLocal", IsLocal } }
+                Params = new Dictionary<string, object>() { { "RemoteIp", host }, { "RemotePort", port }, { "Gain", Config.Gain }, { "ExpTime", Config.ExpTime }, { "IsLocal", IsLocal } }
             };
              return PublishAsyncClient(msg);
         }
@@ -351,10 +347,9 @@ namespace ColorVision.Services.Devices.Camera
             }
             else
             {
-
                 var FunParams = new Dictionary<string, object>() { };
                 FunParams.Add("dExp", Config.ExpTime);
-
+                FunParams.Add("Gain", Config.Gain);
                 var Fun = new ParamFunction() { Name = "CM_SetExpTime", Params = FunParams };
                 var Func = new List<ParamFunction>();
                 Func.Add(Fun);

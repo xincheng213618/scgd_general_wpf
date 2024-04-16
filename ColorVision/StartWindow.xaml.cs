@@ -1,4 +1,5 @@
-﻿using ColorVision.MQTT;
+﻿using ColorVision.FloatingBall;
+using ColorVision.MQTT;
 using ColorVision.MySql;
 using ColorVision.Services;
 using ColorVision.Services.RC;
@@ -197,8 +198,8 @@ namespace ColorVision
             Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}正在打开主窗口"; });
             Application.Current.Dispatcher.Invoke(() =>
             {
-
                 MainWindow mainWindow = new MainWindow();
+
                 ServiceManager ServiceManager = ServiceManager.GetInstance();
                 if (MySqlControl.GetInstance().IsConnect)
                 {

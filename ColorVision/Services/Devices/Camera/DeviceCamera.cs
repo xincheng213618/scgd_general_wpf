@@ -57,7 +57,7 @@ namespace ColorVision.Services.Devices.Camera
         public DeviceCamera(SysDeviceModel sysResourceModel, MQTTTerminalCamera cameraService) : base(sysResourceModel)
         {
             Service = cameraService;
-            DeviceService = new MQTTCamera(Config, Service);
+            DeviceService = new MQTTCamera(Config);
 
             View = new ViewCamera(this);
             View.View.Title = $"相机视图 - {Config.Code}";
@@ -74,7 +74,6 @@ namespace ColorVision.Services.Devices.Camera
 
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
 
-
             TemplateControl.GetInstance().LoadModCabParam(CalibrationParams, SysResourceModel.Id, ModMasterType.Calibration);
 
             FetchLatestTemperatureCommand =  new RelayCommand(a => FetchLatestTemperature(a));
@@ -84,6 +83,8 @@ namespace ColorVision.Services.Devices.Camera
 
             DisplayCameraControlLazy = new Lazy<DisplayCameraControl>(() => new DisplayCameraControl(this));
         }
+
+
         #region License
         public RelayCommand UploadLincenseCommand { get; set; }
         public RelayCommand RefreshLincenseCommand { get; set; }

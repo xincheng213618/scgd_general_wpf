@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Devices.Camera.Configs;
+using ColorVision.Services.Devices.Camera.Dao;
 using cvColorVision;
 using SkiaSharp;
 using System;
@@ -12,6 +13,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media.Media3D;
 
 
 namespace ColorVision.Services.Devices.Camera
@@ -55,6 +57,9 @@ namespace ColorVision.Services.Devices.Camera
 
             ComboxCameraImageBpp.ItemsSource = from e1 in Enum.GetValues(typeof(ImageBpp)).Cast<ImageBpp>()
                                                select new KeyValuePair<ImageBpp, string>(e1, e1.ToDescription());
+
+
+            CameraID.ItemsSource = CameraLicenseDao.Instance.GetAllCameraID();
 
             var type = DeviceCamera.Config.CameraType;
 

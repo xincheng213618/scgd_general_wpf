@@ -29,10 +29,17 @@
             <Grid DockPanel.Dock="Right" >
                 <ToggleButton  Style="{StaticResource ButtonMQTTConnect}" Command="{Binding PropertyCommand}" Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
                 <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
-                <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
+                <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}"/>
             </Grid>
-            <Button Content="温度"  DockPanel.Dock="Right" Style="{StaticResource ButtonDefault.Small}" Command="{Binding FetchLatestTemperatureCommand}"/>
-            <Grid>
+            <Grid  DockPanel.Dock="Right"  ToolTip="查看相机的温度数据">
+                <Image Source="{DynamicResource DITemperature}" Stretch="Uniform" Height="18"/>
+                <Button   Background="Transparent" BorderThickness="0" Command="{Binding FetchLatestTemperatureCommand}"/>
+            </Grid>
+            <Grid  DockPanel.Dock="Right" ToolTip="保存当前的曝光等参数">
+                <Image Source="{DynamicResource DrawingImageSave}" Stretch="Uniform" Height="18"/>
+                <Button   Background="Transparent" BorderThickness="0" Command="{Binding SaveCommand}"/>
+            </Grid>
+            <Grid >
                 <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding IsDisplayOpen}" />
                 <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="4,0,0,0">
                     <Image Source="{Binding Icon}"/>
@@ -49,12 +56,20 @@
                         <Button  Grid.Column="0" Content="打开"  Click="Open_Click" />
                     </DockPanel>
                     <Button x:Name="ButtonClose" Margin="0,0,0,3" Grid.Column="0" Content="关闭" Foreground="White" Background="Red"  Visibility="Collapsed" Click="Close_Click" />
+                    <StackPanel Visibility="{Binding DeviceService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">
+                        <DockPanel Margin="0,2" >
+                            <TextBlock  Text="曝光(ms)" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                            <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime}" MinWidth="50"/>
+                            <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeLog}" Minimum="0" Maximum="11.002"/>
+                        </DockPanel>
+                        
+                        <DockPanel Margin="0,2" >
+                            <TextBlock  Text="增益" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                            <TextBox DockPanel.Dock="Right" Text="{Binding Config.Gain}" MinWidth="50"/>
+                            <hc:PreviewSlider TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.Gain}" Minimum="0" Maximum="5000"/>
+                        </DockPanel>
+                    </StackPanel>
 
-                    <DockPanel Margin="0,2" Visibility="{Binding DeviceService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">
-                        <TextBlock  Text="曝光(ms)" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                        <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime}" MinWidth="50"/>
-                        <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeLog}" Minimum="0" Maximum="11.002"/>
-                    </DockPanel>
 
                     <StackPanel x:Name="StackPanelImage">
                         <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
