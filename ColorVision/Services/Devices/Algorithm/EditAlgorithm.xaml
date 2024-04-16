@@ -32,6 +32,11 @@
                 <GroupBox Header="配置信息" Margin="0,0,0,5">
                     <StackPanel Margin="5">
                         <DockPanel Margin="0,2">
+                            <TextBlock  Text="色温波长" Width="120"/>
+                            <ui:ToggleSwitch IsChecked="{Binding IsCCTWave}"/>
+                        </DockPanel>
+
+                        <DockPanel Margin="0,2">
                             <TextBlock  Text="数据目录"  Width="120"/>
                             <TextBox  x:Name="TextBox_CIEImgPath" Text="{Binding FileServerCfg.DataBasePath}"/>
                         </DockPanel>
@@ -47,11 +52,6 @@
                             <TextBlock Text="保存天数:" Width="120"/>
                             <TextBox Text="{Binding FileServerCfg.SaveDays}"/>
                         </DockPanel>
-                        <DockPanel Margin="0,2">
-                            <TextBlock  Text="色温波长" Width="120"/>
-                            <ui:ToggleSwitch IsChecked="{Binding IsCCTWave}"/>
-                        </DockPanel>
-
                     </StackPanel>
                 </GroupBox>
             </StackPanel>

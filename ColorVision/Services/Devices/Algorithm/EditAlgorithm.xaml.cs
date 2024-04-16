@@ -1,6 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Devices.Camera;
-using System.Collections.ObjectModel;
 using System.Windows;
 
 namespace ColorVision.Services.Devices.Algorithm

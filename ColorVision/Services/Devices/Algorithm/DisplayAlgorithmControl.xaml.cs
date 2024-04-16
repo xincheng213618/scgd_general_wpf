@@ -21,7 +21,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Extension;
 using System.Collections.ObjectModel;
-using System.Linq;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Devices.Calibration;
 
@@ -240,30 +239,7 @@ namespace ColorVision.Services.Devices.Algorithm
                 DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
             };
 
-            ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) =>
-            {
-                SourceImageFiles();
-            };
-            SourceImageFiles();
-        }
-
-        public void SourceImageFiles()
-        {
-            ObservableCollection<TemplateModel<ImageDevice>> deves = new ObservableCollection<TemplateModel<ImageDevice>>();
-            foreach (var item in ServiceManager.GetInstance().DeviceServices)
-            {
-                TemplateModel<ImageDevice> model = new TemplateModel<ImageDevice>();
-                if (item is DeviceCamera deviceCamera)
-                {
-                    model.Value = new ImageDevice() { Name = deviceCamera.Name, DeviceCode = deviceCamera.Code, DeviceType = deviceCamera.ServiceTypes.ToString() };
-                    deves.Add(model);
-                }
-                else if ( item is DeviceCalibration deviceCalibration)
-                {
-                    model.Value = new ImageDevice() { Name = deviceCalibration.Name, DeviceCode = deviceCalibration.Code, DeviceType = deviceCalibration.ServiceTypes.ToString() };
-                    deves.Add(model);
-                }
-            }
+            ObservableCollection<TemplateModel<ImageDevice>> deves = GetImageDevices();
             CB_SourceImageFiles.ItemsSource = deves;
         }
         public class ImageDevice : ParamBase
@@ -278,7 +254,29 @@ namespace ColorVision.Services.Devices.Algorithm
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
-
+        private ObservableCollection<TemplateModel<ImageDevice>> GetImageDevices()
+        {
+            ObservableCollection<TemplateModel<ImageDevice>> deves = new ObservableCollection<TemplateModel<ImageDevice>>();
+            foreach (var item in ServiceManager.GetInstance().DeviceServices)
+            {
+                if (item is DeviceCamera camera)
+                {
+                    TemplateModel<ImageDevice> model = new TemplateModel<ImageDevice>()
+                    {
+                        Value = new ImageDevice() { Name = item.Name, DeviceCode = item.Code, DeviceType = "Camera" },
+                    };
+                    deves.Add(model);
+                }else if (item is DeviceCalibration cali)
+                {
+                    TemplateModel<ImageDevice> model = new TemplateModel<ImageDevice>()
+                    {
+                        Value = new ImageDevice() { Name = item.Name, DeviceCode = item.Code, DeviceType = "Calibration" },
+                    };
+                    deves.Add(model);
+                }
+            }
+            return deves;
+        }
         private void PoiClick(object sender, RoutedEventArgs e)
         {
             if (ComboxPoiTemplate.SelectedIndex ==-1)
@@ -724,10 +722,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
         private void Button_Click_SourceRefresh(object sender, RoutedEventArgs e)
         {
-            ObservableCollection<TemplateModel<ImageDevice>> deves = new ObservableCollection<TemplateModel<ImageDevice>>();
-            TemplateModel<ImageDevice> model = new TemplateModel<ImageDevice>();
-            model.Value = new ImageDevice() { Name = "默认相机", DeviceCode = "DEV.Camera.Default", DeviceType = "Camera" };
-            deves.Add(model);
+            ObservableCollection<TemplateModel<ImageDevice>> deves = GetImageDevices();
             CB_SourceImageFiles.ItemsSource = deves;
         }
     }
