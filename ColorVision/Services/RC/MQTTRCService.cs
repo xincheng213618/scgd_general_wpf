@@ -1,20 +1,25 @@
 ﻿#pragma warning disable CS8603
+using ColorVision.Common.Utilities;
 using ColorVision.MQTT;
 using ColorVision.Services;
 using ColorVision.Services.Core;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Camera;
+using ColorVision.Services.Msg;
 using ColorVision.Services.Terminal;
 using ColorVision.Services.Type;
 using ColorVision.Settings;
 using log4net;
 using MQTTMessageLib;
+using MQTTMessageLib.FileServer;
 using MQTTMessageLib.RC;
 using MQTTMessageLib.Util;
 using MQTTnet.Client;
 using Newtonsoft.Json;
+using Org.BouncyCastle.Asn1.Ocsp;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -58,6 +63,8 @@ namespace ColorVision.Services.RC
         private string RCPublicTopic;
         private string RCAdminTopic;
         private string ArchivedTopic;
+        private string SysConfigTopic;
+        private string SysConfigRespTopic;
         private NodeToken? Token;
         private bool TryTestRegist;
         public ServiceNodeStatus RegStatus { get=> _RegStatus; set { _RegStatus = value; NotifyPropertyChanged();NotifyPropertyChanged(nameof(IsConnect)); } }
@@ -71,7 +78,7 @@ namespace ColorVision.Services.RC
         {
             this.NodeType = "client";
             this.NodeName = MQTTRCServiceTypeConst.BuildNodeName(NodeType, null);
-            this.DevcieName = "dev." + NodeType + ".127.0.0.1";
+            this.DeviceCode = this.DevcieName = "dev." + NodeType + ".127.0.0.1";
             LoadCfg();
             this.RegStatus = ServiceNodeStatus.Unregistered;
             ServiceName = Guid.NewGuid().ToString();
@@ -110,8 +117,11 @@ namespace ColorVision.Services.RC
             this.RCPublicTopic = MQTTRCServiceTypeConst.BuildPublicTopic(RCNodeName);
             this.RCAdminTopic = MQTTRCServiceTypeConst.BuildAdminTopic(RCNodeName);
             this.ArchivedTopic = MQTTRCServiceTypeConst.BuildArchivedTopic(RCNodeName);
+            this.SysConfigTopic = MQTTRCServiceTypeConst.BuildSysConfigTopic(RCNodeName);
+            this.SysConfigRespTopic = MQTTRCServiceTypeConst.BuildSysConfigRespTopic(RCNodeName);
 
             MQTTControl.SubscribeCache(SubscribeTopic);
+            MQTTControl.SubscribeCache(SysConfigRespTopic);
         }
 
         private Task MqttClient_ApplicationMessageReceivedAsync(MqttApplicationMessageReceivedEventArgs arg)
@@ -170,6 +180,10 @@ namespace ColorVision.Services.RC
                 {
                     return Task.CompletedTask;
                 }
+            }else if (arg.ApplicationMessage.Topic == SysConfigRespTopic)
+            {
+                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
+
             }
             return Task.CompletedTask;
         }
@@ -463,6 +477,53 @@ namespace ColorVision.Services.RC
         {
             MQTTArchivedRequest request = new MQTTArchivedRequest(sn);
             PublishAsyncClient(ArchivedTopic, JsonConvert.SerializeObject(request));
+        }
+
+        public void UploadCalibrationFileAsync(string cameraId, string name, string fileName, int fileType, int timeout = 50000)
+        {
+            string md5 = Tool.CalculateMD5(fileName);
+            MsgSend msg = new MsgSend
+            {
+                DeviceCode = cameraId,
+                Token = Token?.AccessToken,
+                MsgID = Guid.NewGuid().ToString("N"),
+                EventName = MQTTFileServerEventEnum.Event_File_Upload,
+                Params = new Dictionary<string, object> { { "Name", name }, { "FileName", fileName }, { "FileExtType", FileExtType.Calibration }, { "MD5", md5 } }
+            };
+            PublishAsyncClient(SysConfigTopic, msg.ToString());
+            //var stopwatch = new Stopwatch();
+            //stopwatch.Start(); // 开始计时
+            //TaskCompletionSource<MsgRecord> tcs = new TaskCompletionSource<MsgRecord>();
+            //MsgRecord msgRecord = PublishAsyncClient(msg);
+
+            //MsgRecordStateChangedHandler handler = (sender) =>
+            //{
+            //    log.Info($"UploadCalibrationFileAsync:{fileName}  状态{sender}  Operation time: {stopwatch.ElapsedMilliseconds} ms");
+            //    tcs.TrySetResult(msgRecord);
+            //};
+            //msgRecord.MsgRecordStateChanged += handler;
+            //var timeoutTask = Task.Delay(timeout);
+            //try
+            //{
+
+            //    var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
+            //    if (completedTask == timeoutTask)
+            //    {
+            //        log.Info($"UploadCalibrationFileAsync:{fileName}  超时  Operation time: {stopwatch.ElapsedMilliseconds} ms");
+            //        tcs.TrySetException(new TimeoutException("The operation has timed out."));
+            //    }
+            //    return await tcs.Task; // 如果超时，这里将会抛出异常
+            //}
+            //catch (Exception ex)
+            //{
+            //    log.Info($"UploadCalibrationFileAsync:{fileName}  异常 {ex.Message} Operation time: {stopwatch.ElapsedMilliseconds} ms");
+            //    tcs.TrySetException(ex);
+            //    return await tcs.Task; // 
+            //}
+            //finally
+            //{
+            //    msgRecord.MsgRecordStateChanged -= handler;
+            //}
         }
     }
 }
