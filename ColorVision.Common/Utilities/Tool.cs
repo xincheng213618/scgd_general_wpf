@@ -15,6 +15,14 @@ namespace ColorVision.Common.Utilities
 {
     public static partial class Tool
     {
+
+        public static bool IsImageFile(string filePath)
+        {
+            string[] imageExtensions = { ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff" };
+            string fileExtension = Path.GetExtension(filePath).ToLower(System.Globalization.CultureInfo.CurrentCulture);
+            return Array.Exists(imageExtensions, extension => extension == fileExtension);
+        }
+
         public static string Base64Encode(string plainText)
         {
             var plainTextBytes = Encoding.UTF8.GetBytes(plainText);

@@ -23,6 +23,9 @@ using System.Windows.Input;
 using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using ColorVision.Solution;
+using System.Linq;
+using ColorVision.Utils;
 
 namespace ColorVision.Media
 {
@@ -132,6 +135,42 @@ namespace ColorVision.Media
                     }
                 }
             };
+
+
+            this.AllowDrop = true;
+            this.Drop += ImageView_Drop; ;
+        }
+
+        private void ImageView_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                var sarr = e.Data.GetData(DataFormats.FileDrop);
+                var a = sarr as string[];
+                var fn = a?.First();
+
+                if (File.Exists(fn))
+                {
+                    if (fn.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
+                    {
+                        CVFileUtil.ReadCVRaw(fn, out CVCIEFile fileInfo);
+                        OpenImage(fileInfo);
+                    }
+                    else if (Tool.IsImageFile(fn))
+                    {
+                        OpenImage(fn);
+                    }
+                    else if (File.Exists(fn))
+                    {
+                        PlatformHelper.Open(fn);
+                    }
+
+                }
+                else if (Directory.Exists(fn))
+                {
+
+                }
+            }
         }
 
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
@@ -658,7 +697,6 @@ namespace ColorVision.Media
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
         {
             RenderPseudo();
-
         }
         private void Pseudo_MouseDoubleClick(object sender, RoutedEventArgs e)
         {

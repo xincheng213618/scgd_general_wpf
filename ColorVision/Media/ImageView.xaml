@@ -11,7 +11,7 @@
              xmlns:hc="https://handyorg.github.io/handycontrol"
              d:DataContext="{d:DesignInstance local:ImageView}"
              mc:Ignorable="d" 
-             d:DesignHeight="600" d:DesignWidth="1000" Initialized="UserControl_Initialized">
+             d:DesignHeight="600" d:DesignWidth="1000" Initialized="UserControl_Initialized" AllowDrop="True">
     <UserControl.Resources>
         <DataTemplate x:Key="DrawingVisualCircleTemplate" >
             <StackPanel  Orientation="Horizontal">

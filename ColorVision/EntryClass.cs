@@ -1,7 +1,10 @@
 // // Copyright (c) Microsoft. All rights reserved.
 // // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using ColorVision.Media;
 using ColorVision.NativeMethods;
+using ColorVision.Net;
+using ColorVision.Utils;
 using log4net;
 using System;
 using System.CodeDom.Compiler;
@@ -30,13 +33,13 @@ namespace ColorVision
 
         public static string SolutionPath { get; set; } = string.Empty;
 
-        public static string CVRAWPath { get; set; } = string.Empty;
-
+        static string[] Sysargs;
         [STAThread]
         [DebuggerNonUserCode]
         [GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
         public static void Main(string[] args)
         {
+            Sysargs = args ?? new string[0];
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
             bool IsDebug = Debugger.IsAttached;
@@ -52,15 +55,9 @@ namespace ColorVision
                     {
                         App.IsReStart = true;
                     }
-
                     if (args[i].EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
                     {
                         SolutionPath = args[i];
-                    }
-
-                    if (args[i].EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
-                    {
-                        CVRAWPath = args[i];
                     }
                 }
             }
