@@ -657,4 +657,31 @@
   <data name="Create" xml:space="preserve">
     <value>создавать</value>
   </data>
+  <data name="Upgrade" xml:space="preserve">
+    <value>обновление</value>
+  </data>
+  <data name="Rollback" xml:space="preserve">
+    <value>возвращаться</value>
+  </data>
+  <data name="Manager" xml:space="preserve">
+    <value>управлять</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>отправлять</value>
+  </data>
+  <data name="Subscribe" xml:space="preserve">
+    <value>подписка</value>
+  </data>
+  <data name="Unsubscribe" xml:space="preserve">
+    <value>Отписаться</value>
+  </data>
+  <data name="OpenSolution" xml:space="preserve">
+    <value>Открыть проект</value>
+  </data>
+  <data name="NewSolution" xml:space="preserve">
+    <value>Новое строительство</value>
+  </data>
+  <data name="MsgList" xml:space="preserve">
+    <value>Список сообщений</value>
+  </data>
 </root>

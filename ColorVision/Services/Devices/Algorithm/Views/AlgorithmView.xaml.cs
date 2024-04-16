@@ -136,9 +136,12 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
         public void AlgResultMasterModelDataDraw(AlgResultMasterModel result)
         {
-            AlgorithmResult algorithmResult = new AlgorithmResult(result);
-            AlgResults.Add(algorithmResult);
-            RefreshResultListView();
+            if (result != null)
+            {
+                AlgorithmResult algorithmResult = new AlgorithmResult(result);
+                AlgResults.AddUnique(algorithmResult);
+                RefreshResultListView();
+            }
         }
 
         private void RefreshResultListView()
@@ -579,13 +582,18 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
         private void GridSplitter_DragCompleted1(object sender, DragCompletedEventArgs e)
         {
-            listViewSide.Width = ListCol2.ActualWidth;
+            var listView = IsExchange ? listView1 : listViewSide;
+
+            listView.Width = ListCol2.ActualWidth;
             ListCol1.Width = new GridLength(1, GridUnitType.Star);
             ListCol2.Width = GridLength.Auto;
         }
-        private void listViewY_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
         {
-
+            var listView = !IsExchange ? listView1 : listViewSide;
+            listView.Height = ListRow2.ActualHeight - 38;
+            ListRow2.Height = GridLength.Auto;
+            ListRow1.Height = new GridLength(1, GridUnitType.Star);
         }
 
         internal void OpenImage(CVCIEFile fileInfo)
@@ -598,17 +606,10 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             AlgResults.Clear();
         }
 
-        private void GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
-        {
-            listView1.Height = ListRow2.ActualHeight - 38;
-            ListRow2.Height = GridLength.Auto;
-            ListRow1.Height = new GridLength(1, GridUnitType.Star);
-        }
-        AlgResultMasterDao algResultMasterDao = new AlgResultMasterDao();
-        private void Search_Click(object sender, RoutedEventArgs e)
-        {
 
-        }
+
+
+        AlgResultMasterDao algResultMasterDao = new AlgResultMasterDao();
 
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
@@ -628,7 +629,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                 foreach (var item in algResults)
                 {
                     AlgorithmResult algorithmResult = new AlgorithmResult(item);
-                    AlgResults.Add(algorithmResult);
+                    AlgResults.AddUnique(algorithmResult);
                 }
                 SerchPopup.IsOpen = false;
                 return;
@@ -644,7 +645,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                 foreach (var item in algResults)
                 {
                     AlgorithmResult algorithmResult = new AlgorithmResult(item);
-                    AlgResults.Add(algorithmResult);
+                    AlgResults.AddUnique(algorithmResult);
                 }
             }
             SerchPopup.IsOpen = false;
@@ -686,28 +687,37 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             if (sender is ContextMenu contextMenu && listViewSide.View is GridView gridView && LeftGridViewColumnVisibilitys.Count ==0)
                 GridViewColumnVisibility.GenContentMenuGridViewColumnZero(contextMenu, gridView.Columns, LeftGridViewColumnVisibilitys);
         }
-
+        bool IsExchange;
         private void Exchange_Click(object sender, RoutedEventArgs e)
         {
-            if (listView1.Parent is Grid parent1 &&listViewSide.Parent is Grid parent2 )
+            IsExchange = !IsExchange;
+            var listD = IsExchange ? listView1 : listViewSide;
+            var listL = IsExchange ? listViewSide : listView1;
+            if (listD.Parent is Grid parent1 && listL.Parent is Grid parent2 )
             {
-                var tempCol = Grid.GetColumn(listView1);
-                var tempRow = Grid.GetRow(listView1);
+                var tempCol = Grid.GetColumn(listD);
+                var tempRow = Grid.GetRow(listD);   
 
-                var tempCol1 = Grid.GetColumn(listViewSide);
-                var tempRow1 = Grid.GetRow(listViewSide);
+                var tempCol1 = Grid.GetColumn(listL);
+                var tempRow1 = Grid.GetRow(listL);
 
-                parent1.Children.Remove(listView1);
-                parent2.Children.Remove(listViewSide);
+                parent1.Children.Remove(listD);
+                parent2.Children.Remove(listL);
 
-                parent1.Children.Add(listViewSide);
-                parent2.Children.Add(listView1);
+                parent1.Children.Add(listL);
+                parent2.Children.Add(listD);
 
-                Grid.SetColumn(listView1, tempCol1);
-                Grid.SetRow(listView1, tempRow1);
+                Grid.SetColumn(listD, tempCol1);
+                Grid.SetRow(listD, tempRow1);
 
-                Grid.SetColumn(listViewSide, tempCol);
-                Grid.SetRow(listViewSide, tempRow);
+                Grid.SetColumn(listL, tempCol);
+                Grid.SetRow(listL, tempRow);
+
+
+                listD.Width = listL.ActualWidth;
+                listL.Height = listD.ActualHeight;
+                listD.Height = double.NaN;
+                listL.Width = double.NaN;
             }
         }
 

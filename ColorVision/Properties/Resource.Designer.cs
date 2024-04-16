@@ -709,6 +709,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 管理 的本地化字符串。
+        /// </summary>
+        public static string Manager {
+            get {
+                return ResourceManager.GetString("Manager", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 最大化 的本地化字符串。
         /// </summary>
         public static string Maximize {
@@ -943,6 +952,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 消息列表 的本地化字符串。
+        /// </summary>
+        public static string MsgList {
+            get {
+                return ResourceManager.GetString("MsgList", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Msg记录窗口 的本地化字符串。
         /// </summary>
         public static string MsgLogWindow {
@@ -1015,6 +1033,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 新建工程 的本地化字符串。
+        /// </summary>
+        public static string NewSolution {
+            get {
+                return ResourceManager.GetString("NewSolution", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 发现新版本 的本地化字符串。
         /// </summary>
         public static string NewVersionFound {
@@ -1074,6 +1101,15 @@ namespace ColorVision.Properties {
         public static string OpenLocalProjectOrFile {
             get {
                 return ResourceManager.GetString("OpenLocalProjectOrFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开工程 的本地化字符串。
+        /// </summary>
+        public static string OpenSolution {
+            get {
+                return ResourceManager.GetString("OpenSolution", resourceCulture);
             }
         }
         
@@ -1240,6 +1276,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 回退 的本地化字符串。
+        /// </summary>
+        public static string Rollback {
+            get {
+                return ResourceManager.GetString("Rollback", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 以管理员身份运行 的本地化字符串。
         /// </summary>
         public static string RunAsAdmin {
@@ -1290,6 +1335,15 @@ namespace ColorVision.Properties {
         public static string SelectResourceToLoad {
             get {
                 return ResourceManager.GetString("SelectResourceToLoad", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 发送 的本地化字符串。
+        /// </summary>
+        public static string Send {
+            get {
+                return ResourceManager.GetString("Send", resourceCulture);
             }
         }
         
@@ -1420,7 +1474,7 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 启动恢复界面布局 的本地化字符串。
+        ///   查找类似 恢复上次退出时窗口的大小和位置 的本地化字符串。
         /// </summary>
         public static string StartRecoverUILayout {
             get {
@@ -1452,6 +1506,15 @@ namespace ColorVision.Properties {
         public static string Submit {
             get {
                 return ResourceManager.GetString("Submit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 订阅 的本地化字符串。
+        /// </summary>
+        public static string Subscribe {
+            get {
+                return ResourceManager.GetString("Subscribe", resourceCulture);
             }
         }
         
@@ -1587,6 +1650,24 @@ namespace ColorVision.Properties {
         public static string UnderDevelopment {
             get {
                 return ResourceManager.GetString("UnderDevelopment", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 退订 的本地化字符串。
+        /// </summary>
+        public static string Unsubscribe {
+            get {
+                return ResourceManager.GetString("Unsubscribe", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 升级 的本地化字符串。
+        /// </summary>
+        public static string Upgrade {
+            get {
+                return ResourceManager.GetString("Upgrade", resourceCulture);
             }
         }
         

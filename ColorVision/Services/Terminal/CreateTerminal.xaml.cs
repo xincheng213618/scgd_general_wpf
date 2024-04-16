@@ -31,7 +31,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using ColorVision.Utilities;
+using ColorVision.Common.Utilities;
 
 namespace ColorVision.Services.Terminal
 {
@@ -72,12 +72,10 @@ namespace ColorVision.Services.Terminal
             }
 
 
-            if (!ServicesHelper.IsInvalidPath(CreateCode.Text, "资源标识") || !ServicesHelper.IsInvalidPath(CreateName.Text, "资源名称"))
-                return;
-
-            if (TerminalService.ServicesCodes.Contains(CreateCode.Text))
+            var deviceS = ServiceManager.GetInstance().DeviceServices.FirstOrDefault(x => x.Code == CreateCode.Text);
+            if (deviceS != null)
             {
-                MessageBox.Show("设备标识已存在,不允许重复添加");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "设备标识已存在,不允许重复添加","ColorVision");
                 return;
             }
             DeviceService deviceService = null;
@@ -120,6 +118,7 @@ namespace ColorVision.Services.Terminal
                             Endpoint = "127.0.0.1",
                             PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
                             DataBasePath = "D:\\CVTest",
+                            SaveDays = 7,
                         }
                     };
                     sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
@@ -175,11 +174,13 @@ namespace ColorVision.Services.Terminal
                     {
                         Id = CreateCode.Text,
                         Name = CreateName.Text,
+                        IsCCTWave = true,
                         FileServerCfg = new FileServerCfg()
                         {
                             Endpoint = "127.0.0.1",
                             PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
                             DataBasePath = "D:\\CVTest",
+                            SaveDays = 7,
                         }
                     };
                     sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
@@ -211,6 +212,7 @@ namespace ColorVision.Services.Terminal
                             Endpoint = "127.0.0.1",
                             PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
                             DataBasePath = "D:\\CVTest",
+                            SaveDays = 7,
                         }
                     };
                     sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);

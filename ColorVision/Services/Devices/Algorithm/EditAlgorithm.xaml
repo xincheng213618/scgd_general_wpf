@@ -6,6 +6,7 @@
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:local="clr-namespace:ColorVision.Services.Devices.Algorithm"
              xmlns:properties="clr-namespace:ColorVision.Properties"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceAlgorithm}"
              Title="{x:Static properties:Resource.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="400" Initialized="Window_Initialized">
@@ -31,9 +32,10 @@
                 <GroupBox Header="配置信息" Margin="0,0,0,5">
                     <StackPanel Margin="5">
                         <DockPanel Margin="0,2">
-                            <TextBlock Text="绑定设备"  Width="120"/>
-                            <hc:ComboBox  x:Name="TextBox_BindDevice" IsEditable="True" SelectedIndex="0" Text="{Binding BindDeviceCode}"  hc:InfoElement.ShowClearButton="True"  />
+                            <TextBlock  Text="色温波长" Width="120"/>
+                            <ui:ToggleSwitch IsChecked="{Binding IsCCTWave}"/>
                         </DockPanel>
+
                         <DockPanel Margin="0,2">
                             <TextBlock  Text="数据目录"  Width="120"/>
                             <TextBox  x:Name="TextBox_CIEImgPath" Text="{Binding FileServerCfg.DataBasePath}"/>
@@ -46,7 +48,10 @@
                             <TextBlock  Text="端口范围" Width="120"/>
                             <TextBox  x:Name="TextBox_PortRange" Text="{Binding FileServerCfg.PortRange}"/>
                         </DockPanel>
-
+                        <DockPanel Margin="0,2">
+                            <TextBlock Text="保存天数:" Width="120"/>
+                            <TextBox Text="{Binding FileServerCfg.SaveDays}"/>
+                        </DockPanel>
                     </StackPanel>
                 </GroupBox>
             </StackPanel>

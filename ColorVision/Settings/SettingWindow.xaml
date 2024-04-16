@@ -12,7 +12,7 @@
         d:DataContext="{d:DesignInstance local:SoftwareConfig}"
         Height="450" IsBlurEnabled="True" WindowStartupLocation="CenterScreen"  Background="Transparent" ResizeMode="NoResize" Width="600" Initialized="Window_Initialized">
     <Window.Resources>
-       
+      
         <ControlTemplate x:Key="GroupBoxHeader1" TargetType="{x:Type GroupBox}">
             <Grid SnapsToDevicePixels="true"    Margin="0,-10,0,0">
                 <Grid.RowDefinitions>
@@ -158,18 +158,8 @@
                                         <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.TransparentWindow}"/>
                                         <TextBlock Text="{x:Static properties:Resource.DisableHardwareAcceleration}"/>
                                     </DockPanel>
-                                    <DockPanel  Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.IsOpenLoaclService}"/>
-                                        <TextBlock Text="{x:Static properties:Resource.LaunchSoftwareWithLocalService}"/>
-                                    </DockPanel>
-
-                                    <DockPanel  Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.WizardCompletionKey,Converter={StaticResource Boolean2BooleanReConverter}}"/>
-                                        <TextBlock Text="{x:Static properties:Resource.Wizard}"/>
-                                    </DockPanel>
                                 </StackPanel>
                             </Border>
-
                         </ScrollViewer>
                     </GroupBox>
                 </Grid>

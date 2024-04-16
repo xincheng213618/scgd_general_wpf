@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8604, CS8605
+using ColorVision.Themes;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -50,10 +51,9 @@ namespace ColorVision.Draw
 
 
 
-            StackPanelTextAttribute.DataContext = DefalutTextAttribute.Defalut;
+            this.DataContext = DefalutTextAttribute.Defalut;
 
-
-
+            this.Resources = null;
         }
 
         private void ComboBoxBrush_SelectionChanged(object sender, SelectionChangedEventArgs e)

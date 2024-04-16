@@ -334,7 +334,7 @@
     <value>启用数据库</value>
   </data>
   <data name="StartRecoverUILayout" xml:space="preserve">
-    <value>启动恢复界面布局</value>
+    <value>恢复上次退出时窗口的大小和位置</value>
   </data>
   <data name="AutoSwitchSelectedView" xml:space="preserve">
     <value>自动切换选中视图</value>
@@ -656,5 +656,32 @@
   </data>
   <data name="Create" xml:space="preserve">
     <value>创建</value>
+  </data>
+  <data name="Upgrade" xml:space="preserve">
+    <value>升级</value>
+  </data>
+  <data name="Rollback" xml:space="preserve">
+    <value>回退</value>
+  </data>
+  <data name="Manager" xml:space="preserve">
+    <value>管理</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>发送</value>
+  </data>
+  <data name="Subscribe" xml:space="preserve">
+    <value>订阅</value>
+  </data>
+  <data name="Unsubscribe" xml:space="preserve">
+    <value>退订</value>
+  </data>
+  <data name="OpenSolution" xml:space="preserve">
+    <value>打开工程</value>
+  </data>
+  <data name="NewSolution" xml:space="preserve">
+    <value>新建工程</value>
+  </data>
+  <data name="MsgList" xml:space="preserve">
+    <value>消息列表</value>
   </data>
 </root>

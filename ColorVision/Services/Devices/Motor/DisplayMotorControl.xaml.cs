@@ -30,9 +30,22 @@ namespace ColorVision.Services.Devices.Motor
         {
             this.DataContext = Device;
             DeviceService.DeviceStatusChanged += DeviceService_DeviceStatusChanged;
+            SelectChanged += (s, e) =>
+            {
+                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
+            };
+            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+            {
+                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
+            };
         }
-        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");  } }
+
+        public event RoutedEventHandler Selected;
+        public event RoutedEventHandler Unselected;
+        public event EventHandler SelectChanged;
         private bool _IsSelected;
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
+
 
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -65,12 +78,12 @@ namespace ColorVision.Services.Devices.Motor
                 if (DeviceService.DeviceStatus == DeviceStatusType.Closed && button.Content.ToString() == "连接")
                 {
                     var msgRecord = DeviceService.Open();
-                    Helpers.SendCommand(button, msgRecord);
+                    ServicesHelper.SendCommand(button, msgRecord);
                 }
                 else if (DeviceService.DeviceStatus == DeviceStatusType.Opened && button.Content.ToString() == "关闭")
                 {
                     var msgRecord = DeviceService.Close();
-                    Helpers.SendCommand(button, msgRecord);
+                    ServicesHelper.SendCommand(button, msgRecord);
                 }
                 else
                 {
@@ -86,7 +99,7 @@ namespace ColorVision.Services.Devices.Motor
                 if (int.TryParse(TextPos.Text ,out int pos))
                 {
                     var msgRecord = DeviceService.Move(pos,CheckBoxIsAbs.IsChecked??true);
-                    Helpers.SendCommand(button, msgRecord);
+                    ServicesHelper.SendCommand(button, msgRecord);
                 }
             }
         }
@@ -98,7 +111,7 @@ namespace ColorVision.Services.Devices.Motor
                 if (int.TryParse(TextPos.Text, out int pos))
                 {
                     var msgRecord = DeviceService.GoHome();
-                    Helpers.SendCommand(button, msgRecord);
+                    ServicesHelper.SendCommand(button, msgRecord);
                 }
             }
         }
@@ -108,7 +121,7 @@ namespace ColorVision.Services.Devices.Motor
             if (sender is Button button)
             {
                 var msgRecord = DeviceService.GetPosition();
-                Helpers.SendCommand(button, msgRecord);
+                ServicesHelper.SendCommand(button, msgRecord);
             }
         }
 
@@ -119,7 +132,7 @@ namespace ColorVision.Services.Devices.Motor
                 if (double.TryParse(TextDiaphragm.Text, out double pos))
                 {
                     var msgRecord = DeviceService.MoveDiaphragm(pos);
-                    Helpers.SendCommand(button, msgRecord);
+                    ServicesHelper.SendCommand(button, msgRecord);
                 }
             }
         }
@@ -129,7 +142,7 @@ namespace ColorVision.Services.Devices.Motor
             if (sender is Button button)
             {
                 var msgRecord = DeviceService.Close();
-                Helpers.SendCommand(button, msgRecord);
+                ServicesHelper.SendCommand(button, msgRecord);
             }
         }
 

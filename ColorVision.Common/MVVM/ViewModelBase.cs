@@ -25,9 +25,18 @@ namespace ColorVision.Common.MVVM
         }
         protected virtual bool SetIfChangedProperty<T>(ref T storage, T value, [CallerMemberName] string propertyName = "")
         {
-            if (EqualityComparer<T>.Default.Equals(storage, value))
-                return false;
+            if (EqualityComparer<T>.Default.Equals(storage, value)) return false;
             storage = value;
+            NotifyPropertyChanged(propertyName);
+            return true;
+        }
+
+        protected virtual bool SetIfChangedProperty<T>(ref T storage, T value, Action onChanged, [CallerMemberName] string propertyName = "")
+        {
+            if (EqualityComparer<T>.Default.Equals(storage, value)) return false;
+
+            storage = value;
+            onChanged?.Invoke();
             NotifyPropertyChanged(propertyName);
             return true;
         }

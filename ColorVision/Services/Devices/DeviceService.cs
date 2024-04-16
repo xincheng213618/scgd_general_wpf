@@ -2,12 +2,12 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Extension;
 using ColorVision.Handler;
-using ColorVision.RC;
+using ColorVision.Services.RC;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Templates;
-using ColorVision.Utilities;
+using ColorVision.Common.Utilities;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
@@ -15,6 +15,8 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ColorVision.Services.Devices.Calibration;
+using ColorVision.Services.Type;
 
 namespace ColorVision.Services.Devices
 {
@@ -47,6 +49,7 @@ namespace ColorVision.Services.Devices
         public RelayCommand ImportCommand { get; set; }
         public RelayCommand CopyCommand { get; set; }
         public RelayCommand ResetCommand { get; set; }
+        public RelayCommand ResourceManagerCommand { get; set; }
 
         public RelayCommand EditCommand { get; set; }
         public bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
@@ -116,7 +119,7 @@ namespace ColorVision.Services.Devices
         public override string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; NotifyPropertyChanged(); } }
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set{ SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
-        public int MySqlId { get => SysResourceModel.Id; }
+        public ServiceTypes ServiceTypes => (ServiceTypes)SysResourceModel.Type;
 
         public DeviceService(SysDeviceModel sysResourceModel) : base()
         {
@@ -148,7 +151,12 @@ namespace ColorVision.Services.Devices
             DeleteCommand = new RelayCommand(a => Delete());
             EditCommand = new RelayCommand(a => { });
 
-
+            ResourceManagerCommand = new RelayCommand(a => 
+            {
+                ResourceManager resourceManager = new ResourceManager(this) { Owner = WindowHelpers.GetActiveWindow() };
+                resourceManager.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                resourceManager.ShowDialog();
+            });
 
             ImportCommand = new RelayCommand(a => {
                 System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
@@ -172,7 +180,7 @@ namespace ColorVision.Services.Devices
             {
                 Window window = new Window() { Width = 700, Height = 400, Icon = Icon,Title = Properties.Resource.Property };
                 window.Content = GetDeviceInfo();
-                window.Owner = WindowHelpers.GetActiveWindow();
+                window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });
@@ -199,13 +207,18 @@ namespace ColorVision.Services.Devices
 
         public event EventHandler ConfigChanged;
 
-        public override void Save()
+        public void SaveConfig()
         {
-            base.Save();
             SysResourceModel.Code = Config.Code;
             SysResourceModel.Name = Config.Name;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             ServiceManager.GetInstance().VSysResourceDao.Save(new SysResourceModel(SysResourceModel));
+        }
+
+        public override void Save()
+        {
+            base.Save();
+            SaveConfig();
             IsEditMode = false;
             ///每次提交之后重启服务
             MQTTRCService.GetInstance().RestartServices(SysResourceModel.TypeCode, SysResourceModel.PCode, Config.Code);
@@ -217,14 +230,21 @@ namespace ColorVision.Services.Devices
 
         public override void Delete()
         {
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), "是否删除", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
             base.Delete();
-            if (SysResourceModel != null)
-                ServiceManager.GetInstance().VSysResourceDao.DeleteById(SysResourceModel.Id);
             Parent.RemoveChild(this);
 
+            //删除数据库
+            if (SysResourceModel != null)
+                ServiceManager.GetInstance().VSysResourceDao.DeleteById(SysResourceModel.Id);
+            //删除设备服务
             ServiceManager.GetInstance().DeviceServices.Remove(this);
+            //删除前台显示
             if (GetDisplayControl() is IDisPlayControl disPlayControl)
                 ServiceManager.GetInstance().DisPlayControls.Remove(disPlayControl);
+            //删除资源
+
+
             this.Dispose();
         }
     }

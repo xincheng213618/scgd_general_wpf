@@ -5,7 +5,6 @@ using ColorVision.Extension;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Msg;
-using ColorVision.Utilities;
 using cvColorVision;
 using MQTTMessageLib;
 using MQTTMessageLib.Camera;
@@ -15,6 +14,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace ColorVision.Services.Devices.Camera
 {
@@ -24,21 +24,17 @@ namespace ColorVision.Services.Devices.Camera
     {
         public event MessageRecvHandler OnMessageRecved;
 
-        public MQTTTerminalCamera CameraService { get; set; }
 
         public override bool IsAlive {get =>  Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); }}
 
-        public MQTTCamera(ConfigCamera CameraConfig, MQTTTerminalCamera cameraService) : base(CameraConfig)
+        public MQTTCamera(ConfigCamera CameraConfig) : base(CameraConfig)
         {
-            CameraService = cameraService;
-            CameraService.Devices.Add(this);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatusType.OffLine;
         }
 
         public override void Dispose()
         {
-            CameraService.Devices.Remove(this);
             base.Dispose();
             GC.SuppressFinalize(this);     
         }
@@ -70,43 +66,45 @@ namespace ColorVision.Services.Devices.Camera
                     case "GetAutoExpTime":
                         if (msg.Data != null && msg.Data[0].result != null)
                         {
-                            if (Config.IsExpThree)
+                            Application.Current.Dispatcher.Invoke(() =>
                             {
-                                for (int i = 0; i < 3; i++)
+                                if (Config.IsExpThree)
                                 {
-                                    if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_X)
+                                    for (int i = 0; i < 3; i++)
                                     {
-                                        Config.ExpTimeR = (int)msg.Data[i].result;
-                                        Config.SaturationR = (int)msg.Data[i].resultSaturation;
-                                    }
-                                    if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Y)
-                                    {
-                                        Config.ExpTimeG = (int)msg.Data[i].result;
-                                        Config.SaturationG = (int)msg.Data[i].resultSaturation;
+                                        if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_X)
+                                        {
+                                            Config.ExpTimeR = (int)msg.Data[i].result;
+                                            Config.SaturationR = (int)msg.Data[i].resultSaturation;
+                                        }
+                                        if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Y)
+                                        {
+                                            Config.ExpTimeG = (int)msg.Data[i].result;
+                                            Config.SaturationG = (int)msg.Data[i].resultSaturation;
+                                        }
+
+                                        if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Z)
+                                        {
+                                            Config.ExpTimeB = (int)msg.Data[i].result;
+                                            Config.SaturationB = (int)msg.Data[i].resultSaturation;
+                                        }
                                     }
 
-                                    if (Config.CFW.ChannelCfgs[i].Chtype == ImageChannelType.Gray_Z)
-                                    {
-                                        Config.ExpTimeB = (int)msg.Data[i].result;
-                                        Config.SaturationB = (int)msg.Data[i].resultSaturation;
-                                    }
+                                    string Msg = "SaturationR:" + Config.SaturationR.ToString() + Environment.NewLine +
+                                                 "SaturationG:" + Config.SaturationG.ToString() + Environment.NewLine +
+                                                 "SaturationB:" + Config.SaturationB.ToString() + Environment.NewLine;
+                                    MessageBox.Show(Application.Current.GetActiveWindow(), Msg);
                                 }
+                                else
+                                {
+                                    Config.ExpTime = (int)msg.Data[0].result;
+                                    Config.Saturation = (int)msg.Data[0].resultSaturation;
 
-                                string Msg = "SaturationR:" + Config.SaturationR.ToString() + Environment.NewLine +
-                                             "SaturationG:" + Config.SaturationG.ToString() + Environment.NewLine +
-                                             "SaturationB:" + Config.SaturationB.ToString() + Environment.NewLine;
-
-                                Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, Msg));
-                            }
-                            else
-                            {
-                                Config.ExpTime = (int)msg.Data[0].result;
-                                Config.Saturation = (int)msg.Data[0].resultSaturation;
-
-                                string Msg = "Saturation:" + Config.Saturation.ToString();
-                                Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, Msg));
-                            }
-                        } 
+                                    string Msg = "Saturation:" + Config.Saturation.ToString();
+                                    MessageBox.Show(Application.Current.GetActiveWindow(), Msg);
+                                }
+                            } );
+                        }   
                         break;
                     case "SaveLicense":
                         log.Debug($"SaveLicense:{msg.Data}");
@@ -156,9 +154,8 @@ namespace ColorVision.Services.Devices.Camera
                         DeviceStatus = DeviceStatusType.Closed;
                         break;
                     case "Open":
-                        if (DeviceStatus == DeviceStatusType.Closed)
-                            Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, "打开失败", "ColorVision"));
                         DeviceStatus = DeviceStatusType.Closed;
+                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, "打开失败", "ColorVision"));
                         break;
                     case "Init":
                         break;
@@ -286,7 +283,7 @@ namespace ColorVision.Services.Devices.Camera
         private bool _IsVideoOpen ;
         public bool IsVideoOpen { get => _IsVideoOpen; set { _IsVideoOpen = value;NotifyPropertyChanged(); } }
 
-        public MsgRecord OpenVideo(string host, int port,double expTime)
+        public MsgRecord OpenVideo(string host, int port)
         {
             CurrentTakeImageMode = TakeImageMode.Live;
             IsVideoOpen = true;
@@ -294,7 +291,7 @@ namespace ColorVision.Services.Devices.Camera
             MsgSend msg = new MsgSend
             {
                 EventName = "OpenLive",
-                Params = new Dictionary<string, object>() { { "RemoteIp", host }, { "RemotePort", port }, { "ExpTime", expTime }, { "IsLocal", IsLocal } }
+                Params = new Dictionary<string, object>() { { "RemoteIp", host }, { "RemotePort", port }, { "Gain", Config.Gain }, { "ExpTime", Config.ExpTime }, { "IsLocal", IsLocal } }
             };
              return PublishAsyncClient(msg);
         }
@@ -350,10 +347,9 @@ namespace ColorVision.Services.Devices.Camera
             }
             else
             {
-
                 var FunParams = new Dictionary<string, object>() { };
                 FunParams.Add("dExp", Config.ExpTime);
-
+                FunParams.Add("Gain", Config.Gain);
                 var Fun = new ParamFunction() { Name = "CM_SetExpTime", Params = FunParams };
                 var Func = new List<ParamFunction>();
                 Func.Add(Fun);
@@ -366,7 +362,6 @@ namespace ColorVision.Services.Devices.Camera
         public MsgRecord GetData(double[] expTime, CalibrationParam param)
         {
             string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            var model = ServiceManager.GetInstance().BatchSave(SerialNumber);
             var Params = new Dictionary<string, object>() { };
             MsgSend msg;
             msg = new MsgSend
@@ -384,91 +379,11 @@ namespace ColorVision.Services.Devices.Camera
             {
                 Params.Add("Calibration", new CVTemplateParam() { ID = param.Id, Name = param.Name });
             }
-
+            Params.Add("ScaleFactor", Config.ScaleFactor);
             double timeout = 0;
             for (int i = 0; i < expTime.Length; i++) timeout += expTime[i];
             return PublishAsyncClient(msg, timeout + 10000);
         }  
-        public MsgRecord GetData_Old(double expTime, double gain)
-        {
-            string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            var model = ServiceManager.GetInstance().BatchSave(SerialNumber);
-
-            MsgSend msg;
-
-            if ((!Config.IsExpThree) && (Config.CameraType == CameraType.CV_Q || Config.CameraType == CameraType.MIL_CL))
-            {
-                List<Dictionary<string, object>> Param = new List<Dictionary<string, object>>();
-                foreach (var item in Config.CFW.ChannelCfgs)
-                {
-                    Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
-                    keyValuePairs.Add("eImgChlType", (int)item.Chtype);
-                    keyValuePairs.Add("nPort", item.Cfwport);
-
-                    if (item.Chtype == ImageChannelType.Gray_X)
-                        keyValuePairs.Add("dExp", Config.ExpTime);
-                    if (item.Chtype == ImageChannelType.Gray_Y)
-                        keyValuePairs.Add("dExp", Config.ExpTime);
-                    if (item.Chtype == ImageChannelType.Gray_Z)
-                        keyValuePairs.Add("dExp", Config.ExpTime);
-
-                    Param.Add(keyValuePairs);
-                }
-
-                msg = new MsgSend
-                {
-                    EventName = "GetData",
-                    Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "Param", Param }, { "gain", gain } }
-                };
-
-            }
-            else if (Config.IsExpThree)
-            {
-                List<Dictionary<string,object>> Param = new List<Dictionary<string,object>>();
-
-
-                foreach (var item in Config.CFW.ChannelCfgs)
-                {
-                    Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
-                    keyValuePairs.Add("eImgChlType", (int)item.Chtype);
-                    keyValuePairs.Add("nPort", item.Cfwport);
-
-                    if (item.Chtype == ImageChannelType.Gray_X)
-                        keyValuePairs.Add("dExp", Config.ExpTimeR);
-                    if (item.Chtype == ImageChannelType.Gray_Y)
-                        keyValuePairs.Add("dExp", Config.ExpTimeG);
-                    if (item.Chtype == ImageChannelType.Gray_Z)
-                        keyValuePairs.Add("dExp", Config.ExpTimeB);
-
-                    Param.Add(keyValuePairs);
-                }
-
-                msg = new MsgSend
-                {
-                    EventName = "GetData",
-                    Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "Param", Param }, { "gain", gain } }
-                };
-            }
-            else
-            {
-
-                List<Dictionary<string, object>> Param = new List<Dictionary<string, object>>();
-                Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
-                keyValuePairs.Add("eImgChlType", (int)ImageChannelType.Gray_Y);
-                keyValuePairs.Add("nPort", -1);
-                keyValuePairs.Add("dExp", expTime);
-                Param.Add(keyValuePairs);
-
-                msg = new MsgSend
-                {
-                    EventName = "GetData",
-                    Params = new Dictionary<string, object>() { { "nBatchID", model.Id }, { "Param", Param }, { "gain", gain } }
-                };
-            }
-
-            return PublishAsyncClient(msg, (Config.IsExpThree? expTime*3 : expTime) + 10000);
-        }
-
         public MsgRecord GetAllCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
 
         public MsgRecord AutoFocus()
@@ -570,25 +485,14 @@ namespace ColorVision.Services.Devices.Camera
             return PublishAsyncClient(msg);
         }
 
-        public void DownloadFile(string fileName, FileExtType extType)
+        public MsgRecord DownloadFile(string fileName, FileExtType extType)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = MQTTFileServerEventEnum.Event_File_Download,
-                //ServiceName = Config.Code,
                 Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", extType } }
             };
-            PublishAsyncClient(msg);
-        }
-
-        public MsgRecord UploadCalibrationFile(string name, string fileName,int fileType)
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = MQTTFileServerEventEnum.Event_File_Upload,
-                Params = new Dictionary<string, object> { { "Name", name }, { "FileName", fileName }, { "FileExtType", FileExtType.Calibration } }
-            };
-             return PublishAsyncClient(msg);
+            return PublishAsyncClient(msg);
         }
 
         public async Task<MsgRecord> UploadCalibrationFileAsync(string name, string fileName, int fileType, int timeout = 50000)
@@ -648,7 +552,7 @@ namespace ColorVision.Services.Devices.Camera
         {
             MsgSend msg = new MsgSend
             {
-                EventName = MQTTCameraEventEnum.Event_GetData_Channel,
+                EventName = MQTTFileServerEventEnum.Event_File_GetChannel,
                 Params = new Dictionary<string, object> { { "RecID", recId }, { "ChannelType", chType } }
             };
             return PublishAsyncClient(msg);

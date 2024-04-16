@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Sorts;
+using ColorVision.Common.Utilities;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Dao;
 using ColorVision.Services.Templates;
@@ -48,7 +49,19 @@ namespace ColorVision.Services.Devices.Camera
 
         private void ServiceCache_Click(object sender, RoutedEventArgs e)
         {
-            DService.CacheClear();
+            if (sender is Button button)
+            {
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), "文件删除后不可找回", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                {
+                    var MsgRecord = DService.CacheClear();
+                    MsgRecord.MsgSucessed += (s) =>
+                    {
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "文件服务清理完成", "ColorVison");
+                        MsgRecord.ClearMsgRecordSucessChangedHandler();
+                    };
+                    ServicesHelper.SendCommand(button, MsgRecord);
+                }
+            }
         }
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)

@@ -1,13 +1,20 @@
-﻿using ColorVision.MQTT;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Media;
+using ColorVision.MQTT;
 using ColorVision.MySql;
-using ColorVision.RC;
+using ColorVision.Net;
 using ColorVision.Services;
+using ColorVision.Services.RC;
 using ColorVision.Settings;
 using ColorVision.Themes;
+using ColorVision.Utils;
 using ColorVision.Wizards;
 using log4net;
 using log4net.Config;
 using System;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -31,18 +38,49 @@ namespace ColorVision
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
+
             var SoftwareSetting = ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting;
             this.ApplyTheme(SoftwareSetting.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(SoftwareSetting.UICulture);
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("ja");
 
+            if (Sysargs.Length > 0)
+            {
+                for (int i = 0; i < Sysargs.Length; i++)
+                {
+                    if (Sysargs[i].EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ImageView imageView = new ImageView();
+                        CVFileUtil.ReadCVRaw(Sysargs[i], out CVCIEFile fileInfo);
+                        Window window = new Window() { Title = "快速预览" };
+                        window.Content = imageView;
+                        imageView.OpenImage(fileInfo);
+                        window.Show();
+                        return;
+                    }
+                    else if (Tool.IsImageFile(Sysargs[i]))
+                    {
+                        ImageView imageView = new ImageView();
+                        Window window = new Window() { Title = "快速预览" };
+                        window.Content = imageView;
+                        imageView.OpenImage(Sysargs[i]);
+                        window.Show();
+                        return;
+                    }
+                    else if (File.Exists(Sysargs[i]))
+                    {
+                        PlatformHelper.Open(Sysargs[i]);
+                        return;
+                    }
+                }
+            }
+
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
-
             //代码先进入启动窗口
-
             if (!SoftwareSetting.WizardCompletionKey)
             {
                 WizardWindow wizardWindow = new WizardWindow();
@@ -51,6 +89,7 @@ namespace ColorVision
             }
             else if (!IsReStart)
             {
+                ///正常进入窗口
                 StartWindow StartWindow = new StartWindow();
                 StartWindow.Show();
             }

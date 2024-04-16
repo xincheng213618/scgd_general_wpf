@@ -18,6 +18,14 @@ using System.Windows.Media;
 using ColorVision.Services.Templates;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Common.Sorts;
+using ColorVision.Services.Devices.Camera.Views;
+using MQTTMessageLib.Camera;
+using System.Linq;
+using MQTTMessageLib.FileServer;
+using ColorVision.Solution;
+using Panuon.WPF.UI;
+using Newtonsoft.Json;
+using MQTTMessageLib.Calibration;
 
 
 namespace ColorVision.Services.Devices.Calibration.Views
@@ -50,7 +58,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
             listView1.ItemsSource = ViewResultCalibrations;
 
             ComboxPOITemplates = new ObservableCollection<TemplateModel<PoiParam>>();
-            ComboxPOITemplates.Insert(0, new TemplateModel<PoiParam>("Empty", new PoiParam() { Id=-1}));
+            ComboxPOITemplates.Insert(0, new TemplateModel<PoiParam>("Empty", new PoiParam() { Id = -1 }));
 
             foreach (var item in TemplateControl.GetInstance().PoiParams)
                 ComboxPOITemplates.Add(item);
@@ -80,6 +88,144 @@ namespace ColorVision.Services.Devices.Calibration.Views
 
             if (listView1.View is GridView gridView)
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+
+
+            ComboBoxLayers.ItemsSource = from e1 in Enum.GetValues(typeof(ImageLayer)).Cast<ImageLayer>()
+                                         select new KeyValuePair<string, ImageLayer>(e1.ToString(), e1);
+
+            netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.FullPath + "\\Cache");
+            netFileUtil.handler += NetFileUtil_handler;
+            DeviceService.OnMessageRecved += DeviceService_OnMessageRecved;
+        }
+
+
+        NetFileUtil netFileUtil;
+        private IPendingHandler? handler { get; set; }
+
+        private void NetFileUtil_handler(object sender, NetFileEvent arg)
+        {
+            if (arg.Code == 0)
+            {
+                if (arg.EventName == FileEvent.FileDownload && arg.FileData.data != null)
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        OpenImage(arg.FileData);
+                    });
+                }
+                handler?.Close();
+            }
+            else
+            {
+                handler?.Close();
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show(Application.Current.MainWindow, "文件打开失败", "ColorVision");
+                });
+            }
+        }
+
+        private MeasureImgResultDao measureImgResultDao = new MeasureImgResultDao();
+        string LocalFileName;
+        private void DeviceService_OnMessageRecved(object sender, MessageRecvArgs arg)
+        {
+            if (arg.ResultCode == 0)
+            {
+                switch (arg.EventName)
+                {
+                    case MQTTCalibrationEventEnum.Event_GetData:
+                        int masterId = Convert.ToInt32(arg.Data.MasterId);
+                        List<MeasureImgResultModel> resultMaster = null;
+                        if (masterId > 0)
+                        {
+                            resultMaster = new List<MeasureImgResultModel>();
+                            MeasureImgResultModel model = measureImgResultDao.GetById(masterId);
+                            if (model != null)
+                                resultMaster.Add(model);
+                        }
+                        else
+                        {
+                            resultMaster = measureImgResultDao.GetAllByBatchCode(arg.SerialNumber);
+                        }
+                        if (resultMaster != null)
+                        {
+                            foreach (MeasureImgResultModel result in resultMaster)
+                            {
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    ShowResult(result);
+                                });
+                            }
+                        }
+                        break;
+                    case MQTTFileServerEventEnum.Event_File_Download:
+                        break;
+                    case MQTTFileServerEventEnum.Event_File_GetChannel:
+                        DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
+                        netFileUtil.TaskStartDownloadFile(pm_dl_ch);
+                        break;
+                }
+            }
+            else if (arg.ResultCode == 102)
+            {
+                switch (arg.EventName)
+                {
+                    case MQTTFileServerEventEnum.Event_File_Upload:
+                        DeviceFileUpdownParam pm_up = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                        if (!string.IsNullOrWhiteSpace(pm_up.FileName)) netFileUtil.TaskStartUploadFile(pm_up.IsLocal, pm_up.ServerEndpoint, pm_up.FileName);
+                        break;
+                    case MQTTFileServerEventEnum.Event_File_Download:
+                        DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                        LocalFileName = pm_dl.FileName;
+                        if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, pm_dl.FileExtType);
+                        break;
+                    case MQTTFileServerEventEnum.Event_File_GetChannel:
+                        DeviceGetChannelResult pm_dl_ch = JsonConvert.DeserializeObject<DeviceGetChannelResult>(JsonConvert.SerializeObject(arg.Data));
+                        netFileUtil.TaskStartDownloadFile(pm_dl_ch);
+                        break;
+                }
+            }
+            else
+            {
+                switch (arg.EventName)
+                {
+                    case MQTTCalibrationEventEnum.Event_GetData:
+                        int masterId = Convert.ToInt32(arg.Data.MasterId);
+                        List<MeasureImgResultModel> resultMaster = null;
+                        if (masterId > 0)
+                        {
+                            resultMaster = new List<MeasureImgResultModel>();
+                            MeasureImgResultModel model = measureImgResultDao.GetById(masterId);
+                            if (model != null)
+                                resultMaster.Add(model);
+                        }
+                        else
+                        {
+                            resultMaster = measureImgResultDao.GetAllByBatchCode(arg.SerialNumber);
+                        }
+                        if (resultMaster != null)
+                        {
+                            foreach (MeasureImgResultModel result in resultMaster)
+                            {
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    ShowResult(result);
+                                });
+                            }
+                        }
+                        break;
+                    case MQTTFileServerEventEnum.Event_File_Download:
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            MessageBox.Show("文件下载失败");
+                        });
+                        break;
+                    case MQTTFileServerEventEnum.Event_File_GetChannel:
+                        break;
+                    case MQTTCameraEventEnum.Event_OpenLive:
+                        break;
+                }
+            }
         }
 
 
@@ -122,9 +268,14 @@ namespace ColorVision.Services.Devices.Calibration.Views
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
             CsvWriter.WriteToCsv(ViewResultCalibrations[listView1.SelectedIndex], dialog.FileName);
-            ImageSource bitmapSource = ImageView.ImageShow.Source;
-            ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
-
+            if (File.Exists(LocalFileName))
+            {
+            }
+            else
+            {
+                ImageSource bitmapSource = ImageView.ImageShow.Source;
+                ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
+            }
         }
 
 
@@ -139,8 +290,46 @@ namespace ColorVision.Services.Devices.Calibration.Views
         {
             if (listView1.SelectedIndex > -1)
             {
-            }
+                var data = ViewResultCalibrations[listView1.SelectedIndex];
+                if (File.Exists(data.FileUrl))
+                {
+                    LocalFileName = data.FileUrl;
+                    var FileData = netFileUtil.OpenLocalCVFile(data.FileUrl);
+                    OpenImage(FileData);
+                }
+                else
+                {
+                    if (data.ResultCode == 0 && data.FilePath != null)
+                    {
+                        string localName = netFileUtil.GetCacheFileFullName(data.FilePath);
+                        FileExtType fileExt = FileExtType.Src;
+                        switch (data.FileType)
+                        {
+                            case CameraFileType.SrcFile:
+                                fileExt = FileExtType.Src;
+                                break;
+                            case CameraFileType.RawFile:
+                                fileExt = FileExtType.Raw;
+                                break;
+                            case CameraFileType.CIEFile:
+                                fileExt = FileExtType.CIE;
+                                break;
+                            default:
+                                break;
+                        }
+                        if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
+                        {
+                            DeviceService.Open(data.FilePath, fileExt);
+                        }
+                        else
+                        {
+                            var FileData = netFileUtil.OpenLocalCVFile(localName, fileExt);
+                            OpenImage(FileData);
+                        }
+                    }
 
+                }
+            }
         }
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -172,10 +361,10 @@ namespace ColorVision.Services.Devices.Calibration.Views
 
         private void SearchAdvanced_Click(object sender, RoutedEventArgs e)
         {
-            if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && string.IsNullOrWhiteSpace(TbDeviceCode.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
+            if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
             {
                 ViewResultCalibrations.Clear();
-                foreach (var item in MeasureImgResultDao.GetAll())
+                foreach (var item in MeasureImgResultDao.GetAllDevice(Device.Code))
                 {
                     ViewResultCalibration algorithmResult = new ViewResultCalibration(item);
                     ViewResultCalibrations.AddUnique(algorithmResult);
@@ -185,7 +374,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
             else
             {
                 ViewResultCalibrations.Clear();
-                List<MeasureImgResultModel> algResults = MeasureImgResultDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, TextBoxFile.Text, TbDeviceCode.Text, SearchTimeSart.DisplayDateTime,SearchTimeEnd.DisplayDateTime);
+                List<MeasureImgResultModel> algResults = MeasureImgResultDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, TextBoxFile.Text, Device.Code, SearchTimeSart.DisplayDateTime,SearchTimeEnd.DisplayDateTime);
                 foreach (var item in algResults)
                 {
                     ViewResultCalibration algorithmResult = new ViewResultCalibration(item);
@@ -204,7 +393,6 @@ namespace ColorVision.Services.Devices.Calibration.Views
             TextBoxId.Text = string.Empty;
             TextBoxBatch.Text = string.Empty;
             TextBoxFile.Text = string.Empty;
-            TbDeviceCode.Text = string.Empty;
         }
 
         private void MenuItem_Delete_Click(object sender, RoutedEventArgs e)
@@ -216,76 +404,6 @@ namespace ColorVision.Services.Devices.Calibration.Views
             }
         }
 
-        private void Order_Click(object sender, RoutedEventArgs e)
-        {
-            OrderPopup.IsOpen = true;
-        }
-
-        private void Radio_Checked(object sender, RoutedEventArgs e)
-        {
-            if (RadioID?.IsChecked == true)
-            {
-                ViewResultCalibrations.SortByID(RadioUp?.IsChecked == false);
-            }
-
-            if (RadioBatch?.IsChecked == true)
-            {
-                ViewResultCalibrations.SortByBatch(RadioUp?.IsChecked == false);
-            }
-
-            if (RadioFilePath?.IsChecked == true)
-            {
-                ViewResultCalibrations.SortByFilePath(RadioUp?.IsChecked == false);
-            }
-
-            if (RadioCreateTime?.IsChecked == true)
-            {
-                ViewResultCalibrations.SortByCreateTime(RadioUp?.IsChecked == false);
-            }
-
-            OrderPopup.IsOpen = false;
-        }
-
-        private void Src_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCalibrations[listView1.SelectedIndex];
-        }
-
-        private void X_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCalibrations[listView1.SelectedIndex];
-        }
-
-        private void Z_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCalibrations[listView1.SelectedIndex];
-        }
-        private void Y_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCalibrations[listView1.SelectedIndex];
-
-        }
-        private void B_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCalibrations[listView1.SelectedIndex];
-        }
-
-        private void R_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCalibrations[listView1.SelectedIndex];
-        }
-
-        private void G_Click(object sender, RoutedEventArgs e)
-        {
-            if (listView1.SelectedIndex == -1) return;
-            var ViewResultCamera = ViewResultCalibrations[listView1.SelectedIndex];
-        }
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
@@ -320,11 +438,6 @@ namespace ColorVision.Services.Devices.Calibration.Views
                     }
                 }
             }
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-
         }
 
         private void POI_Click(object sender, RoutedEventArgs e)
@@ -367,6 +480,93 @@ namespace ColorVision.Services.Devices.Calibration.Views
                             break;
                     }
                }
+            }
+        }
+
+        private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ComboBox comboBox && comboBox.SelectedValue is ImageLayer imageLayer)
+            {
+                if (listView1.SelectedIndex > -1)
+                {
+                    var ViewResultCamera = ViewResultCalibrations[listView1.SelectedIndex];
+                    switch (imageLayer)
+                    {
+                        case ImageLayer.Src:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.SRC);
+                            break;
+                        case ImageLayer.R:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_R);
+                            break;
+                        case ImageLayer.G:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_G);
+                            break;
+                        case ImageLayer.B:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_B);
+                            break;
+                        case ImageLayer.X:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_X);
+                            break;
+                        case ImageLayer.Y:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Y);
+                            break;
+                        case ImageLayer.Z:
+                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Z);
+                            break;
+                        default:
+                            break;
+                    }
+
+                }
+                else
+                {
+                    MessageBox.Show("请先选择您要切换的图像");
+                }
+
+            }
+
+        }
+
+        private void ComboxPOITemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ComboBox comboBox && comboBox.SelectedValue is PoiParam poiParams)
+            {
+                if (poiParams.Id == -1)
+                {
+                    ImageView.ImageShow.Clear();
+                    return;
+                }
+                ImageView.ImageShow.Clear();
+                TemplateControl.GetInstance().LoadPoiDetailFromDB(poiParams);
+                foreach (var item in poiParams.PoiPoints)
+                {
+                    switch (item.PointType)
+                    {
+                        case RiPointTypes.Circle:
+                            DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
+                            Circle.Attribute.Center = new Point(item.PixX, item.PixY);
+                            Circle.Attribute.Radius = item.PixHeight / 2;
+                            Circle.Attribute.Brush = Brushes.Transparent;
+                            Circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
+                            Circle.Attribute.ID = item.ID;
+                            Circle.Attribute.Text = item.Name;
+                            Circle.Render();
+                            ImageView.ImageShow.AddVisual(Circle);
+                            break;
+                        case RiPointTypes.Rect:
+                            DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
+                            Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
+                            Rectangle.Attribute.Brush = Brushes.Transparent;
+                            Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
+                            Rectangle.Attribute.ID = item.ID;
+                            Rectangle.Attribute.Name = item.Name;
+                            Rectangle.Render();
+                            ImageView.ImageShow.AddVisual(Rectangle);
+                            break;
+                        case RiPointTypes.Mask:
+                            break;
+                    }
+                }
             }
         }
     }

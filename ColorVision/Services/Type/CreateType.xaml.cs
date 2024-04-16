@@ -31,8 +31,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using ColorVision.Utilities;
-using ColorVision.RC;
+using ColorVision.Common.Utilities;
+using ColorVision.Services.RC;
 using ColorVision.Services.Terminal;
 
 namespace ColorVision.Services.Type

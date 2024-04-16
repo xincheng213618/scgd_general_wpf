@@ -23,15 +23,9 @@ namespace ColorVision.Services.Devices.Spectrum.Views
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class ViewSpectrum : UserControl,IView,INotifyPropertyChanged
+    public partial class ViewSpectrum : UserControl,IView
     {
-        public event PropertyChangedEventHandler? PropertyChanged;
-        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
         public ObservableCollection<ViewResultSpectrum> ViewResultSpectrums { get; set; } = new ObservableCollection<ViewResultSpectrum>();
-
-
-
         public View View { get; set; }
         public DeviceSpectrum Device { get; set; }
 
@@ -67,9 +61,6 @@ namespace ColorVision.Services.Devices.Spectrum.Views
             wpfplot1.Plot.SetAxisLimitsY(0, 1);
             wpfplot1.Plot.XAxis.SetBoundary(370, 1000);
             wpfplot1.Plot.YAxis.SetBoundary(0, 1);
-
-            listView1.Visibility = Visibility.Collapsed;
-            listView2.Visibility = Visibility.Collapsed;
 
             if (listView1.View is GridView gridView)
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
@@ -418,25 +409,10 @@ namespace ColorVision.Services.Devices.Spectrum.Views
 
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            if (sender is ToggleButton button)
-            {
-                Visibility visibility = button.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
-                listView1.Visibility = visibility;
-            }
-        }
-
-        private void Button_Click_2(object sender, RoutedEventArgs e)
-        {
-            if (sender is ToggleButton button)
-            {
-                Visibility visibility = button.IsChecked == true ? Visibility.Visible : Visibility.Collapsed;
-                listView2.Visibility = visibility;
-            }
-        }
         private void GridSplitter_DragCompleted(object sender, DragCompletedEventArgs e)
         {
+            var listView = !IsExchange ? listView1 : listView2;
+
             listView1.Height = ListRow2.ActualHeight - 38;
             ListRow2.Height = GridLength.Auto;
             ListRow1.Height = new GridLength(1, GridUnitType.Star);
@@ -444,7 +420,9 @@ namespace ColorVision.Services.Devices.Spectrum.Views
 
         private void GridSplitter_DragCompleted1(object sender, DragCompletedEventArgs e)
         {
-            listView2.Width = ListCol2.ActualWidth;
+            var listView = IsExchange ? listView1 : listView2;
+
+            listView.Width = ListCol2.ActualWidth;
             ListCol1.Width = new GridLength(1, GridUnitType.Star);
             ListCol2.Width = GridLength.Auto;
         }
@@ -537,37 +515,38 @@ namespace ColorVision.Services.Devices.Spectrum.Views
 
         }
 
+        private bool IsExchange;
+
         private void Exchange_Click(object sender, RoutedEventArgs e)
         {
-            if (listView1.Parent is Grid parent1 && listView2.Parent is Grid parent2)
+            IsExchange = !IsExchange;
+            var listD = IsExchange ? listView1 : listView2;
+            var listL = IsExchange ? listView2 : listView1;
+            if (listD.Parent is Grid parent1 && listL.Parent is Grid parent2)
             {
-                var tempCol = Grid.GetColumn(listView1);
-                var tempRow = Grid.GetRow(listView1);
+                var tempCol = Grid.GetColumn(listD);
+                var tempRow = Grid.GetRow(listD);
 
-                var tempCol1 = Grid.GetColumn(listView2);
-                var tempRow1 = Grid.GetRow(listView2);
+                var tempCol1 = Grid.GetColumn(listL);
+                var tempRow1 = Grid.GetRow(listL);
 
-                parent1.Children.Remove(listView1);
-                parent2.Children.Remove(listView2);
+                parent1.Children.Remove(listD);
+                parent2.Children.Remove(listL);
 
-                var tempwidth = listView1.ActualWidth;
-                var tempheight = listView1.ActualHeight;
+                parent1.Children.Add(listL);
+                parent2.Children.Add(listD);
 
-                listView1.Width = listView2.ActualWidth;
-                listView1.Height = listView2.ActualHeight;
+                Grid.SetColumn(listD, tempCol1);
+                Grid.SetRow(listD, tempRow1);
 
-                listView2.Width = tempwidth;
-                listView2.Height = tempheight;
+                Grid.SetColumn(listL, tempCol);
+                Grid.SetRow(listL, tempRow);
 
-                parent1.Children.Add(listView2);
-                parent2.Children.Add(listView1);
 
-                Grid.SetColumn(listView1, tempCol1);
-                Grid.SetRow(listView1, tempRow1);
-
-                Grid.SetColumn(listView2, tempCol);
-                Grid.SetRow(listView2, tempRow);
-
+                listD.Width = listL.ActualWidth;
+                listL.Height = listD.ActualHeight;
+                listD.Height = double.NaN;
+                listL.Width = double.NaN;
             }
         }
 
@@ -600,11 +579,6 @@ namespace ColorVision.Services.Devices.Spectrum.Views
                     }
                 }
             }
-        }
-
-        private void ButtonSave_Click(object sender, RoutedEventArgs e)
-        {
-            wpfplot1.SaveAsImage();
         }
     }
 }

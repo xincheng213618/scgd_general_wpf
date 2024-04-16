@@ -20,6 +20,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Extension;
+using System.Collections.ObjectModel;
+using ColorVision.Services.Devices.Camera;
+using ColorVision.Services.Devices.Calibration;
 
 namespace ColorVision.Services.Devices.Algorithm
 {
@@ -46,16 +49,12 @@ namespace ColorVision.Services.Devices.Algorithm
             Device = device;
             InitializeComponent();
 
-            netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.FullName + "\\Cache");
+            netFileUtil = new NetFileUtil();
             netFileUtil.handler += NetFileUtil_handler;
             Service.OnMessageRecved += Service_OnAlgorithmEvent;
             View.OnCurSelectionChanged += View_OnCurSelectionChanged;
             this.PreviewMouseDown += UserControl_PreviewMouseDown;
         }
-
-        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");  } }
-        private bool _IsSelected;
-
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
             if (this.Parent is StackPanel stackPanel)
@@ -80,10 +79,6 @@ namespace ColorVision.Services.Devices.Algorithm
             else
             {
                 handler?.Close();
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    //MessageBox.IsShow(Application.Current.MainWindow, "文件打开失败", "ColorVision");
-                });
             }
         }
 
@@ -103,7 +98,6 @@ namespace ColorVision.Services.Devices.Algorithm
                     break;
                 case AlgorithmResultType.Ghost:
                     doOpenLocal(data.FilePath, FileExtType.Tif);
-                    //doOpen(data.FilePath, FileExtType.Src);
                     break;
                 default:
                     break;
@@ -166,7 +160,26 @@ namespace ColorVision.Services.Devices.Algorithm
                     }
                     break;
                 default:
-                    ShowResultFromDB(arg.SerialNumber, Convert.ToInt32(arg.Data.MasterId));
+                    List<AlgResultMasterModel> resultMaster = null;
+                    if (arg.Data.MasterId > 0)
+                    {
+                        resultMaster = new List<AlgResultMasterModel>();
+                        AlgResultMasterModel model = algResultMasterDao.GetById(arg.Data.MasterId);
+                        resultMaster.Add(model);
+                    }
+                    else
+                    {
+                        resultMaster = algResultMasterDao.GetAllByBatchCode(arg.SerialNumber);
+                    }
+
+                    foreach (AlgResultMasterModel result in resultMaster)
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            Device.View.AlgResultMasterModelDataDraw(result);
+                        });
+                    }
+                    handler?.Close();
                     break;
             }
         }
@@ -180,29 +193,6 @@ namespace ColorVision.Services.Devices.Algorithm
         }
 
         private AlgResultMasterDao algResultMasterDao = new AlgResultMasterDao();
-        private void ShowResultFromDB(string serialNumber, int masterId)
-        {
-            List<AlgResultMasterModel> resultMaster = null;
-            if (masterId > 0)
-            {
-                resultMaster = new List<AlgResultMasterModel>();
-                AlgResultMasterModel model = algResultMasterDao.GetById(masterId);
-                resultMaster.Add(model);
-            }
-            else
-            {
-                resultMaster = algResultMasterDao.GetAllByBatchCode(serialNumber);
-            }
-           
-            foreach (AlgResultMasterModel result in resultMaster)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    Device.View.AlgResultMasterModelDataDraw(result);
-                });
-            }
-            handler?.Close();
-        }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -212,6 +202,8 @@ namespace ColorVision.Services.Devices.Algorithm
 
             ComboxMTFTemplate.ItemsSource = TemplateControl.GetInstance().MTFParams;
             ComboxMTFTemplate.SelectedIndex = 0;
+            ComboxPoiTemplate2.ItemsSource = TemplateControl.GetInstance().PoiParams;
+            ComboxPoiTemplate2.SelectedIndex = 0;
 
             ComboxSFRTemplate.ItemsSource = TemplateControl.GetInstance().SFRParams;
             ComboxSFRTemplate.SelectedIndex = 0;
@@ -227,6 +219,8 @@ namespace ColorVision.Services.Devices.Algorithm
 
             ComboxLedCheckTemplate.ItemsSource = TemplateControl.GetInstance().LedCheckParams;  
             ComboxLedCheckTemplate.SelectedIndex = 0;
+            ComboxPoiTemplate1.ItemsSource = TemplateHelpers.CreatTemplateModelEmpty(TemplateControl.GetInstance().PoiParams);
+            ComboxPoiTemplate1.SelectedIndex = 0;
 
             ComboxFocusPointsTemplate.ItemsSource = TemplateControl.GetInstance().FocusPointsParams;
             ComboxFocusPointsTemplate.SelectedIndex = 0;
@@ -236,8 +230,53 @@ namespace ColorVision.Services.Devices.Algorithm
 
             this.AddViewConfig(View, ComboxView);
 
+            SelectChanged += (s, e) =>
+            {
+                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
+            };
+            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+            {
+                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
+            };
+            ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) => GetImageDevices(); 
+            GetImageDevices();
+        }
+        public class ImageDevice : ParamBase
+        {
+            public string DeviceCode { get; set; }
+            public string DeviceType { get; set; }
         }
 
+        public event RoutedEventHandler Selected;
+        public event RoutedEventHandler Unselected;
+        public event EventHandler SelectChanged;
+        private bool _IsSelected;
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
+
+        private void GetImageDevices()
+        {
+            ObservableCollection<TemplateModel<ImageDevice>> deves = new ObservableCollection<TemplateModel<ImageDevice>>();
+            foreach (var item in ServiceManager.GetInstance().DeviceServices)
+            {
+                if (item is DeviceCamera camera)
+                {
+                    TemplateModel<ImageDevice> model = new TemplateModel<ImageDevice>()
+                    {
+                        Value = new ImageDevice() { Name = item.Name, DeviceCode = item.Code, DeviceType = "Camera" },
+                    };
+                    deves.Add(model);
+                }else if (item is DeviceCalibration cali)
+                {
+                    TemplateModel<ImageDevice> model = new TemplateModel<ImageDevice>()
+                    {
+                        Value = new ImageDevice() { Name = item.Name, DeviceCode = item.Code, DeviceType = "Calibration" },
+                    };
+                    deves.Add(model);
+                }
+            }
+            CB_SourceImageFiles.ItemsSource = deves;
+            CB_SourceImageFiles.SelectedIndex = 0;
+        }
         private void PoiClick(object sender, RoutedEventArgs e)
         {
             if (ComboxPoiTemplate.SelectedIndex ==-1)
@@ -279,7 +318,7 @@ namespace ColorVision.Services.Devices.Algorithm
             if (sender is Button button)
             {
                 var msg = Service.Init();
-                Helpers.SendCommand(button, msg);
+                ServicesHelper.SendCommand(button, msg);
             }
         }
         private void MTF_Click(object sender, RoutedEventArgs e)
@@ -289,7 +328,7 @@ namespace ColorVision.Services.Devices.Algorithm
                 MessageBox.Show(Application.Current.MainWindow, "请先选择MTF模板", "ColorVision");
                 return;
             }
-            if (ComboxPoiTemplate.SelectedIndex == -1)
+            if (ComboxPoiTemplate2.SelectedIndex == -1)
             {
                 MessageBox.Show(Application.Current.MainWindow, "请先选择关注点模板", "ColorVision");
                 return;
@@ -301,9 +340,9 @@ namespace ColorVision.Services.Devices.Algorithm
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().MTFParams[ComboxMTFTemplate.SelectedIndex].Value;
-                var poi_pm = TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value;
-                var ss = Service.MTF(imgFileName, fileExtType, pm.Id, ComboxMTFTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate.Text);
-                Helpers.SendCommand(ss, "MTF");
+                var poi_pm = TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate2.SelectedIndex].Value;
+                var ss = Service.MTF(imgFileName, fileExtType, pm.Id, ComboxMTFTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate2.Text);
+                ServicesHelper.SendCommand(ss, "MTF");
             }
         }
 
@@ -323,7 +362,7 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 var pm = TemplateControl.GetInstance().SFRParams[ComboxSFRTemplate.SelectedIndex].Value;
                 var msg = Service.SFR(imgFileName, fileExtType, pm.Id, ComboxSFRTemplate.Text, sn);
-                Helpers.SendCommand(msg, "SFR");
+                ServicesHelper.SendCommand(msg, "SFR");
             }
         }
 
@@ -374,7 +413,7 @@ namespace ColorVision.Services.Devices.Algorithm
                     POILayoutReq = POILayoutTypes.Mask;
                 }
                 MsgRecord msg = Service.BuildPoi(POILayoutReq, Params, imgFileName, pm.Id, ComboxBuildPoiTemplate.Text, sn);
-                Helpers.SendCommand(msg, "BuildPoi");
+                ServicesHelper.SendCommand(msg, "BuildPoi");
             }
         }
 
@@ -393,7 +432,7 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 var pm = TemplateControl.GetInstance().GhostParams[ComboxGhostTemplate.SelectedIndex].Value;
                 var msg = Service.Ghost(imgFileName, fileExtType, pm.Id, ComboxGhostTemplate.Text, sn);
-                Helpers.SendCommand(msg, "Ghost");
+                ServicesHelper.SendCommand(msg, "Ghost");
             }
         }
 
@@ -412,7 +451,7 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 var pm = TemplateControl.GetInstance().DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value;
                 var msg = Service.Distortion(imgFileName, fileExtType, pm.Id, ComboxDistortionTemplate.Text, sn);
-                Helpers.SendCommand(msg, "Distortion");
+                ServicesHelper.SendCommand(msg, "Distortion");
             }
         }
 
@@ -465,7 +504,7 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 var pm = TemplateControl.GetInstance().FOVParams[ComboxFOVTemplate.SelectedIndex].Value;
                 var msg = Service.FOV(imgFileName, fileExtType, pm.Id, ComboxFOVTemplate.Text, sn);
-                Helpers.SendCommand(msg, "FOV");
+                ServicesHelper.SendCommand(msg, "FOV");
             }
         }
 
@@ -485,7 +524,9 @@ namespace ColorVision.Services.Devices.Algorithm
 
         private void Button_Click_Refresh(object sender, RoutedEventArgs e)
         {
-            Service.GetCIEFiles(Service.Config.BindDeviceCode, "Algorithm");
+            TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
+            if (imageDevice != null) Service.GetCIEFiles(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType);
+            else Service.GetCIEFiles(string.Empty, string.Empty);
         }
 
         private void Button_Click_Upload(object sender, RoutedEventArgs e)
@@ -523,9 +564,11 @@ namespace ColorVision.Services.Devices.Algorithm
         private void doOpen(string fileName, FileExtType extType)
         {
             string localName = netFileUtil.GetCacheFileFullName(fileName);
-            if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
+            if (!System.IO.File.Exists(localName))
             {
-                Service.Open(fileName, extType);
+                TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
+                if (imageDevice != null) Service.Open(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, fileName, extType);
+                else Service.Open(string.Empty, string.Empty, fileName, extType);
             }
             else
             {
@@ -624,7 +667,7 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 var pm = TemplateControl.GetInstance().FocusPointsParams[ComboxFocusPointsTemplate.SelectedIndex].Value;
                 var ss = Service.FocusPoints(ImageFile.Text, fileExtType, pm.Id, ComboxFocusPointsTemplate.Text, sn);
-                Helpers.SendCommand(ss, "FocusPoints");
+                ServicesHelper.SendCommand(ss, "FocusPoints");
             }
         }
 
@@ -636,6 +679,12 @@ namespace ColorVision.Services.Devices.Algorithm
                 return;
             }
 
+            if (ComboxPoiTemplate1.SelectedIndex == -1)
+            {
+                MessageBox.Show(Application.Current.MainWindow, "请先选择关注点模板", "ColorVision");
+                return;
+            }
+
             string sn = string.Empty;
             string imgFileName = ImageFile.Text;
             FileExtType fileExtType = FileExtType.Tif;
@@ -643,14 +692,17 @@ namespace ColorVision.Services.Devices.Algorithm
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().LedCheckParams[ComboxLedCheckTemplate.SelectedIndex].Value;
-                var ss = Service.LedCheck(ImageFile.Text, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn);
-                Helpers.SendCommand(ss, "正在计算灯珠");
+                var poi_pm = TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate1.SelectedIndex].Value;
+                var ss = Service.LedCheck(ImageFile.Text, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate1.Text);
+                ServicesHelper.SendCommand(ss, "正在计算灯珠");
             }
         }
 
         private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
         {
-            Service.GetRawFiles(Service.Config.BindDeviceCode, "Algorithm");
+            TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
+            if (imageDevice != null) Service.GetRawFiles(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType);
+            else Service.GetRawFiles(string.Empty, string.Empty);
         }
 
         private void Button_Click_RawOpen(object sender, RoutedEventArgs e)
@@ -667,7 +719,6 @@ namespace ColorVision.Services.Devices.Algorithm
             };
             doOpen(CB_RawImageFiles.Text, FileExtType.Raw);
         }
-
 
     }
 }

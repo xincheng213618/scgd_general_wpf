@@ -56,6 +56,7 @@ namespace ColorVision.Services.Devices.SMU.Views
         public double yMax { get; set; }
 
 
+        public int IdShow { get; set; }
 
         public void Gen()
         {

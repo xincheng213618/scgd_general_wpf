@@ -33,35 +33,21 @@
             </ListView.ItemContainerStyle>
             <ListView.View >
                 <GridView>
-                    <GridViewColumn  Header="{x:Static properties:Resource.ServiceIdentifier}" Width="105">
+                    <GridViewColumn  Header="{x:Static properties:Resource.ServiceIdentifier}" >
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type terminal:TerminalService}">
                                 <TextBlock Text="{ Binding Code}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="{x:Static properties:Resource.ServiceName}" Width="105">
+                    <GridViewColumn  Header="{x:Static properties:Resource.ServiceName}" >
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type terminal:TerminalService}">
                                 <TextBlock Text="{ Binding Name}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="{x:Static properties:Resource.TransmitChannel}" Width="160">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type terminal:TerminalService}">
-                                <TextBlock Text="{ Binding  Config.SendTopic}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn  Header="{x:Static properties:Resource.ReceiveChannel}" Width="160" >
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type terminal:TerminalService}">
-                                <TextBlock Text="{ Binding  Config.SubscribeTopic}"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
-                    <GridViewColumn  Header="{x:Static properties:Resource.Status}" Width="50">
+                    <GridViewColumn  Header="{x:Static properties:Resource.Status}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type terminal:TerminalService}">
                                 <TextBlock Text="{ Binding  Config.IsAlive}"/>

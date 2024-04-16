@@ -42,7 +42,7 @@
                                 <Border x:Name="border1"   Height="45" Margin="0,2,0,2" BorderThickness="0" Width="{Binding ElementName=ListView1,Path=ActualWidth}">
                                     <Border.ContextMenu>
                                         <ContextMenu>
-                                            <MenuItem Header="删除"  Click="Delete" />
+                                            <MenuItem Header="{x:Static properties:Resource.Delete}"  Click="Delete" />
                                         </ContextMenu>
                                     </Border.ContextMenu>
                                     <Grid Margin="0,2,50,2">

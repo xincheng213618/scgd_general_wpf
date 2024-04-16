@@ -15,8 +15,6 @@ namespace ColorVision.Services.Devices.Algorithm
     {
         public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();
 
-        public string DeviceID { get => Config.Id; }
-
         public event MessageRecvHandler OnMessageRecved;
 
         public DeviceAlgorithm DeviceAlgorithm { get; set; }
@@ -31,17 +29,12 @@ namespace ColorVision.Services.Devices.Algorithm
 
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {
+            if (msg.DeviceCode != Config.Code) return;
             IsRun = false;
             if (msg.Code == 0)
             {
                 switch (msg.EventName)
                 {
-                    //case "Init":
-                    //    DeviceStatus = DeviceStatusType.Init;
-                    //    break;
-                    //case "UnInit":
-                    //    DeviceStatus = DeviceStatusType.UnInit;
-                    //    break;
                     case "SetParam":
                         break;
                     case "Close":
@@ -84,18 +77,6 @@ namespace ColorVision.Services.Devices.Algorithm
                         OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         DeviceStatus = DeviceStatusType.Opened;
                         break;
-                    //case "Close":
-                    //    DeviceStatus = DeviceStatusType.UnInit;
-                    //    break;
-                    //case "Open":
-                    //    DeviceStatus = DeviceStatusType.UnInit;
-                    //    break;
-                    //case "Init":
-                    //    DeviceStatus = DeviceStatusType.UnInit;
-                    //    break;
-                    //case "UnInit":
-                    //    DeviceStatus = DeviceStatusType.UnInit;
-                    //    break;
                     case "Calibrations":
                         break;
                     default:
@@ -112,7 +93,6 @@ namespace ColorVision.Services.Devices.Algorithm
             MsgSend msg = new MsgSend
             {
                 EventName = "Init",
-                //Params = new Dictionary<string, object>() { { "SnID", SnID } , {"CodeID",Config.Code } }
             };
             return PublishAsyncClient(msg);
         }
@@ -348,7 +328,7 @@ namespace ColorVision.Services.Devices.Algorithm
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord LedCheck(string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
+        public MsgRecord LedCheck(string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber, int poiId, string poiTempName)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
@@ -356,6 +336,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
+            Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiId, Name = poiTempName });
 
             MsgSend msg = new MsgSend
             {
@@ -374,31 +355,31 @@ namespace ColorVision.Services.Devices.Algorithm
             return PublishAsyncClient(msg);
         }
 
-        internal void Open(string fileName, FileExtType extType)
+        internal void Open(string deviceCode, string deviceType, string fileName, FileExtType extType)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = MQTTFileServerEventEnum.Event_File_Download,
                 ServiceName = Config.Code,
-                Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", extType } }
+                Params = new Dictionary<string, object> { { "FileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType }, { "FileExtType", extType } }
             };
             PublishAsyncClient(msg);
         }
 
         public void UploadCIEFile(string fileName)
         {
-            MsgSend msg = new MsgSend
-            {
-                EventName = MQTTFileServerEventEnum.Event_File_Upload,
-                ServiceName = Config.Code,
-                Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", FileExtType.CIE } }
-            };
-            PublishAsyncClient(msg);
+            //MsgSend msg = new MsgSend
+            //{
+            //    EventName = MQTTFileServerEventEnum.Event_File_Upload,
+            //    ServiceName = Config.Code,
+            //    Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", FileExtType.CIE } }
+            //};
+            //PublishAsyncClient(msg);
         }
 
-        public void CacheClear()
+        public MsgRecord CacheClear()
         {
-            PublishAsyncClient(new MsgSend { EventName = "" });
+            return PublishAsyncClient(new MsgSend { EventName = "" });
         }
 
 

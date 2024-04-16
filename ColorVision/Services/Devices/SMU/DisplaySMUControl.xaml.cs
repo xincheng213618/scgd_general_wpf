@@ -60,10 +60,21 @@ namespace ColorVision.Services.Devices.SMU
             this.AddViewConfig(View, ComboxView);
 
             this.PreviewMouseDown += UserControl_PreviewMouseDown;
+            SelectChanged += (s, e) =>
+            {
+                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
+            };
+            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+            {
+                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
+            };
         }
 
-        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");  } }
+        public event RoutedEventHandler Selected;
+        public event RoutedEventHandler Unselected;
+        public event EventHandler SelectChanged;
         private bool _IsSelected;
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -155,11 +166,11 @@ namespace ColorVision.Services.Devices.SMU
             {
                 if (Config.DeviceStatus != DeviceStatusType.Opening)
                 {
-                    Helpers.SendCommand(button, DService.Open(Config.IsNet, Config.DevName));
+                    ServicesHelper.SendCommand(button, DService.Open(Config.IsNet, Config.DevName));
                 }
                 else
                 {
-                    Helpers.SendCommand(button, DService.Close());
+                    ServicesHelper.SendCommand(button, DService.Close());
                 }
             }
         }

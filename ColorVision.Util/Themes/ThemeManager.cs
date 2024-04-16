@@ -173,6 +173,7 @@ namespace ColorVision.Themes
             } }
         private Theme? _CurrentTheme;
 
+        //这里是两种
         public Theme CurrentUITheme { get => _CurrentUITheme; private set { if (value == _CurrentUITheme) return; _CurrentUITheme = value; CurrentUIThemeChanged?.Invoke(value);  } }
         private Theme _CurrentUITheme;
 

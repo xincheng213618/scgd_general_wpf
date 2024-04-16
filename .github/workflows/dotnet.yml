@@ -12,16 +12,23 @@ on:
 jobs:
   build:
 
-    runs-on:  ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v3
+    
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: 6.0.x
+        
     - name: Restore dependencies
       run: dotnet restore build.sln
-    - name: Build
-      run: dotnet build /p:Platform=x64 build.sln
+      
+    - name: Setup MSBuild path
+      uses: microsoft/setup-msbuild@v1.1
+    
+    - name: Build C++ project with MSBuild
+      run: |
+        msbuild build.sln /p:Configuration=Release /p:Platform=x64
  

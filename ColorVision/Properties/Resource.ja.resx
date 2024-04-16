@@ -657,4 +657,31 @@
   <data name="Create" xml:space="preserve">
     <value>作成する</value>
   </data>
+  <data name="Upgrade" xml:space="preserve">
+    <value>アップグレード</value>
+  </data>
+  <data name="Rollback" xml:space="preserve">
+    <value>戻る</value>
+  </data>
+  <data name="Manager" xml:space="preserve">
+    <value>管理</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>送信</value>
+  </data>
+  <data name="Subscribe" xml:space="preserve">
+    <value>サブスクリプション</value>
+  </data>
+  <data name="Unsubscribe" xml:space="preserve">
+    <value>購読を解除する</value>
+  </data>
+  <data name="OpenSolution" xml:space="preserve">
+    <value>プロジェクトを開く</value>
+  </data>
+  <data name="NewSolution" xml:space="preserve">
+    <value>新築</value>
+  </data>
+  <data name="MsgList" xml:space="preserve">
+    <value>メッセージ一覧</value>
+  </data>
 </root>

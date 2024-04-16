@@ -20,6 +20,7 @@ using System.Windows.Input;
 using ColorVision.Services.Dao;
 using MQTTMessageLib.Camera;
 using ColorVision.Extension;
+using MQTTMessageLib.Calibration;
 
 namespace ColorVision.Services.Devices.Calibration
 {
@@ -33,15 +34,12 @@ namespace ColorVision.Services.Devices.Calibration
 
         public DeviceCalibration Device { get; set; }
         private MQTTCalibration DeviceService { get => Device.DeviceService;  }
-        private IPendingHandler? handler { get; set; }
-        private NetFileUtil netFileUtil;
+
         public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; }
         public DisplayCalibrationControl(DeviceCalibration device)
         {
             this.Device = device;
             InitializeComponent();
-            netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.FullName + "\\Cache");
-            netFileUtil.handler += NetFileUtil_handler;
             DeviceService.OnMessageRecved += Service_OnCalibrationEvent;
             this.PreviewMouseDown += UserControl_PreviewMouseDown;
 
@@ -55,111 +53,58 @@ namespace ColorVision.Services.Devices.Calibration
             CalibrationParams = Device.CalibrationParams;
             ComboxCalibrationTemplate.ItemsSource = Device.CalibrationParams;
             ComboxCalibrationTemplate.SelectedIndex = 0;
-
-
             this.AddViewConfig(View, ComboxView);
-
+            SelectChanged += (s, e) =>
+            {
+                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
+            };
+            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+            {
+                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
+            };
         }
 
+        public event RoutedEventHandler Selected;
+        public event RoutedEventHandler Unselected;
+        public event EventHandler SelectChanged;
+        private bool _IsSelected;
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
-        MeasureImgResultDao measureImgResultDao = new MeasureImgResultDao();
         private void Service_OnCalibrationEvent(object sender, MessageRecvArgs arg)
         {
             switch (arg.EventName)
             {
                 case MQTTFileServerEventEnum.Event_File_List_All:
                     DeviceListAllFilesParam data = JsonConvert.DeserializeObject<DeviceListAllFilesParam>(JsonConvert.SerializeObject(arg.Data));
-                    DoShowFileList(data);
-                    break;
-                case MQTTFileServerEventEnum.Event_File_Download:
-                    DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                    if (pm_dl != null)
+                    switch (data.FileExtType)
                     {
-                        if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, FileExtType.CIE);
-                    }
-                    break;
-                case MQTTCameraEventEnum.Event_GetData:
-                    int masterId = Convert.ToInt32(arg.Data.MasterId);
-                    List<MeasureImgResultModel> resultMaster = null;
-                    if (masterId > 0)
-                    {
-                        resultMaster = new List<MeasureImgResultModel>();
-                        MeasureImgResultModel model = measureImgResultDao.GetById(masterId);
-                        if (model != null)
-                            resultMaster.Add(model);
-                    }
-                    else
-                    {
-                        resultMaster = measureImgResultDao.GetAllByBatchCode(arg.SerialNumber);
-                    }
-                    if (resultMaster != null)
-                    {
-                        foreach (MeasureImgResultModel result in resultMaster)
-                        {
+                        case FileExtType.Raw:
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                Device.View.ShowResult(result);
+                                data.Files.Reverse();
+                                CB_RawImageFiles.ItemsSource = data.Files;
+                                CB_RawImageFiles.SelectedIndex = 0;
                             });
-                        }
+                            break;
+                        case FileExtType.Src:
+                            break;
+                        case FileExtType.CIE:
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                //CB_CIEImageFiles.ItemsSource = data.Files;
+                                //CB_CIEImageFiles.SelectedIndex = 0;
+                            });
+                            break;
+                        case FileExtType.Calibration:
+                            break;
+                        case FileExtType.Tif:
+                            break;
+                        default:
+                            break;
                     }
                     break;
             }
-
-
         }
-        private void DoShowFileList(DeviceListAllFilesParam data)
-        {
-            switch (data.FileExtType)
-            {
-                case FileExtType.Raw:
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        data.Files.Reverse();
-                        CB_RawImageFiles.ItemsSource = data.Files;
-                        CB_RawImageFiles.SelectedIndex = 0;
-                    });
-                    break;
-                case FileExtType.Src:
-                    break;
-                case FileExtType.CIE:
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        //CB_CIEImageFiles.ItemsSource = data.Files;
-                        //CB_CIEImageFiles.SelectedIndex = 0;
-                    });
-                    break;
-                case FileExtType.Calibration:
-                    break;
-                case FileExtType.Tif:
-                    break;
-                default:
-                    break;
-            }
-        }
-        private void NetFileUtil_handler(object sender, NetFileEvent arg)
-        {
-            if (arg.Code == 0 && arg.FileData.data != null)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    View.OpenImage(arg.FileData);
-                });
-                handler?.Close();
-            }
-            else
-            {
-                handler?.Close();
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MessageBox.Show(Application.Current.MainWindow, "文件打开失败", "ColorVision");
-                });
-            }
-        }
-
-
-
-        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");  } }
-        private bool _IsSelected;
 
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -187,9 +132,8 @@ namespace ColorVision.Services.Devices.Calibration
                         var pm = CalibrationParams[ComboxCalibrationTemplate.SelectedIndex].Value;
 
                         MsgRecord msgRecord = DeviceService.Calibration(param, imgFileName, fileExtType, pm.Id, ComboxCalibrationTemplate.Text, sn, (float)Device.Config.ExpTimeR, (float)Device.Config.ExpTimeG, (float)Device.Config.ExpTimeB);
-                        Helpers.SendCommand(button, msgRecord);
+                        ServicesHelper.SendCommand(button, msgRecord);
                     }
-
                 }
             }
         }
@@ -207,15 +151,7 @@ namespace ColorVision.Services.Devices.Calibration
         }
         private void doOpen(string fileName, FileExtType extType)
         {
-            string localName = netFileUtil.GetCacheFileFullName(fileName);
-            if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
-            {
-                DeviceService.Open(fileName, extType);
-            }
-            else
-            {
-                netFileUtil.OpenLocalFile(localName, extType);
-            }
+            DeviceService.Open(fileName, extType);
         }
         private void Button_Click_RawOpen(object sender, RoutedEventArgs e)
         {
@@ -224,13 +160,7 @@ namespace ColorVision.Services.Devices.Calibration
                 MessageBox.Show("请先选中图片");
                 return;
             }
-            handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
-            handler.Cancelling += delegate
-            {
-                handler?.Close();
-            };
             doOpen(CB_RawImageFiles.Text, FileExtType.Raw);
-
         }
 
         private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)

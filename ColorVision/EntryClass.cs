@@ -1,7 +1,10 @@
 // // Copyright (c) Microsoft. All rights reserved.
 // // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using ColorVision.Media;
 using ColorVision.NativeMethods;
+using ColorVision.Net;
+using ColorVision.Utils;
 using log4net;
 using System;
 using System.CodeDom.Compiler;
@@ -10,6 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Windows;
 
 namespace ColorVision
 {
@@ -29,11 +33,13 @@ namespace ColorVision
 
         public static string SolutionPath { get; set; } = string.Empty;
 
+        static string[] Sysargs;
         [STAThread]
         [DebuggerNonUserCode]
         [GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
         public static void Main(string[] args)
         {
+            Sysargs = args ?? new string[0];
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
             bool IsDebug = Debugger.IsAttached;
@@ -49,7 +55,6 @@ namespace ColorVision
                     {
                         App.IsReStart = true;
                     }
-
                     if (args[i].EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
                     {
                         SolutionPath = args[i];
@@ -68,14 +73,14 @@ namespace ColorVision
             }
 
             mutex = new Mutex(true, "ElectronicNeedleTherapySystem", out bool ret);
-            if (!IsDebug && !ret)
+            if (!ret)
             {
                 IntPtr hWnd = CheckAppRunning.Check("ColorVision");
                 if (hWnd != IntPtr.Zero)
                 {
-                    if (args.Length > 0 && File.Exists(SolutionPath))
+                    if (args.Length > 0)
                     {
-                        ushort atom = GlobalAddAtom(SolutionPath);
+                        ushort atom = GlobalAddAtom(args[0]);
                         SendMessage(hWnd, WM_USER + 1, (IntPtr)atom, IntPtr.Zero);  // 发送消息
                     }
                     log.Info("程序已经打开");

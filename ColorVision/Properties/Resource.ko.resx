@@ -657,4 +657,31 @@
   <data name="Create" xml:space="preserve">
     <value>만들다</value>
   </data>
+  <data name="Upgrade" xml:space="preserve">
+    <value>업그레이드</value>
+  </data>
+  <data name="Rollback" xml:space="preserve">
+    <value>돌아가다</value>
+  </data>
+  <data name="Manager" xml:space="preserve">
+    <value>관리하다</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>보내다</value>
+  </data>
+  <data name="Subscribe" xml:space="preserve">
+    <value>신청</value>
+  </data>
+  <data name="Unsubscribe" xml:space="preserve">
+    <value>구독 취소</value>
+  </data>
+  <data name="OpenSolution" xml:space="preserve">
+    <value>프로젝트 열기</value>
+  </data>
+  <data name="NewSolution" xml:space="preserve">
+    <value>신조</value>
+  </data>
+  <data name="MsgList" xml:space="preserve">
+    <value>메시지 목록</value>
+  </data>
 </root>

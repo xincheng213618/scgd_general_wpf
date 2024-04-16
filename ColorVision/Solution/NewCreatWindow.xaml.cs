@@ -23,6 +23,7 @@ namespace ColorVision.Solution
                     RecentNewCreateCacheList.Add(directoryInfo.FullName);
                 }
             }
+
             if (RecentNewCreateCacheList.Count == 0)
             {
                 string Default = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision";

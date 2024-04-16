@@ -128,11 +128,11 @@ namespace ColorVision.Solution.V
 
         public void GeneralCVSln()
         {
-            HistoryFolder historyFolder = new HistoryFolder("历史记录");
-            var vhistoryFolder = new VFolder(historyFolder);
-            this.AddChild(vhistoryFolder);
+            //HistoryFolder historyFolder = new HistoryFolder("历史记录");
+            //var vhistoryFolder = new VFolder(historyFolder);
+            //this.AddChild(vhistoryFolder);
 
-            List<string> strings = new List<string>() { "MTF", "SFR", "畸变", "灯光检测", "鬼影", "关注点" };
+            //List<string> strings = new List<string>() { "MTF", "SFR", "畸变", "灯光检测", "鬼影", "关注点" };
 
             //if (true)
             //{

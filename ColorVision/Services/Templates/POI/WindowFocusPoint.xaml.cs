@@ -1,13 +1,10 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.Utilities;
 using ColorVision.Draw;
-using ColorVision.Media;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Settings;
 using ColorVision.Util.Draw.Rectangle;
-using ColorVision.Utilities;
 using cvColorVision;
 using cvColorVision.Util;
 using log4net;
@@ -78,7 +75,8 @@ namespace ColorVision.Services.Templates.POI
             };
 
             ToolBarTop = new ToolBarTop(ImageContentGrid, Zoombox1, ImageShow);
-            ToolBarTop.Activate = true;
+            ToolBarTop.ToolBarScaleRuler.IsShow = false;
+            ToolBarTop.ImageEditMode = true;
             ToolBar1.DataContext = ToolBarTop;
 
 
@@ -277,6 +275,7 @@ namespace ColorVision.Services.Templates.POI
         private void OpenCAD_Click(object sender, RoutedEventArgs e)
         {
             CreateImage(PoiParam.Width, PoiParam.Height, Colors.White,false);
+
         }
 
         public void OpenImage(string? filePath)
@@ -287,10 +286,7 @@ namespace ColorVision.Services.Templates.POI
 
                 if (ext == ".cvraw")
                 {
-                    CVCIEFile fileInfo = new CVCIEFile();
-                    fileInfo.FileExtType = FileExtType.Raw;
-                    int ret = CVFileUtil.ReadCVRaw(filePath, ref fileInfo);
-                    if (ret == 0)
+                    if (CVFileUtil.ReadCVRaw(filePath, out CVCIEFile fileInfo))
                     {
                         OpenCvSharp.Mat src;
                         if (fileInfo.bpp != 8)
@@ -313,7 +309,6 @@ namespace ColorVision.Services.Templates.POI
                 {
                     BitmapSource bitmapImage = new BitmapImage(new Uri(filePath));
                     SetImageSource(bitmapImage);
-                    Zoombox1.ZoomUniform();
                 }
             }
         }
@@ -328,6 +323,7 @@ namespace ColorVision.Services.Templates.POI
                 InitDatumAreaValue(bitmapSource.PixelWidth, bitmapSource.PixelHeight);
             }
             ImageShow.ImageInitialize();
+            Zoombox1.ZoomUniform();
         }
 
         private bool Init; 
@@ -406,6 +402,7 @@ namespace ColorVision.Services.Templates.POI
             PoiParam.DatumArea.Polygon3Y = height;
             PoiParam.DatumArea.Polygon4X = 0;
             PoiParam.DatumArea.Polygon4Y = height;
+            Application.Current.Dispatcher.Invoke(() => PoiParam.DatumArea.IsShowDatumArea = true);
             RenderDatumArea();
             DatumSet();
         }
@@ -1215,48 +1212,6 @@ namespace ColorVision.Services.Templates.POI
 
         }
 
-        private WindowStatus OldWindowStatus { get; set; }
-
-        private void Button8_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is ToggleButton toggleButton)
-            {
-                var window = GetWindow(ImageContentGrid);
-
-                if (toggleButton.IsChecked == true)
-                {
-                    if (ImageContentGrid.Parent is Grid p)
-                    {
-                        OldWindowStatus = new WindowStatus();
-                        OldWindowStatus.Parent = p;
-                        OldWindowStatus.WindowState = window.WindowState;
-                        OldWindowStatus.WindowStyle = window.WindowStyle;
-                        OldWindowStatus.ResizeMode = window.ResizeMode;
-                        OldWindowStatus.Root = window.Content;
-                        window.WindowStyle = WindowStyle.None;
-                        window.WindowState = WindowState.Maximized;
-                        OldWindowStatus.Parent.Children.Remove(ImageContentGrid);
-                        window.Content = ImageContentGrid;
-                    }
-                    else
-                    {
-                        return;
-                    }
-                }
-                else
-                {
-
-                    window.WindowStyle = OldWindowStatus.WindowStyle;
-                    window.WindowState = OldWindowStatus.WindowState;
-                    window.ResizeMode = OldWindowStatus.ResizeMode;
-
-                    window.Content = OldWindowStatus.Root;
-                    OldWindowStatus.Parent.Children.Add(ImageContentGrid);
-                }
-            }
-        }
-
-
 
         private void DatumAreaImport_Click(object sender, RoutedEventArgs e)
         {
@@ -1442,7 +1397,7 @@ namespace ColorVision.Services.Templates.POI
                 {
                     if (measureImgResultModel.FileUrl != null)
                     {
-                        OpenImage(new NetFileUtil().OpenLocalCVFile(measureImgResultModel.FileUrl, FileExtType.Raw));
+                        OpenImage(new NetFileUtil().OpenLocalCVFile(measureImgResultModel.FileUrl));
                     }
                     else
                     {

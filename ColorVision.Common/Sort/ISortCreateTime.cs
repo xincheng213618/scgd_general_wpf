@@ -6,7 +6,7 @@ namespace ColorVision.Common.Sorts
 {
     public interface ISortCreateTime
     {
-        DateTime? CreateTime { get; set; }
+        DateTime? CreateTime { get;  }
     }
 
     public interface ISortRecvTime

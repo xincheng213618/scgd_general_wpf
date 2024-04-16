@@ -1,16 +1,17 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Devices.Camera.Dao;
 using ColorVision.Services.Devices.Camera.Views;
-using ColorVision.Services.Core;
+using ColorVision.Services.Extension;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
+using ColorVision.Services.Type;
 using ColorVision.Solution;
-using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using cvColorVision;
 using log4net;
@@ -20,14 +21,11 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
-using ColorVision.Services.Extension;
-using ColorVision.Utilities;
-using System.Linq;
 
 namespace ColorVision.Services.Devices.Camera
 {
@@ -59,7 +57,7 @@ namespace ColorVision.Services.Devices.Camera
         public DeviceCamera(SysDeviceModel sysResourceModel, MQTTTerminalCamera cameraService) : base(sysResourceModel)
         {
             Service = cameraService;
-            DeviceService = new MQTTCamera(Config, Service);
+            DeviceService = new MQTTCamera(Config);
 
             View = new ViewCamera(this);
             View.View.Title = $"相机视图 - {Config.Code}";
@@ -69,13 +67,12 @@ namespace ColorVision.Services.Devices.Camera
             EditCommand = new RelayCommand(a =>
             {
                 EditCamera window = new EditCamera(this);
-                window.Owner = WindowHelpers.GetActiveWindow();
+                window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });
 
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
-
 
             TemplateControl.GetInstance().LoadModCabParam(CalibrationParams, SysResourceModel.Id, ModMasterType.Calibration);
 
@@ -86,6 +83,8 @@ namespace ColorVision.Services.Devices.Camera
 
             DisplayCameraControlLazy = new Lazy<DisplayCameraControl>(() => new DisplayCameraControl(this));
         }
+
+
         #region License
         public RelayCommand UploadLincenseCommand { get; set; }
         public RelayCommand RefreshLincenseCommand { get; set; }
@@ -276,7 +275,7 @@ namespace ColorVision.Services.Devices.Camera
             if (File.Exists(UploadFilePath))
             {
                 Msg ="正在解压文件：" +" 请稍后...";
-                string path = SolutionManager.GetInstance().CurrentSolution.FullName + "\\Cache\\Cal";
+                string path = SolutionManager.GetInstance().CurrentSolution.FullPath + "\\Cache\\Cal";
                 if (Directory.Exists(path))
                     Directory.Delete(path, true);
                 Directory.CreateDirectory(path);
@@ -378,42 +377,42 @@ namespace ColorVision.Services.Devices.Camera
                             switch (item1.CalibrationType)
                             {
                                 case CalibrationType.DarkNoise:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ResouceType.DarkNoise);
+                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DarkNoise);
                                     break;
                                 case CalibrationType.DefectWPoint:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ResouceType.DefectPoint);
+                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
                                     break;
                                 case CalibrationType.DefectBPoint:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ResouceType.DefectPoint);
+                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
                                     break;
                                 case CalibrationType.DefectPoint:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ResouceType.DefectPoint);
+                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
                                     break;
                                 case CalibrationType.DSNU:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ResouceType.DSNU);
+                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DSNU);
                                     break;
                                 case CalibrationType.Uniformity:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ResouceType.Uniformity);
+                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.Uniformity);
                                      break;
                                 case CalibrationType.Luminance:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ResouceType.Luminance);
+                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.Luminance);
                                     break;
                                 case CalibrationType.LumOneColor:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ResouceType.LumOneColor);
+                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.LumOneColor);
                                     break;
                                 case CalibrationType.LumFourColor:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ResouceType.LumFourColor);
+                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.LumFourColor);
                                     break;
                                 case CalibrationType.LumMultiColor:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ResouceType.LumMultiColor);
+                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.LumMultiColor);
                                     break;
                                 case CalibrationType.LumColor:
                                     break;
                                 case CalibrationType.Distortion:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ResouceType.Distortion);
+                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.Distortion);
                                     break;
                                 case CalibrationType.ColorShift:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ResouceType.ColorShift);
+                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.ColorShift);
                                     break;
                                 case CalibrationType.Empty_Num:
                                     break;

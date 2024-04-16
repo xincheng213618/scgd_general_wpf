@@ -1,4 +1,6 @@
-﻿using ColorVision.Services.Dao;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Services.Dao;
+using ColorVision.Services.Type;
 
 namespace ColorVision.Services.Core
 {
@@ -14,6 +16,14 @@ namespace ColorVision.Services.Core
             Id = sysResourceModel.Id;
             Pid = sysResourceModel.Pid;
         }
+
+        public override void Save()
+        {
+            SysResourceModel.Name = Name;
+            ServiceManager.GetInstance().VSysResourceDao.Save(SysResourceModel);
+        }
+
+        public ServiceTypes ServiceTypes { get => (ServiceTypes)SysResourceModel.Type; }
 
         public string? FilePath { get; set; }
         public int Id { get; set; }

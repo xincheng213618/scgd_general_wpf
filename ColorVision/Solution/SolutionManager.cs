@@ -11,6 +11,8 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision.Solution
 {
@@ -23,10 +25,16 @@ namespace ColorVision.Solution
 
         private static SolutionManager _instance;
         private static readonly object _locker = new();
-        public static SolutionManager GetInstance() { lock (_locker) { return _instance ??= new SolutionManager(); } }
+        public static SolutionManager GetInstance() { 
+            lock (_locker)
+            { 
+                if (_instance == null)
+                    _instance = new SolutionManager();
+                return _instance;
+            } }
 
         //工程配置文件
-        public SolutionConfig CurrentSolution { get => SoftwareConfig.SolutionConfig; }
+        public SolutionConfig CurrentSolution { get; set; }
         public SolutionSetting Setting { get => SoftwareConfig.SolutionSetting; }
         public SoftwareConfig SoftwareConfig { get; private set; }
         public RecentFileList SolutionHistory { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
@@ -46,93 +54,156 @@ namespace ColorVision.Solution
         public SolutionExplorer CurrentSolutionExplorer { get => _CurrentSolutionExplorer; set { _CurrentSolutionExplorer = value; NotifyPropertyChanged(); } }
         private SolutionExplorer _CurrentSolutionExplorer;
 
+        public RelayCommand SolutionOpenCommand { get; set; }
+        public RelayCommand SolutionCreateCommand { get; set; }
 
         public SolutionManager()
         {
             SolutionExplorers = new ObservableCollection<SolutionExplorer>();
 
-            SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
+            CurrentSolution = new SolutionConfig();
 
+            SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
+            SolutionLoaded += SolutionManager_SolutionLoaded;
+
+            bool su = false;
             if (File.Exists(App.SolutionPath))
             {
-                CurrentSolution.FullName = App.SolutionPath;
+                CurrentSolution.FullPath = App.SolutionPath;
+                su =OpenSolution(CurrentSolution.FullPath);
             }
-            else
+            else if (SolutionHistory.RecentFiles.Count > 0)
             {
-                SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
+                su =OpenSolution(SolutionHistory.RecentFiles[0]);
             }
-            Application.Current.MainWindow.AddHotKeys(new HotKeys("打开工程", new Hotkey(Key.O, ModifierKeys.Control), OpenSolutionWindow));
-            Application.Current.MainWindow.AddHotKeys(new HotKeys("新建工程", new Hotkey(Key.N, ModifierKeys.Control), NewCreateWindow));
 
-            //ClearCache();
+            if (!su)
+            {
+                string Default = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision";
+                if (!Directory.Exists(Default))
+                    Directory.CreateDirectory(Default);
 
-            OpenSolutionDirectory(CurrentSolution.FullName);
+                string DefaultSolution = Default + "\\" + "Default";
+                if (Directory.Exists(DefaultSolution))
+                    Directory.CreateDirectory(DefaultSolution);
+                DirectoryInfo directoryInfo = new DirectoryInfo(DefaultSolution);
+                var SolutionPath = CreateSolution(directoryInfo);
+                OpenSolution(SolutionPath);
+            }
 
+
+            SolutionOpenCommand = new RelayCommand((a) => OpenSolutionWindow());
+            SolutionCreateCommand = new RelayCommand((a) => NewCreateWindow());
         }
 
-        public DirectoryInfo SolutionDirectory { get; private set; }
-
-        public bool OpenSolutionDirectory(string SolutionFullPath)
+        private void SolutionManager_SolutionLoaded(object? sender, EventArgs e)
         {
-            log.Debug("正在打开工程:" + SolutionFullPath);
-
-            if (!Directory.Exists(SolutionFullPath))
+            if (sender is SolutionConfig solutionConfig)
             {
-                string DefaultPath = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision\\默认工程";
-                if (!Directory.Exists(DefaultPath))
-                    Directory.CreateDirectory(DefaultPath);
-                CreateSolution(new DirectoryInfo(DefaultPath));
-                SolutionFullPath = DefaultPath;
+                SolutionExplorers.Clear();
+                CurrentSolutionExplorer = new SolutionExplorer(solutionConfig.FullPath);
+                SolutionExplorers.Add(CurrentSolutionExplorer);
             }
-            CurrentSolution.FullName = SolutionFullPath;
-            SolutionDirectory = new DirectoryInfo(CurrentSolution.FullName);
-            SolutionHistory.InsertFile(SolutionDirectory.FullName);
-            SolutionLoaded?.Invoke(CurrentSolution, new EventArgs());
-
-            SolutionExplorers.Clear();
-            CurrentSolutionExplorer = new SolutionExplorer(SolutionFullPath);
-            SolutionExplorers.Add(CurrentSolutionExplorer);
-            return true;
         }
+
+        public void InitMenu()
+        {
+            var FileMenuItem = MenuManager.GetInstance().FileMenuItem;       
+            MenuItem RecentListMenuItem = null;
+
+            RecentListMenuItem ??= new MenuItem();
+            RecentListMenuItem.Header = Properties.Resource.RecentFiles;
+            RecentListMenuItem.SubmenuOpened += (s, e) =>
+            {
+                var firstMenuItem = RecentListMenuItem.Items[0];
+                foreach (var item in SolutionHistory.RecentFiles)
+                {
+                    if (Directory.Exists(item))
+                    {
+                        MenuItem menuItem = new MenuItem();
+                        menuItem.Header = item;
+                        menuItem.Click += (sender, e) =>
+                        {
+                            OpenSolution(item);
+                        };
+                        RecentListMenuItem.Items.Add(menuItem);
+                    }
+                    else
+                    {
+                        SolutionHistory.RecentFiles.Remove(item);
+                    }
+                };
+                RecentListMenuItem.Items.Remove(firstMenuItem);
+
+            };
+            RecentListMenuItem.SubmenuClosed += (s, e) => {
+                RecentListMenuItem.Items.Clear();
+                RecentListMenuItem.Items.Add(new MenuItem());
+            };
+            RecentListMenuItem.Items.Add(new MenuItem());
+
+            FileMenuItem?.Items.Insert(3, RecentListMenuItem);
+
+        }
+
+
+
+        public void AddHotKeys()
+        {
+            InitMenu();
+            Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.OpenSolution, new Hotkey(Key.O, ModifierKeys.Control), OpenSolutionWindow));
+            Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.NewSolution, new Hotkey(Key.N, ModifierKeys.Control), NewCreateWindow));
+        }
+
+
+        public DirectoryInfo? SolutionDirectory { get; private set; }
 
         public bool OpenSolution(string FullPath)
         {
             if (File.Exists(FullPath)&& FullPath.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
             {
-                CurrentSolution.FullName = FullPath;
-                SolutionHistory.InsertFile(SolutionDirectory.FullName);
+                FileInfo fileInfo = new FileInfo(FullPath);
+                CurrentSolution.FullPath = FullPath;
+                SolutionDirectory = fileInfo.Directory;
+                SolutionHistory.InsertFile(FullPath);
                 SolutionLoaded?.Invoke(CurrentSolution, new EventArgs());
-
-                SolutionExplorers.Clear();
-                CurrentSolutionExplorer = new SolutionExplorer(FullPath);
-                SolutionExplorers.Add(CurrentSolutionExplorer);
+                return true;
             }
-            return true;
+            else
+            {
+                SolutionHistory.RemoveFile(FullPath);
+                return false;
+            }
         }
 
-        public void CreateSolution(DirectoryInfo Info)
+        public string CreateSolution(DirectoryInfo Info)
         {
-            Tool.CreateDirectoryMax(Info.FullName +"\\Cache");
-            Tool.CreateDirectoryMax(Info.FullName + "\\Cfg");
-            Tool.CreateDirectoryMax(Info.FullName + "\\Image");
-            Tool.CreateDirectoryMax(Info.FullName + "\\Flow");
+            SolutionConfig solutionConfig = new SolutionConfig();
+            Tool.CreateDirectoryMax(Info.FullName +"\\.cache");
 
-            CurrentSolution.FullName = Info.FullName;
-
-            CurrentSolution.ToJsonNFile(Info.FullName + "\\" + Info.Name + ".cvsln");
-            SolutionCreated?.Invoke(CurrentSolution, new EventArgs());
+            CurrentSolution.FullPath = Info.FullName;
+            string slnName = Info.FullName + "\\" + Info.Name + ".cvsln";
+            CurrentSolution.ToJsonNFile(slnName);
+            SolutionCreated?.Invoke(slnName, new EventArgs());
+            
+            return slnName;
         }
 
-        public void OpenSolutionWindow() => OpenSolutionWindow(Application.Current.MainWindow);
-        public void OpenSolutionWindow(Window window)
+        public void CreateShortcut(string FileName)
         {
-            OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = window, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            if (SolutionDirectory!=null)
+                Common.NativeMethods.ShortcutCreator.CreateShortcut(Path.GetFileName(FileName),SolutionDirectory.FullName +"\\Image", FileName);
+        }
+
+        public void OpenSolutionWindow()
+        {
+            OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             openSolutionWindow.Closed += delegate
             {
                 if (!string.IsNullOrWhiteSpace(openSolutionWindow.FullName))
                 {
                     if (Directory.Exists(openSolutionWindow.FullName))
-                        OpenSolutionDirectory(openSolutionWindow.FullName);
+                        OpenSolution(openSolutionWindow.FullName);
                     else
                         MessageBox.Show("找不到工程");
                 }
@@ -140,18 +211,16 @@ namespace ColorVision.Solution
             };
             openSolutionWindow.Show();
         }
-        public void NewCreateWindow() => NewCreateWindow(Application.Current.MainWindow);
-
-        public void NewCreateWindow(Window window)
+        public void NewCreateWindow()
         {
-            NewCreateWindow newCreatWindow = new NewCreateWindow() { Owner = window, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            NewCreateWindow newCreatWindow = new NewCreateWindow() { Owner = WindowHelpers.GetActiveWindow() , WindowStartupLocation = WindowStartupLocation.CenterOwner };
             newCreatWindow.Closed += delegate
             {
                 if (newCreatWindow.IsCreate)
                 {
                     string SolutionDirectoryPath = newCreatWindow.NewCreateViewMode.DirectoryPath + "\\" + newCreatWindow.NewCreateViewMode.Name;
-                    CreateSolution(new DirectoryInfo(SolutionDirectoryPath));
-                    OpenSolutionDirectory(SolutionDirectoryPath);
+                    string name = CreateSolution(new DirectoryInfo(SolutionDirectoryPath));
+                    OpenSolution(name);
                 }
             };
             newCreatWindow.ShowDialog();
@@ -159,10 +228,10 @@ namespace ColorVision.Solution
 
         public void ClearCache()
         {
-            Directory.Delete(CurrentSolution.FullName+ "\\Flow",true);
-            Directory.Delete(CurrentSolution.FullName+ "\\Cache", true);
-            Tool.CreateDirectoryMax(CurrentSolution.FullName+ "\\Cache");
-            Tool.CreateDirectoryMax(CurrentSolution.FullName+ "\\Flow");
+            Directory.Delete(CurrentSolution.FullPath+ "\\Flow",true);
+            Directory.Delete(CurrentSolution.FullPath+ "\\Cache", true);
+            Tool.CreateDirectoryMax(CurrentSolution.FullPath+ "\\Cache");
+            Tool.CreateDirectoryMax(CurrentSolution.FullPath+ "\\Flow");
         }
     }
 }

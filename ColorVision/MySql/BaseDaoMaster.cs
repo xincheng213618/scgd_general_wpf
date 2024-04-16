@@ -144,6 +144,10 @@ namespace ColorVision.MySql
             {
                 return GetModelFromDataRow(dataTable.Rows[0]) ;
             }
+            else if (dataTable.Rows.Count >= 1)
+            {
+                return GetModelFromDataRow(dataTable.Rows[0]);
+            }
             return default;
         }
 
@@ -154,7 +158,10 @@ namespace ColorVision.MySql
             return d_info;
         }
 
+        public List<T> GetAllById(int id) => GetAllByParam(new Dictionary<string, object> { { "id", id } });
+
         public List<T> GetAll()  => GetAllByParam(new Dictionary<string, object>());
+
         public List<T> GetAllByParam(Dictionary<string, object> param)
         {
             string whereClause = string.Empty;

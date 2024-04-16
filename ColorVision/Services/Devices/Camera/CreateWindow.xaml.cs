@@ -20,7 +20,9 @@ using ColorVision.Services.Terminal;
 using ColorVision.Settings;
 using Newtonsoft.Json;
 using ColorVision.Services.Devices.Camera.Configs;
-using ColorVision.Utilities;
+using ColorVision.Common.Utilities;
+using System.Windows.Media.Media3D;
+using ColorVision.Services.Devices.Camera.Dao;
 
 namespace ColorVision.Services.Devices.Camera
 {
@@ -178,6 +180,9 @@ namespace ColorVision.Services.Devices.Camera
                 keyValuePairs[Config.CFW.ChannelCfgs[2].Chtype] = chType3;
             };
 
+            CameraID.ItemsSource = CameraLicenseDao.Instance.GetAllCameraID();
+            TerminalService.MQTTTerminalCamera.GetAllSnID();
+
 
             List<int> BaudRates = new List<int> { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
             TextBaudRate.ItemsSource = BaudRates;
@@ -233,12 +238,13 @@ namespace ColorVision.Services.Devices.Camera
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (!ServicesHelper.IsInvalidPath(CreateCode.Text, "资源标识") || !ServicesHelper.IsInvalidPath(CreateName.Text, "资源名称"))
+            if (!Services.ServicesHelper.IsInvalidPath(CreateCode.Text, "资源标识") || !Services.ServicesHelper.IsInvalidPath(CreateName.Text, "资源名称"))
                 return;
 
-            if (TerminalService.ServicesCodes.Contains(CreateCode.Text))
+            var deviceS= ServiceManager.GetInstance().DeviceServices.FirstOrDefault(x => x.Code == CreateCode.Text);
+            if (deviceS != null)
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "设备标识已存在,不允许重复添加");
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "设备标识已存在,不允许重复添加", "ColorVision");
                 return;
             }
             SysDeviceModel sysDevModel = null;

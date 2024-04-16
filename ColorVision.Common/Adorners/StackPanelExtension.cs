@@ -14,9 +14,9 @@ namespace ColorVision.Adorners
     public static class StackPanelExtension
     {
 
-        public static void AddAdorners(this Panel panel,Window window)
+        public static void AddAdorners(this Panel panel, FrameworkElement window)
         {
-            UserControl? _draggedItem = null;
+            FrameworkElement? _draggedItem = null;
 
             int? _draggedItemIndex = null;
             Point? _initialPosition = null;
@@ -28,7 +28,7 @@ namespace ColorVision.Adorners
 
             void OnMainPanelMouseLeftButtonDown(object sender, MouseButtonEventArgs args)
             {
-                if (args.Source is not UserControl draggedItem) return;
+                if (args.Source is not FrameworkElement draggedItem) return;
 
                 if (panel.CaptureMouse())
                 {
@@ -51,7 +51,7 @@ namespace ColorVision.Adorners
 
                 _dragContentAdorner.SetScreenPosition(ptMoveScreen);
 
-                if (panel.GetChildElement(ptMovePanel) is not UserControl dropTargetItem)
+                if (panel.GetChildElement(ptMovePanel) is not FrameworkElement dropTargetItem)
                 {
                     _insertionAdorner?.Detach();
                     _insertionAdorner = null;
@@ -95,13 +95,13 @@ namespace ColorVision.Adorners
                 HitTestResult result = VisualTreeHelper.HitTest(panel, ptUp);
                 if (result != null)
                 {
-                    UserControl dropTargetItem = ViewHelper.FindVisualParent<UserControl>(result.VisualHit);
+                    FrameworkElement dropTargetItem = ViewHelper.FindVisualParent<UserControl>(result.VisualHit);
 
                     if (_draggedItem != null && dropTargetItem != null && _draggedItemIndex != null)
                     {
                         _draggedItem.Opacity = 1;
                         int dropTargetItemIndex = panel.Children.IndexOf(dropTargetItem);
-                        UserControl draggedItem = panel.Children[_draggedItemIndex.Value] as UserControl;
+                        FrameworkElement draggedItem = panel.Children[_draggedItemIndex.Value] as FrameworkElement;
                         panel.Children.RemoveAt(_draggedItemIndex.Value);
                         panel.Children.Insert(dropTargetItemIndex, draggedItem);
                     }

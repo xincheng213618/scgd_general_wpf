@@ -21,6 +21,7 @@ namespace ColorVision.Services.Devices.Camera.Dao
 
         [JsonProperty("expiry_date")]
         public string ExpiryDate { get; set; }
+
         public DateTime ExpiryDateTime { get => TimeZone.CurrentTimeZone.ToLocalTime(new System.DateTime(1970, 1, 1)).AddSeconds(int.Parse(ExpiryDate)); }
 
         [JsonProperty("issue_date")]
@@ -40,6 +41,7 @@ namespace ColorVision.Services.Devices.Camera.Dao
     {
         public int Id { get; set; }
         public int PKId { get => Id; set => Id = value; }
+        public int IdShow { get; set; }
 
 
         public CameraLicenseModel()
@@ -64,6 +66,9 @@ namespace ColorVision.Services.Devices.Camera.Dao
 
         public string? CusTomerName { get; set; }
 
+        public string? CamerID { get; set; }
+        public string? Config { get; set; }
+        public string? CameraMode { get; set; }
         public DateTime? CreateDate { get; set; }
     }
 
@@ -73,6 +78,8 @@ namespace ColorVision.Services.Devices.Camera.Dao
 
     public class CameraLicenseDao : BaseTableDao<CameraLicenseModel>
     {
+        public static CameraLicenseDao Instance { get; set; } = new CameraLicenseDao();
+
         public CameraLicenseDao() : base("t_scgd_camera_license", "id")
         {
 
@@ -97,12 +104,15 @@ namespace ColorVision.Services.Devices.Camera.Dao
             {
                 Id = item.Field<int>("id"),
                 RescourceId = item.Field<int>("pid"),
-                LicenseValue = item.Field<string>("value"),
-                Model = item.Field<string>("model"),
-                MacAddress = item.Field<string>("mac_sn"),
-                CusTomerName = item.Field<string>("customer_name"),
+                LicenseValue = item.Field<string?>("value"),
+                Model = item.Field<string?>("model"),
+                MacAddress = item.Field<string?>("mac_sn"),
+                CusTomerName = item.Field<string?>("customer_name"),
+                CamerID = item.Field<string?>("phy_camera_id"),
+                Config = item.Field<string?>("phy_camera_cfg"),
+                CameraMode = item.Field<string?>("phy_camera_model"),
                 CreateDate = item.Field<DateTime>("create_date"),
-                ExpiryDate = item.Field<DateTime>("expired")
+                ExpiryDate = item.Field<DateTime?>("expired")
             };
             return model;
         }
@@ -130,6 +140,8 @@ namespace ColorVision.Services.Devices.Camera.Dao
         {
             return GetCameraTempsByCreateDate(resId, limit: 1).FirstOrDefault();
         }
+         
+        public List<string?> GetAllCameraID() => GetAll().Where(x => !string.IsNullOrEmpty(x.CamerID)).Select(x => x.CamerID).ToList();
 
         public List<CameraLicenseModel> GetCameraTempsByCreateDate(int? resId = null, int limit = 1)
         {

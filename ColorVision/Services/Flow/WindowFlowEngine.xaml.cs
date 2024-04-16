@@ -91,13 +91,15 @@ namespace ColorVision.Services.Flow
             TextBoxsn.Text = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
         }
 
-        private string startNodeName;
+        //private string startNodeName;
+        private BaseStartNode nodeStart;
         private void StNodeEditor1_NodeAdded(object sender, STNodeEditorEventArgs e)
         {
             STNode node = e.Node;
             if (e.Node != null && e.Node is BaseStartNode nodeStart)
             {
-                startNodeName = nodeStart.NodeName;
+                //this.startNodeName = nodeStart.NodeName;
+                this.nodeStart = nodeStart;
             }
             node.ContextMenuStrip = new System.Windows.Forms.ContextMenuStrip();
             node.ContextMenuStrip.Items.Add("删除", null, (s, e1) => STNodeEditorMain.Nodes.Remove(node));
@@ -131,7 +133,7 @@ namespace ColorVision.Services.Flow
         {
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
             ofd.Filter = "*.stn|*.stn";
-            ofd.InitialDirectory = SolutionManager.GetInstance().CurrentSolution.FullName;
+            ofd.InitialDirectory = SolutionManager.GetInstance().CurrentSolution.FullPath;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
             ButtonSave.Visibility = Visibility.Visible;
@@ -145,14 +147,16 @@ namespace ColorVision.Services.Flow
             STNodeEditorMain.Nodes.Clear();
             STNodeEditorMain.LoadCanvas(flowName);
             svrName = "";
-           
-            flowControl = new FlowControl(MQTTControl.GetInstance(), startNodeName);
-            flowControl.FlowCompleted += (s, e) =>
+            if (nodeStart != null)
             {
-                ButtonFlowOpen.Content = "开始流程";
-                ButtonFlowPause.IsEnabled = false;
-                ButtonFlowPause.Visibility = Visibility.Collapsed;
-            };
+                flowControl = new FlowControl(MQTTControl.GetInstance(), nodeStart.NodeName);
+                flowControl.FlowCompleted += (s, e) =>
+                {
+                    ButtonFlowOpen.Content = "开始流程";
+                    ButtonFlowPause.IsEnabled = false;
+                    ButtonFlowPause.Visibility = Visibility.Collapsed;
+                };
+            }
             OperateGrid.Visibility = Visibility.Visible;
             this.Title = "流程编辑器 - " + new FileInfo(flowName).Name;
         }
@@ -166,8 +170,9 @@ namespace ColorVision.Services.Flow
                 STNodeEditorMain.LoadCanvas(Convert.FromBase64String(flowParam.DataBase64));
             }
             svrName = "";
+            
 
-            flowControl = new FlowControl(MQTTControl.GetInstance(), startNodeName);
+            flowControl = new FlowControl(MQTTControl.GetInstance(), nodeStart.NodeName);
             flowControl.FlowCompleted += (s, e) =>
             {
                 ButtonFlowOpen.Content = "开始流程";
@@ -180,6 +185,7 @@ namespace ColorVision.Services.Flow
 
         private void SaveFlow(string flowName)
         {
+            if (nodeStart != null) { if (!nodeStart.Ready) { MessageBox.Show("保存失败！流程存在错误!!!"); return; } }
             var data = STNodeEditorMain.GetCanvasData();
 
             if (FlowParam != null)
@@ -194,7 +200,7 @@ namespace ColorVision.Services.Flow
 
         private string GetTopic()
         {
-            return "FLOW/CMD/" + startNodeName;
+            return "FLOW/CMD/" + nodeStart?.NodeName;
         }
 
 

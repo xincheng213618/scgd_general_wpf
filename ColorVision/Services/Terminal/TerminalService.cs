@@ -1,11 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.RC;
+using ColorVision.Services.RC;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Extension;
 using ColorVision.Services.Type;
-using ColorVision.Utilities;
+using ColorVision.Common.Utilities;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Windows;
@@ -60,7 +60,7 @@ namespace ColorVision.Services.Terminal
             EditCommand = new RelayCommand(a =>
             {
                 EditTerminal window = new EditTerminal(this);
-                window.Owner = WindowHelpers.GetActiveWindow();
+                window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });
@@ -68,7 +68,7 @@ namespace ColorVision.Services.Terminal
             OpenCreateWindowCommand = new RelayCommand(a =>
             {
                 CreateTerminal createTerminal = new CreateTerminal(this);
-                createTerminal.Owner = WindowHelpers.GetActiveWindow();
+                createTerminal.Owner = Application.Current.GetActiveWindow();
                 createTerminal.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 createTerminal.ShowDialog();
             });
@@ -108,13 +108,14 @@ namespace ColorVision.Services.Terminal
             }
 
             ContextMenu = new ContextMenu();
-            MenuItem menuItem = new MenuItem() { Header = "删除服务" };
+            MenuItem menuItem = new MenuItem() { Header = ColorVision.Properties.Resource.Delete };
             menuItem.Click += (s, e) => Delete();
             ContextMenu.Items.Add(menuItem);
         }
 
         public override void Delete()
         {
+            if (MessageBox.Show(Application.Current.GetActiveWindow(),"是否删除", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
             base.Delete();
             Parent.RemoveChild(this);
             if (SysResourceModel != null)

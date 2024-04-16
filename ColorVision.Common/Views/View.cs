@@ -21,11 +21,9 @@ namespace ColorVision
     public class View : ViewModelBase
     {
         public event ViewIndexChangedHandler? ViewIndexChangedEvent;
+        public void ClearViewIndexChangedSubscribers() => ViewIndexChangedEvent = null;
 
-        public void ClearViewIndexChangedSubscribers()
-        {
-            ViewIndexChangedEvent = null;
-        }
+        public ViewGridManager ViewGridManager { get; set; }
 
         public int ViewIndex { get =>   _ViewIndex; set {
                 if (_ViewIndex == value)
@@ -47,12 +45,12 @@ namespace ColorVision
         }
 
         public int PreViewIndex { get => _PreViewIndex; private set { _PreViewIndex = value;   } }
-
         private int _PreViewIndex = -1;
 
-        public ImageSource Icon { get; set; }
+        public ImageSource Icon { get => _Icon; set { _Icon = value; NotifyPropertyChanged(); } }
+        private ImageSource _Icon;
 
-        public string Title { get; set; } = string.Empty;
-
+        public string Title { get => _Title; set { _Title = value; NotifyPropertyChanged(); }}
+        private string _Title = string.Empty;
     }
 }

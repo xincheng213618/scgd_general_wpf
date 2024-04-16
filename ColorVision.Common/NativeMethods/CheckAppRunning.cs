@@ -22,7 +22,6 @@ namespace ColorVision.NativeMethods
         [return: MarshalAs(UnmanagedType.Bool)]
         private static extern bool SetForegroundWindow(IntPtr hWnd);
 
-
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool IsIconic(IntPtr hWnd);

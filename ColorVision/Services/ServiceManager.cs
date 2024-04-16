@@ -51,7 +51,6 @@ namespace ColorVision.Services
 
         public ObservableCollection<IDisPlayControl> DisPlayControls { get; set; } = new ObservableCollection<IDisPlayControl>();
 
-
         public VSysResourceDao VSysResourceDao { get; set; } = new VSysResourceDao();
         public VSysDeviceDao VSysDeviceDao { get; set; } = new VSysDeviceDao();
 
@@ -62,7 +61,8 @@ namespace ColorVision.Services
             svrDevices = new Dictionary<string, List<MQTTServiceBase>>();
             ServiceTokens = new List<MQTTServiceInfo>();
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadServices();
-            LoadServices();
+            if (MySqlControl.GetInstance().IsConnect)
+                LoadServices();
         }
 
         public void GenControl(ObservableCollection<DeviceService> MQTTDevices)
@@ -80,7 +80,33 @@ namespace ColorVision.Services
                 }
             }
         }
-
+        public MQTTServiceInfo? GetServiceInfo(ServiceTypes serviceType,string serviceCode)
+        {
+            foreach (var item in ServiceTokens)
+            {
+                if(item.ServiceType == serviceType.ToString())
+                {
+                    if(string.IsNullOrEmpty(serviceCode)) return item;
+                    else if(serviceCode == item.ServiceCode) return item;
+                }
+            }
+            return null;
+        }
+        public List<MQTTServiceInfo> GetServiceJsonList()
+        {
+            List<MQTTServiceInfo> result = new List<MQTTServiceInfo>();
+            foreach (var item in ServiceTokens)
+            {
+                MQTTServiceInfo serviceInfo = new MQTTServiceInfo() { PublishTopic = item.PublishTopic, ServiceCode = item.ServiceCode, ServiceType = item.ServiceType, Token = item.Token, SubscribeTopic = item.SubscribeTopic };
+                result.Add(serviceInfo);
+                foreach (var dev in item.Devices)
+                {
+                    MQTTDeviceInfo device = new MQTTDeviceInfo() { ID = dev.Value.ID, DeviceCode = dev.Value.DeviceCode };
+                    serviceInfo.Devices.Add(dev.Key, device);
+                }
+            }
+            return result;
+        }
         /// <summary>
         /// 生成显示空间
         /// </summary>
@@ -259,7 +285,7 @@ namespace ColorVision.Services
                 List<SysResourceModel> sysResourceModels = sysResourceDao1.GetResourceItems(deviceService.SysResourceModel.Id, UserConfig.TenantId);
                 foreach (var sysResourceModel in sysResourceModels)
                 {
-                    if (sysResourceModel.Type == (int)ResourceType.Group)
+                    if (sysResourceModel.Type == (int)ServiceTypes.Group)
                     {
                         GroupResource groupResource = new GroupResource(sysResourceModel);
                         deviceService.AddChild(groupResource);
@@ -291,7 +317,7 @@ namespace ColorVision.Services
             List<SysResourceModel> sysResourceModels = sysResourceDao1.GetGroupResourceItems(groupResource.SysResourceModel.Id);
             foreach (var sysResourceModel in sysResourceModels)
             {
-                if (sysResourceModel.Type == (int)ResourceType.Group)
+                if (sysResourceModel.Type == (int)ServiceTypes.Group)
                 {
                     GroupResource groupResource1 = new GroupResource(sysResourceModel);
                     LoadgroupResource(groupResource1);
@@ -396,19 +422,6 @@ namespace ColorVision.Services
                     }
                 }
             }
-        }
-
-        public BatchResultMasterModel BatchSave(string sn)
-        {
-            BatchResultMasterModel model = new BatchResultMasterModel(sn, UserConfig.TenantId);
-            batchDao.Save(model);
-            return model;
-        }
-
-        public int ResultBatchSave(string sn)
-        {
-            BatchResultMasterModel model = new BatchResultMasterModel(sn, UserConfig.TenantId);
-            return batchDao.Save(model);
         }
 
         private static string GetServiceKey(string svrType, string svrCode)

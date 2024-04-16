@@ -1,14 +1,15 @@
 ﻿using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Type;
+using System.ServiceProcess;
 
 namespace ColorVision.Services.Core
 {
-    public class GroupResource: BaseResourceObject
+    public class GroupResource: BaseResource
     {
         public static GroupResource? AddGroupResource(ICalibrationService<BaseResourceObject> deviceService , string Name)
         {
-            SysResourceModel sysResourceModel = new SysResourceModel() { Name = Name ,Type = (int)ResourceType.Group };
+            SysResourceModel sysResourceModel = new SysResourceModel() { Name = Name , Type = (int)Type.ServiceTypes.Group };
             sysResourceModel.Pid = deviceService.SysResourceModel.Id;
             sysResourceModel.TenantId = deviceService.SysResourceModel.TenantId;
 
@@ -25,14 +26,13 @@ namespace ColorVision.Services.Core
             return null;
         }
 
-        public GroupResource(SysResourceModel sysResourceModel)
+        public GroupResource(SysResourceModel sysResourceModel):base(sysResourceModel)
         {
             SysResourceModel = sysResourceModel;
             Name = sysResourceModel.Name ?? sysResourceModel.Id.ToString();
         }
 
         SysResourceDao SysResourceDao = new SysResourceDao();
-
         public override void Save()
         {
             SysResourceModel.Name = Name;
@@ -71,9 +71,9 @@ namespace ColorVision.Services.Core
                 if (item is CalibrationResource calibrationResource)
                 {
 
-                    switch ((ResouceType)calibrationResource.SysResourceModel.Type)
+                    switch ((ServiceTypes)calibrationResource.SysResourceModel.Type)
                     {
-                        case ResouceType.DarkNoise:
+                        case ServiceTypes.DarkNoise:
                             foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
@@ -82,7 +82,7 @@ namespace ColorVision.Services.Core
                                 }
                             }
                             break;
-                        case ResouceType.DefectPoint:
+                        case ServiceTypes.DefectPoint:
                             foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
@@ -91,7 +91,7 @@ namespace ColorVision.Services.Core
                                 }
                             }
                             break;
-                        case ResouceType.DSNU:
+                        case ServiceTypes.DSNU:
                             foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
@@ -100,7 +100,7 @@ namespace ColorVision.Services.Core
                                 }
                             }
                             break;
-                        case ResouceType.Uniformity:
+                        case ServiceTypes.Uniformity:
                             foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
@@ -109,7 +109,7 @@ namespace ColorVision.Services.Core
                                 }
                             }
                             break;
-                        case ResouceType.Distortion:
+                        case ServiceTypes.Distortion:
                             foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
@@ -118,7 +118,7 @@ namespace ColorVision.Services.Core
                                 }
                             }
                             break;
-                        case ResouceType.ColorShift:
+                        case ServiceTypes.ColorShift:
                             foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
@@ -127,7 +127,7 @@ namespace ColorVision.Services.Core
                                 }
                             }
                             break;
-                        case ResouceType.Luminance:
+                        case ServiceTypes.Luminance:
                             foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
@@ -136,7 +136,7 @@ namespace ColorVision.Services.Core
                                 }
                             }
                             break;
-                        case ResouceType.LumOneColor:
+                        case ServiceTypes.LumOneColor:
                             foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
@@ -145,7 +145,7 @@ namespace ColorVision.Services.Core
                                 }
                             }
                             break;
-                        case ResouceType.LumFourColor:
+                        case ServiceTypes.LumFourColor:
                             foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
@@ -154,7 +154,7 @@ namespace ColorVision.Services.Core
                                 }
                             }
                             break;
-                        case ResouceType.LumMultiColor:
+                        case ServiceTypes.LumMultiColor:
                             foreach (var item1 in calibrationService.VisualChildren)
                             {
                                 if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id )
@@ -192,17 +192,5 @@ namespace ColorVision.Services.Core
         private CalibrationResource _LumFourColor;
         public CalibrationResource LumMultiColor { get => _LumMultiColor; set { _LumMultiColor = value; NotifyPropertyChanged(); } }
         private CalibrationResource _LumMultiColor;
-
-        public SysResourceModel SysResourceModel { get; set; }
-
-        public override void AddChild(BaseResourceObject baseObject)
-        {
-            base.AddChild(baseObject);
-        }
-
-        public override void RemoveChild(BaseResourceObject baseObject)
-        {
-            base.RemoveChild(baseObject);
-        }
     }
 }

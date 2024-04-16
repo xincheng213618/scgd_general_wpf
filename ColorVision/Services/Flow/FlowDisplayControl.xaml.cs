@@ -1,25 +1,26 @@
-﻿using ColorVision.MQTT;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Extension;
+using ColorVision.MQTT;
+using ColorVision.Services.Core;
+using ColorVision.Services.Devices;
+using ColorVision.Services.Extension;
+using ColorVision.Services.Templates;
+using ColorVision.Settings;
+using ColorVision.Themes;
+using Panuon.WPF.UI;
 using System;
-using System.Collections.Generic;
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
-using Panuon.WPF.UI;
-using ColorVision.Themes;
-using System.Windows.Media;
-using ColorVision.Settings;
-using ColorVision.Common.Utilities;
-using ColorVision.Services.Core;
 using System.Windows.Input;
-using ColorVision.Services.Templates;
-using ColorVision.Extension;
-using System.Security.Cryptography.X509Certificates;
+using System.Windows.Media;
 
 namespace ColorVision.Services.Flow
 {
     /// <summary>
     /// FlowDisplayControl.xaml 的交互逻辑
     /// </summary>
-    public partial class FlowDisplayControl : UserControl, IDisPlayControl
+    public partial class FlowDisplayControl : UserControl, IDisPlayControl, IIcon
     {
         public IFlowView View { get; set; }
 
@@ -29,6 +30,7 @@ namespace ColorVision.Services.Flow
         }
 
         public ConfigHandler ConfigHandler { get; set; }
+        MenuItem menuItem { get; set; }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -37,26 +39,10 @@ namespace ColorVision.Services.Flow
             FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
 
             using System.Drawing.Graphics graphics = System.Drawing.Graphics.FromHwnd(IntPtr.Zero);
-            bool result = graphics.DpiX > 96;
-            if (result)
-            {
-                View = new CVFlowView1();
-            }
-            else
-            {
-                View = new CVFlowView();
+            View = graphics.DpiX > 96 ? new CVFlowView1() : new CVFlowView();
 
-            }
-
-            if (Application.Current.TryFindResource("DrawingImageFlow") is DrawingImage DrawingImageAlgorithm)
-                View.View.Icon = DrawingImageAlgorithm;
-
-            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-            {
-                if (Application.Current.TryFindResource("DrawingImageFlow") is DrawingImage DrawingImageAlgorithm)
-                    View.View.Icon = DrawingImageAlgorithm;
-            };
-            View.View.Title = "流程窗口";
+            View.View.Title = $"流程窗口 ";
+            this.SetIconResource("DrawingImageFlow", View.View);
 
             this.AddViewConfig(View, ComboxView);
             View.View.ViewIndex = 0;
@@ -76,7 +62,8 @@ namespace ColorVision.Services.Flow
                             }
                             else
                             {
-                                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, ServiceManager.GetInstance().ServiceTokens);
+                                var tokens = ServiceManager.GetInstance().ServiceTokens;
+                                View.FlowEngineControl.LoadFromBase64(flowParam.DataBase64, tokens);
                             }
                         }
                         catch (Exception ex)
@@ -91,7 +78,7 @@ namespace ColorVision.Services.Flow
                 }
             };
             FlowTemplate.SelectedIndex = 0;
-
+            this.DataContext = flowControl;
             this.PreviewMouseDown += UserControl_PreviewMouseDown;
 
             menuItem = new MenuItem() { Header = ColorVision.Properties.Resource.MenuFlow };
@@ -102,23 +89,31 @@ namespace ColorVision.Services.Flow
             MenuItem menuItem2 = new MenuItem() { Header = ColorVision.Properties.Resource.StopProcess };
             menuItem2.Click += (s, e) => Button_FlowStop_Click(s, e);
             menuItem.Items.Add(menuItem2);
-        }
-        MenuItem menuItem { get; set; }
 
+            Selected += (s, e) =>
+            {
+                MenuManager.GetInstance().AddMenuItem(menuItem, 1);
+            };
+            Unselected += (s, e) =>
+            {
+                MenuManager.GetInstance().RemoveMenuItem(menuItem);
+            };
+            SelectChanged += (s, e) =>
+            {
+                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
+            };
+            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+            {
+                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
+            };
+        }
+
+        public event RoutedEventHandler Selected;
+        public event RoutedEventHandler Unselected;
+        public event EventHandler SelectChanged;
         private bool _IsSelected;
-        public bool IsSelected { get => _IsSelected;
-            set 
-            { 
-                _IsSelected = value; 
-                if (value)
-                {
-                    MenuManager.GetInstance().AddMenuItem(menuItem,1);
-                }
-                else
-                {
-                    MenuManager.GetInstance().RemoveMenuItem(menuItem);
-                }
-                DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");  } }
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
+
 
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -147,6 +142,10 @@ namespace ColorVision.Services.Flow
             if (sender != null)
             {
                 FlowControlData FlowControlData = (FlowControlData)sender;
+
+                ButtonRun.Visibility = Visibility.Visible;
+                ButtonStop.Visibility = Visibility.Collapsed;
+
                 if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                 {
                     MessageBox.Show("流程计算" + FlowControlData.EventName, "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
@@ -155,6 +154,9 @@ namespace ColorVision.Services.Flow
         }
 
         IPendingHandler handler { get; set; }
+        public ImageSource Icon { get => _Icon; set { _Icon = value; } }
+        private ImageSource _Icon;
+
 
         private  void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
@@ -166,43 +168,53 @@ namespace ColorVision.Services.Flow
                     flowControl = new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
 
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
-                    handler.Cancelling += delegate
-                    {
-                        flowControl?.Stop();
-                        handler?.Close();
-                    };
+
+                    handler.Cancelling += Handler_Cancelling; ;
 
                     flowControl.FlowData += (s, e) =>
                     {
                         if (s is FlowControlData msg)
                         {
-                            try
+                            Application.Current.Dispatcher.Invoke(() =>
                             {
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
-                                });
-                            }
-                            catch 
-                            {
-
-                            }
+                                handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
+                            });
                         }
                     };
                     flowControl.FlowCompleted += FlowControl_FlowCompleted;
                     string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-                    ServiceManager.GetInstance().ResultBatchSave(sn);
+                    ButtonRun.Visibility = Visibility.Collapsed;
+                    ButtonStop.Visibility = Visibility.Visible;
                     flowControl.Start(sn);
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.MainWindow, "找不到完整流程，运行失败");
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败","ColorVision");
                 }
+            }
+        }
+
+        private void Handler_Cancelling(object? sender, CancelEventArgs e)
+        {
+            if (sender is IPendingHandler pendingHandler)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ButtonRun.Visibility = Visibility.Visible;
+                    ButtonStop.Visibility = Visibility.Collapsed;
+                });
+
+                flowControl?.Stop();
+
+                pendingHandler.Cancelling -= Handler_Cancelling;
+                pendingHandler?.Close();
             }
         }
 
         private void Button_FlowStop_Click(object sender, RoutedEventArgs e)
         {
+            ButtonRun.Visibility = Visibility.Visible;
+            ButtonStop.Visibility = Visibility.Collapsed;
             Application.Current.Dispatcher.Invoke(() =>
             {
                 flowControl?.Stop();
@@ -219,6 +231,36 @@ namespace ColorVision.Services.Flow
         {
             TemplateControl.GetInstance().LoadFlowParam();
             FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
+        }
+        FlowControl rcflowControl;
+
+
+
+        private void Button_RCFlowRun_Click(object sender, RoutedEventArgs e)
+        {
+            if (FlowTemplate.SelectedItem is TemplateModel<FlowParam> flowParam)
+            {
+                rcflowControl ??= new FlowControl(MQTTControl.GetInstance(), "");
+                string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+                rcflowControl.Start(sn, flowParam.Value);
+            }
+            else
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(),"没有选择流程","ColorVision");
+            }
+        }
+
+        private void Button_RCFlowStop_Click(object sender, RoutedEventArgs e)
+        {
+            if (FlowTemplate.SelectedItem is TemplateModel<FlowParam> flowParam)
+            {
+                rcflowControl ??= new FlowControl(MQTTControl.GetInstance(), "");
+                rcflowControl.Stop(flowParam.Value);
+            }
+            else
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "没有选择流程", "ColorVision");
+            }
         }
     }
 }

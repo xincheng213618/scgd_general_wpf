@@ -7,13 +7,35 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Controls.Primitives;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Security.Cryptography.X509Certificates;
+using Newtonsoft.Json.Bson;
 
 namespace ColorVision.Draw
 {
 
+    public class EditModeChangedEventArgs : EventArgs
+    {
+        public EditModeChangedEventArgs() { }   
+        public EditModeChangedEventArgs(bool isEditMode) { IsEditMode = isEditMode; }
+        public bool IsEditMode { get; set; }
+    }
+
+    public class WindowStatus
+    {
+        public object Root { get; set; }
+        public Panel Parent { get; set; }
+        public ContentControl ContentParent { get; set; }
+        public WindowStyle WindowStyle { get; set; }
+
+        public WindowState WindowState { get; set; }
+
+        public ResizeMode ResizeMode { get; set; }
+    }
 
     public class ToolBarTop : ViewModelBase
     {
@@ -22,7 +44,17 @@ namespace ColorVision.Draw
         public RelayCommand ZoomIncrease { get; set; }
         public RelayCommand ZoomDecrease { get; set; }
         public RelayCommand ZoomNone { get; set; }
-        public RelayCommand SaveCommand { get; set; }
+        public RelayCommand MaxCommand { get; set; }
+
+        public RelayCommand RotateLeftCommand { get; set; }
+        public RelayCommand RotateRightCommand { get; set; }
+
+
+        public RelayCommand SaveImageCommand { get; set; }
+        public RelayCommand ClearImageCommand { get; set; }
+        public EventHandler ClearImageEventHandler { get; set; }
+
+        public RelayCommand PrintImageCommand { get; set; }
 
         public RelayCommand OpenProperty { get; set; }
 
@@ -42,7 +74,6 @@ namespace ColorVision.Draw
 
         public ToolReferenceLine ToolConcentricCircle { get; set; }
 
-
         public ToolBarTop(FrameworkElement Parent,ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             this.Parent = Parent;
@@ -53,8 +84,21 @@ namespace ColorVision.Draw
             Crosshair = new Crosshair(zombox, drawCanvas);
             ToolBarMeasure = new ToolBarMeasure(Parent, zombox, drawCanvas);
             ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zombox, drawCanvas);
+
+            ToolBarScaleRuler.ScalRuler.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(ToolBarScaleRuler.ScalRuler.ActualLength))
+                {
+
+                }
+                else if (e.PropertyName == nameof(ToolBarScaleRuler.ScalRuler.PhysicalUnit))
+                {
+
+                }
+
+            };
+
             ToolConcentricCircle = new ToolReferenceLine(zombox, drawCanvas);
-            ToolBarScaleRuler.IsShow = false;
 
             ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill());
             ZoomUniform = new RelayCommand(a => ZoomboxSub.ZoomUniform());
@@ -65,7 +109,202 @@ namespace ColorVision.Draw
             this.Parent.PreviewKeyDown += PreviewKeyDown;
             zombox.Cursor = Cursors.Hand;
 
-            SaveCommand = new RelayCommand(a => Save());
+            SaveImageCommand = new RelayCommand(a => Save());
+            PrintImageCommand = new RelayCommand(a => Print());
+
+            ClearImageCommand = new RelayCommand(a => ClearImage());
+            MaxCommand = new RelayCommand(a => MaxImage());
+
+            RotateLeftCommand = new RelayCommand(a => RotateLeft());
+            RotateRightCommand = new RelayCommand(a => RotateRight());
+
+            Parent.PreviewKeyDown += (s, e) =>
+            {
+                if (e.Key == Key.F11)
+                {
+                    if (!IsMax)
+                        MaxImage();
+                }
+                if (e.Key == Key.Add)
+                {
+                    ZoomIncrease.RaiseExecute(e);
+                }
+                if (e.Key == Key.Subtract)
+                {
+                    ZoomDecrease.RaiseExecute(e);
+                }
+            };
+
+            EditModeChanged += (s, e) =>
+            {
+                if (e.IsEditMode)
+                {
+                    Parent.ContextMenu = null;
+                }
+                else
+                {
+                    AddContextMenu();
+                }
+            };
+            AddContextMenu();
+        }
+
+        public void Print()
+        {
+            PrintDialog printDialog = new PrintDialog();
+            if (printDialog.ShowDialog() == true)
+            {
+                // 创建一个可打印的区域
+                Size pageSize = new Size(printDialog.PrintableAreaWidth, printDialog.PrintableAreaHeight);
+                Image.Measure(pageSize);
+                Image.Arrange(new Rect(5, 5, pageSize.Width, pageSize.Height));
+
+                // 开始打印
+                printDialog.PrintVisual(Image, "Printing");
+            }
+
+        }
+        public void AddContextMenu()
+        {
+            ContextMenu contextMenu = new ContextMenu();
+            MenuItem menuItemZoom = new MenuItem() { Header = "缩放工具", Command = SaveImageCommand };
+            menuItemZoom.Items.Add(new MenuItem() { Header = "放大", Command = ZoomIncrease });
+            menuItemZoom.Items.Add(new MenuItem() { Header = "缩小", Command = ZoomIncrease });
+            menuItemZoom.Items.Add(new MenuItem() { Header = "原始大小", Command = ZoomNone });
+            menuItemZoom.Items.Add(new MenuItem() { Header = "适应屏幕", Command = ZoomUniform });
+
+            contextMenu.Items.Add(menuItemZoom);
+
+            MenuItem menuItemScalingMode = new MenuItem() { Header = "BitmapScalingMode" };
+            contextMenu.Items.Add(menuItemScalingMode);
+
+
+
+            contextMenu.Items.Add(new MenuItem() { Header = "左旋转", Command = RotateLeftCommand });
+            contextMenu.Items.Add(new MenuItem() { Header = "右旋转", Command = RotateRightCommand });
+            contextMenu.Items.Add(new MenuItem() { Header = "全屏", Command = MaxCommand, InputGestureText = "F11" });
+            contextMenu.Items.Add(new MenuItem() { Header = "清空", Command = ClearImageCommand });
+
+            contextMenu.Items.Add(new Separator());
+            contextMenu.Items.Add(new MenuItem() { Header = "另存为", Command = SaveImageCommand });
+            contextMenu.Items.Add(new MenuItem() { Header = "Print", Command = PrintImageCommand });
+
+            contextMenu.Items.Add(new MenuItem() { Header = "清空", Command = ClearImageCommand });
+
+
+            Parent.ContextMenu = contextMenu;
+        }
+
+        public void RotateRight()
+        {
+            if (Image.RenderTransform is RotateTransform rotateTransform)
+            {
+                rotateTransform.Angle += 90;
+            }
+            else
+            {
+                RotateTransform rotateTransform1 = new RotateTransform() { Angle = 90 };
+                Image.RenderTransform = rotateTransform1;
+                Image.RenderTransformOrigin = new Point(0.5, 0.5);
+            }
+        }
+
+        public void RotateLeft()
+        {
+            if (Image.RenderTransform is RotateTransform rotateTransform)
+            {
+                rotateTransform.Angle -= 90;
+            }
+            else
+            {
+                RotateTransform rotateTransform1 = new RotateTransform() { Angle = -90 };
+                Image.RenderTransform = rotateTransform1;
+                Image.RenderTransformOrigin = new Point(0.5, 0.5);
+            }
+        }
+
+        private WindowStatus OldWindowStatus { get; set; }
+        public bool IsMax { get; set; }
+        public void MaxImage()
+        {
+            KeyEventHandler PreviewKeyDown =(s,e)=>
+            {
+                if (e.Key == Key.Escape)
+                {
+                    if (IsMax)
+                        MaxImage();
+                }
+            };
+
+            var window = Window.GetWindow(Parent);
+            if (!IsMax)
+            {
+                IsMax = true;
+                if (Parent.Parent is Panel p)
+                {
+                    OldWindowStatus = new WindowStatus();
+                    OldWindowStatus.Parent = p;
+                    OldWindowStatus.WindowState = window.WindowState;
+                    OldWindowStatus.WindowStyle = window.WindowStyle;
+                    OldWindowStatus.ResizeMode = window.ResizeMode;
+                    OldWindowStatus.Root = window.Content;
+                    window.WindowStyle = WindowStyle.None;
+                    window.WindowState = WindowState.Maximized;
+
+                    OldWindowStatus.Parent.Children.Remove(Parent);
+                    window.Content = Parent;
+
+                    window.PreviewKeyDown -= PreviewKeyDown;
+                    window.PreviewKeyDown += PreviewKeyDown;
+                }
+                else if (Parent.Parent is ContentControl content)
+                {
+                    OldWindowStatus = new WindowStatus();
+                    OldWindowStatus.ContentParent = content;
+                    OldWindowStatus.WindowState = window.WindowState;
+                    OldWindowStatus.WindowStyle = window.WindowStyle;
+                    OldWindowStatus.ResizeMode = window.ResizeMode;
+                    OldWindowStatus.Root = window.Content;
+                    window.WindowStyle = WindowStyle.None;
+                    window.WindowState = WindowState.Maximized;
+
+                    content.Content = null;
+                    window.Content = Parent;
+                    window.PreviewKeyDown -= PreviewKeyDown;
+                    window.PreviewKeyDown += PreviewKeyDown;
+                    return;
+                }
+            }
+            else
+            {
+                IsMax =false;
+                if (OldWindowStatus.Parent != null)
+                {
+                    window.WindowStyle = OldWindowStatus.WindowStyle;
+                    window.WindowState = OldWindowStatus.WindowState;
+                    window.ResizeMode = OldWindowStatus.ResizeMode;
+
+                    window.Content = OldWindowStatus.Root;
+                    OldWindowStatus.Parent.Children.Add(Parent);
+                }
+                else
+                {
+                    window.WindowStyle = OldWindowStatus.WindowStyle;
+                    window.WindowState = OldWindowStatus.WindowState;
+                    window.ResizeMode = OldWindowStatus.ResizeMode;
+
+                    OldWindowStatus.ContentParent.Content = Parent;
+                }
+
+                window.PreviewKeyDown -= PreviewKeyDown;
+            }
+        }
+
+        public void ClearImage()
+        {
+            Image.Source = null;
+            ToolBarScaleRuler.IsShow = false;
+            ClearImageEventHandler?.Invoke(this, new EventArgs());
         }
 
         public void Save()
@@ -88,11 +327,6 @@ namespace ColorVision.Draw
             pngEncoder.Save(fileStream);
         }
 
-
-        public void OpenImage()
-        {
-            ToolBarScaleRuler.IsShow = true;
-        }
 
         private void PreviewKeyDown(object sender, KeyEventArgs e)
         {
@@ -201,7 +435,7 @@ namespace ColorVision.Draw
             get => _ShowImageInfo; set
             {
                 if (_ShowImageInfo == value) return;
-                if (value) Activate = false;
+                if (value) ImageEditMode = false;
                 _ShowImageInfo = value;
 
                 MouseMagnifier.IsShow = value;
@@ -209,18 +443,22 @@ namespace ColorVision.Draw
             }
         }
 
+        public EventHandler<EditModeChangedEventArgs> EditModeChanged { get; set; }
 
-        private bool _Activate;
+        private bool _ImageEditMode;
 
-        public bool Activate
+        public bool ImageEditMode
         {
-            get => _Activate;
+            get => _ImageEditMode;
             set
             {
-                if (_Activate == value) return;
+                if (_ImageEditMode == value) return;
                 if (value) ShowImageInfo = false;
-                _Activate = value;
-                if (_Activate)
+                _ImageEditMode = value;
+
+                EditModeChanged?.Invoke(this, new EditModeChangedEventArgs() { IsEditMode = value });
+
+                if (_ImageEditMode)
                 {
                     ZoomboxSub.ActivateOn = ModifierKeys.Control;
                     ZoomboxSub.Cursor = Cursors.Cross;
@@ -247,7 +485,7 @@ namespace ColorVision.Draw
                 _DrawCircle = value;
                 if (value)
                 {
-                    Activate = true;
+                    ImageEditMode = true;
                     LastChoice = nameof(DrawCircle);
                 }
                 NotifyPropertyChanged(); 
@@ -267,7 +505,7 @@ namespace ColorVision.Draw
                 _DrawRect = value;
                 if (value)
                 {
-                    Activate = true;
+                    ImageEditMode = true;
                     LastChoice = nameof(DrawRect);
                 }
                 NotifyPropertyChanged();
@@ -282,7 +520,7 @@ namespace ColorVision.Draw
                 _Measure = value;
                 if (value)
                 {
-                    Activate = true;
+                    ImageEditMode = true;
                     LastChoice = nameof(Measure);
                 }
                 ToolBarMeasure.Measure = value;
@@ -304,7 +542,7 @@ namespace ColorVision.Draw
                 _DrawPolygon = value;
                 if (value)
                 {
-                    Activate = true;
+                    ImageEditMode = true;
                     LastChoice = nameof(DrawPolygon);
                 }
 
@@ -362,7 +600,7 @@ namespace ColorVision.Draw
                 }
                 if (value)
                 {
-                    Activate = true;
+                    ImageEditMode = true;
                     LastChoice = nameof(EraseVisual);
                 }
 

@@ -1,29 +1,24 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Extension;
-using ColorVision.Net;
 using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.Devices.Camera.Views;
+using ColorVision.Services.Devices.PG;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
-using ColorVision.Solution;
 using ColorVision.Themes;
 using cvColorVision;
 using log4net;
 using MQTTMessageLib;
 using MQTTMessageLib.Camera;
-using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
-using Panuon.WPF.UI;
-using ScottPlot.Drawing.Colormaps;
+using Panuon.WPF;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -54,9 +49,6 @@ namespace ColorVision.Services.Devices.Camera
             _timer.Tick += Timer_Tick; 
             this.PreviewMouseDown += UserControl_PreviewMouseDown;
         }
-        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; 
-                DisPlayBorder.BorderBrush = value ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");    } }
-        private bool _IsSelected;
 
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
@@ -103,15 +95,19 @@ namespace ColorVision.Services.Devices.Camera
                         StackPanelOpen.Visibility = Visibility.Visible;
                         ButtonOpen.Visibility = Visibility.Visible;
                         ButtonClose.Visibility = Visibility.Collapsed;
+                        StackPanelImage.Visibility = Visibility.Collapsed;
                         break;
                     case DeviceStatusType.Closing:
                         break;
                     case DeviceStatusType.LiveOpened:
                     case DeviceStatusType.Opened:
                         ButtonInit.Visibility = Visibility.Collapsed;
-                        StackPanelImage.Visibility = Visibility.Visible;
+                        if (!DService.IsVideoOpen)
+                            StackPanelImage.Visibility = Visibility.Visible;
+
                         ButtonOpen.Visibility = Visibility.Collapsed;
                         ButtonClose.Visibility = Visibility.Visible;
+
                         break;
                     case DeviceStatusType.Opening:
                         break;
@@ -131,6 +127,7 @@ namespace ColorVision.Services.Devices.Camera
                             DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(e.Data));
                             string mapName = Device.Code;
                             if (pm_live.IsLocal) mapName = pm_live.MapName;
+                            CameraVideoControl ??= new CameraVideoControl();
                             CameraVideoControl.Start(pm_live.IsLocal, mapName, pm_live.FrameInfo.width, pm_live.FrameInfo.height);
                             break;
                         default:
@@ -139,52 +136,35 @@ namespace ColorVision.Services.Devices.Camera
                 }
 
             };
+            SelectChanged += (s, e) =>
+            {
+                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
+            };
+            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
+            {
+                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
+            };
         }
+
+        public event RoutedEventHandler Selected;
+        public event RoutedEventHandler Unselected;
+        public event EventHandler SelectChanged;
+        private bool _IsSelected;
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
+
 
 
 
         private void CalibrationParamInit()
         {
-            CalibrationParams = new ObservableCollection<TemplateModel<CalibrationParam>>();
-            CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam() { Id = -1 }));
-
-            if (Device.DeviceCalibration != null)
-            {
-                foreach (var item in Device.DeviceCalibration.CalibrationParams)
-                    CalibrationParams.Add(item);
-
-                Device.DeviceCalibration.CalibrationParams.CollectionChanged -= CalibrationParams_CollectionChanged;
-                Device.DeviceCalibration.CalibrationParams.CollectionChanged += CalibrationParams_CollectionChanged;
-            }
-
-            ComboxCalibrationTemplate.ItemsSource = CalibrationParams;
+            ComboxCalibrationTemplate.ItemsSource = TemplateHelpers.CreatTemplateModelEmpty(Device.DeviceCalibration?.CalibrationParams);
             ComboxCalibrationTemplate.SelectedIndex = 0;
         }
 
-        private void CalibrationParams_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
-        {
-            switch (e.Action)
-            {
-                case NotifyCollectionChangedAction.Add:
-                    if (e.NewItems != null)
-                        foreach (TemplateModel<CalibrationParam> newItem in e.NewItems)
-                            CalibrationParams.Add(newItem);
-                    break;
-                case NotifyCollectionChangedAction.Remove:
-                    if (e.OldItems != null)
-                        foreach (TemplateModel<CalibrationParam> newItem in e.OldItems)
-                            CalibrationParams.Remove(newItem);
-                    break;
-                case NotifyCollectionChangedAction.Reset:
-                    CalibrationParams.Clear();
-                    CalibrationParams.Insert(0, new TemplateModel<CalibrationParam>("Empty", new CalibrationParam()) { Id = -1 });
-                    break;
-            }
-        }
 
         private void CameraInit_Click(object sender, RoutedEventArgs e)
         {
-            DService.GetAllCameraID();
+            ServicesHelper.SendCommandEx(sender, DService.GetAllCameraID);
         }
 
         private void Open_Click(object sender, RoutedEventArgs e)
@@ -192,16 +172,16 @@ namespace ColorVision.Services.Devices.Camera
             if (sender is Button button)
             {
                 var msgRecord = DService.Open(DService.Config.CameraID, Device.Config.TakeImageMode, (int)DService.Config.ImageBpp);
-                Helpers.SendCommand(button,msgRecord);
-                MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
+                ServicesHelper.SendCommand(button,msgRecord);
+                MsgRecordSucessChangedHandler msgRecordStateChangedHandler = null;
                 msgRecordStateChangedHandler = (e) =>
                 {
                     ButtonOpen.Visibility = Visibility.Collapsed;
                     ButtonClose.Visibility = Visibility.Visible;
                     StackPanelImage.Visibility = Visibility.Visible;
-                    msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
+                    msgRecord.MsgSucessed -= msgRecordStateChangedHandler;
                 };
-                msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+                msgRecord.MsgSucessed += msgRecordStateChangedHandler;
 
             }
         }
@@ -216,19 +196,23 @@ namespace ColorVision.Services.Devices.Camera
                     if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
                     else expTime = new double[] { Device.Config.ExpTime };
                     MsgRecord msgRecord = DService.GetData(expTime, param);
-                    Helpers.SendCommand(button,msgRecord);
+                    ServicesHelper.SendCommand(button,msgRecord);
                 }
+                else
+                {
+                    double[] expTime = null;
+                    if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
+                    else expTime = new double[] { Device.Config.ExpTime };
+                    MsgRecord msgRecord = DService.GetData(expTime, new CalibrationParam() { Id = -1,Name ="Empty" });
+                    ServicesHelper.SendCommand(button, msgRecord);
+                }  
+
             }
         }
 
         private void AutoExplose_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
-            {
-                MsgRecord msgRecord = DService.GetAutoExpTime();
-                Helpers.SendCommand(button, msgRecord);
-
-            }
+            ServicesHelper.SendCommandEx(sender, DService.GetAutoExpTime);
         }
 
         public CameraVideoControl CameraVideoControl { get; set; }
@@ -247,7 +231,7 @@ namespace ColorVision.Services.Devices.Camera
                     port = CameraVideoControl.Open(host, port);
                     if (port > 0)
                     {
-                        MsgRecord msg = DService.OpenVideo(host, port, DService.Config.ExpTime);
+                        MsgRecord msg = DService.OpenVideo(host, port);
                         msg.MsgRecordStateChanged += (s) =>
                         {
                             if (s == MsgRecordState.Fail)
@@ -262,7 +246,7 @@ namespace ColorVision.Services.Devices.Camera
                                 ButtonClose.Visibility = Visibility.Visible;
                             }
                         };
-                        Helpers.SendCommand(button, msg);
+                        ServicesHelper.SendCommand(button, msg);
                         CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
                         CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
                     }
@@ -300,11 +284,7 @@ namespace ColorVision.Services.Devices.Camera
 
         private void AutoFocus_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
-            {
-                MsgRecord msgRecord = DService.AutoFocus();
-                Helpers.SendCommand(button, msgRecord);
-            }
+            ServicesHelper.SendCommandEx(sender, DService.AutoFocus);
         }
 
         private void SetChannel()
@@ -378,7 +358,7 @@ namespace ColorVision.Services.Devices.Camera
                 if (int.TryParse(TextPos.Text, out int pos))
                 {
                     var msgRecord = DService.Move(pos, CheckBoxIsAbs.IsChecked ?? true);
-                    Helpers.SendCommand(button, msgRecord);
+                    ServicesHelper.SendCommand(button, msgRecord);
                 }
             }
         }
@@ -386,47 +366,31 @@ namespace ColorVision.Services.Devices.Camera
 
         private void GoHome_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
-            {
-                if (int.TryParse(TextPos.Text, out int pos))
-                {
-                    var msgRecord = DService.GoHome();
-                    Helpers.SendCommand(button, msgRecord);
-                }
-            }
+            ServicesHelper.SendCommandEx(sender, DService.GoHome);
         }
 
         private void GetPosition_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
-            {
-                var msgRecord = DService.GetPosition();
-                Helpers.SendCommand(button, msgRecord);
-            }
+            ServicesHelper.SendCommandEx(sender, DService.GetPosition);
         }
 
         private void Move1_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
+            if (double.TryParse(TextDiaphragm.Text, out double pos))
             {
-                if (double.TryParse(TextDiaphragm.Text, out double pos))
-                {
-                    var msgRecord = DService.MoveDiaphragm(pos);
-                    Helpers.SendCommand(button, msgRecord);
-                }
+                ServicesHelper.SendCommandEx(sender, () => DService.MoveDiaphragm(pos));
             }
         }
 
         private void Close_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button)
+            if (DService.IsVideoOpen)
+                CameraVideoControl.Close();
+            MsgRecord msgRecord = ServicesHelper.SendCommandEx(sender, () => DService.Close());
+            if (msgRecord != null)
             {
-                if (DService.IsVideoOpen)
-                    CameraVideoControl.Close();
-                MsgRecord msgRecord = DService.Close();
-                Helpers.SendCommand(button,msgRecord);
                 MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
-                 msgRecordStateChangedHandler = (e) =>
+                msgRecordStateChangedHandler = (e) =>
                 {
                     DService.IsVideoOpen = false;
                     ButtonOpen.Visibility = Visibility.Visible;
@@ -435,11 +399,9 @@ namespace ColorVision.Services.Devices.Camera
                     msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
                 };
                 msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
-
-
             }
-
         }
+
         private DispatcherTimer _timer;
 
         private void Timer_Tick(object? sender, EventArgs e)

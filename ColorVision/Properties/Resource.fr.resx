@@ -657,4 +657,31 @@
   <data name="Create" xml:space="preserve">
     <value>créer</value>
   </data>
+  <data name="Upgrade" xml:space="preserve">
+    <value>mise à niveau</value>
+  </data>
+  <data name="Rollback" xml:space="preserve">
+    <value>retourner</value>
+  </data>
+  <data name="Manager" xml:space="preserve">
+    <value>gérer</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>envoyer</value>
+  </data>
+  <data name="Subscribe" xml:space="preserve">
+    <value>abonnement</value>
+  </data>
+  <data name="Unsubscribe" xml:space="preserve">
+    <value>Se désabonner</value>
+  </data>
+  <data name="OpenSolution" xml:space="preserve">
+    <value>Projet ouvert</value>
+  </data>
+  <data name="NewSolution" xml:space="preserve">
+    <value>Nouvelle construction</value>
+  </data>
+  <data name="MsgList" xml:space="preserve">
+    <value>Liste des messages</value>
+  </data>
 </root>

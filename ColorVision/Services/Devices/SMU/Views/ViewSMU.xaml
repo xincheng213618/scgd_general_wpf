@@ -8,8 +8,15 @@
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:hc="https://handyorg.github.io/handycontrol" 
              mc:Ignorable="d" 
-             d:DesignHeight="450" Background="{DynamicResource  BackgroundBrush}" d:DesignWidth="800" Initialized="UserControl_Initialized" >
-
+             d:DesignHeight="450" d:DesignWidth="800" Background="{DynamicResource BorderBrush}"  Initialized="UserControl_Initialized">
+    <UserControl.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+    </UserControl.Resources>
     <Grid x:Name="MainGrid" >
         <Grid.ColumnDefinitions>
             <ColumnDefinition x:Name="ListCol1" Width="*"/>
@@ -20,87 +27,77 @@
                 <RowDefinition x:Name="ListRow1" Height="*"/>
                 <RowDefinition x:Name="ListRow2" Height="Auto"/>
             </Grid.RowDefinitions>
-            <ScottPlot:WpfPlot  x:Name="wpfplot1" Visibility="{Binding ElementName=ToggleButtonChoice,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}" />
-            <ScottPlot:WpfPlot  x:Name="wpfplot2" Visibility="{Binding ElementName=ToggleButtonChoice,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" />
+            <ScottPlot:WpfPlot  x:Name="wpfplot1"  Panel.ZIndex="9" Visibility="{Binding ElementName=ToggleButtonChoice,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter1}}" />
+            <ScottPlot:WpfPlot  x:Name="wpfplot2"  Panel.ZIndex="9" Visibility="{Binding ElementName=ToggleButtonChoice,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" />
 
             <Grid x:Name="Grid1" Grid.Row="1">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="38"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-                <ToolBar Grid.Row="0"  Background ="#EEF4F9" Loaded="ToolBar1_Loaded" ToolBarTray.IsLocked="True">
-                    <ToggleButton Click="Button1_Click" Margin="2,0,0,0" >
-                        <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSwitch}" />
-                    </ToggleButton>
-                    <ToggleButton x:Name="toggle1" Click="Button_Click_1" Margin="2,0,0,0" IsChecked="True" >
-                        <Image Stretch="Uniform" Source="{DynamicResource DrawingImageList}" >
-                            <Image.RenderTransform>
-                                <RotateTransform Angle="90" CenterX="8" CenterY="8"/>
-                            </Image.RenderTransform>
-                        </Image>
-                    </ToggleButton>
-                    <ToggleButton  x:Name="toggle2" Click="Button_Click_2" Margin="2,0,0,0" >
-                        <Image Stretch="Uniform"  Source="{DynamicResource DrawingImageList}" >
-                        </Image>
-                    </ToggleButton>
-                    <Button Click="Button_Click" Margin="2,0,0,0" >
-                        <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
-                    </Button>
-                    <Button Click="Button2_Click" Margin="2,0,0,0"  >
-                        <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
-                    </Button>
-                    <ToggleButton x:Name="ToggleButtonChoice" Click="Button3_Click" Margin="2,0,0,0" >
-                        <ToggleButton.Style>
-                            <Style TargetType="ToggleButton" BasedOn="{StaticResource ToggleButtonDefault}">
-                                <Setter Property="Content">
-                                    <Setter.Value>
-                                        <Image Stretch="Uniform" Source="{DynamicResource DrawingImageCurrent}" />
-                                    </Setter.Value>
-                                </Setter>
-                                <Style.Triggers>
-                                    <Trigger Property="IsChecked" Value="True">
-                                        <Setter Property="Content">
-                                            <Setter.Value>
-                                                <Image Stretch="Uniform" Source="{DynamicResource DrawingImageVoltage}" />
-                                            </Setter.Value>
-                                        </Setter>
-                                    </Trigger>
-                                </Style.Triggers>
-                            </Style>
-                        </ToggleButton.Style>
-                    </ToggleButton>
-                    <Button  Content="交换" Click="Exchange_Click" Margin="2,0,0,0"/>
+                <ToolBarTray Grid.Row="0" Panel.ZIndex="9">
+                    <ToolBar  ToolBarTray.IsLocked="True">
+                        <ToggleButton Click="Button1_Click" Margin="2,0,0,0" >
+                            <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSwitch}" />
+                        </ToggleButton>
+                        <Button Click="Button_Click" Margin="2,0,0,0" >
+                            <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
+                        </Button>
+                        <Button Click="Button2_Click" Margin="2,0,0,0"  >
+                            <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
+                        </Button>
+                        <ToggleButton x:Name="ToggleButtonChoice" Click="Button3_Click" Margin="2,0,0,0" >
+                            <ToggleButton.Style>
+                                <Style TargetType="ToggleButton" BasedOn="{StaticResource ToggleButtonDefault}">
+                                    <Setter Property="Content">
+                                        <Setter.Value>
+                                            <Image Stretch="Uniform" Source="{DynamicResource DrawingImageCurrent}" />
+                                        </Setter.Value>
+                                    </Setter>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsChecked" Value="True">
+                                            <Setter Property="Content">
+                                                <Setter.Value>
+                                                    <Image Stretch="Uniform" Source="{DynamicResource DrawingImageVoltage}" />
+                                                </Setter.Value>
+                                            </Setter>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ToggleButton.Style>
+                        </ToggleButton>
+                        <Button  Content="交换" Click="Exchange_Click" Margin="2,0,0,0"/>
 
-                    <Button Content="搜索" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
-                    <Button x:Name="Search" Content="高级查询" Click="Search1_Click" Margin="2,0,0,0"/>
-                    <Popup  x:Name="SerchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Search}">
-                        <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="227">
-                            <StackPanel Margin="5">
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="序号" Width="60"/>
-                                    <TextBox  x:Name="TextBoxId" Style="{StaticResource TextBox.Small}" Text=""/>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="批次号" Width="60"/>
-                                    <TextBox x:Name="TextBoxBatch"  Style="{StaticResource TextBox.Small}" Text=""/>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="开始时间" Width="60"/>
-                                    <hc:DateTimePicker x:Name="SearchTimeSart" SelectedDateTime="{x:Static sys:DateTime.MinValue}" Style="{StaticResource DateTimePicker.Small}" />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="截至时间" Width="60"/>
-                                    <hc:DateTimePicker x:Name="SearchTimeEnd" SelectedDateTime="{x:Static sys:DateTime.Now}" Style="{StaticResource DateTimePicker.Small}"  />
-                                </DockPanel>
-                                <Button Content="查询" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
-                            </StackPanel>
-                        </Border>
-                    </Popup>
-                    <Button x:Name="ButtonSave" Content="Save"   Click="ButtonSave_Click"/>
+                        <Button Content="搜索" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
+                        <Button x:Name="Search" Content="高级查询" Click="Search1_Click" Margin="2,0,0,0"/>
+                        <Popup  x:Name="SerchPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Search}">
+                            <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="227">
+                                <StackPanel Margin="5">
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="序号" Width="60"/>
+                                        <TextBox  x:Name="TextBoxId" Style="{StaticResource TextBox.Small}" Text=""/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="批次号" Width="60"/>
+                                        <TextBox x:Name="TextBoxBatch"  Style="{StaticResource TextBox.Small}" Text=""/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="开始时间" Width="60"/>
+                                        <hc:DateTimePicker x:Name="SearchTimeSart" SelectedDateTime="{x:Static sys:DateTime.MinValue}" Style="{StaticResource DateTimePicker.Small}" />
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="截至时间" Width="60"/>
+                                        <hc:DateTimePicker x:Name="SearchTimeEnd" SelectedDateTime="{x:Static sys:DateTime.Now}" Style="{StaticResource DateTimePicker.Small}"  />
+                                    </DockPanel>
+                                    <Button Content="查询" Click="SearchAdvanced_Click" Margin="2,0,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </Popup>
+                    </ToolBar>
+                </ToolBarTray>
 
-                </ToolBar>
-                
-                <ListView  Height="250" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" BorderThickness="0" Background="Transparent" Margin="-5" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
+               
+                <ListView  Height="250" Grid.Row="1" x:Name="listView1" SelectionChanged="listView1_SelectionChanged" BorderThickness="0" Margin="-5" Style="{StaticResource ListView.Small}"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.Resources>
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
                         </ContextMenu>
@@ -119,7 +116,7 @@
                             <GridViewColumn  Header="序号" Width="{Binding IsIDShow,Converter={StaticResource WidthToBooleanConverter}}">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewResultSMU}">
-                                        <TextBlock Text="{Binding Id}"/>
+                                        <TextBlock Text="{Binding IdShow}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

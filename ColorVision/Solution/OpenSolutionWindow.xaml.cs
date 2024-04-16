@@ -3,6 +3,7 @@ using ColorVision.Themes.Controls;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -25,8 +26,11 @@ namespace ColorVision.Solution
         public ObservableCollection<SolutionInfo> SolutionInfos { get; set; }= new ObservableCollection<SolutionInfo>();
         public ObservableCollection<SolutionInfo> SolutionInfosShow { get; set; }
 
-        private void BaseWindow_Initialized(object sender, EventArgs e)
+        private async void BaseWindow_Initialized(object sender, EventArgs e)
         {
+
+            await Task.Delay(50);
+            
             foreach (var item in SolutionHistory.RecentFiles)
             {
                 DirectoryInfo Info = new DirectoryInfo(item);
@@ -34,10 +38,13 @@ namespace ColorVision.Solution
                 {
                     SolutionInfos.Add(new SolutionInfo() { Name = Info.Name, FullName = Info.FullName, CreationTime = Info.CreationTime.ToString("yyyy/MM/dd H:mm") });
                 }
+                else
+                {
+                    SolutionHistory.RemoveFile(item);
+                }
             }
             SolutionInfosShow = new ObservableCollection<SolutionInfo>(SolutionInfos);
             ListView1.ItemsSource = SolutionInfosShow;
-
         }
 
 

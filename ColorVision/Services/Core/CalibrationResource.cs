@@ -8,5 +8,7 @@ namespace ColorVision.Services.Core
         public CalibrationResource(SysResourceModel sysResourceModel) : base(sysResourceModel) 
         { 
         }
+
+        public int IdShow { get; set; }
     }
 }

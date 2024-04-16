@@ -1,9 +1,9 @@
-﻿using ColorVision.MQTT;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.MQTT;
 using ColorVision.MySql;
-using ColorVision.RC;
 using ColorVision.Services;
 using ColorVision.Services.Devices.Camera.Video;
+using ColorVision.Services.RC;
 using ColorVision.Services.Templates;
 using ColorVision.Solution;
 using ColorVision.Update;
@@ -28,7 +28,6 @@ namespace ColorVision.Settings
             SoftwareSetting = new SoftwareSetting();
 
             UserConfig = new UserConfig();
-            SolutionConfig = new SolutionConfig();
             SystemMonitorSetting = new SystemMonitorSetting();
             SystemMonitorLazy = new Lazy<SystemMonitor>(() => SystemMonitor.GetInstance());
             TemplateControlLazy = new Lazy<TemplateControl>(() => TemplateControl.GetInstance());
@@ -51,6 +50,9 @@ namespace ColorVision.Settings
             VideoConfig = new LocalVideoConfig();
             ViewConfig = new ViewConfig();
         }
+
+        public string CalibToolsPath { get=>_CalibToolsPath; set=> _CalibToolsPath = value; }
+        private string _CalibToolsPath = string.Empty;
 
         public ServicesSetting ServicesSetting { get; set; } = new ServicesSetting();
 
@@ -117,11 +119,6 @@ namespace ColorVision.Settings
         public MySqlControl MySqlControl { get => MySqlControlLazy.Value; }
 
         public UserConfig UserConfig { get; set; }
-
-        public SolutionConfig SolutionConfig { get; set; }
-
-        [JsonIgnore]
-        public static SolutionManager SolutionManager { get => SolutionManager.GetInstance(); }
 
         public SolutionSetting SolutionSetting { get; set; } = new SolutionSetting();
 

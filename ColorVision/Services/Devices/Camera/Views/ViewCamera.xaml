@@ -9,7 +9,15 @@
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:hc="https://handyorg.github.io/handycontrol" 
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800" Background="{DynamicResource  BackgroundBrush}"  Initialized="UserControl_Initialized">
+             d:DesignHeight="450" d:DesignWidth="800" Background="{DynamicResource BorderBrush}"  Initialized="UserControl_Initialized">
+    <UserControl.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+    </UserControl.Resources>
     <Grid x:Name="MainGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -21,7 +29,7 @@
                 <RowDefinition Height="38"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <ToolBarTray IsLocked="True">
+            <ToolBarTray  Grid.Row="0" Panel.ZIndex="9" IsLocked="True">
                 <ToolBar Band="0" BandIndex="0">
                     <Button Click="Button_Click_Export" Margin="2,0,0,0" >
                         <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
@@ -29,7 +37,6 @@
                     <Button Click="Button_Click_Clear" Margin="2,0,0,0"  >
                         <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageDelete}" />
                     </Button>
-
                     <Button x:Name="Order" Content="排序" Click="Order_Click" Visibility="Collapsed"  Margin="2,0,0,0"/>
                     <Popup  x:Name="OrderPopup" AllowsTransparency="true" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Bottom" StaysOpen="false" PlacementTarget="{Binding ElementName=Order}">
                         <Border Margin="5" Style="{StaticResource BorderModuleArea}" Width="90">
@@ -81,15 +88,11 @@
                             </StackPanel>
                         </Border>
                     </Popup>
-
-                    <Button Content="清空显示" Click="ClearImage_Click" Margin="2,0,0,0"/>
-
                 </ToolBar>
                 <ToolBar Band="0" BandIndex="1" >
                     <StackPanel Orientation="Horizontal" Margin="5,0">
                         <TextBlock Text="图层" MinWidth="40"/>
                         <ComboBox x:Name="ComboBoxLayers" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" SelectionChanged="ComboBoxLayers_SelectionChanged"/>
-
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="5,0">
                         <TextBlock Text="关注点" MinWidth="40"/>
@@ -97,10 +100,11 @@
                     </StackPanel>
                 </ToolBar>
             </ToolBarTray>
-            <ListView Height="250" Grid.Row="1" x:Name="listView1" Background="Transparent" BorderThickness="0"  Margin="-5" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
+            <ListView Height="250" Grid.Row="1" x:Name="listView1"  BorderThickness="0"  Margin="-5" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
                 <ListView.Resources >
                     <ContextMenu x:Key="ContextMenuItem">
                         <MenuItem Header="{x:Static resx:Resource.Delete}"  Click="MenuItem_Delete_Click" Tag="{Binding .}"  />
+                        <MenuItem Header="{x:Static resx:Resource.Export}"  Click="MenuItem_Export_Click" Tag="{Binding .}"  />
                     </ContextMenu>
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                 </ListView.Resources>
@@ -123,7 +127,7 @@
                         <GridViewColumn  Header="序号" Width="50">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
-                                    <TextBlock Text="{Binding Id}"/>
+                                    <TextBlock Text="{Binding IdShow}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
@@ -148,7 +152,6 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-
                         <GridViewColumn  Header="结果" Width="50">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:ViewResultCamera}">
@@ -156,7 +159,6 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-
                         <GridViewColumn  Header="信息" Width="50">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:ViewResultCamera}">

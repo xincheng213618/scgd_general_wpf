@@ -657,4 +657,31 @@
   <data name="Create" xml:space="preserve">
     <value>創建</value>
   </data>
+  <data name="Upgrade" xml:space="preserve">
+    <value>升級</value>
+  </data>
+  <data name="Rollback" xml:space="preserve">
+    <value>回退</value>
+  </data>
+  <data name="Manager" xml:space="preserve">
+    <value>管理</value>
+  </data>
+  <data name="Send" xml:space="preserve">
+    <value>傳送</value>
+  </data>
+  <data name="Subscribe" xml:space="preserve">
+    <value>訂閱</value>
+  </data>
+  <data name="Unsubscribe" xml:space="preserve">
+    <value>退訂</value>
+  </data>
+  <data name="OpenSolution" xml:space="preserve">
+    <value>打開工程</value>
+  </data>
+  <data name="NewSolution" xml:space="preserve">
+    <value>新建工程</value>
+  </data>
+  <data name="MsgList" xml:space="preserve">
+    <value>訊息清單</value>
+  </data>
 </root>

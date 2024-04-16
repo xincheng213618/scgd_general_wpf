@@ -4,9 +4,10 @@ using ColorVision.MySql;
 using ColorVision.Services;
 using ColorVision.Services.Core;
 using ColorVision.Services.Flow;
+using ColorVision.Services.RC;
 using ColorVision.Settings;
 using ColorVision.Solution;
-using ColorVision.Solution.View;
+using ColorVision.Solution.Searches;
 using ColorVision.Themes;
 using ColorVision.Update;
 using ColorVision.UserSpace;
@@ -40,14 +41,9 @@ namespace ColorVision
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
         public ViewGridManager ViewGridManager { get; set; }
 
-        public ConfigHandler ConfigHandler { get; set; }
-        public SoftwareSetting SoftwareSetting
-        {
-            get
-            {
-                return ConfigHandler.SoftwareConfig.SoftwareSetting;
-            }
-        }
+        public static ConfigHandler ConfigHandler  => ConfigHandler.GetInstance();
+        public static SoftwareSetting SoftwareSetting => ConfigHandler.SoftwareConfig.SoftwareSetting;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -86,16 +82,18 @@ namespace ColorVision
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            ConfigHandler = ConfigHandler.GetInstance();
-            SolutionManager.GetInstance();
+            SolutionManager.GetInstance().AddHotKeys();
 
             if (MySqlControl.GetInstance().IsConnect)
             {
-                //string sql = "INSERT INTO `t_scgd_sys_dictionary_mod_item` (`id`, `symbol`, `address_code`, `name`, `val_type` , `value_range`, `default_val`, `pid`, `create_date`, `is_enable` , `is_delete`, `remark`) VALUES (240, 'CalibrationMode', 240, 'CalibrationMode', 0 , NULL, NULL, 2, '2024-02-01 17:30:49', 1 , 0, NULL) ON DUPLICATE KEY UPDATE `symbol` = VALUES(`symbol`), `address_code` = VALUES(`address_code`), `name` = VALUES(`name`), `val_type` = VALUES(`val_type`), `value_range` = VALUES(`value_range`) , `default_val` = VALUES(`default_val`), `pid` = VALUES(`pid`), `create_date` = VALUES(`create_date`), `is_enable` = VALUES(`is_enable`), `is_delete` = VALUES(`is_delete`) , `remark` = VALUES(`remark`);";
-                //MySqlControl.GetInstance().ExecuteNonQuery(sql);
+                string sql = "ALTER TABLE `t_scgd_camera_license` ADD `code` VARCHAR ( 255 ) DEFAULT NULL,\n" +
+"ADD `phy_camera_id` VARCHAR ( 255 ) DEFAULT NULL COMMENT '物理相机ID',\n" +
+"ADD `phy_camera_model` VARCHAR ( 255 ) DEFAULT NULL COMMENT '物理相机型号',\n" +
+"ADD `phy_camera_cfg` JSON DEFAULT NULL COMMENT '物理相机配置',\n" +
+"MODIFY `customer_name` VARCHAR ( 64 ) DEFAULT NULL COMMENT '客户名称';";
+                MySqlControl.GetInstance().ExecuteNonQuery(sql);
 
-                //string sql1 = "INSERT INTO t_scgd_sys_dictionary_mod_master (id, code, name, pid, create_date, is_enable, is_delete, remark, tenant_id) VALUES (17, 'SpectrumResource', 'SpectrumResource', NULL, '2024-02-04 13:33:04', 1, 0, NULL, 0) ON DUPLICATE KEY UPDATE code = VALUES(code), name = VALUES(name), pid = VALUES(pid), create_date = VALUES(create_date), is_enable = VALUES(is_enable), is_delete = VALUES(is_delete), remark = VALUES(remark), tenant_id = VALUES(tenant_id);\r\nINSERT INTO t_scgd_sys_dictionary_mod_item (id, symbol, address_code, name, val_type, value_range, default_val, pid, create_date, is_enable, is_delete, remark) VALUES (4000, 'ResourceMode', 4000, NULL, 3, NULL, ' ', 17, '2024-02-04 14:03:58', 1, 0, NULL)ON DUPLICATE KEY UPDATE symbol = VALUES(symbol), address_code = VALUES(address_code), name = VALUES(name), val_type = VALUES(val_type), value_range = VALUES(value_range), default_val = VALUES(default_val), pid = VALUES(pid), create_date = VALUES(create_date), is_enable = VALUES(is_enable), is_delete = VALUES(is_delete), remark = VALUES(remark);\r\nINSERT INTO t_scgd_sys_dictionary_mod_item (id, symbol, address_code, name, val_type, value_range, default_val, pid, create_date, is_enable, is_delete, remark) VALUES (4001, 'ResourceName', 4001, NULL, 3, NULL, ' ', 17, '2024-02-04 14:03:57', 1, 0, NULL)ON DUPLICATE KEY UPDATE symbol = VALUES(symbol), address_code = VALUES(address_code), name = VALUES(name), val_type = VALUES(val_type), value_range = VALUES(value_range), default_val = VALUES(default_val), pid = VALUES(pid), create_date = VALUES(create_date), is_enable = VALUES(is_enable), is_delete = VALUES(is_delete), remark = VALUES(remark);\r\nINSERT INTO t_scgd_sys_dictionary_mod_item (id, symbol, address_code, name, val_type, value_range, default_val, pid, create_date, is_enable, is_delete, remark) VALUES (4002, 'ResourceId', 4002, NULL, 1, NULL, '-1', 17, '2024-02-04 14:03:55', 1, 0, NULL)ON DUPLICATE KEY UPDATE symbol = VALUES(symbol), address_code = VALUES(address_code), name = VALUES(name), val_type = VALUES(val_type), value_range = VALUES(value_range), default_val = VALUES(default_val), pid = VALUES(pid), create_date = VALUES(create_date), is_enable = VALUES(is_enable), is_delete = VALUES(is_delete), remark = VALUES(remark);\r\nINSERT INTO t_scgd_sys_dictionary_mod_item (id, symbol, address_code, name, val_type, value_range, default_val, pid, create_date, is_enable, is_delete, remark) VALUES (4003, 'IsSelected', 4003, NULL, 2, NULL, 'false', 17, '2024-02-04 14:03:55', 1, 0, NULL)ON DUPLICATE KEY UPDATE symbol = VALUES(symbol), address_code = VALUES(address_code), name = VALUES(name), val_type = VALUES(val_type), value_range = VALUES(value_range), default_val = VALUES(default_val), pid = VALUES(pid), create_date = VALUES(create_date), is_enable = VALUES(is_enable), is_delete = VALUES(is_delete), remark = VALUES(remark);";
-                //MySqlControl.GetInstance().ExecuteNonQuery(sql1);
+
             }
 
 
@@ -116,8 +114,12 @@ namespace ColorVision
                 this.Title = WindowConfig.Title ?? this.Title;
             }
 
-            SolutionGrid.Children.Add(new SolutionView());
-
+            ViewGridManager SolutionViewGridManager = new ViewGridManager();
+            SolutionViewGridManager.MainView = SolutionGrid;
+            SolutionView solutionView = new SolutionView();
+            SolutionViewGridManager.AddView(0, solutionView);
+            solutionView.View.ViewIndex = 0;
+            SolutionViewGridManager.SetViewNum(-1);
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;
 
@@ -168,10 +170,10 @@ namespace ColorVision
             Menu1.Items.Add(menuItem);
 
 
-            MenuItem menuItem3 = new MenuItem() { Header = Properties.Resource.RestartService, Tag = "CalibrationUpload" };
+            MenuItem menuItem3 = new MenuItem() { Header = Properties.Resource.RestartService };
             menuItem3.Click += (s, e) =>
             {
-                Tool.ExecuteCommandAsAdmin("net stop RegistrationCenterService&&net start RegistrationCenterService");
+                RCManager.GetInstance().OpenCVWinSMS();
             };
             menuItem.Items.Add(menuItem3);
 
@@ -182,21 +184,17 @@ namespace ColorVision
                 Thread thread1 = new Thread(async () => await CheckUpdate()) { IsBackground = true };
                 thread1.Start();
             }
-            if (ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.IsOpenLoaclService)
-            {
-                Task.Run(CheckLocalService);
-            }
 
-            string? RegistrationCenterServicePath = Tool.GetServicePath("RegistrationCenterService");
+            //string? RegistrationCenterServicePath = Tool.GetServicePath("RegistrationCenterService");
 
-            if (RegistrationCenterServicePath != null)
+            //if (RegistrationCenterServicePath != null)
             {
-                string Dir = Path.GetDirectoryName(RegistrationCenterServicePath);
-                string FilePath = Dir + "//Log//" + DateTime.Now.ToString("yyyyMMdd") + ".log";
-                MenuItem menulogs1 = new MenuItem() { Header = "RegistrationCenterServiceLog" };
+                //string Dir = Path.GetDirectoryName(RegistrationCenterServicePath);
+                //string FilePath = Dir + "//Log//" + DateTime.Now.ToString("yyyyMMdd") + ".log";
+                MenuItem menulogs1 = new MenuItem() { Header = "RC服务日志" };
                 menulogs1.Click += (s, e) =>
                 {
-                    PlatformHelper.Open(FilePath);
+                    PlatformHelper.OpenFolder("http://localhost:8080/system/log");
                 };
                 menulogs.Items.Insert(0, menulogs1);
             }
@@ -325,41 +323,7 @@ namespace ColorVision
             }
         }
 
-        public static async Task CheckLocalService()
-        {
-            await Task.Delay(2000);
-            try
-            {
-                string excmd = string.Empty;
-                ServiceController sc = new ServiceController("RegistrationCenterService");
-                if (sc.Status == ServiceControllerStatus.Stopped)
-                {
-                    excmd += "net start RegistrationCenterService&&";
-                }
 
-                ServiceController sc1 = new ServiceController("CVMainService_x86");
-                if (sc1.Status == ServiceControllerStatus.Stopped)
-                {
-                    excmd += "net start CVMainService_x86&&";
-                }
-                ServiceController sc2 = new ServiceController("CVMainService_x64");
-                if (sc2.Status == ServiceControllerStatus.Stopped)
-                {
-                    excmd += "net start CVMainService_x64&&";
-                }
-                if (!string.IsNullOrEmpty(excmd))
-                {
-                    excmd += "1";
-                    Tool.ExecuteCommandAsAdmin(excmd);
-                }
-                ///非管理员模式无法直接通过sc启动程序
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message);
-            }
-
-        }
 
         public static async Task CheckUpdate()
         {
@@ -485,10 +449,7 @@ namespace ColorVision
 
         private void ChangeLog_Clik(object sender, RoutedEventArgs e)
         {
-            ChangelogWindow changelogWindow = new ChangelogWindow();
-            string changelogPath = "CHANGELOG.md";
-            string changelogContent = File.ReadAllText(changelogPath);
-            changelogWindow.SetChangelogText(changelogContent);
+            ChangelogWindow changelogWindow = new ChangelogWindow() { Owner = WindowHelpers.GetActiveWindow() ,WindowStartupLocation =WindowStartupLocation.CenterOwner };
             changelogWindow.ShowDialog();
         }
 

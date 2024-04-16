@@ -79,29 +79,13 @@ namespace ColorVision.Services.Templates
 
             };
 
-            TemplatePath = SolutionManager.GetInstance().SolutionDirectory.FullName;
             Init();
-
-
 
             Application.Current.MainWindow.Closed += (s, e) =>
             {
                 if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
                     return;
                 CSVSave();
-            };
-
-            SolutionManager.GetInstance().SolutionLoaded += (s, e) =>
-            {
-                TemplatePath = SolutionManager.GetInstance().SolutionDirectory.FullName;
-                if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
-                {
-                    LoadFlowParam();
-                }
-                else
-                {
-                    CSVSave();
-                }
             };
         }
         private void Init()
@@ -237,9 +221,9 @@ namespace ColorVision.Services.Templates
         {
             foreach (var item in DicTemplate)
             {
-                if (Directory.Exists(SolutionManager.GetInstance().CurrentSolution.FullName))
+                if (Directory.Exists(SolutionManager.GetInstance().CurrentSolution.FullPath))
                 {
-                    CfgFile.Save(SolutionManager.GetInstance().CurrentSolution.FullName + "\\CFG\\" + item.Key + ".cfg", item.Value);
+                    CfgFile.Save(SolutionManager.GetInstance().CurrentSolution.FullPath + "\\CFG\\" + item.Key + ".cfg", item.Value);
                 }
                 else
                 {

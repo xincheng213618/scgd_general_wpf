@@ -145,11 +145,8 @@ namespace ColorVision.Solution
 
         private void OpenSolution(object sender, RoutedEventArgs e)
         {
-            SolutionManager.OpenSolutionWindow(Window.GetWindow(this));
+            SolutionManager.OpenSolutionWindow();
         }
-
-
-
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
@@ -162,13 +159,9 @@ namespace ColorVision.Solution
         }
 
 
-
-
-
-
         private void SolutionNewCreat(object sender, RoutedEventArgs e)
         {
-            SolutionManager.NewCreateWindow(Window.GetWindow(this));
+            SolutionManager.NewCreateWindow();
         }
 
 

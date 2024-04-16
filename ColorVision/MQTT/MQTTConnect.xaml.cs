@@ -1,4 +1,4 @@
-﻿using ColorVision.RC;
+﻿using ColorVision.Services.RC;
 using ColorVision.Common.MVVM;
 using ColorVision.Settings;
 using System;

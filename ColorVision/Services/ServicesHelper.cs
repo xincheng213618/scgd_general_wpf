@@ -1,10 +1,99 @@
-﻿using ColorVision.Utilities;
+﻿using ColorVision.Common.Extension;
+using ColorVision.Common.Utilities;
+using ColorVision.Services.Msg;
+using Panuon.WPF.UI;
+using System;
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+
 
 namespace ColorVision.Services
 {
-    internal static class ServicesHelper
+    internal static partial class ServicesHelper
     {
+
+        public static IPendingHandler SendCommand(MsgRecord msgRecord, string Msg)
+        {
+            IPendingHandler handler = PendingBox.Show(Application.Current.MainWindow, Msg, true);
+            var temp = Application.Current.MainWindow.Cursor;
+            Application.Current.MainWindow.Cursor = Cursors.Wait;
+            MsgRecordStateChangedHandler msgRecordStateChangedHandler;
+            msgRecordStateChangedHandler = (e) =>
+            {
+                try
+                {
+                    handler?.UpdateMessage(e.ToDescription());
+                    if (e != MsgRecordState.Send)
+                    {
+                        handler?.Close();
+                    }
+                }
+                catch
+                {
+                }
+                finally
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        Application.Current.MainWindow.Cursor = temp;
+                    });
+                }
+
+
+
+            };
+            msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+            handler.Cancelling += delegate
+            {
+                msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
+                handler.Close();
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Application.Current.MainWindow.Cursor = temp;
+                });
+            };
+            return handler;
+        }
+
+        public static MsgRecord? SendCommandEx(object sender, Func<MsgRecord> action)
+        {
+            if (sender is Button button)
+            {
+                if (button.Content.ToString() == MsgRecordState.Send.ToDescription())
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "已经发送,请耐心等待","ColorVison");
+                    return null;
+                }
+                MsgRecord msgRecord = action.Invoke();
+                SendCommand(button, msgRecord);
+                return msgRecord;
+            }
+            return null;
+        }
+
+
+
+        public static void SendCommand(Button button, MsgRecord msgRecord, bool Reserve = true)
+        {
+            var temp = button.Content;
+            button.Content = msgRecord.MsgRecordState.ToDescription();
+            MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
+            msgRecordStateChangedHandler = async (e) =>
+            {
+                button.Content = e.ToDescription();
+                await Task.Delay(100);
+                if (e != MsgRecordState.Send)
+                {
+                    button.Content = temp;
+                }
+                msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
+            };
+            if (Reserve)
+                msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
+        }
+
         public static bool IsInvalidPath(string Path, string Hint = "名称")
         {
             if (string.IsNullOrEmpty(Path))
