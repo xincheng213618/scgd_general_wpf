@@ -20,6 +20,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Extension;
+using System.Collections.ObjectModel;
 
 namespace ColorVision.Services.Devices.Algorithm
 {
@@ -235,8 +236,19 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
             };
-        }
 
+            ObservableCollection<TemplateModel<ImageDevice>> deves = new ObservableCollection<TemplateModel<ImageDevice>>();
+            TemplateModel<ImageDevice> model = new TemplateModel<ImageDevice>();
+            model.Value = new ImageDevice() { Name= "默认相机", DeviceCode = "DEV.Camera.Default", DeviceType = "Camera" };
+            deves.Add(model);
+            CB_SourceImageFiles.ItemsSource = deves;
+            CB_SourceImageFiles.SelectedIndex = 0;
+        }
+        public class ImageDevice : ParamBase
+        {
+            public string DeviceCode { get; set; }
+            public string DeviceType { get; set; }
+        }
         public event RoutedEventHandler Selected;
         public event RoutedEventHandler Unselected;
         public event EventHandler SelectChanged;
@@ -491,7 +503,9 @@ namespace ColorVision.Services.Devices.Algorithm
 
         private void Button_Click_Refresh(object sender, RoutedEventArgs e)
         {
-            Service.GetCIEFiles(Service.Config.BindDeviceCode, "Algorithm");
+            TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
+            if (imageDevice != null) Service.GetCIEFiles(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType);
+            else Service.GetCIEFiles(string.Empty, string.Empty);
         }
 
         private void Button_Click_Upload(object sender, RoutedEventArgs e)
@@ -531,7 +545,9 @@ namespace ColorVision.Services.Devices.Algorithm
             string localName = netFileUtil.GetCacheFileFullName(fileName);
             if (!System.IO.File.Exists(localName))
             {
-                Service.Open(fileName, extType);
+                TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
+                if (imageDevice != null) Service.Open(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, fileName, extType);
+                else Service.Open(string.Empty, string.Empty, fileName, extType);
             }
             else
             {
@@ -663,7 +679,9 @@ namespace ColorVision.Services.Devices.Algorithm
 
         private void Button_Click_RawRefresh(object sender, RoutedEventArgs e)
         {
-            Service.GetRawFiles(Service.Config.BindDeviceCode, "Algorithm");
+            TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
+            if (imageDevice != null) Service.GetRawFiles(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType);
+            else Service.GetRawFiles(string.Empty, string.Empty);
         }
 
         private void Button_Click_RawOpen(object sender, RoutedEventArgs e)
@@ -681,6 +699,13 @@ namespace ColorVision.Services.Devices.Algorithm
             doOpen(CB_RawImageFiles.Text, FileExtType.Raw);
         }
 
-
+        private void Button_Click_SourceRefresh(object sender, RoutedEventArgs e)
+        {
+            ObservableCollection<TemplateModel<ImageDevice>> deves = new ObservableCollection<TemplateModel<ImageDevice>>();
+            TemplateModel<ImageDevice> model = new TemplateModel<ImageDevice>();
+            model.Value = new ImageDevice() { Name = "默认相机", DeviceCode = "DEV.Camera.Default", DeviceType = "Camera" };
+            deves.Add(model);
+            CB_SourceImageFiles.ItemsSource = deves;
+        }
     }
 }
