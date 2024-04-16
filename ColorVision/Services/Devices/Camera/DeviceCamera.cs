@@ -57,7 +57,7 @@ namespace ColorVision.Services.Devices.Camera
         public DeviceCamera(SysDeviceModel sysResourceModel, MQTTTerminalCamera cameraService) : base(sysResourceModel)
         {
             Service = cameraService;
-            DeviceService = new MQTTCamera(Config, Service);
+            DeviceService = new MQTTCamera(Config);
 
             View = new ViewCamera(this);
             View.View.Title = $"相机视图 - {Config.Code}";

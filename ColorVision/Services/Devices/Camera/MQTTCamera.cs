@@ -24,21 +24,17 @@ namespace ColorVision.Services.Devices.Camera
     {
         public event MessageRecvHandler OnMessageRecved;
 
-        public MQTTTerminalCamera CameraService { get; set; }
 
         public override bool IsAlive {get =>  Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); }}
 
-        public MQTTCamera(ConfigCamera CameraConfig, MQTTTerminalCamera cameraService) : base(CameraConfig)
+        public MQTTCamera(ConfigCamera CameraConfig) : base(CameraConfig)
         {
-            CameraService = cameraService;
-            CameraService.Devices.Add(this);
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
             DeviceStatus = DeviceStatusType.OffLine;
         }
 
         public override void Dispose()
         {
-            CameraService.Devices.Remove(this);
             base.Dispose();
             GC.SuppressFinalize(this);     
         }
