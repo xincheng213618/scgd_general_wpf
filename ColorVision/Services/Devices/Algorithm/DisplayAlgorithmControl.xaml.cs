@@ -164,7 +164,8 @@ namespace ColorVision.Services.Devices.Algorithm
                     if (arg.Data.MasterId > 0)
                     {
                         resultMaster = new List<AlgResultMasterModel>();
-                        AlgResultMasterModel model = algResultMasterDao.GetById(arg.Data.MasterId);
+                        int MasterId = arg.Data.MasterId;
+                        AlgResultMasterModel model = algResultMasterDao.GetById(MasterId);
                         resultMaster.Add(model);
                     }
                     else
