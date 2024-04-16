@@ -135,7 +135,6 @@ namespace ColorVision
             writeableBitmap.Lock();
             RtlMoveMemory(hImage.pData, writeableBitmap.BackBuffer, (uint)(hImage.cols * hImage.rows * hImage.channels*(depth / 8)));
             writeableBitmap.Unlock();
-
             return hImage;
         }
     }

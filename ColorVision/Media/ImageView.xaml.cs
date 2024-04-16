@@ -606,12 +606,7 @@ namespace ColorVision.Media
             if (filePath != null && File.Exists(filePath))
             {
                 string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
-                if (ext.Contains(".tif"))
-                {
-                    BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
-                    SetImageSource(bitmapImage.ToWriteableBitmap());
-                }
-                else if (ext.Contains(".cvraw") || ext.Contains(".cvsrc") || ext.Contains(".cvcie"))
+                if (ext.Contains(".cvraw") || ext.Contains(".cvsrc") || ext.Contains(".cvcie"))
                 {
                     FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
                     try
@@ -628,7 +623,7 @@ namespace ColorVision.Media
                     try
                     {
                         BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
-                        SetImageSource(bitmapImage.ToWriteableBitmap());
+                        SetImageSource(bitmapImage);
                     }
                     catch(Exception ex)
                     {
@@ -638,6 +633,7 @@ namespace ColorVision.Media
                 }
             }
         }
+
 
         public void OpenGhostImage(string? filePath,int[] LEDpixelX, int[] LEDPixelY, int[] GhostPixelX, int[] GhostPixelY)
         {
@@ -654,6 +650,43 @@ namespace ColorVision.Media
         public HImage? HImageCache { get; set; }
 
 
+        private void SetImageSource(BitmapImage writeableBitmap)
+        {
+            if (HImageCache != null)
+            {
+                HImageCache?.Dispose();
+                HImageCache = null;
+            };
+            Task.Run(() => Application.Current.Dispatcher.Invoke((() => HImageCache = writeableBitmap.ToHImage())));
+           
+            ToolBarTop.PseudoVisible = Visibility.Visible;
+
+            PseudoSlider.ValueChanged -= RangeSlider1_ValueChanged;
+            PseudoSlider.ValueChanged += RangeSlider1_ValueChanged;
+
+            if (HImageCache?.channels == 1)
+            {
+                ToolBarTop.CIEVisible = Visibility.Collapsed;
+            }
+            else
+            {
+                ToolBarTop.CIEVisible = Visibility.Visible;
+            }
+            ViewBitmapSource = writeableBitmap;
+            ImageShow.Source = ViewBitmapSource;
+
+            Task.Run(() => {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Zoombox1.ZoomUniform();
+                    ToolBarTop.ToolBarScaleRuler.Render();
+                });
+            });
+            ToolBar1.Visibility = Visibility.Visible;
+            ImageShow.ImageInitialize();
+            ToolBarTop.ToolBarScaleRuler.IsShow = true;
+        }
+
         private void SetImageSource(WriteableBitmap writeableBitmap)
         {
             if (HImageCache != null)
@@ -662,7 +695,10 @@ namespace ColorVision.Media
                 HImageCache = null;
             };
 
-            HImageCache = writeableBitmap.ToHImage();
+            Task.Run(() =>
+            {
+                HImageCache = writeableBitmap.ToHImage();
+            });
             ToolBarTop.PseudoVisible = Visibility.Visible;
 
             PseudoSlider.ValueChanged -= RangeSlider1_ValueChanged;
