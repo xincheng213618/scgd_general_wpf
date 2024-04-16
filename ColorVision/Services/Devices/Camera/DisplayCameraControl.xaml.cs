@@ -231,7 +231,7 @@ namespace ColorVision.Services.Devices.Camera
                     port = CameraVideoControl.Open(host, port);
                     if (port > 0)
                     {
-                        MsgRecord msg = DService.OpenVideo(host, port, DService.Config.ExpTime);
+                        MsgRecord msg = DService.OpenVideo(host, port);
                         msg.MsgRecordStateChanged += (s) =>
                         {
                             if (s == MsgRecordState.Fail)
