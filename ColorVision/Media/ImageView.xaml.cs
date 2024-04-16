@@ -694,6 +694,7 @@ namespace ColorVision.Media
                 HImageCache?.Dispose();
                 HImageCache = null;
             };
+
             Task.Run(() => Application.Current.Dispatcher.Invoke((() => HImageCache = writeableBitmap.ToHImage())));
 
             ToolBarTop.PseudoVisible = Visibility.Visible;
