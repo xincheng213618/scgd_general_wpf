@@ -30,9 +30,9 @@ namespace ColorVision.Services.DAO
         public string? Result { get; set; }
         public int TenantId { get; set; }
     }
-    public class BatchResultMasterDao : BaseDaoMaster<BatchResultMasterModel>
+    public class BatchResultMasterDao : BaseTableDao<BatchResultMasterModel>
     {
-        public BatchResultMasterDao() : base(string.Empty, "t_scgd_measure_batch", "id", false)
+        public BatchResultMasterDao() : base("t_scgd_measure_batch", "id")
         {
         }
 
@@ -74,9 +74,10 @@ namespace ColorVision.Services.DAO
             keyValuePairs.Add("code", batchCode);
             return ConditionalQuery(keyValuePairs);
         }
+
         public BatchResultMasterModel? GetByCode(string code)
         {
-            string sql = $"select * from {GetTableName()} where code=@code";
+            string sql = $"select * from {TableName} where code=@code";
             Dictionary<string, object> param = new Dictionary<string, object>
             {
                 { "code", code }

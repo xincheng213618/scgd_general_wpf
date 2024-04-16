@@ -189,11 +189,9 @@ namespace ColorVision.Services.Devices.Camera
         }
         #endregion
 
-        public CameraTempDao cameraTempDao { get; set; } = new CameraTempDao();   
-
         private void FetchLatestTemperature(object a)
         {
-            var model = cameraTempDao.GetLatestCameraTemp(SysResourceModel.Id);
+            var model = CameraTempDao.Instance.GetLatestCameraTemp(SysResourceModel.Id);
             if (model != null)
             {
                 MessageBox.Show(Application.Current.MainWindow, $"{model.CreateDate:HH:mm:ss} {Environment.NewLine}温度:{model.TempValue}");

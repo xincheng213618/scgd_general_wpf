@@ -17,6 +17,8 @@ namespace ColorVision.Services.Dao
 
     public class CameraTempDao : BaseTableDao<CameraTempModel>
     {
+        public static CameraTempDao Instance { get; set; } = new CameraTempDao();
+
         public CameraTempDao() : base("t_scgd_camera_temp", "id")
         {
         }

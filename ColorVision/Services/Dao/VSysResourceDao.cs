@@ -53,9 +53,9 @@ namespace ColorVision.Services.Dao
         public int TenantId { get; set; }
     }
 
-    public class SysResourceDao : BaseDaoMaster<SysResourceModel>
+    public class SysResourceDao : BaseTableDao<SysResourceModel>
     {
-        public SysResourceDao() : base(string.Empty, "t_scgd_sys_resource", "id", true)
+        public SysResourceDao() : base("t_scgd_sys_resource", "id")
         {
 
         }
@@ -130,59 +130,6 @@ namespace ColorVision.Services.Dao
 
 
 
-        public List<SysResourceModel> GetAllResources(int tenantId = -1)
-        {
-            List<SysResourceModel> list = new List<SysResourceModel>();
-
-            DataTable dInfo;
-            string sql;
-
-            sql = $"SELECT id, name, code,pid,txt_value,type,tenant_id,create_date FROM {GetTableName()} where 1=1 {(tenantId != 1 ? "and tenantId=@tenantId" : "")} and is_delete = 0 and is_enable = 1";
-            var parameters = new Dictionary<string, object>();
-            if (tenantId != -1)
-                parameters.Add("@tenantId", tenantId);
-
-
-            dInfo = GetData(sql, parameters);
-            foreach (DataRow item in dInfo.Rows)
-            {
-                SysResourceModel? model = GetModelFromDataRow(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
-
-
-
-        internal SysResourceModel? GetByCode(string code)
-        {
-            string sql = $"select * from {GetTableName()} where code=@code" + GetDelSQL(true);
-            Dictionary<string, object> param = new Dictionary<string, object>
-            {
-                { "code", code }
-            };
-            DataTable d_info = GetData(sql, param);
-            return d_info.Rows.Count == 1 ? GetModelFromDataRow(d_info.Rows[0]) : default;
-        }
-
-        internal List<SysResourceModel> GetServices(int tenantId)
-        {
-            List<SysResourceModel> list = new List<SysResourceModel>();
-            DataTable d_info = GetTablePidIsNullByPPcodeAndTenantId(tenantId);
-            foreach (var item in d_info.AsEnumerable())
-            {
-                SysResourceModel? model = GetModelFromDataRow(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
-
         public void CreatResourceGroup()
         {
             string sql = "CREATE TABLE IF NOT EXISTS `t_scgd_sys_resource_group` ( `id` INT(11) NOT NULL AUTO_INCREMENT, `resource_id` INT(11) NOT NULL, `group_id` INT(11) NOT NULL, PRIMARY KEY (`id`), UNIQUE KEY `resource_group_unique` (`resource_id`, `group_id`), CONSTRAINT `fk_resource_id` FOREIGN KEY (`resource_id`) REFERENCES `t_scgd_sys_resource` (`id`) ON DELETE CASCADE ON UPDATE CASCADE, CONSTRAINT `fk_group_id` FOREIGN KEY (`group_id`) REFERENCES `t_scgd_sys_resource` (`id`) ON DELETE CASCADE ON UPDATE CASCADE ) ENGINE = INNODB CHARSET = utf8mb4;";
@@ -211,29 +158,6 @@ namespace ColorVision.Services.Dao
             return list;
         }
 
-        internal List<SysResourceModel> GetAllType(int type)
-        {
-            List<SysResourceModel> list = new List<SysResourceModel>();
-            string sql = $"select * from {GetTableName()} where type={type}" + GetDelSQL(true);
-            DataTable d_info = GetData(sql);
-            foreach (var item in d_info.AsEnumerable())
-            {
-                SysResourceModel? model = GetModelFromDataRow(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
-
-        public virtual DataTable GetTablePidIsNullByPPcodeAndTenantId(int tenantId)
-        {
-            string ppcode = "service_type";
-            string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and ( pid is null or pid=-1) and ppcode='{ppcode}'" + GetDelSQL(true);
-            DataTable d_info = GetData(sql);
-            return d_info;
-        }
 
         internal int DeleteInCodes(string[] codes)
         {

@@ -18,9 +18,9 @@ namespace ColorVision.Services.Dao
         public int? PoiHeight { get; set; }
     }
 
-    public class POIPointResultDao : BaseDaoMaster<POIPointResultModel>
+    public class POIPointResultDao : BaseTableDao<POIPointResultModel>
     {
-        public POIPointResultDao() : base(string.Empty, "t_scgd_algorithm_result_detail_poi_mtf", "id", false)
+        public POIPointResultDao() : base("t_scgd_algorithm_result_detail_poi_mtf", "id")
         {
         }
 

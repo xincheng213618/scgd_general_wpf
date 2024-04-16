@@ -10,5 +10,6 @@ namespace ColorVision.MySql
         {
 
         }
+
     }
 }

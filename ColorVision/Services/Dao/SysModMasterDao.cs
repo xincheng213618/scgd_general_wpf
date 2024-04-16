@@ -14,9 +14,10 @@ namespace ColorVision.Services.Dao
         public string? Remark { get; set; }
         public int TenantId { get; set; }
     }
-    public class SysModMasterDao : BaseDaoMaster<SysModMasterModel>
+    public class SysModMasterDao : BaseTableDao<SysModMasterModel>
     {
-        public SysModMasterDao() : base(string.Empty, "t_scgd_sys_dictionary_mod_master", "id", true)
+        public static SysModMasterDao Instance { get; set; } = new SysModMasterDao();
+        public SysModMasterDao() : base("t_scgd_sys_dictionary_mod_master", "id")
         {
         }
 

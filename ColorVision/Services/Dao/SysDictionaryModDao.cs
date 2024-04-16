@@ -10,9 +10,9 @@ namespace ColorVision.Services.Dao
         public string? Name { get; set; }
         public int TenantId { get; set; }
     }
-    public class SysDictionaryModDao : BaseDaoMaster<SysDictionaryModModel>
+    public class SysDictionaryModDao : BaseTableDao<SysDictionaryModModel>
     {
-        public SysDictionaryModDao() : base(string.Empty, "t_scgd_sys_dictionary_mod_master", "id", true)
+        public SysDictionaryModDao() : base("t_scgd_sys_dictionary_mod_master", "id")
         {
         }
 
@@ -33,7 +33,7 @@ namespace ColorVision.Services.Dao
         {
             if (string.IsNullOrEmpty(code))
                 return new SysDictionaryModModel();
-            string sql = $"select * from {GetTableName()} where is_delete=0 and code=@code and tenant_id=@tenantId";
+            string sql = $"select * from {TableName} where is_delete=0 and code=@code and tenant_id=@tenantId";
             Dictionary<string, object> param = new Dictionary<string, object>
             {
                 { "code", code },

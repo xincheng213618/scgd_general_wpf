@@ -305,7 +305,7 @@ namespace ColorVision.Services.Templates
                             mpc.Reload(des);
                             mpc.ModTypeConfigs.Clear();
                             mpc.ModTypeConfigs.Add(new MParamConfig(-1,"关注点","POI"));
-                            List<SysModMasterModel> sysModMaster = new SysModMasterDao().GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                            List<SysModMasterModel> sysModMaster = SysModMasterDao.Instance.GetAllById(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
                             foreach (SysModMasterModel model in sysModMaster)
                             {
                                 mpc.ModTypeConfigs.Add(new MParamConfig(model));

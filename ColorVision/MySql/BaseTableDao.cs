@@ -128,5 +128,10 @@ namespace ColorVision.MySql
         }
 
 
+        public int DeleteById(int id, bool IsLogicDel = true)
+        {
+            string sql = IsLogicDel ? $"UPDATE {TableName} SET is_delete = 1 WHERE id = @id" : $"DELETE FROM {TableName} WHERE id = @id";
+            return ExecuteNonQuery(sql, new Dictionary<string, object> { { "id", id } });
+        }
     }
 }
