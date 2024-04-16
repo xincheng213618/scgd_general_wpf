@@ -720,10 +720,5 @@ namespace ColorVision.Services.Devices.Algorithm
             doOpen(CB_RawImageFiles.Text, FileExtType.Raw);
         }
 
-        private void Button_Click_SourceRefresh(object sender, RoutedEventArgs e)
-        {
-            ObservableCollection<TemplateModel<ImageDevice>> deves = GetImageDevices();
-            CB_SourceImageFiles.ItemsSource = deves;
-        }
     }
 }
