@@ -70,12 +70,6 @@ namespace ColorVision.Services.Core
                         MQTTRCService.GetInstance().QueryServices();
                         return Task.CompletedTask;
                     }
-                    //没有sn提示
-                    //if (json.Code == -401)
-                    //{
-                    //    MsgReturnReceived?.Invoke(json);
-                    //    return Task.CompletedTask;
-                    //}
 
                     if (json.Code != 0 && json.Code != 1 && json.Code != -1 && json.Code != -401)
                     {
@@ -91,7 +85,22 @@ namespace ColorVision.Services.Core
                             value.Enabled = false;
                             timers.Remove(json.MsgID);
                             msgee = true;
-                            MsgReturnReceived?.Invoke(json);
+                            try
+                            {
+                                MsgReturnReceived?.Invoke(json);
+                            }
+                            catch(Exception ex)
+                            {
+                                MsgRecord foundMsgRecord1 = MsgRecords.FirstOrDefault(record => record.MsgID == json.MsgID);
+                                if (foundMsgRecord1 != null)
+                                {
+                                    foundMsgRecord1.ReciveTime = DateTime.Now;
+                                    foundMsgRecord1.MsgReturn = json;
+                                    foundMsgRecord1.ErrorMsg = ex.Message;
+                                    foundMsgRecord1.MsgRecordState = json.Code == 0 ? MsgRecordState.Success : MsgRecordState.Fail;
+                                    MsgRecords.Remove(foundMsgRecord1);
+                                }
+                            }
                         }
                         MsgRecord foundMsgRecord = MsgRecords.FirstOrDefault(record => record.MsgID == json.MsgID);
                         if (foundMsgRecord != null)

@@ -26,6 +26,8 @@ namespace ColorVision.Services.Msg
         public MsgSend MsgSend { get; set; }
         public MsgReturn MsgReturn { get; set; }
 
+        public string ErrorMsg { get; set; }
+
         public MsgRecordState MsgRecordState
         {
             get => _MsgRecordState; set
