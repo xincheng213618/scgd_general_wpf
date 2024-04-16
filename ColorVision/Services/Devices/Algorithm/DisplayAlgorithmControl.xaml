@@ -38,8 +38,29 @@
                     <TextBlock Text="图像源" Margin="0,0,5,0"/>
                     <ComboBox x:Name="CB_SourceImageFiles"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value"  DisplayMemberPath="Key" />
                 </DockPanel>
-                <StackPanel >
-                    <StackPanel>
+                <StackPanel>
+                    <GroupBox Visibility="{Binding ElementName=POITabItem,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter}}">
+                        <GroupBox.Header>
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="CIE图像数据区"/>
+                                <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="需要矫正后的数据才可以计算"/>
+                            </StackPanel>
+                        </GroupBox.Header>
+                        <StackPanel  Margin="5" >
+                            <DockPanel Margin="0,2">
+                                <RadioButton IsChecked="True" GroupName="CIESrc"/>
+                                <Button Content="刷新" Click="Button_Click_Refresh" />
+                                <Button DockPanel.Dock="Right" Content="上传" Click="Button_Click_Upload" Visibility="Hidden" Width="0" />
+                                <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_Open" />
+                                <ComboBox x:Name="CB_CIEImageFiles"  Style="{StaticResource ComboBox.Small}"  Width="120"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <RadioButton x:Name="BatchSelect" Content="批次号" GroupName="CIESrc"/>
+                                <TextBox x:Name="BatchCode" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" />
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
+                    <StackPanel  Visibility="{Binding ElementName=POITabItem,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter1}}" >
                         <DockPanel Margin="0,2">
                             <RadioButton Content="本地" IsChecked="True" GroupName="alg_src" Width="80"/>
                             <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
@@ -59,29 +80,8 @@
                         </DockPanel>
                     </StackPanel>
                     <TabControl>
-                        <TabItem Header="POI">
+                        <TabItem x:Name="POITabItem" Header="POI">
                             <StackPanel Margin="2" >
-                                <GroupBox>
-                                    <GroupBox.Header>
-                                        <StackPanel Orientation="Horizontal">
-                                            <TextBlock Text="CIE图像数据区"/>
-                                            <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="需要矫正后的数据才可以计算"/>
-                                        </StackPanel>
-                                    </GroupBox.Header>
-                                    <StackPanel  Margin="5" >
-                                        <DockPanel Margin="0,2">
-                                            <RadioButton IsChecked="True" GroupName="CIESrc"/>
-                                            <Button Content="刷新" Click="Button_Click_Refresh" />
-                                            <Button DockPanel.Dock="Right" Content="上传" Click="Button_Click_Upload" Visibility="Hidden" Width="0" />
-                                            <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_Open" />
-                                            <ComboBox x:Name="CB_CIEImageFiles"  Style="{StaticResource ComboBox.Small}"  Width="120"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="0,2">
-                                            <RadioButton x:Name="BatchSelect" Content="批次号" GroupName="CIESrc"/>
-                                            <TextBox x:Name="BatchCode" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" />
-                                        </DockPanel>
-                                    </StackPanel>
-                                </GroupBox>
                                 <GroupBox  Header="POI">
                                     <DockPanel Margin="0,2">
                                         <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="PoiClick" />
