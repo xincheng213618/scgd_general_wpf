@@ -16,6 +16,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using ColorVision.Services.Devices.Calibration;
+using ColorVision.Services.Type;
 
 namespace ColorVision.Services.Devices
 {
@@ -118,6 +119,7 @@ namespace ColorVision.Services.Devices
         public override string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; NotifyPropertyChanged(); } }
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set{ SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
+        public ServiceTypes ServiceTypes => (ServiceTypes)SysResourceModel.Type;
 
         public DeviceService(SysDeviceModel sysResourceModel) : base()
         {

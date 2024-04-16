@@ -21,18 +21,6 @@ namespace ColorVision.Services.Devices.Algorithm
 
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-
-            ObservableCollection<string> Devices = new ObservableCollection<string>();
-            foreach (var item in ServiceManager.GetInstance().DeviceServices)
-            {
-                if (item is DeviceCamera camera)
-                {
-                    if (!Devices.Contains(camera.Code))
-                        Devices.Add(camera.Code);
-                }
-            }
-            TextBox_BindDevice.ItemsSource = Devices;
-
             this.DataContext = Device;
             EditConfig = Device.Config.Clone();
             EditContent.DataContext = EditConfig;

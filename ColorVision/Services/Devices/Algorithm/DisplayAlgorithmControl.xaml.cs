@@ -21,6 +21,9 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Extension;
 using System.Collections.ObjectModel;
+using System.Linq;
+using ColorVision.Services.Devices.Camera;
+using ColorVision.Services.Devices.Calibration;
 
 namespace ColorVision.Services.Devices.Algorithm
 {
@@ -237,18 +240,38 @@ namespace ColorVision.Services.Devices.Algorithm
                 DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
             };
 
+            ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) =>
+            {
+                SourceImageFiles();
+            };
+            SourceImageFiles();
+        }
+
+        public void SourceImageFiles()
+        {
             ObservableCollection<TemplateModel<ImageDevice>> deves = new ObservableCollection<TemplateModel<ImageDevice>>();
-            TemplateModel<ImageDevice> model = new TemplateModel<ImageDevice>();
-            model.Value = new ImageDevice() { Name= "默认相机", DeviceCode = "DEV.Camera.Default", DeviceType = "Camera" };
-            deves.Add(model);
+            foreach (var item in ServiceManager.GetInstance().DeviceServices)
+            {
+                TemplateModel<ImageDevice> model = new TemplateModel<ImageDevice>();
+                if (item is DeviceCamera deviceCamera)
+                {
+                    model.Value = new ImageDevice() { Name = deviceCamera.Name, DeviceCode = deviceCamera.Code, DeviceType = deviceCamera.ServiceTypes.ToString() };
+                    deves.Add(model);
+                }
+                else if ( item is DeviceCalibration deviceCalibration)
+                {
+                    model.Value = new ImageDevice() { Name = deviceCalibration.Name, DeviceCode = deviceCalibration.Code, DeviceType = deviceCalibration.ServiceTypes.ToString() };
+                    deves.Add(model);
+                }
+            }
             CB_SourceImageFiles.ItemsSource = deves;
-            CB_SourceImageFiles.SelectedIndex = 0;
         }
         public class ImageDevice : ParamBase
         {
             public string DeviceCode { get; set; }
             public string DeviceType { get; set; }
         }
+
         public event RoutedEventHandler Selected;
         public event RoutedEventHandler Unselected;
         public event EventHandler SelectChanged;

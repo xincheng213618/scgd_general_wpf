@@ -51,7 +51,6 @@ namespace ColorVision.Services
 
         public ObservableCollection<IDisPlayControl> DisPlayControls { get; set; } = new ObservableCollection<IDisPlayControl>();
 
-
         public VSysResourceDao VSysResourceDao { get; set; } = new VSysResourceDao();
         public VSysDeviceDao VSysDeviceDao { get; set; } = new VSysDeviceDao();
 

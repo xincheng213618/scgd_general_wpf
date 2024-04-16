@@ -34,47 +34,10 @@
 
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel Margin="5" >
-                <GroupBox  Header="图像源">
-                    <DockPanel Margin="0,2">
-                        <Button Content="刷新" Click="Button_Click_SourceRefresh" />
-                        <ComboBox x:Name="CB_SourceImageFiles"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value"  DisplayMemberPath="Key" Width="220"/>
-                    </DockPanel>
-                </GroupBox>
-                <GroupBox  Header="关注点">
-                    <StackPanel Margin="2" >
-                        <GroupBox>
-                            <GroupBox.Header>
-                                <StackPanel Orientation="Horizontal">
-                                    <TextBlock Text="CIE图像数据区"/>
-                                    <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="需要矫正后的数据才可以计算"/>
-                                </StackPanel>
-                            </GroupBox.Header>
-                            <StackPanel  Margin="5" >
-                                <DockPanel Margin="0,2">
-                                    <RadioButton IsChecked="True" GroupName="CIESrc"/>
-                                    <Button Content="刷新" Click="Button_Click_Refresh" />
-                                    <Button DockPanel.Dock="Right" Content="上传" Click="Button_Click_Upload" Visibility="Hidden" Width="0" />
-                                    <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_Open" />
-                                    <ComboBox x:Name="CB_CIEImageFiles"  Style="{StaticResource ComboBox.Small}"  Width="120"/>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <RadioButton x:Name="BatchSelect" Content="批次号" GroupName="CIESrc"/>
-                                    <TextBox x:Name="BatchCode" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" />
-                                </DockPanel>
-                            </StackPanel>
-                        </GroupBox>
-                        <GroupBox  Header="POI">
-                            <DockPanel Margin="0,2">
-                                <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="PoiClick" />
-                                <ComboBox  x:Name="ComboxPoiTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusParm" Click="MenuItem_Template"/>
-                                </Grid>
-                            </DockPanel>
-                        </GroupBox>
-                    </StackPanel>
-                </GroupBox>
+                <DockPanel Margin="0,2">
+                    <TextBlock Text="图像源" Margin="0,0,5,0"/>
+                    <ComboBox x:Name="CB_SourceImageFiles"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                </DockPanel>
                 <StackPanel >
                     <StackPanel>
                         <DockPanel Margin="0,2">
@@ -96,6 +59,42 @@
                         </DockPanel>
                     </StackPanel>
                     <TabControl>
+                        <TabItem Header="POI">
+                            <StackPanel Margin="2" >
+                                <GroupBox>
+                                    <GroupBox.Header>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Text="CIE图像数据区"/>
+                                            <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="需要矫正后的数据才可以计算"/>
+                                        </StackPanel>
+                                    </GroupBox.Header>
+                                    <StackPanel  Margin="5" >
+                                        <DockPanel Margin="0,2">
+                                            <RadioButton IsChecked="True" GroupName="CIESrc"/>
+                                            <Button Content="刷新" Click="Button_Click_Refresh" />
+                                            <Button DockPanel.Dock="Right" Content="上传" Click="Button_Click_Upload" Visibility="Hidden" Width="0" />
+                                            <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_Open" />
+                                            <ComboBox x:Name="CB_CIEImageFiles"  Style="{StaticResource ComboBox.Small}"  Width="120"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <RadioButton x:Name="BatchSelect" Content="批次号" GroupName="CIESrc"/>
+                                            <TextBox x:Name="BatchCode" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" />
+                                        </DockPanel>
+                                    </StackPanel>
+                                </GroupBox>
+                                <GroupBox  Header="POI">
+                                    <DockPanel Margin="0,2">
+                                        <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="PoiClick" />
+                                        <ComboBox  x:Name="ComboxPoiTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusParm" Click="MenuItem_Template"/>
+                                        </Grid>
+                                    </DockPanel>
+                                </GroupBox>
+                            </StackPanel>
+
+                        </TabItem>
                         <TabItem Header="FOV">
                             <GroupBox  Header="FOV" ToolTip="Field of view">
                                 <DockPanel Margin="0,2">
