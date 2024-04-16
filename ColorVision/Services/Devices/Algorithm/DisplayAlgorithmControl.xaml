@@ -34,6 +34,12 @@
 
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel Margin="5" >
+                <GroupBox  Header="图像源">
+                    <DockPanel Margin="0,2">
+                        <Button Content="刷新" Click="Button_Click_SourceRefresh" />
+                        <ComboBox x:Name="CB_SourceImageFiles"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value"  DisplayMemberPath="Key" Width="220"/>
+                    </DockPanel>
+                </GroupBox>
                 <GroupBox  Header="关注点">
                     <StackPanel Margin="2" >
                         <GroupBox>

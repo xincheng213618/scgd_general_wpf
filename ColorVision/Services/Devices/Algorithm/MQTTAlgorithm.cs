@@ -355,26 +355,26 @@ namespace ColorVision.Services.Devices.Algorithm
             return PublishAsyncClient(msg);
         }
 
-        internal void Open(string fileName, FileExtType extType)
+        internal void Open(string deviceCode, string deviceType, string fileName, FileExtType extType)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = MQTTFileServerEventEnum.Event_File_Download,
                 ServiceName = Config.Code,
-                Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", extType } }
+                Params = new Dictionary<string, object> { { "FileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType }, { "FileExtType", extType } }
             };
             PublishAsyncClient(msg);
         }
 
         public void UploadCIEFile(string fileName)
         {
-            MsgSend msg = new MsgSend
-            {
-                EventName = MQTTFileServerEventEnum.Event_File_Upload,
-                ServiceName = Config.Code,
-                Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", FileExtType.CIE } }
-            };
-            PublishAsyncClient(msg);
+            //MsgSend msg = new MsgSend
+            //{
+            //    EventName = MQTTFileServerEventEnum.Event_File_Upload,
+            //    ServiceName = Config.Code,
+            //    Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", FileExtType.CIE } }
+            //};
+            //PublishAsyncClient(msg);
         }
 
         public MsgRecord CacheClear()
