@@ -41,14 +41,9 @@ namespace ColorVision
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
         public ViewGridManager ViewGridManager { get; set; }
 
-        public ConfigHandler ConfigHandler { get; set; }
-        public SoftwareSetting SoftwareSetting
-        {
-            get
-            {
-                return ConfigHandler.SoftwareConfig.SoftwareSetting;
-            }
-        }
+        public static ConfigHandler ConfigHandler  => ConfigHandler.GetInstance();
+        public static SoftwareSetting SoftwareSetting => ConfigHandler.SoftwareConfig.SoftwareSetting;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -87,7 +82,6 @@ namespace ColorVision
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            ConfigHandler = ConfigHandler.GetInstance();
             SolutionManager.GetInstance().AddHotKeys();
 
             if (MySqlControl.GetInstance().IsConnect)
@@ -119,6 +113,7 @@ namespace ColorVision
                     this.Icon = WindowConfig.Icon;
                 this.Title = WindowConfig.Title ?? this.Title;
             }
+
             ViewGridManager SolutionViewGridManager = new ViewGridManager();
             SolutionViewGridManager.MainView = SolutionGrid;
             SolutionView solutionView = new SolutionView();
