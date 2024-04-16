@@ -351,7 +351,6 @@ namespace ColorVision.Services.Devices.Camera
             }
             else
             {
-
                 var FunParams = new Dictionary<string, object>() { };
                 FunParams.Add("dExp", Config.ExpTime);
                 FunParams.Add("Gain", Config.Gain);
