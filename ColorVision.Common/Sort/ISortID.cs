@@ -5,7 +5,7 @@ namespace ColorVision.Common.Sorts
 {
     public interface ISortID
     {
-        public int Id { get; set; }
+        public int Id { get;  }
 
         public int IdShow { get; set; }
 

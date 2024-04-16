@@ -36,7 +36,6 @@ namespace ColorVision.Solution.Searches
 
         public TimeSpan? TotalTime { get => _TotalTime; set { _TotalTime = value; NotifyPropertyChanged(); } }
         private TimeSpan? _TotalTime;
-
     }
 
     /// <summary>

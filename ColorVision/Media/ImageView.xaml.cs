@@ -29,10 +29,12 @@ namespace ColorVision.Media
     /// <summary>
     /// ImageView.xaml 的交互逻辑
     /// </summary>
-    public partial class ImageView : UserControl, IView
+    public partial class ImageView : UserControl, IView,IDisposable
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(ImageView));
         public ToolBarTop ToolBarTop { get; set; }
+
+        public ColormapTypes ColormapTypes { get; set; } = ColormapTypes.COLORMAP_JET;
 
         public View View { get; set; }
      
@@ -40,6 +42,10 @@ namespace ColorVision.Media
         {
             View = new View();
             InitializeComponent();
+        }
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
         }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
@@ -127,8 +133,6 @@ namespace ColorVision.Media
                 }
             };
         }
-
-
 
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
         {
@@ -518,6 +522,7 @@ namespace ColorVision.Media
                 }
                 SetImageSource(dst.ToWriteableBitmap());
                 dst.Dispose();
+                src.Dispose();
             }
             else if (fileInfo.FileExtType == FileExtType.CIE)
             {
@@ -535,19 +540,26 @@ namespace ColorVision.Media
                 {
                     dst = src;
                 }
-                SetImageSource(dst.ToWriteableBitmap());
+                var Data = dst.ToWriteableBitmap();
+                SetImageSource(Data);
                 dst.Dispose();
+                src.Dispose();
             }
         }
 
         public void Clear()
         {
+            PseudoImage = null;
+            ViewBitmapSource = null;
+
             ImageShow.Source = null;
+
             if (HImageCache != null)
             {
                 HImageCache?.Dispose();
                 HImageCache = null;
             }
+            GC.Collect();
         }
 
         public void OpenImage(string? filePath)
@@ -609,28 +621,25 @@ namespace ColorVision.Media
             {
                 HImageCache?.Dispose();
                 HImageCache = null;
-            }
+            };
 
             HImageCache = writeableBitmap.ToHImage();
-
             ToolBarTop.PseudoVisible = Visibility.Visible;
-            DebounceTimer.AddOrResetTimer("RenderPseudo", 500, RenderPseudo);
+
+            PseudoSlider.ValueChanged -= RangeSlider1_ValueChanged;
+            PseudoSlider.ValueChanged += RangeSlider1_ValueChanged;
 
             if (HImageCache?.channels == 1)
             {
-
-
-                ToolBarTop.CIEVisible = Visibility.Collapsed ;
+                ToolBarTop.CIEVisible = Visibility.Collapsed;
             }
             else
             {
-                //ToolBarTop.PseudoVisible = Visibility.Collapsed;
                 ToolBarTop.CIEVisible = Visibility.Visible;
             }
             ViewBitmapSource = writeableBitmap;
-
             ImageShow.Source = ViewBitmapSource;
-            DrawGridImage(DrawingVisualGrid, writeableBitmap);
+
             Task.Run(() => {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -640,47 +649,25 @@ namespace ColorVision.Media
             });
             ToolBar1.Visibility = Visibility.Visible;
             ImageShow.ImageInitialize();
-
             ToolBarTop.ToolBarScaleRuler.IsShow = true;
-        }  
-
+        }
 
         public ImageSource PseudoImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
 
-
         private void ToggleButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is ToggleButton toggleButton)
+            RenderPseudo();
+
+        }
+        private void Pseudo_MouseDoubleClick(object sender, RoutedEventArgs e)
+        {
+            PseudoColor pseudoColor = new PseudoColor();
+            pseudoColor.Closed += (s, e) =>
             {
-                if (PseudoImage != null)
-                {
-                    if (toggleButton.IsChecked == true)
-                    {
-                        ImageShow.Source = PseudoImage;
-                    }
-                    else
-                    {
-                        ImageShow.Source = ViewBitmapSource;
-                    }
-                }
-                else
-                {
-                    PseudoColor window = new PseudoColor() { Owner = Window.GetWindow(this)};
-                    window.Show();
-                }
-            }
-        }
-
-        private void ToolBar1_Loaded(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-
-
-        private void CheckBox_Click(object sender, RoutedEventArgs e)
-        {
+                ColormapTypes = pseudoColor.ColormapTypes;
+            };
+            pseudoColor.Show();
         }
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
@@ -807,32 +794,37 @@ namespace ColorVision.Media
             }
         }
 
-        public void RenderPseudo(object? sender, ElapsedEventArgs e)
+        public void RenderPseudo()
         {
-            if (HImageCache != null)
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                // 首先获取滑动条的值，这需要在UI线程中执行
-                Application.Current.Dispatcher.Invoke(() =>
+                if (Pseudo.IsChecked == false)
                 {
+                    ImageShow.Source = ViewBitmapSource;
+                    PseudoImage = null;
+                    return;
+                }
+
+                if (HImageCache != null)
+                {
+                    // 首先获取滑动条的值，这需要在UI线程中执行
+
                     uint min = (uint)PseudoSlider.ValueStart;
                     uint max = (uint)PseudoSlider.ValueEnd;
-                    logger.Info($"ImagePath，正在执行PseudoColor,min:{min},max:{max}");
 
-                    // 在后台线程中执行耗时的图像处理操作
+                    logger.Info($"ImagePath，正在执行PseudoColor,min:{min},max:{max}");
                     Task.Run(() =>
                     {
-                        int ret = OpenCVHelper.PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max);
+                        int ret = OpenCVHelper.PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max, ColormapTypes);
 
-                        // 图像处理完成后，回到UI线程更新界面
+                        var image = hImageProcessed.ToWriteableBitmap();
+                        OpenCVHelper.FreeHImageData(hImageProcessed.pData);
+                        hImageProcessed.pData = IntPtr.Zero;
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             if (ret == 0)
                             {
-                                PseudoImage = hImageProcessed.ToWriteableBitmap();
-                                //在转换完成之后需要释放掉内存；
-                                OpenCVHelper.FreeHImageData(hImageProcessed.pData);
-                                hImageProcessed.pData = IntPtr.Zero;
-
+                                PseudoImage = image;
                                 if (Pseudo.IsChecked == true)
                                 {
                                     ImageShow.Source = PseudoImage;
@@ -841,15 +833,15 @@ namespace ColorVision.Media
                             }
                         });
                     });
-                });
-            }
+                };
+            });
         }
 
         private void RangeSlider1_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
         {
             RowDefinitionStart.Height = new GridLength((170.0 / 255.0) * (255 - PseudoSlider.ValueEnd));
             RowDefinitionEnd.Height = new GridLength((170.0 / 255.0) * PseudoSlider.ValueStart);
-            DebounceTimer.AddOrResetTimer("RenderPseudo",300, RenderPseudo);
+            DebounceTimer.AddOrResetTimer("RenderPseudo",100, RenderPseudo);
         }
 
         private void ButtonCIE1931_Click(object sender, RoutedEventArgs e)
@@ -873,10 +865,6 @@ namespace ColorVision.Media
             windowCIE.Show();
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
 
-           
-        }
     }
 }

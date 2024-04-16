@@ -11,6 +11,20 @@ using ColorVision.Services.RC;
 
 namespace ColorVision.Solution.Searches
 {
+    public class ViewArchiveResult : ViewModelBase, ISortID,ISortCreateTime
+    {
+        public ViewArchiveResult(ArchivedMasterModel  archivedMasterModel)
+        {
+            ArchivedMasterModel = archivedMasterModel;
+        }
+        public ArchivedMasterModel ArchivedMasterModel { get; set; }
+        public int Id { get => ArchivedMasterModel.Id; set => throw new NotImplementedException(); }
+
+        public int IdShow { get => ArchivedMasterModel.Id;set { ArchivedMasterModel.Id = value; } }
+
+        public DateTime? CreateTime { get => ArchivedMasterModel.CreateDate; }
+    }
+
 
     /// <summary>
     /// ArchivePage.xaml 的交互逻辑
@@ -25,21 +39,20 @@ namespace ColorVision.Solution.Searches
             InitializeComponent();
         }
 
-        BatchResultMasterDao batchResultMasterDao = new BatchResultMasterDao();
 
-        public ObservableCollection<ViewBatchResult> ViewBatchResults { get; set; } = new ObservableCollection<ViewBatchResult>();
+        public ObservableCollection<ViewArchiveResult> ViewResults { get; set; } = new ObservableCollection<ViewArchiveResult>();
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
-            ViewBatchResults.Clear();
-            var BatchResultMasterModels = batchResultMasterDao.GetAll();
-            foreach (var item in BatchResultMasterModels)
+            ViewResults.Clear();
+            foreach (var item in ArchivedMasterDao.Instance.GetAll())
             {
-                ViewBatchResults.Add(new ViewBatchResult(item));
+                ViewResults.Add(new ViewArchiveResult(item));
             }
         }
+
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            listView1.ItemsSource = ViewBatchResults;
+            listView1.ItemsSource = ViewResults;
             if (listView1.View is GridView gridView)
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilities);
         }
@@ -49,21 +62,18 @@ namespace ColorVision.Solution.Searches
         }
         private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            var BatchResultMasterModels = batchResultMasterDao.ConditionalQuery(SearchBox.Text);
-            ViewBatchResults.Clear();
-            foreach (var item in BatchResultMasterModels)
+            ViewResults.Clear();
+            foreach (var item in ArchivedMasterDao.Instance.ConditionalQuery(SearchBox.Text))
             {
-                ViewBatchResults.AddUnique(new ViewBatchResult(item));
+                ViewResults.AddUnique(new ViewArchiveResult(item));
             }
         }
 
         private void Query_Click(object sender, RoutedEventArgs e)
         {
-            var BatchResultMasterModels = batchResultMasterDao.ConditionalQuery(SearchBox.Text);
-            ViewBatchResults.Clear();
-            foreach (var item in BatchResultMasterModels)
+            foreach (var item in ArchivedMasterDao.Instance.ConditionalQuery(SearchBox.Text))
             {
-                ViewBatchResults.AddUnique(new ViewBatchResult(item));
+                ViewResults.AddUnique(new ViewArchiveResult(item));
             }
         }
 
@@ -91,15 +101,11 @@ namespace ColorVision.Solution.Searches
                         {
                             case "序号":
                                 item.IsSortD = !item.IsSortD;
-                                ViewBatchResults.SortByID(item.IsSortD);
+                                ViewResults.SortByID(item.IsSortD);
                                 break;
                             case "测量时间":
                                 item.IsSortD = !item.IsSortD;
-                                ViewBatchResults.SortByCreateTime(item.IsSortD);
-                                break;
-                            case "批次号":
-                                item.IsSortD = !item.IsSortD;
-                                ViewBatchResults.SortByBatch(item.IsSortD);
+                                ViewResults.SortByCreateTime(item.IsSortD);
                                 break;
                             default:
                                 break;
@@ -112,15 +118,7 @@ namespace ColorVision.Solution.Searches
         }
         private void listView1_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (sender is ListView listView && listView.SelectedIndex > -1)
-            {
-                Frame.Navigate(new BatchShowPage(Frame, ViewBatchResults[listView.SelectedIndex]));
-            }
-        }
-        private void Arch_Click(object sender, RoutedEventArgs e)
-        {
-            ViewBatchResult sel = (ViewBatchResult)listView1.SelectedValue;
-            MQTTRCService.GetInstance().Archived(sel.BatchCode);
+
         }
     }
 }

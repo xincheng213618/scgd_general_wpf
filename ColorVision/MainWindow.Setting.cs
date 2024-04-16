@@ -1,6 +1,8 @@
 ﻿using ColorVision.Media;
 using ColorVision.Net;
 using ColorVision.Solution;
+using ColorVision.Common.Extension;
+
 using HandyControl.Tools;
 using HandyControl.Tools.Extension;
 using System;
@@ -11,6 +13,7 @@ using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using ColorVision.Draw;
 
 namespace ColorVision
 {
@@ -54,10 +57,16 @@ namespace ColorVision
                                 {
                                     ImageView imageView = new ImageView();
                                     CVFileUtil.ReadCVRaw(result, out CVCIEFile fileInfo);
-                                    Window window = new Window() { Title = "快速预览" };
+                                    Window window = new Window() { Title = "快速预览", Owner = Application.Current.MainWindow};
                                     window.Content = imageView;
                                     imageView.OpenImage(fileInfo);
+
                                     window.Show();
+                                    window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() => {
+                                        imageView.ToolBarTop.ClearImage();
+                                    }));
+
+
                                 }
                             }
                             else
