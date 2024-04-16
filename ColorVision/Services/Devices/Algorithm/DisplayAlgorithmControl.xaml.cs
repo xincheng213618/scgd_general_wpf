@@ -238,9 +238,8 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
             };
-
-            ObservableCollection<TemplateModel<ImageDevice>> deves = GetImageDevices();
-            CB_SourceImageFiles.ItemsSource = deves;
+            ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) => GetImageDevices(); 
+            GetImageDevices();
         }
         public class ImageDevice : ParamBase
         {
@@ -254,7 +253,7 @@ namespace ColorVision.Services.Devices.Algorithm
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
-        private ObservableCollection<TemplateModel<ImageDevice>> GetImageDevices()
+        private void GetImageDevices()
         {
             ObservableCollection<TemplateModel<ImageDevice>> deves = new ObservableCollection<TemplateModel<ImageDevice>>();
             foreach (var item in ServiceManager.GetInstance().DeviceServices)
@@ -275,7 +274,8 @@ namespace ColorVision.Services.Devices.Algorithm
                     deves.Add(model);
                 }
             }
-            return deves;
+            CB_SourceImageFiles.ItemsSource = deves;
+            CB_SourceImageFiles.SelectedIndex = 0;
         }
         private void PoiClick(object sender, RoutedEventArgs e)
         {
