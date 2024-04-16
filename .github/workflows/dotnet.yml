@@ -25,10 +25,10 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore build.sln
       
+    - name: Setup MSBuild path
+      uses: microsoft/setup-msbuild@v1.1
+    
     - name: Build C++ project with MSBuild
       run: |
-        # 安装MSBuild
-        sudo apt-get install -y msbuild
-        # 构建C++项目
         msbuild build.sln /p:Configuration=Release /p:Platform=x64
  
