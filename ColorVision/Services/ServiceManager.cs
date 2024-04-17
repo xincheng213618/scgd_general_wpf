@@ -51,7 +51,6 @@ namespace ColorVision.Services
 
         public ObservableCollection<IDisPlayControl> DisPlayControls { get; set; } = new ObservableCollection<IDisPlayControl>();
 
-        public VSysResourceDao VSysResourceDao { get; set; } = new VSysResourceDao();
         public VSysDeviceDao VSysDeviceDao { get; set; } = new VSysDeviceDao();
 
         public ServiceManager()
@@ -133,7 +132,6 @@ namespace ColorVision.Services
             }
             LastGenControl = DeviceServices;
         }
-        public VSysResourceDao SysResourceDao { get; set; } = new VSysResourceDao();
         private Dictionary<string, List<MQTTServiceBase>> svrDevices = new Dictionary<string, List<MQTTServiceBase>>();
 
         public void LoadServices()
@@ -159,7 +157,7 @@ namespace ColorVision.Services
 
             TerminalServices.Clear();
             svrDevices.Clear();
-            List<SysResourceModel> sysResourceModelServices = SysResourceDao.GetServices(UserConfig.TenantId);
+            List<SysResourceModel> sysResourceModelServices = VSysResourceDao.Instance.GetServices(UserConfig.TenantId);
             foreach (var typeService1 in TypeServices)
             {
                 var sysResourceModels = sysResourceModelServices.FindAll((x) => x.Type == (int)typeService1.ServiceTypes);

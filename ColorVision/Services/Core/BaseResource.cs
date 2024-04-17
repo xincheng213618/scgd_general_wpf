@@ -20,7 +20,7 @@ namespace ColorVision.Services.Core
         public override void Save()
         {
             SysResourceModel.Name = Name;
-            ServiceManager.GetInstance().VSysResourceDao.Save(SysResourceModel);
+            VSysResourceDao.Instance.Save(SysResourceModel);
         }
 
         public ServiceTypes ServiceTypes { get => (ServiceTypes)SysResourceModel.Type; }

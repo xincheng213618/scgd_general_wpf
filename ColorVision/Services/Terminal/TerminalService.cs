@@ -120,10 +120,9 @@ namespace ColorVision.Services.Terminal
             Parent.RemoveChild(this);
             if (SysResourceModel != null)
             {
-                ServiceManager.GetInstance().VSysResourceDao.DeleteById(SysResourceModel.Id);
-                ServiceManager.GetInstance().VSysResourceDao.DeleteAllByPid(SysResourceModel.Id);
+                VSysResourceDao.Instance.DeleteById(SysResourceModel.Id);
+                VSysResourceDao.Instance.DeleteAllByPid(SysResourceModel.Id);
             }
-
             ServiceManager.GetInstance().TerminalServices.Remove(this);
         }
 
@@ -152,7 +151,7 @@ namespace ColorVision.Services.Terminal
             SysResourceModel.Name = Config.Name;
             SysResourceModel.Code = Config.Code;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            ServiceManager.GetInstance().VSysResourceDao.Save(SysResourceModel);
+            VSysResourceDao.Instance.Save(SysResourceModel);
            
             MQTTRCService.GetInstance().RestartServices(Config.ServiceType.ToString());
         }

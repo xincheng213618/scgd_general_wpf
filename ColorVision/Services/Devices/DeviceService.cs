@@ -212,7 +212,7 @@ namespace ColorVision.Services.Devices
             SysResourceModel.Code = Config.Code;
             SysResourceModel.Name = Config.Name;
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
-            ServiceManager.GetInstance().VSysResourceDao.Save(new SysResourceModel(SysResourceModel));
+            VSysResourceDao.Instance.Save(new SysResourceModel(SysResourceModel));
         }
 
         public override void Save()
@@ -236,7 +236,7 @@ namespace ColorVision.Services.Devices
 
             //删除数据库
             if (SysResourceModel != null)
-                ServiceManager.GetInstance().VSysResourceDao.DeleteById(SysResourceModel.Id);
+                VSysResourceDao.Instance.DeleteById(SysResourceModel.Id);
             //删除设备服务
             ServiceManager.GetInstance().DeviceServices.Remove(this);
             //删除前台显示

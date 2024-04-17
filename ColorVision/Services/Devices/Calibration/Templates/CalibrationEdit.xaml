@@ -7,7 +7,7 @@
         xmlns:local="clr-namespace:ColorVision.Services.Devices.Calibration.Templates"
         xmlns:group="clr-namespace:ColorVision.Services.Core"
         mc:Ignorable="d"
-        Title="资源组管理"  Background="{DynamicResource GlobalBackground}"  Closed="Window_Closed" Height="350" Width="1200" Initialized="Window_Initialized" >
+        Title="资源组管理"  Background="{DynamicResource GlobalBackground}" Closed="Window_Closed" Height="350" Width="1200" Initialized="Window_Initialized" >
     <Window.Resources>
         <Style  TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}"/>
         <Style TargetType="hc:ComboBox" BasedOn="{StaticResource ComboBox.Small}">
@@ -15,7 +15,7 @@
             <Setter Property="IsEditable" Value="True"/>
         </Style>
     </Window.Resources>
-    <Grid>
+    <Grid Margin="5">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto"/>
             <ColumnDefinition Width="*"/>
@@ -51,6 +51,18 @@
             </ListView>
         </Grid>
         <StackPanel x:Name="StackPanelCab" Grid.Column="1" d:DataContext="{d:DesignInstance group:GroupResource}">
+            <Border  BorderThickness="1" BorderBrush="{DynamicResource  BorderBrush}" CornerRadius="5" Margin="5">
+                <StackPanel Margin="5">
+                    <DockPanel  Margin="0,2">
+                        <TextBlock DockPanel.Dock="Left" Text="曝光"  Width="80" />
+                        <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.ExpTime}"/>
+                    </DockPanel>
+                    <DockPanel  Margin="0,2">
+                        <TextBlock DockPanel.Dock="Left" Text="增益"  Width="80" />
+                        <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.Gain}"/>
+                    </DockPanel>
+                </StackPanel>
+            </Border>
             <Border  BorderThickness="1" BorderBrush="{DynamicResource  BorderBrush}" CornerRadius="5" Margin="5">
                 <StackPanel Margin="5">
                     <DockPanel  Margin="0,2">

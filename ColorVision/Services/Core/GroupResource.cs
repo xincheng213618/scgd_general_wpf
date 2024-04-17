@@ -1,10 +1,20 @@
-﻿using ColorVision.Services.Dao;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Type;
-using System.ServiceProcess;
+using Newtonsoft.Json;
 
 namespace ColorVision.Services.Core
 {
+    public class ConfigGroup :ViewModelBase
+    {
+        public int Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
+        private int _Gain;
+
+        public int ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); } }
+        private int _ExpTime = 10;
+    }
+
     public class GroupResource: BaseResource
     {
         public static GroupResource? AddGroupResource(ICalibrationService<BaseResourceObject> deviceService , string Name)
@@ -25,15 +35,21 @@ namespace ColorVision.Services.Core
             return null;
         }
 
+        public ConfigGroup Config { get; set; }
+
+
         public GroupResource(SysResourceModel sysResourceModel):base(sysResourceModel)
         {
             SysResourceModel = sysResourceModel;
             Name = sysResourceModel.Name ?? sysResourceModel.Id.ToString();
+
+            Config = BaseResourceObjectExtensions.TryDeserializeConfig<ConfigGroup>(SysResourceModel.Value);
         }
 
         public override void Save()
         {
             SysResourceModel.Name = Name;
+            SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             SysResourceDao.Instance.Save(SysResourceModel);
 
             ///这里后面再优化，先全部删除在添加

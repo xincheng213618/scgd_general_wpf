@@ -235,4 +235,8 @@
     </Page>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services\PhyCamera\Dao\" />
+  </ItemGroup>
+
 </Project>
