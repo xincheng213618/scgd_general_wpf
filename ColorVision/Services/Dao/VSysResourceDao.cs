@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using ColorVision.MySql;
+using ColorVision.MySql.ORM;
 
 namespace ColorVision.Services.Dao
 {

@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 
-namespace ColorVision.MySql
+namespace ColorVision.MySql.ORM
 {
     /// <summary>
     /// 因为项目中本身包含Service,所以这里取消Service层的设置，直接从Dao层
@@ -21,9 +21,9 @@ namespace ColorVision.MySql
 
         public BaseDao(string tableName, string pkField)
         {
-            this.MySqlControl = MySqlControl.GetInstance();
-            this._TableName = tableName;
-            this._PKField = pkField;
+            MySqlControl = MySqlControl.GetInstance();
+            _TableName = tableName;
+            _PKField = pkField;
         }
 
         public int ExecuteNonQuery(string sql)
@@ -67,7 +67,7 @@ namespace ColorVision.MySql
             DataTable dt = new DataTable();
             try
             {
-                if (param == null || param.Count ==0)
+                if (param == null || param.Count == 0)
                 {
                     using MySqlDataAdapter adapter = new MySqlDataAdapter(sql, MySqlControl.MySqlConnection);
                     int count = adapter.Fill(dt);
@@ -123,7 +123,7 @@ namespace ColorVision.MySql
 
         private void DataAdapter_RowUpdated(object sender, MySqlRowUpdatedEventArgs e)
         {
-            if(e.Row[_PKField] == DBNull.Value)
+            if (e.Row[_PKField] == DBNull.Value)
             {
                 e.Row[_PKField] = e.Command.LastInsertedId;
             }

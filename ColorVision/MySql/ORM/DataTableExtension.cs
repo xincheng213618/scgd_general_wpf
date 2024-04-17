@@ -2,14 +2,13 @@
 using System.Data;
 using System.Linq;
 
-namespace ColorVision.MySql
+namespace ColorVision.MySql.ORM
 {
     public static class DataTableExtension
     {
         public static DataRow? SelectRow(this DataTable dataTable, int id)
         {
-            if (dataTable == null)
-                throw new ArgumentNullException(nameof(dataTable));
+            ArgumentNullException.ThrowIfNull(dataTable);
 
             if (!dataTable.Columns.Contains("id"))
                 throw new ArgumentException("Column 'id' does not exist in the DataTable.");

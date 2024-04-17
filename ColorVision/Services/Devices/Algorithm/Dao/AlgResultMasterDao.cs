@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8601
 using ColorVision.MySql;
+using ColorVision.MySql.ORM;
 using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.Generic;

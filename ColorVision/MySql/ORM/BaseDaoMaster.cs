@@ -4,14 +4,14 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 
-namespace ColorVision.MySql
+namespace ColorVision.MySql.ORM
 {
 
-    public class BaseDaoMaster<T>: BaseDao1 where T : IPKModel
+    public class BaseDaoMaster<T> : BaseDao1 where T : IPKModel
     {
         public string ViewName { get; set; }
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseDaoMaster<T>));
-        public BaseDaoMaster(string viewName, string tableName, string pkField, bool isLogicDel) :base(tableName, pkField, isLogicDel)
+        public BaseDaoMaster(string viewName, string tableName, string pkField, bool isLogicDel) : base(tableName, pkField, isLogicDel)
         {
             ViewName = viewName;
         }
@@ -29,7 +29,7 @@ namespace ColorVision.MySql
             DataTable d_info = SelectById(item.PKId);
             ConvertRow(item, d_info);
             int ret = Save(d_info);
-            item.PKId =d_info.Rows[0].Field<int>(PKField);
+            item.PKId = d_info.Rows[0].Field<int>(PKField);
             return ret;
         }
 
@@ -39,7 +39,7 @@ namespace ColorVision.MySql
             Model2Row(item, row);
         }
 
-        public virtual int Save(List<T> datas,int tenantId)
+        public virtual int Save(List<T> datas, int tenantId)
         {
             DeleteAll(tenantId);
             DataTable d_info = GetDataTable();
@@ -67,7 +67,7 @@ namespace ColorVision.MySql
             return Save(d_info);
         }
 
-        public int SaveByPid(int pid,List<T> datas)
+        public int SaveByPid(int pid, List<T> datas)
         {
             DeleteAllByPid(pid);
             DataTable d_info = GetDataTable();
@@ -86,7 +86,7 @@ namespace ColorVision.MySql
         public int BulkInsertAsync(DataTable dataTable)
         {
             int count = -1;
-            MySqlConnector.MySqlConnection connection = new MySqlConnector.MySqlConnection(MySqlControl.GetInstance().GetConnectionString()+ ";SslMode = none;AllowLoadLocalInfile=True");
+            MySqlConnector.MySqlConnection connection = new MySqlConnector.MySqlConnection(MySqlControl.GetInstance().GetConnectionString() + ";SslMode = none;AllowLoadLocalInfile=True");
             dataTable.TableName = TableName;
             using (connection)
             {
@@ -128,7 +128,7 @@ namespace ColorVision.MySql
         }
 
 
-        protected string GetTableName()  => string.IsNullOrWhiteSpace(ViewName)? TableName: ViewName;
+        protected string GetTableName() => string.IsNullOrWhiteSpace(ViewName) ? TableName : ViewName;
 
         public T? GetById(int id) => GetByParam(new Dictionary<string, object> { { "id", id } });
 
@@ -142,7 +142,7 @@ namespace ColorVision.MySql
             DataTable dataTable = GetData(sql, param);
             if (dataTable.Rows.Count == 1)
             {
-                return GetModelFromDataRow(dataTable.Rows[0]) ;
+                return GetModelFromDataRow(dataTable.Rows[0]);
             }
             else if (dataTable.Rows.Count >= 1)
             {
@@ -160,7 +160,7 @@ namespace ColorVision.MySql
 
         public List<T> GetAllById(int id) => GetAllByParam(new Dictionary<string, object> { { "id", id } });
 
-        public List<T> GetAll()  => GetAllByParam(new Dictionary<string, object>());
+        public List<T> GetAll() => GetAllByParam(new Dictionary<string, object>());
 
         public List<T> GetAllByParam(Dictionary<string, object> param)
         {
@@ -182,7 +182,7 @@ namespace ColorVision.MySql
             return list;
         }
 
-        public List<T> ConditionalQuery(Dictionary<string,object> param)
+        public List<T> ConditionalQuery(Dictionary<string, object> param)
         {
             List<T> list = new List<T>();
             string sql = $"select * from {GetTableName()} where 1=1";
@@ -195,7 +195,7 @@ namespace ColorVision.MySql
                 {
                     // 对于安全起见，应该使用参数化查询来避免SQL注入
 
-                    if (pair.Key.StartsWith(">",StringComparison.CurrentCulture))
+                    if (pair.Key.StartsWith(">", StringComparison.CurrentCulture))
                     {
                         sql += $" AND `{pair.Key[1..]}` > '{pair.Value.ToString()}'";
                     }
@@ -232,7 +232,7 @@ namespace ColorVision.MySql
             foreach (var item in d_info.AsEnumerable())
             {
                 T? model = GetModelFromDataRow(item);
-                if(model != null)
+                if (model != null)
                 {
                     list.Add(model);
                 }
@@ -401,9 +401,9 @@ namespace ColorVision.MySql
             string sql = IsLogicDel ? $"UPDATE {TableName} SET is_delete = 1 WHERE pid = @pid" : $"DELETE FROM {TableName} WHERE pid = @pid";
             return ExecuteNonQuery(sql, new Dictionary<string, object> { { "pid", pid } });
         }
-        public int DeleteById(int id,bool IsLogicDel = true)
+        public int DeleteById(int id, bool IsLogicDel = true)
         {
-            string sql = IsLogicDel? $"UPDATE {TableName} SET is_delete = 1 WHERE id = @id":$"DELETE FROM {TableName} WHERE id = @id";
+            string sql = IsLogicDel ? $"UPDATE {TableName} SET is_delete = 1 WHERE id = @id" : $"DELETE FROM {TableName} WHERE id = @id";
             return ExecuteNonQuery(sql, new Dictionary<string, object> { { "id", id } });
         }
     }

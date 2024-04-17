@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using ColorVision.MySql;
+using ColorVision.MySql.ORM;
 using ColorVision.Services.Devices.Camera.Dao;
 
 namespace ColorVision.Solution.Searches

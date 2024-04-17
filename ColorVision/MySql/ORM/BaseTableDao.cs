@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 
-namespace ColorVision.MySql
+namespace ColorVision.MySql.ORM
 {
     public class BaseTableDao<T> : BaseDao where T : IPKModel
     {
@@ -60,7 +60,7 @@ namespace ColorVision.MySql
 
         public List<T> GetAll() => GetAllByParam(new Dictionary<string, object>());
         public List<T> GetAllById(int id) => GetAllByParam(new Dictionary<string, object>() { { "id", id } });
-        public List<T> GetAllByPid (int pid) => GetAllByParam(new Dictionary<string, object>() { { "pid", pid } });
+        public List<T> GetAllByPid(int pid) => GetAllByParam(new Dictionary<string, object>() { { "pid", pid } });
         public List<T> GetAllByTenantId(int tenantId) => GetAllByParam(new Dictionary<string, object>() { { "tenantId", tenantId } });
 
         public List<T> GetAllByParam(Dictionary<string, object> param)

@@ -1,4 +1,5 @@
 ﻿using ColorVision.MySql;
+using ColorVision.MySql.ORM;
 using ColorVision.Services.Dao;
 using System;
 using System.Collections.Generic;

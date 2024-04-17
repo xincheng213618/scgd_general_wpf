@@ -1,20 +1,20 @@
 ﻿using System.Collections.Generic;
 using System.Data;
 
-namespace ColorVision.MySql
+namespace ColorVision.MySql.ORM
 {
     public class BaseDao1 : BaseDao
     {
         public bool IsLogicDel { get { return _IsLogicDel; } set { _IsLogicDel = value; } }
         private bool _IsLogicDel;
 
-        public BaseDao1(string tableName, string pkField, bool isLogicDel) : base(tableName,pkField)
+        public BaseDao1(string tableName, string pkField, bool isLogicDel) : base(tableName, pkField)
         {
 
-            this._IsLogicDel = isLogicDel;
+            _IsLogicDel = isLogicDel;
         }
 
-        protected string GetDelSQL(bool hasAnd) => _IsLogicDel ?  hasAnd ? " and is_delete=0" : "is_delete=0" : string.Empty;
+        protected string GetDelSQL(bool hasAnd) => _IsLogicDel ? hasAnd ? " and is_delete=0" : "is_delete=0" : string.Empty;
 
         public DataTable SelectById(int id)
         {
