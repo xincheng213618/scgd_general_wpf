@@ -135,7 +135,6 @@ namespace ColorVision.Services
         }
         public VSysResourceDao SysResourceDao { get; set; } = new VSysResourceDao();
         private Dictionary<string, List<MQTTServiceBase>> svrDevices = new Dictionary<string, List<MQTTServiceBase>>();
-        private SysDictionaryDao sysDictionaryDao = new SysDictionaryDao();
 
         public void LoadServices()
         {
@@ -144,7 +143,7 @@ namespace ColorVision.Services
 
 
             var ServiceTypess = Enum.GetValues(typeof(ServiceTypes)).Cast<ServiceTypes>();
-            List<SysDictionaryModel> SysDictionaryModels = sysDictionaryDao.GetAllByPcode("service_type");
+            List<SysDictionaryModel> SysDictionaryModels = SysDictionaryDao.Instance.GetAllByPcode("service_type");
 
             TypeServices.Clear();
             foreach (var type in ServiceTypess)
@@ -336,12 +335,11 @@ namespace ColorVision.Services
                 }
             }
         }
-        private BatchResultMasterDao batchDao = new BatchResultMasterDao();
 
         public void ProcResult(FlowControlData flowControlData)
         {
             int totalTime = flowControlData.Params.TTL;
-            batchDao.UpdateEnd(flowControlData.SerialNumber, totalTime, flowControlData.EventName);
+            BatchResultMasterDao.Instance.UpdateEnd(flowControlData.SerialNumber, totalTime, flowControlData.EventName);
             SpectrumDrawPlotFromDB(flowControlData.SerialNumber);
         }
 
@@ -353,16 +351,16 @@ namespace ColorVision.Services
             List<SpectrumData> datas = new List<SpectrumData>();
             List<SpectumResultModel> resultSpec;
             List<SMUResultModel> resultSMU;
-            BatchResultMasterModel batch = batchDao.GetByCode(bid);
+            BatchResultMasterModel batch = BatchResultMasterDao.Instance.GetByCode(bid);
             if (batch == null)
             {
                  resultSMU = smuDao.selectBySN(bid);
-                 resultSpec = SpectumResultDao.Instance.selectBySN(bid);
+                 resultSpec = spectumDao.selectBySN(bid);
             }
             else
             {
                 resultSMU = smuDao.GetAllByPid(batch.Id);
-                resultSpec = SpectumResultDao.Instance.GetAllByPid(batch.Id);
+                resultSpec = spectumDao.GetAllByPid(batch.Id);
             }
 
             for (int i = 0; i < resultSpec.Count; i++)

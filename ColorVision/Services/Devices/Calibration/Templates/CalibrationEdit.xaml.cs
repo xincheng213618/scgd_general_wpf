@@ -137,15 +137,12 @@ namespace ColorVision.Services.Devices.Calibration.Templates
             return FileName;
         }
 
-
-        SysResourceDao SysResourceDao = new SysResourceDao();
-
         private void Button_Delete_Click(object sender, RoutedEventArgs e)
         {
             if (ListView1.SelectedIndex > -1)
             {
                 GroupResource groupResource = groupResources[ListView1.SelectedIndex];
-                SysResourceDao.DeleteById(groupResource.SysResourceModel.Id, false);
+                SysResourceDao.Instance.DeleteById(groupResource.SysResourceModel.Id, false);
                 groupResources.Remove(groupResource);
                 CalibrationService.VisualChildren.Remove(groupResource);
                 MessageBox.Show("删除成功");

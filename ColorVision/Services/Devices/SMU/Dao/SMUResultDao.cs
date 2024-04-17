@@ -42,9 +42,12 @@ namespace ColorVision.Services.Devices.SMU.Dao
         public float IResult { get; set; }//电流
         public DateTime? CreateDate { get; set; }
     }
-    public class SMUResultDao : BaseDaoMaster<SMUResultModel>
+    public class SMUResultDao : BaseTableDao<SMUResultModel>
     {
-        public SMUResultDao() : base(string.Empty, "t_scgd_measure_result_smu", "id", false)
+
+        public static SMUResultDao Instance { get; set; } = new SMUResultDao();
+
+        public SMUResultDao() : base("t_scgd_measure_result_smu", "id")
         {
         }
         public override DataRow Model2Row(SMUResultModel item, DataRow row)
@@ -87,7 +90,7 @@ namespace ColorVision.Services.Devices.SMU.Dao
 
         private DataTable GetTableAllBySN(string bid)
         {
-            string sql = $"select * from {GetTableName()} where batch_id='{bid}'";
+            string sql = $"select * from {TableName} where batch_id='{bid}'";
             DataTable d_info = GetData(sql);
             return d_info;
         }

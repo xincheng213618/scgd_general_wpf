@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿using ColorVision.Services.DAO;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Data;

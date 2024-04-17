@@ -23,6 +23,8 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
     }
     public class AlgResultGhostDao : BaseTableDao<AlgResultGhostModel>
     {
+        public static AlgResultGhostDao Instance { get; set; }= new AlgResultGhostDao();
+
         public AlgResultGhostDao() : base("t_scgd_algorithm_result_detail_ghost", "id")
         {
         }

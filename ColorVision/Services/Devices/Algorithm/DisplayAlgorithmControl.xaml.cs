@@ -165,12 +165,12 @@ namespace ColorVision.Services.Devices.Algorithm
                     {
                         resultMaster = new List<AlgResultMasterModel>();
                         int MasterId = arg.Data.MasterId;
-                        AlgResultMasterModel model = algResultMasterDao.GetById(MasterId);
+                        AlgResultMasterModel model = AlgResultMasterDao.Instance.GetById(MasterId);
                         resultMaster.Add(model);
                     }
                     else
                     {
-                        resultMaster = algResultMasterDao.GetAllByBatchCode(arg.SerialNumber);
+                        resultMaster = AlgResultMasterDao.Instance.GetAllByBatchCode(arg.SerialNumber);
                     }
 
                     foreach (AlgResultMasterModel result in resultMaster)
@@ -192,8 +192,6 @@ namespace ColorVision.Services.Devices.Algorithm
         {
             if (!string.IsNullOrWhiteSpace(param.FileName)) netFileUtil.TaskStartDownloadFile(param.IsLocal, param.ServerEndpoint, param.FileName, FileExtType.CIE);
         }
-
-        private AlgResultMasterDao algResultMasterDao = new AlgResultMasterDao();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {

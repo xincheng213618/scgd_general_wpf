@@ -19,9 +19,8 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
 
     public class AlgResultFOVDao : BaseTableDao<AlgResultFOVModel>
     {
-        public AlgResultFOVDao() : base("t_scgd_algorithm_result_detail_fov", "id")
-        {
-        }
+        public static AlgResultFOVDao Instance { get; set; } = new AlgResultFOVDao();
+        public AlgResultFOVDao() : base("t_scgd_algorithm_result_detail_fov", "id") { }
 
         public override AlgResultFOVModel GetModelFromDataRow(DataRow item)
         {

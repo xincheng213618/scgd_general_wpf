@@ -41,7 +41,6 @@ namespace ColorVision.Solution.Searches
         public ObservableCollection<AlgorithmResult> AlgorithmResults { get; set; } = new ObservableCollection<AlgorithmResult>();
 
         MeasureImgResultDao MeasureImgResultDao = new MeasureImgResultDao();
-        AlgResultMasterDao algResultMasterDao = new AlgResultMasterDao();
 
         private void Page_Initialized(object sender, EventArgs e)
         {
@@ -53,7 +52,7 @@ namespace ColorVision.Solution.Searches
             listView1.ItemsSource = ViewResultCameras;
 
 
-            foreach (var item in algResultMasterDao.GetAllByBatchid(ViewBatchResult.Id))
+            foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchid(ViewBatchResult.Id))
             {
                 AlgorithmResults.AddUnique(new AlgorithmResult(item));
             }

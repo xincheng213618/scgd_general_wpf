@@ -33,6 +33,8 @@ namespace ColorVision.Services.DAO
     }
     public class BatchResultMasterDao : BaseTableDao<BatchResultMasterModel>
     {
+        public static BatchResultMasterDao Instance { get; set; } = new BatchResultMasterDao();
+
         public BatchResultMasterDao() : base("t_scgd_measure_batch", "id")
         {
         }

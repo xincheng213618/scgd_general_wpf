@@ -275,7 +275,6 @@ namespace ColorVision.Services.Devices.Calibration
                             {
                                 string FileName = msgRecord.MsgReturn.Data.FileName;
 
-                                SysResourceDao sysResourceDao = new SysResourceDao();
                                 SysResourceModel sysResourceModel = new SysResourceModel();
                                 sysResourceModel.Name = item1.Title;
                                 sysResourceModel.Code = md5;
@@ -283,7 +282,7 @@ namespace ColorVision.Services.Devices.Calibration
                                 sysResourceModel.Pid = this.SysResourceModel.Id;
                                 sysResourceModel.Value = Path.GetFileName(FileName);
                                 sysResourceModel.CreateDate = DateTime.Now;
-                                sysResourceDao.Save(sysResourceModel);
+                                SysResourceDao.Instance.Save(sysResourceModel);
                                 if (sysResourceModel != null)
                                 {
                                     CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);

@@ -159,10 +159,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             public int Y { get; set; }
         }
 
-        private AlgResultFOVDao FOVResultDao = new AlgResultFOVDao();
-        private AlgResultSFRDao SFRResultDao = new AlgResultSFRDao();
-        private AlgResultMTFDao MTFResultDao = new AlgResultMTFDao();
-        private AlgResultDistortionDao DisResultDao = new AlgResultDistortionDao();
         private POIPointResultDao poiPointResultDao = new POIPointResultDao();
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -281,7 +277,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         if (result.SFRData == null)
                         {
                             result.FOVData = new ObservableCollection<FOVResultData>();
-                            List<AlgResultFOVModel> AlgResultFOVModels = FOVResultDao.GetAllByPid(result.Id);
+                            List<AlgResultFOVModel> AlgResultFOVModels = AlgResultFOVDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultFOVModels)
                             {
                                 FOVResultData fOVResultData = new FOVResultData(item);
@@ -310,7 +306,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         if (result.SFRData == null)
                         {
                             result.SFRData = new ObservableCollection<SFRResultData>();
-                            List<AlgResultSFRModel> AlgResultSFRModels = SFRResultDao.GetAllByPid(result.Id);
+                            List<AlgResultSFRModel> AlgResultSFRModels = AlgResultSFRDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultSFRModels)
                             {
                                 var Pdfrequencys = JsonConvert.DeserializeObject<float[]>(item.Pdfrequency);
@@ -347,7 +343,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         if (result.MTFData == null)
                         {
                             result.MTFData = new ObservableCollection<MTFResultData>();
-                            List<AlgResultMTFModel> AlgResultMTFModels = MTFResultDao.GetAllByPid(result.Id);
+                            List<AlgResultMTFModel> AlgResultMTFModels = AlgResultMTFDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultMTFModels)
                             {
                                 MTFResultData mTFResultData = new MTFResultData(item);
@@ -378,9 +374,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         if (result.GhostData == null)
                         {
                             result.GhostData = new ObservableCollection<GhostResultData>();
-                            AlgResultGhostDao algResultGhostDao = new AlgResultGhostDao();
-
-                            List<AlgResultGhostModel> AlgResultGhostModels = algResultGhostDao.GetAllByPid(result.Id);
+                            List<AlgResultGhostModel> AlgResultGhostModels = AlgResultGhostDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultGhostModels)
                             {
                                 GhostResultData ghostResultData = new GhostResultData(item);
@@ -471,7 +465,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         if (result.DistortionData == null)
                         {
                             result.DistortionData = new ObservableCollection<DistortionResultData>();
-                            var Distortions = DisResultDao.GetAllByPid(result.Id);
+                            var Distortions = AlgResultDistortionDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in Distortions)
                             {
                                 DistortionResultData distortionResultData = new DistortionResultData(item);
@@ -506,7 +500,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         if (result.LedResultDatas == null)
                         {
                             result.LedResultDatas = new ObservableCollection<LedResultData>();
-                            List<AlgResultMTFModel> AlgResultLedcheckModels = MTFResultDao.GetAllByPid(result.Id);
+                            List<AlgResultMTFModel> AlgResultLedcheckModels = AlgResultMTFDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultLedcheckModels)
                             {
                                 LedResultData ledResultData = new LedResultData(new Point((double)item.PoiX, (double)item.PoiY), (double)item.PoiWidth / 2);
@@ -545,7 +539,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         if (result.BuildPoiResultData == null)
                         {
                             result.BuildPoiResultData = new ObservableCollection<BuildPoiResultData>();
-                            List<AlgResultMTFModel> AlgResultMTFModels = MTFResultDao.GetAllByPid(result.Id);
+                            List<AlgResultMTFModel> AlgResultMTFModels = AlgResultMTFDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultMTFModels)
                             {
                                 BuildPoiResultData mTFResultData = new BuildPoiResultData(item);
@@ -606,11 +600,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             AlgResults.Clear();
         }
 
-
-
-
-        AlgResultMasterDao algResultMasterDao = new AlgResultMasterDao();
-
         private void Search1_Click(object sender, RoutedEventArgs e)
         {
             SerchPopup.IsOpen = true;
@@ -625,7 +614,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             if (string.IsNullOrEmpty(TextBoxId.Text)&& string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxType.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
             {
                 AlgResults.Clear();
-                List<AlgResultMasterModel> algResults = algResultMasterDao.GetAll();
+                List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.GetAll();
                 foreach (var item in algResults)
                 {
                     AlgorithmResult algorithmResult = new AlgorithmResult(item);
@@ -641,7 +630,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                     altype = ((int)algorithmResultType).ToString();
 
                 AlgResults.Clear();
-                List<AlgResultMasterModel> algResults = algResultMasterDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, altype.ToString(), TextBoxFile.Text ,SearchTimeSart.SelectedDateTime,SearchTimeEnd.SelectedDateTime);
+                List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, altype.ToString(), TextBoxFile.Text ,SearchTimeSart.SelectedDateTime,SearchTimeEnd.SelectedDateTime);
                 foreach (var item in algResults)
                 {
                     AlgorithmResult algorithmResult = new AlgorithmResult(item);
