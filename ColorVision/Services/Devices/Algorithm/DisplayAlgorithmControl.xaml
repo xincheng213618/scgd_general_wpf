@@ -66,19 +66,21 @@
                             </GroupBox>
                         </TabItem>
                         <TabItem Header="MTF">
-                            <StackPanel >
+                            <StackPanel Margin="0,5">
                                 <DockPanel Margin="0,2">
                                     <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="MTF_Click" />
                                     <ComboBox  x:Name="ComboxMTFTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                    <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="MTF的值表示成像系统对特定空间频率的细节进行调制或传递的效率"/>
                                     <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                         <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
                                         <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="MTFParam" Click="MenuItem_Template"/>
                                     </Grid>
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
-                                    <TextBlock Text="POI" Width="30"/>
                                     <ComboBox  x:Name="ComboxPoiTemplate2"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                    <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusParm" Click="MenuItem_Template"/>
+                                    </Grid>
                                 </DockPanel>
                             </StackPanel>
                         </TabItem>
@@ -132,8 +134,11 @@
                                     </Grid>
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
-                                    <TextBlock Text="POI" Width="30"/>
                                     <ComboBox  x:Name="ComboxPoiTemplate1"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                    <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusParm" Click="MenuItem_Template"/>
+                                    </Grid>
                                 </DockPanel>
                             </StackPanel>
                         </TabItem>
@@ -229,15 +234,35 @@
                         </GroupBox.Header>
                         <StackPanel  Margin="5" >
                             <DockPanel Margin="0,2">
-                                <RadioButton IsChecked="True" GroupName="CIESrc"/>
-                                <Button Content="刷新" Click="Button_Click_Refresh" />
-                                <Button DockPanel.Dock="Right" Content="上传" Click="Button_Click_Upload" Visibility="Hidden" Width="0" />
+                                <StackPanel Orientation="Horizontal" Width="70">
+                                    <RadioButton IsChecked="True" GroupName="CIESrc"/>
+                                    <Button Click="Button_Click_Refresh" Background="Transparent"  BorderThickness="0" >
+                                        <Button.Triggers>
+                                            <EventTrigger RoutedEvent="Button.Click">
+                                                <BeginStoryboard>
+                                                    <Storyboard>
+                                                        <DoubleAnimation Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                    </Storyboard>
+                                                </BeginStoryboard>
+                                            </EventTrigger>
+                                        </Button.Triggers>
+                                        <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"   Foreground="{DynamicResource GlobalTextBrush}"  FontSize="15" ToolTip="刷新">
+                                            <TextBlock.RenderTransform>
+                                                <RotateTransform x:Name="rotateTransform1" CenterX="7.5" CenterY="7.5"/>
+                                            </TextBlock.RenderTransform>
+                                        </TextBlock>
+                                    </Button>
+
+                                </StackPanel>
+ 
+                                <Button DockPanel.Dock="Right" Content="上传" Click="Button_Click_Upload" Visibility="Collapsed" Width="0" />
                                 <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_Open" />
-                                <ComboBox x:Name="CB_CIEImageFiles"  Style="{StaticResource ComboBox.Small}"  Width="120"/>
+
+                                <ComboBox x:Name="CB_CIEImageFiles" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}"  Width="130"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
-                                <RadioButton x:Name="BatchSelect" Content="批次号" GroupName="CIESrc"/>
-                                <TextBox x:Name="BatchCode" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" />
+                                <RadioButton x:Name="BatchSelect" Content="批次号" GroupName="CIESrc" Width="70"/>
+                                <TextBox x:Name="BatchCode" HorizontalAlignment="Left" Style="{StaticResource TextBox.Small}" BorderThickness="1"  Width="130"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
@@ -250,7 +275,23 @@
                         <DockPanel Margin="0,2">
                             <StackPanel Orientation="Horizontal" Width="80">
                                 <RadioButton x:Name="AlgRawSelect" GroupName="alg_src"/>
-                                <Button Content="刷新" Click="Button_Click_RawRefresh" />
+                                <Button Click="Button_Click_RawRefresh" Background="Transparent"  BorderThickness="0">
+                                    <Button.Triggers>
+                                        <EventTrigger RoutedEvent="Button.Click">
+                                            <BeginStoryboard>
+                                                <Storyboard>
+                                                    <DoubleAnimation Storyboard.TargetName="rotateTransform" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </Button.Triggers>
+                                    <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"   Foreground="{DynamicResource GlobalTextBrush}"  FontSize="15" ToolTip="刷新">
+                                        <TextBlock.RenderTransform>
+                                            <RotateTransform x:Name="rotateTransform" CenterX="7.5" CenterY="7.5"/>
+                                        </TextBlock.RenderTransform>
+                                    </TextBlock>
+                                </Button>
+
                             </StackPanel>
                             <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_RawOpen" />
                             <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}"  Width="150" HorizontalAlignment="Left" />
