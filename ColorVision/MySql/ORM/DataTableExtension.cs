@@ -9,15 +9,17 @@ namespace ColorVision.MySql.ORM
         public static DataRow? SelectRow(this DataTable dataTable, int id)
         {
             ArgumentNullException.ThrowIfNull(dataTable);
-
             if (!dataTable.Columns.Contains("id"))
                 throw new ArgumentException("Column 'id' does not exist in the DataTable.");
             var rows = dataTable.AsEnumerable().Where(row => row.Field<int>("id") == id).ToList();
             return rows.Count == 1 ? rows[0] : null;
         }
 
+
         public static DataRow GetRow<T>(this DataTable dataTable, T item) where T : IPKModel
         {
+            ArgumentNullException.ThrowIfNull(dataTable);
+            ArgumentNullException.ThrowIfNull(item);
             DataRow row = dataTable.SelectRow(item.PKId);
             if (row == null)
             {
