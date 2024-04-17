@@ -346,7 +346,6 @@ namespace ColorVision.Services
         }
 
 
-        private SpectumResultDao spectumDao = new SpectumResultDao();
         private SMUResultDao smuDao = new SMUResultDao();
 
         public void SpectrumDrawPlotFromDB(string bid)
@@ -358,12 +357,12 @@ namespace ColorVision.Services
             if (batch == null)
             {
                  resultSMU = smuDao.selectBySN(bid);
-                 resultSpec = spectumDao.selectBySN(bid);
+                 resultSpec = SpectumResultDao.Instance.selectBySN(bid);
             }
             else
             {
                 resultSMU = smuDao.GetAllByPid(batch.Id);
-                resultSpec = spectumDao.GetAllByPid(batch.Id);
+                resultSpec = SpectumResultDao.Instance.GetAllByPid(batch.Id);
             }
 
             for (int i = 0; i < resultSpec.Count; i++)

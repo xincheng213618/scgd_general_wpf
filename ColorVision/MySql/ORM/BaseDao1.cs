@@ -10,7 +10,6 @@ namespace ColorVision.MySql.ORM
 
         public BaseDao1(string tableName, string pkField, bool isLogicDel) : base(tableName, pkField)
         {
-
             _IsLogicDel = isLogicDel;
         }
 

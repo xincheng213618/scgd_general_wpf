@@ -346,22 +346,12 @@ namespace ColorVision.Services.Templates
 
         public ObservableCollection<TemplateModel<PoiParam>> LoadPoiParam()
         {
-            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
+            PoiParams.Clear();
+            List<PoiMasterModel> poiMasters = poiMaster.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            foreach (var dbModel in poiMasters)
             {
-                PoiParams.Clear();
-                List<PoiMasterModel> poiMasters = poiMaster.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                foreach (var dbModel in poiMasters)
-                {
-                    PoiParams.Add(new TemplateModel<PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel)));
-                }
+                PoiParams.Add(new TemplateModel<PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel)));
             }
-            else
-            {
-                PoiParams.Clear();
-                if (PoiParams.Count == 0)
-                    PoiParams = IDefault($"{ModMasterType.POI}.cfg", new PoiParam());
-            }
-
             return PoiParams;
         }
 

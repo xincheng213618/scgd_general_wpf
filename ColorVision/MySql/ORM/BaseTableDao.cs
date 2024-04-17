@@ -83,8 +83,6 @@ namespace ColorVision.MySql.ORM
             return list;
         }
 
-
-
         public List<T> ConditionalQuery(Dictionary<string, object> param)
         {
             List<T> list = new List<T>();

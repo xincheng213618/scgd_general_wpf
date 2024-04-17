@@ -1,18 +1,18 @@
 ﻿#pragma warning disable 
+using ColorVision;
+using ColorVision.MySql.ORM;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using ColorVision;
-using ColorVision.MySql;
-using ColorVision.MySql.ORM;
-using Xceed.Wpf.Toolkit;
 
 namespace ColorVision.Services.Devices.Spectrum.Dao
 {
-    public class SpectumResultDao : BaseDaoMaster<SpectumResultModel>
+    public class SpectumResultDao : BaseTableDao<SpectumResultModel>
     {
-        public SpectumResultDao() : base(string.Empty, "t_scgd_measure_result_spectrometer", "id", false)
+        public static SpectumResultDao Instance { get; set; } = new SpectumResultDao();
+
+        public SpectumResultDao() : base("t_scgd_measure_result_spectrometer", "id")
         {
 
         }
@@ -34,7 +34,7 @@ namespace ColorVision.Services.Devices.Spectrum.Dao
 
         private DataTable GetTableAllBySN(string bid)
         {
-            string sql = $"select * from {GetTableName()} where batch_id='{bid}'";
+            string sql = $"select * from {TableName} where batch_id='{bid}'";
             DataTable d_info = GetData(sql);
             return d_info;
         }
@@ -48,46 +48,40 @@ namespace ColorVision.Services.Devices.Spectrum.Dao
             keyValuePairs.Add("<create_date", dateTimeEnd);
             return ConditionalQuery(keyValuePairs);
         }
-
-
-        public override SpectumResultModel GetModelFromDataRow(DataRow item)
+        public override SpectumResultModel GetModelFromDataRow(DataRow item) => new SpectumResultModel
         {
-            SpectumResultModel model = new SpectumResultModel
-            {
-                Id = item.Field<int>("id"),
-                BatchId = item.Field<int>("batch_id"),
-                CreateDate = item.Field<DateTime?>("create_date"),
-                IntTime = item.Field<float?>("fIntTime"),
-                iAveNum = item.Field<int>("iAveNum"),
-                IsUseAutoIntTime = item.Field<bool>("self_adaption_init_dark"),
-                IsUseAutoDark = item.Field<bool>("auto_init_dark"),
-                fPL = item.Field<string>("fPL"),
-                fRi = item.Field<string>("fRi"),
-                fx = item.Field<float?>("fx"),
-                fy = item.Field<float?>("fy"),
-                fu = item.Field<float?>("fu"),
-                fv = item.Field<float?>("fv"),
-                fCCT = item.Field<float?>("fCCT"),
-                dC = item.Field<float?>("dC"),
-                fLd = item.Field<float?>("fLd"),
-                fPur = item.Field<float?>("fPur"),
-                fLp = item.Field<float?>("fLp"),
-                fHW = item.Field<float?>("fHW"),
-                fLav = item.Field<float?>("fLav"),
-                fRa = item.Field<float?>("fRa"),
-                fRR = item.Field<float?>("fRR"),
-                fGR = item.Field<float?>("fGR"),
-                fBR = item.Field<float?>("fBR"),
-                fIp = item.Field<float?>("fIp"),
-                fPh = item.Field<float?>("fPh"),
-                fPhe = item.Field<float?>("fPhe"),
-                fPlambda = item.Field<float?>("fPlambda"),
-                fSpect1 = item.Field<float?>("fSpect1"),
-                fSpect2 = item.Field<float?>("fSpect2"),
-                fInterval = item.Field<float?>("fInterval"),
-            };
+            Id = item.Field<int>("id"),
+            BatchId = item.Field<int>("batch_id"),
+            CreateDate = item.Field<DateTime?>("create_date"),
+            IntTime = item.Field<float?>("fIntTime"),
+            iAveNum = item.Field<int>("iAveNum"),
+            IsUseAutoIntTime = item.Field<bool>("self_adaption_init_dark"),
+            IsUseAutoDark = item.Field<bool>("auto_init_dark"),
+            fPL = item.Field<string>("fPL"),
+            fRi = item.Field<string>("fRi"),
+            fx = item.Field<float?>("fx"),
+            fy = item.Field<float?>("fy"),
+            fu = item.Field<float?>("fu"),
+            fv = item.Field<float?>("fv"),
+            fCCT = item.Field<float?>("fCCT"),
+            dC = item.Field<float?>("dC"),
+            fLd = item.Field<float?>("fLd"),
+            fPur = item.Field<float?>("fPur"),
+            fLp = item.Field<float?>("fLp"),
+            fHW = item.Field<float?>("fHW"),
+            fLav = item.Field<float?>("fLav"),
+            fRa = item.Field<float?>("fRa"),
+            fRR = item.Field<float?>("fRR"),
+            fGR = item.Field<float?>("fGR"),
+            fBR = item.Field<float?>("fBR"),
+            fIp = item.Field<float?>("fIp"),
+            fPh = item.Field<float?>("fPh"),
+            fPhe = item.Field<float?>("fPhe"),
+            fPlambda = item.Field<float?>("fPlambda"),
+            fSpect1 = item.Field<float?>("fSpect1"),
+            fSpect2 = item.Field<float?>("fSpect2"),
+            fInterval = item.Field<float?>("fInterval"),
+        };
 
-            return model;
-        }
     }
 }

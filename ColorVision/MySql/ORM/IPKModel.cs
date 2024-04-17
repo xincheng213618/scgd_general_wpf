@@ -1,4 +1,4 @@
-﻿namespace ColorVision.MySql
+﻿namespace ColorVision.MySql.ORM
 {
     public interface IPKModel
     {

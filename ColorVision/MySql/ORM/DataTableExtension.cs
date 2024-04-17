@@ -6,6 +6,7 @@ namespace ColorVision.MySql.ORM
 {
     public static class DataTableExtension
     {
+        //如果找到两个或多个行，则返回第一个行
         public static DataRow? SelectRow(this DataTable dataTable, int id)
         {
             ArgumentNullException.ThrowIfNull(dataTable);
