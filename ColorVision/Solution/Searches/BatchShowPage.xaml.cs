@@ -44,19 +44,29 @@ namespace ColorVision.Solution.Searches
 
         private void Page_Initialized(object sender, EventArgs e)
         {
-            foreach (var item in MeasureImgResultDao.GetAllByBatchid(ViewBatchResult.Id))
-            {
-                ViewResultCameras.AddUnique(new ViewResultCamera(item));
-            }
+            TextBatch.Text = "批次 " + ViewBatchResult.BatchCode +" 结果";
 
             listView1.ItemsSource = ViewResultCameras;
 
 
+            listView2.ItemsSource = AlgorithmResults;
+
+        }
+        private void Page_Loaded(object sender, RoutedEventArgs e)
+        {
+            ViewResultCameras.Clear();
+            foreach (var item in MeasureImgResultDao.GetAllByBatchid(ViewBatchResult.Id))
+            {
+                ViewResultCameras.AddUnique(new ViewResultCamera(item));
+            }
+            if (ViewResultCameras.Count == 0) StactPanelImage.Visibility = Visibility.Collapsed;
+
+            AlgorithmResults.Clear();
             foreach (var item in AlgResultMasterDao.Instance.GetAllByBatchid(ViewBatchResult.Id))
             {
                 AlgorithmResults.AddUnique(new AlgorithmResult(item));
             }
-            listView2.ItemsSource = AlgorithmResults;
+            if (AlgorithmResults.Count == 0) StactPanelAlg.Visibility = Visibility.Collapsed;
 
         }
 

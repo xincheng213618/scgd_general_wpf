@@ -7,13 +7,10 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Windows;
-using System.Windows.Controls.Primitives;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Security.Cryptography.X509Certificates;
-using Newtonsoft.Json.Bson;
 
 namespace ColorVision.Draw
 {
@@ -74,16 +71,16 @@ namespace ColorVision.Draw
 
         public ToolReferenceLine ToolConcentricCircle { get; set; }
 
-        public ToolBarTop(FrameworkElement Parent,ZoomboxSub zombox, DrawCanvas drawCanvas)
+        public ToolBarTop(FrameworkElement Parent,ZoomboxSub zoombox, DrawCanvas drawCanvas)
         {
             this.Parent = Parent;
-            ZoomboxSub = zombox ?? throw new ArgumentNullException(nameof(zombox));
+            ZoomboxSub = zoombox ?? throw new ArgumentNullException(nameof(zoombox));
             Image = drawCanvas ?? throw new ArgumentNullException(nameof(drawCanvas));
 
-            MouseMagnifier = new MouseMagnifier(zombox, drawCanvas);
-            Crosshair = new Crosshair(zombox, drawCanvas);
-            ToolBarMeasure = new ToolBarMeasure(Parent, zombox, drawCanvas);
-            ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zombox, drawCanvas);
+            MouseMagnifier = new MouseMagnifier(zoombox, drawCanvas);
+            Crosshair = new Crosshair(zoombox, drawCanvas);
+            ToolBarMeasure = new ToolBarMeasure(Parent, zoombox, drawCanvas);
+            ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zoombox, drawCanvas);
 
             ToolBarScaleRuler.ScalRuler.PropertyChanged += (s, e) =>
             {
@@ -97,22 +94,21 @@ namespace ColorVision.Draw
                 }
 
             };
+            ToolConcentricCircle = new ToolReferenceLine(zoombox, drawCanvas);
 
-            ToolConcentricCircle = new ToolReferenceLine(zombox, drawCanvas);
-
-            ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill());
-            ZoomUniform = new RelayCommand(a => ZoomboxSub.ZoomUniform());
-            ZoomIncrease = new RelayCommand(a => ZoomboxSub.Zoom(1.25));
-            ZoomDecrease = new RelayCommand(a => ZoomboxSub.Zoom(0.8));
-            ZoomNone = new RelayCommand(a => ZoomboxSub.ZoomNone());
+            ZoomUniformToFill = new RelayCommand(a => ZoomboxSub.ZoomUniformToFill(), a => Image.Source != null);
+            ZoomUniform = new RelayCommand(a => ZoomboxSub.ZoomUniform(),a => Image.Source != null);
+            ZoomIncrease = new RelayCommand(a => ZoomboxSub.Zoom(1.25), a => Image.Source != null);
+            ZoomDecrease = new RelayCommand(a => ZoomboxSub.Zoom(0.8), a => Image.Source != null);
+            ZoomNone = new RelayCommand(a => ZoomboxSub.ZoomNone(), a => Image.Source != null);
             OpenProperty = new RelayCommand(a => new DrawProperties() {Owner = Window.GetWindow(Parent),WindowStartupLocation =WindowStartupLocation.CenterOwner }.Show());
             this.Parent.PreviewKeyDown += PreviewKeyDown;
-            zombox.Cursor = Cursors.Hand;
+            zoombox.Cursor = Cursors.Hand;
 
-            SaveImageCommand = new RelayCommand(a => Save());
-            PrintImageCommand = new RelayCommand(a => Print());
+            SaveImageCommand = new RelayCommand(a => Save(),a=>Image.Source!=null);
+            PrintImageCommand = new RelayCommand(a => Print(), a => Image.Source != null);
 
-            ClearImageCommand = new RelayCommand(a => ClearImage());
+            ClearImageCommand = new RelayCommand(a => ClearImage(),a => Image.Source != null);
             MaxCommand = new RelayCommand(a => MaxImage());
 
             RotateLeftCommand = new RelayCommand(a => RotateLeft());
@@ -192,7 +188,7 @@ namespace ColorVision.Draw
             contextMenu.Items.Add(new MenuItem() { Header = "清空", Command = ClearImageCommand });
 
 
-            Parent.ContextMenu = contextMenu;
+            ZoomboxSub.ContextMenu = contextMenu;
         }
 
         public void RotateRight()

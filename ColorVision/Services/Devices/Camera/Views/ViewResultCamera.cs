@@ -1,15 +1,16 @@
 ﻿#pragma warning disable CS8604,CS8629
-using ColorVision.Common.Sorts;
+using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Sorts;
+using ColorVision.Common.Utilities;
+using ColorVision.Media;
+using ColorVision.Net;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Export;
 using MQTTMessageLib.Camera;
 using System;
 using System.IO;
-using ColorVision.Services.Export;
-using ColorVision.Media;
-using ColorVision.Net;
 using System.Windows;
-using ColorVision.Common.Utilities;
 
 namespace ColorVision.Services.Devices.Camera.Views
 {
@@ -61,11 +62,11 @@ namespace ColorVision.Services.Devices.Camera.Views
             Window window = new Window() { Title = "快速预览", Owner = Application.Current.GetActiveWindow() ,WindowStartupLocation = WindowStartupLocation.CenterOwner};
             window.Content = imageView;
             imageView.OpenImage(fileInfo);
-            window.Closing += (s, e) =>
-            {
-                imageView.Clear();
-            };
+
             window.Show();
+            window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() => {
+                imageView.ToolBarTop.ClearImage();
+            }));
         }
 
         public RelayCommand ExportCVCIECommand { get; set; }

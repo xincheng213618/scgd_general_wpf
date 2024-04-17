@@ -7,41 +7,48 @@
              xmlns:local="clr-namespace:ColorVision.Media"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d" 
-             Title="SettingColorMap"  Width="400" Height="400" Background="{StaticResource BackgroundBrush}" Initialized="UserControl_Initialized">
+             Title="SettingColorMap"  Width="400" Height="400"  SizeToContent="Height" Background="{StaticResource BackgroundBrush}" Initialized="UserControl_Initialized">
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0" Margin="0,0,5,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <TextBox Grid.Column="0" Width="28" Text="{Binding ValueStart, ElementName=RangeSlider1, StringFormat=#0}" Style="{StaticResource BaseStyle}"  Background="Transparent"  BorderThickness="0"  HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
-            <TextBox Grid.Column="2" Width="28" Text="{Binding ValueEnd, ElementName=RangeSlider1, StringFormat=#0}" Style="{StaticResource BaseStyle}" Background="Transparent"  BorderThickness="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
-            <Grid Grid.Column="1" >
+        <StackPanel>
+            <ComboBox x:Name="ComColormapTypes" SelectedValuePath="Value"  DisplayMemberPath="Key" SelectionChanged="ComColormapTypes_SelectionChanged" />
+            <Grid Grid.Row="0" Margin="0,5">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="0"  x:Name="RowDefinitionEnd"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="0"  x:Name="RowDefinitionStart"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
-                <Border Grid.Column="0" Background="Black" CornerRadius="10,0,0,10"/>
-                <Border Grid.Column="1"  Background="Transparent" VerticalAlignment="Top" >
-                    <Image x:Name="ColormapTypesImage" Source="/Assets/Colormaps/colorscale_jet.jpg" Stretch="Fill"  Height="28"/>
-                </Border>
-                <Border Grid.Column="2" Background="White" CornerRadius="0,10,10,0 "/>
+                <TextBox Grid.Column="0" Width="28" Text="{Binding ValueStart, ElementName=RangeSlider1, StringFormat=#0}" Style="{StaticResource BaseStyle}"  Background="Transparent"  BorderThickness="0"  HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                <TextBox Grid.Column="2" Width="28" Text="{Binding ValueEnd, ElementName=RangeSlider1, StringFormat=#0}" Style="{StaticResource BaseStyle}" Background="Transparent"  BorderThickness="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+                <Grid Grid.Column="1" >
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="0"  x:Name="RowDefinitionEnd"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="0"  x:Name="RowDefinitionStart"/>
+                    </Grid.ColumnDefinitions>
+                    <Border Grid.Column="0" Background="Black" CornerRadius="10,0,0,10"/>
+                    <Border Grid.Column="1"  Background="Transparent" VerticalAlignment="Top" >
+                        <Image x:Name="ColormapTypesImage" Source="/Assets/Colormaps/colorscale_jet.jpg" Stretch="Fill"  Height="28"/>
+                    </Border>
+                    <Border Grid.Column="2" Background="White" CornerRadius="0,10,10,0 "/>
+                </Grid>
+                <hc:RangeSlider Grid.Column="1"  x:Name="RangeSlider1" FocusVisualStyle="{x:Null}"  Style="{StaticResource RangeSliderBaseStyle}" Orientation="Horizontal" Background="Transparent" hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0"  VerticalAlignment="Center" ValueChanged="RangeSlider1_ValueChanged"/>
             </Grid>
-            <hc:RangeSlider Grid.Column="1"  x:Name="RangeSlider1" FocusVisualStyle="{x:Null}"  Style="{StaticResource RangeSliderBaseStyle}" Orientation="Horizontal" Background="Transparent" hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0"  VerticalAlignment="Center" ValueChanged="RangeSlider1_ValueChanged"/>
-        </Grid>
-        <Grid Grid.Row="1">
+        </StackPanel>
+        <Grid Grid.Row="1" Visibility="Collapsed">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="146*"/>
+                <ColumnDefinition Width="245*"/>
+            </Grid.ColumnDefinitions>
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <ListView x:Name="dataGrid1" Background="Transparent" BorderThickness="0">
+            <ListView x:Name="dataGrid1" Background="Transparent" BorderThickness="0" Grid.ColumnSpan="2" Margin="0,0,0,30" Grid.RowSpan="2">
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
                     </Style>
@@ -65,10 +72,7 @@
                     </GridView>
                 </ListView.View>
             </ListView>
-            <StackPanel Grid.Row="1">
-                <StackPanel>
-                    <ComboBox x:Name="ComColormapTypes" SelectedValuePath="Value"  DisplayMemberPath="Key"   SelectionChanged="ComColormapTypes_SelectionChanged" />
-                </StackPanel>
+            <StackPanel Grid.Row="1" Grid.ColumnSpan="2">
                 <DockPanel>
                     <TextBlock Text="等级:" Width="100"/>
                     <hc:NumericUpDown x:Name="textBox" Value="10" ValueChanged="textBox_ValueChanged"  Minimum="2"/>
