@@ -485,7 +485,7 @@ namespace ColorVision.Services.RC
             MsgSend msg = new MsgSend
             {
                 DeviceCode = cameraId,
-                Token = Token?.AccessToken,
+                Token = Token?.AccessToken ??string.Empty,
                 MsgID = Guid.NewGuid().ToString("N"),
                 EventName = MQTTFileServerEventEnum.Event_File_Upload,
                 Params = new Dictionary<string, object> { { "Name", name }, { "FileName", fileName }, { "FileExtType", FileExtType.Calibration }, { "MD5", md5 } }

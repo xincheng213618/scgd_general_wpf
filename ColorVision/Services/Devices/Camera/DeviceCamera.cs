@@ -53,6 +53,8 @@ namespace ColorVision.Services.Devices.Camera
         public RelayCommand UploadCalibrationCommand { get; set; }
 
         public RelayCommand FetchLatestTemperatureCommand { get; set; }
+        public RelayCommand DisPlaySaveCommand { get; set; }
+
 
         public DeviceCamera(SysDeviceModel sysResourceModel, MQTTTerminalCamera cameraService) : base(sysResourceModel)
         {
@@ -80,8 +82,14 @@ namespace ColorVision.Services.Devices.Camera
 
             UploadLincenseCommand = new RelayCommand(a => UploadLincense());
             RefreshLincenseCommand = new RelayCommand(a => RefreshLincense());
-
+            DisPlaySaveCommand = new RelayCommand(a => SaveDis());
             DisplayCameraControlLazy = new Lazy<DisplayCameraControl>(() => new DisplayCameraControl(this));
+        }
+
+        public void SaveDis()
+        {
+            if (MessageBox.Show(Application.Current.GetActiveWindow(), "是否保存当前界面的曝光配置", "ColorVison", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
+            SaveConfig();
         }
 
 

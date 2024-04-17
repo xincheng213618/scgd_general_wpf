@@ -36,8 +36,25 @@
                 <Button   Background="Transparent" BorderThickness="0" Command="{Binding FetchLatestTemperatureCommand}"/>
             </Grid>
             <Grid  DockPanel.Dock="Right" ToolTip="保存当前的曝光等参数">
-                <Image Source="{DynamicResource DrawingImageSave}" Stretch="Uniform" Height="18"/>
-                <Button   Background="Transparent" BorderThickness="0" Command="{Binding SaveCommand}"/>
+                <Image Source="{DynamicResource DrawingImageSave}" Stretch="Uniform" Height="18">
+                    <Image.RenderTransform>
+                        <ScaleTransform x:Name="ScaleTransform"/>
+                    </Image.RenderTransform>
+                </Image>
+                <Button Background="Transparent" BorderThickness="0" Command="{Binding DisPlaySaveCommand}">
+                    <Button.Triggers>
+                        <EventTrigger RoutedEvent="Button.Click">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX" From="1" To="0.8" Duration="0:0:0.1" FillBehavior="Stop"/>
+                                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY" From="1" To="0.8" Duration="0:0:0.1" FillBehavior="Stop"/>
+                                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX" From="0.8" To="1" BeginTime="0:0:0.1" Duration="0:0:0.1" FillBehavior="Stop"/>
+                                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY" From="0.8" To="1" BeginTime="0:0:0.1" Duration="0:0:0.1" FillBehavior="Stop"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Button.Triggers>
+                </Button>
             </Grid>
             <Grid >
                 <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding IsDisplayOpen}" />
