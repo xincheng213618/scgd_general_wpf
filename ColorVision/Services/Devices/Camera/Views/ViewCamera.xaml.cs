@@ -581,8 +581,13 @@ namespace ColorVision.Services.Devices.Camera.Views
                 {
                     MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到原始文件", "ColorVision");
                 }
-
             }
+        }
+
+        private void CalculPOI_Click(object sender, RoutedEventArgs e)
+        {
+            Window window = new Window();
+            window.Show();
         }
     }
 }

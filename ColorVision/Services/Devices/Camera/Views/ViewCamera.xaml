@@ -97,6 +97,7 @@
                     <StackPanel Orientation="Horizontal" Margin="5,0">
                         <TextBlock Text="关注点" MinWidth="40"/>
                         <ComboBox x:Name="ComboxPOITemplate" Width="130" Style="{StaticResource ComboBox.Small}" HorizontalAlignment="Left"  SelectionChanged="ComboxPOITemplate_SelectionChanged" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
+                        <Button Content="计算"  Click="CalculPOI_Click"/>
                     </StackPanel>
                 </ToolBar>
             </ToolBarTray>
