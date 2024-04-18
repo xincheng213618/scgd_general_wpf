@@ -15,6 +15,7 @@ using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.UserSpace;
 using cvColorVision.Util;
+using CVCommCore;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -451,7 +452,7 @@ namespace ColorVision.Services.Templates
                     {
                         res = new SysResourceModel();
                         res.Name = flowParam.Name;
-                        res.Type = 101;
+                        res.Type = (int)PhysicalResourceType.FlowFile;
                         if (!string.IsNullOrEmpty(flowParam.DataBase64))
                         {
                             res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
@@ -465,7 +466,7 @@ namespace ColorVision.Services.Templates
                 {
                     SysResourceModel res = new SysResourceModel();
                     res.Name = flowParam.Name;
-                    res.Type = 101;
+                    res.Type = (int)PhysicalResourceType.FlowFile;
                     if (!string.IsNullOrEmpty(flowParam.DataBase64))
                     {
                         res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
