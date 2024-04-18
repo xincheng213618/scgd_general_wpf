@@ -13,7 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace ColorVision.Services.PhyCamera
+namespace ColorVision.Services.PhyCameras
 {
     /// <summary>
     /// PhyCameraManagerWindow.xaml 的交互逻辑
@@ -33,7 +33,11 @@ namespace ColorVision.Services.PhyCamera
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-
+            StackPanelShow.Children.Clear();
+            if (TreeView1.SelectedItem is PhyCamera phyCamera)
+            {
+                StackPanelShow.Children.Add(phyCamera.GetDeviceInfo());
+            }
         }
     }
 }

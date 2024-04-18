@@ -2,8 +2,10 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.PhyCameras.Configs;
 using Newtonsoft.Json;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -19,6 +21,8 @@ namespace ColorVision.Services.PhyCameras
         public bool IsExpanded { get; set; }
         public bool IsSelected { get; set; }
 
+        public ObservableCollection<CalibrationParam> CalibrationParams { get; set; }
+
         public PhyCamera(SysResourceModel sysResourceModel):base(sysResourceModel)
         {
             Config = BaseResourceObjectExtensions.TryDeserializeConfig<ConfigPhyCamera>(SysResourceModel.Value);
@@ -32,6 +36,7 @@ namespace ColorVision.Services.PhyCameras
             });
             ContentInit();
         }
+        public  UserControl GetDeviceInfo() => new InfoPhyCamera(this);
 
         public override void Delete()
         {
