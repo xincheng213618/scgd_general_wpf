@@ -8,7 +8,7 @@ using System.Windows.Input;
 namespace ColorVision.Services.Devices.Calibration
 {
     /// <summary>
-    /// EditCamera.xaml 的交互逻辑
+    /// EditCalibration.xaml 的交互逻辑
     /// </summary>
     public partial class EditCalibration : Window
     {

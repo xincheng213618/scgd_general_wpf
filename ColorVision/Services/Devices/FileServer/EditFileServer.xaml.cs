@@ -17,7 +17,7 @@ using System.Windows.Input;
 namespace ColorVision.Services.Devices.FileServer
 {
     /// <summary>
-    /// EditCamera.xaml 的交互逻辑
+    /// EditFileServer.xaml 的交互逻辑
     /// </summary>
     public partial class EditFileServer: Window
     {

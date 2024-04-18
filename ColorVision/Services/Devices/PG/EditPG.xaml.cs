@@ -18,7 +18,7 @@ using ColorVision.Common.MVVM;
 namespace ColorVision.Services.Devices.PG
 {
     /// <summary>
-    /// EditCamera.xaml 的交互逻辑
+    /// EditPG.xaml 的交互逻辑
     /// </summary>
     public partial class EditPG : Window
     {
