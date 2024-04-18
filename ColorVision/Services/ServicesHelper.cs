@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Threading;
 
 
 namespace ColorVision.Services
@@ -14,6 +15,18 @@ namespace ColorVision.Services
     internal static partial class ServicesHelper
     {
 
+        public static async void SelectAndFocusFirstNode(TreeView treeView)
+        {
+            await Task.Delay(1);
+            if (treeView.Items.Count > 0)
+            {
+                if (treeView.SelectedItem == null && treeView.ItemContainerGenerator.ContainerFromIndex(0) is TreeViewItem firstNode)
+                {
+                    firstNode.IsSelected = true;
+                    Application.Current.Dispatcher.Invoke(() => firstNode.Focus());
+                }
+            }
+        }
         public static IPendingHandler SendCommand(MsgRecord msgRecord, string Msg)
         {
             IPendingHandler handler = PendingBox.Show(Application.Current.MainWindow, Msg, true);

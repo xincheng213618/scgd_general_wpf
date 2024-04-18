@@ -9,13 +9,15 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.PhyCameras
 {
-    public class PhyCamera : BaseResource
+    public class PhyCamera : BaseResource,ITreeViewItem
     {
         public ConfigPhyCamera Config { get; set; }
 
         public RelayCommand UploadCalibrationCommand { get; set; }
         public RelayCommand EditCommand { get; set; }
         public ContextMenu ContextMenu { get; set; }
+        public bool IsExpanded { get; set; }
+        public bool IsSelected { get; set; }
 
         public PhyCamera(SysResourceModel sysResourceModel):base(sysResourceModel)
         {

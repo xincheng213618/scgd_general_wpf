@@ -28,11 +28,7 @@ namespace ColorVision.Services.PhyCamera
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = PhyCameraManager.GetInstance();
-        }
-
-        private void TreeView1_Loaded(object sender, RoutedEventArgs e)
-        {
-
+            ServicesHelper.SelectAndFocusFirstNode(TreeView1);
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)

@@ -6,13 +6,13 @@
         xmlns:local="clr-namespace:ColorVision.Services.PhyCameras"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PhyCameraManager}"
-        Title="PhyCameraManagerWindow" Height="450" Width="800" Initialized="Window_Initialized">
+        Title="PhyCameraManagerWindow" Height="450" Width="800" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition  Height="Auto"/>
             <RowDefinition  Height="*"/>
         </Grid.RowDefinitions>
-        <StackPanel Orientation="Horizontal">
+        <StackPanel Orientation="Horizontal" Margin="5">
             <Button Content="添加相机" Command="{Binding CreateCommand}"/>
         </StackPanel>
         <Grid Grid.Row="1">
@@ -20,7 +20,7 @@
                 <ColumnDefinition Width="250"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <TreeView x:Name="TreeView1" ItemsSource="{Binding PhyCameras}" Loaded="TreeView1_Loaded" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged" Margin="5,0,5,0">
+            <TreeView x:Name="TreeView1" ItemsSource="{Binding PhyCameras}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged" Margin="5,0,5,0">
                 <TreeView.Resources>
                     <HierarchicalDataTemplate DataType="{x:Type local:PhyCamera}" ItemsSource="{Binding VisualChildren}" >
                         <StackPanel >

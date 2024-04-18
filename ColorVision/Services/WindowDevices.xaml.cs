@@ -27,6 +27,7 @@ namespace ColorVision.Services
             TreeView1.ItemsSource = MQTTDevices;
             Grid1.DataContext = ConfigHandler.GetInstance().SoftwareConfig.UserConfig;
             ButtonOK.Focus();
+            ServicesHelper.SelectAndFocusFirstNode(TreeView1);
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -47,14 +48,6 @@ namespace ColorVision.Services
 
         private void TreeView1_Loaded(object sender, RoutedEventArgs e)
         {
-            TreeViewItem firstNode = TreeView1.ItemContainerGenerator.ContainerFromIndex(0) as TreeViewItem;
-
-            // 选中第一个节点
-            if (firstNode != null)
-            {
-                firstNode.IsSelected = true;
-                firstNode.Focus();
-            }
         }
 
 
