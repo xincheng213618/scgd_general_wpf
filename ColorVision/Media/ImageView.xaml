@@ -179,8 +179,8 @@
                             <Button Content="单十字准线" Click="reference1_Click" Width="80"  Tag="1"/>
                         </StackPanel>
                     </Popup>
-                    <ToggleButton  Click="Button5_Click">
-                        <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImagegridlines}"  Margin="-5"/>
+                    <ToggleButton IsChecked="{Binding Gridline.IsShow}">
+                        <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIGridlines}"  Margin="-5"/>
                     </ToggleButton>
                     <ToggleButton  IsChecked="{Binding Measure}" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageruler}"  Margin="-5"/>

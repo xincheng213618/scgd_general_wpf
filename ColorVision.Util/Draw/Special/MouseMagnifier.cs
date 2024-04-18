@@ -33,15 +33,12 @@ namespace ColorVision.Util.Draw.Special
 
         public DrawingVisual DrawVisualImage { get; set; }
 
-        public DrawingVisual DrawingVisualImage1 { get; set; }
-
         public event MouseMoveColorHandler MouseMoveColorHandler;
         public MouseMagnifier(ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
             Image = drawCanvas;
             DrawVisualImage = new DrawingVisual();
-            DrawingVisualImage1 = new DrawingVisual();
         }
 
         public bool IsShow
@@ -66,7 +63,6 @@ namespace ColorVision.Util.Draw.Special
             }
         }
         private bool _IsShow;
-
 
         public void DrawImage(Point actPoint, Point disPoint, ImageInfo imageInfo)
         {

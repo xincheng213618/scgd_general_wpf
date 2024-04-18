@@ -54,8 +54,6 @@ namespace ColorVision.Media
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
-        private DrawingVisual DrawingVisualGrid = new DrawingVisual();
-
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             //这里是为了让控件可以被选中，作为做了一个底层的Textbox,这样就可以让控件被选中了，后面看看能不能优化掉，这个写法并不是好的。
@@ -182,34 +180,6 @@ namespace ColorVision.Media
                 item.Render();
             }
         }
-
-
-
-        private void DrawGridImage(DrawingVisual drawingVisual, BitmapSource bitmapSource)
-        {
-            Brush brush = Brushes.Black;
-            FontFamily fontFamily = new FontFamily("Arial");
-
-            double fontSize = 10;
-            using DrawingContext dc = drawingVisual.RenderOpen();
-            for (int i = 0; i < bitmapSource.Width; i += 40)
-            {
-                string text = i.ToString();
-                FormattedText formattedText = new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                dc.DrawText(formattedText, new Point(i, -10));
-                dc.DrawLine(new Pen(Brushes.Blue, 1), new Point(i, 0), new Point(i, bitmapSource.Height));
-            }
-
-            for (int j = 0; j < bitmapSource.Height; j += 40)
-            {
-                string text = j.ToString();
-                FormattedText formattedText = new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-                dc.DrawText(formattedText, new Point(-10, j));
-                dc.DrawLine(new Pen(Brushes.Blue, 1), new Point(0, j), new Point(bitmapSource.Width, j));
-            }
-        }
-
-
 
         private static void DrawSelectRect(DrawingVisual drawingVisual, Rect rect)
         {
@@ -512,18 +482,6 @@ namespace ColorVision.Media
         }
         private void ImageShow_MouseLeave(object sender, MouseEventArgs e)
         {
-        }
-
-        private void Button5_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is ToggleButton toggleButton)
-            {
-                if (!ImageShow.ContainsVisual(DrawingVisualGrid) && toggleButton.IsChecked == true)
-                    ImageShow.AddVisual(DrawingVisualGrid);
-                if (ImageShow.ContainsVisual(DrawingVisualGrid) && toggleButton.IsChecked == false)
-                    ImageShow.RemoveVisual(DrawingVisualGrid);
-            }
-
         }
 
         private void Button7_Click(object sender, RoutedEventArgs e)

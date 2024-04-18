@@ -57,16 +57,24 @@ namespace ColorVision.Services.Devices.Camera.Views
         }
         public void Open()
         {
-            ImageView imageView = new ImageView();
-            CVFileUtil.ReadCVRaw(FileUrl, out CVCIEFile fileInfo);
-            Window window = new Window() { Title = "快速预览", Owner = Application.Current.GetActiveWindow() ,WindowStartupLocation = WindowStartupLocation.CenterOwner};
-            window.Content = imageView;
-            imageView.OpenImage(fileInfo);
+            if (File.Exists(FileUrl))
+            {
+                ImageView imageView = new ImageView();
+                CVFileUtil.ReadCVRaw(FileUrl, out CVCIEFile fileInfo);
+                Window window = new Window() { Title = "快速预览", Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                window.Content = imageView;
+                imageView.OpenImage(fileInfo);
 
-            window.Show();
-            window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() => {
-                imageView.ToolBarTop.ClearImage();
-            }));
+                window.Show();
+                window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() => {
+                    imageView.ToolBarTop.ClearImage();
+                }));
+            }
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到文件", "ColorVision");
+            }
+
         }
 
         public RelayCommand ExportCVCIECommand { get; set; }

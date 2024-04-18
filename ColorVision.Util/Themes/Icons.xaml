@@ -73,7 +73,7 @@
             </DrawingGroup>
         </DrawingImage.Drawing>
     </DrawingImage>
-    <DrawingImage x:Key="DrawingImagegridlines">
+    <DrawingImage x:Key="DIGridlines">
         <DrawingImage.Drawing>
             <DrawingGroup ClipGeometry="M0,0 V1024 H1024 V0 H0 Z">
                 <GeometryDrawing Brush="{StaticResource IconSolidColorBrush}" Geometry="F1 M1024,1024z M0,0z M896,384L896,304 720,304 720,128 640,128 640,304 384,304 384,128 304,128 304,304 128,304 128,384 304,384 304,640 128,640 128,720 304,720 304,896 384,896 384,720 640,720 640,896 720,896 720,720 896,720 896,640 720,640 720,384 896,384z M640,640L384,640 384,384 640,384 640,640z" />

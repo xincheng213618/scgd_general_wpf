@@ -62,6 +62,7 @@ namespace ColorVision.Draw
         public MouseMagnifier MouseMagnifier { get; set; }
 
         public Crosshair Crosshair { get; set; }
+        public Gridline Gridline { get; set; }
 
         private ToolBarMeasure ToolBarMeasure { get; set; }
 
@@ -79,6 +80,7 @@ namespace ColorVision.Draw
 
             MouseMagnifier = new MouseMagnifier(zoombox, drawCanvas);
             Crosshair = new Crosshair(zoombox, drawCanvas);
+            Gridline = new Gridline(zoombox, drawCanvas);
             ToolBarMeasure = new ToolBarMeasure(Parent, zoombox, drawCanvas);
             ToolBarScaleRuler = new ToolBarScaleRuler(Parent, zoombox, drawCanvas);
 
@@ -507,6 +509,7 @@ namespace ColorVision.Draw
                 NotifyPropertyChanged();
             }
         }
+
 
         public bool Measure {
             get => _Measure;
