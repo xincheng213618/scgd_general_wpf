@@ -45,7 +45,7 @@ namespace ColorVision.Services.Devices.Spectrum
             TextSerial.ItemsSource = Serials;
             List<int> BaudRates = new List<int> { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
             TextBaudRate.ItemsSource = BaudRates;
-            this.DataContext = Device;
+            DataContext = Device;
 
             EditConfig = Device.Config.Clone();
             EditContent.DataContext = EditConfig;
@@ -56,7 +56,7 @@ namespace ColorVision.Services.Devices.Spectrum
         {
             EditConfig.CopyTo(Device.Config);
             Device.DeviceService?.SetParam(Device.Config.MaxIntegralTime, Device.Config.BeginIntegralTime);
-            this.Close();
+            Close();
         }
     }
 }

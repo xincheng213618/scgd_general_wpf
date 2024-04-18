@@ -26,8 +26,8 @@ namespace ColorVision.Services.Devices
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = IUploadMsg;
-            IUploadMsg.UploadClosed += (s, e) => this.Close();
+            DataContext = IUploadMsg;
+            IUploadMsg.UploadClosed += (s, e) => Close();
         }
     }
 }

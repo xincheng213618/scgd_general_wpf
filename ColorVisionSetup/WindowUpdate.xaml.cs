@@ -15,7 +15,7 @@ namespace ColorVisionSetup
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = AutoUpdater.GetInstance();
+            DataContext = AutoUpdater.GetInstance();
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)

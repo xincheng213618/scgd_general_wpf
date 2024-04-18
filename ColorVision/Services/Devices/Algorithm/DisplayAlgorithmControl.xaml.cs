@@ -53,11 +53,11 @@ namespace ColorVision.Services.Devices.Algorithm
             netFileUtil.handler += NetFileUtil_handler;
             Service.OnMessageRecved += Service_OnAlgorithmEvent;
             View.OnCurSelectionChanged += View_OnCurSelectionChanged;
-            this.PreviewMouseDown += UserControl_PreviewMouseDown;
+            PreviewMouseDown += UserControl_PreviewMouseDown;
         }
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (this.Parent is StackPanel stackPanel)
+            if (Parent is StackPanel stackPanel)
             {
                 if (stackPanel.Tag is IDisPlayControl disPlayControl)
                     disPlayControl.IsSelected = false;
@@ -195,7 +195,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = Device;
+            DataContext = Device;
             ComboxPoiTemplate.ItemsSource = TemplateControl.GetInstance().PoiParams;
             ComboxPoiTemplate.SelectedIndex = 0;
 

@@ -28,7 +28,7 @@ namespace ColorVision.Services.Devices.Camera
             Device = deviceCamera;
             IsCanEdit = isCanEdit;
             InitializeComponent();
-            this.Loaded += DeviceCameraControl_Loaded;
+            Loaded += DeviceCameraControl_Loaded;
         }
 
         private void DeviceCameraControl_Loaded(object sender, RoutedEventArgs e)
@@ -41,7 +41,7 @@ namespace ColorVision.Services.Devices.Camera
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
-            this.DataContext = Device;
+            DataContext = Device;
 
             Device.RefreshLincense();
             ListViewLincense.ItemsSource = Device.LicenseModels;

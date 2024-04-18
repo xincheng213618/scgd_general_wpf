@@ -22,7 +22,7 @@ namespace ColorVision.Draw.Special
         public Crosshair(ZoomboxSub zombox, DrawCanvas drawCanvas)
         {
             ZoomboxSub = zombox;
-            this.DrawCanvas = drawCanvas;
+            DrawCanvas = drawCanvas;
             DrawVisualImage = new DrawingVisual();
             DrawingVisualImage1 = new DrawingVisual();
         }

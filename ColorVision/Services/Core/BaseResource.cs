@@ -10,7 +10,7 @@ namespace ColorVision.Services.Core
 
         public BaseResource(SysResourceModel sysResourceModel)
         {
-            this.SysResourceModel = sysResourceModel;
+            SysResourceModel = sysResourceModel;
             Name = sysResourceModel.Name ?? string.Empty;
             FilePath = sysResourceModel.Value;
             Id = sysResourceModel.Id;

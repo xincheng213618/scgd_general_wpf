@@ -50,7 +50,7 @@ namespace ColorVision.Services.Templates.POI
 
         private async void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = PoiParam;
+            DataContext = PoiParam;
 
             ListView1.ItemsSource = DrawingVisualLists;
 
@@ -171,7 +171,7 @@ namespace ColorVision.Services.Templates.POI
                 PoiParam.Height = 300;
             }
 
-            this.Closed += (s, e) =>
+            Closed += (s, e) =>
             {
                 if (ImageShow.Source == null)
                 {
@@ -181,7 +181,7 @@ namespace ColorVision.Services.Templates.POI
                 PoiParam.PoiPoints.Clear();
             };
 
-            this.PreviewKeyDown += (s, e) =>
+            PreviewKeyDown += (s, e) =>
             {
                 if (e.Key == Key.Escape)
                 {

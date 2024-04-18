@@ -34,7 +34,7 @@ namespace ColorVision.Services.Devices.Calibration
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = DeviceCalibration;
+            DataContext = DeviceCalibration;
             EditConfig = DeviceCalibration.Config.Clone();
             EditContent.DataContext = EditConfig;
         }
@@ -42,7 +42,7 @@ namespace ColorVision.Services.Devices.Calibration
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             EditConfig.CopyTo(DeviceCalibration.Config);
-            this.Close();
+            Close();
         }
     }
 }

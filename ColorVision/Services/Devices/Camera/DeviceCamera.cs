@@ -435,13 +435,13 @@ namespace ColorVision.Services.Devices.Camera
                                 sysResourceModel.Name = item1.Title;
                                 sysResourceModel.Code = md5;
                                 sysResourceModel.Type = (int)item1.CalibrationType.ToResouceType();
-                                sysResourceModel.Pid = this.SysResourceModel.Id;
+                                sysResourceModel.Pid = SysResourceModel.Id;
                                 sysResourceModel.Value = Path.GetFileName(FileName);
                                 sysResourceDao.Save(sysResourceModel);
                                 if (sysResourceModel != null)
                                 {
                                     CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
-                                    this.AddChild(calibrationResource);
+                                    AddChild(calibrationResource);
                                     keyValuePairs2.Add(item1.Title, calibrationResource);
                                 }
                             }

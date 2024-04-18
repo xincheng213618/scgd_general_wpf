@@ -25,8 +25,8 @@ namespace ColorVision
             MQTTControl.MQTTMsgChanged += ShowLog;
             TopicListView.ItemsSource = MQTTControl.SubscribeTopic;
             SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-            this.DataContext = ConfigHandler.GetInstance();
-            this.Title += $"  {MQTTControl.Config.Host}_{MQTTControl.Config.Port}";
+            DataContext = ConfigHandler.GetInstance();
+            Title += $"  {MQTTControl.Config.Host}_{MQTTControl.Config.Port}";
         }
 
 

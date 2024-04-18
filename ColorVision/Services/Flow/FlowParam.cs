@@ -17,8 +17,8 @@ namespace ColorVision.Services.Flow
 
         public FlowParam(ModMasterModel dbModel, List<ModFlowDetailModel> flowDetail) : base()
         {
-            this.Id = dbModel.Id;
-            this.Name = dbModel.Name ?? string.Empty;
+            Id = dbModel.Id;
+            Name = dbModel.Name ?? string.Empty;
             List<ModDetailModel> modDetailModels = new List<ModDetailModel>();
             foreach (var model in flowDetail)
             {

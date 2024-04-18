@@ -78,8 +78,8 @@ namespace ColorVision.Services.Flow
                 }
             };
             FlowTemplate.SelectedIndex = 0;
-            this.DataContext = flowControl;
-            this.PreviewMouseDown += UserControl_PreviewMouseDown;
+            DataContext = flowControl;
+            PreviewMouseDown += UserControl_PreviewMouseDown;
 
             menuItem = new MenuItem() { Header = ColorVision.Properties.Resource.MenuFlow };
             MenuItem menuItem1 = new MenuItem() { Header = ColorVision.Properties.Resource.ExecutionProcess };
@@ -117,7 +117,7 @@ namespace ColorVision.Services.Flow
 
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (this.Parent is StackPanel stackPanel)
+            if (Parent is StackPanel stackPanel)
             {
                 if (stackPanel.Tag is IDisPlayControl disPlayControl)
                     disPlayControl.IsSelected = false;

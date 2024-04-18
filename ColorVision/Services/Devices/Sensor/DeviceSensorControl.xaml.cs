@@ -27,7 +27,7 @@ namespace ColorVision.Services.Devices.Sensor
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
-            this.DataContext = DeviceSensor;
+            DataContext = DeviceSensor;
 
             ComboxSensorType.ItemsSource = from e1 in Enum.GetValues(typeof(CommunicateType)).Cast<CommunicateType>()
                                           select new KeyValuePair<CommunicateType, string>(e1, e1.ToString()); 

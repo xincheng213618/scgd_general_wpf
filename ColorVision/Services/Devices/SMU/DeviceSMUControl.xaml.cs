@@ -16,7 +16,7 @@ namespace ColorVision.Services.Devices.SMU
         public bool IsCanEdit { get; set; }
         public DeviceSMUControl(DeviceSMU mqttDeviceSMU, bool isCanEdit = true)
         {
-            this.MQTTDeviceSMU = mqttDeviceSMU;
+            MQTTDeviceSMU = mqttDeviceSMU;
             IsCanEdit = isCanEdit;
             InitializeComponent();
         }
@@ -24,7 +24,7 @@ namespace ColorVision.Services.Devices.SMU
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
-            this.DataContext = this.MQTTDeviceSMU;
+            DataContext = MQTTDeviceSMU;
         }
 
 

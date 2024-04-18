@@ -20,15 +20,15 @@ namespace ColorVision.Services.Devices.Motor
 
         public DisplayMotorControl(DeviceMotor device)
         {
-            this.Device = device;
+            Device = device;
             InitializeComponent();
 
-            this.PreviewMouseDown += UserControl_PreviewMouseDown;
+            PreviewMouseDown += UserControl_PreviewMouseDown;
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = Device;
+            DataContext = Device;
             DeviceService.DeviceStatusChanged += DeviceService_DeviceStatusChanged;
             SelectChanged += (s, e) =>
             {
@@ -49,7 +49,7 @@ namespace ColorVision.Services.Devices.Motor
 
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (this.Parent is StackPanel stackPanel)
+            if (Parent is StackPanel stackPanel)
             {
                 if (stackPanel.Tag is IDisPlayControl disPlayControl)
                     disPlayControl.IsSelected = false;

@@ -35,7 +35,7 @@ namespace ColorVision.FloatingBall
         {
              ContextMenu contextMenu = new ContextMenu();
             MenuItem menuItem1 = new MenuItem() { Header = "隐藏界面" };
-            menuItem1.Click += (s, e) => { this.Close(); };
+            menuItem1.Click += (s, e) => { Close(); };
             contextMenu.Items.Add(menuItem1);
 
 
@@ -43,7 +43,7 @@ namespace ColorVision.FloatingBall
             menuItem.Click += (s, e) => { Environment.Exit(0); };
             contextMenu.Items.Add(menuItem);
 
-            this.ContextMenu = contextMenu;
+            ContextMenu = contextMenu;
         }
     }
 }

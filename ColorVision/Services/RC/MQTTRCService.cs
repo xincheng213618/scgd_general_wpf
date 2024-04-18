@@ -76,11 +76,11 @@ namespace ColorVision.Services.RC
         public event RCServiceStatusChangedHandler StatusChangedEventHandler;
         public MQTTRCService():base()
         {
-            this.NodeType = "client";
-            this.NodeName = MQTTRCServiceTypeConst.BuildNodeName(NodeType, null);
-            this.DeviceCode = this.DevcieName = "dev." + NodeType + ".127.0.0.1";
+            NodeType = "client";
+            NodeName = MQTTRCServiceTypeConst.BuildNodeName(NodeType, null);
+            DeviceCode = DevcieName = "dev." + NodeType + ".127.0.0.1";
             LoadCfg();
-            this.RegStatus = ServiceNodeStatus.Unregistered;
+            RegStatus = ServiceNodeStatus.Unregistered;
             ServiceName = Guid.NewGuid().ToString();
 
             MQTTControl = MQTTControl.GetInstance();
@@ -106,19 +106,19 @@ namespace ColorVision.Services.RC
         public void LoadCfg()
         {
             RCServiceConfig RcServiceConfig = ConfigHandler.GetInstance().SoftwareConfig.RcServiceConfig;
-            this.AppId = RcServiceConfig.AppId;
-            this.AppSecret = RcServiceConfig.AppSecret;
-            this.RCNodeName = RcServiceConfig.RCName;
+            AppId = RcServiceConfig.AppId;
+            AppSecret = RcServiceConfig.AppSecret;
+            RCNodeName = RcServiceConfig.RCName;
 
-            this.SubscribeTopic = MQTTRCServiceTypeConst.BuildNodeTopic(NodeName, RCNodeName);
+            SubscribeTopic = MQTTRCServiceTypeConst.BuildNodeTopic(NodeName, RCNodeName);
 
-            this.RCRegTopic = MQTTRCServiceTypeConst.BuildRegTopic(RCNodeName);
-            this.RCHeartbeatTopic = MQTTRCServiceTypeConst.BuildHeartbeatTopic(RCNodeName);
-            this.RCPublicTopic = MQTTRCServiceTypeConst.BuildPublicTopic(RCNodeName);
-            this.RCAdminTopic = MQTTRCServiceTypeConst.BuildAdminTopic(RCNodeName);
-            this.ArchivedTopic = MQTTRCServiceTypeConst.BuildArchivedTopic(RCNodeName);
-            this.SysConfigTopic = MQTTRCServiceTypeConst.BuildSysConfigTopic(RCNodeName);
-            this.SysConfigRespTopic = MQTTRCServiceTypeConst.BuildSysConfigRespTopic(RCNodeName);
+            RCRegTopic = MQTTRCServiceTypeConst.BuildRegTopic(RCNodeName);
+            RCHeartbeatTopic = MQTTRCServiceTypeConst.BuildHeartbeatTopic(RCNodeName);
+            RCPublicTopic = MQTTRCServiceTypeConst.BuildPublicTopic(RCNodeName);
+            RCAdminTopic = MQTTRCServiceTypeConst.BuildAdminTopic(RCNodeName);
+            ArchivedTopic = MQTTRCServiceTypeConst.BuildArchivedTopic(RCNodeName);
+            SysConfigTopic = MQTTRCServiceTypeConst.BuildSysConfigTopic(RCNodeName);
+            SysConfigRespTopic = MQTTRCServiceTypeConst.BuildSysConfigRespTopic(RCNodeName);
 
             MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.SubscribeCache(SysConfigRespTopic);
@@ -144,7 +144,7 @@ namespace ColorVision.Services.RC
                             MQTTNodeServiceStartupRequest req = JsonConvert.DeserializeObject<MQTTNodeServiceStartupRequest>(Msg);
                             if (req != null)
                             {
-                                this.RegStatus = ServiceNodeStatus.Registered;
+                                RegStatus = ServiceNodeStatus.Registered;
                                 if (!TryTestRegist)
                                 {
                                     Token = req.Data.Token;
@@ -335,8 +335,8 @@ namespace ColorVision.Services.RC
         public bool Regist()
         {
             StatusChangedEventHandler?.Invoke(this, new RCServiceStatusChangedEvent(ServiceNodeStatus.Unregistered));
-            this.Token = null;
-            this.RegStatus = ServiceNodeStatus.Unregistered;
+            Token = null;
+            RegStatus = ServiceNodeStatus.Unregistered;
             MQTTNodeServiceRegist reg = new MQTTNodeServiceRegist(NodeName, AppId, AppSecret, SubscribeTopic, NodeType);
             PublishAsyncClient(RCRegTopic, JsonConvert.SerializeObject(reg));
             return true;
@@ -398,7 +398,7 @@ namespace ColorVision.Services.RC
             string RegTopic = MQTTRCServiceTypeConst.BuildRegTopic(cfg.RCName);
             string appId = cfg.AppId;
             string appSecret = cfg.AppSecret;
-            this.RegStatus = ServiceNodeStatus.Unregistered;
+            RegStatus = ServiceNodeStatus.Unregistered;
             MQTTNodeServiceRegist reg = new MQTTNodeServiceRegist(NodeName, appId, appSecret, SubscribeTopic, NodeType);
             PublishAsyncClient(RegTopic, JsonConvert.SerializeObject(reg));
             for (int i = 0; i < 3; i++)

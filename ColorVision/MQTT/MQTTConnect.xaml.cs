@@ -47,13 +47,13 @@ namespace ColorVision.MQTT
             ConfigHandler.GetInstance().SaveConfig();
             FlowEngineLib.MQTTHelper.SetDefaultCfg(MQTTConfig.Host, MQTTConfig.Port, MQTTConfig.UserName, MQTTConfig.UserPwd, false, null);
             Task.Run(() => MQTTControl.GetInstance().Connect(MQTTConfig));
-            this.Close();
+            Close();
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
             MQTTConfigBackUp.CopyTo(MQTTConfig);
-            this.Close();
+            Close();
         }
 
 
@@ -74,7 +74,7 @@ namespace ColorVision.MQTT
 
             MQTTConfigs.Insert(0, MQTTConfig);
             ListViewMQTT.SelectedIndex = 0;
-            this.Closed += (s, e) =>
+            Closed += (s, e) =>
             {
                 MQTTConfigs.Remove(MQTTConfig);
             };
@@ -85,7 +85,7 @@ namespace ColorVision.MQTT
             Task.Run( async () =>
             {
                 bool IsConnect = await MQTTControl.TestConnect(MQTTConfig);
-                await this.Dispatcher.BeginInvoke(() =>
+                await Dispatcher.BeginInvoke(() =>
                 {
                     Task.Run(() =>
                     {
@@ -103,12 +103,12 @@ namespace ColorVision.MQTT
             if (ListViewMQTTBorder.Visibility == Visibility.Visible)
             {
                 ListViewMQTTBorder.Visibility = Visibility.Collapsed;
-                this.Width -= 170;
+                Width -= 170;
             }
             else
             {
                 ListViewMQTTBorder.Visibility = Visibility.Visible;
-                this.Width += 170;
+                Width += 170;
             }
         }
 

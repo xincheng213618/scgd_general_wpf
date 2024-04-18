@@ -64,7 +64,7 @@ namespace ColorVision.Solution
             if (result == System.Windows.Forms.DialogResult.OK)
             { 
             }
-            this.Close();
+            Close();
         }
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
@@ -80,7 +80,7 @@ namespace ColorVision.Solution
                 if (listView.SelectedIndex > -1)
                 {
                     FullName = SolutionInfos[listView.SelectedIndex].FullName;
-                    this.Close();
+                    Close();
                 }
             }
         }
@@ -92,7 +92,7 @@ namespace ColorVision.Solution
                 if (listView.SelectedIndex > -1)
                 {
                     FullName = SolutionInfos[listView.SelectedIndex].FullName;
-                    this.Close();
+                    Close();
                 }
             }
         }

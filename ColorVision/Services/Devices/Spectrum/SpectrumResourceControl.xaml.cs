@@ -31,7 +31,7 @@ namespace ColorVision.Services.Devices.Spectrum
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = SpectrumResourceParam;
+            DataContext = SpectrumResourceParam;
             ComboBoxList.ItemsSource = BaseResources;
 
         }
@@ -42,7 +42,7 @@ namespace ColorVision.Services.Devices.Spectrum
             ComboBoxList.SelectionChanged -= ComboBox_SelectionChanged;
             DeviceSpectrum = deviceSpectrum;
             SpectrumResourceParam = spectrumResourceParam;
-            this.DataContext = SpectrumResourceParam;
+            DataContext = SpectrumResourceParam;
 
             string CalibrationMode = SpectrumResourceParam.ResourceMode;
 

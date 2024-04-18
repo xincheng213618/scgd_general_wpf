@@ -53,7 +53,7 @@ namespace ColorVision.Themes.Controls
             Closing += (sender, e) => Owner?.Activate();
             WindowChrome = WindowChrome.GetWindowChrome(this);
 
-            this.Loaded += (s, e) =>
+            Loaded += (s, e) =>
             {
                 if (IsBlurEnabled)
                 {
@@ -67,7 +67,7 @@ namespace ColorVision.Themes.Controls
 
                     if (IsWin10) {
                         IsDragMoveEnabled = false;
-                        this.WindowStyle = WindowStyle.None;
+                        WindowStyle = WindowStyle.None;
                     }
 
                     wac.Color = ThemeManager.Current.CurrentUITheme == Theme.Dark ? Color.FromArgb(180, 0, 0, 0) : Color.FromArgb(200, 255, 255, 255);
@@ -167,7 +167,7 @@ namespace ColorVision.Themes.Controls
 
             if (IsBlurEnabled && e.Key == Key.Escape)
             {
-                this.Close();
+                Close();
                 e.Handled = true;
             }
         }
@@ -179,7 +179,7 @@ namespace ColorVision.Themes.Controls
 
         public virtual void CommandInitialized()
         {
-            this.CommandBindings.Add(new CommandBinding(WindowTopMost, ExecutedCommand, CanExecuteCommand));
+            CommandBindings.Add(new CommandBinding(WindowTopMost, ExecutedCommand, CanExecuteCommand));
 
             CommandBindings.Add(new CommandBinding(SystemCommands.CloseWindowCommand, CloseWindow));
             CommandBindings.Add(new CommandBinding(SystemCommands.MaximizeWindowCommand, MaximizeWindow, CanResizeWindow));
@@ -255,7 +255,7 @@ namespace ColorVision.Themes.Controls
         public virtual void BaseClose()
         {
             BaseClosed = true;
-            this.Close();
+            Close();
         }
 
 

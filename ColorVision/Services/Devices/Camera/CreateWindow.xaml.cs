@@ -66,7 +66,7 @@ namespace ColorVision.Services.Devices.Camera
             CreateCode.Text = TerminalService.NewCreateFileName($"DEV.{TerminalService.ServiceType}.Default");
             CreateName.Text = TerminalService.NewCreateFileName($"DEV.{TerminalService.ServiceType}.Default");
 
-            this.DataContext = this;
+            DataContext = this;
 
             var Config = CreateConfig;
 
@@ -268,7 +268,7 @@ namespace ColorVision.Services.Devices.Camera
                 if (sysDevModel != null && sysDevModel.TypeCode != null && sysDevModel.PCode != null && sysDevModel.Code != null)
                     RC.MQTTRCService.GetInstance().RestartServices(sysDevModel.TypeCode, sysDevModel.PCode, sysDevModel.Code);
                 //MessageBox.Show(WindowHelpers.GetActiveWindow(), "创建成功正在重启服务", "ColorVision");
-                this.Close();
+                Close();
             }
             else
             {

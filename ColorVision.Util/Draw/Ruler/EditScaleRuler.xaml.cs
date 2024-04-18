@@ -29,8 +29,8 @@ namespace ColorVision.Draw.Ruler
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = DrawingVisualScaleHost1;
-            this.Resources = null;
+            DataContext = DrawingVisualScaleHost1;
+            Resources = null;
         }
 
         private void Cal_Click(object sender, RoutedEventArgs e)
@@ -43,7 +43,7 @@ namespace ColorVision.Draw.Ruler
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            this.Close();
+            Close();
         }
 
         private void Calculate_Click(object sender, RoutedEventArgs e)

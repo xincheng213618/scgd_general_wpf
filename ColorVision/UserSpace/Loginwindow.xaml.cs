@@ -24,7 +24,7 @@ namespace ColorVision.UserSpace
             UserDao userDao = new UserDao();
             if (userDao.Checklogin(Account1.Text, PasswordBox1.Password))
             {
-                this.Close();
+                Close();
             }
             else
             {

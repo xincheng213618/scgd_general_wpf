@@ -15,13 +15,13 @@ namespace ColorVision.Common.MVVM
         //Func<object,bool> =>Predicate<object> ss
         public RelayCommand(Action<object> execute)
         {
-            this.Execute = execute ?? throw new ArgumentNullException(nameof(execute));
-            this.CanExecute = a => true;
+            Execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            CanExecute = a => true;
         }
         public RelayCommand(Action<object> execute, Predicate<object> canExecute)
         {
-            this.Execute = execute ?? throw new ArgumentNullException(nameof(execute));
-            this.CanExecute = canExecute;
+            Execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            CanExecute = canExecute;
         }
 
         bool ICommand.CanExecute(object? parameter) => CanExecute is null || CanExecute(parameter);
@@ -51,19 +51,19 @@ namespace ColorVision.Common.MVVM
 
         public bool CanExecute(T? parameter)
         {
-            return this._canExecute == null || this._canExecute(parameter);
+            return _canExecute == null || _canExecute(parameter);
         }
 
         public void Execute(T? parameter)
         {
-            this._action(parameter);
+            _action(parameter);
         }
 
         public bool CanExecute(object? parameter)
         {
             if (TryGetCommandArg(parameter, out T? res))
             {
-                return this.CanExecute(res);
+                return CanExecute(res);
             }
             return false;
         }

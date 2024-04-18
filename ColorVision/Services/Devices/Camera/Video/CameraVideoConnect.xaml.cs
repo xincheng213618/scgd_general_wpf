@@ -33,7 +33,7 @@ namespace ColorVision.Services.Devices.Camera.Video
             ListViewMySql.ItemsSource = CameraVideoConfigs;
             CameraVideoConfigs.Insert(0, CameraVideoConfig);
             ListViewMySql.SelectedIndex = 0;
-            this.Closed += (s, e) =>
+            Closed += (s, e) =>
             {
                 CameraVideoConfigs.Remove(CameraVideoConfig);
             };
@@ -63,12 +63,12 @@ namespace ColorVision.Services.Devices.Camera.Video
                 CameraVideoConfigCopy.Name = CameraVideoConfigCopy.Host +"_" + CameraVideoConfigCopy.Port;
             }
             CameraVideoConfigCopy.CopyTo(CameraVideoConfig);
-            this.Close();
+            Close();
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            this.Close();
+            Close();
         }
 
         private void Button_Click_Test1(object sender, RoutedEventArgs e)
@@ -76,12 +76,12 @@ namespace ColorVision.Services.Devices.Camera.Video
             if (ListViewMySqlBorder.Visibility == Visibility.Visible)
             {
                 ListViewMySqlBorder.Visibility = Visibility.Collapsed;
-                this.Width -= 170;
+                Width -= 170;
             }
             else
             {
                 ListViewMySqlBorder.Visibility = Visibility.Visible;
-                this.Width += 170;
+                Width += 170;
             }           
         }
 

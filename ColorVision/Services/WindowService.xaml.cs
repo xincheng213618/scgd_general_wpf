@@ -52,7 +52,7 @@ namespace ColorVision.Services
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             ServiceManager.GetInstance().GenDeviceDisplayControl();
-            this.Close();
+            Close();
         }
 
         private void TreeView1_Loaded(object sender, RoutedEventArgs e)

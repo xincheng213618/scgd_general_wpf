@@ -41,7 +41,7 @@ namespace ColorVision.Services.Export
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "导出仅支持CIE文件", "ColorVision");
                 return;
             }
-            this.DataContext = VExportCIE;
+            DataContext = VExportCIE;
 
         }
         private void Save_Click(object sender, RoutedEventArgs e)
@@ -64,7 +64,7 @@ namespace ColorVision.Services.Export
         {
             Thread thread = new Thread(() => VExportCIE.SaveToTif(VExportCIE));
             thread.Start();
-            this.Close();
+            Close();
         }
     }
 }

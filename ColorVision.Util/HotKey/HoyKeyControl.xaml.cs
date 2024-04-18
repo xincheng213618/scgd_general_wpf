@@ -46,9 +46,9 @@ namespace ColorVision.HotKey
         HotKeys HotKeys;
         public HoyKeyControl(HotKeys hotKeys)
         {   
-            this.HotKeys = hotKeys;
+            HotKeys = hotKeys;
             InitializeComponent();
-            this.DataContext = HotKeys;
+            DataContext = HotKeys;
         }
 
         private static bool HasKeyChar(Key key) => key is

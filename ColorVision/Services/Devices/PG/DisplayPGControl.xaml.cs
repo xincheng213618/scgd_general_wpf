@@ -22,15 +22,15 @@ namespace ColorVision.Services.Devices.PG
         {
             DevicePG = devicePG;
             InitializeComponent();
-            this.DataContext = DevicePG;
+            DataContext = DevicePG;
 
-            this.PreviewMouseDown += UserControl_PreviewMouseDown;
+            PreviewMouseDown += UserControl_PreviewMouseDown;
         }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.PGService.HeartbeatEvent += (e) => PGService_DeviceStatusHandler(e.DeviceStatus);
+            PGService.HeartbeatEvent += (e) => PGService_DeviceStatusHandler(e.DeviceStatus);
 
-            if (this.PGService.Config.IsNet)
+            if (PGService.Config.IsNet)
             {
                 TextBlockPGIP.Text = "IP地址";
                 TextBlockPGPort.Text = "端口";
@@ -59,7 +59,7 @@ namespace ColorVision.Services.Devices.PG
 
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (this.Parent is StackPanel stackPanel)
+            if (Parent is StackPanel stackPanel)
             {
                 if (stackPanel.Tag is IDisPlayControl disPlayControl)
                     disPlayControl.IsSelected = false;
@@ -100,13 +100,13 @@ namespace ColorVision.Services.Devices.PG
                     MessageBox.Show(Application.Current.MainWindow, "端口配置错误");
                     return;
                 }
-                if (this.PGService.Config.IsNet) PGService.Open(CommunicateType.Tcp, TextBoxPGIP.Text, port);
+                if (PGService.Config.IsNet) PGService.Open(CommunicateType.Tcp, TextBoxPGIP.Text, port);
                 else PGService.Open(CommunicateType.Serial, TextBoxPGIP.Text, port);
             }
             else
             {
                 button.Content = "关闭中";
-                this.PGService.Close();
+                PGService.Close();
             }
         }
 

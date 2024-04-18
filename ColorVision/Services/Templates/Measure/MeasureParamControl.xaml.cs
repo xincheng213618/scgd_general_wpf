@@ -145,10 +145,10 @@ namespace ColorVision.Services.Templates
 
         public void Reload(List<MeasureDetailModel> des)
         {
-            this.ListConfigs.Clear();
+            ListConfigs.Clear();
             foreach (MeasureDetailModel model in des)
             {
-                this.ListConfigs.Add(new MParamConfig(model));
+                ListConfigs.Add(new MParamConfig(model));
             }
         }
     }

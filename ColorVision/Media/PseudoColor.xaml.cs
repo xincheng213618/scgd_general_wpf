@@ -37,8 +37,8 @@ namespace ColorVision.Media
         {
             PseudoValues = new ObservableCollection<PseudoValue>();
             ColorMap = new ColorMap();
-            this.MinData = mindata;
-            this.MaxData = maxdata;
+            MinData = mindata;
+            MaxData = maxdata;
             MinMax = (maxdata - MinMax) / 255;
             InitializeComponent();
         }
@@ -94,17 +94,17 @@ namespace ColorVision.Media
         private void button_Create_Click(object sender, RoutedEventArgs e)
         {
             Genera();
-            this.Close();
+            Close();
         }
 
 
 
         private void RangeSlider1_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
         {
-            if (this.ActualWidth > 0)
+            if (ActualWidth > 0)
             {
-                RowDefinitionStart.Width = new GridLength(((this.ActualWidth - 100) / 255.0) * (255 - RangeSlider1.ValueEnd));
-                RowDefinitionEnd.Width = new GridLength(((this.ActualWidth - 100) / 255.0) * RangeSlider1.ValueStart);
+                RowDefinitionStart.Width = new GridLength(((ActualWidth - 100) / 255.0) * (255 - RangeSlider1.ValueEnd));
+                RowDefinitionEnd.Width = new GridLength(((ActualWidth - 100) / 255.0) * RangeSlider1.ValueStart);
             }
             //获取当前的滚动条的start位置以及end位置
         }
@@ -113,7 +113,7 @@ namespace ColorVision.Media
         {
             double minLua = RangeSlider1.ValueStart;
             double maxLua = RangeSlider1.ValueEnd;
-            ColorMap.buildCustomMap(Int32.Parse(this.textBox.Value.ToString()), minLua / MinMax, maxLua / MinMax);
+            ColorMap.buildCustomMap(Int32.Parse(textBox.Value.ToString()), minLua / MinMax, maxLua / MinMax);
             //colormapNum = Int32.Parse(this.textBox_level.Name);
             init();
             ColorMap.reMap();

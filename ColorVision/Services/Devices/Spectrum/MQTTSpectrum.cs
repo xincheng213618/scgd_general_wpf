@@ -81,7 +81,7 @@ namespace ColorVision.Services.Devices.Spectrum
                                 //cmdMap.Remove(json.MsgID);
                             }
                         }
-                        else if (json.EventName == "Heartbeat" && json.ServiceName.Equals(this.ServiceName, StringComparison.Ordinal))
+                        else if (json.EventName == "Heartbeat" && json.ServiceName.Equals(ServiceName, StringComparison.Ordinal))
                         {
                             List<SpectrumDeviceHeartbeatParam> devs_heartbeat = JsonConvert.DeserializeObject<List<SpectrumDeviceHeartbeatParam>>(JsonConvert.SerializeObject(json.Data));
                             if (devs_heartbeat != null && devs_heartbeat.Count > 0) DoSpectumHeartbeat(devs_heartbeat);

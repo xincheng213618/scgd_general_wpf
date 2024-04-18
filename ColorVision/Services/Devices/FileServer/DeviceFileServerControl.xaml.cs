@@ -24,7 +24,7 @@ namespace ColorVision.Services.Devices.FileServer
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
-            this.DataContext = DeviceFileServer;
+            DataContext = DeviceFileServer;
         }
     }
 }

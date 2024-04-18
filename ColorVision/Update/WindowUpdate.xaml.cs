@@ -15,7 +15,7 @@ namespace ColorVision.Update
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = AutoUpdater.GetInstance(); 
+            DataContext = AutoUpdater.GetInstance(); 
         }
     }
 }

@@ -31,7 +31,7 @@ namespace ColorVision.Net
 
         public NetFileUtil(string fileCachePath)
         {
-            this.FileCachePath = fileCachePath;
+            FileCachePath = fileCachePath;
         }
 
         public string GetCacheFileFullName(string fileName)
@@ -540,10 +540,10 @@ namespace ColorVision.Net
         public CVCIEFile FileData { get; set; }
         public NetFileEvent(FileEvent eventName, int code, string fileName, CVCIEFile fileData)
         {
-            this.EventName = eventName;
-            this.Code = code;
-            this.FileName = fileName;
-            this.FileData = fileData;
+            EventName = eventName;
+            Code = code;
+            FileName = fileName;
+            FileData = fileData;
         }
 
         public NetFileEvent(FileEvent eventName, int code, string fileName) : this(eventName, code, fileName, default)

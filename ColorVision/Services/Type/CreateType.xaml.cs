@@ -54,7 +54,7 @@ namespace ColorVision.Services.Type
             CreateCode.Text = TypeService.NewCreateFileName($"SVR.{TypeService.ServiceTypes}.Default");
             CreateName.Text = TypeService.NewCreateFileName($"SVR.{TypeService.ServiceTypes}.Default");
 
-            this.DataContext = TypeService;
+            DataContext = TypeService;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -94,7 +94,7 @@ namespace ColorVision.Services.Type
 
                 MQTTRCService.GetInstance().RestartServices(TypeService.ServiceTypes.ToString());
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "创建成功，正在重启服务", "ColorVision");
-                this.Close();
+                Close();
             }
             else
             {

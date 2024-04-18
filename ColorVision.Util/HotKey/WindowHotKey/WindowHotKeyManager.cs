@@ -16,7 +16,7 @@ namespace ColorVision.HotKey.WindowHotKey
 
         private WindowHotKeyManager(Control window)
         {
-            this.control = window;
+            control = window;
             Instances.Add(window, this);
             HotKeysList = new List<HotKeys>();
         }

@@ -158,7 +158,7 @@ namespace ColorVision.Services.Flow
                 };
             }
             OperateGrid.Visibility = Visibility.Visible;
-            this.Title = "流程编辑器 - " + new FileInfo(flowName).Name;
+            Title = "流程编辑器 - " + new FileInfo(flowName).Name;
         }
 
         public void OpenFlowBase64(FlowParam flowParam)
@@ -180,7 +180,7 @@ namespace ColorVision.Services.Flow
                 ButtonFlowPause.Visibility = Visibility.Collapsed;
             };
             OperateGrid.Visibility = Visibility.Visible;
-            this.Title = "流程编辑器 - " + new FileInfo(flowParam.Name).Name;
+            Title = "流程编辑器 - " + new FileInfo(flowParam.Name).Name;
         }
 
         private void SaveFlow(string flowName)

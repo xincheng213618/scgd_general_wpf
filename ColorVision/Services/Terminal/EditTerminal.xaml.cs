@@ -31,7 +31,7 @@ namespace ColorVision.Services.Terminal
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = TerminalService;
+            DataContext = TerminalService;
             EditConfig = TerminalService.Config.Clone();
             EditContent.DataContext = EditConfig;
         }
@@ -39,7 +39,7 @@ namespace ColorVision.Services.Terminal
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             TerminalService.Config.CopyFrom(EditConfig);
-            this.Close();
+            Close();
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)

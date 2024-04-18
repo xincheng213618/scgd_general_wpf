@@ -50,34 +50,34 @@ namespace ColorVision
 
             if (SoftwareSetting.IsRestoreWindow && SoftwareSetting.Height != 0 && SoftwareSetting.Width != 0)
             {
-                this.Top = SoftwareSetting.Top;
-                this.Left = SoftwareSetting.Left;
-                this.Height = SoftwareSetting.Height;
-                this.Width = SoftwareSetting.Width;
-                this.WindowState = (WindowState)SoftwareSetting.WindowState;
+                Top = SoftwareSetting.Top;
+                Left = SoftwareSetting.Left;
+                Height = SoftwareSetting.Height;
+                Width = SoftwareSetting.Width;
+                WindowState = (WindowState)SoftwareSetting.WindowState;
 
-                if (this.Width > SystemParameters.WorkArea.Width)
+                if (Width > SystemParameters.WorkArea.Width)
                 {
-                    this.Width = SystemParameters.WorkArea.Width;
+                    Width = SystemParameters.WorkArea.Width;
                 }
-                if (this.Height > SystemParameters.WorkArea.Height)
+                if (Height > SystemParameters.WorkArea.Height)
                 {
-                    this.Height = SystemParameters.WorkArea.Height;
+                    Height = SystemParameters.WorkArea.Height;
                 }
             }
-            this.SizeChanged += (s, e) =>
+            SizeChanged += (s, e) =>
             {
                 if (SoftwareSetting.IsRestoreWindow)
                 {
-                    SoftwareSetting.Top = this.Top;
-                    SoftwareSetting.Left = this.Left;
-                    SoftwareSetting.Height = this.Height;
-                    SoftwareSetting.Width = this.Width;
-                    SoftwareSetting.WindowState = (int)this.WindowState;
+                    SoftwareSetting.Top = Top;
+                    SoftwareSetting.Left = Left;
+                    SoftwareSetting.Height = Height;
+                    SoftwareSetting.Width = Width;
+                    SoftwareSetting.WindowState = (int)WindowState;
                 }
             };
             var IsAdministrator = Tool.IsAdministrator();
-            this.Title = Title + $"- {(IsAdministrator ? Properties.Resource.RunAsAdmin : Properties.Resource.NotRunAsAdmin)}";
+            Title = Title + $"- {(IsAdministrator ? Properties.Resource.RunAsAdmin : Properties.Resource.NotRunAsAdmin)}";
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -101,17 +101,17 @@ namespace ColorVision
             {
                 ThemeManager.Current.SystemThemeChanged += (e) =>
                 {
-                    this.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Assets/Image/{(e == Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
+                    Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Assets/Image/{(e == Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
                 };
                 if (ThemeManager.Current.SystemTheme == Theme.Dark)
-                    this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
+                    Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
             }
 
             if (WindowConfig.IsExist)
             {
                 if (WindowConfig.Icon != null)
-                    this.Icon = WindowConfig.Icon;
-                this.Title = WindowConfig.Title ?? this.Title;
+                    Icon = WindowConfig.Icon;
+                Title = WindowConfig.Title ?? Title;
             }
 
             ViewGridManager SolutionViewGridManager = new ViewGridManager();
@@ -127,7 +127,7 @@ namespace ColorVision
             MenuStatusBar.DataContext = ConfigHandler.GetInstance().SoftwareConfig;
 
             ViewGridManager.GetInstance().SetViewNum(1);
-            this.Closed += (s, e) => { Environment.Exit(-1); };
+            Closed += (s, e) => { Environment.Exit(-1); };
             Debug.WriteLine(Properties.Resource.LaunchSuccess);
 
             MenuItem menulogs = new MenuItem() { Header = Properties.Resource.Log };

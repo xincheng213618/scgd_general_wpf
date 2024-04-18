@@ -83,7 +83,7 @@ namespace ColorVision.Services.Devices.PG
                         else if (json.EventName == "UnInit")
                         {
                         }
-                        else if (json.EventName == "Heartbeat" && json.ServiceName.Equals(this.ServiceName, System.StringComparison.Ordinal))
+                        else if (json.EventName == "Heartbeat" && json.ServiceName.Equals(ServiceName, System.StringComparison.Ordinal))
                         {
                             List<DeviceHeartbeatParam> devs_heartbeat = JsonConvert.DeserializeObject<List<DeviceHeartbeatParam>>(JsonConvert.SerializeObject(json.Data));
                             if (devs_heartbeat != null && devs_heartbeat.Count > 0) DoHeartbeat(devs_heartbeat);

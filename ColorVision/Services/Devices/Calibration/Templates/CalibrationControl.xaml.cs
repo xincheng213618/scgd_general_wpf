@@ -36,21 +36,21 @@ namespace ColorVision.Services.Devices.Calibration.Templates
 
         public CalibrationControl(ICalibrationService<BaseResourceObject> calibrationService)
         {
-            this.CalibrationService = calibrationService;
+            CalibrationService = calibrationService;
 
             InitializeComponent();
-            this.CalibrationParam = new CalibrationParam();
-            this.DataContext = CalibrationParam;
+            CalibrationParam = new CalibrationParam();
+            DataContext = CalibrationParam;
         }
 
         public Dictionary<string, List<ColorVisionVCalibratioItem>> CalibrationModeList { get; set; }
 
         public CalibrationControl(ICalibrationService<BaseResourceObject> calibrationService, CalibrationParam calibrationParam)
         {
-            this.CalibrationService = calibrationService;
+            CalibrationService = calibrationService;
             InitializeComponent();
-            this.CalibrationParam = calibrationParam;
-            this.DataContext = CalibrationParam;
+            CalibrationParam = calibrationParam;
+            DataContext = CalibrationParam;
         }
 
         public CalibrationParam calibrationParam1 { get; set; }
@@ -63,9 +63,9 @@ namespace ColorVision.Services.Devices.Calibration.Templates
 
             ComboBoxList.SelectionChanged -= ComboBox_SelectionChanged;
 
-            this.CalibrationService = calibrationService;
-            this.CalibrationParam = calibrationParam;
-            this.DataContext = CalibrationParam;
+            CalibrationService = calibrationService;
+            CalibrationParam = calibrationParam;
+            DataContext = CalibrationParam;
 
             TempCache.Cache = calibrationParam.CalibrationMode;
             TempCache.DarkNoiseIsSelected = calibrationParam.Normal.DarkNoise.IsSelected;

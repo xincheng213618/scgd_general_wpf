@@ -57,7 +57,7 @@ namespace ColorVision.Media
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             //这里是为了让控件可以被选中，作为做了一个底层的Textbox,这样就可以让控件被选中了，后面看看能不能优化掉，这个写法并不是好的。
-            this.MouseDown += (s, e) =>
+            MouseDown += (s, e) =>
             {
                 TextBox1.Focus();
             };
@@ -70,7 +70,7 @@ namespace ColorVision.Media
 
             ToolBarTop.ClearImageEventHandler += (s, e) => Clear();
 
-            this.Focusable = true;
+            Focusable = true;
             Zoombox1.LayoutUpdated += Zoombox1_LayoutUpdated;
 
 
@@ -115,7 +115,7 @@ namespace ColorVision.Media
                 }
             };
 
-            this.PreviewKeyDown += (s, e) =>
+            PreviewKeyDown += (s, e) =>
             {
                 if (e.Key == Key.R)
                 {
@@ -123,7 +123,7 @@ namespace ColorVision.Media
                 }
 
             };
-            this.PreviewKeyDown += (s,e)=>
+            PreviewKeyDown += (s,e)=>
             {
                 if (e.Key == Key.Escape)
                 {
@@ -136,8 +136,8 @@ namespace ColorVision.Media
             };
 
 
-            this.AllowDrop = true;
-            this.Drop += ImageView_Drop; ;
+            AllowDrop = true;
+            Drop += ImageView_Drop; ;
         }
 
         private void ImageView_Drop(object sender, DragEventArgs e)

@@ -35,11 +35,11 @@ namespace ColorVision.Services.Devices
             if (string.IsNullOrEmpty(Upload1.UploadFileName)|| string.IsNullOrEmpty(Upload1.UploadFilePath))
             {
                 MessageBox.Show("您未选择文件");
-                this.Close();
+                Close();
                 return;
             }
             OnUpload?.Invoke(Upload1,new EventArgs());
-            this.Close();
+            Close();
         }
     }
 }

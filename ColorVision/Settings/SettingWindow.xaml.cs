@@ -34,20 +34,20 @@ namespace ColorVision.Settings
                 IsBlurEnabled = false;
                 ThemeManager.Current.CurrentUIThemeChanged += (e) =>
                 {
-                    this.Background = IsBlurEnabled ? this.Background : e == Theme.Light ? Brushes.White : Brushes.Black;
+                    Background = IsBlurEnabled ? Background : e == Theme.Light ? Brushes.White : Brushes.Black;
                 };
             }
             else
             {
                 IsBlurEnabled = ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.TransparentWindow && IsBlurEnabled;
             }
-            this.Background = IsBlurEnabled ? this.Background :ThemeManager.Current.CurrentUITheme == Theme.Light?Brushes.White:Brushes.Black;
+            Background = IsBlurEnabled ? Background :ThemeManager.Current.CurrentUITheme == Theme.Light?Brushes.White:Brushes.Black;
 
         }
         private void Window_Initialized(object sender, EventArgs e)
         {
             SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-            this.DataContext = SoftwareConfig;
+            DataContext = SoftwareConfig;
             AutoRunDock.DataContext = ConfigHandler.GetInstance();
             GlobalConst.LogLevel.ForEach(it =>
             {

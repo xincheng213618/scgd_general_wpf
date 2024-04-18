@@ -8,11 +8,11 @@ namespace ColorVision.Solution
         private void IniCommand()
         {
             ApplicationCommands.Delete.InputGestures.Add(new KeyGesture(Key.Delete, ModifierKeys.None, "Del"));
-            CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, this.ExecutedCommand, (s,e) => { if (e.Parameter is VObject baseObject) e.CanExecute = false; }));
-            CommandBindings.Add(new CommandBinding(ApplicationCommands.Cut, this.ExecutedCommand, this.CanExecuteCommand));
-            CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, this.ExecutedCommand, this.CanExecuteCommand));
-            CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, this.ExecutedCommand, this.CanExecuteCommand));
-            CommandBindings.Add(new CommandBinding(Commands.ReName, this.ExecutedCommand, this.CanExecuteCommand));
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ExecutedCommand, (s,e) => { if (e.Parameter is VObject baseObject) e.CanExecute = false; }));
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.Cut, ExecutedCommand, CanExecuteCommand));
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, ExecutedCommand, CanExecuteCommand));
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, ExecutedCommand, CanExecuteCommand));
+            CommandBindings.Add(new CommandBinding(Commands.ReName, ExecutedCommand, CanExecuteCommand));
         }
 
         #region 通用命令执行函数

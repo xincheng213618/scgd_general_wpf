@@ -51,9 +51,9 @@ namespace ColorVision.Draw
 
 
 
-            this.DataContext = DefalutTextAttribute.Defalut;
+            DataContext = DefalutTextAttribute.Defalut;
 
-            this.Resources = null;
+            Resources = null;
         }
 
         private void ComboBoxBrush_SelectionChanged(object sender, SelectionChangedEventArgs e)

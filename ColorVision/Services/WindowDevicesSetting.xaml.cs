@@ -172,7 +172,7 @@ namespace ColorVision.Services
 
         private void OK_Click(object sender, RoutedEventArgs e)
         {
-            this.Close();
+            Close();
         }
 
 

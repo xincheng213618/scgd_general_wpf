@@ -28,8 +28,8 @@ namespace ColorVision
         {
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
             InitializeComponent();
-            Left = SystemParameters.WorkArea.Right - this.Width;
-            Top = SystemParameters.WorkArea.Bottom - this.Height;
+            Left = SystemParameters.WorkArea.Right - Width;
+            Top = SystemParameters.WorkArea.Bottom - Height;
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -41,10 +41,10 @@ namespace ColorVision
 #endif
 
             ThemeManager.Current.SystemThemeChanged += (e) => {
-                this.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Assets/Image/{(e == Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
+                Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision;component/Assets/Image/{(e == Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
             };
             if (ThemeManager.Current.SystemTheme == Theme.Dark)
-                this.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
+                Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
 
             MQTTControl.GetInstance();
             MySqlControl.GetInstance();
@@ -228,7 +228,7 @@ namespace ColorVision
                     TextBoxMsg.Text += $"{Environment.NewLine}数据库连接失败，跳过服务配置";
                 }
                 mainWindow.Show();
-                this.Close();
+                Close();
             });
         }
         

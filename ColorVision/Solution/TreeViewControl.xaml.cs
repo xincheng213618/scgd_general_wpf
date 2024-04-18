@@ -76,8 +76,8 @@ namespace ColorVision.Solution
 
         private void UserControl_Loaded(object sender, RoutedEventArgs e)
         {
-            this.AllowDrop = true;
-            this.Drop += TreeViewControl_Drop;
+            AllowDrop = true;
+            Drop += TreeViewControl_Drop;
 
             SolutionTreeView.ContextMenu = new ContextMenu();
             SolutionTreeView.ContextMenuOpening += SolutionTreeView_ContextMenuOpening;

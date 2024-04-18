@@ -76,13 +76,13 @@ namespace ColorVision.Services.Devices.Spectrum
             sysResourceModel.Name = UploadFileName;
             sysResourceModel.Code = md5;
             sysResourceModel.Type = 201;
-            sysResourceModel.Pid = this.SysResourceModel.Id;
+            sysResourceModel.Pid = SysResourceModel.Id;
             sysResourceModel.Value = Path.GetFileName(UploadFilePath);
             SysResourceDao.Instance.Save(sysResourceModel);
             if (sysResourceModel != null)
             {
                 BaseResource calibrationResource = new BaseResource(sysResourceModel);
-                this.AddChild(calibrationResource);
+                AddChild(calibrationResource);
             }
 
             Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));

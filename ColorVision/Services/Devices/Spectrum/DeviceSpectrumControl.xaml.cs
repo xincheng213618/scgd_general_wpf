@@ -21,8 +21,8 @@ namespace ColorVision.Services.Devices.Spectrum
         public bool IsCanEdit { get; set; }
         public DeviceSpectrumControl(DeviceSpectrum mqttDeviceSp, bool isCanEdit = true)
         {
-            this.disposedObj = false;
-            this.Device = mqttDeviceSp;
+            disposedObj = false;
+            Device = mqttDeviceSp;
             SpectrumService = mqttDeviceSp.DeviceService;
             SpectrumService.AutoParamHandlerEvent += Spectrum_AutoParamHandlerEvent;
             IsCanEdit = isCanEdit;
@@ -31,7 +31,7 @@ namespace ColorVision.Services.Devices.Spectrum
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
-            this.DataContext = this.Device;
+            DataContext = Device;
         }
 
         private void Spectrum_AutoParamHandlerEvent(AutoIntTimeParam colorPara)

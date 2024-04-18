@@ -29,7 +29,7 @@ namespace ColorVision.Services.Templates.POI
             {
                 if (ListConfigs[ListView1.SelectedIndex].GetValue() is PoiParam poiParam)
                 SelectPoiParam = poiParam;
-                this.Close();
+                Close();
             }
         }
     }

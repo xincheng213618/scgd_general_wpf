@@ -41,7 +41,7 @@ namespace ColorVision.Services.Devices.FileServer
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = Device;
+            DataContext = Device;
 
             EditConfig = Device.Config.Clone();
             EditContent.DataContext = EditConfig;
@@ -51,7 +51,7 @@ namespace ColorVision.Services.Devices.FileServer
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             EditConfig.CopyTo(Device.Config);
-            this.Close();
+            Close();
         }
     }
 }

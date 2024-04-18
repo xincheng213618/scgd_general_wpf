@@ -17,13 +17,13 @@ namespace ColorVision.Services.Type
         public TypeService TypeService { get; set; }
         public TypeServiceControl(TypeService typeService)
         {
-            this.TypeService = typeService;
+            TypeService = typeService;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = TypeService;
+            DataContext = TypeService;
             ListViewService.ItemsSource = TypeService.VisualChildren;
         }
 
@@ -33,7 +33,7 @@ namespace ColorVision.Services.Type
             {
                 if (TypeService.VisualChildren[listView.SelectedIndex] is TerminalService serviceTerminal)
                 {
-                    if (this.Parent is Grid grid)
+                    if (Parent is Grid grid)
                     {
                         grid.Children.Clear();
                         grid.Children.Add(serviceTerminal.GenDeviceControl());

@@ -67,10 +67,10 @@ namespace ColorVision.Services.Flow
 
         private void UserControl_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            if (this.ActualWidth > 200)
+            if (ActualWidth > 200)
             {
-                winf1.Height = (int)this.ActualHeight;
-                winf1.Width = (int)this.ActualWidth;
+                winf1.Height = (int)ActualHeight;
+                winf1.Width = (int)ActualWidth;
             }
         }
 

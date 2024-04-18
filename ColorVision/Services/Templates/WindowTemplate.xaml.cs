@@ -227,16 +227,16 @@ namespace ColorVision.Services.Templates
             ListView1.SelectedIndex = 0;
             if (ListView1.View is GridView gridView1)
                 GridViewColumnVisibility.AddGridViewColumn(gridView1.Columns, GridViewColumnVisibilitys);
-            this.Closed += WindowTemplate_Closed;
+            Closed += WindowTemplate_Closed;
 
             switch (TemplateType)
             {
                 case TemplateType.PoiParam:
-                    this.MinWidth = 300;
+                    MinWidth = 300;
                     Width = 300;
                     break;
                 case TemplateType.FlowParam:
-                    this.MinWidth = 300;
+                    MinWidth = 300;
                     Width = 300;
                     break;
             }
@@ -270,7 +270,7 @@ namespace ColorVision.Services.Templates
                         {
                             flowParam.Name ??= TemplateModelBases[listView.SelectedIndex].Key;
                             new WindowFlowEngine(flowParam) { Owner =null }.Show();
-                            this.Close();
+                            Close();
                         }
                         break;
                 }
@@ -508,7 +508,7 @@ namespace ColorVision.Services.Templates
 
             }
 
-            this.Close();
+            Close();
         }
 
 

@@ -34,7 +34,7 @@ namespace ColorVision.Solution.V
                 if (fileInfo !=null)
                 {
                     DirectoryInfo = fileInfo.Directory ??new DirectoryInfo(FullPath);
-                    this.Name = Path.GetFileNameWithoutExtension(FullPath);
+                    Name = Path.GetFileNameWithoutExtension(FullPath);
                     if (DirectoryInfo != null)
                     {
                         DirectoryInfo rootDirectory = DirectoryInfo.Root;
@@ -47,7 +47,7 @@ namespace ColorVision.Solution.V
             else if(Directory.Exists(FullPath))
             {
                 DirectoryInfo = new DirectoryInfo(FullPath);
-                this.Name = DirectoryInfo.Name;
+                Name = DirectoryInfo.Name;
                 DirectoryInfo rootDirectory = DirectoryInfo.Root;
                 DriveInfo = new DriveInfo(rootDirectory.FullName);
             }
@@ -55,7 +55,7 @@ namespace ColorVision.Solution.V
             GeneralRelayCommand();
             GeneralContextMenu();
             GeneralCVSln();
-            this.IsExpanded = true;
+            IsExpanded = true;
             DriveMonitor();
 
         }
@@ -98,7 +98,7 @@ namespace ColorVision.Solution.V
 
         public void Refresh()
         {
-            this.VisualChildren.Clear();
+            VisualChildren.Clear();
             GeneralCVSln();
         }
 
@@ -110,7 +110,7 @@ namespace ColorVision.Solution.V
             ClearCacheCommand = new RelayCommand(a =>
             {
                 DirectoryInfo.Delete(true);
-                this.VisualChildren.Clear();
+                VisualChildren.Clear();
                 ///这里之后追加服务的清理
             });
         }
@@ -221,7 +221,7 @@ namespace ColorVision.Solution.V
             {
                 BaseFolder folder = new BaseFolder(item);
                 var vFolder = new VFolder(folder);
-                this.AddChild(vFolder);
+                AddChild(vFolder);
                 GeneralChild(vFolder, item);
             }
         }

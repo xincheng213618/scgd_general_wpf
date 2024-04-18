@@ -414,25 +414,25 @@ namespace cvColorVision
 
         private void setValue()
         {
-            st_cfg.filterByColor = this.filterByColor;
-            st_cfg.blobColor = this.blobColor;
-            st_cfg.minThreshold = this.minThreshold;
-            st_cfg.thresholdStep = this.thresholdStep;
-            st_cfg.maxThreshold = this.maxThreshold;
-            st_cfg.minDistBetweenBlobs = this.minDistBetweenBlobs;
-            st_cfg.filterByArea = this.filterByArea;
-            st_cfg.minArea = this.minArea;
-            st_cfg.maxArea = this.maxArea;
-            st_cfg.minRepeatability = this.minRepeatability;
-            st_cfg.filterByCircularity = this.filterByCircularity;
-            st_cfg.minCircularity = this.minCircularity;
-            st_cfg.maxCircularity = this.maxCircularity;
-            st_cfg.filterByConvexity = this.filterByConvexity;
-            st_cfg.minConvexity = this.minConvexity;
-            st_cfg.maxConvexity = this.maxConvexity;
-            st_cfg.filterByInertia = this.filterByInertia;
-            st_cfg.minInertiaRatio = this.minInertiaRatio;
-            st_cfg.maxInertiaRatio = this.maxInertiaRatio;
+            st_cfg.filterByColor = filterByColor;
+            st_cfg.blobColor = blobColor;
+            st_cfg.minThreshold = minThreshold;
+            st_cfg.thresholdStep = thresholdStep;
+            st_cfg.maxThreshold = maxThreshold;
+            st_cfg.minDistBetweenBlobs = minDistBetweenBlobs;
+            st_cfg.filterByArea = filterByArea;
+            st_cfg.minArea = minArea;
+            st_cfg.maxArea = maxArea;
+            st_cfg.minRepeatability = minRepeatability;
+            st_cfg.filterByCircularity = filterByCircularity;
+            st_cfg.minCircularity = minCircularity;
+            st_cfg.maxCircularity = maxCircularity;
+            st_cfg.filterByConvexity = filterByConvexity;
+            st_cfg.minConvexity = minConvexity;
+            st_cfg.maxConvexity = maxConvexity;
+            st_cfg.filterByInertia = filterByInertia;
+            st_cfg.minInertiaRatio = minInertiaRatio;
+            st_cfg.maxInertiaRatio = maxInertiaRatio;
         }
 
         internal static void Save(BlobThreParams blobThreParams)

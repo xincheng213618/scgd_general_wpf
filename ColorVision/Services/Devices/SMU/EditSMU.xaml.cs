@@ -44,7 +44,7 @@ namespace ColorVision.Services.Devices.SMU
             TextSerial.ItemsSource = Serials;
             List<string> devTypes = new List<string> { "Keithley_2400", "Keithley_2600", "Precise_S100" };
             SMUType.ItemsSource = devTypes;
-            this.DataContext = Device;
+            DataContext = Device;
 
             EditConfig = Device.Config.Clone();
             EditContent.DataContext = EditConfig;
@@ -53,7 +53,7 @@ namespace ColorVision.Services.Devices.SMU
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             EditConfig.CopyTo(Device.Config);
-            this.Close();
+            Close();
         }
     }
 }

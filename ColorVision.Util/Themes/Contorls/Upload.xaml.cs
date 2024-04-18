@@ -15,13 +15,13 @@ namespace ColorVision.Themes.Controls
         {
             InitializeComponent();
 
-            this.DragEnter += (s, e) =>
+            DragEnter += (s, e) =>
             {
                 e.Effects = DragDropEffects.Scroll;
                 e.Handled = true;
                 UploadRec.Stroke = Brushes.Blue;
             };
-            this.DragLeave += (s, e) =>
+            DragLeave += (s, e) =>
             {
                 UploadRec.Stroke = Brushes.Gray;
             };

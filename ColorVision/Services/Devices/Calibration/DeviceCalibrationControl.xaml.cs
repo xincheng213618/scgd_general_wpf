@@ -22,14 +22,14 @@ namespace ColorVision.Services.Devices.Calibration
 
         public DeviceCalibrationControl(DeviceCalibration deviceCalibration, bool isCanEdit = true)
         {
-            this.Device = deviceCalibration;
+            Device = deviceCalibration;
             IsCanEdit = isCanEdit;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = this.Device;
+            DataContext = Device;
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
         }
         public void Dispose()

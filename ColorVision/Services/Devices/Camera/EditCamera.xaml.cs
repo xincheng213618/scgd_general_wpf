@@ -209,14 +209,14 @@ namespace ColorVision.Services.Devices.Camera
             };
 
             EditConfig = DeviceCamera.Config.Clone();
-            this.DataContext = DeviceCamera;
+            DataContext = DeviceCamera;
             EditContent.DataContext = EditConfig;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             EditConfig.CopyTo(DeviceCamera.Config);
-            this.Close();
+            Close();
         }
     }
 }

@@ -19,15 +19,15 @@ namespace ColorVision.Services.Devices.Sensor
 
         public DisplaySensorControl(DeviceSensor device)
         {
-            this.Device = device;
+            Device = device;
             InitializeComponent();
 
-            this.PreviewMouseDown += UserControl_PreviewMouseDown;
+            PreviewMouseDown += UserControl_PreviewMouseDown;
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = Device;
+            DataContext = Device;
             SelectChanged += (s, e) =>
             {
                 DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
@@ -47,7 +47,7 @@ namespace ColorVision.Services.Devices.Sensor
 
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (this.Parent is StackPanel stackPanel)
+            if (Parent is StackPanel stackPanel)
             {
                 if (stackPanel.Tag is IDisPlayControl disPlayControl)
                     disPlayControl.IsSelected = false;

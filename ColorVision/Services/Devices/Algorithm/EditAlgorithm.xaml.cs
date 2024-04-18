@@ -19,14 +19,14 @@ namespace ColorVision.Services.Devices.Algorithm
 
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-            this.DataContext = Device;
+            DataContext = Device;
             EditConfig = Device.Config.Clone();
             EditContent.DataContext = EditConfig;
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             EditConfig.CopyTo(Device.Config);
-            this.Close();
+            Close();
         }
 
 

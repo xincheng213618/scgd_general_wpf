@@ -279,7 +279,7 @@ namespace ColorVision.Services.Devices.Calibration
                                 sysResourceModel.Name = item1.Title;
                                 sysResourceModel.Code = md5;
                                 sysResourceModel.Type = (int)item1.CalibrationType.ToResouceType();
-                                sysResourceModel.Pid = this.SysResourceModel.Id;
+                                sysResourceModel.Pid = SysResourceModel.Id;
                                 sysResourceModel.Value = Path.GetFileName(FileName);
                                 sysResourceModel.CreateDate = DateTime.Now;
                                 SysResourceDao.Instance.Save(sysResourceModel);
@@ -288,7 +288,7 @@ namespace ColorVision.Services.Devices.Calibration
                                     CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
-                                        this.AddChild(calibrationResource);
+                                        AddChild(calibrationResource);
                                     });
                                     keyValuePairs2.Add(item1.Title, calibrationResource);
                                 }

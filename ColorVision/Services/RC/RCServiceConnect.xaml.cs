@@ -38,7 +38,7 @@ namespace ColorVision.Services.RC
             rcServiceConfigs.Insert(0, rcServiceConfig);
             ListViewRC.SelectedIndex = 0;
 
-            this.Closed += (s, e) =>
+            Closed += (s, e) =>
             {
                 rcServiceConfigs.Remove(rcServiceConfig);
             };
@@ -66,13 +66,13 @@ namespace ColorVision.Services.RC
             Task.Run(() => {
                 MQTTRCService.GetInstance().QueryServices();
                 MQTTRCService.GetInstance().ReRegist(); });
-            this.Close();
+            Close();
         }
 
         private void Button_Click_Cancel(object sender, RoutedEventArgs e)
         {
             rcServiceConfigBackUp.CopyTo(rcServiceConfig);
-            this.Close();
+            Close();
         }
 
         private void Button_Click_Test(object sender, RoutedEventArgs e)
@@ -81,7 +81,7 @@ namespace ColorVision.Services.RC
             Task.Run(() =>
             {
                 bool IsConnect = MQTTRCService.GetInstance().TryRegist(rcServiceConfig);
-                this.Dispatcher.BeginInvoke(() => MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}", "ColorVision")); 
+                Dispatcher.BeginInvoke(() => MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}", "ColorVision")); 
             });
         }
 
@@ -90,12 +90,12 @@ namespace ColorVision.Services.RC
             if (ListViewRCBorder.Visibility == Visibility.Visible)
             {
                 ListViewRCBorder.Visibility = Visibility.Collapsed;
-                this.Width -= 170;
+                Width -= 170;
             }
             else
             {
                 ListViewRCBorder.Visibility = Visibility.Visible;
-                this.Width += 170;
+                Width += 170;
             }
         }
 

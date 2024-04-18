@@ -38,17 +38,17 @@ namespace ColorVision.Services.Devices.Calibration
         public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; }
         public DisplayCalibrationControl(DeviceCalibration device)
         {
-            this.Device = device;
+            Device = device;
             InitializeComponent();
             DeviceService.OnMessageRecved += Service_OnCalibrationEvent;
-            this.PreviewMouseDown += UserControl_PreviewMouseDown;
+            PreviewMouseDown += UserControl_PreviewMouseDown;
 
         }
 
         public ViewCalibration View { get=> Device.View; }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = Device;
+            DataContext = Device;
 
             CalibrationParams = Device.CalibrationParams;
             ComboxCalibrationTemplate.ItemsSource = Device.CalibrationParams;
@@ -108,7 +108,7 @@ namespace ColorVision.Services.Devices.Calibration
 
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
-            if (this.Parent is StackPanel stackPanel)
+            if (Parent is StackPanel stackPanel)
             {
                 if (stackPanel.Tag is IDisPlayControl disPlayControl)
                     disPlayControl.IsSelected = false;

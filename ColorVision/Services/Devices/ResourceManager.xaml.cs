@@ -26,13 +26,13 @@ namespace ColorVision.Services.Devices
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = DeviceService;
+            DataContext = DeviceService;
             ListViewService.ItemsSource = DeviceService.VisualChildren;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            this.Close();
+            Close();
         }
 
         private void ListViewService_SelectionChanged(object sender, SelectionChangedEventArgs e)

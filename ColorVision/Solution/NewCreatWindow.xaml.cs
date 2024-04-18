@@ -35,17 +35,17 @@ namespace ColorVision.Solution
 
 
             DirectoryPath = RecentNewCreateCacheList[0];
-            this.Name = NewCreateFileName(ConfigHandler.GetInstance().SoftwareConfig.SolutionSetting.DefaultCreatName);
+            Name = NewCreateFileName(ConfigHandler.GetInstance().SoftwareConfig.SolutionSetting.DefaultCreatName);
             RecentNewCreateNameCacheList.Add(Name);
         }
 
         public string NewCreateFileName(string FileName)
         {
-            if (!Directory.Exists($"{this.DirectoryPath}\\{FileName}"))
+            if (!Directory.Exists($"{DirectoryPath}\\{FileName}"))
                 return FileName;
             for (int i = 1; i < 999; i++)
             {
-                if (!Directory.Exists($"{this.DirectoryPath}\\{FileName}{i}"))
+                if (!Directory.Exists($"{DirectoryPath}\\{FileName}{i}"))
                     return $"{FileName}{i}";
             }
             return FileName;
@@ -82,7 +82,7 @@ namespace ColorVision.Solution
         {
             InitializeComponent();
             NewCreateViewMode = new NewCreateViewMode();
-            this.DataContext = NewCreateViewMode;
+            DataContext = NewCreateViewMode;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -107,7 +107,7 @@ namespace ColorVision.Solution
         {
             if (string.IsNullOrWhiteSpace(NewCreateViewMode.Name))
             {
-                this.Close();
+                Close();
                 return;
             }
 
@@ -129,7 +129,7 @@ namespace ColorVision.Solution
                 }
                 else
                 {
-                    this.Close();
+                    Close();
                     return;
                 }
             }
@@ -153,7 +153,7 @@ namespace ColorVision.Solution
             NewCreateViewMode.RecentNewCreateCache.InsertFile(NewCreateViewMode.DirectoryPath);
 
             IsCreate = true;
-            this.Close();
+            Close();
         }
 
         private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

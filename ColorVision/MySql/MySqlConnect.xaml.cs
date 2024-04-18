@@ -47,13 +47,13 @@ namespace ColorVision.MySql
 
             ConfigHandler.GetInstance().SaveConfig();
             Task.Run(() => MySqlControl.GetInstance().Connect());
-            this.Close();
+            Close();
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
             MySqlConfigBackUp.CopyTo(MySqlConfig);
-            this.Close();
+            Close();
         }
 
 
@@ -76,7 +76,7 @@ namespace ColorVision.MySql
             MySqlConfigs.Insert(0, MySqlConfig);
             ListViewMySql.SelectedIndex = 0;
 
-            this.Closed += (s, e) =>
+            Closed += (s, e) =>
             {
                 MySqlConfigs.Remove(MySqlConfig);
             };
@@ -88,7 +88,7 @@ namespace ColorVision.MySql
             Task.Run(() =>
             {
                 bool IsConnect = MySqlControl.TestConnect(MySqlConfig);
-                this.Dispatcher.BeginInvoke(() => MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}", "ColorVision"));
+                Dispatcher.BeginInvoke(() => MessageBox.Show($"连接{(IsConnect ? "成功" : "失败")}", "ColorVision"));
             });
 
 
@@ -99,12 +99,12 @@ namespace ColorVision.MySql
             if (ListViewMySqlBorder.Visibility == Visibility.Visible)
             {
                 ListViewMySqlBorder.Visibility = Visibility.Collapsed;
-                this.Width -= 170;
+                Width -= 170;
             }
             else
             {
                 ListViewMySqlBorder.Visibility = Visibility.Visible;
-                this.Width += 170;
+                Width += 170;
             }           
         }
 

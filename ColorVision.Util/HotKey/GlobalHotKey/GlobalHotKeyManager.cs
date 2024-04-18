@@ -10,7 +10,7 @@ namespace ColorVision.HotKey.GlobalHotKey
         public IntPtr WindowHandle { get; set; } 
         private GlobalHotKeyManager(IntPtr intPtr)
         {
-            this.WindowHandle = intPtr;
+            WindowHandle = intPtr;
         }
         private static readonly object locker = new object();
 

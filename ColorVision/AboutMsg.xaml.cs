@@ -21,12 +21,12 @@ namespace ColorVision
         {
             InitializeComponent();
             IsBlurEnabled = ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.TransparentWindow && IsBlurEnabled;
-            this.Background = IsBlurEnabled ? this.Background : Brushes.Gray;
+            Background = IsBlurEnabled ? Background : Brushes.Gray;
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.Topmost = true;
+            Topmost = true;
             CloseButton.Focus();
             #if (DEBUG == true)
             TextBlockVision.Text = $"ColorVision{(DebugBuild(Assembly.GetExecutingAssembly())? " (Debug) " : "(Release)")}{(Debugger.IsAttached ? " (调试中) " : "")} ({(IntPtr.Size == 4 ? "32" : "64")}位) - {Assembly.GetExecutingAssembly().GetName().Version} -.NET Core {Environment.Version} Build {File.GetLastWriteTime(System.Windows.Forms.Application.ExecutablePath):yyyy.MM.dd}";
@@ -37,11 +37,11 @@ namespace ColorVision
 
 
             Grid1.Background = RainbowAnimation();
-            this.Deactivated += (s, e) =>
+            Deactivated += (s, e) =>
             {
                 try
                 {
-                    this.Close();
+                    Close();
                 }
                 catch 
                 {
@@ -128,20 +128,20 @@ namespace ColorVision
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            this.Close();
+            Close();
         }
 
         private void Image_PreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
             Process.Start("explorer", "https://www.color-vision.com.cn/");
-            this.Close();
+            Close();
         }
 
         private void BaseWindow_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Escape)
             {
-                this.Close();
+                Close();
                 e.Handled = true;
             }
         }
@@ -153,12 +153,12 @@ namespace ColorVision
 
         private void CloseButton_MouseLeave(object sender, MouseEventArgs e)
         {
-            this.Cursor = Cursors.Arrow;
+            Cursor = Cursors.Arrow;
         }
 
         private void CloseButton_MouseEnter(object sender, MouseEventArgs e)
         {
-            this.Cursor = Cursors.Hand;
+            Cursor = Cursors.Hand;
         }
     }
 }

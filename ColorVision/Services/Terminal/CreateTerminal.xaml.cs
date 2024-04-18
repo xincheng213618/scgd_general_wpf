@@ -52,7 +52,7 @@ namespace ColorVision.Services.Terminal
             CreateCode.Text = TerminalService.NewCreateFileName($"DEV.{TerminalService.ServiceType}.Default");
             CreateName.Text = TerminalService.NewCreateFileName($"DEV.{TerminalService.ServiceType}.Default");
 
-            this.DataContext = TerminalService;
+            DataContext = TerminalService;
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -243,7 +243,7 @@ namespace ColorVision.Services.Terminal
                 if (sysDevModel != null && sysDevModel.TypeCode != null && sysDevModel.PCode != null && sysDevModel.Code != null)
                     RC.MQTTRCService.GetInstance().RestartServices(sysDevModel.TypeCode, sysDevModel.PCode, sysDevModel.Code);
                 //MessageBox.Show(WindowHelpers.GetActiveWindow(),"创建成功，正在重启服务", "ColorVision");
-                this.Close();
+                Close();
             }
             else
             {

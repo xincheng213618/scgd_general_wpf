@@ -169,7 +169,7 @@ namespace ColorVision.Services.Devices
                 var config = JsonConvert.DeserializeObject<T>(data);
                 if (config != null)
                 {
-                    config.CopyTo(this.Config);
+                    config.CopyTo(Config);
                     Save();
                 }
                 else
@@ -245,7 +245,7 @@ namespace ColorVision.Services.Devices
             //删除资源
 
 
-            this.Dispose();
+            Dispose();
         }
     }
 }

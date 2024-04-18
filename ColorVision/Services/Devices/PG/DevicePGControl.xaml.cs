@@ -24,7 +24,7 @@ namespace ColorVision.Services.Devices.PG
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
-            this.DataContext = DevicePG;
+            DataContext = DevicePG;
         }
 
 

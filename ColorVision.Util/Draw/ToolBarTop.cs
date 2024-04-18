@@ -573,7 +573,7 @@ namespace ColorVision.Draw
                     return;
                 if (!string.IsNullOrWhiteSpace(_LastChoice))
                 {
-                    Type type = this.GetType();
+                    Type type = GetType();
                     PropertyInfo property = type.GetProperty(_LastChoice);
                     property?.SetValue(this, false);
                 }

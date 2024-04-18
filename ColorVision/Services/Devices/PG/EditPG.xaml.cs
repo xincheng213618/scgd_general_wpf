@@ -67,7 +67,7 @@ namespace ColorVision.Services.Devices.PG
             };
 
 
-            this.DataContext = Device;
+            DataContext = Device;
 
             EditConfig = Device.Config.Clone();
             EditContent.DataContext = EditConfig;
@@ -76,7 +76,7 @@ namespace ColorVision.Services.Devices.PG
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             EditConfig.CopyTo(Device.Config);
-            this.Close();
+            Close();
         }
     }
 }

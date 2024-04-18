@@ -42,7 +42,7 @@ namespace ColorVision.Services.Devices.Spectrum.Views
             Grid.SetColumn(TextBox1, 0);
             Grid.SetRow(TextBox1, 0);
             MainGrid.Children.Insert(0, TextBox1);
-            this.MouseDown += (s, e) =>
+            MouseDown += (s, e) =>
             {
                 TextBox1.Focus();
             };

@@ -16,13 +16,13 @@ namespace ColorVision.Services.Terminal
 
         public TerminalServiceControl(TerminalService mQTTService)
         {
-            this.ServiceTerminal = mQTTService;
+            ServiceTerminal = mQTTService;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = ServiceTerminal;
+            DataContext = ServiceTerminal;
 
             if (ServiceTerminal.VisualChildren.Count == 0)
                 ListViewService.Visibility = Visibility.Collapsed;
@@ -47,7 +47,7 @@ namespace ColorVision.Services.Terminal
             {
                 if (ServiceTerminal.VisualChildren[listView.SelectedIndex] is DeviceService baseObject)
                 {
-                    if (this.Parent is Grid grid)
+                    if (Parent is Grid grid)
                     {
                         grid.Children.Clear();
                         grid.Children.Add(baseObject.GetDeviceControl());

@@ -40,7 +40,7 @@ namespace ColorVision.Services.Devices.SMU.Views
 
             this.VList = VList;
             this.IList = IList;
-            this.MeasurementType = measurementType;
+            MeasurementType = measurementType;
             this.LimitEnd = LimitEnd;
             Gen();
         }

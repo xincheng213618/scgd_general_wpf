@@ -17,7 +17,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
         public DeviceAlgorithmControl(DeviceAlgorithm device, bool isCanEdit = true)
         {
-            this.Device = device;
+            Device = device;
             IsCanEdit = isCanEdit;
             InitializeComponent();
         }
@@ -25,7 +25,7 @@ namespace ColorVision.Services.Devices.Algorithm
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
-            this.DataContext = Device;
+            DataContext = Device;
         }
         private void ServiceCache_Click(object sender, RoutedEventArgs e)
         {
