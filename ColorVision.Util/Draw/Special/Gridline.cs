@@ -51,11 +51,17 @@ namespace ColorVision.Draw.Special
 
         private void ZoomboxSub_LayoutUpdated(object? sender, System.EventArgs e)
         {
-            DrawImage();
+            if (Radio != ZoomboxSub.ContentMatrix.M11)
+            {
+                Radio = ZoomboxSub.ContentMatrix.M11;
+                DrawImage();
+            }
+
         }
 
         private bool _IsShow;
 
+        double Radio;
         public void DrawImage()
         {
             if (DrawCanvas.Source is BitmapSource bitmapSource)

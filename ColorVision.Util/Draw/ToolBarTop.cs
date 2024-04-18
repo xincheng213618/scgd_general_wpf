@@ -137,7 +137,7 @@ namespace ColorVision.Draw
             {
                 if (e.IsEditMode)
                 {
-                    Parent.ContextMenu = null;
+                    ZoomboxSub.ContextMenu = null;
                 }
                 else
                 {

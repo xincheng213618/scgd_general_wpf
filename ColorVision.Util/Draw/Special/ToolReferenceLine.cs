@@ -55,8 +55,13 @@ namespace ColorVision.Util.Draw.Special
 
         private void ZoomboxSub_LayoutUpdated(object? sender, EventArgs e)
         {
-            Render();
+            if (Radio != ZoomboxSub.ContentMatrix.M11)
+            {
+                Radio = ZoomboxSub.ContentMatrix.M11;
+                Render();
+            }
         }
+        double Radio;
 
         private bool IsRMouseDown;
         private bool IsLMouseDown;

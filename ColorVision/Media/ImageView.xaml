@@ -168,7 +168,7 @@
                     </ToggleButton>
                     <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
                     <Button Content="属性" Command="{Binding OpenProperty}" />
-                    <Button x:Name="reference"  Click="reference_Click" Margin="1,0" >
+                    <Button x:Name="reference"  Click="reference_Click" Margin="1,0" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource ConcentricCirclesDrawImg}"  Margin="-5"/>
                     </Button>
                     <Popup x:Name="menuPop1" StaysOpen="False" Margin="0" PlacementTarget="{Binding ElementName=reference}" AllowsTransparency="True">
@@ -179,7 +179,7 @@
                             <Button Content="单十字准线" Click="reference1_Click" Width="80"  Tag="1"/>
                         </StackPanel>
                     </Popup>
-                    <ToggleButton IsChecked="{Binding Gridline.IsShow}">
+                    <ToggleButton IsChecked="{Binding Gridline.IsShow}" >
                         <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIGridlines}"  Margin="-5"/>
                     </ToggleButton>
                     <ToggleButton  IsChecked="{Binding Measure}" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
