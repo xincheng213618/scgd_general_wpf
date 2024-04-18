@@ -158,7 +158,7 @@ namespace ColorVision.Services.Dao
             return list;
         }
 
-
+        public List<SysResourceModel> GetAllType(int type) => GetAllByParam(new Dictionary<string, object>() { { "type", type },{ "is_delete",0 } });
         internal int DeleteInCodes(string[] codes)
         {
             string sqlCode = string.Join(',', codes);

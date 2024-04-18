@@ -127,7 +127,6 @@ namespace ColorVision.Services.Devices.Camera.Dao
                 row["expired"] = item.ExpiryDate;
                 row["code"] = item.Code;
                 row["res_dev_cam_pid"] = item.DevCameraId;
-
                 if (item.DevCaliId!=null)
                     row["res_dev_cali_pid"] = item.DevCaliId;
 

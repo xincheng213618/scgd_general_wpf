@@ -26,6 +26,7 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ColorVision.Services.PhyCamera;
 
 namespace ColorVision
 {
@@ -207,6 +208,10 @@ namespace ColorVision
                         {
                             MessageBox.Show(Application.Current.GetActiveWindow(),ex.Message);
                         }
+                        break;
+                    case "PhyCameraManager":
+                        PhyCameraManagerWindow phyCameraManager = new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow() };
+                        phyCameraManager.Show();
                         break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");

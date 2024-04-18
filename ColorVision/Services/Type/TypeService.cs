@@ -45,6 +45,8 @@ namespace ColorVision.Services.Type
         [Description("多色")]
         LumMultiColor = 40,
         Group = 1000,
+        SpCalibration =201,
+        PhyCamera =101,
     }
 
     public class TypeService : TerminalServiceBase
