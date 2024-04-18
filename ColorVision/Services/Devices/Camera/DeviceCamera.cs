@@ -134,7 +134,7 @@ namespace ColorVision.Services.Devices.Camera
                             foreach (var item in licFiles)
                             {
                                 CameraLicenseModel cameraLicenseModel = new CameraLicenseModel();
-                                cameraLicenseModel.RescourceId = SysResourceModel.Id;
+                                cameraLicenseModel.DevCameraId = SysResourceModel.Id;
                                 cameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(item.FullName);
 
                                 using var stream = item.Open();
@@ -165,7 +165,7 @@ namespace ColorVision.Services.Devices.Camera
                     else if (Path.GetExtension(file) == ".lic")
                     {
                         CameraLicenseModel cameraLicenseModel = new CameraLicenseModel();
-                        cameraLicenseModel.RescourceId = SysResourceModel.Id;
+                        cameraLicenseModel.DevCameraId = SysResourceModel.Id;
                         cameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(openFileDialog.SafeFileName);
                         cameraLicenseModel.LicenseValue = File.ReadAllText(file);
                         cameraLicenseModel.CusTomerName = cameraLicenseModel.ColorVisionLincense.Licensee;

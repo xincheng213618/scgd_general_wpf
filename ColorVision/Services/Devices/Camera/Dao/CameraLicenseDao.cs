@@ -51,7 +51,10 @@ namespace ColorVision.Services.Devices.Camera.Dao
             ExpiryDate = DateTime.Now;
         }
 
-        public int? RescourceId { get; set; }
+        public string? Code { get; set; }
+        public int? DevCameraId { get; set; }
+
+        public int? DevCaliId { get; set; }
 
         public string? LicenseValue { get; set; }
 
@@ -66,10 +69,6 @@ namespace ColorVision.Services.Devices.Camera.Dao
         public DateTime? ExpiryDate { get; set; }
 
         public string? CusTomerName { get; set; }
-
-        public string? CamerID { get; set; }
-        public string? Config { get; set; }
-        public string? CameraMode { get; set; }
         public DateTime? CreateDate { get; set; }
     }
 
@@ -93,93 +92,53 @@ namespace ColorVision.Services.Devices.Camera.Dao
             dataTable.Columns.Add("mac_sn", typeof(string));
             dataTable.Columns.Add("model", typeof(string));
             dataTable.Columns.Add("value", typeof(string));
-            dataTable.Columns.Add("pid", typeof(int));
             dataTable.Columns.Add("create_date", typeof(DateTime));
             dataTable.Columns.Add("expired", typeof(DateTime));
+            dataTable.Columns.Add("code", typeof(string));
+            dataTable.Columns.Add("res_dev_cam_pid", typeof(int));
+            dataTable.Columns.Add("res_dev_cali_pid", typeof(int));
             return dataTable;
         }
 
-        public override CameraLicenseModel GetModelFromDataRow(DataRow item)
+        public override CameraLicenseModel GetModelFromDataRow(DataRow item) => new CameraLicenseModel()
         {
-            CameraLicenseModel model = new CameraLicenseModel
-            {
-                Id = item.Field<int>("id"),
-                RescourceId = item.Field<int>("pid"),
-                LicenseValue = item.Field<string?>("value"),
-                Model = item.Field<string?>("model"),
-                MacAddress = item.Field<string?>("mac_sn"),
-                CusTomerName = item.Field<string?>("customer_name"),
-                CamerID = item.Field<string?>("phy_camera_id"),
-                Config = item.Field<string?>("phy_camera_cfg"),
-                CameraMode = item.Field<string?>("phy_camera_model"),
-                CreateDate = item.Field<DateTime>("create_date"),
-                ExpiryDate = item.Field<DateTime?>("expired")
-            };
-            return model;
-        }
+            Id = item.Field<int>("id"),
+            LicenseValue = item.Field<string?>("value"),
+            Model = item.Field<string?>("model"),
+            MacAddress = item.Field<string?>("mac_sn"),
+            CusTomerName = item.Field<string?>("customer_name"),
+            CreateDate = item.Field<DateTime>("create_date"),
+            ExpiryDate = item.Field<DateTime?>("expired"),
+            Code = item.Field<string?>("code"),
+            DevCameraId = item.Field<int?>("res_dev_cam_pid"),
+            DevCaliId = item.Field<int?>("res_dev_cali_pid")
+        };
 
         public override DataRow Model2Row(CameraLicenseModel item, DataRow row)
         {
             if (item != null)
             {
                 row["id"] = item.Id;
-                row["pid"] = item.RescourceId;
                 row["value"] = item.LicenseValue;
                 row["model"] = item.Model;
                 row["mac_sn"] = item.MacAddress;
                 row["customer_name"] = item.CusTomerName;
                 row["create_date"] = item.CreateDate;
                 row["expired"] = item.ExpiryDate;
+                row["code"] = item.Code;
+                row["res_dev_cam_pid"] = item.DevCameraId;
+
+                if (item.DevCaliId!=null)
+                    row["res_dev_cali_pid"] = item.DevCaliId;
+
             }
             return row;
         }
 
-        public List<CameraLicenseModel> GetAllByMAC(string id ,int pid) => GetAllByParam(new Dictionary<string, object>() { { "mac_sn", id },{ "pid", pid } });
-
-
-        public CameraLicenseModel? GetLatestCameraTemp(int? resId = null)
-        {
-            return GetCameraTempsByCreateDate(resId, limit: 1).FirstOrDefault();
-        }
+        public List<CameraLicenseModel> GetAllByMAC(string id ,int pid) => GetAllByParam(new Dictionary<string, object>() { { "mac_sn", id },{ "res_dev_cam_pid", pid } });
          
-        public List<string?> GetAllCameraID() => GetAll().Where(x => !string.IsNullOrEmpty(x.CamerID)).Select(x => x.CamerID).ToList();
+        public List<string?> GetAllCameraID() => GetAll().Where(x => !string.IsNullOrEmpty(x.Code)).Select(x => x.Code).ToList();
 
-        public List<CameraLicenseModel> GetCameraTempsByCreateDate(int? resId = null, int limit = 1)
-        {
-            List<CameraLicenseModel> list = new List<CameraLicenseModel>();
-            DataTable dInfo;
-            string sql;
-            if (resId.HasValue)
-            {
-                sql = $"SELECT id, temp_value, pwm_value,create_date,res_id FROM {TableName} WHERE res_id = @ResId ORDER BY create_date DESC LIMIT @Limit";
-                var parameters = new Dictionary<string, object>
-                {
-                    {"@ResId", resId.Value},
-                    {"@Limit", limit}
-                };
-                dInfo = GetData(sql, parameters);
-            }
-            else
-            {
-
-                sql = $"SELECT id, temp_value, pwm_value,create_date,res_id FROM {TableName} ORDER BY create_date DESC LIMIT @Limit";
-                var parameters = new Dictionary<string, object>
-                {
-                    {"@Limit", limit}
-                };
-                dInfo = GetData(sql, parameters);
-            };
-
-            foreach (DataRow item in dInfo.Rows)
-            {
-                var model = GetModelFromDataRow(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
 
     }
 

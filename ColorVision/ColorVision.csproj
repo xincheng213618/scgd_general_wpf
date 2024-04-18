@@ -236,7 +236,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Services\PhyCamera\Dao\" />
+    <Folder Include="Services\Devices\PhyCamera\Dao\" />
   </ItemGroup>
 
 </Project>
