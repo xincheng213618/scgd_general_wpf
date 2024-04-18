@@ -1,12 +1,13 @@
-﻿using ColorVision.Services.Templates.POI.Dao;
+﻿using ColorVision.Common.Sorts;
+using ColorVision.Services.Templates.POI.Dao;
 
 namespace ColorVision.Services.Templates.POI
 {
-    public class PoiParamData
+    public class PoiParamData :ISortID
     {
         public PoiParamData(PoiDetailModel dbModel)
         {
-            ID = dbModel.Id;
+            Id = dbModel.Id;
             Name = dbModel.Name ?? dbModel.Id.ToString();
             PointType = dbModel.Type switch
             {
@@ -25,7 +26,7 @@ namespace ColorVision.Services.Templates.POI
         {
         }
 
-        public int ID { set; get; }
+        public int Id { set; get; }
 
         public string Name { set; get; }
         public RiPointTypes PointType { set; get; }
@@ -36,6 +37,7 @@ namespace ColorVision.Services.Templates.POI
 
         public object Tag { set; get; }
 
+        public int IdShow { get; set; }
     }
 
 }

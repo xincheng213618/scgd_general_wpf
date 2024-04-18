@@ -86,12 +86,12 @@ namespace ColorVision
 
             if (MySqlControl.GetInstance().IsConnect)
             {
-                string sql = "ALTER TABLE `t_scgd_camera_license` ADD `code` VARCHAR ( 255 ) DEFAULT NULL,\n" +
-"ADD `phy_camera_id` VARCHAR ( 255 ) DEFAULT NULL COMMENT '物理相机ID',\n" +
-"ADD `phy_camera_model` VARCHAR ( 255 ) DEFAULT NULL COMMENT '物理相机型号',\n" +
-"ADD `phy_camera_cfg` JSON DEFAULT NULL COMMENT '物理相机配置',\n" +
-"MODIFY `customer_name` VARCHAR ( 64 ) DEFAULT NULL COMMENT '客户名称';";
-                MySqlControl.GetInstance().ExecuteNonQuery(sql);
+//                string sql = "ALTER TABLE `t_scgd_camera_license` ADD `code` VARCHAR ( 255 ) DEFAULT NULL,\n" +
+//"ADD `phy_camera_id` VARCHAR ( 255 ) DEFAULT NULL COMMENT '物理相机ID',\n" +
+//"ADD `phy_camera_model` VARCHAR ( 255 ) DEFAULT NULL COMMENT '物理相机型号',\n" +
+//"ADD `phy_camera_cfg` JSON DEFAULT NULL COMMENT '物理相机配置',\n" +
+//"MODIFY `customer_name` VARCHAR ( 64 ) DEFAULT NULL COMMENT '客户名称';";
+//                MySqlControl.GetInstance().ExecuteNonQuery(sql);
 
 
             }

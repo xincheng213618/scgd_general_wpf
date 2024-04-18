@@ -429,7 +429,7 @@ namespace ColorVision.Services.Templates.POI
                             Circle.Attribute.Radius = item.PixWidth/2;
                             Circle.Attribute.Brush = Brushes.Transparent;
                             Circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Circle.Attribute.ID = item.ID;
+                            Circle.Attribute.ID = item.IdShow;
                             Circle.Attribute.Text = item.Name;
                             Circle.Render();
                             ImageShow.AddVisual(Circle);
@@ -439,7 +439,7 @@ namespace ColorVision.Services.Templates.POI
                             Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Rectangle.Attribute.ID = item.ID;
+                            Rectangle.Attribute.ID = item.IdShow;
                             Rectangle.Attribute.Name = item.Name;
                             Rectangle.Render();
                             ImageShow.AddVisual(Rectangle);
@@ -1091,7 +1091,7 @@ namespace ColorVision.Services.Templates.POI
                     {
                         PoiParamData poiParamData = new PoiParamData()
                         {
-                            ID = circle.ID,
+                            Id = circle.ID,
                             PointType = RiPointTypes.Circle,
                             PixX = circle.Center.X,
                             PixY = circle.Center.Y,
@@ -1108,7 +1108,7 @@ namespace ColorVision.Services.Templates.POI
                     {
                         PoiParamData poiParamData = new PoiParamData()
                         {
-                            ID = rectangle.ID,
+                            Id = rectangle.ID,
                             Name = rectangle.Name,
                             PointType = RiPointTypes.Rect,
                             PixX = rectangle.Rect.X,

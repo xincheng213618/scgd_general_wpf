@@ -24,7 +24,7 @@ namespace ColorVision.Services.Templates.POI.Dao
 
         public PoiDetailModel(int pid, PoiParamData data)
         {
-            Id = data.ID;
+            Id = data.Id;
             Pid = pid;
             Name = data.Name;
             Type = data.PointType switch

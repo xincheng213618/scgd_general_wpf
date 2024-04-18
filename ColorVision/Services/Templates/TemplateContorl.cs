@@ -1,4 +1,6 @@
 ﻿#pragma warning disable CS8604
+using ColorVision.Common.Extension;
+using ColorVision.Common.Sorts;
 using ColorVision.Common.Utilities;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
@@ -377,7 +379,7 @@ namespace ColorVision.Services.Templates
             List<PoiDetailModel> poiDetails = poiDetail.GetAllByPid(poiParam.Id);
             foreach (var dbModel in poiDetails)
             {
-                poiParam.PoiPoints.Add(new PoiParamData(dbModel));
+                poiParam.PoiPoints.AddUnique(new PoiParamData(dbModel));
             }
         }
 

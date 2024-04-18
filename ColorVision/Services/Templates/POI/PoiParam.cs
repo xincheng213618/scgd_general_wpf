@@ -79,7 +79,7 @@ namespace ColorVision.Services.Templates.POI
         /// <summary>
         /// 关注点列表
         /// </summary>
-        public List<PoiParamData> PoiPoints { get; set; } = new List<PoiParamData>();
+        public ObservableCollection<PoiParamData> PoiPoints { get; set; } = new ObservableCollection<PoiParamData>();
 
         public DatumArea DatumArea { get; set; } = new DatumArea();
 
