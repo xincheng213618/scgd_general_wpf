@@ -61,7 +61,6 @@ namespace ColorVision.Media
             {
                 TextBox1.Focus();
             };
-
             ToolBarTop = new ToolBarTop(this,Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
             ToolBar2.DataContext = ToolBarTop;

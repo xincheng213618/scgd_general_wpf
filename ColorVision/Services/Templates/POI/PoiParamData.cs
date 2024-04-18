@@ -33,6 +33,9 @@ namespace ColorVision.Services.Templates.POI
         public double PixY { set; get; }
         public double PixWidth { set; get; }
         public double PixHeight { set; get; }
+
+        public object Tag { set; get; }
+
     }
 
 }

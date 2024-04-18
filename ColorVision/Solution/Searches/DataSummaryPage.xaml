@@ -39,11 +39,12 @@
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
                                     <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
                                     <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn  Header="序号">
+                            <GridViewColumn  Header="序号" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewBatchResult}"  >
                                         <TextBlock Text="{Binding Id}"/>
@@ -61,13 +62,6 @@
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:ViewBatchResult}"  >
                                         <TextBlock Text="{Binding BatchCode}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="用时">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type local:ViewBatchResult}"  >
-                                        <TextBlock Text="{Binding TotalTime}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

@@ -21,9 +21,11 @@ namespace ColorVision.Draw
     public class DrawingVisualBase<T>: DrawingVisualBase where T : DrawBaseAttribute, new()
     {
         public override int ID { get => Attribute.ID; set => Attribute.ID = value; }
+
+        public object Tag { get; set; }
+
+        public object ToolTip { get; set; }
+
         public T Attribute { get; set; }
     }
-
-
-
 }
