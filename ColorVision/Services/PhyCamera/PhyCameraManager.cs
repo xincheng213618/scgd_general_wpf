@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Type;
 using SkiaSharp;
@@ -26,6 +27,9 @@ namespace ColorVision.Services.PhyCameras
         public PhyCameraManager() 
         {
             CreateCommand = new RelayCommand(a => Create());
+            MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadPhyCamera();
+            if (MySqlControl.GetInstance().IsConnect)
+                LoadPhyCamera();
         }
 
         public void Create()

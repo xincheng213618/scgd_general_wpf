@@ -3,7 +3,7 @@ using ColorVision.Services.Dao;
 
 namespace ColorVision.Services.Core
 {
-    public class CalibrationResource : BaseResource, ISortID, ISortFilePath
+    public class CalibrationResource : BaseFileResource, ISortID, ISortFilePath
     {
         public CalibrationResource(SysResourceModel sysResourceModel) : base(sysResourceModel) 
         { 

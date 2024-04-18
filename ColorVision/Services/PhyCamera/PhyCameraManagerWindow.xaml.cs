@@ -29,5 +29,15 @@ namespace ColorVision.Services.PhyCamera
         {
             this.DataContext = PhyCameraManager.GetInstance();
         }
+
+        private void TreeView1_Loaded(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+
+        }
     }
 }

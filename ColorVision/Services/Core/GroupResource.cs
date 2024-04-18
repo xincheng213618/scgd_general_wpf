@@ -15,7 +15,7 @@ namespace ColorVision.Services.Core
         private int _ExpTime = 10;
     }
 
-    public class GroupResource: BaseResource
+    public class GroupResource: BaseFileResource
     {
         public static GroupResource? AddGroupResource(ICalibrationService<BaseResourceObject> deviceService , string Name)
         {

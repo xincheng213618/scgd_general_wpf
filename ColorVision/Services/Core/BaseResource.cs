@@ -4,6 +4,18 @@ using ColorVision.Services.Type;
 
 namespace ColorVision.Services.Core
 {
+
+    public class BaseFileResource : BaseResource
+    {
+        public BaseFileResource(SysResourceModel sysResourceModel):base(sysResourceModel)
+        {
+            FilePath = sysResourceModel.Value;
+        }
+        public string? FilePath { get; set; }
+        public int? Pid { get => SysResourceModel.Pid; }
+
+    }
+
     public class BaseResource : BaseResourceObject
     {
         public SysResourceModel SysResourceModel { get; set; }
@@ -12,9 +24,6 @@ namespace ColorVision.Services.Core
         {
             SysResourceModel = sysResourceModel;
             Name = sysResourceModel.Name ?? string.Empty;
-            FilePath = sysResourceModel.Value;
-            Id = sysResourceModel.Id;
-            Pid = sysResourceModel.Pid;
         }
 
         public override void Save()
@@ -23,11 +32,15 @@ namespace ColorVision.Services.Core
             VSysResourceDao.Instance.Save(SysResourceModel);
         }
 
+        public override void Delete()
+        {
+            base.Delete();  
+            SysResourceDao.Instance.DeleteById(SysResourceModel.Id);
+        }
+
         public ServiceTypes ServiceTypes { get => (ServiceTypes)SysResourceModel.Type; }
 
-        public string? FilePath { get; set; }
-        public int Id { get; set; }
-        public int? Pid { get; set; }
+        public int Id { get => SysResourceModel.Id; }
     }
 
 
