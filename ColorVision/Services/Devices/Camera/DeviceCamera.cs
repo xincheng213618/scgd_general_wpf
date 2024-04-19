@@ -320,7 +320,7 @@ namespace ColorVision.Services.Devices.Camera
                 string Cameracfg = path + "\\Camera.cfg";
 
                 string Calibrationcfg = path + "\\Calibration.cfg";
-                Dictionary<string, List<ColorVisionVCalibratioItem>> keyValuePairs1 = JsonConvert.DeserializeObject<Dictionary<string, List<ColorVisionVCalibratioItem>>>(File.ReadAllText(Calibrationcfg, Encoding.GetEncoding("gbk")));
+                Dictionary<string, List<ZipCalibrationItem>> keyValuePairs1 = JsonConvert.DeserializeObject<Dictionary<string, List<ZipCalibrationItem>>>(File.ReadAllText(Calibrationcfg, Encoding.GetEncoding("gbk")));
 
                 Dictionary<string, CalibrationResource> keyValuePairs2 = new Dictionary<string, CalibrationResource>();
 
@@ -480,7 +480,7 @@ namespace ColorVision.Services.Devices.Camera
                 {
                     try
                     {
-                        List<ColorVisionVCalibratioItem> keyValuePairs = JsonConvert.DeserializeObject<List<ColorVisionVCalibratioItem>>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
+                        List<ZipCalibrationItem> keyValuePairs = JsonConvert.DeserializeObject<List<ZipCalibrationItem>>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
                         if (keyValuePairs != null)
                         {
                             string filePath = Path.GetFileNameWithoutExtension(item2.FullName);

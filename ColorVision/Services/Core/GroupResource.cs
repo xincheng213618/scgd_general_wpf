@@ -13,6 +13,16 @@ namespace ColorVision.Services.Core
 
         public int ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); } }
         private int _ExpTime = 10;
+
+        public double Aperturein { get; set; }
+
+        public double ND { get; set; }
+
+        public double ShotType { get; set; }
+
+        public double Focallength { get; set; }
+        public double GetImgMode { get; set; }
+        public double ImgBpp { get; set; }
     }
 
     public class GroupResource: BaseFileResource

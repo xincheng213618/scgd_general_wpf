@@ -61,6 +61,18 @@
                         <TextBlock DockPanel.Dock="Left" Text="增益"  Width="80" />
                         <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.Gain}"/>
                     </DockPanel>
+                    <DockPanel  Margin="0,2">
+                        <TextBlock DockPanel.Dock="Left" Text="ND"  Width="80" />
+                        <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.ND}"/>
+                    </DockPanel>
+                    <DockPanel  Margin="0,2">
+                        <TextBlock DockPanel.Dock="Left" Text="ImgBpp"  Width="80" />
+                        <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.ImgBpp}"/>
+                    </DockPanel>
+                    <DockPanel  Margin="0,2">
+                        <TextBlock DockPanel.Dock="Left" Text="ShotType"  Width="80" />
+                        <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding Config.ShotType}"/>
+                    </DockPanel>
                 </StackPanel>
             </Border>
             <Border  BorderThickness="1" BorderBrush="{DynamicResource  BorderBrush}" CornerRadius="5" Margin="5">
