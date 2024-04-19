@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Services.Dao;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Terminal;
@@ -52,7 +53,8 @@ namespace ColorVision.Services.Core
                     return true;
             }
             //这里追加一个规则，所有服务下设备名称均不允许相同
-            var deviceS = ServiceManager.GetInstance().DeviceServices.FirstOrDefault(x => x.Code == Code);
+            //这里追加一个规则，所有Code均不允许相同 2024.04.19
+            var deviceS = SysResourceDao.Instance.GetByParam(new System.Collections.Generic.Dictionary<string, object>() { { "code", Code } });
             if (deviceS != null)
                 return true;
             return false;

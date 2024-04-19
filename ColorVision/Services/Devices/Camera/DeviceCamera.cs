@@ -9,6 +9,7 @@ using ColorVision.Services.Devices.Camera.Dao;
 using ColorVision.Services.Devices.Camera.Views;
 using ColorVision.Services.Extension;
 using ColorVision.Services.Msg;
+using ColorVision.Services.PhyCameras;
 using ColorVision.Services.Templates;
 using ColorVision.Services.Type;
 using ColorVision.Solution;
@@ -65,7 +66,6 @@ namespace ColorVision.Services.Devices.Camera
             View.View.Title = $"相机视图 - {Config.Code}";
             this.SetIconResource("DrawingImageCamera", View.View);
 
-
             EditCommand = new RelayCommand(a =>
             {
                 EditCamera window = new EditCamera(this);
@@ -84,6 +84,27 @@ namespace ColorVision.Services.Devices.Camera
             RefreshLincenseCommand = new RelayCommand(a => RefreshLincense());
             DisPlaySaveCommand = new RelayCommand(a => SaveDis());
             DisplayCameraControlLazy = new Lazy<DisplayCameraControl>(() => new DisplayCameraControl(this));
+
+            RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
+            OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger());
+        }
+        public RelayCommand OpenPhyCameraMangerCommand { get; set; }
+        public void OpenPhyCameraManger()
+        {
+            DeviceService.GetAllCameraID();
+            PhyCameraManagerWindow phyCameraManager = new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow() };
+            phyCameraManager.Show();
+        }
+
+        public RelayCommand RefreshDeviceIdCommand { get; set; }
+
+        public void RefreshDeviceId()
+        {
+            MsgRecord msgRecord =  DeviceService.GetAllCameraID();
+            msgRecord.MsgSucessed += (e) =>
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(),"GetAllCameraID Sucess");
+            };
         }
 
         public void SaveDis()
