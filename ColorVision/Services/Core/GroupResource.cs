@@ -30,7 +30,7 @@ namespace ColorVision.Services.Core
         private double _GetImgMode;
 
         public double ImgBpp { get => _ImgBpp; set { _ImgBpp = value; NotifyPropertyChanged(); } }
-        private double _ImgBpp;
+        private double _ImgBpp; 
     }
 
     public class GroupResource: BaseFileResource

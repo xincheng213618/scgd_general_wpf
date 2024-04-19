@@ -306,7 +306,7 @@ namespace ColorVision.Services.Devices.Calibration
                 {
                     try
                     {
-                        List<ZipCalibrationItem> keyValuePairs = JsonConvert.DeserializeObject<List<ZipCalibrationItem>>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
+                        ZipCalibrationGroup keyValuePairs = JsonConvert.DeserializeObject<ZipCalibrationGroup>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
                         if (keyValuePairs != null)
                         {
                             string filePath = Path.GetFileNameWithoutExtension(item2.FullName);
@@ -328,7 +328,7 @@ namespace ColorVision.Services.Devices.Calibration
                             GroupResource groupResource = GroupResource.AddGroupResource(this, filePath);
                             if (groupResource != null)
                             {
-                                foreach (var item1 in keyValuePairs)
+                                foreach (var item1 in keyValuePairs.ZipCalibrationItems)
                                 {
                                     if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
                                     {
