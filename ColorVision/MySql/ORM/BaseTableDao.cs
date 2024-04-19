@@ -54,16 +54,25 @@ namespace ColorVision.MySql.ORM
                 whereClause = "WHERE " + string.Join(" AND ", param.Select(p => $"{p.Key} = @{p.Key}"));
             string sql = $"SELECT * FROM {TableName} {whereClause}";
 
-            DataTable dataTable = GetData(sql, param);
-            if (dataTable.Rows.Count == 1)
+            try
             {
-                return GetModelFromDataRow(dataTable.Rows[0]);
+                DataTable dataTable = GetData(sql, param);
+                if (dataTable.Rows.Count == 1)
+                {
+                    return GetModelFromDataRow(dataTable.Rows[0]);
+                }
+                else if (dataTable.Rows.Count >= 1)
+                {
+                    return GetModelFromDataRow(dataTable.Rows[0]);
+                }
+                return default;
             }
-            else if (dataTable.Rows.Count >= 1)
+            catch (Exception ex)
             {
-                return GetModelFromDataRow(dataTable.Rows[0]);
+                log.Debug(ex);
+                return default;
             }
-            return default;
+
         }
 
 
@@ -82,15 +91,23 @@ namespace ColorVision.MySql.ORM
             DataTable d_info = GetData(sql, param);
 
             List<T> list = new List<T>();
-            foreach (var item in d_info.AsEnumerable())
+            try
             {
-                T? model = GetModelFromDataRow(item);
-                if (model != null)
+                foreach (var item in d_info.AsEnumerable())
                 {
-                    list.Add(model);
+                    T? model = GetModelFromDataRow(item);
+                    if (model != null)
+                    {
+                        list.Add(model);
+                    }
                 }
+                return list;
             }
-            return list;
+            catch (Exception ex)
+            {
+                return list;
+            }
+
         }
 
         public List<T> ConditionalQuery(Dictionary<string, object> param)
@@ -118,21 +135,28 @@ namespace ColorVision.MySql.ORM
                     {
                         sql += $" AND `{pair.Key}` LIKE '%{pair.Value}%'";
                     }
-
-
                 }
             }
-
-            DataTable d_info = GetData(sql, param);
-            foreach (var item in d_info.AsEnumerable())
+            try
             {
-                T? model = GetModelFromDataRow(item);
-                if (model != null)
+                DataTable d_info = GetData(sql, param);
+                foreach (var item in d_info.AsEnumerable())
                 {
-                    list.Add(model);
+
+                    T? model = GetModelFromDataRow(item);
+                    if (model != null)
+                    {
+                        list.Add(model);
+                    }
                 }
+                return list;
             }
-            return list;
+            catch (Exception ex)
+            {
+                log.Debug(ex);
+                return list;
+            }
+
         }
 
 
