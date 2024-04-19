@@ -27,6 +27,7 @@ using System.Windows.Media.Imaging;
 using ColorVision.Solution;
 using System.Linq;
 using ColorVision.Utils;
+using CVCommCore.CVAlgorithm;
 
 namespace ColorVision.Media
 {

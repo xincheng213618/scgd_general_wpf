@@ -20,6 +20,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Services.Dao;
 using ColorVision.Common.Sorts;
+using CVCommCore.CVAlgorithm;
 
 namespace ColorVision.Services.Devices.Algorithm.Views
 {
