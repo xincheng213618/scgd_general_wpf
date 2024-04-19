@@ -1,13 +1,15 @@
 ﻿using Newtonsoft.Json;
-using cvColorVision;
 using ColorVision.Services.Devices;
+using cvColorVision;
+using ColorVision.Services.Devices.Camera.Configs;
+using ColorVision.Common.MVVM;
 
 namespace ColorVision.Services.PhyCameras.Configs
 {
     /// <summary>
     /// 相机配置
     /// </summary>
-    public class ConfigPhyCamera : DeviceServiceConfig
+    public class ConfigPhyCamera : ViewModelBase
     {
         public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged(); } }
         private string _CameraID;
@@ -40,5 +42,6 @@ namespace ColorVision.Services.PhyCameras.Configs
         }
 
         public CameraCfg CameraCfg { get; set; } = new CameraCfg();
+
     }
 }

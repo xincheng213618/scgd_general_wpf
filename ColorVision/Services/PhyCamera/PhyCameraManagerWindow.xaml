@@ -12,31 +12,39 @@
             <RowDefinition  Height="Auto"/>
             <RowDefinition  Height="*"/>
         </Grid.RowDefinitions>
-        <StackPanel Orientation="Horizontal" Margin="5">
-            <Button Content="添加相机" Command="{Binding CreateCommand}"/>
-        </StackPanel>
+
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="250"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <TreeView x:Name="TreeView1" ItemsSource="{Binding PhyCameras}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged" Margin="5,0,5,0">
-                <TreeView.Resources>
-                    <HierarchicalDataTemplate DataType="{x:Type local:PhyCamera}" ItemsSource="{Binding VisualChildren}" >
-                        <StackPanel >
-                            <TextBlock Text="{Binding Name}"/>
-                        </StackPanel>
-                    </HierarchicalDataTemplate>
-                </TreeView.Resources>
-                <TreeView.ItemContainerStyle>
-                    <Style TargetType="{x:Type TreeViewItem}" BasedOn="{StaticResource TreeViewItemBaseStyle}">
-                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
-                        <Setter Property="IsExpanded" Value="{Binding IsExpanded}"/>
-                        <Setter Property="IsSelected" Value="{Binding IsSelected}"/>
-                    </Style>
-                </TreeView.ItemContainerStyle>
-            </TreeView>
-            <Grid x:Name="StackPanelShow" Grid.Column="1" Margin="0,0,5,0" />
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <StackPanel Orientation="Horizontal" Margin="5">
+                    <Button Content="添加相机" Command="{Binding CreateCommand}"/>
+                </StackPanel>
+                <TreeView x:Name="TreeView1" Grid.Row="1" ItemsSource="{Binding PhyCameras}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged" Margin="0,0,5,0">
+                    <TreeView.Resources>
+                        <HierarchicalDataTemplate DataType="{x:Type local:PhyCamera}" ItemsSource="{Binding VisualChildren}" >
+                            <StackPanel >
+                                <TextBlock Text="{Binding Name}"/>
+                            </StackPanel>
+                        </HierarchicalDataTemplate>
+                    </TreeView.Resources>
+                    <TreeView.ItemContainerStyle>
+                        <Style TargetType="{x:Type TreeViewItem}" BasedOn="{StaticResource TreeViewItemBaseStyle}">
+                            <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                            <Setter Property="IsExpanded" Value="{Binding IsExpanded}"/>
+                            <Setter Property="IsSelected" Value="{Binding IsSelected}"/>
+                        </Style>
+                    </TreeView.ItemContainerStyle>
+                </TreeView>
+
+            </Grid>
+            <Grid x:Name="StackPanelShow" Grid.Column="1" Margin="0,0,0,0" />
         </Grid>
     </Grid>
 </Window>

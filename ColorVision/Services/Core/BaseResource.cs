@@ -4,7 +4,6 @@ using ColorVision.Services.Type;
 
 namespace ColorVision.Services.Core
 {
-
     public class BaseFileResource : BaseResource
     {
         public BaseFileResource(SysResourceModel sysResourceModel):base(sysResourceModel)

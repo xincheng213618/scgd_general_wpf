@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
+using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Devices.Camera.Configs;
@@ -47,6 +48,8 @@ namespace ColorVision.Services.PhyCameras
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            this.DataContext = PhyCamera;
+
             EditConfig = PhyCamera.Config.Clone();
             EditContent.DataContext = EditConfig;
 
@@ -60,7 +63,7 @@ namespace ColorVision.Services.PhyCameras
                                                select new KeyValuePair<ImageBpp, string>(e1, e1.ToDescription());
 
 
-            CameraID.ItemsSource = CameraLicenseDao.Instance.GetAllCameraID();
+            CameraID.ItemsSource = SysResourceDao.Instance.GetAllCameraID();
 
             var type = EditConfig.CameraType;
 
@@ -145,8 +148,6 @@ namespace ColorVision.Services.PhyCameras
 
             ComboxMotorType.ItemsSource = from e1 in Enum.GetValues(typeof(FOCUS_COMMUN)).Cast<FOCUS_COMMUN>()
                                           select new KeyValuePair<FOCUS_COMMUN, string>(e1, e1.ToString());
-            int index = 0;
-
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

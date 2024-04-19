@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
+using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Devices.Camera.Dao;
@@ -59,7 +60,7 @@ namespace ColorVision.Services.Devices.Camera
                                                select new KeyValuePair<ImageBpp, string>(e1, e1.ToDescription());
 
 
-            CameraID.ItemsSource = CameraLicenseDao.Instance.GetAllCameraID();
+            CameraID.ItemsSource = SysResourceDao.Instance.GetAllCameraID();
 
             var type = DeviceCamera.Config.CameraType;
 

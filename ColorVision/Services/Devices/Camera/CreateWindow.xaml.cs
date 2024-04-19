@@ -180,7 +180,7 @@ namespace ColorVision.Services.Devices.Camera
                 keyValuePairs[Config.CFW.ChannelCfgs[2].Chtype] = chType3;
             };
 
-            CameraID.ItemsSource = CameraLicenseDao.Instance.GetAllCameraID();
+            CameraID.ItemsSource = SysResourceDao.Instance.GetAllCameraID();
             TerminalService.MQTTTerminalCamera.GetAllSnID();
 
 

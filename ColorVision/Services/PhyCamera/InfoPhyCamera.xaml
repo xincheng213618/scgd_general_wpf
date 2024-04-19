@@ -69,26 +69,8 @@
                                         <TextBlock Text="相机类型:" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CameraType}"/>
                                     </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="发送信道:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SendTopic}"/>
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="接收信道:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SubscribeTopic}"/>
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="心跳时间"  Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.HeartbeatTime}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2" >
-                                        <TextBlock Text="Token"  Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ServiceToken}"/>
-                                    </DockPanel>
                                     <Button Content="上传许可文件"  Command="{Binding UploadLincenseCommand}" />
-
                                 </StackPanel>
-                                <Image Source="{Binding QRIcon}"  Height="100" Width="100"  HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0"/>
                             </Grid>
 
                         </StackPanel>
@@ -286,78 +268,12 @@
                             </GroupBox>
                         </StackPanel>
                     </TabItem>
-                    <TabItem Header="自动聚焦"  Visibility="{Binding Config.IsHaveMotor,Converter={StaticResource bool2VisibilityConverter}}">
-                        <StackPanel Margin="5">
-                            <GroupBox Header="自动聚焦配置">
-                                <StackPanel Margin="5">
-                                    <DockPanel>
-                                        <TextBlock Text="电机类型:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.eFOCUSCOMMUN}" />
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="串口:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.SzComName}" />
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="波特率:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.BaudRate}" />
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="评价函数类型:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.AutoFocusConfig.EvaFunc}" />
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="超时时间:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.AutoFocusConfig.nTimeout}" />
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="电机移动区间下限:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.AutoFocusConfig.MinPosition}" />
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="电机移动区间上限:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.AutoFocusConfig.MaxPosition}" />
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="步径摆动范围:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.AutoFocusConfig.Forwardparam}" />
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="目前使用步径:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.AutoFocusConfig.CurStep}" />
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="步径每次缩诚系数:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.AutoFocusConfig.Curtailparam}" />
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="停止步径:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.AutoFocusConfig.StopStep}" />
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="最低评价值:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.MotorConfig.AutoFocusConfig.MinValue}" />
-                                    </DockPanel>
-                                </StackPanel>
-                            </GroupBox>
-
-                        </StackPanel>
-                    </TabItem>
-                    <TabItem Header="校正文件">
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,2">
-                                <TextBlock  Text="绑定设备"  Width="120"/>
-                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.BindDeviceCode}"/>
-                            </DockPanel>
-                        </StackPanel>
-                    </TabItem>
                     <TabItem Header="许可证信息">
                         <StackPanel Margin="5">
                             <StackPanel Orientation="Horizontal">
                                 <Button Content="上传" Command="{Binding UploadLincenseCommand}"/>
                                 <Button Content="刷新" Command="{Binding RefreshLincenseCommand}"/>
                             </StackPanel>
-
                             <ListView  Height="250" Grid.Row="1" BorderThickness="0" Background="Transparent" x:Name="ListViewLincense" Margin="-5"  Style="{StaticResource ListView.Small}"  >
                                 <ListView.Resources>
                                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>

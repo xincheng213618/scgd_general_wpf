@@ -129,6 +129,7 @@ namespace ColorVision.Services.Dao
         }
 
 
+        public List<string?> GetAllCameraID() => GetAllByParam(new Dictionary<string, object>() { {"type",101 } }).Where(x => !string.IsNullOrEmpty(x.Name)).Select(x => x.Name).ToList();
 
         public void CreatResourceGroup()
         {

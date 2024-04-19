@@ -37,6 +37,7 @@ namespace ColorVision.Services.PhyCameras
                 Channel = ImageChannel.One,
             };
 
+            CameraID.ItemsSource = SysResourceDao.Instance.GetAllCameraID();
             DataContext = this;
 
             var Config = CreateConfig;
