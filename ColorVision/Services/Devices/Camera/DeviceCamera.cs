@@ -5,10 +5,11 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Configs;
-using ColorVision.Services.Devices.Camera.Dao;
 using ColorVision.Services.Devices.Camera.Views;
 using ColorVision.Services.Extension;
 using ColorVision.Services.Msg;
+using ColorVision.Services.PhyCameras;
+using ColorVision.Services.PhyCameras.Dao;
 using ColorVision.Services.Templates;
 using ColorVision.Services.Type;
 using ColorVision.Solution;
@@ -65,7 +66,6 @@ namespace ColorVision.Services.Devices.Camera
             View.View.Title = $"相机视图 - {Config.Code}";
             this.SetIconResource("DrawingImageCamera", View.View);
 
-
             EditCommand = new RelayCommand(a =>
             {
                 EditCamera window = new EditCamera(this);
@@ -84,6 +84,27 @@ namespace ColorVision.Services.Devices.Camera
             RefreshLincenseCommand = new RelayCommand(a => RefreshLincense());
             DisPlaySaveCommand = new RelayCommand(a => SaveDis());
             DisplayCameraControlLazy = new Lazy<DisplayCameraControl>(() => new DisplayCameraControl(this));
+
+            RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
+            OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger());
+        }
+        public RelayCommand OpenPhyCameraMangerCommand { get; set; }
+        public void OpenPhyCameraManger()
+        {
+            DeviceService.GetAllCameraID();
+            PhyCameraManagerWindow phyCameraManager = new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow() };
+            phyCameraManager.Show();
+        }
+
+        public RelayCommand RefreshDeviceIdCommand { get; set; }
+
+        public void RefreshDeviceId()
+        {
+            MsgRecord msgRecord =  DeviceService.GetAllCameraID();
+            msgRecord.MsgSucessed += (e) =>
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(),"GetAllCameraID Sucess");
+            };
         }
 
         public void SaveDis()
@@ -299,7 +320,7 @@ namespace ColorVision.Services.Devices.Camera
                 string Cameracfg = path + "\\Camera.cfg";
 
                 string Calibrationcfg = path + "\\Calibration.cfg";
-                Dictionary<string, List<ColorVisionVCalibratioItem>> keyValuePairs1 = JsonConvert.DeserializeObject<Dictionary<string, List<ColorVisionVCalibratioItem>>>(File.ReadAllText(Calibrationcfg, Encoding.GetEncoding("gbk")));
+                Dictionary<string, List<ZipCalibrationItem>> keyValuePairs1 = JsonConvert.DeserializeObject<Dictionary<string, List<ZipCalibrationItem>>>(File.ReadAllText(Calibrationcfg, Encoding.GetEncoding("gbk")));
 
                 Dictionary<string, CalibrationResource> keyValuePairs2 = new Dictionary<string, CalibrationResource>();
 
@@ -459,7 +480,7 @@ namespace ColorVision.Services.Devices.Camera
                 {
                     try
                     {
-                        List<ColorVisionVCalibratioItem> keyValuePairs = JsonConvert.DeserializeObject<List<ColorVisionVCalibratioItem>>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
+                        List<ZipCalibrationItem> keyValuePairs = JsonConvert.DeserializeObject<List<ZipCalibrationItem>>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
                         if (keyValuePairs != null)
                         {
                             string filePath = Path.GetFileNameWithoutExtension(item2.FullName);

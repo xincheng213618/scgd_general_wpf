@@ -88,8 +88,6 @@
                             </UniformGrid>
                         </GroupBox>
 
-
-
                         <DockPanel Margin="0,2">
                             <TextBlock Text="温控:" Width="120"/>
                             <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding CreateConfig.CameraCfg.TempCtlChecked}"/>

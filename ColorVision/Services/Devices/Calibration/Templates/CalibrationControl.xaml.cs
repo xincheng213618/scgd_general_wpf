@@ -43,7 +43,7 @@ namespace ColorVision.Services.Devices.Calibration.Templates
             DataContext = CalibrationParam;
         }
 
-        public Dictionary<string, List<ColorVisionVCalibratioItem>> CalibrationModeList { get; set; }
+        public Dictionary<string, List<ZipCalibrationItem>> CalibrationModeList { get; set; }
 
         public CalibrationControl(ICalibrationService<BaseResourceObject> calibrationService, CalibrationParam calibrationParam)
         {

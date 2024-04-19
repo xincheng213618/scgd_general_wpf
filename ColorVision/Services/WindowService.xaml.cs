@@ -36,7 +36,7 @@ namespace ColorVision.Services
                 default:
                     break;
             }
-            SelectAndFocusFirstNode(TreeView1);
+            ServicesHelper.SelectAndFocusFirstNode(TreeView1);
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
@@ -60,18 +60,7 @@ namespace ColorVision.Services
 
         }
 
-        public async void SelectAndFocusFirstNode(TreeView treeView)
-        {
-            await Task.Delay(1);
-            if (treeView.Items.Count > 0)
-            {
-                if (treeView.SelectedItem == null && treeView.ItemContainerGenerator.ContainerFromIndex(0) is TreeViewItem firstNode)
-                {
-                    firstNode.IsSelected = true;
-                    Dispatcher.Invoke(() => firstNode.Focus());
-                }
-            }
-        }
+
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             MQTTRCService.GetInstance().RestartServices();
@@ -85,15 +74,15 @@ namespace ColorVision.Services
             {
                 case 0:
                     TreeView1.ItemsSource = ServiceManager.GetInstance().TypeServices;
-                    SelectAndFocusFirstNode(TreeView1);
+                    ServicesHelper.SelectAndFocusFirstNode(TreeView1);
                     break;
                 case 1:
                     TreeView1.ItemsSource = ServiceManager.GetInstance().TerminalServices;
-                    SelectAndFocusFirstNode(TreeView1);
+                    ServicesHelper.SelectAndFocusFirstNode(TreeView1);
                     break;
                 case 2:
                     TreeView1.ItemsSource = ServiceManager.GetInstance().DeviceServices;
-                    SelectAndFocusFirstNode(TreeView1);
+                    ServicesHelper.SelectAndFocusFirstNode(TreeView1);
                     break;
                 default:
                     break;

@@ -17,7 +17,7 @@ using System.Windows.Input;
 namespace ColorVision.Services.Devices.SMU
 {
     /// <summary>
-    /// EditCamera.xaml 的交互逻辑
+    /// EditSMU.xaml 的交互逻辑
     /// </summary>
     public partial class EditSMU : Window
     {

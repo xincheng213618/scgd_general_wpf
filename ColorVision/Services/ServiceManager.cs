@@ -295,7 +295,7 @@ namespace ColorVision.Services
                     }
                     else
                     {
-                        BaseResource calibrationResource = new BaseResource(sysResourceModel);
+                        BaseFileResource calibrationResource = new BaseFileResource(sysResourceModel);
                         deviceService.AddChild(calibrationResource);
                     }
                 }

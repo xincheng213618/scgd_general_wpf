@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.Sorts;
-using ColorVision.Common.Utilities;
-using ColorVision.Services.Devices.Calibration.Templates;
+using ColorVision.Services.PhyCameras.Dao;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using System;
@@ -8,30 +7,21 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.Camera
+namespace ColorVision.Services.PhyCameras
 {
     /// <summary>
     /// DevicePGControl.xaml 的交互逻辑
     /// </summary>
-    public partial class DeviceCameraControl : UserControl
+    public partial class InfoPhyCamera : UserControl
     {
-        public DeviceCamera Device { get; set; }
-
-        public MQTTCamera DService { get => Device.DeviceService; }
+        public PhyCamera Device { get; set; }
 
         public bool IsCanEdit { get; set; }
-
-        public DeviceCameraControl(DeviceCamera deviceCamera,bool isCanEdit =true)
+        public InfoPhyCamera(PhyCamera deviceCamera,bool isCanEdit =true)
         {
             Device = deviceCamera;
             IsCanEdit = isCanEdit;
             InitializeComponent();
-            Loaded += DeviceCameraControl_Loaded;
-        }
-
-        private void DeviceCameraControl_Loaded(object sender, RoutedEventArgs e)
-        {
-            Device.IsEditMode = false;
         }
 
         public ObservableCollection<CameraLicenseModel> LicenseModels { get; set; } = new ObservableCollection<CameraLicenseModel>();
@@ -40,27 +30,8 @@ namespace ColorVision.Services.Devices.Camera
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             DataContext = Device;
-
-            Device.RefreshLincense();
-            ListViewLincense.ItemsSource = Device.LicenseModels;
         }
 
-        private void ServiceCache_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button)
-            {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), "文件删除后不可找回", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
-                {
-                    var MsgRecord = DService.CacheClear();
-                    MsgRecord.MsgSucessed += (s) =>
-                    {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "文件服务清理完成", "ColorVison");
-                        MsgRecord.ClearMsgRecordSucessChangedHandler();
-                    };
-                    ServicesHelper.SendCommand(button, MsgRecord);
-                }
-            }
-        }
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
@@ -76,19 +47,9 @@ namespace ColorVision.Services.Devices.Camera
                 switch (control.Tag?.ToString() ?? string.Empty)
                 {
                     case "Calibration":
-                        CalibrationControl calibration = Device.CalibrationParams.Count == 0 ? new CalibrationControl(Device) : new CalibrationControl(Device, Device.CalibrationParams[0].Value);
-                        windowTemplate  = new WindowTemplate(TemplateType.Calibration, calibration, Device);
-                        windowTemplate.Owner = Window.GetWindow(this);
-                        windowTemplate.ShowDialog();
                         break;
                 }
             }
-        }
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            CalibrationEdit CalibrationEdit = new CalibrationEdit(Device);
-            CalibrationEdit.Show();
         }
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();

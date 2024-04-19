@@ -1,5 +1,6 @@
 ﻿using ColorVision.Services.DAO;
 using log4net;
+using log4net.Util;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -30,10 +31,18 @@ namespace ColorVision.MySql.ORM
         {
             DataTable dataTable = SelectById(item.PKId);
             DataRow row = dataTable.GetRow(item);
-            Model2Row(item, row);
-            int ret = Save(dataTable);
-            item.PKId = dataTable.Rows[0].Field<int>(PKField);
-            return ret;
+            try
+            {
+                Model2Row(item, row);
+                int ret = Save(dataTable);
+                item.PKId = dataTable.Rows[0].Field<int>(PKField);
+                return ret;
+            }
+            catch (Exception ex)
+            {
+                log.Debug(ex);
+                return -1;
+            }
         }
 
         public T? GetById(int id) => GetByParam(new Dictionary<string, object> { { "id", id } });
@@ -56,7 +65,6 @@ namespace ColorVision.MySql.ORM
             }
             return default;
         }
-
 
 
         public List<T> GetAll() => GetAllByParam(new Dictionary<string, object>());

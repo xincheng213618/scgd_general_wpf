@@ -18,7 +18,7 @@ using System.Windows.Input;
 namespace ColorVision.Services.Devices.Spectrum
 {
     /// <summary>
-    /// EditCamera.xaml 的交互逻辑
+    /// EditSpectrum.xaml 的交互逻辑
     /// </summary>
     public partial class EditSpectrum : Window
     {

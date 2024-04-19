@@ -26,7 +26,7 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using ColorVision.Services.PhyCamera;
+using ColorVision.Services.PhyCameras;
 
 namespace ColorVision
 {

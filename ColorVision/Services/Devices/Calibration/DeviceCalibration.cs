@@ -144,7 +144,7 @@ namespace ColorVision.Services.Devices.Calibration
 
                 string Calibrationcfg = path + "\\Calibration.cfg";
 
-                Dictionary<string, List<ColorVisionVCalibratioItem>> keyValuePairs1 = JsonConvert.DeserializeObject<Dictionary<string, List<ColorVisionVCalibratioItem>>>(File.ReadAllText(Calibrationcfg, Encoding.GetEncoding("gbk")));
+                Dictionary<string, List<ZipCalibrationItem>> keyValuePairs1 = JsonConvert.DeserializeObject<Dictionary<string, List<ZipCalibrationItem>>>(File.ReadAllText(Calibrationcfg, Encoding.GetEncoding("gbk")));
 
                 Dictionary<string, CalibrationResource> keyValuePairs2 = new Dictionary<string, CalibrationResource>();
 
@@ -300,14 +300,13 @@ namespace ColorVision.Services.Devices.Calibration
                 }
 
 
-
                 string CalibrationFile = path + "\\" + "Calibration";
                 DirectoryInfo directoryInfo = new DirectoryInfo(CalibrationFile);
                 foreach (var item2 in directoryInfo.GetFiles())
                 {
                     try
                     {
-                        List<ColorVisionVCalibratioItem> keyValuePairs = JsonConvert.DeserializeObject<List<ColorVisionVCalibratioItem>>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
+                        ZipCalibrationGroup keyValuePairs = JsonConvert.DeserializeObject<ZipCalibrationGroup>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
                         if (keyValuePairs != null)
                         {
                             string filePath = Path.GetFileNameWithoutExtension(item2.FullName);
@@ -329,7 +328,7 @@ namespace ColorVision.Services.Devices.Calibration
                             GroupResource groupResource = GroupResource.AddGroupResource(this, filePath);
                             if (groupResource != null)
                             {
-                                foreach (var item1 in keyValuePairs)
+                                foreach (var item1 in keyValuePairs.ZipCalibrationItems)
                                 {
                                     if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
                                     {
