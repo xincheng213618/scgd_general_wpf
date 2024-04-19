@@ -1,28 +1,13 @@
-﻿using ColorVision.Common.Extension;
-using cvColorVision;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Terminal;
-using ColorVision.Settings;
-using Newtonsoft.Json;
 using ColorVision.Services.Devices.Camera.Configs;
-using ColorVision.Common.Utilities;
-using System.Windows.Media.Media3D;
-using ColorVision.Services.Devices.Camera.Dao;
+using ColorVision.Settings;
+using cvColorVision;
+using Newtonsoft.Json;
+using System;
+using System.Linq;
+using System.Windows;
 
 namespace ColorVision.Services.Devices.Camera
 {

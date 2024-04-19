@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera.Dao;
 using ColorVision.Services.PhyCameras.Configs;
 using ColorVision.Settings;
 using cvColorVision;
@@ -9,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Services.PhyCameras
 {

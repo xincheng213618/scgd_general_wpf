@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 using ColorVision.Common.Sorts;
 using ColorVision.MySql.ORM;
 
-namespace ColorVision.Services.Devices.Camera.Dao
+namespace ColorVision.Services.PhyCameras.Dao
 {
     public class ColorVisionLincense
     {
