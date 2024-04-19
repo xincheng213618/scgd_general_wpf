@@ -100,8 +100,6 @@ namespace ColorVision.Services.Devices.Camera
             {
                 ComboxCameraChannel.ItemsSource = from e1 in Enum.GetValues(typeof(ImageChannel)).Cast<ImageChannel>()
                                                   select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
-
-
             };
 
 

@@ -9,10 +9,9 @@
         Title="PhyCameraManagerWindow" Height="450" Width="800" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.RowDefinitions>
-            <RowDefinition  Height="Auto"/>
-            <RowDefinition  Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="250"/>

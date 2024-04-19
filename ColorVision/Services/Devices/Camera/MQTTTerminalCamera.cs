@@ -15,11 +15,6 @@ namespace ColorVision.Services.Devices.Camera
 
         public MQTTTerminalCamera(TerminalServiceConfig Config) :base(Config)
         {
-            Connected += (s, e) => GetAllSnID();
-            if (MQTTControl.IsConnect)
-                GetAllSnID();     
         }
-
-        public MsgRecord GetAllSnID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
     }
 }
