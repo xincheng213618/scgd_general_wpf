@@ -42,6 +42,7 @@ namespace ColorVision.Services.PhyCameras.Configs
         }
 
         public CameraCfg CameraCfg { get; set; } = new CameraCfg();
+        public CFWPORT CFW { get; set; } = new CFWPORT();
 
     }
 }

@@ -20,7 +20,7 @@ namespace ColorVision.Services.Templates
         LedCheckParam,
         FocusPointsParam,
         BuildPOIParmam,
-        SpectrumResourceParam
+        SpectrumResourceParam,
     }
 
     public class TemplateTypeFactory
