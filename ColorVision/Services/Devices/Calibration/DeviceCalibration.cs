@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Extension;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;
@@ -16,6 +17,7 @@ using log4net;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
@@ -102,7 +104,6 @@ namespace ColorVision.Services.Devices.Calibration
             UploadWindow uploadwindow = new UploadWindow("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
             uploadwindow.OnUpload += (s, e) =>
             {
-
                 if (s is Upload upload)
                 {
                     UploadMsg uploadMsg = new UploadMsg(this);
@@ -113,19 +114,17 @@ namespace ColorVision.Services.Devices.Calibration
             };
             uploadwindow.ShowDialog();
         }
-
         public string Msg { get => _Msg; set { _Msg = value; Application.Current.Dispatcher.Invoke(() => NotifyPropertyChanged()); } }
         private string _Msg;
 
         public event EventHandler UploadClosed;
-
+        public ObservableCollection<string> UploadList { get; set; } = new ObservableCollection<string>();
         public async void UploadData(string UploadFilePath)
         {
             Msg = "正在解压文件：" + " 请稍后...";
             await Task.Delay(10);
             if (File.Exists(UploadFilePath))
             {
-                Msg = "正在解压文件：" + " 请稍后...";
                 string path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)+ "\\ColorVision\\Cacahe";
                 if (Directory.Exists(path))
                     Directory.Delete(path, true);
@@ -145,13 +144,24 @@ namespace ColorVision.Services.Devices.Calibration
 
                 string Calibrationcfg = path + "\\Calibration.cfg";
 
-                Dictionary<string, List<ZipCalibrationItem>> keyValuePairs1 = JsonConvert.DeserializeObject<Dictionary<string, List<ZipCalibrationItem>>>(File.ReadAllText(Calibrationcfg, Encoding.GetEncoding("gbk")));
+                Dictionary<string, List<ZipCalibrationItem>> AllCalFiles = JsonConvert.DeserializeObject<Dictionary<string, List<ZipCalibrationItem>>>(File.ReadAllText(Calibrationcfg, Encoding.GetEncoding("gbk")));
 
                 Dictionary<string, CalibrationResource> keyValuePairs2 = new Dictionary<string, CalibrationResource>();
 
-                if (keyValuePairs1 != null)
+                if (AllCalFiles != null)
                 {
-                    foreach (var item in keyValuePairs1)
+                    foreach (var item in AllCalFiles)
+                    {
+                        foreach (var item1 in item.Value)
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                UploadList.Add(item1.Title);
+                            });
+                        }
+                    }
+
+                    foreach (var item in AllCalFiles)
                     {
                         foreach (var item1 in item.Value)
                         {
@@ -283,6 +293,7 @@ namespace ColorVision.Services.Devices.Calibration
                                 sysResourceModel.Pid = SysResourceModel.Id;
                                 sysResourceModel.Value = Path.GetFileName(FileName);
                                 sysResourceModel.CreateDate = DateTime.Now;
+                                sysResourceModel.Remark = item1.ToJsonN();
                                 SysResourceDao.Instance.Save(sysResourceModel);
                                 if (sysResourceModel != null)
                                 {
@@ -345,7 +356,10 @@ namespace ColorVision.Services.Devices.Calibration
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show(ex.Message);
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+                        });
                     }
                 }
                 Msg = "上传结束";
