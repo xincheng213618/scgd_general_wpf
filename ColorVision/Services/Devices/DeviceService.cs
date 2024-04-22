@@ -5,7 +5,6 @@ using ColorVision.Handler;
 using ColorVision.Services.RC;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Templates;
 using ColorVision.Common.Utilities;
 using Newtonsoft.Json;
@@ -17,6 +16,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Type;
+using ColorVision.Services.PhyCamera.Templates;
 
 namespace ColorVision.Services.Devices
 {

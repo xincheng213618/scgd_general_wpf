@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Calibration.Templates;
+using ColorVision.Services.PhyCamera.Templates;
 using ColorVision.Services.Type;
 using Newtonsoft.Json;
 

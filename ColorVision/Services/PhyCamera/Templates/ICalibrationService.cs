@@ -2,7 +2,7 @@
 using ColorVision.Services.Templates;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Services.Devices.Calibration.Templates
+namespace ColorVision.Services.PhyCamera.Templates
 {
     public interface ICalibrationService<T>
     {

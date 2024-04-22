@@ -7,7 +7,7 @@ using cvColorVision;
 using System.Collections.Generic;
 
 
-namespace ColorVision.Services.Devices.Calibration.Templates
+namespace ColorVision.Services.PhyCamera.Templates
 {
     public class CalibrationBase : ModelBase
     {

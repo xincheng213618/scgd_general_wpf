@@ -7,8 +7,9 @@ using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Type;
+using ColorVision.Services.PhyCamera.Templates;
 
-namespace ColorVision.Services.Devices.Calibration.Templates
+namespace ColorVision.Services.PhyCamera.Templates
 {
     /// <summary>
     /// CalibrationEdit.xaml 的交互逻辑

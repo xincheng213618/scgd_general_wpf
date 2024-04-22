@@ -1,26 +1,19 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Net;
-using ColorVision.Services.Devices.Calibration.Templates;
-using ColorVision.Services.Devices.Calibration.Views;
+using ColorVision.Extension;
 using ColorVision.Services.Core;
+using ColorVision.Services.Devices.Calibration.Views;
 using ColorVision.Services.Msg;
+using ColorVision.Services.PhyCamera.Templates;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
-using ColorVision.Solution;
 using ColorVision.Themes;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
-using Panuon.WPF.UI;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using ColorVision.Services.Dao;
-using MQTTMessageLib.Camera;
-using ColorVision.Extension;
-using MQTTMessageLib.Calibration;
 
 namespace ColorVision.Services.Devices.Calibration
 {
