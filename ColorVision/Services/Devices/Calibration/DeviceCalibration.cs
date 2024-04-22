@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -228,42 +229,42 @@ namespace ColorVision.Services.Devices.Calibration
                             switch (item1.CalibrationType)
                             {
                                 case CalibrationType.DarkNoise:
-                                    msgRecord = await MQTTRCService.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DarkNoise);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DarkNoise);
                                     break;
                                 case CalibrationType.DefectWPoint:
-                                    msgRecord = await MQTTRCService.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
                                     break;
                                 case CalibrationType.DefectBPoint:
-                                    msgRecord = await MQTTRCService.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
                                     break;
                                 case CalibrationType.DefectPoint:
-                                    msgRecord = await MQTTRCService.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
                                     break;
                                 case CalibrationType.DSNU:
-                                    msgRecord = await MQTTRCService.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DSNU);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DSNU);
                                     break;
                                 case CalibrationType.Uniformity:
-                                    msgRecord = await MQTTRCService.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.Uniformity);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.Uniformity);
                                     break;
                                 case CalibrationType.Luminance:
-                                    msgRecord = await MQTTRCService.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.Luminance);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.Luminance);
                                     break;
                                 case CalibrationType.LumOneColor:
-                                    msgRecord = await MQTTRCService.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.LumOneColor);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.LumOneColor);
                                     break;
                                 case CalibrationType.LumFourColor:
-                                    msgRecord = await MQTTRCService.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.LumFourColor);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.LumFourColor);
                                     break;
                                 case CalibrationType.LumMultiColor:
-                                    msgRecord = await MQTTRCService.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.LumMultiColor);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.LumMultiColor);
                                     break;
                                 case CalibrationType.LumColor:
                                     break;
                                 case CalibrationType.Distortion:
-                                    msgRecord = await MQTTRCService.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.Distortion);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.Distortion);
                                     break;
                                 case CalibrationType.ColorShift:
-                                    msgRecord = await MQTTRCService.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.ColorShift);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.ColorShift);
                                     break;
                                 case CalibrationType.Empty_Num:
                                     break;
