@@ -1,4 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Services.Devices.Camera;
+using ColorVision.Services.PhyCameras;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -35,8 +37,15 @@ namespace ColorVision.Services.Devices.Calibration
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = DeviceCalibration;
+
+            CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
+            CameraPhyID.SelectedItem = PhyCameraManager.GetInstance().GetPhyCamera(DeviceCalibration.Config.CameraID);
+            CameraPhyID.DisplayMemberPath = "Name";
+
             EditConfig = DeviceCalibration.Config.Clone();
             EditContent.DataContext = EditConfig;
+
+
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
