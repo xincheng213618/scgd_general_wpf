@@ -496,6 +496,7 @@ namespace ColorVision.Services.RC
             };
             SendTopic = SysConfigTopic;
             SubscribeTopic = SysConfigRespTopic;
+            DeviceCode = "e58adc4ea51efbbf9";
             MsgRecord msgRecord = PublishAsyncClient(msg);
 
             MsgRecordStateChangedHandler handler = (sender) =>
