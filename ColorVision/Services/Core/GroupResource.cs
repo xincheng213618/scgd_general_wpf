@@ -3,6 +3,7 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Type;
 using Newtonsoft.Json;
+using System.Windows;
 
 namespace ColorVision.Services.Core
 {
@@ -47,7 +48,10 @@ namespace ColorVision.Services.Core
             if (pkId > 0 && SysResourceDao.Instance.GetById(pkId) is SysResourceModel model)
             {
                 GroupResource groupResource = new GroupResource(model);
-                deviceService.AddChild(groupResource);
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    deviceService.AddChild(groupResource);
+                });
                 return groupResource;
             }
             return null;

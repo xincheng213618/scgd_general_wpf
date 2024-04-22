@@ -307,6 +307,12 @@ namespace ColorVision.Services.Devices.Camera
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
+            if (Device.PhyCamera == null)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
+                return;
+            }
+
             if (sender is Button button)
             {
                 TemplateControl = TemplateControl.GetInstance();
@@ -321,25 +327,18 @@ namespace ColorVision.Services.Devices.Camera
                 {
                     case "Calibration":
                         CalibrationControl calibration;
-                        if (Device.PhyCamera != null)
+
+                        if (Device.PhyCamera.CalibrationParams.Count > 0)
                         {
-                            if (Device.PhyCamera.CalibrationParams.Count > 0)
-                            {
-                                calibration = new CalibrationControl(Device.PhyCamera, Device.PhyCamera.CalibrationParams[0].Value);
-                            }
-                            else
-                            {
-                                calibration = new CalibrationControl(Device.PhyCamera);
-                            }
-                            windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, Device.PhyCamera, false);
-                            windowTemplate.Owner = Window.GetWindow(this);
-                            windowTemplate.ShowDialog();
+                            calibration = new CalibrationControl(Device.PhyCamera, Device.PhyCamera.CalibrationParams[0].Value);
                         }
                         else
                         {
-                            MessageBox.Show("在使用校正前，请先配置对映的校正服务");
+                            calibration = new CalibrationControl(Device.PhyCamera);
                         }
-
+                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, Device.PhyCamera, false);
+                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate.ShowDialog();
                         break;
                     default:
                         HandyControl.Controls.Growl.Info(Properties.Resource.UnderDevelopment);

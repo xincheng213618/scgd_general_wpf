@@ -58,8 +58,6 @@ namespace ColorVision.Services.Devices
         public virtual ImageSource Icon { get; set; }
         public SysDeviceModel SysResourceModel { get; set; }
 
-        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
-
         public virtual UserControl GetDeviceControl()
         {
             throw new NotImplementedException();

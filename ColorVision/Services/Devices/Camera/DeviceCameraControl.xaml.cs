@@ -40,9 +40,6 @@ namespace ColorVision.Services.Devices.Camera
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             DataContext = Device;
-
-            Device.RefreshLincense();
-            ListViewLincense.ItemsSource = Device.LicenseModels;
         }
 
         private void ServiceCache_Click(object sender, RoutedEventArgs e)

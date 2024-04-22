@@ -12,6 +12,7 @@ namespace ColorVision.Services.Devices.Calibration
 
         public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; NotifyPropertyChanged(); } }
         private double _ExpTimeB = 10;
+
         public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged(); } }
         private string _CameraID;
 
