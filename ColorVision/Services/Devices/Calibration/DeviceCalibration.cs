@@ -217,6 +217,7 @@ namespace ColorVision.Services.Devices.Calibration
                                 continue;
 
                             bool isExist = false;
+
                             foreach (var item2 in VisualChildren)
                             {
                                 if (item2 is CalibrationResource CalibrationResource)
@@ -318,8 +319,21 @@ namespace ColorVision.Services.Devices.Calibration
                 {
                     try
                     {
-                        ZipCalibrationGroup keyValuePairs = JsonConvert.DeserializeObject<ZipCalibrationGroup>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
-                        if (keyValuePairs != null)
+                        ZipCalibrationGroup zipCalibrationGroup;
+                        try
+                        {
+                            zipCalibrationGroup = new ZipCalibrationGroup();
+                            zipCalibrationGroup.ZipCalibrationItems = JsonConvert.DeserializeObject<List<ZipCalibrationItem>>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
+                        }
+                        catch (Exception ex)
+                        {
+                            zipCalibrationGroup = JsonConvert.DeserializeObject<ZipCalibrationGroup>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
+                        }
+
+
+
+
+                        if (zipCalibrationGroup != null)
                         {
                             string filePath = Path.GetFileNameWithoutExtension(item2.FullName);
 
@@ -340,7 +354,7 @@ namespace ColorVision.Services.Devices.Calibration
                             GroupResource groupResource = GroupResource.AddGroupResource(this, filePath);
                             if (groupResource != null)
                             {
-                                foreach (var item1 in keyValuePairs.ZipCalibrationItems)
+                                foreach (var item1 in zipCalibrationGroup.ZipCalibrationItems)
                                 {
                                     if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
                                     {

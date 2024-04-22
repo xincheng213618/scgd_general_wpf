@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace ColorVision.Services.Devices.Calibration.Templates
 {
-    public class ZipCalibrationGroup :ViewModelBase
+    public class ZipCalibrationGroup : ViewModelBase
     {
         public List<ZipCalibrationItem> ZipCalibrationItems { get; set; } = new List<ZipCalibrationItem>();
 
@@ -61,10 +61,9 @@ namespace ColorVision.Services.Devices.Calibration.Templates
         public double GetImgMode { get => _GetImgMode; set { _GetImgMode = value; NotifyPropertyChanged(); } }
         private double _GetImgMode;
 
-        public double ImgBpp
-        {
-            get =>
+        public double ImgBpp { get => _ImgBpp; set { _ImgBpp = value; NotifyPropertyChanged(); } }
+        private double _ImgBpp;
+
+
     }
-
-
 }
