@@ -3,6 +3,7 @@ using ColorVision.Services.Devices;
 using cvColorVision;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Common.MVVM;
+using CVCommCore.CVCamera;
 
 namespace ColorVision.Services.PhyCameras.Configs
 {
@@ -14,8 +15,8 @@ namespace ColorVision.Services.PhyCameras.Configs
         public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged(); } }
         private string _CameraID;
 
-        public CameraType CameraType { get => _CameraType; set { _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
-        private CameraType _CameraType;
+        public cvColorVision.CameraType CameraType { get => _CameraType; set { _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
+        private cvColorVision.CameraType _CameraType;
 
         public TakeImageMode TakeImageMode { get => _TakeImageMode; set { _TakeImageMode = value; NotifyPropertyChanged(); } }
         private TakeImageMode _TakeImageMode;
@@ -25,13 +26,10 @@ namespace ColorVision.Services.PhyCameras.Configs
         public ImageChannel Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); NotifyPropertyChanged(nameof(IsChannelThree)); } }
         private ImageChannel _Channel;
 
-        public int Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
-        private int _Gain = 10;
-
         [JsonIgnore]
         public bool IsExpThree
         {
-            get => TakeImageMode != TakeImageMode.Live && (CameraType == CameraType.CV_Q || CameraType == CameraType.CV_MIL_CL);
+            get => TakeImageMode != TakeImageMode.Live && (CameraType == cvColorVision.CameraType.CV_Q || CameraType == cvColorVision.CameraType.CV_MIL_CL);
             set => NotifyPropertyChanged();
         }
         [JsonIgnore]
@@ -40,9 +38,9 @@ namespace ColorVision.Services.PhyCameras.Configs
             get => Channel == ImageChannel.Three;
             set => NotifyPropertyChanged();
         }
-
         public CameraCfg CameraCfg { get; set; } = new CameraCfg();
         public CFWPORT CFW { get; set; } = new CFWPORT();
 
+        public FileSeviceConfig FileServerCfg { get; set; }
     }
 }

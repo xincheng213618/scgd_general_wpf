@@ -3,6 +3,7 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.PhyCameras.Configs;
 using ColorVision.Settings;
 using cvColorVision;
+using CVCommCore;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -33,6 +34,7 @@ namespace ColorVision.Services.PhyCameras
                 TakeImageMode = TakeImageMode.Measure_Normal,
                 ImageBpp = ImageBpp.bpp8,
                 Channel = ImageChannel.One,
+                FileServerCfg = new CVCommCore.CVCamera.FileSeviceConfig() { Endpoint="127.0.0.1", FileBasePath= "D:\\SysResConfig", PortRange="8888"},
             };
 
             CameraID.ItemsSource = SysResourceDao.Instance.GetAllCameraID();
@@ -106,7 +108,7 @@ namespace ColorVision.Services.PhyCameras
             if (!ServicesHelper.IsInvalidPath(CreateConfig.CameraID, "相机ID") )
                 return;
 
-            SysResourceModel sysResource = new SysResourceModel(CreateConfig.CameraID, CreateConfig.CameraID,101 ,ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            SysResourceModel sysResource = new SysResourceModel(CreateConfig.CameraID, CreateConfig.CameraID, (int)PhysicalResourceType.PhyCamera, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             sysResource.Value = JsonConvert.SerializeObject(CreateConfig);
             SysResourceDao.Instance.Save(sysResource);
 
