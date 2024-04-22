@@ -53,7 +53,7 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="其他" Width="150">s
+                    <GridViewColumn  Header="其他" Width="150">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type core:CalibrationResource}">
                                 <TextBlock Text="{Binding SysResourceModel.Remark, StringFormat='yyyy-MM-dd HH:mm:ss'}"/>
