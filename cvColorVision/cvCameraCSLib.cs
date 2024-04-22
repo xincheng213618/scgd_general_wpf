@@ -476,23 +476,6 @@ namespace cvColorVision
         public EvaFunc eEvaFunc { set; get; }           //评价函数类型
         public double dMinValue { set; get; } 			//最低评价值
     };
-    public class CameraCfg
-    {
-        public int ob { set; get; }
-        public int obR { set; get; }
-        public int obB { set; get; }
-        public int obT { set; get; }
-        public bool tempCtlChecked { set; get; }
-        public float targetTemp { set; get; }
-        public float usbTraffic { set; get; }
-        public int offset { set; get; }
-        public int gain { set; get; }
-        public int ex { set; get; }
-        public int ey { set; get; }
-        public int ew { set; get; }
-        public int eh { set; get; }
-    }
-
     public class ChannelCfg
     {
         [JsonProperty]
@@ -511,7 +494,6 @@ namespace cvColorVision
     public class ProjectSysCfg
     {
         public ExpTimeCfg expTimeCfg;
-        public CameraCfg cameraCfg { set; get; }
         public List<CalibrationItem> calibrationLibCfg;
         public List<ChannelCfg> channelCfg;
 
@@ -520,7 +502,6 @@ namespace cvColorVision
             expTimeCfg = new ExpTimeCfg();
             calibrationLibCfg = new List<CalibrationItem>();
             channelCfg = new List<ChannelCfg>();
-            cameraCfg = new CameraCfg();
         }
     }
 

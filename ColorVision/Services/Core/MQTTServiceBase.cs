@@ -43,6 +43,7 @@ namespace ColorVision.Services.Core
         {
             MQTTControl.SubscribeCache(SubscribeTopic);
         }
+
         private Task Processing(MqttApplicationMessageReceivedEventArgs arg)
         {
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
@@ -70,8 +71,12 @@ namespace ColorVision.Services.Core
                         MQTTRCService.GetInstance().QueryServices();
                         return Task.CompletedTask;
                     }
+                    if (json.Code == 102)
+                    {
+                        return Task.CompletedTask;
+                    }
 
-                    if (json.Code != 0 && json.Code != 1 && json.Code != -1 && json.Code != -401)
+                    if (json.Code != 0 && json.Code != 1 && json.Code != -1&& json.Code != -401)
                     {
                         MsgReturnReceived?.Invoke(json);
                         return Task.CompletedTask;
@@ -170,20 +175,17 @@ namespace ColorVision.Services.Core
         internal virtual MsgRecord PublishAsyncClient(MsgSend msg,double Timeout = 30000)
         {
             Guid guid = Guid.NewGuid();
-            msg.MsgID = guid.ToString();
-            msg.DeviceCode = DeviceCode;
-            msg.Token = ServiceToken;
-            ///这里是为了兼容只前的写法，后面会修改掉
-            if (string.IsNullOrWhiteSpace(msg.ServiceName))
-            {
-                msg.ServiceName = SendTopic;
-            }
+            //这里修改成 如果在上一级已经赋值就不在这里强制修改
+            msg.MsgID ??= guid.ToString();
+            msg.DeviceCode ??= DeviceCode;
+            msg.Token ??= ServiceToken;
+            msg.ServiceName ??= SendTopic;
 
             string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
             Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));
 
-            MsgRecord msgRecord = new MsgRecord { SendTopic = SendTopic, SubscribeTopic = SubscribeTopic, MsgID = guid.ToString(), SendTime = DateTime.Now, MsgSend = msg, MsgRecordState = MsgRecordState.Send };
+            MsgRecord msgRecord = new MsgRecord { SendTopic = SendTopic, SubscribeTopic = SubscribeTopic, MsgID = msg.MsgID, SendTime = DateTime.Now, MsgSend = msg, MsgRecordState = MsgRecordState.Send };
 
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -195,13 +197,13 @@ namespace ColorVision.Services.Core
             timer.Elapsed += (s, e) =>
             {
                 timer.Enabled = false;
-                lock (_locker) { timers.Remove(guid.ToString()); }
+                lock (_locker) { timers.Remove(msg.MsgID); }
                 msgRecord.MsgRecordState = MsgRecordState.Timeout;
                 MsgRecords.Remove(msgRecord);
             };
             timer.AutoReset = false;
             timer.Enabled = true;
-            timers.Add(guid.ToString(), timer);
+            timers.Add(msg.MsgID, timer);
             timer.Start();
             return msgRecord;
         }

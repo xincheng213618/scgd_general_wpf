@@ -1,21 +1,14 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
-using ColorVision.Services.Devices.Calibration;
-using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.Devices.Camera.Configs;
-using ColorVision.Services.Devices.Camera.Dao;
+using ColorVision.Services.Dao;
 using ColorVision.Services.PhyCameras.Configs;
 using cvColorVision;
-using SkiaSharp;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Drawing.Text;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media.Media3D;
 
 
 namespace ColorVision.Services.PhyCameras
@@ -47,6 +40,8 @@ namespace ColorVision.Services.PhyCameras
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            this.DataContext = PhyCamera;
+
             EditConfig = PhyCamera.Config.Clone();
             EditContent.DataContext = EditConfig;
 
@@ -60,7 +55,7 @@ namespace ColorVision.Services.PhyCameras
                                                select new KeyValuePair<ImageBpp, string>(e1, e1.ToDescription());
 
 
-            CameraID.ItemsSource = CameraLicenseDao.Instance.GetAllCameraID();
+            CameraID.ItemsSource = SysResourceDao.Instance.GetAllCameraID();
 
             var type = EditConfig.CameraType;
 
@@ -145,8 +140,6 @@ namespace ColorVision.Services.PhyCameras
 
             ComboxMotorType.ItemsSource = from e1 in Enum.GetValues(typeof(FOCUS_COMMUN)).Cast<FOCUS_COMMUN>()
                                           select new KeyValuePair<FOCUS_COMMUN, string>(e1, e1.ToString());
-            int index = 0;
-
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

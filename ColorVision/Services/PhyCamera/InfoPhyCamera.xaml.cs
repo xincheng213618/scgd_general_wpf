@@ -1,8 +1,5 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Sorts;
-using ColorVision.Common.Utilities;
-using ColorVision.Services.Devices.Calibration.Templates;
-using ColorVision.Services.Devices.Camera.Dao;
+﻿using ColorVision.Common.Sorts;
+using ColorVision.Services.PhyCameras.Dao;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using System;

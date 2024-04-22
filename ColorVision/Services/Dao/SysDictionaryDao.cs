@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System.Collections.Generic;
+using System.Data;
 using ColorVision.MySql;
 using ColorVision.MySql.ORM;
 
@@ -12,6 +13,7 @@ namespace ColorVision.Services.Dao
         public int Pid { get; set; }
         public int Value { get; set; }
         public int TenantId { get; set; }
+        public bool IsHide { get; set; }
     }
     public class SysDictionaryDao : BaseDaoMaster<SysDictionaryModel>
     {
@@ -31,8 +33,31 @@ namespace ColorVision.Services.Dao
                 Pid = item.Field<int>("pid"),
                 Value = item.Field<int>("val"),
                 TenantId = item.Field<int>("tenant_id"),
+                IsHide = item.Field<bool>("is_hide"),
             };
             return model;
+        }
+
+        public List<SysDictionaryModel> GetServiceTypes()
+        {
+            List<SysDictionaryModel> result = this.GetAllByPcode("service_type");
+            return result;
+        }
+
+        public new List<SysDictionaryModel> GetAllByPcode(string pcode)
+        {
+            List<SysDictionaryModel> list = new List<SysDictionaryModel>();
+            string sql = $"select * from {GetTableName()} where is_hide=0 and pcode='{pcode}'" + GetDelSQL(true);
+            DataTable d_info = GetData(sql);
+            foreach (var item in d_info.AsEnumerable())
+            {
+                SysDictionaryModel? model = GetModelFromDataRow(item);
+                if (model != null)
+                {
+                    list.Add(model);
+                }
+            }
+            return list;
         }
     }
 }

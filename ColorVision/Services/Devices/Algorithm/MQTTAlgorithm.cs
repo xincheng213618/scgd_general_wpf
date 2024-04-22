@@ -1,5 +1,6 @@
 ﻿using ColorVision.Services.Msg;
 using cvColorVision;
+using CVCommCore.CVAlgorithm;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
@@ -121,13 +122,12 @@ namespace ColorVision.Services.Devices.Algorithm
             PublishAsyncClient(msg);
         }
 
-        public MsgRecord POI(string fileName, int pid, string tempName, string serialNumber)
+        public MsgRecord POI(string deviceCode, string deviceType, string fileName, int pid, string tempName, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
-
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
             MsgSend msg = new MsgSend
@@ -138,13 +138,13 @@ namespace ColorVision.Services.Devices.Algorithm
             };
             return PublishAsyncClient(msg);
         }
-        public MsgRecord BuildPoi(string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
+        public MsgRecord BuildPoi(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
             MsgSend msg = new MsgSend
@@ -155,13 +155,13 @@ namespace ColorVision.Services.Devices.Algorithm
             };
             return PublishAsyncClient(msg);
         }
-        public MsgRecord BuildPoi(POILayoutTypes POILayoutReq, Dictionary<string, object> @params, string fileName, int pid, string tempName, string serialNumber)
+        public MsgRecord BuildPoi(POIPointTypes POILayoutReq, Dictionary<string, object> @params, string deviceCode, string deviceType, string fileName, int pid, string tempName, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName } };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
             Params.Add("POILayoutReq", POILayoutReq.ToString());
             foreach (var param in @params)
@@ -178,13 +178,13 @@ namespace ColorVision.Services.Devices.Algorithm
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord FOV(string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
+        public MsgRecord FOV(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
             MsgSend msg = new MsgSend
@@ -208,13 +208,13 @@ namespace ColorVision.Services.Devices.Algorithm
         }
 
 
-        public MsgRecord MTF(string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber, int poiId, string poiTempName)
+        public MsgRecord MTF(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber, int poiId, string poiTempName)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
             Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiId, Name = poiTempName });
 
@@ -249,13 +249,13 @@ namespace ColorVision.Services.Devices.Algorithm
             return JsonConvert.SerializeObject(file_data);
         }
 
-        public MsgRecord SFR(string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
+        public MsgRecord SFR(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
             MsgSend msg = new MsgSend
@@ -269,13 +269,13 @@ namespace ColorVision.Services.Devices.Algorithm
         }
 
 
-        public MsgRecord Ghost(string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
+        public MsgRecord Ghost(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
             MsgSend msg = new MsgSend
@@ -288,13 +288,13 @@ namespace ColorVision.Services.Devices.Algorithm
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord Distortion(string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
+        public MsgRecord Distortion(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
             MsgSend msg = new MsgSend
@@ -309,13 +309,13 @@ namespace ColorVision.Services.Devices.Algorithm
 
 
 
-        public MsgRecord FocusPoints(string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
+        public MsgRecord FocusPoints(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
             MsgSend msg = new MsgSend
@@ -328,13 +328,13 @@ namespace ColorVision.Services.Devices.Algorithm
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord LedCheck(string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber, int poiId, string poiTempName)
+        public MsgRecord LedCheck(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber, int poiId, string poiTempName)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
 
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, };
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
             Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiId, Name = poiTempName });
 

@@ -106,6 +106,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="CVCommCore">
+      <HintPath>..\DLL\CVCommCore.dll</HintPath>
+    </Reference>
     <Reference Include="CVImageChannelLib">
       <HintPath>..\DLL\CVImageChannelLib.dll</HintPath>
       <Private>True</Private>
@@ -233,10 +236,6 @@
     <Page Update="Window1.xaml">
       <CopyToOutputDirectory></CopyToOutputDirectory>
     </Page>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Services\PhyCamera\Dao\" />
   </ItemGroup>
 
 </Project>

@@ -7,7 +7,6 @@ using ColorVision.Services.Core;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
-using ColorVision.Solution;
 using ColorVision.Themes;
 using log4net;
 using MQTTMessageLib.Algorithm;
@@ -23,6 +22,7 @@ using ColorVision.Extension;
 using System.Collections.ObjectModel;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Devices.Calibration;
+using CVCommCore.CVAlgorithm;
 
 namespace ColorVision.Services.Devices.Algorithm
 {
@@ -306,7 +306,9 @@ namespace ColorVision.Services.Devices.Algorithm
                 }
             }
             var pm = TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value;
-            Service.POI(imgFileName, pm.Id, ComboxPoiTemplate.Text, sn);
+            TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
+            if (imageDevice != null) Service.POI(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, imgFileName, pm.Id, ComboxPoiTemplate.Text, sn);
+            else Service.POI(string.Empty, string.Empty, imgFileName, pm.Id, ComboxPoiTemplate.Text, sn);
             handler = PendingBox.Show(Application.Current.MainWindow, "", "计算关注点", true);
             handler.Cancelling += delegate
             {
@@ -342,7 +344,11 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 var pm = TemplateControl.GetInstance().MTFParams[ComboxMTFTemplate.SelectedIndex].Value;
                 var poi_pm = TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate2.SelectedIndex].Value;
-                var ss = Service.MTF(imgFileName, fileExtType, pm.Id, ComboxMTFTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate2.Text);
+                TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
+
+                MsgRecord ss = null;
+                if(imageDevice!=null) ss = Service.MTF(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, imgFileName, fileExtType, pm.Id, ComboxMTFTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate2.Text);
+                else ss = Service.MTF(string.Empty, string.Empty, imgFileName, fileExtType, pm.Id, ComboxMTFTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate2.Text);
                 ServicesHelper.SendCommand(ss, "MTF");
             }
         }
@@ -362,7 +368,10 @@ namespace ColorVision.Services.Devices.Algorithm
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().SFRParams[ComboxSFRTemplate.SelectedIndex].Value;
-                var msg = Service.SFR(imgFileName, fileExtType, pm.Id, ComboxSFRTemplate.Text, sn);
+                MsgRecord msg = null;
+                TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
+                if (imageDevice != null) msg = Service.SFR(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, imgFileName, fileExtType, pm.Id, ComboxSFRTemplate.Text, sn);
+                else msg = Service.SFR(string.Empty, string.Empty, imgFileName, fileExtType, pm.Id, ComboxSFRTemplate.Text, sn);
                 ServicesHelper.SendCommand(msg, "SFR");
             }
         }
@@ -384,14 +393,14 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 var pm = TemplateControl.GetInstance().BuildPOIParams[ComboxBuildPoiTemplate.SelectedIndex].Value;
                 var Params = new Dictionary<string, object>();
-                POILayoutTypes POILayoutReq;
+                POIPointTypes POILayoutReq;
                 if ((bool)CircleChecked.IsChecked)
                 {
                     Params.Add("LayoutCenterX", centerX.Text);
                     Params.Add("LayoutCenterY", centerY.Text);
                     Params.Add("LayoutWidth", int.Parse(radius.Text) * 2);
                     Params.Add("LayoutHeight", int.Parse(radius.Text) * 2);
-                    POILayoutReq = POILayoutTypes.Circle;
+                    POILayoutReq = POIPointTypes.Circle;
                 }
                 else if ((bool)RectChecked.IsChecked)
                 {
@@ -399,7 +408,7 @@ namespace ColorVision.Services.Devices.Algorithm
                     Params.Add("LayoutCenterY", rect_centerY.Text);
                     Params.Add("LayoutWidth", width.Text);
                     Params.Add("LayoutHeight", height.Text);
-                    POILayoutReq = POILayoutTypes.Rect;
+                    POILayoutReq = POIPointTypes.Rect;
                 }
                 else//四边形
                 {
@@ -411,9 +420,12 @@ namespace ColorVision.Services.Devices.Algorithm
                     Params.Add("LayoutPolygonY3", Mask_Y3.Text);
                     Params.Add("LayoutPolygonX4", Mask_X4.Text);
                     Params.Add("LayoutPolygonY4", Mask_Y4.Text);
-                    POILayoutReq = POILayoutTypes.Mask;
+                    POILayoutReq = POIPointTypes.Mask;
                 }
-                MsgRecord msg = Service.BuildPoi(POILayoutReq, Params, imgFileName, pm.Id, ComboxBuildPoiTemplate.Text, sn);
+                TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
+                MsgRecord msg = null;
+                if (imageDevice != null) msg = Service.BuildPoi(POILayoutReq, Params, imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, imgFileName, pm.Id, ComboxBuildPoiTemplate.Text, sn);
+                else msg = Service.BuildPoi(POILayoutReq, Params, string.Empty, string.Empty, imgFileName, pm.Id, ComboxBuildPoiTemplate.Text, sn);
                 ServicesHelper.SendCommand(msg, "BuildPoi");
             }
         }
@@ -432,7 +444,10 @@ namespace ColorVision.Services.Devices.Algorithm
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().GhostParams[ComboxGhostTemplate.SelectedIndex].Value;
-                var msg = Service.Ghost(imgFileName, fileExtType, pm.Id, ComboxGhostTemplate.Text, sn);
+                TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
+                MsgRecord msg = null;
+                if (imageDevice != null) msg= Service.Ghost(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, imgFileName, fileExtType, pm.Id, ComboxGhostTemplate.Text, sn);
+                else msg = Service.Ghost(string.Empty, string.Empty, imgFileName, fileExtType, pm.Id, ComboxGhostTemplate.Text, sn);
                 ServicesHelper.SendCommand(msg, "Ghost");
             }
         }
@@ -451,7 +466,10 @@ namespace ColorVision.Services.Devices.Algorithm
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value;
-                var msg = Service.Distortion(imgFileName, fileExtType, pm.Id, ComboxDistortionTemplate.Text, sn);
+                TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
+                MsgRecord msg = null;
+                if (imageDevice != null) msg= Service.Distortion(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, imgFileName, fileExtType, pm.Id, ComboxDistortionTemplate.Text, sn);
+                else msg = Service.Distortion(string.Empty, string.Empty, imgFileName, fileExtType, pm.Id, ComboxDistortionTemplate.Text, sn);
                 ServicesHelper.SendCommand(msg, "Distortion");
             }
         }
@@ -498,13 +516,16 @@ namespace ColorVision.Services.Devices.Algorithm
             }
 
             string sn = string.Empty;
-            string imgFileName = ImageFile.Text; 
+            string imgFileName = ImageFile.Text;
             FileExtType fileExtType = FileExtType.Tif;
 
-            if (GetAlgSN(ref sn,ref imgFileName ,ref fileExtType))
+            if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().FOVParams[ComboxFOVTemplate.SelectedIndex].Value;
-                var msg = Service.FOV(imgFileName, fileExtType, pm.Id, ComboxFOVTemplate.Text, sn);
+                TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
+                MsgRecord msg = null;
+                if (imageDevice != null) msg = Service.FOV(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, imgFileName, fileExtType, pm.Id, ComboxFOVTemplate.Text, sn);
+                else msg = Service.FOV(string.Empty, string.Empty, imgFileName, fileExtType, pm.Id, ComboxFOVTemplate.Text, sn);
                 ServicesHelper.SendCommand(msg, "FOV");
             }
         }
@@ -667,7 +688,10 @@ namespace ColorVision.Services.Devices.Algorithm
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().FocusPointsParams[ComboxFocusPointsTemplate.SelectedIndex].Value;
-                var ss = Service.FocusPoints(ImageFile.Text, fileExtType, pm.Id, ComboxFocusPointsTemplate.Text, sn);
+                TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
+                MsgRecord ss = null;
+                if (imageDevice != null) ss = Service.FocusPoints(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, ImageFile.Text, fileExtType, pm.Id, ComboxFocusPointsTemplate.Text, sn);
+                else ss = Service.FocusPoints(string.Empty, string.Empty, ImageFile.Text, fileExtType, pm.Id, ComboxFocusPointsTemplate.Text, sn);
                 ServicesHelper.SendCommand(ss, "FocusPoints");
             }
         }
@@ -694,7 +718,10 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 var pm = TemplateControl.GetInstance().LedCheckParams[ComboxLedCheckTemplate.SelectedIndex].Value;
                 var poi_pm = TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate1.SelectedIndex].Value;
-                var ss = Service.LedCheck(ImageFile.Text, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate1.Text);
+                TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
+                MsgRecord ss = null;
+                if (imageDevice != null) ss = Service.LedCheck(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, ImageFile.Text, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate1.Text);
+                else ss = Service.LedCheck(string.Empty, string.Empty, ImageFile.Text, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate1.Text);
                 ServicesHelper.SendCommand(ss, "正在计算灯珠");
             }
         }

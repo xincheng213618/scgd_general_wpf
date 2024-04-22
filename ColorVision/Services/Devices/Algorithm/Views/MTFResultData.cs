@@ -1,6 +1,6 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Services.Devices.Algorithm.Dao;
-using MQTTMessageLib.Algorithm;
+using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 
 namespace ColorVision.Services.Devices.Algorithm.Views

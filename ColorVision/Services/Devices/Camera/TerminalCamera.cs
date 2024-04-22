@@ -30,8 +30,6 @@ namespace ColorVision.Services.Devices.Camera
             MQTTTerminalCamera cameraService = new MQTTTerminalCamera(Config);
             MQTTServiceTerminalBase = cameraService;
             MQTTTerminalCamera = cameraService;
-            RefreshCommand = new RelayCommand(a => cameraService.GetAllSnID());
-
             this.SetIconResource("DrawingImageCamera");
         }
     }

@@ -141,7 +141,7 @@ namespace ColorVision.Services
 
 
             var ServiceTypess = Enum.GetValues(typeof(ServiceTypes)).Cast<ServiceTypes>();
-            List<SysDictionaryModel> SysDictionaryModels = SysDictionaryDao.Instance.GetAllByPcode("service_type");
+            List<SysDictionaryModel> SysDictionaryModels = SysDictionaryDao.Instance.GetServiceTypes();
 
             TypeServices.Clear();
             foreach (var type in ServiceTypess)

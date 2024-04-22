@@ -1,11 +1,13 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Extension;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Calibration.Views;
 using ColorVision.Services.Extension;
 using ColorVision.Services.Msg;
+using ColorVision.Services.RC;
 using ColorVision.Services.Templates;
 using ColorVision.Services.Type;
 using ColorVision.Solution;
@@ -15,9 +17,11 @@ using log4net;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -95,13 +99,11 @@ namespace ColorVision.Services.Devices.Calibration
             }
         }
 
-
         public void UploadCalibration(object sender)
         {
             UploadWindow uploadwindow = new UploadWindow("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
             uploadwindow.OnUpload += (s, e) =>
             {
-
                 if (s is Upload upload)
                 {
                     UploadMsg uploadMsg = new UploadMsg(this);
@@ -112,19 +114,17 @@ namespace ColorVision.Services.Devices.Calibration
             };
             uploadwindow.ShowDialog();
         }
-
         public string Msg { get => _Msg; set { _Msg = value; Application.Current.Dispatcher.Invoke(() => NotifyPropertyChanged()); } }
         private string _Msg;
 
         public event EventHandler UploadClosed;
-
+        public ObservableCollection<string> UploadList { get; set; } = new ObservableCollection<string>();
         public async void UploadData(string UploadFilePath)
         {
             Msg = "正在解压文件：" + " 请稍后...";
             await Task.Delay(10);
             if (File.Exists(UploadFilePath))
             {
-                Msg = "正在解压文件：" + " 请稍后...";
                 string path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)+ "\\ColorVision\\Cacahe";
                 if (Directory.Exists(path))
                     Directory.Delete(path, true);
@@ -144,13 +144,24 @@ namespace ColorVision.Services.Devices.Calibration
 
                 string Calibrationcfg = path + "\\Calibration.cfg";
 
-                Dictionary<string, List<ColorVisionVCalibratioItem>> keyValuePairs1 = JsonConvert.DeserializeObject<Dictionary<string, List<ColorVisionVCalibratioItem>>>(File.ReadAllText(Calibrationcfg, Encoding.GetEncoding("gbk")));
+                Dictionary<string, List<ZipCalibrationItem>> AllCalFiles = JsonConvert.DeserializeObject<Dictionary<string, List<ZipCalibrationItem>>>(File.ReadAllText(Calibrationcfg, Encoding.GetEncoding("gbk")));
 
                 Dictionary<string, CalibrationResource> keyValuePairs2 = new Dictionary<string, CalibrationResource>();
 
-                if (keyValuePairs1 != null)
+                if (AllCalFiles != null)
                 {
-                    foreach (var item in keyValuePairs1)
+                    foreach (var item in AllCalFiles)
+                    {
+                        foreach (var item1 in item.Value)
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                UploadList.Add(item1.Title);
+                            });
+                        }
+                    }
+
+                    foreach (var item in AllCalFiles)
                     {
                         foreach (var item1 in item.Value)
                         {
@@ -206,6 +217,7 @@ namespace ColorVision.Services.Devices.Calibration
                                 continue;
 
                             bool isExist = false;
+
                             foreach (var item2 in VisualChildren)
                             {
                                 if (item2 is CalibrationResource CalibrationResource)
@@ -228,42 +240,42 @@ namespace ColorVision.Services.Devices.Calibration
                             switch (item1.CalibrationType)
                             {
                                 case CalibrationType.DarkNoise:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DarkNoise);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DarkNoise);
                                     break;
                                 case CalibrationType.DefectWPoint:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
                                     break;
                                 case CalibrationType.DefectBPoint:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
                                     break;
                                 case CalibrationType.DefectPoint:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
                                     break;
                                 case CalibrationType.DSNU:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DSNU);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.DSNU);
                                     break;
                                 case CalibrationType.Uniformity:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.Uniformity);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.Uniformity);
                                     break;
                                 case CalibrationType.Luminance:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.Luminance);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.Luminance);
                                     break;
                                 case CalibrationType.LumOneColor:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.LumOneColor);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.LumOneColor);
                                     break;
                                 case CalibrationType.LumFourColor:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.LumFourColor);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.LumFourColor);
                                     break;
                                 case CalibrationType.LumMultiColor:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.LumMultiColor);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.LumMultiColor);
                                     break;
                                 case CalibrationType.LumColor:
                                     break;
                                 case CalibrationType.Distortion:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.Distortion);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.Distortion);
                                     break;
                                 case CalibrationType.ColorShift:
-                                    msgRecord = await DeviceService.UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.ColorShift);
+                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(item1.Title, FilePath, (int)ServiceTypes.ColorShift);
                                     break;
                                 case CalibrationType.Empty_Num:
                                     break;
@@ -282,6 +294,7 @@ namespace ColorVision.Services.Devices.Calibration
                                 sysResourceModel.Pid = SysResourceModel.Id;
                                 sysResourceModel.Value = Path.GetFileName(FileName);
                                 sysResourceModel.CreateDate = DateTime.Now;
+                                sysResourceModel.Remark = item1.ToJsonN();
                                 SysResourceDao.Instance.Save(sysResourceModel);
                                 if (sysResourceModel != null)
                                 {
@@ -300,15 +313,27 @@ namespace ColorVision.Services.Devices.Calibration
                 }
 
 
-
                 string CalibrationFile = path + "\\" + "Calibration";
                 DirectoryInfo directoryInfo = new DirectoryInfo(CalibrationFile);
                 foreach (var item2 in directoryInfo.GetFiles())
                 {
                     try
                     {
-                        List<ColorVisionVCalibratioItem> keyValuePairs = JsonConvert.DeserializeObject<List<ColorVisionVCalibratioItem>>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
-                        if (keyValuePairs != null)
+                        ZipCalibrationGroup zipCalibrationGroup;
+                        try
+                        {
+                            zipCalibrationGroup = new ZipCalibrationGroup();
+                            zipCalibrationGroup.ZipCalibrationItems = JsonConvert.DeserializeObject<List<ZipCalibrationItem>>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
+                        }
+                        catch (Exception ex)
+                        {
+                            zipCalibrationGroup = JsonConvert.DeserializeObject<ZipCalibrationGroup>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
+                        }
+
+
+
+
+                        if (zipCalibrationGroup != null)
                         {
                             string filePath = Path.GetFileNameWithoutExtension(item2.FullName);
 
@@ -329,7 +354,7 @@ namespace ColorVision.Services.Devices.Calibration
                             GroupResource groupResource = GroupResource.AddGroupResource(this, filePath);
                             if (groupResource != null)
                             {
-                                foreach (var item1 in keyValuePairs)
+                                foreach (var item1 in zipCalibrationGroup.ZipCalibrationItems)
                                 {
                                     if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
                                     {
@@ -345,7 +370,10 @@ namespace ColorVision.Services.Devices.Calibration
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show(ex.Message);
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+                        });
                     }
                 }
                 Msg = "上传结束";

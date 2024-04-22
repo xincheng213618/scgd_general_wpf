@@ -10,7 +10,7 @@ using Newtonsoft.Json;
 using ColorVision.Common.Sorts;
 using ColorVision.MySql.ORM;
 
-namespace ColorVision.Services.Devices.Camera.Dao
+namespace ColorVision.Services.PhyCameras.Dao
 {
     public class ColorVisionLincense
     {
@@ -129,23 +129,11 @@ namespace ColorVision.Services.Devices.Camera.Dao
                 row["res_dev_cam_pid"] = item.DevCameraId;
                 if (item.DevCaliId!=null)
                     row["res_dev_cali_pid"] = item.DevCaliId;
-
             }
             return row;
         }
 
         public List<CameraLicenseModel> GetAllByMAC(string id ,int pid) => GetAllByParam(new Dictionary<string, object>() { { "mac_sn", id },{ "res_dev_cam_pid", pid } });
-         
-        public List<string?> GetAllCameraID() => GetAll().Where(x => !string.IsNullOrEmpty(x.Code)).Select(x => x.Code).ToList();
-
-
+    
     }
-
-
-
-
-
-
-
-
 }
