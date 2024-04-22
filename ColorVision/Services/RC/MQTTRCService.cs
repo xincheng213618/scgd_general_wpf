@@ -494,9 +494,10 @@ namespace ColorVision.Services.RC
                 EventName = MQTTFileServerEventEnum.Event_File_Upload,
                 Params = new Dictionary<string, object> { { "Name", name }, { "FileName", fileName }, { "FileExtType", FileExtType.Calibration }, { "MD5", md5 } }
             };
+
             SendTopic = SysConfigTopic;
             SubscribeTopic = SysConfigRespTopic;
-            DeviceCode = "e58adc4ea51efbbf9";
+
             MsgRecord msgRecord = PublishAsyncClient(msg);
 
             MsgRecordStateChangedHandler handler = (sender) =>

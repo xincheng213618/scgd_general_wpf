@@ -170,14 +170,12 @@ namespace ColorVision.Services.Core
         internal virtual MsgRecord PublishAsyncClient(MsgSend msg,double Timeout = 30000)
         {
             Guid guid = Guid.NewGuid();
-            msg.MsgID = guid.ToString();
-            msg.DeviceCode = DeviceCode;
-            msg.Token = ServiceToken;
-            ///这里是为了兼容只前的写法，后面会修改掉
-            if (string.IsNullOrWhiteSpace(msg.ServiceName))
-            {
-                msg.ServiceName = SendTopic;
-            }
+            //这里修改成 如果在上一级已经赋值就不在这里强制修改
+            msg.MsgID ??= guid.ToString();
+            msg.DeviceCode ??= DeviceCode;
+            msg.Token ??= ServiceToken;
+            msg.ServiceName ??= SendTopic;
+
 
             string json = JsonConvert.SerializeObject(msg, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
 
