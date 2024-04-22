@@ -16,7 +16,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Type;
-using ColorVision.Services.PhyCamera.Templates;
+using ColorVision.Services.PhyCameras.Templates;
 
 namespace ColorVision.Services.Devices
 {

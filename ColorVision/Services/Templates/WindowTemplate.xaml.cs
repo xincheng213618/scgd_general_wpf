@@ -10,7 +10,7 @@ using ColorVision.Services.Devices.PG.Templates;
 using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Devices.Spectrum;
 using ColorVision.Services.Flow;
-using ColorVision.Services.PhyCamera.Templates;
+using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates.Measure;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Services.Templates.POI.Dao;

@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Services.PhyCamera.Templates;
+using ColorVision.Services.PhyCameras;
+using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using System;
@@ -32,6 +33,7 @@ namespace ColorVision.Services.Devices.Calibration
             DataContext = Device;
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
         }
+
         public void Dispose()
         {
             GC.SuppressFinalize(this);
@@ -51,8 +53,8 @@ namespace ColorVision.Services.Devices.Calibration
                 switch (control.Tag?.ToString() ?? string.Empty)
                 {
                     case "Calibration":
-                        CalibrationControl calibration = Device.CalibrationParams.Count == 0 ? new CalibrationControl(Device) : new CalibrationControl(Device, Device.CalibrationParams[0].Value);
-                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, Device);
+                        CalibrationControl calibration = Device.CalibrationParams.Count == 0 ? new CalibrationControl(Device.PhyCamera) : new CalibrationControl(Device.PhyCamera, Device.CalibrationParams[0].Value);
+                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, Device.PhyCamera);
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;
@@ -62,7 +64,7 @@ namespace ColorVision.Services.Devices.Calibration
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            CalibrationEdit CalibrationEdit = new CalibrationEdit(Device);
+            CalibrationEdit CalibrationEdit = new CalibrationEdit(Device.PhyCamera);
             CalibrationEdit.Show();
         }
         private void ServiceCache_Click(object sender, RoutedEventArgs e)

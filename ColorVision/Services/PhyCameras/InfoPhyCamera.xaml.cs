@@ -92,5 +92,10 @@ namespace ColorVision.Services.PhyCameras
                 MessageBox.Show(textBlock.Text);
             }
         }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

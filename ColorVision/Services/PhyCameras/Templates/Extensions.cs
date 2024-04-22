@@ -2,7 +2,7 @@
 using cvColorVision;
 using System.ComponentModel;
 
-namespace ColorVision.Services.PhyCamera.Templates
+namespace ColorVision.Services.PhyCameras.Templates
 {
 
     public static class Extensions

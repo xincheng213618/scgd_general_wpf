@@ -56,7 +56,7 @@
                     <TabItem Header="基本信息">
                         <StackPanel Margin="5">
                             <Grid>
-                                <StackPanel Margin="5" HorizontalAlignment="Left">
+                                <StackPanel Margin="5" >
                                     <DockPanel>
                                         <TextBlock Text="Code:" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Code}"/>
@@ -70,6 +70,10 @@
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CameraType}"/>
                                     </DockPanel>
                                     <Button Content="上传许可文件"  Command="{Binding UploadLincenseCommand}" />
+                                    <Button Content="上传校正文件"  Command="{Binding UploadCalibrationCommand}" />
+                                    <Button Content="校正模板设置" Tag="Calibration"  Click="MenuItem_Template" />
+                                    <Button Content="校正模板管理" Click="Button_Click_1"/>
+                                    <Button Content="资源组管理" Command="{Binding ResourceManagerCommand}"/>
                                 </StackPanel>
                             </Grid>
 

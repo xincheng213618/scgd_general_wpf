@@ -4,7 +4,7 @@ using ColorVision.Services.Core;
 using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.Devices.Camera.Views;
 using ColorVision.Services.Msg;
-using ColorVision.Services.PhyCamera.Templates;
+using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Themes;
@@ -154,7 +154,7 @@ namespace ColorVision.Services.Devices.Camera
 
         private void CalibrationParamInit()
         {
-            ComboxCalibrationTemplate.ItemsSource = TemplateHelpers.CreatTemplateModelEmpty(Device.DeviceCalibration?.CalibrationParams);
+            ComboxCalibrationTemplate.ItemsSource = TemplateHelpers.CreatTemplateModelEmpty(Device.PhyCamera?.CalibrationParams);
             ComboxCalibrationTemplate.SelectedIndex = 0;
         }
 
@@ -321,17 +321,17 @@ namespace ColorVision.Services.Devices.Camera
                 {
                     case "Calibration":
                         CalibrationControl calibration;
-                        if (Device.DeviceCalibration != null)
+                        if (Device.PhyCamera != null)
                         {
-                            if (Device.DeviceCalibration.CalibrationParams.Count > 0)
+                            if (Device.PhyCamera.CalibrationParams.Count > 0)
                             {
-                                calibration = new CalibrationControl(Device.DeviceCalibration, Device.DeviceCalibration.CalibrationParams[0].Value);
+                                calibration = new CalibrationControl(Device.PhyCamera, Device.PhyCamera.CalibrationParams[0].Value);
                             }
                             else
                             {
-                                calibration = new CalibrationControl(Device.DeviceCalibration);
+                                calibration = new CalibrationControl(Device.PhyCamera);
                             }
-                            windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, Device.DeviceCalibration, false);
+                            windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, Device.PhyCamera, false);
                             windowTemplate.Owner = Window.GetWindow(this);
                             windowTemplate.ShowDialog();
                         }

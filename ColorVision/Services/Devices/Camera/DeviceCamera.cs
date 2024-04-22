@@ -26,18 +26,7 @@ namespace ColorVision.Services.Devices.Camera
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCamera));
 
-        public DeviceCalibration? DeviceCalibration
-        {
-            get
-            {
-                foreach (var item in ServiceManager.GetInstance().DeviceServices)
-                {
-                    if (item is DeviceCalibration deviceCalibration && deviceCalibration.Code == Config.BindDeviceCode)
-                        return deviceCalibration;
-                }
-                return null;
-            }
-        }
+        public PhyCamera? PhyCamera { get => PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraID);}
 
         public ViewCamera View { get; set; }
         public MQTTCamera DeviceService { get; set; }

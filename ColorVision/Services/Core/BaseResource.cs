@@ -37,7 +37,6 @@ namespace ColorVision.Services.Core
             SysResourceDao.Instance.DeleteById(SysResourceModel.Id);
         }
 
-        public ServiceTypes ServiceTypes { get => (ServiceTypes)SysResourceModel.Type; }
 
         public int Id { get => SysResourceModel.Id; }
     }

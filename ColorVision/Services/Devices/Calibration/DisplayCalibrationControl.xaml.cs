@@ -3,7 +3,7 @@ using ColorVision.Extension;
 using ColorVision.Services.Core;
 using ColorVision.Services.Devices.Calibration.Views;
 using ColorVision.Services.Msg;
-using ColorVision.Services.PhyCamera.Templates;
+using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Themes;
@@ -180,13 +180,13 @@ namespace ColorVision.Services.Devices.Calibration
                         CalibrationControl calibration;
                         if (Device.CalibrationParams.Count > 0)
                         {
-                            calibration = new CalibrationControl(Device, Device.CalibrationParams[0].Value);
+                            calibration = new CalibrationControl(Device.PhyCamera, Device.CalibrationParams[0].Value);
                         }
                         else
                         {
-                            calibration = new CalibrationControl(Device);
+                            calibration = new CalibrationControl(Device.PhyCamera);
                         }
-                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, Device, false);
+                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, Device.PhyCamera, false);
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;
@@ -196,6 +196,8 @@ namespace ColorVision.Services.Devices.Calibration
                 }
             }
         }
+
+
 
         private bool GetSN(ref string sn, ref string imgFileName, ref FileExtType fileExtType)
         {
