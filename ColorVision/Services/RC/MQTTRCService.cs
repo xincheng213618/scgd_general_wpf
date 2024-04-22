@@ -26,6 +26,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media.Media3D;
 
 namespace ColorVision.Services.RC
 {
@@ -479,51 +480,53 @@ namespace ColorVision.Services.RC
             PublishAsyncClient(ArchivedTopic, JsonConvert.SerializeObject(request));
         }
 
-        public void UploadCalibrationFileAsync(string cameraId, string name, string fileName, int fileType, int timeout = 50000)
+        public async Task<MsgRecord> UploadCalibrationFileAsync(string name, string fileName, int fileType, int timeout = 50000)
         {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start(); 
+            TaskCompletionSource<MsgRecord> tcs = new TaskCompletionSource<MsgRecord>();
             string md5 = Tool.CalculateMD5(fileName);
             MsgSend msg = new MsgSend
             {
-                DeviceCode = cameraId,
-                Token = Token?.AccessToken ??string.Empty,
+                DeviceCode = "e58adc4ea51efbbf9",
+                Token = Token?.AccessToken ?? string.Empty,
                 MsgID = Guid.NewGuid().ToString("N"),
                 EventName = MQTTFileServerEventEnum.Event_File_Upload,
                 Params = new Dictionary<string, object> { { "Name", name }, { "FileName", fileName }, { "FileExtType", FileExtType.Calibration }, { "MD5", md5 } }
             };
-            PublishAsyncClient(SysConfigTopic, msg.ToString());
-            //var stopwatch = new Stopwatch();
-            //stopwatch.Start(); // 开始计时
-            //TaskCompletionSource<MsgRecord> tcs = new TaskCompletionSource<MsgRecord>();
-            //MsgRecord msgRecord = PublishAsyncClient(msg);
+            SendTopic = SysConfigTopic;
+            SubscribeTopic = SysConfigRespTopic;
+            MsgRecord msgRecord = PublishAsyncClient(msg);
 
-            //MsgRecordStateChangedHandler handler = (sender) =>
-            //{
-            //    log.Info($"UploadCalibrationFileAsync:{fileName}  状态{sender}  Operation time: {stopwatch.ElapsedMilliseconds} ms");
-            //    tcs.TrySetResult(msgRecord);
-            //};
-            //msgRecord.MsgRecordStateChanged += handler;
-            //var timeoutTask = Task.Delay(timeout);
-            //try
-            //{
+            MsgRecordStateChangedHandler handler = (sender) =>
+            {
+                log.Info($"UploadCalibrationFileAsync:{fileName}  状态{sender}  Operation time: {stopwatch.ElapsedMilliseconds} ms");
+                tcs.TrySetResult(msgRecord);
+            };
+            msgRecord.MsgRecordStateChanged += handler;
+            var timeoutTask = Task.Delay(timeout);
+            try
+            {
 
-            //    var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
-            //    if (completedTask == timeoutTask)
-            //    {
-            //        log.Info($"UploadCalibrationFileAsync:{fileName}  超时  Operation time: {stopwatch.ElapsedMilliseconds} ms");
-            //        tcs.TrySetException(new TimeoutException("The operation has timed out."));
-            //    }
-            //    return await tcs.Task; // 如果超时，这里将会抛出异常
-            //}
-            //catch (Exception ex)
-            //{
-            //    log.Info($"UploadCalibrationFileAsync:{fileName}  异常 {ex.Message} Operation time: {stopwatch.ElapsedMilliseconds} ms");
-            //    tcs.TrySetException(ex);
-            //    return await tcs.Task; // 
-            //}
-            //finally
-            //{
-            //    msgRecord.MsgRecordStateChanged -= handler;
-            //}
+                var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
+                if (completedTask == timeoutTask)
+                {
+                    log.Info($"UploadCalibrationFileAsync:{fileName}  超时  Operation time: {stopwatch.ElapsedMilliseconds} ms");
+                    tcs.TrySetException(new TimeoutException("The operation has timed out."));
+                }
+                return await tcs.Task; // 如果超时，这里将会抛出异常
+            }
+            catch (Exception ex)
+            {
+                log.Info($"UploadCalibrationFileAsync:{fileName}  异常 {ex.Message} Operation time: {stopwatch.ElapsedMilliseconds} ms");
+                tcs.TrySetException(ex);
+                return await tcs.Task; // 
+            }
+            finally
+            {
+                msgRecord.MsgRecordStateChanged -= handler;
+            }
         }
+
     }
 }

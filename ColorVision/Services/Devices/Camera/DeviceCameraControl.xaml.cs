@@ -77,20 +77,11 @@ namespace ColorVision.Services.Devices.Camera
                 switch (control.Tag?.ToString() ?? string.Empty)
                 {
                     case "Calibration":
-                        CalibrationControl calibration = Device.CalibrationParams.Count == 0 ? new CalibrationControl(Device) : new CalibrationControl(Device, Device.CalibrationParams[0].Value);
-                        windowTemplate  = new WindowTemplate(TemplateType.Calibration, calibration, Device);
-                        windowTemplate.Owner = Window.GetWindow(this);
-                        windowTemplate.ShowDialog();
                         break;
                 }
             }
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            CalibrationEdit CalibrationEdit = new CalibrationEdit(Device);
-            CalibrationEdit.Show();
-        }
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 

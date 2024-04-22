@@ -89,7 +89,7 @@ namespace ColorVision.Services.Devices.Camera.Configs
         private bool _IsHaveMotor;
 
         public MotorConfig MotorConfig { get; set; } = new MotorConfig();
-
+          
         public ExpTimeCfg ExpTimeCfg { get; set; } = new ExpTimeCfg();
 
         public CameraCfg CameraCfg { get; set; } = new CameraCfg();
