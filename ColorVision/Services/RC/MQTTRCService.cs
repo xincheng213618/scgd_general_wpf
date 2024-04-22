@@ -42,6 +42,26 @@ namespace ColorVision.Services.RC
 
     public delegate void RCServiceStatusChangedHandler(object sender, RCServiceStatusChangedEvent args);
 
+
+
+    public class MQTTFileUpload: MQTTServiceBase
+    {
+        private static MQTTFileUpload _instance;
+        private static readonly object _locker = new();
+        public static MQTTFileUpload GetInstance() { lock (_locker) { return _instance ??= new MQTTFileUpload(); } }
+
+
+        public MQTTFileUpload()
+        {
+
+        }
+
+
+
+
+    }
+
+
     /// <summary>
     /// 注册服务
     /// </summary>
@@ -51,7 +71,6 @@ namespace ColorVision.Services.RC
         private static MQTTRCService _instance;
         private static readonly object _locker = new();
         public static MQTTRCService GetInstance() { lock (_locker) { return _instance ??= new MQTTRCService(); } }
-
 
         private string NodeName;
         private string NodeType;
@@ -270,7 +289,6 @@ namespace ColorVision.Services.RC
                 }
             }
         }
-
         private static TypeService GetTypeService(List<TypeService> svrs, CVServiceType serviceTypes)
         {
             ServiceTypes cvSType = EnumTool.ParseEnum<ServiceTypes>(serviceTypes.ToString());
@@ -329,7 +347,6 @@ namespace ColorVision.Services.RC
         public bool ReRegist()
         {
             LoadCfg();
-
             return Regist();
         }
 
@@ -483,20 +500,19 @@ namespace ColorVision.Services.RC
         public async Task<MsgRecord> UploadCalibrationFileAsync(string name, string fileName, int fileType, int timeout = 50000)
         {
             var stopwatch = new Stopwatch();
-            stopwatch.Start(); 
+            stopwatch.Start();
+
+            SendTopic = SysConfigTopic;
+            SubscribeTopic = SysConfigRespTopic;
             TaskCompletionSource<MsgRecord> tcs = new TaskCompletionSource<MsgRecord>();
             string md5 = Tool.CalculateMD5(fileName);
             MsgSend msg = new MsgSend
             {
                 DeviceCode = "e58adc4ea51efbbf9",
                 Token = Token?.AccessToken ?? string.Empty,
-                MsgID = Guid.NewGuid().ToString("N"),
                 EventName = MQTTFileServerEventEnum.Event_File_Upload,
                 Params = new Dictionary<string, object> { { "Name", name }, { "FileName", fileName }, { "FileExtType", FileExtType.Calibration }, { "MD5", md5 } }
             };
-
-            SendTopic = SysConfigTopic;
-            SubscribeTopic = SysConfigRespTopic;
 
             MsgRecord msgRecord = PublishAsyncClient(msg);
 
