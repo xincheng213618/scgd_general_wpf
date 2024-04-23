@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Devices.Camera.Configs;
+using ColorVision.Services.PhyCameras;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
@@ -43,8 +44,9 @@ namespace ColorVision.Services.Devices.Camera
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-
-            CameraID.ItemsSource = DeviceCamera.Service.DevicesSN;
+            CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
+            CameraPhyID.SelectedItem = PhyCameraManager.GetInstance().GetPhyCamera(DeviceCamera.Config.CameraID);
+            CameraPhyID.DisplayMemberPath = "Name";
 
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
@@ -55,8 +57,6 @@ namespace ColorVision.Services.Devices.Camera
             ComboxCameraImageBpp.ItemsSource = from e1 in Enum.GetValues(typeof(ImageBpp)).Cast<ImageBpp>()
                                                select new KeyValuePair<ImageBpp, string>(e1, e1.ToDescription());
 
-
-            CameraID.ItemsSource = SysResourceDao.Instance.GetAllCameraID();
 
             var type = DeviceCamera.Config.CameraType;
 

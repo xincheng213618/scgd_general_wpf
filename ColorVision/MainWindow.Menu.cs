@@ -221,11 +221,6 @@ namespace ColorVision
         }
 
 
-        private void MenuItem_Click8(object sender, RoutedEventArgs e)
-        {
-            new WindowFourColorCalibration() {Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
-        }
-
         private void MenuItem9_Click(object sender, RoutedEventArgs e)
         {
             new WindowFlowEngine() { Owner = null, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();

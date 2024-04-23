@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.Sorts;
 using ColorVision.Common.Utilities;
-using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.PhyCameras.Dao;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
@@ -41,9 +40,6 @@ namespace ColorVision.Services.Devices.Camera
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             DataContext = Device;
-
-            Device.RefreshLincense();
-            ListViewLincense.ItemsSource = Device.LicenseModels;
         }
 
         private void ServiceCache_Click(object sender, RoutedEventArgs e)

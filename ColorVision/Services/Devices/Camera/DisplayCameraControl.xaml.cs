@@ -1,11 +1,10 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Extension;
 using ColorVision.Services.Core;
-using ColorVision.Services.Devices.Calibration.Templates;
 using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.Devices.Camera.Views;
-using ColorVision.Services.Devices.PG;
 using ColorVision.Services.Msg;
+using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Themes;
@@ -14,11 +13,9 @@ using log4net;
 using MQTTMessageLib;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
-using Panuon.WPF;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -157,7 +154,7 @@ namespace ColorVision.Services.Devices.Camera
 
         private void CalibrationParamInit()
         {
-            ComboxCalibrationTemplate.ItemsSource = TemplateHelpers.CreatTemplateModelEmpty(Device.DeviceCalibration?.CalibrationParams);
+            ComboxCalibrationTemplate.ItemsSource = TemplateHelpers.CreatTemplateModelEmpty(Device.PhyCamera?.CalibrationParams);
             ComboxCalibrationTemplate.SelectedIndex = 0;
         }
 
@@ -310,6 +307,12 @@ namespace ColorVision.Services.Devices.Camera
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
+            if (Device.PhyCamera == null)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
+                return;
+            }
+
             if (sender is Button button)
             {
                 TemplateControl = TemplateControl.GetInstance();
@@ -324,25 +327,18 @@ namespace ColorVision.Services.Devices.Camera
                 {
                     case "Calibration":
                         CalibrationControl calibration;
-                        if (Device.DeviceCalibration != null)
+
+                        if (Device.PhyCamera.CalibrationParams.Count > 0)
                         {
-                            if (Device.DeviceCalibration.CalibrationParams.Count > 0)
-                            {
-                                calibration = new CalibrationControl(Device.DeviceCalibration, Device.DeviceCalibration.CalibrationParams[0].Value);
-                            }
-                            else
-                            {
-                                calibration = new CalibrationControl(Device.DeviceCalibration);
-                            }
-                            windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, Device.DeviceCalibration, false);
-                            windowTemplate.Owner = Window.GetWindow(this);
-                            windowTemplate.ShowDialog();
+                            calibration = new CalibrationControl(Device.PhyCamera, Device.PhyCamera.CalibrationParams[0].Value);
                         }
                         else
                         {
-                            MessageBox.Show("在使用校正前，请先配置对映的校正服务");
+                            calibration = new CalibrationControl(Device.PhyCamera);
                         }
-
+                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, Device.PhyCamera, false);
+                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate.ShowDialog();
                         break;
                     default:
                         HandyControl.Controls.Growl.Info(Properties.Resource.UnderDevelopment);

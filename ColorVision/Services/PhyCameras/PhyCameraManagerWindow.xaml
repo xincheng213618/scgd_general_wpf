@@ -27,7 +27,7 @@
                 </StackPanel>
                 <TreeView x:Name="TreeView1" Grid.Row="1" ItemsSource="{Binding PhyCameras}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged" Margin="0,0,5,0">
                     <TreeView.Resources>
-                        <HierarchicalDataTemplate DataType="{x:Type local:PhyCamera}" ItemsSource="{Binding VisualChildren}" >
+                        <HierarchicalDataTemplate DataType="{x:Type local:PhyCamera}">
                             <StackPanel >
                                 <TextBlock Text="{Binding Name}"/>
                             </StackPanel>
