@@ -104,7 +104,6 @@ namespace ColorVision.Services.PhyCameras
                                                           select new KeyValuePair<ImageChannel, string>(e1, e1.ToDescription());
                     };
                 }
-
             };
         }
 
