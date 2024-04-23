@@ -62,7 +62,6 @@ namespace ColorVision.Services.Templates
         {
             InitializeComponent();
         }
-        private MeasureMasterDao measureMaster = new MeasureMasterDao();
         private MeasureDetailDao measureDetail = new MeasureDetailDao();
         public int MasterID { get; set; }
         public ObservableCollection<MParamConfig> ListConfigs { get; set; } = new ObservableCollection<MParamConfig>();

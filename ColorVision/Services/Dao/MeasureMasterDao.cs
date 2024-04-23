@@ -24,9 +24,11 @@ namespace ColorVision.Services.Dao
         public string? Remark { get; set; }
         public int TenantId { get; set; }
     }
-    public class MeasureMasterDao : BaseDaoMaster<MeasureMasterModel>
+    public class MeasureMasterDao : BaseTableDao<MeasureMasterModel>
     {
-        public MeasureMasterDao() : base(string.Empty, "t_scgd_measure_template_master", "id", true)
+        public static MeasureMasterDao Instance { get; set; } = new MeasureMasterDao();
+
+        public MeasureMasterDao() : base("t_scgd_measure_template_master", "id")
         {
         }
 

@@ -554,7 +554,7 @@ namespace ColorVision.Services.Templates
         internal MeasureParam? AddMeasureParam(string name)
         {
             MeasureMasterModel model = new MeasureMasterModel(name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            measureMaster.Save(model);
+            MeasureMasterDao.Instance.Save(model);
             int pkId = model.PKId;
             if (pkId > 0)
             {
@@ -564,7 +564,7 @@ namespace ColorVision.Services.Templates
         }
         private MeasureParam? LoadMeasureParamById(int pkId)
         {
-            MeasureMasterModel model = measureMaster.GetById(pkId);
+            MeasureMasterModel model = MeasureMasterDao.Instance.GetById(pkId);
             if (model != null) return new MeasureParam(model);
             else return null;
         }
@@ -676,7 +676,6 @@ namespace ColorVision.Services.Templates
             return FlowParams;
         }
 
-        private MeasureMasterDao measureMaster = new MeasureMasterDao();
         private MeasureDetailDao measureDetail = new MeasureDetailDao();
 
         internal ObservableCollection<TemplateModel<MeasureParam>> LoadMeasureParams()
@@ -684,7 +683,7 @@ namespace ColorVision.Services.Templates
             MeasureParams.Clear();
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                List<MeasureMasterModel> devices = measureMaster.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                List<MeasureMasterModel> devices = MeasureMasterDao.Instance.GetAllByTenantId(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in devices)
                 {
                     MeasureParams.Add(new TemplateModel<MeasureParam>(dbModel.Name ?? "default", new MeasureParam(dbModel)));
