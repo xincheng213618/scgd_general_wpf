@@ -42,7 +42,7 @@
                             </DockPanel>
                             <DockPanel Margin="0,5" >
                                 <TextBlock Text="设备自连接" Width="120"/>
-                                <CheckBox Content="启用" IsChecked="{Binding IsAutoStart}"/>
+                                <CheckBox Content="启用" IsChecked="{Binding IsAutoOpen}"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>

@@ -38,7 +38,10 @@
                                 <TextBlock Text="绑定矫正服务"  Width="120"/>
                                 <hc:ComboBox  x:Name="TextBox_BindDevice" IsEditable="True" SelectedIndex="0" Text="{Binding BindDeviceCode}"  hc:InfoElement.ShowClearButton="True"  />
                             </DockPanel>
-
+                            <DockPanel Margin="0,5" >
+                                <TextBlock Text="设备自连接" Width="120"/>
+                                <CheckBox Content="启用" IsChecked="{Binding IsAutoOpen}"/>
+                            </DockPanel>
                         </StackPanel>
                     </GroupBox>
 

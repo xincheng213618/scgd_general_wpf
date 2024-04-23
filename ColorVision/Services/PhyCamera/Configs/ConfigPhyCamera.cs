@@ -18,8 +18,8 @@ namespace ColorVision.Services.PhyCameras.Configs
         public cvColorVision.CameraType CameraType { get => _CameraType; set { _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
         private cvColorVision.CameraType _CameraType;
 
-        public TakeImageMode TakeImageMode { get => _TakeImageMode; set { _TakeImageMode = value; NotifyPropertyChanged(); } }
-        private TakeImageMode _TakeImageMode;
+        public cvColorVision.TakeImageMode TakeImageMode { get => _TakeImageMode; set { _TakeImageMode = value; NotifyPropertyChanged(); } }
+        private cvColorVision.TakeImageMode _TakeImageMode;
 
         public ImageBpp ImageBpp { get => _ImageBpp; set { _ImageBpp = value; NotifyPropertyChanged(); } }
         private ImageBpp _ImageBpp;
@@ -29,7 +29,7 @@ namespace ColorVision.Services.PhyCameras.Configs
         [JsonIgnore]
         public bool IsExpThree
         {
-            get => TakeImageMode != TakeImageMode.Live && (CameraType == cvColorVision.CameraType.CV_Q || CameraType == cvColorVision.CameraType.CV_MIL_CL);
+            get => TakeImageMode != cvColorVision.TakeImageMode.Live && (CameraType == cvColorVision.CameraType.CV_Q || CameraType == cvColorVision.CameraType.CV_MIL_CL);
             set => NotifyPropertyChanged();
         }
         [JsonIgnore]

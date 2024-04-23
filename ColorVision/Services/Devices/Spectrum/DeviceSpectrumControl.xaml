@@ -77,7 +77,7 @@
                             </DockPanel>
                             <DockPanel>
                                 <TextBlock Text="设备自连接"  Width="120"/>
-                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.IsAutoStart}"/>
+                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.IsAutoOpen}"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
