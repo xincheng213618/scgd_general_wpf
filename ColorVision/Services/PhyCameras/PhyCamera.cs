@@ -144,18 +144,22 @@ namespace ColorVision.Services.PhyCameras
                         if (Code == SysResourceModel.Code)
                         {
                             CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
-                        }
-                        if (CameraLicenseModel == null)
-                            CameraLicenseModel = new CameraLicenseModel();
-                        CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(openFileDialog.SafeFileName);
-                        CameraLicenseModel.LicenseValue = File.ReadAllText(file);
-                        CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLincense.Licensee;
-                        CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLincense.DeviceMode;
-                        CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
+                            if (CameraLicenseModel == null)
+                                CameraLicenseModel = new CameraLicenseModel();
+                            CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(openFileDialog.SafeFileName);
+                            CameraLicenseModel.LicenseValue = File.ReadAllText(file);
+                            CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLincense.Licensee;
+                            CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLincense.DeviceMode;
+                            CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
 
-                        int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
-                        MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
-                        RefreshLincense();
+                            int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "更新成功")}", "ColorVision");
+                            RefreshLincense();
+                        }
+                        else
+                        {
+                            MessageBox.Show(WindowHelpers.GetActiveWindow(), "该相机不支持此许可证", "ColorVision");
+                        }
                     }
                     else
                     {
