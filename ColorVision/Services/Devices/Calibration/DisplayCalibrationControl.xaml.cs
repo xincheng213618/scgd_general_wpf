@@ -32,7 +32,7 @@ namespace ColorVision.Services.Devices.Calibration
         {
             Device = device;
             InitializeComponent();
-            DeviceService.OnMessageRecved += Service_OnCalibrationEvent;
+            DeviceService.MsgReturnReceived += Service_OnCalibrationEvent;
             PreviewMouseDown += UserControl_PreviewMouseDown;
 
         }
@@ -60,7 +60,7 @@ namespace ColorVision.Services.Devices.Calibration
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
-        private void Service_OnCalibrationEvent(object sender, MessageRecvArgs arg)
+        private void Service_OnCalibrationEvent(MsgReturn arg)
         {
             switch (arg.EventName)
             {

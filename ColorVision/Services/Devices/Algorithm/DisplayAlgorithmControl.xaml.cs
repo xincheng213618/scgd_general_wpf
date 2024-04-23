@@ -51,7 +51,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             netFileUtil = new NetFileUtil();
             netFileUtil.handler += NetFileUtil_handler;
-            Service.OnMessageRecved += Service_OnAlgorithmEvent;
+            Service.MsgReturnReceived += Service_OnAlgorithmEvent;
             View.OnCurSelectionChanged += View_OnCurSelectionChanged;
             PreviewMouseDown += UserControl_PreviewMouseDown;
         }
@@ -140,7 +140,7 @@ namespace ColorVision.Services.Devices.Algorithm
             }
         }
 
-        private void Service_OnAlgorithmEvent(object sender, MessageRecvArgs arg)
+        private void Service_OnAlgorithmEvent(MsgReturn arg)
         {
             switch (arg.EventName)
             {

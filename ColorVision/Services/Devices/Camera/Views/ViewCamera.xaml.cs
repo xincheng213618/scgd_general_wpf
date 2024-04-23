@@ -82,7 +82,7 @@ namespace ColorVision.Services.Devices.Camera.Views
 
             netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.FullPath + "\\Cache");
             netFileUtil.handler += NetFileUtil_handler;
-            DeviceService.OnMessageRecved += DeviceService_OnMessageRecved;
+            DeviceService.MsgReturnReceived += DeviceService_OnMessageRecved;
         }
 
 
@@ -114,9 +114,9 @@ namespace ColorVision.Services.Devices.Camera.Views
 
         private MeasureImgResultDao measureImgResultDao = new MeasureImgResultDao();
         string LocalFileName;
-        private void DeviceService_OnMessageRecved(object sender, MessageRecvArgs arg)
+        private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
-            if (arg.ResultCode == 0)
+            if (arg.Code == 0)
             {
                 switch (arg.EventName)
                 {
@@ -153,7 +153,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                         break;
                 }
             }
-            else if (arg.ResultCode == 102)
+            else if (arg.Code == 102)
             {
                 switch (arg.EventName)
                 {

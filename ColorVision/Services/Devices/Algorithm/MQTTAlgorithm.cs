@@ -16,8 +16,6 @@ namespace ColorVision.Services.Devices.Algorithm
     {
         public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();
 
-        public event MessageRecvHandler OnMessageRecved;
-
         public DeviceAlgorithm DeviceAlgorithm { get; set; }
 
         public MQTTAlgorithm(DeviceAlgorithm device, ConfigAlgorithm Config) : base(Config)
@@ -46,7 +44,6 @@ namespace ColorVision.Services.Devices.Algorithm
                         break;
 
                     case MQTTAlgorithmEventEnum.Event_POI_GetData:
-                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         DeviceStatus = DeviceStatusType.Opened;
                         break;
                     case "SaveLicense":
@@ -55,18 +52,14 @@ namespace ColorVision.Services.Devices.Algorithm
                     //    break;
                     case MQTTFileServerEventEnum.Event_File_Upload:
                     case MQTTFileServerEventEnum.Event_File_List_All:
-                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         break;
                     case "MTF":
-                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision"));
                         break;
                     case "FOV":
-                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision"));
                         break;
                     default:
-                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         break;
                 }
             }
@@ -75,13 +68,11 @@ namespace ColorVision.Services.Devices.Algorithm
                 switch (msg.EventName)
                 {
                     case "GetData":
-                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         DeviceStatus = DeviceStatusType.Opened;
                         break;
                     case "Calibrations":
                         break;
                     default:
-                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         DeviceStatus = DeviceStatusType.Opened;
                         break;
                 }

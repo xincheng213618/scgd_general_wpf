@@ -8,25 +8,6 @@ using System.Windows;
 
 namespace ColorVision.Services.Devices
 {
-    public class MessageRecvArgs
-    {
-        public int ResultCode { get; set; }
-        public string EventName { get; set; }
-        public string SerialNumber { get; set; }
-        public dynamic Data { get; set; }
-
-        public MessageRecvArgs(string eventName, string serialNumber, int resultCode, dynamic Data)
-        {
-            ResultCode = resultCode;
-            EventName = eventName;
-            SerialNumber = serialNumber;
-            this.Data = Data;
-        }
-    }
-
-    public delegate void MessageRecvHandler(object sender, MessageRecvArgs arg);
-
-
     public class MQTTDeviceService<T> : MQTTServiceBase where T : BaseConfig
     {
         public event DeviceStatusChangedHandler DeviceStatusChanged;

@@ -15,13 +15,9 @@ using System.Windows;
 
 namespace ColorVision.Services.Devices.Camera
 {
-    public delegate void MQTTCameraMsgHandler(object sender, MsgReturn msg);
 
     public class MQTTCamera : MQTTDeviceService<ConfigCamera>
     {
-        public event MessageRecvHandler OnMessageRecved;
-
-
         public override bool IsAlive {get =>  Config.IsAlive; set { Config.IsAlive = value; NotifyPropertyChanged(); }}
 
         public MQTTCamera(ConfigCamera CameraConfig) : base(CameraConfig)
@@ -58,7 +54,6 @@ namespace ColorVision.Services.Devices.Camera
                     case MQTTCameraEventEnum.Event_Open:
                     case MQTTCameraEventEnum.Event_OpenLive:
                     case MQTTCameraEventEnum.Event_GetData:
-                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         break;
                     case "GetAutoExpTime":
                         if (msg.Data != null && msg.Data[0].result != null)
@@ -122,7 +117,6 @@ namespace ColorVision.Services.Devices.Camera
                     case "SetCfg":
                         break;
                     default:
-                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         break;
                 }
             }
@@ -159,7 +153,6 @@ namespace ColorVision.Services.Devices.Camera
                     case "UnInit":
                         break;
                     default:
-                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         break;
                 }
             }

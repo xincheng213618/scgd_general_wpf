@@ -15,7 +15,6 @@ namespace ColorVision.Services.Devices.Calibration
 {
     public class MQTTCalibration : MQTTDeviceService<ConfigCalibration>
     {
-        public event MessageRecvHandler OnMessageRecved;
         public MQTTCalibration(ConfigCalibration config) : base(config)
         {
             MsgReturnReceived += ProcessingReceived;
@@ -30,12 +29,7 @@ namespace ColorVision.Services.Devices.Calibration
                 switch (msg.EventName)
                 {
                     case "Calibration":
-
-                        //object obj = msg.Data;
-                        //Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, obj.ToString()));
-                        //break;
                     default:
-                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         break;
                 }
             }
@@ -47,7 +41,6 @@ namespace ColorVision.Services.Devices.Calibration
                         Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, "校准失败"));
                         break;
                     default:
-                        OnMessageRecved?.Invoke(this, new MessageRecvArgs(msg.EventName, msg.SerialNumber, msg.Code, msg.Data));
                         break;
                 }
             }
