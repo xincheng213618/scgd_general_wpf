@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
+using System.Windows.Documents;
 
 namespace ColorVision.Services.PhyCameras
 {
@@ -54,8 +55,6 @@ namespace ColorVision.Services.PhyCameras
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 string[] selectedFiles = openFileDialog.FileNames;
-
-
                 var licenses = CameraLicenseDao.Instance.GetAll();
 
                 foreach (string file in selectedFiles)
@@ -83,6 +82,14 @@ namespace ColorVision.Services.PhyCameras
 
                                 int ret = CameraLicenseDao.Instance.Save(cameraLicenseModel);
                                 MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
+                                SysDictionaryModel? sysDictionaryModel = SysDictionaryDao.Instance.GetAll().Find(a => a.Code == cameraLicenseModel.MacAddress);
+                                if (sysDictionaryModel == null)
+                                {
+                                    sysDictionaryModel = new SysDictionaryModel();
+                                    sysDictionaryModel.Code = cameraLicenseModel.MacAddress;
+                                    sysDictionaryModel.Type = (int)ServiceTypes.PhyCamera;
+                                    SysDictionaryDao.Instance.Save(sysDictionaryModel);
+                                }
                             }
                         }
                         catch (Exception ex)
@@ -104,10 +111,16 @@ namespace ColorVision.Services.PhyCameras
 
                         int ret = CameraLicenseDao.Instance.Save(cameraLicenseModel);
 
-
-
-
                         MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "更新成功")}", "ColorVision");
+
+                        SysDictionaryModel? sysDictionaryModel = SysDictionaryDao.Instance.GetAll().Find(a => a.Code == cameraLicenseModel.MacAddress);
+                        if (sysDictionaryModel == null)
+                        {
+                            sysDictionaryModel = new SysDictionaryModel();
+                            sysDictionaryModel.Code = cameraLicenseModel.MacAddress;
+                            sysDictionaryModel.Type = (int)ServiceTypes.PhyCamera;
+                            SysDictionaryDao.Instance.Save(sysDictionaryModel);
+                        }
                     }
                     else
                     {
@@ -115,6 +128,7 @@ namespace ColorVision.Services.PhyCameras
                     }
                 }
             }
+            LoadPhyCamera();
         }
 
         public ObservableCollection<PhyCamera> PhyCameras { get; set; } = new ObservableCollection<PhyCamera>();
