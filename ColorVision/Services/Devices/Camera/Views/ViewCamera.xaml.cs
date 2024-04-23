@@ -45,8 +45,6 @@ namespace ColorVision.Services.Devices.Camera.Views
             InitializeComponent();
         }
 
-        public ObservableCollection<TemplateModel<PoiParam>> ComboxPOITemplates { get; set; }
-
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             View= new View();
@@ -71,33 +69,8 @@ namespace ColorVision.Services.Devices.Camera.Views
 
             listView1.ItemsSource = ViewResultCameras;
 
-            ComboxPOITemplates = new ObservableCollection<TemplateModel<PoiParam>>();
-            ComboxPOITemplates.Insert(0, new TemplateModel<PoiParam>("Empty", new PoiParam() { Id=-1}));
 
-            foreach (var item in TemplateControl.GetInstance().PoiParams)
-                ComboxPOITemplates.Add(item);
-
-            TemplateControl.GetInstance().PoiParams.CollectionChanged += (s, e) =>
-            {
-                switch (e.Action)
-                {
-                    case NotifyCollectionChangedAction.Add:
-                        if (e.NewItems != null)
-                            foreach (TemplateModel<PoiParam> newItem in e.NewItems)
-                                ComboxPOITemplates.Add(newItem);
-                        break;
-                    case NotifyCollectionChangedAction.Remove:
-                        if (e.OldItems != null)
-                            foreach (TemplateModel<PoiParam> newItem in e.OldItems)
-                                ComboxPOITemplates.Remove(newItem);
-                        break;
-                    case NotifyCollectionChangedAction.Reset:
-                        ComboxPOITemplates.Clear();
-                        ComboxPOITemplates.Insert(0, new TemplateModel<PoiParam>("Empty", new PoiParam()) { Id = -1 });
-                        break;
-                }
-            };
-            ComboxPOITemplate.ItemsSource = ComboxPOITemplates;
+            ComboxPOITemplate.ItemsSource = TemplateHelpers.CreatTemplateModelEmpty(TemplateControl.GetInstance().PoiParams);
             ComboxPOITemplate.SelectedIndex = 0;
 
             if (listView1.View is GridView gridView)
@@ -106,6 +79,7 @@ namespace ColorVision.Services.Devices.Camera.Views
 
             ComboBoxLayers.ItemsSource  =from e1 in Enum.GetValues(typeof(ImageLayer)).Cast<ImageLayer>()
                                          select new KeyValuePair<string, ImageLayer>(e1.ToString(), e1);
+
             netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.FullPath + "\\Cache");
             netFileUtil.handler += NetFileUtil_handler;
             DeviceService.OnMessageRecved += DeviceService_OnMessageRecved;

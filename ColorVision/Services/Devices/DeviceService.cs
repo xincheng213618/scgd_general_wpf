@@ -22,7 +22,7 @@ using ColorVision.Interfaces;
 namespace ColorVision.Services.Devices
 {
 
-    public class DeviceService : BaseResourceObject, IDisposable , ITreeViewItem,IIcon
+    public class DeviceService : BaseResourceObject, IDisposable, ITreeViewItem,IIcon
     {
         public virtual string Code { get; set; }
         public virtual string SendTopic { get; set; }

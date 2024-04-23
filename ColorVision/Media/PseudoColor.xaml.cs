@@ -10,9 +10,6 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Media
 {
-
-
-
     public class PseudoValue : ViewModelBase
     {
         public string ValText { get => _ValText; set { _ValText = value; NotifyPropertyChanged(); } }
@@ -42,6 +39,7 @@ namespace ColorVision.Media
             MinMax = (maxdata - MinMax) / 255;
             InitializeComponent();
         }
+
         public ColormapTypes ColormapTypes { get; set; } = ColormapTypes.COLORMAP_JET;
 
         public static Dictionary<ColormapTypes, string> GetColormapDictionary()

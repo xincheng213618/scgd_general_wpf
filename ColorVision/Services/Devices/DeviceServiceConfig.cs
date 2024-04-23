@@ -52,7 +52,7 @@ namespace ColorVision.Services.Devices
     /// <summary>
     /// 基础硬件配置信息
     /// </summary>
-    public class DeviceServiceConfig : BaseConfig, IDeviceServiceConfig
+    public class DeviceServiceConfig : BaseConfig
     {
         /// <summary>
         /// 设备序号
