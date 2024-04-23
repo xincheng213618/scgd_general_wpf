@@ -27,6 +27,7 @@ using ColorVision.Common.MVVM.Json;
 using ColorVision.Services.Devices.PG;
 using ColorVision.Services.PhyCameras.Dao;
 using System.Linq;
+using ColorVision.Interfaces;
 
 namespace ColorVision.Services.PhyCameras
 {

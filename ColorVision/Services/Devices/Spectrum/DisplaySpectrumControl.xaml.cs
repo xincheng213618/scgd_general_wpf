@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
-using ColorVision.Services.Core;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Themes;
@@ -16,6 +15,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using static cvColorVision.GCSDLL;
 using ColorVision.Extension;
+using ColorVision.Interfaces;
 
 namespace ColorVision.Services.Devices.Spectrum
 {

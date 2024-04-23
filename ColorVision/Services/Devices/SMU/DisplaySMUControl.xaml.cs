@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Services.Devices.SMU.Configs;
 using ColorVision.Services.Devices.SMU.Views;
-using ColorVision.Services.Core;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Themes;
@@ -13,6 +12,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Extension;
+using ColorVision.Interfaces;
 
 namespace ColorVision.Services.Devices.SMU
 {

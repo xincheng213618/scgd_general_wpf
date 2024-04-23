@@ -17,14 +17,10 @@ using System.Windows.Media;
 using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Type;
 using ColorVision.Services.PhyCameras.Templates;
+using ColorVision.Interfaces;
 
 namespace ColorVision.Services.Devices
 {
-
-    public interface IIcon
-    {
-        public ImageSource Icon { get; set; }
-    }
 
     public class DeviceService : BaseResourceObject, IDisposable , ITreeViewItem,IIcon
     {

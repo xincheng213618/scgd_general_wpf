@@ -1,4 +1,4 @@
-﻿using ColorVision.Services.Devices;
+﻿using ColorVision.Interfaces;
 using ColorVision.Themes;
 using System;
 using System.Collections.Generic;

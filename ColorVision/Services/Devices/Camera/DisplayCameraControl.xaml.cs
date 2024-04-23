@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Extension;
-using ColorVision.Services.Core;
+using ColorVision.Interfaces;
 using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.Devices.Camera.Views;
 using ColorVision.Services.Msg;

@@ -3,7 +3,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Net;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;
-using ColorVision.Services.Core;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
@@ -23,6 +22,7 @@ using System.Collections.ObjectModel;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Devices.Calibration;
 using CVCommCore.CVAlgorithm;
+using ColorVision.Interfaces;
 
 namespace ColorVision.Services.Devices.Algorithm
 {

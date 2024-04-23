@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows;
 
-namespace ColorVision.Services.Core
+namespace ColorVision.Interfaces
 {
     public interface IDisPlayControl
     {
@@ -10,7 +10,6 @@ namespace ColorVision.Services.Core
         public event RoutedEventHandler Unselected;
 
         public event EventHandler SelectChanged;
-
 
         public bool IsSelected { get; set; }
     }

@@ -1,6 +1,6 @@
 ﻿using System.Windows.Controls;
 
-namespace ColorVision.Services.Core
+namespace ColorVision.Interfaces
 {
     public interface ITreeViewItem
     {

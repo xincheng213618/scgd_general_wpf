@@ -1,8 +1,8 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Extension;
+using ColorVision.Interfaces;
 using ColorVision.Media;
 using ColorVision.Net;
-using ColorVision.Services.Core;
 using ColorVision.Settings;
 using ColorVision.Themes;
 using log4net;

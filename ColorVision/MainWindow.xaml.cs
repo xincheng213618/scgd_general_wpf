@@ -1,8 +1,8 @@
 ﻿using ColorVision.Adorners;
 using ColorVision.Common.Utilities;
+using ColorVision.Interfaces;
 using ColorVision.MySql;
 using ColorVision.Services;
-using ColorVision.Services.Core;
 using ColorVision.Services.Flow;
 using ColorVision.Services.RC;
 using ColorVision.Settings;
@@ -346,6 +346,12 @@ namespace ColorVision
                 if (stackPanel1.Children.Contains(flowDisplayControl))
                     stackPanel1.Children.Remove(flowDisplayControl);
                 stackPanel1.Children.Insert(0, flowDisplayControl);
+
+                foreach (var item in ServiceManager.GetInstance().DisPlayControls)
+                {
+                    if (item is UserControl userControl)
+                        stackPanel1.Children.Add(userControl);
+                }
 
                 ServiceManager.GetInstance().DisPlayControls.CollectionChanged += (s, e) =>
                 {

@@ -1,4 +1,5 @@
-﻿using ColorVision.MySql;
+﻿using ColorVision.Interfaces;
+using ColorVision.MySql;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.DAO;
