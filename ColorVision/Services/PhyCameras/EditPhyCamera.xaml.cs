@@ -20,7 +20,6 @@ namespace ColorVision.Services.PhyCameras
     {
         public PhyCamera PhyCamera { get; set; }
 
-
         public ConfigPhyCamera EditConfig { get; set; }
 
         public EditPhyCamera(PhyCamera phyCamera)
@@ -55,7 +54,7 @@ namespace ColorVision.Services.PhyCameras
                                                select new KeyValuePair<ImageBpp, string>(e1, e1.ToDescription());
 
 
-            CameraID.ItemsSource = SysResourceDao.Instance.GetAllCameraID();
+            CameraID.ItemsSource = SysResourceDao.Instance.GetAllCameraId();
 
             var type = EditConfig.CameraType;
 

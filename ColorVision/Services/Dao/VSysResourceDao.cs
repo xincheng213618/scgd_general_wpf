@@ -132,8 +132,9 @@ namespace ColorVision.Services.Dao
             ExecuteNonQuery(sql, parameters);
         }
 
-
-        public List<string?> GetAllCameraID() => GetAllByParam(new Dictionary<string, object>() { {"type",101 } }).Where(x => !string.IsNullOrEmpty(x.Name)).Select(x => x.Name).ToList();
+        public List<SysResourceModel> GetAllCameraId() => GetAllByParam(new Dictionary<string, object>() { { "type", 101 } });
+        public List<SysResourceModel> GetAllEmptyCameraId() => GetAllByParam(new Dictionary<string, object>() { { "type", 101 }}).Where(a =>string.IsNullOrWhiteSpace(a.Value)).ToList();
+        public SysResourceModel? GetByCode(string code) => GetByParam(new Dictionary<string, object>() { { "code", code } });
 
         public void CreatResourceGroup()
         {
@@ -218,46 +219,6 @@ namespace ColorVision.Services.Dao
         }
 
 
-        public List<SysResourceModel> GetAllResources(int tenantId =-1)
-        {
-            List<SysResourceModel> list = new List<SysResourceModel>();
-
-            DataTable dInfo;
-            string sql;
-
-            sql = $"SELECT id, name, code,pid,txt_value,type,tenant_id,create_date FROM {GetTableName()} where 1=1 {(tenantId!=1?"and tenantId=@tenantId":"")} and is_delete = 0 and is_enable = 1";
-            var parameters = new Dictionary<string, object>();
-            if (tenantId != -1)
-                parameters.Add("@tenantId", tenantId);
-
-
-            dInfo = GetData(sql, parameters);
-            foreach (DataRow item in dInfo.Rows)
-            {
-                SysResourceModel? model = GetModelFromDataRow(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
-
-
-
-        internal SysResourceModel? GetByCode(string code)
-        {
-            string sql = $"select * from {GetTableName()} where code=@code" + GetDelSQL(true);
-            Dictionary<string, object> param = new Dictionary<string, object>
-            {
-                { "code", code }
-            };
-            DataTable d_info = GetData(sql, param);
-            return d_info.Rows.Count == 1 ? GetModelFromDataRow(d_info.Rows[0]) : default;
-        }
-
-
-
 
         internal List<SysResourceModel> GetServices(int tenantId)
         {
@@ -274,47 +235,6 @@ namespace ColorVision.Services.Dao
             return list;
         }
 
-
-
-
-
-
-        public List<SysResourceModel> GetResourceItems(int pid, int tenantId=-1)
-        {
-            List<SysResourceModel> list = new List<SysResourceModel>();
-
-            string sql = $"SELECT id, name, code,pid,txt_value,type,tenant_id,create_date FROM {TableName} where 1=1 {(tenantId != 1 ? "and tenant_id=@tenantId" : "")} and pid=@pid and is_delete = 0 and is_enable = 1";
-            var parameters = new Dictionary<string, object>();
-            if (tenantId != -1)
-                parameters.Add("@tenantId", tenantId);
-            parameters.Add("@pid", pid);
-            var dInfo = GetData(sql, parameters);
-            foreach (DataRow item in dInfo.Rows)
-            {
-                SysResourceModel? model = GetModelFromDataRow(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
-
-        internal List<SysResourceModel> GetAllType(int type)
-        {
-            List<SysResourceModel> list = new List<SysResourceModel>();
-            string sql = $"select * from {GetTableName()} where type={type}" + GetDelSQL(true);
-            DataTable d_info = GetData(sql);
-            foreach (var item in d_info.AsEnumerable())
-            {
-                SysResourceModel? model = GetModelFromDataRow(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
 
         public virtual DataTable GetTablePidIsNullByPPcodeAndTenantId(int tenantId)
         {

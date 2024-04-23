@@ -14,6 +14,8 @@ namespace ColorVision.Services.PhyCameras.Configs
     {
         public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged(); } }
         private string _CameraID;
+        public string Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }
+        private string _Code;
 
         public CameraType CameraType { get => _CameraType; set { _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
         private cvColorVision.CameraType _CameraType;

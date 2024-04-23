@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.Extension;
+using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
 using ColorVision.Services.PhyCameras.Configs;
+using ColorVision.Services.Type;
 using ColorVision.Settings;
 using cvColorVision;
 using CVCommCore;
@@ -9,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using System.Windows.Media.Media3D;
 
 namespace ColorVision.Services.PhyCameras
 {
@@ -37,7 +40,9 @@ namespace ColorVision.Services.PhyCameras
                 FileServerCfg = new CVCommCore.CVCamera.FileSeviceConfig() { Endpoint="127.0.0.1", FileBasePath= "D:\\SysResConfig", PortRange="8888"},
             };
 
-            CameraID.ItemsSource = SysResourceDao.Instance.GetAllCameraID();
+            CameraID.ItemsSource = SysResourceDao.Instance.GetAllEmptyCameraId();
+            CameraID.DisplayMemberPath = "Name";
+            CameraID.SelectedValuePath = "Code";
             DataContext = this;
 
             var Config = CreateConfig;
@@ -107,12 +112,17 @@ namespace ColorVision.Services.PhyCameras
         {
             if (!ServicesHelper.IsInvalidPath(CreateConfig.CameraID, "相机ID") )
                 return;
+            SysResourceModel? sysResourceModel = SysResourceDao.Instance.GetByCode(CreateConfig.Code);
+            if (sysResourceModel == null)
+                sysResourceModel = new SysResourceModel(CreateConfig.CameraID, CreateConfig.Code, (int)PhysicalResourceType.PhyCamera, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
 
-            SysResourceModel sysResource = new SysResourceModel(CreateConfig.CameraID, CreateConfig.CameraID, (int)PhysicalResourceType.PhyCamera, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            sysResource.Value = JsonConvert.SerializeObject(CreateConfig);
-            SysResourceDao.Instance.Save(sysResource);
-
-            PhyCamera phyCamera = new PhyCamera(sysResource);
+            sysResourceModel.Value = JsonConvert.SerializeObject(CreateConfig);
+            int ret =  SysResourceDao.Instance.Save(sysResourceModel);
+            if (ret < 0)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(),"不允许创建没有Code的相机", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);    
+            }
+            PhyCamera phyCamera = new PhyCamera(sysResourceModel);
             PhyCameraManager.PhyCameras.Add(phyCamera);
             Close();
         }

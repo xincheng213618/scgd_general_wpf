@@ -47,7 +47,6 @@ namespace ColorVision.Services.Devices.Camera
             CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
             CameraPhyID.SelectedItem = PhyCameraManager.GetInstance().GetPhyCamera(DeviceCamera.Config.CameraID);
             CameraPhyID.DisplayMemberPath = "Name";
-
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
 

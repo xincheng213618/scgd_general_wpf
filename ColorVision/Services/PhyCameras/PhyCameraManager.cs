@@ -41,7 +41,7 @@ namespace ColorVision.Services.PhyCameras
             var list = SysResourceDao.Instance.GetAllType((int)ServiceTypes.PhyCamera);
             foreach (var item in list)
             {
-                if (item.Value != null)
+                if (!string.IsNullOrWhiteSpace(item.Value))
                 {
                     PhyCameras.Add(new PhyCamera(item));
                 }

@@ -48,6 +48,7 @@ namespace ColorVision.Services.Devices
         public event DeviceStatusChangedHandler DeviceStatusChanged;
 
     }
+    public delegate void DeviceStatusChangedHandler(DeviceStatusType deviceStatus);
 
     /// <summary>
     /// 基础硬件配置信息
