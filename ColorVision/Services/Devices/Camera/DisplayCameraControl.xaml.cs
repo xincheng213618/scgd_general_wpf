@@ -113,16 +113,14 @@ namespace ColorVision.Services.Devices.Camera
                 }
             };
 
-
-            DService.OnMessageRecved += (s,e) =>
+            DService.MsgReturnReceived += (msg) =>
             {
-                if (e.ResultCode == 0)
+                if (msg.Code == 0)
                 {
-                    switch
-                    (e.EventName)
+                    switch (msg.EventName)
                     {
                         case MQTTCameraEventEnum.Event_OpenLive:
-                            DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(e.Data));
+                            DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(msg.Data));
                             string mapName = Device.Code;
                             if (pm_live.IsLocal) mapName = pm_live.MapName;
                             CameraVideoControl ??= new CameraVideoControl();
