@@ -2,8 +2,6 @@
 
 namespace ColorVision.MQTT
 {
-
-
     /// <summary>
     /// MQTT配置
     /// </summary>
