@@ -10,9 +10,8 @@ namespace ColorVision.Services.Core
         {
             FilePath = sysResourceModel.Value;
         }
-        public string? FilePath { get; set; }
-        public int? Pid { get => SysResourceModel.Pid; }
 
+        public string? FilePath { get; set; }
     }
 
     public class BaseResource : BaseResourceObject
@@ -36,7 +35,6 @@ namespace ColorVision.Services.Core
             base.Delete();  
             SysResourceDao.Instance.DeleteById(SysResourceModel.Id);
         }
-
 
         public int Id { get => SysResourceModel.Id; }
     }

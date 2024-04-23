@@ -1,5 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.Services.Core;
+using ColorVision.Services.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

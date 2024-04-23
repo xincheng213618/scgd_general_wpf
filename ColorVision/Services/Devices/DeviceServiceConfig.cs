@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Core;
+using ColorVision.Services.Interfaces;
 using MQTTMessageLib;
 using Newtonsoft.Json;
 using System;
@@ -49,39 +49,15 @@ namespace ColorVision.Services.Devices
 
     }
 
-    public enum ServiceStatus
-    {
-        Offline,
-        Online
-    }
-
     /// <summary>
     /// 基础硬件配置信息
     /// </summary>
-    public class DeviceServiceConfig : BaseConfig
+    public class DeviceServiceConfig : BaseConfig, IDeviceServiceConfig
     {
         /// <summary>
         /// 设备序号
         /// </summary>
-        public string Id { get => _Id; set {  _Id = value; NotifyPropertyChanged(); } }
+        public string Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
         private string _Id;
-    }
-
-
-
-    public delegate void HeartbeatHandler(HeartbeatParam heartbeat);
-
-    public class HeartbeatParam
-    {
-        public DeviceStatusType DeviceStatus { get; set; }
-
-        [JsonProperty("time")]
-        public string Time { get; set; }
-    }
-
-    public class DeviceHeartbeatParam
-    {
-        public string DeviceName { get; set; }
-        public DeviceStatusType DeviceStatus { get; set; }
     }
 }

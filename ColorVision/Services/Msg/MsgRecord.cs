@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Core;
+using ColorVision.Services.Interfaces;
 using Newtonsoft.Json;
 using System;
 using System.Windows;

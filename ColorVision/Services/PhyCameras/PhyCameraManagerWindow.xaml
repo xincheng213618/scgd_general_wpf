@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Services.PhyCameras"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:PhyCameraManager}"
-        Title="PhyCameraManagerWindow" Height="450" Width="800" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized">
+        Title="PhyCameraManagerWindow" Height="550" Width="1280" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>

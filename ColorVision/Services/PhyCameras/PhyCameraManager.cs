@@ -15,6 +15,8 @@ namespace ColorVision.Services.PhyCameras
         private static readonly object _locker = new();
         public static PhyCameraManager GetInstance() { lock (_locker) { return _instance ??= new PhyCameraManager(); } }
         public RelayCommand CreateCommand { get; set; }
+        public RelayCommand CreateWithLincenseCommand { get; set; }
+
 
         public PhyCameraManager() 
         {
@@ -26,7 +28,6 @@ namespace ColorVision.Services.PhyCameras
 
         public PhyCamera? GetPhyCamera(string CamerID) => PhyCameras.FirstOrDefault(a => a.Name == CamerID);
 
-
         public void Create()
         {
             CreateWindow createWindow = new CreateWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
@@ -34,8 +35,6 @@ namespace ColorVision.Services.PhyCameras
         }
 
         public ObservableCollection<PhyCamera> PhyCameras { get; set; } = new ObservableCollection<PhyCamera>();
-
-
 
         public void LoadPhyCamera()
         {
