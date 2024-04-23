@@ -220,7 +220,7 @@ namespace ColorVision.Services.Devices.Algorithm
             ComboxLedCheckTemplate.ItemsSource = TemplateControl.GetInstance().LedCheckParams;  
             ComboxLedCheckTemplate.SelectedIndex = 0;
 
-            ComboxPoiTemplate1.ItemsSource = TemplateHelpers.CreatTemplateModelEmpty(TemplateControl.GetInstance().PoiParams);
+            ComboxPoiTemplate1.ItemsSource = TemplateControl.GetInstance().PoiParams.CreatEmpty();
             ComboxPoiTemplate1.SelectedIndex = 0;
 
             ComboxFocusPointsTemplate.ItemsSource = TemplateControl.GetInstance().FocusPointsParams;

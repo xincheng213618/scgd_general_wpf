@@ -12,9 +12,13 @@ using System.Runtime.CompilerServices;
 
 namespace ColorVision.Services.Templates
 {
-
     public static class TemplateHelpers
     {
+        public static ObservableCollection<TemplateModel<T>> CreatEmpty<T>(this ObservableCollection<TemplateModel<T>>? templateModels) where T : ParamBase, new()
+        {
+            return CreatTemplateModelEmpty<T>(templateModels);
+        }
+
         public static ObservableCollection<TemplateModel<T>> CreatTemplateModelEmpty<T>(ObservableCollection<TemplateModel<T>>? templateModels) where T : ParamBase, new()
         {
             var templateModels1 = new ObservableCollection<TemplateModel<T>>();

@@ -153,7 +153,7 @@ namespace ColorVision.Services.Devices.Camera
 
         private void CalibrationParamInit()
         {
-            ComboxCalibrationTemplate.ItemsSource = TemplateHelpers.CreatTemplateModelEmpty(Device.PhyCamera?.CalibrationParams);
+            ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreatEmpty();
             ComboxCalibrationTemplate.SelectedIndex = 0;
         }
 

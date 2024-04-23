@@ -55,7 +55,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
             View = new View();
             listView1.ItemsSource = ViewResultCalibrations;
 
-            ComboxPOITemplate.ItemsSource = TemplateHelpers.CreatTemplateModelEmpty(TemplateControl.GetInstance().PoiParams);
+            ComboxPOITemplate.ItemsSource = TemplateControl.GetInstance().PoiParams.CreatEmpty();
             ComboxPOITemplate.SelectedIndex = 0;
 
             if (listView1.View is GridView gridView)
