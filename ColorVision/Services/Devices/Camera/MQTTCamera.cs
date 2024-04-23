@@ -11,10 +11,7 @@ using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Threading;
 
 namespace ColorVision.Services.Devices.Camera
 {
