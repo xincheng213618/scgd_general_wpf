@@ -17,6 +17,7 @@ using ColorVision.Services.Devices.Spectrum;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Dao;
 using ColorVision.Services.Flow;
+using ColorVision.Services.PhyCameras;
 using ColorVision.Services.Terminal;
 using ColorVision.Services.Type;
 using ColorVision.Settings;
@@ -277,6 +278,31 @@ namespace ColorVision.Services
             }
 
             GroupResources.Clear();
+
+            foreach (var phycamrea in PhyCameraManager.GetInstance().PhyCameras)
+            {
+                List<SysResourceModel> sysResourceModels = sysResourceDao1.GetResourceItems(phycamrea.SysResourceModel.Id, UserConfig.TenantId);
+                foreach (var sysResourceModel in sysResourceModels)
+                {
+                    if (sysResourceModel.Type == (int)ServiceTypes.Group)
+                    {
+                        GroupResource groupResource = new GroupResource(sysResourceModel);
+                        phycamrea.AddChild(groupResource);
+                        GroupResources.Add(groupResource);
+                    }
+                    else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
+                    {
+                        CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
+                        phycamrea.AddChild(calibrationResource);
+                    }
+                    else
+                    {
+                        BaseFileResource calibrationResource = new BaseFileResource(sysResourceModel);
+                        phycamrea.AddChild(calibrationResource);
+                    }
+                }
+            }
+
             foreach (var deviceService in DeviceServices)
             {
                 List<SysResourceModel> sysResourceModels = sysResourceDao1.GetResourceItems(deviceService.SysResourceModel.Id, UserConfig.TenantId);

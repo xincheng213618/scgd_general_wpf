@@ -52,6 +52,8 @@ namespace ColorVision.Services.Dao
         public string? Value { get; set; }
         public DateTime CreateDate { get; set; }
         public int TenantId { get; set; }
+
+        public string? Remark { get; set; }
     }
 
     public class SysResourceDao : BaseTableDao<SysResourceModel>
@@ -72,6 +74,7 @@ namespace ColorVision.Services.Dao
                 Value = item.Field<string>("txt_value"),
                 CreateDate = item.Field<DateTime>("create_date"),
                 TenantId = item.Field<int>("tenant_id"),
+                Remark =item.Field<string?>("remark"),
             };
             return model;
         }
@@ -88,6 +91,7 @@ namespace ColorVision.Services.Dao
                 if (item.Type >= 0) row["type"] = item.Type;
                 row["tenant_id"] = item.TenantId;
                 row["create_date"] = item.CreateDate;
+                if (item.Remark!=null) row["remark"] = item.Remark;
             }
             return row;
         }
@@ -105,7 +109,7 @@ namespace ColorVision.Services.Dao
         {
             List<SysResourceModel> list = new List<SysResourceModel>();
 
-            string sql = "SELECT rg.group_id, r.id, r.name, r.code, r.type , r.pid, r.txt_value, r.create_date, r.tenant_id FROM t_scgd_sys_resource_group rg JOIN t_scgd_sys_resource r ON rg.resource_id = r.id WHERE  rg.group_id =@groupId";
+            string sql = "SELECT rg.group_id, r.id, r.name, r.code, r.type , r.pid, r.txt_value, r.create_date, r.tenant_id, r.remark FROM t_scgd_sys_resource_group rg JOIN t_scgd_sys_resource r ON rg.resource_id = r.id WHERE  rg.group_id =@groupId";
             var parameters = new Dictionary<string, object>();
             parameters.Add("@groupId", groupId);
             var dInfo = GetData(sql, parameters);
@@ -142,7 +146,7 @@ namespace ColorVision.Services.Dao
         {
             List<SysResourceModel> list = new List<SysResourceModel>();
 
-            string sql = $"SELECT id, name, code,pid,txt_value,type,tenant_id,create_date FROM {TableName} where 1=1 {(tenantId != 1 ? "and tenant_id=@tenantId" : "")} and pid=@pid and is_delete = 0 and is_enable = 1";
+            string sql = $"SELECT * FROM {TableName} where 1=1 {(tenantId != 1 ? "and tenant_id=@tenantId" : "")} and pid=@pid and is_delete = 0 and is_enable = 1";
             var parameters = new Dictionary<string, object>();
             if (tenantId != -1)
                 parameters.Add("@tenantId", tenantId);

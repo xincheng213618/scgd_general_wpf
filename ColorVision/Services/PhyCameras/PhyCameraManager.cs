@@ -4,6 +4,7 @@ using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Type;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 
 namespace ColorVision.Services.PhyCameras
@@ -23,6 +24,9 @@ namespace ColorVision.Services.PhyCameras
                 LoadPhyCamera();
         }
 
+        public PhyCamera? GetPhyCamera(string CamerID) => PhyCameras.FirstOrDefault(a => a.Name == CamerID);
+
+
         public void Create()
         {
             CreateWindow createWindow = new CreateWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
@@ -30,6 +34,8 @@ namespace ColorVision.Services.PhyCameras
         }
 
         public ObservableCollection<PhyCamera> PhyCameras { get; set; } = new ObservableCollection<PhyCamera>();
+
+
 
         public void LoadPhyCamera()
         {

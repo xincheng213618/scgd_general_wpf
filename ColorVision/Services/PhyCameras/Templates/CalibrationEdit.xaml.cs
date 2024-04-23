@@ -7,8 +7,9 @@ using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Type;
+using ColorVision.Services.PhyCameras.Templates;
 
-namespace ColorVision.Services.Devices.Calibration.Templates
+namespace ColorVision.Services.PhyCameras.Templates
 {
     /// <summary>
     /// CalibrationEdit.xaml 的交互逻辑
@@ -21,7 +22,6 @@ namespace ColorVision.Services.Devices.Calibration.Templates
             CalibrationService = calibrationService;
             InitializeComponent();
         }
-
         public ObservableCollection<GroupResource> groupResources { get; set; } = new ObservableCollection<GroupResource>();
 
         public ObservableCollection<CalibrationResource> DarkNoiseList { get; set; } = new ObservableCollection<CalibrationResource>();

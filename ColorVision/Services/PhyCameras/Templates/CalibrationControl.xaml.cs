@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Devices.Calibration.Templates
+namespace ColorVision.Services.PhyCameras.Templates
 {
     class TempCache
     {

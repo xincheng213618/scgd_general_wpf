@@ -41,6 +41,6 @@ namespace ColorVision.Services.PhyCameras.Configs
         public CameraCfg CameraCfg { get; set; } = new CameraCfg();
         public CFWPORT CFW { get; set; } = new CFWPORT();
 
-        public FileSeviceConfig FileServerCfg { get; set; }
+        public FileSeviceConfig FileServerCfg { get; set; } = new FileSeviceConfig() { Endpoint = "127.0.0.1", FileBasePath = "D:\\", PortRange = "43210" };
     }
 }

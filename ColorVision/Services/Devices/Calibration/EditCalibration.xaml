@@ -35,6 +35,11 @@
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
+                    <DockPanel Margin="0,2">
+                        <TextBlock Text="物理相机ID" Width="120"/>
+                        <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Text="{Binding CameraID}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                    </DockPanel>
+
                     <GroupBox Header="配置信息" Margin="0,5">
                         <StackPanel Margin="5">
 

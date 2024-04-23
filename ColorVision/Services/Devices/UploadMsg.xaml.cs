@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.ObjectModel;
 using System.Windows;
+using System.Windows.Documents;
 
 namespace ColorVision.Services.Devices
 {
@@ -7,6 +9,8 @@ namespace ColorVision.Services.Devices
     public interface IUploadMsg
     {
         public string Msg { get; }
+
+        public ObservableCollection<string> UploadList { get; }
 
         public event EventHandler UploadClosed;
     }

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.Services.Core;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,9 +17,9 @@ namespace ColorVision.Services.Devices
 {
     public partial class ResourceManager : Window
     {
-        public DeviceService DeviceService { get;set;}
+        public BaseResourceObject DeviceService { get;set;}
 
-        public ResourceManager(DeviceService deviceService)
+        public ResourceManager(BaseResourceObject deviceService)
         {
             DeviceService = deviceService;
             InitializeComponent();

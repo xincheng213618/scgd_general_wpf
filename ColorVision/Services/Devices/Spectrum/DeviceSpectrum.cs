@@ -45,6 +45,9 @@ namespace ColorVision.Services.Devices.Spectrum
         }
 
         public string Msg { get => _Msg; set { _Msg = value; Application.Current.Dispatcher.Invoke(() => NotifyPropertyChanged()); } }
+
+        public ObservableCollection<string> UploadList { get; set; }
+
         private string _Msg;
 
         public event EventHandler UploadClosed;

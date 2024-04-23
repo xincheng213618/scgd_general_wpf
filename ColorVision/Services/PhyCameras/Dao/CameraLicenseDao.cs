@@ -44,13 +44,11 @@ namespace ColorVision.Services.PhyCameras.Dao
         public int PKId { get => Id; set => Id = value; }
         public int IdShow { get; set; }
 
-
         public CameraLicenseModel()
         {
             CreateDate = DateTime.Now;
             ExpiryDate = DateTime.Now;
         }
-
         public string? Code { get; set; }
         public int? DevCameraId { get; set; }
 
@@ -70,11 +68,8 @@ namespace ColorVision.Services.PhyCameras.Dao
 
         public string? CusTomerName { get; set; }
         public DateTime? CreateDate { get; set; }
+
     }
-
-
-
-
 
     public class CameraLicenseDao : BaseTableDao<CameraLicenseModel>
     {

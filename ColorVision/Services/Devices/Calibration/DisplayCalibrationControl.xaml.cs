@@ -1,26 +1,19 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Net;
-using ColorVision.Services.Devices.Calibration.Templates;
-using ColorVision.Services.Devices.Calibration.Views;
+using ColorVision.Extension;
 using ColorVision.Services.Core;
+using ColorVision.Services.Devices.Calibration.Views;
 using ColorVision.Services.Msg;
+using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
-using ColorVision.Solution;
 using ColorVision.Themes;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
-using Panuon.WPF.UI;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using ColorVision.Services.Dao;
-using MQTTMessageLib.Camera;
-using ColorVision.Extension;
-using MQTTMessageLib.Calibration;
 
 namespace ColorVision.Services.Devices.Calibration
 {
@@ -35,7 +28,6 @@ namespace ColorVision.Services.Devices.Calibration
         public DeviceCalibration Device { get; set; }
         private MQTTCalibration DeviceService { get => Device.DeviceService;  }
 
-        public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; }
         public DisplayCalibrationControl(DeviceCalibration device)
         {
             Device = device;
@@ -49,9 +41,7 @@ namespace ColorVision.Services.Devices.Calibration
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
-
-            CalibrationParams = Device.CalibrationParams;
-            ComboxCalibrationTemplate.ItemsSource = Device.CalibrationParams;
+            ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams;
             ComboxCalibrationTemplate.SelectedIndex = 0;
             this.AddViewConfig(View, ComboxView);
             SelectChanged += (s, e) =>
@@ -119,8 +109,15 @@ namespace ColorVision.Services.Devices.Calibration
 
         private void Calibration_Click(object sender, RoutedEventArgs e)
         {
+            if (Device.PhyCamera == null)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "请先配置物理相机", "ColorVision");
+                return;
+            }
+
             if (sender is Button button)
             {
+
                 if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
                 {
                     string sn = string.Empty;
@@ -129,7 +126,7 @@ namespace ColorVision.Services.Devices.Calibration
 
                     if (GetSN(ref sn, ref imgFileName, ref fileExtType))
                     {
-                        var pm = CalibrationParams[ComboxCalibrationTemplate.SelectedIndex].Value;
+                        var pm = Device.PhyCamera.CalibrationParams[ComboxCalibrationTemplate.SelectedIndex].Value;
 
                         MsgRecord msgRecord = DeviceService.Calibration(param, imgFileName, fileExtType, pm.Id, ComboxCalibrationTemplate.Text, sn, (float)Device.Config.ExpTimeR, (float)Device.Config.ExpTimeG, (float)Device.Config.ExpTimeB);
                         ServicesHelper.SendCommand(button, msgRecord);
@@ -171,6 +168,11 @@ namespace ColorVision.Services.Devices.Calibration
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
+            if (Device.PhyCamera == null)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
+                return;
+            }
             if (sender is Button button)
             {
                 TemplateControl = TemplateControl.GetInstance();
@@ -185,15 +187,15 @@ namespace ColorVision.Services.Devices.Calibration
                 {
                     case "Calibration":
                         CalibrationControl calibration;
-                        if (Device.CalibrationParams.Count > 0)
+                        if (Device.PhyCamera.CalibrationParams.Count > 0)
                         {
-                            calibration = new CalibrationControl(Device, Device.CalibrationParams[0].Value);
+                            calibration = new CalibrationControl(Device.PhyCamera, Device.PhyCamera.CalibrationParams[0].Value);
                         }
                         else
                         {
-                            calibration = new CalibrationControl(Device);
+                            calibration = new CalibrationControl(Device.PhyCamera);
                         }
-                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, Device, false);
+                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, Device.PhyCamera, false);
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;
@@ -203,6 +205,8 @@ namespace ColorVision.Services.Devices.Calibration
                 }
             }
         }
+
+
 
         private bool GetSN(ref string sn, ref string imgFileName, ref FileExtType fileExtType)
         {
