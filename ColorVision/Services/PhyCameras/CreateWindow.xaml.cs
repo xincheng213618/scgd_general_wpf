@@ -122,8 +122,7 @@ namespace ColorVision.Services.PhyCameras
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(),"不允许创建没有Code的相机", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);    
             }
-            PhyCamera phyCamera = new PhyCamera(sysResourceModel);
-            PhyCameraManager.PhyCameras.Add(phyCamera);
+            PhyCameraManager.LoadPhyCamera();
             Close();
         }
     }
