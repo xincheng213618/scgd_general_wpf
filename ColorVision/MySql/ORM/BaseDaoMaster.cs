@@ -15,10 +15,6 @@ namespace ColorVision.MySql.ORM
         {
             ViewName = viewName;
         }
-        public BaseDaoMaster(string tableName, string pkField, bool isLogicDel) : base(tableName, pkField, isLogicDel)
-        {
-
-        }
 
         public virtual DataRow Model2Row(T item, DataRow row) => row;
 

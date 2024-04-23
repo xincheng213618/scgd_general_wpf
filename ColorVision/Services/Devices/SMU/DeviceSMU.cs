@@ -4,12 +4,12 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera.Views;
 using ColorVision.Services.Devices.SMU.Configs;
 using ColorVision.Services.Devices.SMU.Views;
-using ColorVision.Services.Extension;
 using ColorVision.Themes;
 using ColorVision.Common.Utilities;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ColorVision.Interfaces;
 
 namespace ColorVision.Services.Devices.SMU
 {

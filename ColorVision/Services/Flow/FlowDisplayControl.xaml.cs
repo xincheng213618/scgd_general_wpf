@@ -2,7 +2,6 @@
 using ColorVision.Extension;
 using ColorVision.Interfaces;
 using ColorVision.MQTT;
-using ColorVision.Services.Extension;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Themes;

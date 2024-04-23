@@ -1,10 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Interfaces;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
-using ColorVision.Services.Extension;
 using ColorVision.Services.Templates;
 using ColorVision.Themes.Controls;
 using System;

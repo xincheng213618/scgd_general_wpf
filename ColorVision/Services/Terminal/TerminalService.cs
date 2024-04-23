@@ -3,7 +3,6 @@ using ColorVision.Services.RC;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices;
-using ColorVision.Services.Extension;
 using ColorVision.Services.Type;
 using ColorVision.Common.Utilities;
 using Newtonsoft.Json;
