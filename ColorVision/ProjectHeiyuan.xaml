@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
-        Title="ProjectHeiyuan" Height="450" Width="800" Initialized="Window_Initialized">
+        Title="ProjectHeiyuan" Height="700" Width="1280" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
