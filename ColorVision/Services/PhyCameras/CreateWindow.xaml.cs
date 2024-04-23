@@ -110,8 +110,6 @@ namespace ColorVision.Services.PhyCameras
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (!ServicesHelper.IsInvalidPath(CreateConfig.CameraID, "相机ID") )
-                return;
             SysResourceModel? sysResourceModel = SysResourceDao.Instance.GetByCode(CreateConfig.Code);
             if (sysResourceModel == null)
                 sysResourceModel = new SysResourceModel(CreateConfig.CameraID, CreateConfig.Code, (int)PhysicalResourceType.PhyCamera, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);

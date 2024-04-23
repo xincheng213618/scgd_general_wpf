@@ -111,15 +111,16 @@ namespace ColorVision.Services.PhyCameras
 
                         int ret = CameraLicenseDao.Instance.Save(cameraLicenseModel);
 
-                        MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "更新成功")}", "ColorVision");
+                        MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} {(ret == -1 ? "添加许可证失败" : "添加许可证成功")}", "ColorVision");
 
-                        SysDictionaryModel? sysDictionaryModel = SysDictionaryDao.Instance.GetAll().Find(a => a.Code == cameraLicenseModel.MacAddress);
+                        var sysDictionaryModel = SysResourceDao.Instance.GetAll().Find(a => a.Code == cameraLicenseModel.MacAddress);
                         if (sysDictionaryModel == null)
                         {
-                            sysDictionaryModel = new SysDictionaryModel();
+                            sysDictionaryModel = new SysResourceModel();
                             sysDictionaryModel.Code = cameraLicenseModel.MacAddress;
                             sysDictionaryModel.Type = (int)ServiceTypes.PhyCamera;
-                            SysDictionaryDao.Instance.Save(sysDictionaryModel);
+                            ret = SysResourceDao.Instance.Save(sysDictionaryModel);
+                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} {(ret == -1 ? "添加物理相机失败" : "添加物理相机成功")}", "ColorVision");
                         }
                     }
                     else
