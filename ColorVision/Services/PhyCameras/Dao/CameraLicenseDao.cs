@@ -121,14 +121,15 @@ namespace ColorVision.Services.PhyCameras.Dao
                 row["create_date"] = item.CreateDate;
                 row["expired"] = item.ExpiryDate;
                 row["code"] = item.Code;
-                row["res_dev_cam_pid"] = item.DevCameraId;
+                if (item.DevCameraId != null)
+                    row["res_dev_cam_pid"] = item.DevCameraId;
                 if (item.DevCaliId!=null)
                     row["res_dev_cali_pid"] = item.DevCaliId;
             }
             return row;
         }
 
-        public List<CameraLicenseModel> GetAllByMAC(string id ,int pid) => GetAllByParam(new Dictionary<string, object>() { { "mac_sn", id },{ "res_dev_cam_pid", pid } });
+        public CameraLicenseModel? GetByMAC(string? Code) => GetByParam(new Dictionary<string, object>() { { "mac_sn", Code } });
     
     }
 }

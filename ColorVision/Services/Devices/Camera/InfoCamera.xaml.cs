@@ -13,7 +13,7 @@ namespace ColorVision.Services.Devices.Camera
     /// <summary>
     /// DevicePGControl.xaml 的交互逻辑
     /// </summary>
-    public partial class DeviceCameraControl : UserControl
+    public partial class InfoCamera : UserControl
     {
         public DeviceCamera Device { get; set; }
 
@@ -21,7 +21,7 @@ namespace ColorVision.Services.Devices.Camera
 
         public bool IsCanEdit { get; set; }
 
-        public DeviceCameraControl(DeviceCamera deviceCamera,bool isCanEdit =true)
+        public InfoCamera(DeviceCamera deviceCamera,bool isCanEdit =true)
         {
             Device = deviceCamera;
             IsCanEdit = isCanEdit;

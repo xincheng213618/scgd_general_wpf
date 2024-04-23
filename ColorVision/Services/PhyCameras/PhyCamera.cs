@@ -81,19 +81,17 @@ namespace ColorVision.Services.PhyCameras
 
             UploadLincenseCommand = new RelayCommand(a => UploadLincense());
             RefreshLincenseCommand = new RelayCommand(a => RefreshLincense());
-
+            RefreshLincense();
         }
 
         #region License
-        public ObservableCollection<CameraLicenseModel> LicenseModels { get; set; } = new ObservableCollection<CameraLicenseModel>();
+
+        public CameraLicenseModel? CameraLicenseModel { get => _CameraLicenseModel; set { _CameraLicenseModel = value; NotifyPropertyChanged(); } }
+        private CameraLicenseModel? _CameraLicenseModel;
 
         public void RefreshLincense()
         {
-            LicenseModels.Clear();
-            foreach (var item in CameraLicenseDao.Instance.GetAllByPid(SysResourceModel.Id))
-            {
-                LicenseModels.Add(item);
-            };
+            CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
         }
 
         private void UploadLincense()
@@ -110,7 +108,6 @@ namespace ColorVision.Services.PhyCameras
 
                 foreach (string file in selectedFiles)
                 {
-
                     if (Path.GetExtension(file) == ".zip")
                     {
                         try
@@ -123,7 +120,6 @@ namespace ColorVision.Services.PhyCameras
                                 CameraLicenseModel cameraLicenseModel = new CameraLicenseModel();
                                 cameraLicenseModel.DevCameraId = SysResourceModel.Id;
                                 cameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(item.FullName);
-
                                 using var stream = item.Open();
                                 using var reader = new StreamReader(stream, Encoding.UTF8); // 假设文件编码为UTF-8
                                 cameraLicenseModel.LicenseValue = reader.ReadToEnd();
@@ -131,16 +127,9 @@ namespace ColorVision.Services.PhyCameras
                                 cameraLicenseModel.CusTomerName = cameraLicenseModel.ColorVisionLincense.Licensee;
                                 cameraLicenseModel.Model = cameraLicenseModel.ColorVisionLincense.DeviceMode;
                                 cameraLicenseModel.ExpiryDate = cameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
-                                if (CameraLicenseDao.Instance.GetAllByMAC(cameraLicenseModel.MacAddress, SysResourceModel.Id).Count == 0)
-                                {
-                                    int ret = CameraLicenseDao.Instance.Save(cameraLicenseModel);
 
-                                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
-                                }
-                                else
-                                {
-                                    MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} 重复添加", "ColorVision");
-                                }
+                                int ret = CameraLicenseDao.Instance.Save(cameraLicenseModel);
+                                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
                             }
 
                         }
@@ -151,31 +140,27 @@ namespace ColorVision.Services.PhyCameras
                     }
                     else if (Path.GetExtension(file) == ".lic")
                     {
-                        CameraLicenseModel cameraLicenseModel = new CameraLicenseModel();
-                        cameraLicenseModel.DevCameraId = SysResourceModel.Id;
-                        cameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(openFileDialog.SafeFileName);
-                        cameraLicenseModel.LicenseValue = File.ReadAllText(file);
-                        cameraLicenseModel.CusTomerName = cameraLicenseModel.ColorVisionLincense.Licensee;
-                        cameraLicenseModel.Model = cameraLicenseModel.ColorVisionLincense.DeviceMode;
-                        cameraLicenseModel.ExpiryDate = cameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
+                        string Code = Path.GetFileNameWithoutExtension(openFileDialog.SafeFileName);
+                        if (Code == SysResourceModel.Code)
+                        {
+                            CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
+                        }
+                        if (CameraLicenseModel == null)
+                            CameraLicenseModel = new CameraLicenseModel();
+                        CameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(openFileDialog.SafeFileName);
+                        CameraLicenseModel.LicenseValue = File.ReadAllText(file);
+                        CameraLicenseModel.CusTomerName = CameraLicenseModel.ColorVisionLincense.Licensee;
+                        CameraLicenseModel.Model = CameraLicenseModel.ColorVisionLincense.DeviceMode;
+                        CameraLicenseModel.ExpiryDate = CameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
 
-                        if (CameraLicenseDao.Instance.GetAllByMAC(cameraLicenseModel.MacAddress, SysResourceModel.Id).Count == 0)
-                        {
-                            int ret = CameraLicenseDao.Instance.Save(cameraLicenseModel);
-                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
-                        }
-                        else
-                        {
-                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} 重复添加", "ColorVision");
-                        }
+                        int ret = CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                        MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{CameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
                         RefreshLincense();
-
                     }
                     else
                     {
                         MessageBox.Show(WindowHelpers.GetActiveWindow(), "不支持的许可文件后缀", "ColorVision");
                     }
-
                 }
             }
         }

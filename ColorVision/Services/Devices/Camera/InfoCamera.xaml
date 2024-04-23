@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="ColorVision.Services.Devices.Camera.DeviceCameraControl"
+﻿<UserControl x:Class="ColorVision.Services.Devices.Camera.InfoCamera"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -92,7 +92,6 @@
                                         <TextBlock Text="设备自连接"  Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.IsAutoOpen}"/>
                                     </DockPanel>
-                                    <Button Content="上传许可文件"  Command="{Binding UploadLincenseCommand}" />
                                     <Button Content="刷新设备列表" Command="{Binding RefreshDeviceIdCommand}"/>
                                     <Button Content="管理物理相机设备" Command="{Binding OpenPhyCameraMangerCommand}"/>
                                 </StackPanel>

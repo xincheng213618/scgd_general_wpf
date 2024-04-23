@@ -273,66 +273,38 @@
                     </TabItem>
                     <TabItem Header="许可证信息">
                         <StackPanel Margin="5">
-                            <StackPanel Orientation="Horizontal">
-                                <Button Content="上传" Command="{Binding UploadLincenseCommand}"/>
-                                <Button Content="刷新" Command="{Binding RefreshLincenseCommand}"/>
-                            </StackPanel>
-                            <ListView  Height="250" Grid.Row="1" BorderThickness="0" Background="Transparent" x:Name="ListViewLincense" Margin="-5"  Style="{StaticResource ListView.Small}"  >
-                                <ListView.Resources>
-                                    <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
-                                </ListView.Resources>
-                                <ListView.View >
-                                    <GridView >
-                                        <GridView.ColumnHeaderContainerStyle>
-                                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                                <Setter Property="Background" Value="Transparent"/>
-                                                <Setter Property="BorderThickness" Value="0"/>
-                                                <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
-                                                <EventSetter Event="Click" Handler="GridViewColumnSort"/>
-                                            </Style>
-                                        </GridView.ColumnHeaderContainerStyle>
-                                        <GridViewColumn   Header="序号" >
-                                            <GridViewColumn.CellTemplate>
-                                                <DataTemplate  DataType="{x:Type dao:CameraLicenseModel}">
-                                                    <TextBlock Text="{Binding Id}"/>
-                                                </DataTemplate>
-                                            </GridViewColumn.CellTemplate>
-                                        </GridViewColumn>
-
-                                        <GridViewColumn   Header="DeviceMode" >
-                                            <GridViewColumn.CellTemplate>
-                                                <DataTemplate  DataType="{x:Type dao:CameraLicenseModel}">
-                                                    <TextBlock Text="{Binding ColorVisionLincense.DeviceMode}"/>
-                                                </DataTemplate>
-                                            </GridViewColumn.CellTemplate>
-                                        </GridViewColumn>
-
-
-                                        <GridViewColumn   Header="licensee" >
-                                            <GridViewColumn.CellTemplate>
-                                                <DataTemplate  DataType="{x:Type dao:CameraLicenseModel}">
-                                                    <TextBlock Text="{Binding ColorVisionLincense.Licensee}"/>
-                                                </DataTemplate>
-                                            </GridViewColumn.CellTemplate>
-                                        </GridViewColumn>
-                                        <GridViewColumn  Header="expiry_date" >
-                                            <GridViewColumn.CellTemplate>
-                                                <DataTemplate  DataType="{x:Type dao:CameraLicenseModel}">
-                                                    <TextBlock Text="{Binding ColorVisionLincense.ExpiryDateTime, StringFormat=yyyy-MM-dd}" />
-                                                </DataTemplate>
-                                            </GridViewColumn.CellTemplate>
-                                        </GridViewColumn>
-                                        <GridViewColumn  Header="许可证信息">
-                                            <GridViewColumn.CellTemplate>
-                                                <DataTemplate  DataType="{x:Type dao:CameraLicenseModel}">
-                                                    <TextBlock Text="{Binding  LicenseContent}" PreviewMouseLeftButtonUp="TextBlock_PreviewMouseLeftButtonUp" />
-                                                </DataTemplate>
-                                            </GridViewColumn.CellTemplate>
-                                        </GridViewColumn>
-                                    </GridView>
-                                </ListView.View>
-                            </ListView>
+                            <DockPanel >
+                                <TextBlock Text="DeviceMode" Width="80"/>
+                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraLicenseModel.ExpiryDate}"/>
+                            </DockPanel>
+                            <DockPanel >
+                                <TextBlock Text="AuthoritySignature" Width="100"/>
+                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraLicenseModel.ColorVisionLincense.AuthoritySignature}"/>
+                            </DockPanel>
+                            <DockPanel >
+                                <TextBlock Text="DeviceMode" Width="80"/>
+                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraLicenseModel.ColorVisionLincense.DeviceMode}"/>
+                            </DockPanel>
+                            <DockPanel >
+                                <TextBlock Text="ExpiryDate" Width="80"/>
+                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraLicenseModel.ColorVisionLincense.ExpiryDate}"/>
+                            </DockPanel>
+                            <DockPanel >
+                                <TextBlock Text="IssueDate" Width="80"/>
+                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraLicenseModel.ColorVisionLincense.IssueDate}"/>
+                            </DockPanel>
+                            <DockPanel >
+                                <TextBlock Text="IssuingAuthority" Width="80"/>
+                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraLicenseModel.ColorVisionLincense.IssuingAuthority}"/>
+                            </DockPanel>
+                            <DockPanel >
+                                <TextBlock Text="Licensee" Width="80"/>
+                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraLicenseModel.ColorVisionLincense.Licensee}"/>
+                            </DockPanel>
+                            <DockPanel >
+                                <TextBlock Text="LicenseeSignature" Width="80"/>
+                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraLicenseModel.ColorVisionLincense.LicenseeSignature}"/>
+                            </DockPanel>
                         </StackPanel>
                     </TabItem>
                 </TabControl>

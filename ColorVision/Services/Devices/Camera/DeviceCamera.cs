@@ -102,8 +102,8 @@ namespace ColorVision.Services.Devices.Camera
             }
         }
 
-        public override UserControl GetDeviceControl() => new DeviceCameraControl(this);
-        public override UserControl GetDeviceInfo() => new DeviceCameraControl(this, false);
+        public override UserControl GetDeviceControl() => new InfoCamera(this);
+        public override UserControl GetDeviceInfo() => new InfoCamera(this, false);
         
         private Lazy<DisplayCameraControl> DisplayCameraControlLazy { get; set; }
 
