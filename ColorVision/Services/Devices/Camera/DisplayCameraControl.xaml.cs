@@ -118,7 +118,8 @@ namespace ColorVision.Services.Devices.Camera
             {
                 if (e.ResultCode == 0)
                 {
-                    switch (e.EventName)
+                    switch
+                    (e.EventName)
                     {
                         case MQTTCameraEventEnum.Event_OpenLive:
                             DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(e.Data));
