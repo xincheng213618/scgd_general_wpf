@@ -57,7 +57,12 @@ namespace ColorVision.Services.Devices.Calibration
 
             DisplayLazy = new Lazy<DisplayCalibrationControl>(() => new DisplayCalibrationControl(this));
         }
-
+        public override void Save()
+        {
+            base.Save();
+            if (PhyCamera != null)
+                PhyCamera.SetCalibration(this);
+        }
 
         public override UserControl GetDeviceControl() => new DeviceCalibrationControl(this);
 

@@ -28,6 +28,8 @@ using ColorVision.Services.Devices.PG;
 using ColorVision.Services.PhyCameras.Dao;
 using System.Linq;
 using ColorVision.Interfaces;
+using ColorVision.Services.Devices.Camera;
+using MQTTMessageLib.Camera;
 
 namespace ColorVision.Services.PhyCameras
 {
@@ -83,6 +85,28 @@ namespace ColorVision.Services.PhyCameras
             UploadLincenseCommand = new RelayCommand(a => UploadLincense());
             RefreshLincenseCommand = new RelayCommand(a => RefreshLincense());
             RefreshLincense();
+        }
+
+        public DeviceCamera DeviceCamera { get; set; }
+
+        public void SetDeviceCamera(DeviceCamera deviceCamera)
+        {
+            DeviceCamera = deviceCamera;
+            if (CameraLicenseModel != null)
+            {
+                CameraLicenseModel.DevCameraId = deviceCamera.SysResourceModel.Id;
+                CameraLicenseDao.Instance.Save(CameraLicenseModel);
+            }
+        }
+        public DeviceCalibration DeviceCalibration { get; set; }
+        public void SetCalibration(DeviceCalibration deviceCalibration)
+        {
+            DeviceCalibration = deviceCalibration;
+            if (CameraLicenseModel != null)
+            {
+                CameraLicenseModel.DevCaliId = deviceCalibration.SysResourceModel.Id;
+                CameraLicenseDao.Instance.Save(CameraLicenseModel);
+            }
         }
 
         #region License

@@ -63,6 +63,10 @@ namespace ColorVision.Services.Devices.Camera
             RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
             OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger());
         }
+
+
+
+
         public RelayCommand OpenPhyCameraMangerCommand { get; set; }
         public void OpenPhyCameraManger()
         {
@@ -88,6 +92,13 @@ namespace ColorVision.Services.Devices.Camera
             SaveConfig();
         }
 
+        public override void Save()
+        {
+            base.Save();
+            if (PhyCamera != null)
+                PhyCamera.SetDeviceCamera(this);
+
+        }
 
         private void FetchLatestTemperature(object a)
         {

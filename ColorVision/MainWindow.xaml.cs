@@ -169,6 +169,16 @@ namespace ColorVision
             };
             menuItem.Items.Add(menuItem3);
 
+
+            MenuItem menuItem4 = new MenuItem() { Header = "河源精电" };
+            menuItem4.Click += (s, e) =>
+            {
+                ProjectHeiyuan projectHeiyuan = new ProjectHeiyuan();
+                projectHeiyuan.Show();
+            };
+            menuItem.Items.Add(menuItem4);
+
+
 #endif
 
             if (ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.IsAutoUpdate)
