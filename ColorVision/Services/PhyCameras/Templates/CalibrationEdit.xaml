@@ -7,7 +7,7 @@
         xmlns:local="clr-namespace:ColorVision.Services.PhyCameras.Templates"
         xmlns:group="clr-namespace:ColorVision.Services.Core"
         mc:Ignorable="d"
-        Title="资源组管理"  Background="{DynamicResource GlobalBackground}" Closed="Window_Closed" Height="350" Width="1200" Initialized="Window_Initialized" >
+        Title="资源组管理"  Background="{DynamicResource GlobalBackground}" Closed="Window_Closed" Height="450" Width="1200" Initialized="Window_Initialized" >
     <Window.Resources>
         <Style  TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}"/>
         <Style TargetType="hc:ComboBox" BasedOn="{StaticResource ComboBox.Small}">

@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.MVVM.Json;
 using ColorVision.Common.Utilities;
+using ColorVision.Extension;
 using ColorVision.Handler;
 using ColorVision.Interfaces;
 using ColorVision.Services.Core;
@@ -446,11 +447,11 @@ namespace ColorVision.Services.PhyCameras
                                 sysResourceModel.Pid = SysResourceModel.Id;
                                 sysResourceModel.Value = Path.GetFileName(FileName);
                                 sysResourceModel.CreateDate = DateTime.Now;
-                                sysResourceModel.Remark = item1.ToJson();
+                                sysResourceModel.Remark = item1.ToJsonN();
                                 int ret = SysResourceDao.Instance.Save(sysResourceModel);
                                 if (sysResourceModel != null)
                                 {
-                                    CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
+                                    CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
                                         AddChild(calibrationResource);
@@ -475,7 +476,7 @@ namespace ColorVision.Services.PhyCameras
                         try
                         {
                             zipCalibrationGroup = new ZipCalibrationGroup();
-                            zipCalibrationGroup.ZipCalibrationItems = JsonConvert.DeserializeObject<List<ZipCalibrationItem>>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
+                            zipCalibrationGroup.List = JsonConvert.DeserializeObject<List<ZipCalibrationItem>>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
                         }
                         catch (Exception ex)
                         {
@@ -503,17 +504,18 @@ namespace ColorVision.Services.PhyCameras
                             GroupResource groupResource = GroupResource.AddGroupResource(this, filePath);
                             if (groupResource != null)
                             {
-                                foreach (var item1 in zipCalibrationGroup.ZipCalibrationItems)
+                                foreach (var item1 in zipCalibrationGroup.List)
                                 {
                                     if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
                                     {
+                                        SysResourceDao.Instance.ADDGroup(groupResource.SysResourceModel.Id, colorVisionVCalibratioItems.SysResourceModel.Id);
                                         Application.Current.Dispatcher.Invoke(() =>
                                         {
                                             groupResource.AddChild(colorVisionVCalibratioItems);
                                         });
                                     }
                                 }
-                                groupResource.SetCalibrationResource(this);
+                                groupResource.SetCalibrationResource();
                             }
                         }
                     }

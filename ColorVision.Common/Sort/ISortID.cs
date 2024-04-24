@@ -6,9 +6,6 @@ namespace ColorVision.Common.Sorts
     public interface ISortID
     {
         public int Id { get;  }
-
-        public int IdShow { get; set; }
-
     }
 
     public static partial class SortableExtension
@@ -17,7 +14,6 @@ namespace ColorVision.Common.Sorts
         {
             if (!collection.Any(existingItem => existingItem.Id == item.Id))
             {
-                item.IdShow = collection.Count + 1;
                 collection.Add(item);
             }
         }

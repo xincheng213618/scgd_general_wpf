@@ -94,7 +94,7 @@ namespace ColorVision.Services.PhyCameras.Templates
             {
                 if (item is GroupResource groupResource)
                 {
-                    groupResource.SetCalibrationResource(CalibrationService);
+                    groupResource.SetCalibrationResource();
                     groupResources.Add(groupResource);
                 }
             }

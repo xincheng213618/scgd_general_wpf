@@ -162,7 +162,7 @@ namespace ColorVision.Services.PhyCameras
                     }
                     else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
                     {
-                        CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
+                        CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
                         phycamrea.AddChild(calibrationResource);
                     }
                     else
@@ -171,6 +171,7 @@ namespace ColorVision.Services.PhyCameras
                         phycamrea.AddChild(calibrationResource);
                     }
                 }
+
             }
         }
 
@@ -187,7 +188,7 @@ namespace ColorVision.Services.PhyCameras
                 }
                 else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
                 {
-                    CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
+                    CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
                     groupResource.AddChild(calibrationResource);
                 }
                 else
@@ -196,6 +197,8 @@ namespace ColorVision.Services.PhyCameras
                     groupResource.AddChild(calibrationResource);
                 }
             }
+            groupResource.SetCalibrationResource();
+
         }
     }
 }

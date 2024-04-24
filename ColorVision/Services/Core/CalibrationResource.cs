@@ -1,8 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Sorts;
 using ColorVision.Services.Dao;
+using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
-using System.Security.Cryptography.X509Certificates;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace ColorVision.Services.Core
 {
@@ -19,13 +21,23 @@ namespace ColorVision.Services.Core
 
     public class CalibrationResource : BaseFileResource, ISortID, ISortFilePath
     {
-        public CalibrationFileConfig Config { get; set; }
-        public CalibrationResource(SysResourceModel sysResourceModel) : base(sysResourceModel) 
-        { 
-            //Config = BaseResourceObjectExtensions.TryDeserializeConfig<CalibrationFileConfig>(sysResourceModel.Value);
+        public static List<CalibrationResource> CalibrationResources { get; set; } = new List<CalibrationResource>();
+
+        public static CalibrationResource EnsureInstance(SysResourceModel sysResourceModel)
+        {
+            var list = CalibrationResources.Find(a => a.SysResourceModel.Id == sysResourceModel.Id);
+            if (list != null)
+                return list;
+            return new CalibrationResource(sysResourceModel);
         }
 
-        public int IdShow { get; set; }
+        public CalibrationFileConfig Config { get; set; }
+        public CalibrationResource(SysResourceModel sysResourceModel) : base(sysResourceModel) 
+        {
+            CalibrationResources.Add(this);
+
+            //Config = BaseResourceObjectExtensions.TryDeserializeConfig<CalibrationFileConfig>(sysResourceModel.Value);
+        }
 
         public override void Save()
         {

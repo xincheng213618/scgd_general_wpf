@@ -314,7 +314,7 @@ namespace ColorVision.Services
                     }
                    else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
                     {
-                        CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
+                        CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
                         deviceService.AddChild(calibrationResource);
                     }
                     else
@@ -346,7 +346,7 @@ namespace ColorVision.Services
                 }
                 else if (30<=sysResourceModel.Type && sysResourceModel.Type <= 40)
                 {
-                    CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
+                    CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
                     groupResource.AddChild(calibrationResource);
                 }
                 else

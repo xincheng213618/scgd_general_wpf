@@ -12,8 +12,8 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <TextBlock Text="{Binding Msg}"  HorizontalAlignment="Center"/>
-        <ListView Grid.Row="1" ItemsSource="{Binding UploadList}">
+        <TextBlock Text="{Binding Msg}"  Margin="5" FontSize="18" HorizontalAlignment="Center"/>
+        <ListView Grid.Row="1" ItemsSource="{Binding UploadList}" Background="Transparent">
 
         </ListView>
     </Grid>

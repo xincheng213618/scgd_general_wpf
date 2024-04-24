@@ -78,7 +78,6 @@ namespace ColorVision.Services.Core
             SysResourceDao.Instance.DeleteGroupRelate(SysResourceModel.Id);
 
             VisualChildren.Clear();
-
             VisualChildren.Add(DarkNoise);
             VisualChildren.Add(DSNU);
             VisualChildren.Add(DefectPoint);
@@ -100,109 +99,47 @@ namespace ColorVision.Services.Core
             base.Save();
         }
 
-        public void SetCalibrationResource(ICalibrationService<BaseResourceObject> calibrationService)
+        public void SetCalibrationResource()
         {
             foreach (var item in VisualChildren)
             {
                 if (item is CalibrationResource calibrationResource)
                 {
-
                     switch ((ServiceTypes)calibrationResource.SysResourceModel.Type)
                     {
                         case ServiceTypes.DarkNoise:
-                            foreach (var item1 in calibrationService.VisualChildren)
-                            {
-                                if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
-                                {
-                                    DarkNoise = calibrationResource1;
-                                }
-                            }
+                            DarkNoise = calibrationResource;
                             break;
                         case ServiceTypes.DefectPoint:
-                            foreach (var item1 in calibrationService.VisualChildren)
-                            {
-                                if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
-                                {
-                                    DefectPoint = calibrationResource1;
-                                }
-                            }
+                            DefectPoint = calibrationResource;
                             break;
                         case ServiceTypes.DSNU:
-                            foreach (var item1 in calibrationService.VisualChildren)
-                            {
-                                if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
-                                {
-                                    DSNU = calibrationResource1;
-                                }
-                            }
+                            DSNU = calibrationResource;
                             break;
                         case ServiceTypes.Uniformity:
-                            foreach (var item1 in calibrationService.VisualChildren)
-                            {
-                                if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
-                                {
-                                    Uniformity = calibrationResource1;
-                                }
-                            }
+                            Uniformity = calibrationResource;
                             break;
                         case ServiceTypes.Distortion:
-                            foreach (var item1 in calibrationService.VisualChildren)
-                            {
-                                if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
-                                {
-                                    Distortion = calibrationResource1;
-                                }
-                            }
+                            Distortion = calibrationResource;
                             break;
                         case ServiceTypes.ColorShift:
-                            foreach (var item1 in calibrationService.VisualChildren)
-                            {
-                                if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
-                                {
-                                    ColorShift = calibrationResource1;
-                                }
-                            }
+                            ColorShift = calibrationResource;
                             break;
                         case ServiceTypes.Luminance:
-                            foreach (var item1 in calibrationService.VisualChildren)
-                            {
-                                if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
-                                {
-                                    Luminance = calibrationResource1;
-                                }
-                            }
+                            Luminance = calibrationResource;
                             break;
                         case ServiceTypes.LumOneColor:
-                            foreach (var item1 in calibrationService.VisualChildren)
-                            {
-                                if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
-                                {
-                                    LumOneColor = calibrationResource1;
-                                }
-                            }
+                            LumOneColor = calibrationResource;
                             break;
                         case ServiceTypes.LumFourColor:
-                            foreach (var item1 in calibrationService.VisualChildren)
-                            {
-                                if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id)
-                                {
-                                    LumFourColor = calibrationResource1;
-                                }
-                            }
+                            LumFourColor = calibrationResource;
                             break;
                         case ServiceTypes.LumMultiColor:
-                            foreach (var item1 in calibrationService.VisualChildren)
-                            {
-                                if (item1 is CalibrationResource calibrationResource1 && calibrationResource.Id == calibrationResource1.Id )
-                                {
-                                    LumMultiColor = calibrationResource1;
-                                }
-                            }
+                            LumMultiColor = calibrationResource;
                             break;
                         default:
                             break;
                     }
-
                 }
             }
         }

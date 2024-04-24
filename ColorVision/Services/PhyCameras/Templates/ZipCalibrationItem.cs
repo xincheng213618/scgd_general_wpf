@@ -6,7 +6,7 @@ namespace ColorVision.Services.PhyCameras.Templates
 {
     public class ZipCalibrationGroup : ViewModelBase
     {
-        public List<ZipCalibrationItem> ZipCalibrationItems { get; set; } = new List<ZipCalibrationItem>();
+        public List<ZipCalibrationItem> List { get; set; } = new List<ZipCalibrationItem>();
 
         public double Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
         private double _Gain;
