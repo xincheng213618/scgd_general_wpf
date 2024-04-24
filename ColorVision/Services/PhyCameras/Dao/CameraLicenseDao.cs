@@ -104,7 +104,7 @@ namespace ColorVision.Services.PhyCameras.Dao
             CusTomerName = item.Field<string?>("customer_name"),
             CreateDate = item.Field<DateTime>("create_date"),
             ExpiryDate = item.Field<DateTime?>("expired"),
-            Code = item.Field<string?>("code"),
+            //Code = item.Field<string?>("code"),
             DevCameraId = item.Field<int?>("res_dev_cam_pid"),
             DevCaliId = item.Field<int?>("res_dev_cali_pid")
         };
@@ -120,7 +120,7 @@ namespace ColorVision.Services.PhyCameras.Dao
                 row["customer_name"] = item.CusTomerName;
                 row["create_date"] = item.CreateDate;
                 row["expired"] = item.ExpiryDate;
-                row["code"] = item.Code;
+                //row["code"] = item.Code;
                 if (item.DevCameraId != null)
                     row["res_dev_cam_pid"] = item.DevCameraId;
                 if (item.DevCaliId!=null)
