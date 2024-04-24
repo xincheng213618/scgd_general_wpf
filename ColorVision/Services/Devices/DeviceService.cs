@@ -48,8 +48,6 @@ namespace ColorVision.Services.Devices
         public RelayCommand ResourceManagerCommand { get; set; }
 
         public RelayCommand EditCommand { get; set; }
-        public bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
-        private bool _IsEditMode;
 
         public virtual ImageSource Icon { get; set; }
         public SysDeviceModel SysResourceModel { get; set; }
@@ -105,8 +103,6 @@ namespace ColorVision.Services.Devices
 
         public override ImageSource Icon { get => _Icon; set { _Icon = value; NotifyPropertyChanged(); } }
         private ImageSource _Icon;
-        public  ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; NotifyPropertyChanged(); } }
-        private ImageSource? _QRIcon;
 
         public override object GetConfig() => Config;
 
@@ -189,7 +185,6 @@ namespace ColorVision.Services.Devices
 
             Config.Code = SysResourceModel.Code ?? string.Empty;
             Config.Name = SysResourceModel.Name ?? string.Empty;
-            QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
 
         }
 
@@ -213,10 +208,8 @@ namespace ColorVision.Services.Devices
         {
             base.Save();
             SaveConfig();
-            IsEditMode = false;
             ///每次提交之后重启服务
             MQTTRCService.GetInstance().RestartServices(SysResourceModel.TypeCode, SysResourceModel.PCode, Config.Code);
-            QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
             ConfigChanged?.Invoke(this, new EventArgs());
         }
 

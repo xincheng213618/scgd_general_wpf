@@ -37,8 +37,8 @@ namespace ColorVision.Services.Devices.Algorithm
         readonly Lazy<DisplayAlgorithmControl> DisplayAlgorithmControlLazy;
         public DisplayAlgorithmControl DisplayAlgorithmControl { get; set; }
 
-        public override UserControl GetDeviceControl() => new DeviceAlgorithmControl(this);
-        public override UserControl GetDeviceInfo() => new DeviceAlgorithmControl(this, false);
+        public override UserControl GetDeviceControl() => new InfoAlgorithm(this);
+        public override UserControl GetDeviceInfo() => new InfoAlgorithm(this, false);
 
         public override UserControl GetDisplayControl() => DisplayAlgorithmControlLazy.Value;
 
