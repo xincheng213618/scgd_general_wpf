@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -26,6 +27,8 @@ namespace ColorVision.Themes.Controls
                 UploadRec.Stroke = Brushes.Gray;
             };
         }
+        public event EventHandler SelectChaned;
+
 
         public static readonly DependencyProperty UploadFileNameProperty = DependencyProperty.Register(nameof(UploadFileNameProperty), typeof(string), typeof(Upload), new PropertyMetadata(""));
         public string UploadFileName
@@ -49,7 +52,7 @@ namespace ColorVision.Themes.Controls
             set { SetValue(FilterProperty, value); }
         }
 
-        private void ChoiceFile_Click(object sender, RoutedEventArgs e)
+        public void ChoiceFile()
         {
             Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
 
@@ -66,7 +69,14 @@ namespace ColorVision.Themes.Controls
                 GridUpdate.Visibility = Visibility.Collapsed;
                 GridShow.Visibility = Visibility.Visible;
                 UploadRec.Stroke = Brushes.Gray;
+
+                SelectChaned?.Invoke(this, new EventArgs());
             }
+        }
+
+        private void ChoiceFile_Click(object sender, RoutedEventArgs e)
+        {
+            ChoiceFile();
         }
 
 
@@ -85,6 +95,8 @@ namespace ColorVision.Themes.Controls
                 GridUpdate.Visibility = Visibility.Collapsed;
                 GridShow.Visibility = Visibility.Visible;
                 UploadRec.Stroke = Brushes.Gray;
+
+                SelectChaned?.Invoke(this,new EventArgs());
             }
 
 

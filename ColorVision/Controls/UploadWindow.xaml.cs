@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Windows;
+using System.Windows.Input;
 
-namespace ColorVision.Services.Devices
+namespace ColorVision.Controls
 {
     /// <summary>
     /// UploadWindow.xaml 的交互逻辑
@@ -21,6 +22,36 @@ namespace ColorVision.Services.Devices
         {
             if (!string.IsNullOrWhiteSpace(Filter))
                 Upload1.Filter = Filter;
+            Upload1.SelectChaned += (s, e) =>
+            {
+                ButtonUpload.Visibility = Visibility.Visible;
+            };
+
+            this.PreviewKeyDown += (s, e) =>
+            {
+                if (e.Key == Key.Escape)
+                {
+                    this.Close();
+                }
+                else if (e.Key == Key.Enter)
+                {
+                    if (ButtonUpload.Visibility == Visibility.Visible)
+                    {
+                        if (string.IsNullOrEmpty(Upload1.UploadFileName) || string.IsNullOrEmpty(Upload1.UploadFilePath))
+                        {
+                            MessageBox.Show("您未选择文件");
+                            Close();
+                            return;
+                        }
+                        OnUpload?.Invoke(Upload1, new EventArgs());
+                        Close();
+                    }
+                    else
+                    {
+                        Upload1.ChoiceFile();
+                    }
+                }
+            };
         }
 
         private void Window_DragEnter(object sender, DragEventArgs e)

@@ -41,9 +41,6 @@ namespace ColorVision.Services.PhyCameras.Dao
     public class CameraLicenseModel : ViewModelBase,IPKModel, ISortID
     {
         public int Id { get; set; }
-        public int PKId { get => Id; set => Id = value; }
-        public int IdShow { get; set; }
-
         public CameraLicenseModel()
         {
             CreateDate = DateTime.Now;

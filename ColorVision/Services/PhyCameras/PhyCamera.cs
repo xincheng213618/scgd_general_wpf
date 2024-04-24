@@ -1,39 +1,41 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM.Json;
 using ColorVision.Common.Utilities;
+using ColorVision.Controls;
+using ColorVision.Extension;
+using ColorVision.Handler;
+using ColorVision.Interfaces;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices;
+using ColorVision.Services.Devices.Calibration;
+using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Msg;
-using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.PhyCameras.Configs;
+using ColorVision.Services.PhyCameras.Dao;
+using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.RC;
+using ColorVision.Services.Templates;
+using ColorVision.Services.Type;
+using ColorVision.Themes.Controls;
+using cvColorVision;
+using log4net;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.IO.Compression;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.Services.Devices.Calibration;
-using log4net;
-using ColorVision.Services.Devices;
-using System.IO.Compression;
-using ColorVision.Themes.Controls;
-using ColorVision.Services.Templates;
-using cvColorVision;
-using ColorVision.Services.Type;
-using ColorVision.Common.MVVM.Json;
-using ColorVision.Services.Devices.PG;
-using ColorVision.Services.PhyCameras.Dao;
-using System.Linq;
-using ColorVision.Interfaces;
-using ColorVision.Services.Devices.Camera;
-using MQTTMessageLib.Camera;
+using System.Windows.Media;
 
 namespace ColorVision.Services.PhyCameras
 {
-    public class PhyCamera : BaseResource,ITreeViewItem, IUploadMsg, ICalibrationService<BaseResourceObject>
+    public class PhyCamera : BaseResource,ITreeViewItem, IUploadMsg, ICalibrationService<BaseResourceObject>, IIcon
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCalibration));
 
@@ -47,13 +49,22 @@ namespace ColorVision.Services.PhyCameras
         public RelayCommand RefreshLincenseCommand { get; set; }
 
         public RelayCommand EditCommand { get; set; }
+
+        public ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; NotifyPropertyChanged(); } }
+        private ImageSource? _QRIcon;
+        public ImageSource Icon { get => _Icon; set{ _Icon = value; NotifyPropertyChanged(); } }
+        private ImageSource _Icon;
+
         public ContextMenu ContextMenu { get; set; }
+
         public bool IsExpanded { get; set; }
         public bool IsSelected { get; set; }
         public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
 
         public PhyCamera(SysResourceModel sysResourceModel):base(sysResourceModel)
         {
+            this.SetIconResource("DrawingImageCamera");
+
             Config = BaseResourceObjectExtensions.TryDeserializeConfig<ConfigPhyCamera>(SysResourceModel.Value);
             DeleteCommand = new RelayCommand(a => Delete());
             EditCommand = new RelayCommand(a =>
@@ -85,6 +96,8 @@ namespace ColorVision.Services.PhyCameras
             UploadLincenseCommand = new RelayCommand(a => UploadLincense());
             RefreshLincenseCommand = new RelayCommand(a => RefreshLincense());
             RefreshLincense();
+
+            QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
         }
 
         public DeviceCamera DeviceCamera { get; set; }
@@ -259,6 +272,7 @@ namespace ColorVision.Services.PhyCameras
 
         public event EventHandler UploadClosed;
         public ObservableCollection<string> UploadList { get; set; } = new ObservableCollection<string>();
+
         public async void UploadData(string UploadFilePath)
         {
             Msg = "正在解压文件：" + " 请稍后...";
@@ -362,7 +376,7 @@ namespace ColorVision.Services.PhyCameras
                             {
                                 if (item2 is CalibrationResource CalibrationResource)
                                 {
-                                    if (CalibrationResource.SysResourceModel.Code == md5)
+                                    if (CalibrationResource.SysResourceModel.Code.Contains(md5) )
                                     {
                                         keyValuePairs2.Add(item1.Title, CalibrationResource);
                                         isExist = true;
@@ -429,16 +443,16 @@ namespace ColorVision.Services.PhyCameras
 
                                 SysResourceModel sysResourceModel = new SysResourceModel();
                                 sysResourceModel.Name = item1.Title;
-                                sysResourceModel.Code = md5;
+                                sysResourceModel.Code = Id + md5;
                                 sysResourceModel.Type = (int)item1.CalibrationType.ToResouceType();
                                 sysResourceModel.Pid = SysResourceModel.Id;
                                 sysResourceModel.Value = Path.GetFileName(FileName);
                                 sysResourceModel.CreateDate = DateTime.Now;
-                                sysResourceModel.Remark = item1.ToJson();
-                                SysResourceDao.Instance.Save(sysResourceModel);
+                                sysResourceModel.Remark = item1.ToJsonN(new JsonSerializerSettings());
+                                int ret = SysResourceDao.Instance.Save(sysResourceModel);
                                 if (sysResourceModel != null)
                                 {
-                                    CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
+                                    CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
                                     Application.Current.Dispatcher.Invoke(() =>
                                     {
                                         AddChild(calibrationResource);
@@ -463,7 +477,7 @@ namespace ColorVision.Services.PhyCameras
                         try
                         {
                             zipCalibrationGroup = new ZipCalibrationGroup();
-                            zipCalibrationGroup.ZipCalibrationItems = JsonConvert.DeserializeObject<List<ZipCalibrationItem>>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
+                            zipCalibrationGroup.List = JsonConvert.DeserializeObject<List<ZipCalibrationItem>>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
                         }
                         catch (Exception ex)
                         {
@@ -491,17 +505,18 @@ namespace ColorVision.Services.PhyCameras
                             GroupResource groupResource = GroupResource.AddGroupResource(this, filePath);
                             if (groupResource != null)
                             {
-                                foreach (var item1 in zipCalibrationGroup.ZipCalibrationItems)
+                                foreach (var item1 in zipCalibrationGroup.List)
                                 {
                                     if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
                                     {
+                                        SysResourceDao.Instance.ADDGroup(groupResource.SysResourceModel.Id, colorVisionVCalibratioItems.SysResourceModel.Id);
                                         Application.Current.Dispatcher.Invoke(() =>
                                         {
                                             groupResource.AddChild(colorVisionVCalibratioItems);
                                         });
                                     }
                                 }
-                                groupResource.SetCalibrationResource(this);
+                                groupResource.SetCalibrationResource();
                             }
                         }
                     }
@@ -518,12 +533,6 @@ namespace ColorVision.Services.PhyCameras
                 Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
             }
         }
-
-
-
-
-
-
 
 
         public UserControl GetDeviceInfo() => new InfoPhyCamera(this);

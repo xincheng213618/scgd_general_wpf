@@ -64,9 +64,9 @@ namespace ColorVision.Services.Devices.Calibration
                 PhyCamera.SetCalibration(this);
         }
 
-        public override UserControl GetDeviceControl() => new DeviceCalibrationControl(this);
+        public override UserControl GetDeviceControl() => new InfoCalibration(this);
 
-        public override UserControl GetDeviceInfo() => new DeviceCalibrationControl(this,false);
+        public override UserControl GetDeviceInfo() => new InfoCalibration(this,false);
 
         readonly Lazy<DisplayCalibrationControl> DisplayLazy;
 

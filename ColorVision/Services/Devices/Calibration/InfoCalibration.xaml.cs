@@ -1,32 +1,40 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Services.PhyCameras;
+using ColorVision.Services.PhyCameras.Templates;
+using ColorVision.Services.Templates;
+using ColorVision.Settings;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.Algorithm
+namespace ColorVision.Services.Devices.Calibration
 {
     /// <summary>
-    /// DeviceAlgorithmControl.xaml 的交互逻辑s
+    /// DeviceSMUControl.xaml 的交互逻辑
     /// </summary>
-    public partial class DeviceAlgorithmControl : UserControl
+    public partial class InfoCalibration : UserControl
     {
-        public DeviceAlgorithm Device { get; set; }
-        public MQTTAlgorithm DService { get => Device.MQTTService; }
+        public DeviceCalibration Device { get; set; }
+
+        public MQTTCalibration DService { get => Device.DeviceService; }
+        public ServiceManager ServiceControl { get; set; }
 
         public bool IsCanEdit { get; set; }
 
-        public DeviceAlgorithmControl(DeviceAlgorithm device, bool isCanEdit = true)
+        public InfoCalibration(DeviceCalibration deviceCalibration, bool isCanEdit = true)
         {
-            Device = device;
+            Device = deviceCalibration;
             IsCanEdit = isCanEdit;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             DataContext = Device;
+            if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
         }
+
+
         private void ServiceCache_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)

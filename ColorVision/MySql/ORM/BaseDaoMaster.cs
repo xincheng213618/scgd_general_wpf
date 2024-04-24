@@ -22,10 +22,10 @@ namespace ColorVision.MySql.ORM
 
         public virtual int Save(T item)
         {
-            DataTable d_info = SelectById(item.PKId);
+            DataTable d_info = SelectById(item.Id);
             ConvertRow(item, d_info);
             int ret = Save(d_info);
-            item.PKId = d_info.Rows[0].Field<int>(PKField);
+            item.Id = d_info.Rows[0].Field<int>(PKField);
             return ret;
         }
 
@@ -373,7 +373,7 @@ namespace ColorVision.MySql.ORM
 
         public DataRow GetRow(T item, DataTable dataTable)
         {
-            DataRow row = dataTable.SelectRow(item.PKId);
+            DataRow row = dataTable.SelectRow(item.Id);
             if (row == null)
             {
                 row = dataTable.NewRow();

@@ -81,7 +81,7 @@ namespace ColorVision.Services.Type
             VSysResourceDao resourceDao = new VSysResourceDao();
             resourceDao.Save(sysResource);
 
-            int pkId = sysResource.PKId;
+            int pkId = sysResource.Id;
             if (pkId > 0 && resourceDao.GetById(pkId) is SysResourceModel model)
             {
                 TerminalService terminalService = TypeService.ServiceTypes switch

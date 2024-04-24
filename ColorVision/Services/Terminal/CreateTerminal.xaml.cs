@@ -66,7 +66,7 @@ namespace ColorVision.Services.Terminal
                 deviceConfig.SubscribeTopic = TerminalService.Config.SubscribeTopic;
                 sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
                 VSysResourceDao.Instance.Save(sysResource);
-                int pkId = sysResource.PKId;
+                int pkId = sysResource.Id;
                 if (pkId > 0 && ServiceManager.GetInstance().VSysDeviceDao.GetById(pkId) is SysDeviceModel model) return model;
                 else return null;
             }
@@ -112,13 +112,6 @@ namespace ColorVision.Services.Terminal
                             DelayTime = 1000,
                             OpenCmd = "a",
                             CloseCmd = "b"
-                        },
-                        FileServerCfg = new FileServerCfg()
-                        {
-                            Endpoint = "127.0.0.1",
-                            PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
-                            DataBasePath = "D:\\CVTest",
-                            SaveDays = 7,
                         }
                     };
                     sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
@@ -175,13 +168,6 @@ namespace ColorVision.Services.Terminal
                         Id = CreateCode.Text,
                         Name = CreateName.Text,
                         IsCCTWave = true,
-                        FileServerCfg = new FileServerCfg()
-                        {
-                            Endpoint = "127.0.0.1",
-                            PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
-                            DataBasePath = "D:\\CVTest",
-                            SaveDays = 7,
-                        }
                     };
                     sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
                     if (sysDevModel != null)
@@ -207,13 +193,6 @@ namespace ColorVision.Services.Terminal
                     {
                         Id = CreateCode.Text,
                         Name = CreateName.Text,
-                        FileServerCfg = new FileServerCfg()
-                        {
-                            Endpoint = "127.0.0.1",
-                            PortRange = string.Format("{0}-{1}", fromPort, fromPort + 5),
-                            DataBasePath = "D:\\CVTest",
-                            SaveDays = 7,
-                        }
                     };
                     sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
                     if (sysDevModel != null)

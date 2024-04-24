@@ -52,31 +52,28 @@
 
             <Border  Grid.Row="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
                 <TabControl  TabStripPlacement="Left">
-                    <TabItem Header="基本信息">
-                        <StackPanel Margin="5">
-                            <Grid>
-                                <StackPanel Margin="5" >
-                                    <DockPanel>
-                                        <TextBlock Text="Code:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Code}"/>
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="相机ID:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CameraID}"/>
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="相机类型:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CameraType}"/>
-                                    </DockPanel>
-                                    <Button Content="上传许可文件"  Command="{Binding UploadLincenseCommand}" />
-                                    <Button Content="上传校正文件"  Command="{Binding UploadCalibrationCommand}" />
-                                    <Button Content="校正模板设置" Tag="Calibration"  Click="MenuItem_Template" />
-                                    <Button Content="校正模板管理" Command="{Binding CalibrationEditCommand}"/>
-                                    <Button Content="资源组管理" Command="{Binding ResourceManagerCommand}"/>
-                                </StackPanel>
-                            </Grid>
+                    <TabItem Header="管理">
+                        <Grid Margin="5">
+                            <UniformGrid Margin="5" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
+                                <Button Content="修改配置" Margin="5" Height="100" Width="180" Command="{Binding EditCommand}"/>
 
-                        </StackPanel>
+                                <Border Height="100" Width="180"  BorderBrush="{StaticResource SecondaryRegionBrush}" BorderThickness="1.5" CornerRadius="5">
+                                    <Grid Margin="15" >
+                                        <TextBlock VerticalAlignment="Top" HorizontalAlignment="Center" Text="{Binding CameraLicenseModel.Model}"/>
+                                        <TextBlock Text="修改许可证" HorizontalAlignment="Center"/>
+                                        <TextBlock VerticalAlignment="Bottom" HorizontalAlignment="Center" Text="{Binding CameraLicenseModel.ExpiryDate,StringFormat=yyyy/MM//dd}"/>
+                                        <Button  Command="{Binding UploadLincenseCommand}" BorderThickness="0" Background="#01FFFFFF"/>
+                                    </Grid>
+                                </Border>
+
+                                <Button Content="上传校正文件" Margin="5" Height="100" Width="180" Style="{StaticResource ButtonDefault}" Command="{Binding UploadCalibrationCommand}" />
+                                <Button Content="校正模板设置" Margin="5" Height="100" Width="180" Tag="Calibration"  Click="MenuItem_Template" />
+                                <Button Content="校正模板管理" Margin="5" Height="100" Width="180" Command="{Binding CalibrationEditCommand}"/>
+                                <Button Content="资源组管理" Margin="5" Height="100" Width="180" Command="{Binding ResourceManagerCommand}"/>
+                            </UniformGrid>
+                            <TextBlock  Text="{Binding SysResourceModel.Code}" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                        </Grid>
+
                     </TabItem>
                     <TabItem Header="基础配置">
                         <StackPanel Margin="5">
@@ -271,38 +268,34 @@
                             </GroupBox>
                         </StackPanel>
                     </TabItem>
-                    <TabItem Header="许可证信息">
+                    <TabItem Header="许可证">
                         <StackPanel Margin="5">
                             <DockPanel >
-                                <TextBlock Text="DeviceMode" Width="80"/>
-                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraLicenseModel.ExpiryDate}"/>
-                            </DockPanel>
-                            <DockPanel >
-                                <TextBlock Text="AuthoritySignature" Width="100"/>
-                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraLicenseModel.ColorVisionLincense.AuthoritySignature}"/>
-                            </DockPanel>
-                            <DockPanel >
-                                <TextBlock Text="DeviceMode" Width="80"/>
+                                <TextBlock Text="DeviceMode" Width="120"/>
                                 <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraLicenseModel.ColorVisionLincense.DeviceMode}"/>
                             </DockPanel>
                             <DockPanel >
-                                <TextBlock Text="ExpiryDate" Width="80"/>
-                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraLicenseModel.ColorVisionLincense.ExpiryDate}"/>
-                            </DockPanel>
-                            <DockPanel >
-                                <TextBlock Text="IssueDate" Width="80"/>
+                                <TextBlock Text="IssueDate" Width="120"/>
                                 <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraLicenseModel.ColorVisionLincense.IssueDate}"/>
                             </DockPanel>
                             <DockPanel >
-                                <TextBlock Text="IssuingAuthority" Width="80"/>
+                                <TextBlock Text="ExpiryDate" Width="120"/>
+                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraLicenseModel.ExpiryDate}"/>
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBlock Text="IssuingAuthority" Width="120"/>
                                 <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraLicenseModel.ColorVisionLincense.IssuingAuthority}"/>
                             </DockPanel>
                             <DockPanel >
-                                <TextBlock Text="Licensee" Width="80"/>
+                                <TextBlock Text="Licensee" Width="120"/>
                                 <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraLicenseModel.ColorVisionLincense.Licensee}"/>
                             </DockPanel>
                             <DockPanel >
-                                <TextBlock Text="LicenseeSignature" Width="80"/>
+                                <TextBlock Text="AuthoritySignature" Width="120"/>
+                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraLicenseModel.ColorVisionLincense.AuthoritySignature}"/>
+                            </DockPanel>
+                            <DockPanel >
+                                <TextBlock Text="LicenseeSignature" Width="120"/>
                                 <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraLicenseModel.ColorVisionLincense.LicenseeSignature}"/>
                             </DockPanel>
                         </StackPanel>

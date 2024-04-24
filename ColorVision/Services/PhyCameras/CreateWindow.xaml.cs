@@ -37,7 +37,6 @@ namespace ColorVision.Services.PhyCameras
                 TakeImageMode = TakeImageMode.Measure_Normal,
                 ImageBpp = ImageBpp.bpp8,
                 Channel = ImageChannel.One,
-                FileServerCfg = new CVCommCore.CVCamera.FileSeviceConfig() { Endpoint="127.0.0.1", FileBasePath= "D:\\SysResConfig", PortRange="8888"},
             };
 
             CameraID.ItemsSource = SysResourceDao.Instance.GetAllEmptyCameraId();

@@ -50,9 +50,6 @@ namespace ColorVision.Services
 
         public List<MQTTServiceInfo> ServiceTokens { get; set; }
 
-
-        public ObservableCollection<IDisPlayControl> DisPlayControls { get; set; } = new ObservableCollection<IDisPlayControl>();
-
         public VSysDeviceDao VSysDeviceDao { get; set; } = new VSysDeviceDao();
 
         public ServiceManager()
@@ -69,14 +66,14 @@ namespace ColorVision.Services
         public void GenControl(ObservableCollection<DeviceService> MQTTDevices)
         {
             LastGenControl = MQTTDevices;
-            DisPlayControls.Clear();
+            DisPlayManager.GetInstance().IDisPlayControls.Clear();
             foreach (var item in MQTTDevices)
             {
                 if (item is DeviceService device)
                 {
                     if (device.GetDisplayControl() is IDisPlayControl disPlayControl)
                     {
-                        DisPlayControls.Add(disPlayControl);
+                        DisPlayManager.GetInstance().IDisPlayControls.Add(disPlayControl);
                     }
                 }
             }
@@ -114,7 +111,7 @@ namespace ColorVision.Services
         public void GenDeviceDisplayControl()
         {
             LastGenControl = new ObservableCollection<DeviceService>();
-            DisPlayControls.Clear();
+            DisPlayManager.GetInstance().IDisPlayControls.Clear();
             foreach (var serviceKind in TypeServices)
             {
                 foreach (var service in serviceKind.VisualChildren)
@@ -126,7 +123,7 @@ namespace ColorVision.Services
                             LastGenControl.Add(device);
                             if (device.GetDisplayControl() is IDisPlayControl disPlayControl)
                             {
-                                DisPlayControls.Add(disPlayControl);
+                                DisPlayManager.GetInstance().IDisPlayControls.Add(disPlayControl);
                             }
                         }
                     }
@@ -282,7 +279,7 @@ namespace ColorVision.Services
 
             foreach (var phycamrea in PhyCameraManager.GetInstance().PhyCameras)
             {
-                List<SysResourceModel> sysResourceModels = sysResourceDao1.GetResourceItems(phycamrea.SysResourceModel.Id, UserConfig.TenantId);
+                List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetResourceItems(phycamrea.SysResourceModel.Id, UserConfig.TenantId);
                 foreach (var sysResourceModel in sysResourceModels)
                 {
                     if (sysResourceModel.Type == (int)ServiceTypes.Group)
@@ -306,7 +303,7 @@ namespace ColorVision.Services
 
             foreach (var deviceService in DeviceServices)
             {
-                List<SysResourceModel> sysResourceModels = sysResourceDao1.GetResourceItems(deviceService.SysResourceModel.Id, UserConfig.TenantId);
+                List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetResourceItems(deviceService.SysResourceModel.Id, UserConfig.TenantId);
                 foreach (var sysResourceModel in sysResourceModels)
                 {
                     if (sysResourceModel.Type == (int)ServiceTypes.Group)
@@ -317,7 +314,7 @@ namespace ColorVision.Services
                     }
                    else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
                     {
-                        CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
+                        CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
                         deviceService.AddChild(calibrationResource);
                     }
                     else
@@ -333,12 +330,11 @@ namespace ColorVision.Services
                 LoadgroupResource(groupResource);
             }
         }
-        SysResourceDao sysResourceDao1 = new SysResourceDao();
 
         public void LoadgroupResource(GroupResource groupResource)
         {
-            sysResourceDao1.CreatResourceGroup();
-            List<SysResourceModel> sysResourceModels = sysResourceDao1.GetGroupResourceItems(groupResource.SysResourceModel.Id);
+            SysResourceDao.Instance.CreatResourceGroup();
+            List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetGroupResourceItems(groupResource.SysResourceModel.Id);
             foreach (var sysResourceModel in sysResourceModels)
             {
                 if (sysResourceModel.Type == (int)ServiceTypes.Group)
@@ -350,7 +346,7 @@ namespace ColorVision.Services
                 }
                 else if (30<=sysResourceModel.Type && sysResourceModel.Type <= 40)
                 {
-                    CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
+                    CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
                     groupResource.AddChild(calibrationResource);
                 }
                 else
@@ -433,7 +429,7 @@ namespace ColorVision.Services
                 datas.Add(data);
             }
 
-            foreach (var ctl in DisPlayControls)
+            foreach (var ctl in DisPlayManager.GetInstance().IDisPlayControls)
             {
                 if (ctl is DisplaySpectrumControl spectrum)
                 {
