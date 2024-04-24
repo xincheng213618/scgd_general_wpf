@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows;
 
-namespace ColorVision.Services.Devices
+namespace ColorVision.Controls
 {
     /// <summary>
     /// UploadWindow.xaml 的交互逻辑

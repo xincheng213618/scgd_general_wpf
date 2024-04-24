@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Documents;
 
-namespace ColorVision.Services.Devices
+namespace ColorVision.Controls
 {
 
     public interface IUploadMsg

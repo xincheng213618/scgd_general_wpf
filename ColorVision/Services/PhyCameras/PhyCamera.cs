@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.MVVM.Json;
 using ColorVision.Common.Utilities;
+using ColorVision.Controls;
 using ColorVision.Extension;
 using ColorVision.Handler;
 using ColorVision.Interfaces;
