@@ -357,13 +357,13 @@ namespace ColorVision
                     stackPanel1.Children.Remove(flowDisplayControl);
                 stackPanel1.Children.Insert(0, flowDisplayControl);
 
-                foreach (var item in ServiceManager.GetInstance().DisPlayControls)
+                foreach (var item in DisPlayManager.GetInstance().IDisPlayControls)
                 {
                     if (item is UserControl userControl)
                         stackPanel1.Children.Add(userControl);
                 }
 
-                ServiceManager.GetInstance().DisPlayControls.CollectionChanged += (s, e) =>
+                DisPlayManager.GetInstance().IDisPlayControls.CollectionChanged += (s, e) =>
                 {
                     if (s is ObservableCollection<IDisPlayControl> disPlayControls)
                     {

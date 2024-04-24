@@ -50,9 +50,6 @@ namespace ColorVision.Services
 
         public List<MQTTServiceInfo> ServiceTokens { get; set; }
 
-
-        public ObservableCollection<IDisPlayControl> DisPlayControls { get; set; } = new ObservableCollection<IDisPlayControl>();
-
         public VSysDeviceDao VSysDeviceDao { get; set; } = new VSysDeviceDao();
 
         public ServiceManager()
@@ -69,14 +66,14 @@ namespace ColorVision.Services
         public void GenControl(ObservableCollection<DeviceService> MQTTDevices)
         {
             LastGenControl = MQTTDevices;
-            DisPlayControls.Clear();
+            DisPlayManager.GetInstance().IDisPlayControls.Clear();
             foreach (var item in MQTTDevices)
             {
                 if (item is DeviceService device)
                 {
                     if (device.GetDisplayControl() is IDisPlayControl disPlayControl)
                     {
-                        DisPlayControls.Add(disPlayControl);
+                        DisPlayManager.GetInstance().IDisPlayControls.Add(disPlayControl);
                     }
                 }
             }
@@ -114,7 +111,7 @@ namespace ColorVision.Services
         public void GenDeviceDisplayControl()
         {
             LastGenControl = new ObservableCollection<DeviceService>();
-            DisPlayControls.Clear();
+            DisPlayManager.GetInstance().IDisPlayControls.Clear();
             foreach (var serviceKind in TypeServices)
             {
                 foreach (var service in serviceKind.VisualChildren)
@@ -126,7 +123,7 @@ namespace ColorVision.Services
                             LastGenControl.Add(device);
                             if (device.GetDisplayControl() is IDisPlayControl disPlayControl)
                             {
-                                DisPlayControls.Add(disPlayControl);
+                                DisPlayManager.GetInstance().IDisPlayControls.Add(disPlayControl);
                             }
                         }
                     }
@@ -433,7 +430,7 @@ namespace ColorVision.Services
                 datas.Add(data);
             }
 
-            foreach (var ctl in DisPlayControls)
+            foreach (var ctl in DisPlayManager.GetInstance().IDisPlayControls)
             {
                 if (ctl is DisplaySpectrumControl spectrum)
                 {

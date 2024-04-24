@@ -235,9 +235,8 @@ namespace ColorVision.Services.Devices
             ServiceManager.GetInstance().DeviceServices.Remove(this);
             //删除前台显示
             if (GetDisplayControl() is IDisPlayControl disPlayControl)
-                ServiceManager.GetInstance().DisPlayControls.Remove(disPlayControl);
+                DisPlayManager.GetInstance().IDisPlayControls.Remove(disPlayControl);
             //删除资源
-
 
             Dispose();
         }
