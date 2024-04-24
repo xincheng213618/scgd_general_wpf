@@ -10,6 +10,7 @@ namespace ColorVision.Services.Devices.Camera.Configs
         /// </summary>
         public string DataBasePath { get => _DataBasePath; set { _DataBasePath = value; NotifyPropertyChanged(); } }
         private string _DataBasePath = "D:\\CVTest";
+
         /// <summary>
         /// 端口地址
         /// </summary>

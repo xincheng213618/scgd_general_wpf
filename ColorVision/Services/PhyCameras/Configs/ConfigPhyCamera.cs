@@ -75,6 +75,25 @@ namespace ColorVision.Services.PhyCameras.Configs
         public CameraCfg CameraCfg { get; set; } = new CameraCfg();
         public CFWPORT CFW { get; set; } = new CFWPORT();
 
-        public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
+        public FileSeviceConfig FileServerCfg { get; set; } = new FileSeviceConfig();
+    }
+
+    public  class FileSeviceConfig :ViewModelBase
+    {
+        public string FileBasePath { get => _FileBasePath; set { _FileBasePath = value; NotifyPropertyChanged(); } }
+        private string _FileBasePath = "D:\\CVTest";
+
+        /// <summary>
+        /// 端口地址
+        /// </summary>
+        public string Endpoint { get => _Endpoint; set { _Endpoint = value; NotifyPropertyChanged(); } }
+        private string _Endpoint = "127.0.0.1";
+        /// <summary>
+        /// 端口范围
+        /// </summary>
+        public string PortRange { get => _PortRange; set { _PortRange = value; NotifyPropertyChanged(); } }
+        private string _PortRange = ((Func<string>)(() => { int fromPort = Math.Abs(new Random().Next()) % 99 + 6600; return string.Format("{0}-{1}", fromPort, fromPort + 5); }))();
+
+
     }
 }
