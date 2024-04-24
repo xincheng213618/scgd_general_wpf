@@ -140,7 +140,7 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resource.resx</DependentUpon>
     </Compile>
-    <Compile Update="Services\Devices\ResourceManager.xaml.cs">
+    <Compile Update="Services\Group\ResourceManager.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Services\Terminal\CreateTerminal.xaml.cs">
