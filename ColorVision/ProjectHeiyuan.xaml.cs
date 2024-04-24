@@ -43,11 +43,12 @@ namespace ColorVision
         public NumSet NumSet { get; set; } = new NumSet();
     }
 
-    public class SerialPortMsg : ViewModelBase
+    public class SerialMsg : ViewModelBase
     {
         public byte[] Bytes { get; set; }
-
         public string Msg => BitConverter.ToString(Bytes).Replace("-", " ");
+        public DateTime SendTime { get; set; } = DateTime.Now;
+
     }
 
     public class HYMesManager
@@ -58,7 +59,9 @@ namespace ColorVision
         {
             lock (locker) { return _Instance ?? new HYMesManager(); }
         }
-        
+
+        public ObservableCollection<SerialMsg> SerialMsgs { get; set; } = new ObservableCollection<SerialMsg>();
+
         private SerialPort serialPort { get; set; }
 
         public HYMesManager()
@@ -129,7 +132,7 @@ namespace ColorVision
             msg.CopyTo(framedMsg, 1); // Copy original message into the new array starting at index 1
             framedMsg[framedMsg.Length - 1] = 0x03; // ETX (End of Text)
 
-            string hex = BitConverter.ToString(framedMsg).Replace("-", " ");
+            SerialMsgs.Add(new SerialMsg() { Bytes = framedMsg });
             if (serialPort.IsOpen)
                 serialPort.Write(msg, 0, msg.Length);
         }
