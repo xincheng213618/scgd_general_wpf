@@ -448,7 +448,7 @@ namespace ColorVision.Services.PhyCameras
                                 sysResourceModel.Pid = SysResourceModel.Id;
                                 sysResourceModel.Value = Path.GetFileName(FileName);
                                 sysResourceModel.CreateDate = DateTime.Now;
-                                sysResourceModel.Remark = item1.ToJsonN();
+                                sysResourceModel.Remark = item1.ToJsonN(new JsonSerializerSettings());
                                 int ret = SysResourceDao.Instance.Save(sysResourceModel);
                                 if (sysResourceModel != null)
                                 {
