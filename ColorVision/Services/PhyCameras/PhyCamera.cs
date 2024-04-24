@@ -33,7 +33,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Services.PhyCameras
 {
-    public class PhyCamera : BaseResource,ITreeViewItem, IUploadMsg, ICalibrationService<BaseResourceObject>
+    public class PhyCamera : BaseResource,ITreeViewItem, IUploadMsg, ICalibrationService<BaseResourceObject>, IIcon
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCalibration));
 
@@ -50,6 +50,8 @@ namespace ColorVision.Services.PhyCameras
 
         public ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; NotifyPropertyChanged(); } }
         private ImageSource? _QRIcon;
+        public ImageSource Icon { get => _Icon; set{ _Icon = value; NotifyPropertyChanged(); } }
+        private ImageSource _Icon;
 
         public ContextMenu ContextMenu { get; set; }
 
@@ -59,6 +61,7 @@ namespace ColorVision.Services.PhyCameras
 
         public PhyCamera(SysResourceModel sysResourceModel):base(sysResourceModel)
         {
+            this.SetIconResource("DrawingImageCamera");
             Config = BaseResourceObjectExtensions.TryDeserializeConfig<ConfigPhyCamera>(SysResourceModel.Value);
             DeleteCommand = new RelayCommand(a => Delete());
             EditCommand = new RelayCommand(a =>
@@ -266,6 +269,7 @@ namespace ColorVision.Services.PhyCameras
 
         public event EventHandler UploadClosed;
         public ObservableCollection<string> UploadList { get; set; } = new ObservableCollection<string>();
+
         public async void UploadData(string UploadFilePath)
         {
             Msg = "正在解压文件：" + " 请稍后...";
