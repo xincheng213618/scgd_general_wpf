@@ -29,7 +29,7 @@ namespace ColorVision.Services.Core
 
         public override void Save()
         {
-            //SysResourceModel.Value = JsonConvert.SerializeObject(Config);
+            SysResourceModel.Remark = JsonConvert.SerializeObject(Config);
             VSysResourceDao.Instance.Save(SysResourceModel);
         }
     }

@@ -17,6 +17,7 @@ namespace ColorVision.Services.Core
     public class BaseResource : BaseResourceObject
     {
         public SysResourceModel SysResourceModel { get; set; }
+        public int Id { get => SysResourceModel.Id; }
 
         public BaseResource(SysResourceModel sysResourceModel)
         {
@@ -36,7 +37,6 @@ namespace ColorVision.Services.Core
             SysResourceDao.Instance.DeleteById(SysResourceModel.Id);
         }
 
-        public int Id { get => SysResourceModel.Id; }
     }
 
 
