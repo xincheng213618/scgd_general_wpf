@@ -12,6 +12,9 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Documents;
+using ColorVision.Services.Core;
+using ColorVision.UserSpace;
+using System.Collections.Generic;
 
 namespace ColorVision.Services.PhyCameras
 {
@@ -143,6 +146,54 @@ namespace ColorVision.Services.PhyCameras
                 if (!string.IsNullOrWhiteSpace(item.Value))
                 {
                     PhyCameras.Add(new PhyCamera(item));
+                }
+            }
+
+            foreach (var phycamrea in PhyCameras)
+            {
+                List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetResourceItems(phycamrea.SysResourceModel.Id);
+                foreach (var sysResourceModel in sysResourceModels)
+                {
+                    if (sysResourceModel.Type == (int)ServiceTypes.Group)
+                    {
+                        GroupResource groupResource = new GroupResource(sysResourceModel);
+                        phycamrea.AddChild(groupResource);
+                        LoadgroupResource(groupResource);
+                    }
+                    else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
+                    {
+                        CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
+                        phycamrea.AddChild(calibrationResource);
+                    }
+                    else
+                    {
+                        BaseFileResource calibrationResource = new BaseFileResource(sysResourceModel);
+                        phycamrea.AddChild(calibrationResource);
+                    }
+                }
+            }
+        }
+
+        public void LoadgroupResource(GroupResource groupResource)
+        {
+            List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetGroupResourceItems(groupResource.SysResourceModel.Id);
+            foreach (var sysResourceModel in sysResourceModels)
+            {
+                if (sysResourceModel.Type == (int)ServiceTypes.Group)
+                {
+                    GroupResource groupResource1 = new GroupResource(sysResourceModel);
+                    LoadgroupResource(groupResource1);
+                    groupResource.AddChild(groupResource);
+                }
+                else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
+                {
+                    CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
+                    groupResource.AddChild(calibrationResource);
+                }
+                else
+                {
+                    BaseResource calibrationResource = new BaseResource(sysResourceModel);
+                    groupResource.AddChild(calibrationResource);
                 }
             }
         }

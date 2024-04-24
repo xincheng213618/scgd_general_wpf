@@ -279,7 +279,7 @@ namespace ColorVision.Services
 
             foreach (var phycamrea in PhyCameraManager.GetInstance().PhyCameras)
             {
-                List<SysResourceModel> sysResourceModels = sysResourceDao1.GetResourceItems(phycamrea.SysResourceModel.Id, UserConfig.TenantId);
+                List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetResourceItems(phycamrea.SysResourceModel.Id, UserConfig.TenantId);
                 foreach (var sysResourceModel in sysResourceModels)
                 {
                     if (sysResourceModel.Type == (int)ServiceTypes.Group)
@@ -303,7 +303,7 @@ namespace ColorVision.Services
 
             foreach (var deviceService in DeviceServices)
             {
-                List<SysResourceModel> sysResourceModels = sysResourceDao1.GetResourceItems(deviceService.SysResourceModel.Id, UserConfig.TenantId);
+                List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetResourceItems(deviceService.SysResourceModel.Id, UserConfig.TenantId);
                 foreach (var sysResourceModel in sysResourceModels)
                 {
                     if (sysResourceModel.Type == (int)ServiceTypes.Group)
@@ -330,12 +330,11 @@ namespace ColorVision.Services
                 LoadgroupResource(groupResource);
             }
         }
-        SysResourceDao sysResourceDao1 = new SysResourceDao();
 
         public void LoadgroupResource(GroupResource groupResource)
         {
-            sysResourceDao1.CreatResourceGroup();
-            List<SysResourceModel> sysResourceModels = sysResourceDao1.GetGroupResourceItems(groupResource.SysResourceModel.Id);
+            SysResourceDao.Instance.CreatResourceGroup();
+            List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetGroupResourceItems(groupResource.SysResourceModel.Id);
             foreach (var sysResourceModel in sysResourceModels)
             {
                 if (sysResourceModel.Type == (int)ServiceTypes.Group)
