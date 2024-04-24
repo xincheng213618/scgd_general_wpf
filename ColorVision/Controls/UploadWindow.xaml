@@ -7,12 +7,12 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:controls ="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
         mc:Ignorable="d"
-        Title="CalibrationUpload" Height="300" Width="600" AllowDrop="True" Initialized="Window_Initialized" >
+        Title="上传" Height="300" Width="600" AllowDrop="True" Initialized="Window_Initialized" >
     <Grid>
         <Image Source="/Assets/Image/uploadbg.avif"  Stretch="UniformToFill"/>
         <controls:Upload  x:Name="Upload1"  Margin="30"/>
-        <DockPanel Margin="0,5"  HorizontalAlignment="Center" VerticalAlignment="Bottom">
-            <Button Content="上传"  Click="Button_Click_1"/>
+        <DockPanel  x:Name="ButtonUpload" HorizontalAlignment="Center" Visibility="Collapsed" VerticalAlignment="Center" Margin="0,100,0,0">
+            <Button Content="上传"  Click="Button_Click_1" Width="150" Height="25"/>
         </DockPanel>
     </Grid>
 </Window>
