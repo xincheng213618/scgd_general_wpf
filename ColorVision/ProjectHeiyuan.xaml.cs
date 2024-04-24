@@ -47,7 +47,7 @@ namespace ColorVision
     {
         public byte[] Bytes { get; set; }
 
-        private string _Msg { get =>}
+        public string Msg => BitConverter.ToString(Bytes).Replace("-", " ");
     }
 
     public class HYMesManager
