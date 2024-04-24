@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO.Ports;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -66,6 +67,9 @@ namespace ColorVision
             Results.Add(new TempResult() { Name = "y" });
             Results.Add(new TempResult() { Name = "z" });
             ListViewResult.ItemsSource = Results;
+
+            ComboBoxSer.ItemsSource = SerialPort.GetPortNames();
+            ComboBoxSer.SelectedIndex = 0;
         }
 
 

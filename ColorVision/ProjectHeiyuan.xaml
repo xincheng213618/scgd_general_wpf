@@ -170,33 +170,12 @@
             <GroupBox Header="MES" VerticalAlignment="Top" Margin="5,0">
                 <StackPanel Margin="5">
                     <DockPanel Margin="0,2">
-                        <TextBlock Text="用户" Width="50"/>
-                        <TextBox DockPanel.Dock="Right" Style="{StaticResource TextBox.Small}" />
+                        <TextBlock Text="设备序号" Width="50"/>
+                        <TextBox DockPanel.Dock="Right" Style="{StaticResource TextBox.Small}"  Text="0"/>
                     </DockPanel>
                     <DockPanel Margin="0,2">
-                        <TextBlock Text="密码" Width="50"/>
-                        <TextBox DockPanel.Dock="Right" Style="{StaticResource TextBox.Small}" />
-                    </DockPanel>
-                    <UniformGrid Columns="2" Margin="50,2,0,2">
-                        <Button Content="登录"/>
-                        <Button Content="登出"/>
-                    </UniformGrid>
-                    <DockPanel Margin="5" HorizontalAlignment="Left">
-                        <ui:ToggleSwitch DockPanel.Dock="Right"  />
-                        <TextBlock Text="上传" Width="50" />
-                    </DockPanel>
-
-                    <DockPanel Margin="0,2">
-                        <TextBlock Text="密码" Width="50"/>
-                        <TextBox DockPanel.Dock="Right" Style="{StaticResource TextBox.Small}" />
-                    </DockPanel>
-                    <DockPanel Margin="0,2">
-                        <TextBlock Text="设备名称" Width="50"/>
-                        <TextBox DockPanel.Dock="Right" Style="{StaticResource TextBox.Small}" />
-                    </DockPanel>
-                    <DockPanel Margin="0,2">
-                        <TextBlock Text="工单号" Width="50"/>
-                        <TextBox DockPanel.Dock="Right" Style="{StaticResource TextBox.Small}" />
+                        <TextBlock Text="串口号" Width="50"/>
+                        <ComboBox x:Name="ComboBoxSer" />
                     </DockPanel>
                 </StackPanel>
 
