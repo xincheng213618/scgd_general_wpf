@@ -43,6 +43,13 @@ namespace ColorVision
         public NumSet NumSet { get; set; } = new NumSet();
     }
 
+    public class SerialPortMsg : ViewModelBase
+    {
+        public byte[] Bytes { get; set; }
+
+        private string _Msg { get =>}
+    }
+
     public class HYMesManager
     {
         private static HYMesManager _Instance;
@@ -106,12 +113,12 @@ namespace ColorVision
         private void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             
-
         }
+
+
         public void SendSn(string ch,string sn)
         {
             string SendMsg = $"CSN,C,{ch},{sn}";
-
             Send(System.Text.Encoding.UTF8.GetBytes(SendMsg));
         }
 

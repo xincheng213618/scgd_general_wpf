@@ -57,7 +57,7 @@ namespace ColorVision.Services.RC
 
         }
 
-        public async Task<MsgRecord> UploadCalibrationFileAsync(string name, string fileName, int fileType, int timeout = 50000)
+        public async Task<MsgRecord> UploadCalibrationFileAsync(string cameraID,string name, string fileName, int fileType, int timeout = 50000)
         {
             var stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -66,7 +66,7 @@ namespace ColorVision.Services.RC
             string md5 = Tool.CalculateMD5(fileName);
             MsgSend msg = new MsgSend
             {
-                DeviceCode = "e58adc4ea51efbbf9",
+                DeviceCode = cameraID,
                 EventName = MQTTFileServerEventEnum.Event_File_Upload,
                 Params = new Dictionary<string, object> { { "Name", name }, { "FileName", fileName }, { "FileExtType", FileExtType.Calibration }, { "MD5", md5 } }
             };
