@@ -21,7 +21,7 @@ namespace ColorVision.MySql.ORM
         {
             ArgumentNullException.ThrowIfNull(dataTable);
             ArgumentNullException.ThrowIfNull(item);
-            DataRow row = dataTable.SelectRow(item.PKId);
+            DataRow row = dataTable.SelectRow(item.Id);
             if (row == null)
             {
                 row = dataTable.NewRow();

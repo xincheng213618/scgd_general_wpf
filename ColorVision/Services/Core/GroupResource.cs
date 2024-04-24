@@ -44,7 +44,7 @@ namespace ColorVision.Services.Core
 
             SysResourceDao.Instance.Save(sysResourceModel);
 
-            int pkId = sysResourceModel.PKId;
+            int pkId = sysResourceModel.Id;
             if (pkId > 0 && SysResourceDao.Instance.GetById(pkId) is SysResourceModel model)
             {
                 GroupResource groupResource = new GroupResource(model);

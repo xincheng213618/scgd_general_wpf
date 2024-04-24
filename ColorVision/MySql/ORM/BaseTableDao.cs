@@ -29,13 +29,13 @@ namespace ColorVision.MySql.ORM
 
         public virtual int Save(T item)
         {
-            DataTable dataTable = SelectById(item.PKId);
+            DataTable dataTable = SelectById(item.Id);
             DataRow row = dataTable.GetRow(item);
             try
             {
                 Model2Row(item, row);
                 int ret = Save(dataTable);
-                item.PKId = dataTable.Rows[0].Field<int>(PKField);
+                item.Id = dataTable.Rows[0].Field<int>(PKField);
                 return ret;
             }
             catch (Exception ex)

@@ -66,7 +66,7 @@ namespace ColorVision.Services.Terminal
                 deviceConfig.SubscribeTopic = TerminalService.Config.SubscribeTopic;
                 sysResource.Value = JsonConvert.SerializeObject(deviceConfig);
                 VSysResourceDao.Instance.Save(sysResource);
-                int pkId = sysResource.PKId;
+                int pkId = sysResource.Id;
                 if (pkId > 0 && ServiceManager.GetInstance().VSysDeviceDao.GetById(pkId) is SysDeviceModel model) return model;
                 else return null;
             }
