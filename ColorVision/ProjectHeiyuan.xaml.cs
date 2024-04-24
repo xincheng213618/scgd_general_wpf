@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Sorts;
+using ColorVision.Update;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -46,18 +47,25 @@ namespace ColorVision
     public class SerialMsg : ViewModelBase
     {
         public byte[] Bytes { get; set; }
-        public string Msg => BitConverter.ToString(Bytes).Replace("-", " ");
+        public string Hex => BitConverter.ToString(Bytes).Replace("-", " ");
         public DateTime SendTime { get; set; } = DateTime.Now;
+
+        public string ASCII => Encoding.UTF8.GetString(Bytes);
 
     }
 
     public class HYMesManager
     {
-        private static HYMesManager _Instance;
-        private static readonly object locker = new object();
-        public static HYMesManager GetInstance()
+        private static HYMesManager _instance;
+        private static readonly object _locker = new();
+        public static HYMesManager GetInstance() 
         {
-            lock (locker) { return _Instance ?? new HYMesManager(); }
+            
+            lock (_locker) {
+                if (_instance ==null)
+                    _instance = new HYMesManager();
+                return _instance;
+            } 
         }
 
         public ObservableCollection<SerialMsg> SerialMsgs { get; set; } = new ObservableCollection<SerialMsg>();
@@ -132,7 +140,7 @@ namespace ColorVision
             msg.CopyTo(framedMsg, 1); // Copy original message into the new array starting at index 1
             framedMsg[framedMsg.Length - 1] = 0x03; // ETX (End of Text)
 
-            SerialMsgs.Add(new SerialMsg() { Bytes = framedMsg });
+              SerialMsgs.Add(new SerialMsg() { Bytes = framedMsg });
             if (serialPort.IsOpen)
                 serialPort.Write(msg, 0, msg.Length);
         }
@@ -185,6 +193,8 @@ namespace ColorVision
 
             ComboBoxSer.ItemsSource = SerialPort.GetPortNames();
             ComboBoxSer.SelectedIndex = 0;
+
+            ListViewMes.ItemsSource = HYMesManager.GetInstance().SerialMsgs;
         }
 
 

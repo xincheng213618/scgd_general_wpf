@@ -167,6 +167,10 @@
             
         </Grid>
         <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
             <GroupBox Header="MES" VerticalAlignment="Top" Margin="5,0">
                 <StackPanel Margin="5">
                     <DockPanel Margin="0,2">
@@ -178,11 +182,37 @@
                         <ComboBox x:Name="ComboBoxSer" />
                     </DockPanel>
                 </StackPanel>
-
-
             </GroupBox>
+
+            <ListView x:Name="ListViewMes" Grid.Row="1">
+                <ListView.View>
+                    <GridView>
+                        <GridViewColumn  Header="创建日期" Width="150">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:SerialMsg}">
+                                    <TextBlock Text="{Binding  SendTime, StringFormat='yyyy-MM-dd HH:mm:ss'}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="ASCII">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:SerialMsg}">
+                                    <TextBlock Text="{Binding ASCII, StringFormat='yyyy-MM-dd HH:mm:ss'}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="Hex">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:SerialMsg}">
+                                    <TextBlock Text="{Binding Hex, StringFormat='yyyy-MM-dd HH:mm:ss'}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+            </ListView>
             
-            
+           
         </Grid>
         
 
