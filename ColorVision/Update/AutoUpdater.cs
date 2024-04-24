@@ -1,21 +1,17 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Settings;
 using ColorVision.Common.Utilities;
+using ColorVision.Settings;
 using log4net;
-using Org.BouncyCastle.Asn1.Ocsp;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace ColorVision.Update
 {
