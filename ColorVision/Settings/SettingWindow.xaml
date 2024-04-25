@@ -62,7 +62,6 @@
     <Grid>
         <TabControl TabStripPlacement="Left" Background="Transparent" BorderThickness="1,0,0,0"  Style="{StaticResource  TabControlBaseStyle}">
             <TabControl.Resources>
-                
             </TabControl.Resources>
             <TabItem  x:Name="UniversalTabItem" MinWidth="100" Header="{x:Static properties:Resource.GeneralSettings}" >
                 <TabItem.Style>
