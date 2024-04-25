@@ -14,6 +14,7 @@ namespace ColorVision.Services.Devices.Sensor
         private uint _Port;
 
 
-
+        public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; NotifyPropertyChanged(); } }
+        private bool _IsAutoOpen = true;
     }
 }

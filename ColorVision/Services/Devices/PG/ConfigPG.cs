@@ -13,5 +13,8 @@ namespace ColorVision.Services.Devices.PG
 
         public int Port { get => _Port; set { _Port = value; NotifyPropertyChanged(); } }
         private int _Port;
+
+        public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; NotifyPropertyChanged(); } }
+        private bool _IsAutoOpen = true;
     }
 }
