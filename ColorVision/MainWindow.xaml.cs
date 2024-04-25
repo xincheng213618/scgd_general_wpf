@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Interfaces;
 using ColorVision.MySql;
+using ColorVision.Projects;
 using ColorVision.Services;
 using ColorVision.Services.Flow;
 using ColorVision.Services.RC;
@@ -173,7 +174,7 @@ namespace ColorVision
             MenuItem menuItem4 = new MenuItem() { Header = "河源精电" };
             menuItem4.Click += (s, e) =>
             {
-                ProjectHeiyuan projectHeiyuan = new ProjectHeiyuan();
+                ProjectHeyuan projectHeiyuan = new ProjectHeiyuan();
                 projectHeiyuan.Show();
             };
             menuItem.Items.Add(menuItem4);
