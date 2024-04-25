@@ -25,8 +25,8 @@ namespace ColorVision.Services.Devices.Motor
             };
         }
 
-        public override UserControl GetDeviceControl() => new DeviceMotorControl(this);
-        public override UserControl GetDeviceInfo() => new DeviceMotorControl(this, false);
+        public override UserControl GetDeviceControl() => new InfoMotor(this);
+        public override UserControl GetDeviceInfo() => new InfoMotor(this, false);
 
         public override UserControl GetDisplayControl() => new DisplayMotorControl(this);
 

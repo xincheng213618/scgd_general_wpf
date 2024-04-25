@@ -6,16 +6,16 @@ using System.Windows.Controls;
 namespace ColorVision.Services.Devices.CfwPort
 {
     /// <summary>
-    /// DeviceSMUControl.xaml 的交互逻辑
+    /// InfoSMU.xaml 的交互逻辑
     /// </summary>
-    public partial class DeviceCfwPortControl : UserControl, IDisposable
+    public partial class InfoCfwPort : UserControl, IDisposable
     {
         public DeviceCfwPort Device { get; set; }
         public ServiceManager ServiceControl { get; set; }
 
         public bool IsCanEdit { get; set; }
 
-        public DeviceCfwPortControl(DeviceCfwPort deviceCfwPort, bool isCanEdit = true)
+        public InfoCfwPort(DeviceCfwPort deviceCfwPort, bool isCanEdit = true)
         {
             Device = deviceCfwPort;
             IsCanEdit = isCanEdit;

@@ -21,8 +21,8 @@ namespace ColorVision.Services.Devices.CfwPort
            
         }
 
-        public override UserControl GetDeviceControl() => new DeviceCfwPortControl(this);
-        public override UserControl GetDeviceInfo() => new DeviceCfwPortControl(this, false);
+        public override UserControl GetDeviceControl() => new InfoCfwPort(this);
+        public override UserControl GetDeviceInfo() => new InfoCfwPort(this, false);
 
         public override UserControl GetDisplayControl() => new DisplayCfwPortControl(this);
 

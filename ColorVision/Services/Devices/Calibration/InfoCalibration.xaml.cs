@@ -10,7 +10,7 @@ using System.Windows.Controls;
 namespace ColorVision.Services.Devices.Calibration
 {
     /// <summary>
-    /// DeviceSMUControl.xaml 的交互逻辑
+    /// InfoSMU.xaml 的交互逻辑
     /// </summary>
     public partial class InfoCalibration : UserControl
     {

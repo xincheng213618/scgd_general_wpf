@@ -6,15 +6,15 @@ using System.Windows.Controls;
 namespace ColorVision.Services.Devices.SMU
 {
     /// <summary>
-    /// DeviceSMUControl.xaml 的交互逻辑
+    /// InfoSMU.xaml 的交互逻辑
     /// </summary>
-    public partial class DeviceSMUControl : UserControl, IDisposable
+    public partial class InfoSMU : UserControl, IDisposable
     {
         public DeviceSMU MQTTDeviceSMU { get; set; }
         public ServiceManager ServiceControl { get; set; }
 
         public bool IsCanEdit { get; set; }
-        public DeviceSMUControl(DeviceSMU mqttDeviceSMU, bool isCanEdit = true)
+        public InfoSMU(DeviceSMU mqttDeviceSMU, bool isCanEdit = true)
         {
             MQTTDeviceSMU = mqttDeviceSMU;
             IsCanEdit = isCanEdit;

@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="ColorVision.Services.Devices.Motor.DeviceMotorControl"
+﻿<UserControl x:Class="ColorVision.Services.Devices.Motor.InfoMotor"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -40,7 +40,7 @@
                 </Border>
                 <Border Grid.Column="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5"  Margin="5,0,0,0">
                     <DockPanel Margin="10,0">
-                        <Grid x:Name="ButtonEdit" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}" Width="25"  Margin="0,0,10,0">
+                        <Grid x:Name="ButtonEdit" Width="25"  Margin="0,0,10,0">
                             <Image Source="{StaticResource  DrawingImageEdit}" Width="17" Margin="0" />
                             <Button Background="Transparent" BorderThickness="0" Command="{Binding EditCommand}"/>
                         </Grid>
@@ -60,7 +60,7 @@
                                     <StackPanel Margin="5">
                                         <DockPanel>
                                             <TextBlock Text="ID" Width="120"/>
-                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ID}"/>
+                                            <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.Id}"/>
                                         </DockPanel>
                                         <DockPanel>
                                             <TextBlock Text="发送信道" Width="120"/>

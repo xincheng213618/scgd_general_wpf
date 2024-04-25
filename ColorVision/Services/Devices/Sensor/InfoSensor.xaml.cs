@@ -8,16 +8,16 @@ using System.Windows.Controls;
 namespace ColorVision.Services.Devices.Sensor
 {
     /// <summary>
-    /// DevicePGControl.xaml 的交互逻辑
+    /// InfoPG.xaml 的交互逻辑
     /// </summary>
-    public partial class DeviceSensorControl : UserControl
+    public partial class InfoSensor : UserControl
     {
         public DeviceSensor DeviceSensor { get; set; }
 
         public MQTTSensor Service { get => DeviceSensor.DeviceService; }
 
         public bool IsCanEdit { get; set; }
-        public DeviceSensorControl(DeviceSensor deviceSensor, bool isCanEdit = true)
+        public InfoSensor(DeviceSensor deviceSensor, bool isCanEdit = true)
         {
             DeviceSensor = deviceSensor;
             IsCanEdit = isCanEdit;
@@ -27,6 +27,7 @@ namespace ColorVision.Services.Devices.Sensor
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
+
             DataContext = DeviceSensor;
 
             ComboxSensorType.ItemsSource = from e1 in Enum.GetValues(typeof(CommunicateType)).Cast<CommunicateType>()

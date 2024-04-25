@@ -6,13 +6,13 @@ using System.Windows.Controls;
 namespace ColorVision.Services.Devices.PG
 {
     /// <summary>
-    /// DevicePGControl.xaml 的交互逻辑
+    /// InfoPG.xaml 的交互逻辑
     /// </summary>
-    public partial class DevicePGControl : UserControl
+    public partial class InfoPG : UserControl
     {
         public DevicePG DevicePG { get; set; }
         public bool IsCanEdit { get; set; }
-        public DevicePGControl(DevicePG devicePG, bool isCanEdit = true)
+        public InfoPG(DevicePG devicePG, bool isCanEdit = true)
         {
             DevicePG = devicePG;
             IsCanEdit = isCanEdit;

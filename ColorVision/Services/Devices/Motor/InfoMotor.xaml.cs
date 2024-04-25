@@ -8,15 +8,15 @@ using System.Windows.Controls;
 namespace ColorVision.Services.Devices.Motor
 {
     /// <summary>
-    /// DeviceSMUControl.xaml 的交互逻辑
+    /// InfoSMU.xaml 的交互逻辑
     /// </summary>
-    public partial class DeviceMotorControl : UserControl, IDisposable
+    public partial class InfoMotor : UserControl, IDisposable
     {
         public DeviceMotor Device { get; set; }
         public ServiceManager ServiceControl { get; set; }
 
         public bool IsCanEdit { get; set; }
-        public DeviceMotorControl(DeviceMotor deviceMotor, bool isCanEdit = true)
+        public InfoMotor(DeviceMotor deviceMotor, bool isCanEdit = true)
         {
             Device = deviceMotor;
             IsCanEdit = isCanEdit;

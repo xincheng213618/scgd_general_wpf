@@ -8,9 +8,9 @@ using ColorVision.Settings;
 namespace ColorVision.Services.Devices.Spectrum
 {
     /// <summary>
-    /// DeviceSpectrumControl.xaml 的交互逻辑
+    /// InfoSpectrum.xaml 的交互逻辑
     /// </summary>
-    public partial class DeviceSpectrumControl : UserControl, IDisposable
+    public partial class InfoSpectrum : UserControl, IDisposable
     {
         public DeviceSpectrum Device { get; set; }
 
@@ -19,7 +19,7 @@ namespace ColorVision.Services.Devices.Spectrum
         private bool disposedObj;
 
         public bool IsCanEdit { get; set; }
-        public DeviceSpectrumControl(DeviceSpectrum mqttDeviceSp, bool isCanEdit = true)
+        public InfoSpectrum(DeviceSpectrum mqttDeviceSp, bool isCanEdit = true)
         {
             disposedObj = false;
             Device = mqttDeviceSp;

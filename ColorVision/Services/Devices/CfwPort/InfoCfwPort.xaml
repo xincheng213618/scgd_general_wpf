@@ -1,4 +1,4 @@
-﻿<UserControl x:Class="ColorVision.Services.Devices.CfwPort.DeviceCfwPortControl"
+﻿<UserControl x:Class="ColorVision.Services.Devices.CfwPort.InfoCfwPort"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
@@ -64,7 +64,7 @@
                                     </DockPanel>
                                     <DockPanel>
                                         <TextBlock Text="ID" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ID}"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.Id}"/>
                                     </DockPanel>
                                     <DockPanel>
                                         <TextBlock Text="发送信道" Width="120"/>

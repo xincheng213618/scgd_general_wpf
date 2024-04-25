@@ -12,7 +12,7 @@ using System.Windows.Controls.Primitives;
 namespace ColorVision.Services.PhyCameras
 {
     /// <summary>
-    /// DevicePGControl.xaml 的交互逻辑
+    /// InfoPG.xaml 的交互逻辑
     /// </summary>
     public partial class InfoPhyCamera : UserControl
     {
