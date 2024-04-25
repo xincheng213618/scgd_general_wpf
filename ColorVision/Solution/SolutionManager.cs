@@ -109,7 +109,7 @@ namespace ColorVision.Solution
 
         public void InitMenu()
         {
-            var FileMenuItem = MenuManager.GetInstance().FileMenuItem;       
+            var FileMenuItem = MenuManager.GetInstance().GetFileMenuItem();       
             MenuItem RecentListMenuItem = null;
 
             RecentListMenuItem ??= new MenuItem();

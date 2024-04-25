@@ -22,6 +22,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.ServiceProcess;
 using System.Text.RegularExpressions;
@@ -210,6 +211,8 @@ namespace ColorVision
             SolutionTab1.Content = new TreeViewControl();
 
             PluginLoader.LoadPlugins("Plugins");
+
+            PluginLoader.LoadAssembly(Assembly.GetExecutingAssembly());
         }
 
         public async static Task EnsureLocalInfile()

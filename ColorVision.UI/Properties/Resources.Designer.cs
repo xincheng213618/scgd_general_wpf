@@ -68,5 +68,14 @@ namespace ColorVision.UI.Properties {
                 return ResourceManager.GetString("MenuFile", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   查找类似 模板(_T) 的本地化字符串。
+        /// </summary>
+        internal static string MenuTemplate {
+            get {
+                return ResourceManager.GetString("MenuTemplate", resourceCulture);
+            }
+        }
     }
 }

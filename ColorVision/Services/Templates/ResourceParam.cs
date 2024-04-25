@@ -10,7 +10,6 @@ namespace ColorVision.Services.Templates
         {
 
         }
-
         public ResourceParam(SysResourceModel dbModel)
         {
             Id = dbModel.Id;

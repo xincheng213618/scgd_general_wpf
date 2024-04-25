@@ -21,6 +21,7 @@ namespace ColorVision.Services.Templates
         FocusPointsParam,
         BuildPOIParmam,
         SpectrumResourceParam,
+        ValidateParam,
     }
 
     public class TemplateTypeFactory

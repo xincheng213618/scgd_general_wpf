@@ -38,7 +38,6 @@
                         <MenuItem Header="{x:Static properties:Resource.MenuExit}" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                     </MenuItem>
                     <MenuItem Header="{x:Static properties:Resource.MenuTemplate}">
-                        <MenuItem Header="流程模板设置(_F)" Tag="FlowParam"  Click="MenuItem_Template"/>
                         <MenuItem Header="关注点模板设置(_P)" Tag="FocusParm" Click="MenuItem_Template"/>
                         <MenuItem Header="测量模板设置(_S)" Tag="MeasureParm" Click="MenuItem_Template"/>
                         <Separator/>

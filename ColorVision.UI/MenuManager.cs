@@ -17,17 +17,28 @@ namespace ColorVision.UI
 
         }
 
-        public MenuItem? FileMenuItem { get
+        public MenuItem? GetFileMenuItem()
+        {
+            foreach (var item in Menu.Items)
             {
-                foreach (var item in Menu.Items)
+                if (item is MenuItem menuItem && menuItem.Header.ToString() == Properties.Resources.MenuFile)
                 {
-                    if (item is MenuItem menuItem && menuItem.Header.ToString() == Properties.Resources.MenuFile)
-                    {
-                        return menuItem;
-                    }
+                    return menuItem;
                 }
-                return null;
-            } 
+            }
+            return null;
+        }
+
+        public MenuItem? GetTemplateMenuItem() 
+        {
+            foreach (var item in Menu.Items)
+            {
+                if (item is MenuItem menuItem && menuItem.Header.ToString() == Properties.Resources.MenuTemplate)
+                {
+                    return menuItem;
+                }
+            }
+            return null;
         }
 
         public void AddMenuItem(MenuItem menuItem, int index = -1)

@@ -1,10 +1,33 @@
-﻿using ColorVision.Services.Dao;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Services.Dao;
 using ColorVision.Services.Flow.Dao;
 using ColorVision.Services.Templates;
+using ColorVision.UI;
 using System.Collections.Generic;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Services.Flow
 {
+    public class FlowPlugin : IPlugin
+    {
+        public string Name => "FlowPlugin";
+
+        public string Description => "FlowPlugin";
+
+        public void Execute()
+        {
+            MenuItem menuItem = new MenuItem() { Header = "流程模板设置(_F)" };
+            menuItem.Click += (s, e) =>
+            {
+                WindowTemplate windowTemplate = new WindowTemplate(TemplateType.FlowParam) { Owner = Application.Current.GetActiveWindow() };
+                windowTemplate.ShowDialog();
+            };
+            MenuManager.GetInstance().GetTemplateMenuItem()?.Items.Add(menuItem);
+        }
+    }
+
+
     /// <summary>
     /// 流程引擎模板
     /// </summary>

@@ -120,4 +120,7 @@
   <data name="MenuFile" xml:space="preserve">
     <value>Fichier(F)</value>
   </data>
+  <data name="MenuTemplate" xml:space="preserve">
+    <value>Modèle (T)</value>
+  </data>
 </root>
