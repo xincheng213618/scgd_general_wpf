@@ -13,9 +13,6 @@ namespace ColorVision.Services.Devices.Camera.Configs
         public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged(); } }
         private string _CameraID;
 
-        public string BindDeviceCode { get => _BindDeviceCode; set { _BindDeviceCode = value; NotifyPropertyChanged(); } }
-        private string _BindDeviceCode;
-
         public CameraType CameraType { get => _CameraType; set { _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
         private CameraType _CameraType;
 

@@ -108,18 +108,6 @@ namespace ColorVision.Services.Devices.Camera
 
             };
 
-
-            ObservableCollection<string> Calibrations = new ObservableCollection<string>();
-            foreach (var item in ServiceManager.GetInstance().DeviceServices)
-            {
-                if (item is DeviceCalibration calibration)
-                {
-                    if (!Calibrations.Contains(calibration.Code))
-                        Calibrations.Add(calibration.Code);
-                }
-            }
-            TextBox_BindDevice.ItemsSource = Calibrations;
-
             var ImageChannelTypeList = new[]{
                  new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, "Channel_R"),
                  new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Y, "Channel_G"),
