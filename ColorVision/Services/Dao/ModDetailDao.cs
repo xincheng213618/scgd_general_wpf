@@ -32,6 +32,8 @@ namespace ColorVision.Services.Dao
 
     public class ModDetailDao : BaseDaoMaster<ModDetailModel>
     {
+        public static ModDetailDao Instance { get; set; } = new ModDetailDao();
+
         public ModDetailDao() : base("v_scgd_mod_detail", "t_scgd_mod_param_detail", "id", true)
         {
         }

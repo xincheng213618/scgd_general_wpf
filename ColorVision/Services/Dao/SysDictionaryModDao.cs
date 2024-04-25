@@ -13,6 +13,8 @@ namespace ColorVision.Services.Dao
     }
     public class SysDictionaryModDao : BaseTableDao<SysDictionaryModModel>
     {
+        public static SysDictionaryModDao Instance { get; set; } = new SysDictionaryModDao();
+
         public SysDictionaryModDao() : base("t_scgd_sys_dictionary_mod_master", "id")
         {
         }

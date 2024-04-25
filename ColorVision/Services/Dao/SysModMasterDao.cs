@@ -14,6 +14,7 @@ namespace ColorVision.Services.Dao
         public string? Remark { get; set; }
         public int TenantId { get; set; }
     }
+
     public class SysModMasterDao : BaseTableDao<SysModMasterModel>
     {
         public static SysModMasterDao Instance { get; set; } = new SysModMasterDao();
@@ -35,6 +36,20 @@ namespace ColorVision.Services.Dao
             };
 
             return model;
+        }
+        public override DataRow Model2Row(SysModMasterModel item, DataRow row)
+        {
+            if (item != null)
+            {
+                row["id"] = item.Id;
+                row["name"] = item.Name;
+                row["code"] = item.Code;
+                row["create_date"] = item.CreateDate;
+                row["is_enable"] = item.IsEnable;
+                row["is_delete"] = item.IsDelete;
+                row["remark"] = item.Remark;   
+            }
+            return row;
         }
     }
 }

@@ -401,20 +401,18 @@ namespace ColorVision.Services.Templates
             return null;
         }
 
-        private SysDictionaryModDetailDao sysDao = new SysDictionaryModDetailDao();
-        private SysDictionaryModDao sysDicDao = new SysDictionaryModDao();
         private VSysResourceDao resourceDao = new VSysResourceDao();
 
         public int Save(ModMasterModel modMaster)
         {
             int ret = -1;
-            SysDictionaryModModel mod = sysDicDao.GetByCode(modMaster.Pcode, modMaster.TenantId);
+            SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(modMaster.Pcode, modMaster.TenantId);
             if (mod != null)
             {
                 modMaster.Pid = mod.Id;
                 ret = masterFlowDao.Save(modMaster);
                 List<ModDetailModel> list = new List<ModDetailModel>();
-                List<SysDictionaryModDetaiModel> sysDic = sysDao.GetAllByPid(modMaster.Pid);
+                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(modMaster.Pid);
                 foreach (var item in sysDic)
                 {
                     list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
@@ -475,8 +473,6 @@ namespace ColorVision.Services.Templates
         {
             ModMasterDao modMasterDao = new ModMasterDao();
             SysDictionaryModDao sysDicDao = new SysDictionaryModDao();
-            SysDictionaryModDetailDao sysDao = new SysDictionaryModDetailDao();
-            ModDetailDao detailDao = new ModDetailDao();
             int ret = -1;
             SysDictionaryModModel mod = sysDicDao.GetByCode(modMaster.Pcode, modMaster.TenantId);
             if (mod != null)
@@ -484,12 +480,12 @@ namespace ColorVision.Services.Templates
                 modMaster.Pid = mod.Id;
                 ret = modMasterDao.Save(modMaster);
                 List<ModDetailModel> list = new List<ModDetailModel>();
-                List<SysDictionaryModDetaiModel> sysDic = sysDao.GetAllByPid(modMaster.Pid);
+                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(modMaster.Pid);
                 foreach (var item in sysDic)
                 {
                     list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
                 }
-                detailDao.SaveByPid(modMaster.Id, list);
+                ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
             }
             return ret;
         }
