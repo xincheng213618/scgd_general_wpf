@@ -208,6 +208,8 @@ namespace ColorVision
 
             Task.Run(EnsureLocalInfile);
             SolutionTab1.Content = new TreeViewControl();
+
+            PluginLoader.LoadPlugins("Plugins");
         }
 
         public async static Task EnsureLocalInfile()

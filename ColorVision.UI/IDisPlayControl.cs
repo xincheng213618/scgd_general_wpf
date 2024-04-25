@@ -3,6 +3,7 @@ using System.Windows;
 
 namespace ColorVision.UI
 {
+
     public interface IDisPlayControl
     {
         public event RoutedEventHandler Selected;
