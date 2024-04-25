@@ -26,9 +26,13 @@
             <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="{Binding Config.Name}"  FontSize="15" IsChecked="{Binding IsDisplayOpen}" />
         </DockPanel>
         <Border x:Name="DisPlayBorder"  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
-            <StackPanel   Margin="5" >
+            <StackPanel Margin="5" >
                 <Button Margin="0,2" Content="连接"  Click="Open_Click"/>
-                
+                <DockPanel Margin="0,2">
+                    <Button DockPanel.Dock="Right" Content="发送" Margin="5,0,0,0"/>
+                    <ComboBox Name="ComboBoxCommand"/>
+                </DockPanel>
+
             </StackPanel>
         </Border>
     </StackPanel>
