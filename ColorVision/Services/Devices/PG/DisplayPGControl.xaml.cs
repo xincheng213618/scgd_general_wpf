@@ -1,11 +1,11 @@
-﻿using System;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Themes;
+using ColorVision.UI;
+using MQTTMessageLib;
+using System;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.Common.Utilities;
 using System.Windows.Input;
-using MQTTMessageLib;
-using ColorVision.Themes;
-using ColorVision.Interfaces;
 
 namespace ColorVision.Services.Devices.PG
 {

@@ -22,7 +22,7 @@ using System.Collections.ObjectModel;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Devices.Calibration;
 using CVCommCore.CVAlgorithm;
-using ColorVision.Interfaces;
+using ColorVision.UI;
 
 namespace ColorVision.Services.Devices.Algorithm
 {

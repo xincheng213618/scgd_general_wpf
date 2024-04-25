@@ -10,6 +10,7 @@ using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.Solution.Searches;
 using ColorVision.Themes;
+using ColorVision.UI;
 using ColorVision.Update;
 using ColorVision.UserSpace;
 using ColorVision.Utils;

@@ -1,12 +1,13 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Extension;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Themes;
+using ColorVision.UI;
 using MQTTMessageLib;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Threading.Tasks;
@@ -14,8 +15,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using static cvColorVision.GCSDLL;
-using ColorVision.Extension;
-using ColorVision.Interfaces;
 
 namespace ColorVision.Services.Devices.Spectrum
 {

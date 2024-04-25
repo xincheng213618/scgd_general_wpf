@@ -1,9 +1,7 @@
-﻿using ColorVision.Services;
-using System;
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace ColorVision.Interfaces
+namespace ColorVision.UI
 {
     public interface IDisPlayControl
     {

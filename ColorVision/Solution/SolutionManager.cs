@@ -13,6 +13,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ColorVision.UI;
 
 namespace ColorVision.Solution
 {

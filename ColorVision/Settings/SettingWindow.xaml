@@ -60,7 +60,7 @@
         </Style>
     </Window.Resources>
     <Grid>
-        <TabControl TabStripPlacement="Left" Background="Transparent"  Style="{StaticResource  TabControlBaseStyle}">
+        <TabControl TabStripPlacement="Left" Background="Transparent" BorderThickness="1,0,0,0"  Style="{StaticResource  TabControlBaseStyle}">
             <TabControl.Resources>
                 
             </TabControl.Resources>

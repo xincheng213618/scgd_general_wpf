@@ -1,16 +1,14 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Extension;
-using ColorVision.Interfaces;
 using ColorVision.Media;
 using ColorVision.Net;
-using ColorVision.Settings;
 using ColorVision.Themes;
+using ColorVision.UI;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;

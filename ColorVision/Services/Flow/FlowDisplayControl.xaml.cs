@@ -5,6 +5,7 @@ using ColorVision.MQTT;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Themes;
+using ColorVision.UI;
 using Panuon.WPF.UI;
 using System;
 using System.ComponentModel;

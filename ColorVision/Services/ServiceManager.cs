@@ -22,6 +22,7 @@ using ColorVision.Services.PhyCameras;
 using ColorVision.Services.Terminal;
 using ColorVision.Services.Type;
 using ColorVision.Settings;
+using ColorVision.UI;
 using ColorVision.UserSpace;
 using FlowEngineLib;
 using Newtonsoft.Json;

@@ -18,6 +18,7 @@ using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Type;
 using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Interfaces;
+using ColorVision.UI;
 
 namespace ColorVision.Services.Devices
 {

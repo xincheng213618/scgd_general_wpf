@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Extension;
-using ColorVision.Interfaces;
 using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.Devices.Camera.Views;
 using ColorVision.Services.Msg;
@@ -8,6 +7,7 @@ using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Themes;
+using ColorVision.UI;
 using cvColorVision;
 using log4net;
 using MQTTMessageLib;

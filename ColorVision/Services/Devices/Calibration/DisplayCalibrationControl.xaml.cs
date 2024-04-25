@@ -1,16 +1,15 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Extension;
-using ColorVision.Interfaces;
 using ColorVision.Services.Devices.Calibration.Views;
 using ColorVision.Services.Msg;
 using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Themes;
+using ColorVision.UI;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using System;
-using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
