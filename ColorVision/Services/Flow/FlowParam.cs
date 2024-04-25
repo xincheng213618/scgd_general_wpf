@@ -23,7 +23,7 @@ namespace ColorVision.Services.Flow
                 WindowTemplate windowTemplate = new WindowTemplate(TemplateType.FlowParam) { Owner = Application.Current.GetActiveWindow() };
                 windowTemplate.ShowDialog();
             };
-            MenuManager.GetInstance().GetTemplateMenuItem()?.Items.Add(menuItem);
+            MenuManager.GetInstance().GetTemplateMenuItem()?.Items.Insert(0,menuItem);
         }
     }
 

@@ -13,5 +13,7 @@ namespace ColorVision.Services.Devices.Sensor
         public uint Port { get => _Port; set { _Port = value; NotifyPropertyChanged(); } }
         private uint _Port;
 
+
+
     }
 }
