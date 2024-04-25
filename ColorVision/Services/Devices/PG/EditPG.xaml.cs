@@ -55,12 +55,12 @@ namespace ColorVision.Services.Devices.PG
                 }
             }
 
-            IsNet.Checked += (s,e)=>
+            IsComm.Checked += (s,e)=>
             {
                 TextBlockPGIP.Text = "串口";
                 TextBlockPGPort.Text = "波特率";
             };
-            IsComm.Checked += (s,e)=> 
+            IsNet.Checked += (s,e)=> 
             {
                 TextBlockPGIP.Text = "IP地址";
                 TextBlockPGPort.Text = "端口";

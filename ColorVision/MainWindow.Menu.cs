@@ -69,7 +69,6 @@ namespace ColorVision
                 Menu.Items.Insert(index, menuItem);
             }
         }
-
         public void RemoveMenuItem(MenuItem menuItem)
         {
             Menu.Items.Remove(menuItem);

@@ -11,6 +11,7 @@ namespace ColorVision.Services.Dao
         public string? Name { get; set; }
         public int TenantId { get; set; }
     }
+
     public class SysDictionaryModDao : BaseTableDao<SysDictionaryModModel>
     {
         public static SysDictionaryModDao Instance { get; set; } = new SysDictionaryModDao();
