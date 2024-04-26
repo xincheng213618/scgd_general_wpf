@@ -1,4 +1,5 @@
 ﻿using ColorVision.Services.Msg;
+using MQTTMessageLib.Sensor;
 using System.Collections.Generic;
 
 namespace ColorVision.Services.Devices.Sensor
@@ -27,12 +28,14 @@ namespace ColorVision.Services.Devices.Sensor
             PublishAsyncClient(msg);
         }
 
-        public void ExecCmd()
+        public void ExecCmd(string req,string resp)
         {
+            SensorExecCmdParam cmdParam = new SensorExecCmdParam();
+            cmdParam.Cmd = new SensorCmd() { CmdType= SensorCmdType.Hex, Request= req, Response= resp };
             MsgSend msg = new MsgSend
             {
-                EventName = "ExecCmd",
-                Params = new Dictionary<string, object> { { "eCOM_Type", Config.CommunicateType }, { "szIPAddress", Config.SzIPAddress }, { "nPort", Config.Port } }
+                EventName = MQTTSensorEventEnum.Event_ExecCmd,
+                Params = cmdParam
             };
             PublishAsyncClient(msg);
         }
