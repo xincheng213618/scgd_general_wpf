@@ -123,4 +123,10 @@
   <data name="MenuTemplate" xml:space="preserve">
     <value>템플릿(T)</value>
   </data>
+  <data name="MenuTool" xml:space="preserve">
+    <value>도구 (_T)</value>
+  </data>
+  <data name="MenuHelp" xml:space="preserve">
+    <value>도움 (_H)</value>
+  </data>
 </root>

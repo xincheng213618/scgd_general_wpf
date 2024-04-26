@@ -54,13 +54,11 @@
                         <MenuItem Header="鬼影模板设置(_H)"  Tag="GhostParam" Click="MenuItem_Template"/>
                         <MenuItem Header="灯珠检测模板设置(_L)"  Tag="LedCheckParam" Click="MenuItem_Template"/>
                         <MenuItem Header="发光区检测模板设置(_P)"  Tag="FocusPointsParam" Click="MenuItem_Template"/>
-                        <MenuItem Header="BuildPOI模板设置(_B)"  Tag="BuildPOIParmam" Click="MenuItem_Template"/>
                     </MenuItem>
                     <MenuItem Header="{x:Static properties:Resource.MenuTool}">
                         <MenuItem Header="{x:Static properties:Resource.WorkflowEngine_F}" Click="MenuItem9_Click"/>
                         <MenuItem Header="MQTT日志(_Q)" Click="MenuItem_Click"/>
                         <MenuItem Header="Msg列表(_L)" Click="MenuItem12_Click"/>
-                        <MenuItem Header="管理员服务配置(_S)"  Tag="ServiceParam" Click="MenuItem_Template"/>
                         <MenuItem Header="设备配置(_D)"  Tag="DeviceParam" Click="MenuItem_Template"/>
                         <MenuItem Header="校正生成工具"  Tag="" Click="MenuItem_Template"/>
                         <MenuItem Header="物理相机管理"  Tag="PhyCameraManager" Click="MenuItem_Template"/>

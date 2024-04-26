@@ -36,7 +36,7 @@ namespace ColorVision
 
         public void Dispose()
         {
-            // 使用 Marshal.FreeHGlobal 来释放由 Marshal.AllocHGlobal 分配的内存
+            // 使用 Marshal.FreeHGlobal来释放由 Marshal.AllocHGlobal 分配的内存
             if (pData != IntPtr.Zero)
             {
                 Marshal.FreeHGlobal(pData);

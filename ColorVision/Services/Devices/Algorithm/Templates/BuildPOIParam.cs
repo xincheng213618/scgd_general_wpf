@@ -1,14 +1,36 @@
-﻿using ColorVision.Services.Dao;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Services.Dao;
 using ColorVision.Services.Templates;
 using ColorVision.Services.Templates.POI;
+using ColorVision.UI;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {
+    public class BuildPOIMenuItem : IPlugin
+    {
+        public string Name => "BuildPOI";
+        public string Description => "BuildPOI";
+
+        public void Execute()
+        {
+            MenuItem menuItem = new MenuItem() { Header = "BuildPOI模板设置(_B)" };
+            menuItem.Click += (s, e) =>
+            {
+                new WindowTemplate(TemplateType.BuildPOIParmam){ Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            };
+            MenuManager.GetInstance().GetTemplateMenuItem()?.Items.Add(menuItem);
+        }
+    }
+
+
     public class BuildPOIParam : ParamBase
     {
         public BuildPOIParam() { }
+
         public BuildPOIParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
         {
         }

@@ -27,12 +27,12 @@ namespace ColorVision.Services.Devices.Sensor
             PublishAsyncClient(msg);
         }
 
-        public void ExecCmd()
+        public void ExecCmd(string command)
         {
             MsgSend msg = new MsgSend
             {
                 EventName = "ExecCmd",
-                Params = new Dictionary<string, object> { { "eCOM_Type", Config.CommunicateType }, { "szIPAddress", Config.SzIPAddress }, { "nPort", Config.Port } }
+                Params = new Dictionary<string, object> { { "eCOM_Type", Config.CommunicateType }, { "szIPAddress", Config.SzIPAddress }, { "nPort", Config.Port } ,{ "cmd",command} }
             };
             PublishAsyncClient(msg);
         }

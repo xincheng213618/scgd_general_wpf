@@ -1,0 +1,68 @@
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Services.Dao;
+using ColorVision.Services.Templates;
+using ColorVision.UI;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+
+namespace ColorVision.Services.Devices.Sensor.Templates
+{
+    public class CamerExpMenuItem : IPlugin
+    {
+        public string Name => "CamerExp";
+        public string Description => "CamerExp";
+
+        public void Execute()
+        {
+            MenuItem menuItem = new MenuItem() { Header = "相机曝光模板设置(_B)" };
+            menuItem.Click += (s, e) =>
+            {
+                new WindowTemplate(TemplateType.CameraExposureParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            };
+            MenuManager.GetInstance().GetTemplateMenuItem()?.Items.Add(menuItem);
+        }
+    }
+
+    public class CameraExposureParam : ParamBase
+    {
+        public static ObservableCollection<TemplateModel<CameraExposureParam>> CameraExposureParams { get; set; } = new ObservableCollection<TemplateModel<CameraExposureParam>>();
+
+        public CameraExposureParam() : base()
+        {
+        }
+
+        public CameraExposureParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
+        {
+
+        }
+
+
+        [Category("CamerExp"), Description("ExpTime")]
+        public int ExpTime { get => GetValue(_ExpTime); set { SetProperty(ref _ExpTime, value); } }
+        private int _ExpTime = 10;
+
+
+        [Category("CamerExp"), Description("ExpTimeR")]
+        public int ExpTimeR { get => GetValue(_ExpTimeR); set { SetProperty(ref _ExpTimeR, value); } }
+        private int _ExpTimeR = 10;
+
+
+        [Category("CamerExp"), Description("ExpTimeG")]
+        public int ExpTimeG { get => GetValue(_ExpTimeG); set { SetProperty(ref _ExpTimeG, value); } }
+        private int _ExpTimeG = 10;
+
+
+        [Category("CamerExp"), Description("ExpTimeB")]
+        public int ExpTimeB { get => GetValue(_ExpTimeB); set { SetProperty(ref _ExpTimeB, value); } }
+        private int _ExpTimeB = 10;
+
+    }
+
+}

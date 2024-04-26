@@ -123,4 +123,10 @@
   <data name="MenuTemplate" xml:space="preserve">
     <value>Шаблон(Т)</value>
   </data>
+  <data name="MenuTool" xml:space="preserve">
+    <value>Инструмент(Т)</value>
+  </data>
+  <data name="MenuHelp" xml:space="preserve">
+    <value>помощь</value>
+  </data>
 </root>

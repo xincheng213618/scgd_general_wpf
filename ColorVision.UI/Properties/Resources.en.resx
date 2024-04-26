@@ -123,4 +123,10 @@
   <data name="MenuTemplate" xml:space="preserve">
     <value>_Template</value>
   </data>
+  <data name="MenuTool" xml:space="preserve">
+    <value>_Tool</value>
+  </data>
+  <data name="MenuHelp" xml:space="preserve">
+    <value>_Help</value>
+  </data>
 </root>
