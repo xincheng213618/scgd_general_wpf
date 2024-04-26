@@ -41,6 +41,19 @@ namespace ColorVision.UI
             return null;
         }
 
+        public MenuItem? GetMenuToolItem()
+        {
+            foreach (var item in Menu.Items)
+            {
+                if (item is MenuItem menuItem && menuItem.Header.ToString() == Properties.Resources.MenuTool)
+                {
+                    return menuItem;
+                }
+            }
+            return null;
+        }
+
+
         public void AddMenuItem(MenuItem menuItem, int index = -1)
         {
             if (index < 0 || index > Menu.Items.Count)
@@ -52,6 +65,8 @@ namespace ColorVision.UI
                 Menu.Items.Insert(index, menuItem);
             }
         }
+
+
         public void RemoveMenuItem(MenuItem menuItem)
         {
             Menu.Items.Remove(menuItem);

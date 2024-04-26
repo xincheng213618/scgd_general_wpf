@@ -76,11 +76,6 @@ namespace ColorVision
                         windowTemplate.Owner = GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;
-                    case "FlowParam":
-                        windowTemplate = new WindowTemplate(TemplateType.FlowParam);
-                        windowTemplate.Owner = GetWindow(this);
-                        windowTemplate.ShowDialog();
-                        break;
                     case "ServiceParam":
                         new WindowService() { Owner =this,WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
                         break;
@@ -125,15 +120,6 @@ namespace ColorVision
                         break;
                     case "FocusPointsParam":
                         windowTemplate = new WindowTemplate(TemplateType.FocusPointsParam);
-                        windowTemplate.Owner = GetWindow(this);
-                        windowTemplate.ShowDialog();
-                        break;
-                    case "CalibrationUpload":
-                        UploadWindow calibrationUpload = new UploadWindow();
-                        calibrationUpload.ShowDialog();
-                        break;
-                    case "BuildPOIParmam":
-                        windowTemplate = new WindowTemplate(TemplateType.BuildPOIParmam);
                         windowTemplate.Owner = GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;

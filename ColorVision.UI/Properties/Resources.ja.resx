@@ -123,4 +123,10 @@
   <data name="MenuTemplate" xml:space="preserve">
     <value>テンプレート(T)</value>
   </data>
+  <data name="MenuTool" xml:space="preserve">
+    <value>ツール (_T)</value>
+  </data>
+  <data name="MenuHelp" xml:space="preserve">
+    <value>ヘルプ (_H)</value>
+  </data>
 </root>

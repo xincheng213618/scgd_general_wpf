@@ -11,6 +11,7 @@ namespace ColorVision.Services.DAO.Validate
     {
         public ValidateTemplateMasterModel() 
         {
+
         }
 
         public int? TId { get; set; }
@@ -21,6 +22,7 @@ namespace ColorVision.Services.DAO.Validate
         public string? Result { get; set; }
         public int TenantId { get; set; }
     }
+
     public class ValidateTemplateMasterDao : BaseTableDao<BatchResultMasterModel>
     {
         public static ValidateTemplateMasterDao Instance { get; set; } = new ValidateTemplateMasterDao();
@@ -28,7 +30,6 @@ namespace ColorVision.Services.DAO.Validate
         public ValidateTemplateMasterDao() : base("t_scgd_measure_batch", "id")
         {
         }
-
         public override BatchResultMasterModel GetModelFromDataRow(DataRow item)
         {
             BatchResultMasterModel model = new BatchResultMasterModel
@@ -59,31 +60,6 @@ namespace ColorVision.Services.DAO.Validate
                 row["tenant_id"] = item.TenantId;
             }
             return row;
-        }
-
-        public List<BatchResultMasterModel> ConditionalQuery(string batchCode)
-        {
-            Dictionary<string, object> keyValuePairs = new Dictionary<string, object>(0);
-            keyValuePairs.Add("code", batchCode);
-            return ConditionalQuery(keyValuePairs);
-        }
-
-        public BatchResultMasterModel? GetByCode(string code)
-        {
-            string sql = $"select * from {TableName} where code=@code";
-            Dictionary<string, object> param = new Dictionary<string, object>
-            {
-                { "code", code }
-            };
-            DataTable d_info = GetData(sql, param);
-            return (d_info !=null && d_info.Rows.Count == 1) ? GetModelFromDataRow(d_info.Rows[0]) : default;
-        }
-
-        public int UpdateEnd(string bid, int totalTime, string result)
-        {
-            int result_code = (result == "Completed") ? 0 : -1;
-            string sql = $"update {TableName} set result='{result}',result_code={result_code},total_time={totalTime} where code='{bid}'";
-            return ExecuteNonQuery(sql);
         }
     }
 }

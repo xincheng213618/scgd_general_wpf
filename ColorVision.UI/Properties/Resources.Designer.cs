@@ -70,11 +70,29 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 帮助(_H) 的本地化字符串。
+        /// </summary>
+        internal static string MenuHelp {
+            get {
+                return ResourceManager.GetString("MenuHelp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 模板(_T) 的本地化字符串。
         /// </summary>
         internal static string MenuTemplate {
             get {
                 return ResourceManager.GetString("MenuTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 工具(_T) 的本地化字符串。
+        /// </summary>
+        internal static string MenuTool {
+            get {
+                return ResourceManager.GetString("MenuTool", resourceCulture);
             }
         }
     }

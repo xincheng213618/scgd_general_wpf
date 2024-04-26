@@ -28,15 +28,13 @@
         <Border x:Name="DisPlayBorder"  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel Margin="5" >
                 <Button Margin="0,2" Content="连接"  Click="Open_Click"/>
-                <DockPanel Margin="0,2">
-                    <Button DockPanel.Dock="Right" Content="发送" Margin="5,0,0,0" Click="Send_Click"/>
-                    <ComboBox Name="ComboBoxCommand"/>
+                <DockPanel>
+                    <ComboBox  x:Name="ComboxSensorTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" SelectionChanged="ComboxSensorTemplate_SelectionChanged" />
                 </DockPanel>
+
                 <DockPanel Margin="0,2">
-                    <TextBox x:Name="req" Text="5A 05 09 04 01 FE 00 01 6C"/>
-                </DockPanel>
-                <DockPanel Margin="0,2">
-                    <TextBox x:Name="resp" Text="5A 06 08 03 01 FE 00 6A"/>
+                    <Button DockPanel.Dock="Right" Content="发送" Margin="5,0,0,0" Click="SendCommand_Click"/>
+                    <ComboBox Name="ComboBoxCommand"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
                 </DockPanel>
 
             </StackPanel>

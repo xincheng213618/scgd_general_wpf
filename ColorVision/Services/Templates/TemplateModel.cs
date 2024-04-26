@@ -9,7 +9,6 @@ namespace ColorVision.Services.Templates
     public class TemplateModelBase : ViewModelBase, ISortID
     {
         public virtual int Id { get; set; }
-        public int IdShow { get; set; }
 
         public virtual string Key { get; set; }
         public string Tag { get => _Tag; set { _Tag = value; NotifyPropertyChanged(); } }

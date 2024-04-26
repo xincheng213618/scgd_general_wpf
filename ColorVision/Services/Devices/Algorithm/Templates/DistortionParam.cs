@@ -11,6 +11,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
         public DistortionParam() { }
         public DistortionParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
         {
+
         }
 
         [Category("大小"), Description("宽度"), DisplayName("宽度")]

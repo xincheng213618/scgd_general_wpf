@@ -1,7 +1,10 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Services.Devices.Sensor.Templates;
+using ColorVision.Services.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -28,6 +31,8 @@ namespace ColorVision.Services.Devices.Sensor
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
+            ComboxSensorTemplate.ItemsSource = SensorHeYuan.SensorHeYuans;
+
             SelectChanged += (s, e) =>
             {
                 DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
@@ -61,9 +66,28 @@ namespace ColorVision.Services.Devices.Sensor
              DeviceService.Open();
         }
 
-        private void Send_Click(object sender, RoutedEventArgs e)
+
+        private void SendCommand_Click(object sender, RoutedEventArgs e)
         {
-            DeviceService.ExecCmd(req.Text, resp.Text);
+            DeviceService.ExecCmd((string)ComboBoxCommand.SelectedValue);
+        }
+
+        private void ComboxSensorTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ComboxSensorTemplate.SelectedItem is TemplateModel<SensorHeYuan> sensorHeYuan)
+            {
+                List<KeyValuePair<string, string>> keyValuePairs = new List<KeyValuePair<string, string>>();
+                
+                foreach (var item in sensorHeYuan.Value.GetType().GetProperties())
+                {
+                    if (item.PropertyType== typeof(string))
+                    {
+                        keyValuePairs.Add( new KeyValuePair<string, string>(item.Name,(string)item.GetValue(sensorHeYuan.Value)));
+                    }
+                }
+
+                ComboBoxCommand.ItemsSource = keyValuePairs;
+            }
         }
     }
 }

@@ -103,4 +103,10 @@
   <data name="MenuTemplate" xml:space="preserve">
     <value>模板(_T)</value>
   </data>
+  <data name="MenuTool" xml:space="preserve">
+    <value>工具(_T)</value>
+  </data>
+  <data name="MenuHelp" xml:space="preserve">
+    <value>帮助(_H)</value>
+  </data>
 </root>

@@ -4,7 +4,7 @@ using ColorVision.MySql;
 using ColorVision.MySql.ORM;
 using NPOI.SS.Formula.Functions;
 
-namespace ColorVision.Services.Dao
+namespace ColorVision.Services.Dao.Validate
 {
     public class SysDictionaryModItemValidateModel : PKModel
     {
@@ -40,7 +40,7 @@ namespace ColorVision.Services.Dao
             IsEnable = item.Field<bool>("is_enable"),
         };
 
-        public void SetValue<T>(T t,T t1)
+        public void SetValue<T>(T t, T t1)
         {
             if (t != null)
                 t1 = t;
@@ -56,7 +56,7 @@ namespace ColorVision.Services.Dao
                     row["code"] = item.Code;
                 row["val_max"] = item.ValMax;
                 row["val_min"] = item.ValMin;
-                if (item.ValEqual!=null)
+                if (item.ValEqual != null)
                     row["val_equal"] = item.ValEqual;
                 row["val_radix"] = item.ValRadix;
                 row["val_type"] = item.ValType;

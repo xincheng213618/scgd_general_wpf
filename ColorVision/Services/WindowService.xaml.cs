@@ -6,9 +6,28 @@ using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.UI;
+using ColorVision.Common.Utilities;
 
 namespace ColorVision.Services
 {
+    public class WindowServiceMenuItem :IPlugin
+    {
+        public string Name => "服务设置";
+        public string Category => "设置";
+        public string Description => "服务设置";
+
+        public void Execute()
+        {
+            MenuItem menuItem = new MenuItem() { Header = "管理员服务配置(_S)" };
+            menuItem.Click += (s, e) =>
+            {
+                new WindowService() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            };
+            MenuManager.GetInstance().GetMenuToolItem()?.Items.Insert(4,menuItem);
+        }
+    }
+
 
     /// <summary>
     /// WindowService.xaml 的交互逻辑

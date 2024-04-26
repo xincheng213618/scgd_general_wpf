@@ -6,6 +6,7 @@ using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Algorithm.Templates;
 using ColorVision.Services.Devices.PG.Templates;
+using ColorVision.Services.Devices.Sensor.Templates;
 using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Flow;
 using ColorVision.Services.Flow.Dao;
@@ -107,6 +108,9 @@ namespace ColorVision.Services.Templates
             LoadParams(FocusPointsParams);
             LoadParams(LedCheckParams);
             LoadParams(BuildPOIParams);
+            LoadModParam(SensorHeYuan.SensorHeYuans, "Sensor.HeYuan");
+            LoadModParam(CameraExposureParam.CameraExposureParams, "camera_exp_time");
+
         }
         public void LoadParams<T>(ObservableCollection<TemplateModel<T>> TemplateModels) where T : ParamBase, new()
         {
@@ -158,6 +162,9 @@ namespace ColorVision.Services.Templates
                     break;
                 case System.Type t when t == typeof(MeasureParam):
                     LoadMeasureParams();
+                    break;
+                case System.Type t when t == typeof(BuildPOIParam):
+                    LoadModParam(BuildPOIParams, ModMasterType.BuildPOI);
                     break;
                 case System.Type t when t == typeof(BuildPOIParam):
                     LoadModParam(BuildPOIParams, ModMasterType.BuildPOI);
@@ -292,6 +299,12 @@ namespace ColorVision.Services.Templates
                     break;
                 case TemplateType.BuildPOIParmam:
                     Save(BuildPOIParams, ModMasterType.BuildPOI);
+                    break;
+                case TemplateType.SensorHeYuan:
+                    Save(SensorHeYuan.SensorHeYuans, ModMasterType.SensorHeYuan);
+                    break;
+                case TemplateType.CameraExposureParam:
+                    Save(CameraExposureParam.CameraExposureParams, ModMasterType.CameraExposure);
                     break;
                 default:
                     break;
