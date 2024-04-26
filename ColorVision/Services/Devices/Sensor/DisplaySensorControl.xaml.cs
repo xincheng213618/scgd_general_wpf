@@ -58,7 +58,7 @@ namespace ColorVision.Services.Devices.Sensor
 
         private void Open_Click(object sender, RoutedEventArgs e)
         {
-            DeviceService.Init();
+             DeviceService.Open();
         }
     }
 }

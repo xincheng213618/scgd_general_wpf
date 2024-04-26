@@ -17,25 +17,6 @@ namespace ColorVision.Services.Devices.Sensor
 
         }
 
-
-        public void Init()
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "Init",
-                Params = new Dictionary<string, object> { { "eCOM_Type", Config.CommunicateType } ,{ "szIPAddress",Config.SzIPAddress },{ "nPort",Config.Port} }
-            };
-            PublishAsyncClient(msg);
-        }
-        public void UnInit()
-        {
-            MsgSend msg = new MsgSend
-            {
-                EventName = "UnInit",
-            };
-            PublishAsyncClient(msg);
-        }
-
         public void Open()
         {
             MsgSend msg = new MsgSend

@@ -91,7 +91,8 @@ namespace ColorVision.Services.Devices.Camera.Configs
 
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 
-        public bool IsAutoOpen { set; get; }
+        public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; NotifyPropertyChanged(); } }
+        private bool _IsAutoOpen = true;
 
     }
 }
