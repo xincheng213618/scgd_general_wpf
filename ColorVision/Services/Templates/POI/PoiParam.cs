@@ -1,16 +1,45 @@
-﻿using ColorVision.Services.Templates.POI.Dao;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Services.Templates.POI.Dao;
+using ColorVision.Settings;
+using ColorVision.UI;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Services.Templates.POI
 {
+    public class PoiParamMenuItem : IPlugin
+    {
+        public string Name => "PoiParam";
+        public string Description => "PoiParam";
+
+        public void Execute()
+        {
+            SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
+            if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
+                return;
+            }
+
+            MenuItem menuItem = new MenuItem() { Header = "关注点模板设置(_P)" };
+            menuItem.Click += (s, e) =>
+            {
+                new WindowTemplate(TemplateType.PoiParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            };
+            MenuManager.GetInstance().GetTemplateMenuItem()?.Items.Insert(1,menuItem);
+        }
+    }
+
+
     /// <summary>
     /// 关注点模板
     /// </summary>
     public class PoiParam : ParamBase
     {
-        public static ObservableCollection<TemplateModel<PoiParam>> Params { get; set; }
+        public static ObservableCollection<TemplateModel<PoiParam>> Params { get; set; } = new ObservableCollection<TemplateModel<PoiParam>>();
 
         public PoiParam()
         {

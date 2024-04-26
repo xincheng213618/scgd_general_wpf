@@ -1360,7 +1360,7 @@ namespace ColorVision.Services.Templates.POI
         private void Import_Draw_Click(object sender, RoutedEventArgs e)
         {
             var ListConfigs = new ObservableCollection<TemplateModelBase>();
-            foreach (var item in TemplateControl.GetInstance().PoiParams)
+            foreach (var item in PoiParam.Params)
             {
                 if (item.Value != PoiParam)
                 {

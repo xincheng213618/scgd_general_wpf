@@ -1,11 +1,40 @@
-﻿using ColorVision.Services.Dao;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Services.Dao;
 using ColorVision.Services.Templates;
+using ColorVision.Settings;
+using ColorVision.UI;
 using cvColorVision;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {
+    public class GhostParamMenuItem : IPlugin
+    {
+        public string Name => "GhostPara";
+        public string Description => "GhostPara";
+
+        public void Execute()
+        {
+            SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
+            if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
+                return;
+            }
+
+            MenuItem menuItem = new MenuItem() { Header = "鬼影模板设置(_H)" };
+            menuItem.Click += (s, e) =>
+            {
+                new WindowTemplate(TemplateType.GhostParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            };
+            MenuManager.GetInstance().GetTemplateMenuItem()?.Items.Add(menuItem);
+        }
+    }
+    
+
     public class DistortionParam : ParamBase
     {
         public DistortionParam() { }

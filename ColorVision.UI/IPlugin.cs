@@ -1,4 +1,5 @@
-﻿using log4net.Plugin;
+﻿using ColorVision.Common.MVVM;
+using log4net.Plugin;
 using System.IO;
 using System.Reflection;
 
@@ -11,16 +12,20 @@ namespace ColorVision.UI
         void Execute();
     }
 
+
+
+
+
     public class PluginLoader
     {
-        public static List<IPlugin> LoadAssembly(Assembly assembly)
+        public static List<T> LoadAssembly<T>(Assembly assembly)where T: IPlugin
         {
-            List<IPlugin> plugins = new List<IPlugin>();
+            List<T> plugins = new List<T>();
             foreach (Type type in assembly.GetTypes())
             {
-                if (type.GetInterfaces().Contains(typeof(IPlugin)))
+                if (type.GetInterfaces().Contains(typeof(T)))
                 {
-                    if (Activator.CreateInstance(type) is IPlugin plugin)
+                    if (Activator.CreateInstance(type) is T plugin)
                     {
                         plugin.Execute();
                         plugins.Add(plugin);

@@ -1,8 +1,20 @@
-﻿using log4net;
+﻿using ColorVision.Common.MVVM;
+using log4net;
+using System.Reflection;
 using System.Windows.Controls;
 
 namespace ColorVision.UI
 {
+    public interface IMenuItem
+    {
+        int Index { get; }
+        string? Header { get; }
+        string? InputGestureText { get; }
+        string? Icon { get; }
+        RelayCommand Command { get; }
+    }
+
+
     public class MenuManager
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MenuManager));
@@ -15,6 +27,22 @@ namespace ColorVision.UI
         public MenuManager()
         {
 
+        }
+
+        public static List<T> LoadAssembly<T>(Assembly assembly) where T : IMenuItem
+        {
+            List<T> plugins = new List<T>();
+            foreach (Type type in assembly.GetTypes())
+            {
+                if (type.GetInterfaces().Contains(typeof(T)))
+                {
+                    if (Activator.CreateInstance(type) is T plugin)
+                    {
+                        plugins.Add(plugin);
+                    }
+                }
+            }
+            return plugins;
         }
 
         public MenuItem? GetFileMenuItem()

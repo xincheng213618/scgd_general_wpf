@@ -84,7 +84,7 @@ namespace ColorVision.Services.Templates
                 if (config.Type != null && config.Type.Equals("POI", StringComparison.Ordinal))
                 {
                     TemplateControl.LoadPoiParam();
-                    foreach (var item in TemplateControl.PoiParams)
+                    foreach (var item in PoiParam.Params)
                     {
                         ModMasterConfigs.Add(new MParamConfig(item.Value));
                     }

@@ -16,6 +16,7 @@ using ColorVision.Services.Templates.Measure;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Settings;
+using cvColorVision;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -119,8 +120,8 @@ namespace ColorVision.Services.Templates
                     break;
                 case TemplateType.PoiParam:
                     if (IsReLoad)
-                        TemplateControl.LoadParams(TemplateControl.PoiParams);
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.PoiParams);
+                        TemplateControl.LoadParams(PoiParam.Params);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(PoiParam.Params);
                     Title = "关注点设置";
                     break;
                 case TemplateType.MTFParam:
@@ -411,7 +412,7 @@ namespace ColorVision.Services.Templates
                     break;
                 case TemplateType.PoiParam:
                     PoiParam? poiParam = TemplateControl.AddPoiParam(TextBox1.Text);
-                    if (poiParam != null) CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text, poiParam);
+                    if (poiParam != null) CreateNewTemplate(PoiParam.Params, TextBox1.Text, poiParam);
                     else MessageBox.Show("数据库创建POI模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
                 case TemplateType.FlowParam:
@@ -483,7 +484,7 @@ namespace ColorVision.Services.Templates
                     CreateNewTemplate(TemplateControl.LedCheckParams, TextBox1.Text, new LedCheckParam() { });
                     break;
                 case TemplateType.PoiParam:
-                    CreateNewTemplate(TemplateControl.PoiParams, TextBox1.Text , new PoiParam() { });
+                    CreateNewTemplate(PoiParam.Params, TextBox1.Text , new PoiParam() { });
                     break;
                 case TemplateType.FlowParam:
                     CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, new FlowParam() { Name = TextBox1.Text });
@@ -622,8 +623,8 @@ namespace ColorVision.Services.Templates
                             break;
                         case TemplateType.PoiParam:
                             PoiMasterDao poiMasterDao = new PoiMasterDao();
-                            poiMasterDao.DeleteById(TemplateControl.PoiParams[ListView1.SelectedIndex].Value.Id);
-                            TemplateControl.PoiParams.RemoveAt(ListView1.SelectedIndex);
+                            poiMasterDao.DeleteById(PoiParam.Params[ListView1.SelectedIndex].Value.Id);
+                            PoiParam.Params.RemoveAt(ListView1.SelectedIndex);
                             break;
                         case TemplateType.MTFParam:
                             TemplateDel(TemplateControl.MTFParams);
@@ -916,7 +917,7 @@ namespace ColorVision.Services.Templates
                         PoiParam? poiParam = JsonConvert.DeserializeObject<PoiParam>(File.ReadAllText(ofd.FileName));
                         if (poiParam != null)
                         {
-                            CreateNewTemplate(TemplateControl.PoiParams, name, poiParam);
+                            CreateNewTemplate(PoiParam.Params, name, poiParam);
                             TemplateControl.GetInstance().Save2DB(poiParam);
                         }
                         else MessageBox.Show("数据库创建POI模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);

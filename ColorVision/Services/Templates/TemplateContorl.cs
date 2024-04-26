@@ -51,8 +51,6 @@ namespace ColorVision.Services.Templates
             LedReusltParams = new ObservableCollection<TemplateModel<LedReusltParam>>();
             SMUParams = new ObservableCollection<TemplateModel<SMUParam>>();
             FlowParams = new ObservableCollection<TemplateModel<FlowParam>>();
-            PoiParams = new ObservableCollection<TemplateModel<PoiParam>>();
-            PoiParam.Params = PoiParams;
             MeasureParams = new ObservableCollection<TemplateModel<MeasureParam>>();
             MTFParams = new ObservableCollection<TemplateModel<MTFParam>>();
             SFRParams = new ObservableCollection<TemplateModel<SFRParam>>();
@@ -95,7 +93,7 @@ namespace ColorVision.Services.Templates
         private void Init()
         {
             LoadParams(LedReusltParams);
-            LoadParams(PoiParams);
+            LoadParams(PoiParam.Params);
             LoadParams(FlowParams);
             LoadParams(AoiParams);
             LoadParams(SMUParams);
@@ -124,7 +122,7 @@ namespace ColorVision.Services.Templates
                     break;
                 case System.Type t when t == typeof(PoiParam):
                     LoadPoiParam();
-                    DicTemplate.TryAdd("Poi", PoiParams);
+                    DicTemplate.TryAdd("Poi", PoiParam.Params);
                     break;
                 case System.Type t when t == typeof(FlowParam):
                     LoadFlowParam();
@@ -254,7 +252,7 @@ namespace ColorVision.Services.Templates
                     SaveDefault(FileNameLedJudgeParams, LedReusltParams);
                     break;
                 case TemplateType.PoiParam:
-                    foreach (var item in PoiParams)
+                    foreach (var item in PoiParam.Params)
                     {
                         var modMasterModel = poiMaster.GetById(item.Id);
                         if (modMasterModel != null)
@@ -362,13 +360,13 @@ namespace ColorVision.Services.Templates
 
         public ObservableCollection<TemplateModel<PoiParam>> LoadPoiParam()
         {
-            PoiParams.Clear();
+            PoiParam.Params.Clear();
             List<PoiMasterModel> poiMasters = poiMaster.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             foreach (var dbModel in poiMasters)
             {
-                PoiParams.Add(new TemplateModel<PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel)));
+                PoiParam.Params.Add(new TemplateModel<PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel)));
             }
-            return PoiParams;
+            return PoiParam.Params;
         }
 
         public PoiParam? AddPoiParam(string TemplateName)
@@ -713,7 +711,6 @@ namespace ColorVision.Services.Templates
         public ObservableCollection<TemplateModel<PGParam>> PGParams { get; set; }
         public ObservableCollection<TemplateModel<SMUParam>> SMUParams { get; set; }
         public ObservableCollection<TemplateModel<LedReusltParam>> LedReusltParams { get; set; }
-        public ObservableCollection<TemplateModel<PoiParam>> PoiParams { get; set; }
         public ObservableCollection<TemplateModel<FlowParam>> FlowParams { get; set; }
         public ObservableCollection<TemplateModel<MTFParam>> MTFParams { get; set; }
         public ObservableCollection<TemplateModel<SFRParam>> SFRParams { get; set; }

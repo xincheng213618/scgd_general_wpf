@@ -71,11 +71,6 @@ namespace ColorVision
                         windowTemplate.Owner = GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;
-                    case "FocusParm":
-                        windowTemplate = new WindowTemplate(TemplateType.PoiParam);
-                        windowTemplate.Owner = GetWindow(this);
-                        windowTemplate.ShowDialog();
-                        break;
                     case "ServiceParam":
                         new WindowService() { Owner =this,WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
                         break;
@@ -100,11 +95,6 @@ namespace ColorVision
                         break;
                     case "FOVParam":
                         windowTemplate = new WindowTemplate(TemplateType.FOVParam);
-                        windowTemplate.Owner = GetWindow(this);
-                        windowTemplate.ShowDialog();
-                        break;
-                    case "GhostParam":
-                        windowTemplate = new WindowTemplate(TemplateType.GhostParam);
                         windowTemplate.Owner = GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;

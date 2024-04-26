@@ -23,6 +23,7 @@ using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Devices.Calibration;
 using CVCommCore.CVAlgorithm;
 using ColorVision.UI;
+using ColorVision.Services.Templates.POI;
 
 namespace ColorVision.Services.Devices.Algorithm
 {
@@ -196,13 +197,13 @@ namespace ColorVision.Services.Devices.Algorithm
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
-            ComboxPoiTemplate.ItemsSource = TemplateControl.GetInstance().PoiParams;
+            ComboxPoiTemplate.ItemsSource = PoiParam.Params;
             ComboxPoiTemplate.SelectedIndex = 0;
 
             ComboxMTFTemplate.ItemsSource = TemplateControl.GetInstance().MTFParams;
             ComboxMTFTemplate.SelectedIndex = 0;
 
-            ComboxPoiTemplate2.ItemsSource = TemplateControl.GetInstance().PoiParams;
+            ComboxPoiTemplate2.ItemsSource = PoiParam.Params;
             ComboxPoiTemplate2.SelectedIndex = 0;
 
             ComboxSFRTemplate.ItemsSource = TemplateControl.GetInstance().SFRParams;
@@ -220,7 +221,7 @@ namespace ColorVision.Services.Devices.Algorithm
             ComboxLedCheckTemplate.ItemsSource = TemplateControl.GetInstance().LedCheckParams;  
             ComboxLedCheckTemplate.SelectedIndex = 0;
 
-            ComboxPoiTemplate1.ItemsSource = TemplateControl.GetInstance().PoiParams.CreatEmpty();
+            ComboxPoiTemplate1.ItemsSource = PoiParam.Params.CreatEmpty();
             ComboxPoiTemplate1.SelectedIndex = 0;
 
             ComboxFocusPointsTemplate.ItemsSource = TemplateControl.GetInstance().FocusPointsParams;
@@ -305,7 +306,7 @@ namespace ColorVision.Services.Devices.Algorithm
                     return;
                 }
             }
-            var pm = TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate.SelectedIndex].Value;
+            var pm = PoiParam.Params[ComboxPoiTemplate.SelectedIndex].Value;
             TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
             if (imageDevice != null) Service.POI(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, imgFileName, pm.Id, ComboxPoiTemplate.Text, sn);
             else Service.POI(string.Empty, string.Empty, imgFileName, pm.Id, ComboxPoiTemplate.Text, sn);
@@ -343,7 +344,7 @@ namespace ColorVision.Services.Devices.Algorithm
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().MTFParams[ComboxMTFTemplate.SelectedIndex].Value;
-                var poi_pm = TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate2.SelectedIndex].Value;
+                var poi_pm = PoiParam.Params[ComboxPoiTemplate2.SelectedIndex].Value;
                 TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
 
                 MsgRecord ss = null;
@@ -717,7 +718,7 @@ namespace ColorVision.Services.Devices.Algorithm
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = TemplateControl.GetInstance().LedCheckParams[ComboxLedCheckTemplate.SelectedIndex].Value;
-                var poi_pm = TemplateControl.GetInstance().PoiParams[ComboxPoiTemplate1.SelectedIndex].Value;
+                var poi_pm = PoiParam.Params[ComboxPoiTemplate1.SelectedIndex].Value;
                 TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
                 MsgRecord ss = null;
                 if (imageDevice != null) ss = Service.LedCheck(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, ImageFile.Text, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate1.Text);
