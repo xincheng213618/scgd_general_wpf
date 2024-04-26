@@ -29,6 +29,16 @@ using System.Windows.Input;
 
 namespace ColorVision.Services.Templates
 {
+    public interface ITemplateControl
+    {
+        public void Load();
+        public void Create();
+        public void Save();
+        public void Delete();
+        public void Import();
+        public void Export();
+    }
+
     /// <summary>
     /// CalibrationTemplate.xaml 的交互逻辑
     /// </summary>
@@ -411,7 +421,7 @@ namespace ColorVision.Services.Templates
                     else MessageBox.Show("数据库创建灯光检测模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
                 case TemplateType.PoiParam:
-                    PoiParam? poiParam = TemplateControl.AddPoiParam(TextBox1.Text);
+                    PoiParam? poiParam = PoiParam.AddPoiParam(TextBox1.Text);
                     if (poiParam != null) CreateNewTemplate(PoiParam.Params, TextBox1.Text, poiParam);
                     else MessageBox.Show("数据库创建POI模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;

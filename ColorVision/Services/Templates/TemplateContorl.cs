@@ -254,11 +254,11 @@ namespace ColorVision.Services.Templates
                 case TemplateType.PoiParam:
                     foreach (var item in PoiParam.Params)
                     {
-                        var modMasterModel = poiMaster.GetById(item.Id);
+                        var modMasterModel = PoiMasterDao.Instance.GetById(item.Id);
                         if (modMasterModel != null)
                         {
                             modMasterModel.Name = item.Key;
-                            poiMaster.Save(modMasterModel);
+                            PoiMasterDao.Instance.Save(modMasterModel);
                         }
                     }
                     break;
@@ -337,7 +337,7 @@ namespace ColorVision.Services.Templates
         public void Save2DB(PoiParam poiParam)
         {
             PoiMasterModel poiMasterModel = new PoiMasterModel(poiParam);
-            poiMaster.Save(poiMasterModel);
+            PoiMasterDao.Instance.Save(poiMasterModel);
 
             List<PoiDetailModel> poiDetails = new List<PoiDetailModel>();
             foreach (PoiParamData pt in poiParam.PoiPoints)
@@ -355,13 +355,12 @@ namespace ColorVision.Services.Templates
         }
 
 
-        private PoiMasterDao poiMaster = new PoiMasterDao();
         private PoiDetailDao poiDetail = new PoiDetailDao();
 
-        public ObservableCollection<TemplateModel<PoiParam>> LoadPoiParam()
+        public static ObservableCollection<TemplateModel<PoiParam>> LoadPoiParam()
         {
             PoiParam.Params.Clear();
-            List<PoiMasterModel> poiMasters = poiMaster.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            List<PoiMasterModel> poiMasters = PoiMasterDao.Instance.GetAllByTenantId(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             foreach (var dbModel in poiMasters)
             {
                 PoiParam.Params.Add(new TemplateModel<PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel)));
@@ -369,20 +368,7 @@ namespace ColorVision.Services.Templates
             return PoiParam.Params;
         }
 
-        public PoiParam? AddPoiParam(string TemplateName)
-        {
-            PoiMasterModel poiMasterModel = new PoiMasterModel(TemplateName, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            poiMaster.Save(poiMasterModel);
 
-            int pkId = poiMasterModel.Id;
-            if (pkId > 0)
-            {
-                PoiMasterModel Service = poiMaster.GetById(pkId);
-                if (Service != null) return new PoiParam(Service);
-                else return null;
-            }
-            return null;
-        }
 
 
         internal void LoadPoiDetailFromDB(PoiParam poiParam)

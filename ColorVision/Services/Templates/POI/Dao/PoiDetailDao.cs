@@ -46,6 +46,8 @@ namespace ColorVision.Services.Templates.POI.Dao
 
     public class PoiDetailDao : BaseDaoMaster<PoiDetailModel>
     {
+        public static PoiDetailDao Instance { get; } = new PoiDetailDao();
+
         public PoiDetailDao() : base(string.Empty, "t_scgd_algorithm_poi_template_detail", "id", true)
         {
         }

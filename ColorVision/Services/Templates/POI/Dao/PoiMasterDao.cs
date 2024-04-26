@@ -77,9 +77,11 @@ namespace ColorVision.Services.Templates.POI.Dao
         public int TenantId { get; set; }
     }
 
-    public class PoiMasterDao : BaseDaoMaster<PoiMasterModel>
+    public class PoiMasterDao : BaseTableDao<PoiMasterModel>
     {
-        public PoiMasterDao() : base("", "t_scgd_algorithm_poi_template_master", "id", true)
+        public static PoiMasterDao Instance { get; } = new PoiMasterDao();
+
+        public PoiMasterDao() : base("t_scgd_algorithm_poi_template_master", "id")
         {
 
         }

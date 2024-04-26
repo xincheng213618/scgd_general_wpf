@@ -34,12 +34,28 @@ namespace ColorVision.Services.Templates.POI
     }
 
 
+
     /// <summary>
     /// 关注点模板
     /// </summary>
     public class PoiParam : ParamBase
     {
         public static ObservableCollection<TemplateModel<PoiParam>> Params { get; set; } = new ObservableCollection<TemplateModel<PoiParam>>();
+
+        public static PoiParam? AddPoiParam(string TemplateName)
+        {
+            PoiMasterModel poiMasterModel = new PoiMasterModel(TemplateName, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            PoiMasterDao.Instance.Save(poiMasterModel);
+
+            int pkId = poiMasterModel.Id;
+            if (pkId > 0)
+            {
+                PoiMasterModel Service = PoiMasterDao.Instance.GetById(pkId);
+                if (Service != null) return new PoiParam(Service);
+                else return null;
+            }
+            return null;
+        }
 
         public PoiParam()
         {
