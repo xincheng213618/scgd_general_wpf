@@ -1,4 +1,5 @@
 ﻿using ColorVision.Services.Msg;
+using MQTTMessageLib.Sensor;
 using System.Collections.Generic;
 
 namespace ColorVision.Services.Devices.Sensor
@@ -23,6 +24,16 @@ namespace ColorVision.Services.Devices.Sensor
             {
                 EventName = "Open",
                 Params = new Dictionary<string, object> { { "eCOM_Type", Config.CommunicateType }, { "szIPAddress", Config.SzIPAddress }, { "nPort", Config.Port } }
+            };
+            PublishAsyncClient(msg);
+        }
+
+        public void ExecCmd(SensorCmd command)
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "ExecCmd",
+                Params = new Dictionary<string, object> { { "eCOM_Type", Config.CommunicateType }, { "szIPAddress", Config.SzIPAddress }, { "nPort", Config.Port }, { "cmd", command } }
             };
             PublishAsyncClient(msg);
         }
