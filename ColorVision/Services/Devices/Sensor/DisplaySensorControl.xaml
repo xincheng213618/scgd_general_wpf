@@ -29,6 +29,7 @@
             <StackPanel Margin="5" >
                 <Button Margin="0,2" Content="连接"  Click="Open_Click"/>
                 <DockPanel>
+                    <Button DockPanel.Dock="Right" Content="发送" Margin="5,0,0,0" Click="SendTemp_Click"/>
                     <ComboBox  x:Name="ComboxSensorTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" SelectionChanged="ComboxSensorTemplate_SelectionChanged" />
                 </DockPanel>
 

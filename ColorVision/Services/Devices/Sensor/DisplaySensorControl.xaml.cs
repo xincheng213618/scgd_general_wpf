@@ -3,6 +3,8 @@ using ColorVision.Services.Devices.Sensor.Templates;
 using ColorVision.Services.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
+using MQTTMessageLib;
+using MQTTMessageLib.Sensor;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -69,7 +71,11 @@ namespace ColorVision.Services.Devices.Sensor
 
         private void SendCommand_Click(object sender, RoutedEventArgs e)
         {
-            DeviceService.ExecCmd((string)ComboBoxCommand.SelectedValue);
+            //DeviceService.ExecCmd((string)ComboBoxCommand.SelectedValue);
+            string cmdValue = (string)ComboBoxCommand.SelectedValue;
+            string[] vals = cmdValue.Split(',');
+            SensorCmd cmd = new SensorCmd() { CmdType= SensorCmdType.Hex, Request= vals[0], Response= vals[1], Timeout=5000 };
+            DeviceService.ExecCmd(cmd);
         }
 
         private void ComboxSensorTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -87,6 +93,15 @@ namespace ColorVision.Services.Devices.Sensor
                 }
 
                 ComboBoxCommand.ItemsSource = keyValuePairs;
+            }
+        }
+
+        private void SendTemp_Click(object sender, RoutedEventArgs e)
+        {
+            if (ComboxSensorTemplate.SelectedItem is TemplateModel<SensorHeYuan> sensorHeYuan)
+            {
+                CVTemplateParam templateParam = new CVTemplateParam() { ID= sensorHeYuan.Value.Id, Name= sensorHeYuan.Value.Name };
+                DeviceService.ExecCmd(templateParam);
             }
         }
     }

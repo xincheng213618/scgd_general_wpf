@@ -1,4 +1,5 @@
 ﻿using ColorVision.Services.Msg;
+using MQTTMessageLib;
 using MQTTMessageLib.Sensor;
 using System.Collections.Generic;
 
@@ -27,13 +28,34 @@ namespace ColorVision.Services.Devices.Sensor
             };
             PublishAsyncClient(msg);
         }
-
+        /// <summary>
+        /// 发送单个指令
+        /// </summary>
+        /// <param name="command"></param>
         public void ExecCmd(SensorCmd command)
         {
+            SensorExecCmdParam req = new SensorExecCmdParam();
+            req.Cmd = command;
             MsgSend msg = new MsgSend
             {
-                EventName = "ExecCmd",
-                Params = new Dictionary<string, object> { { "eCOM_Type", Config.CommunicateType }, { "szIPAddress", Config.SzIPAddress }, { "nPort", Config.Port }, { "cmd", command } }
+                EventName = MQTTSensorEventEnum.Event_ExecCmd,
+                Params = req,
+            };
+            PublishAsyncClient(msg);
+        }
+        /// <summary>
+        /// 发送模板
+        /// </summary>
+        /// <param name="temp"></param>
+        public void ExecCmd(CVTemplateParam temp)
+        {
+            SensorExecCmdParam req = new SensorExecCmdParam();
+            req.TemplateParam = temp;
+            req.Cmd = new SensorCmd() { CmdType= SensorCmdType.None };
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTSensorEventEnum.Event_ExecCmd,
+                Params = req,
             };
             PublishAsyncClient(msg);
         }
@@ -42,7 +64,7 @@ namespace ColorVision.Services.Devices.Sensor
         {
             MsgSend msg = new MsgSend
             {
-                EventName = "ExecCmd",
+                EventName = MQTTSensorEventEnum.Event_ExecCmd,
                 Params = new Dictionary<string, object> { { "eCOM_Type", Config.CommunicateType }, { "szIPAddress", Config.SzIPAddress }, { "nPort", Config.Port } ,{ "cmd",command} }
             };
             PublishAsyncClient(msg);
