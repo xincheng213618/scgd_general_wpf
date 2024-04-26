@@ -45,6 +45,16 @@ namespace ColorVision.Services.Devices.Sensor
             };
             PublishAsyncClient(msg);
         }
+
+        public void ExecCmd()
+        {
+            MsgSend msg = new MsgSend
+            {
+                EventName = "ExecCmd",
+                Params = new Dictionary<string, object> { { "eCOM_Type", Config.CommunicateType }, { "szIPAddress", Config.SzIPAddress }, { "nPort", Config.Port } }
+            };
+            PublishAsyncClient(msg);
+        }
         public void Close()
         {
             MsgSend msg = new MsgSend
