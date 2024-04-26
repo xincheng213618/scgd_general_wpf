@@ -22,7 +22,7 @@
         </Grid.RowDefinitions>
         <ScrollViewer x:Name="EditContent" d:DataContext="{d:DesignInstance local:ConfigPG}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <Border Background ="{DynamicResource GlobalBackground}" CornerRadius="5">
-                <StackPanel Margin="5,0" >
+                <StackPanel >
                     <GroupBox Header="资源信息" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2" >
