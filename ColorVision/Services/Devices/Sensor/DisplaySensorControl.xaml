@@ -29,7 +29,7 @@
             <StackPanel Margin="5" >
                 <Button Margin="0,2" Content="连接"  Click="Open_Click"/>
                 <DockPanel Margin="0,2">
-                    <Button DockPanel.Dock="Right" Content="发送" Margin="5,0,0,0"/>
+                    <Button DockPanel.Dock="Right" Content="发送" Margin="5,0,0,0" Click="SendCommand_Click"/>
                     <ComboBox Name="ComboBoxCommand"/>
                 </DockPanel>
 

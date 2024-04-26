@@ -60,5 +60,11 @@ namespace ColorVision.Services.Devices.Sensor
         {
              DeviceService.Open();
         }
+
+
+        private void SendCommand_Click(object sender, RoutedEventArgs e)
+        {
+            DeviceService.ExecCmd();
+        }
     }
 }
