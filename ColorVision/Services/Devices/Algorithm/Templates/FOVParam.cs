@@ -15,7 +15,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
     {
         public string? OwnerGuid => "Template";
 
-        public string? Guid => "BuildFOV";
+        public string? GuidId => "BuildFOV";
         public int Index => 9;
         public string? Header => "BuildFOV模板设置(_B)";
 

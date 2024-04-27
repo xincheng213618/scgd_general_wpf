@@ -20,7 +20,7 @@ namespace ColorVision.Services.Devices.Sensor.Templates
     {
         public string OwnerGuid => "Template";
 
-        public string? Guid => "SensorHeYuan";
+        public string? GuidId => "SensorHeYuan";
         public int Index => 7;
         public string? Header => "河源模板设置(_S)";
 

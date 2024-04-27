@@ -20,7 +20,7 @@ namespace ColorVision.Services.Devices.Sensor.Templates
     {
         public string OwnerGuid => "Template";
 
-        public string? Guid => "CameraExposureParam";
+        public string? GuidId => "CameraExposureParam";
         public int Index => 5;
         public string? Header => "机曝光模板设置(_B)";
 

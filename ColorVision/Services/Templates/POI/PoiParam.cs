@@ -15,7 +15,7 @@ namespace ColorVision.Services.Templates.POI
     {
         public string? OwnerGuid => "Template";
 
-        public string? Guid => "PoiParam";
+        public string? GuidId => "PoiParam";
         public int Index => 1;
         public string? Header => "POI模板设置(_P)";
 

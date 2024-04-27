@@ -19,6 +19,8 @@ namespace ColorVision.Services.Dao
     }
     public class VSysDeviceDao : BaseDaoMaster<SysDeviceModel>
     {
+        public static VSysDeviceDao Instance { get; set; } = new VSysDeviceDao();
+
         public VSysDeviceDao() : base("v_scgd_sys_resource_valid_devices", "t_scgd_sys_resource", "id", false)
         {
         }

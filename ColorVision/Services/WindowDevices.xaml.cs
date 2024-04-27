@@ -16,7 +16,7 @@ namespace ColorVision.Services
     {
         public string? OwnerGuid => "Tool";
 
-        public string? Guid { get; set; } = "WindowDevices";
+        public string? GuidId { get; set; } = "WindowDevices";
         public int Index => 3;
         public string? Header => "设备配置(_D)";
 

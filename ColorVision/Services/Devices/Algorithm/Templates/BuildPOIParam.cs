@@ -16,7 +16,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
     {
         public string? OwnerGuid => "Template";
 
-        public string? Guid => "BuildPOI";
+        public string? GuidId => "BuildPOI";
         public int Index => 2;
         public string? Header => "BuildPOI模板设置(_B)";
 

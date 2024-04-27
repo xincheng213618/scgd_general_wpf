@@ -51,8 +51,6 @@ namespace ColorVision.Services
 
         public List<MQTTServiceInfo> ServiceTokens { get; set; }
 
-        public VSysDeviceDao VSysDeviceDao { get; set; } = new VSysDeviceDao();
-
         public ServiceManager()
         {
             UserConfig = ConfigHandler.GetInstance().SoftwareConfig.UserConfig;
@@ -184,7 +182,7 @@ namespace ColorVision.Services
                 }
             }
 
-            List<SysDeviceModel> sysResourceModelDevices = VSysDeviceDao.GetAll(UserConfig.TenantId);
+            List<SysDeviceModel> sysResourceModelDevices = VSysDeviceDao.Instance.GetAll(UserConfig.TenantId);
             DeviceServices.Clear();
 
             foreach (var terminalService in TerminalServices)

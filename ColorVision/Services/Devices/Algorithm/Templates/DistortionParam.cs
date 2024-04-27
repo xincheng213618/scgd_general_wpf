@@ -16,7 +16,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
     {
         public string? OwnerGuid => "Template";
 
-        public string? Guid => "GhostParam";
+        public string? GuidId => "GhostParam";
         public int Index => 3;
         public string? Header => "GhostParam模板设置(_G)";
 

@@ -21,6 +21,8 @@ namespace ColorVision.Services.Dao
 
     public class POIPointResultDao : BaseTableDao<POIPointResultModel>
     {
+        public static POIPointResultDao Instance { get; set; } = new POIPointResultDao();
+
         public POIPointResultDao() : base("t_scgd_algorithm_result_detail_poi_mtf", "id")
         {
         }

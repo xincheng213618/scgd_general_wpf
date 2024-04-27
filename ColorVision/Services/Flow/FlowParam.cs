@@ -15,7 +15,7 @@ namespace ColorVision.Services.Flow
     {
         public string? OwnerGuid => "Template";
 
-        public string? Guid => "FlowParam";
+        public string? GuidId => "FlowParam";
         public int Index => 0;
         public string? Header => "FlowParam模板设置(_F)";
 

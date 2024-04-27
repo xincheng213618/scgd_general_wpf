@@ -8,7 +8,7 @@ namespace ColorVision.UI
     public interface IMenuItem
     {
         public string? OwnerGuid { get; }
-        public string? Guid { get;}
+        public string? GuidId { get;}
         public int Index { get; }
         public string? Header { get; }
         public string? InputGestureText { get; }
@@ -41,7 +41,7 @@ namespace ColorVision.UI
             {
                 if (Activator.CreateInstance(type) is T iMenuItem)
                 {
-                    string GuidId = iMenuItem.Guid ?? Guid.NewGuid().ToString();
+                    string GuidId = iMenuItem.GuidId ?? Guid.NewGuid().ToString();
                     MenuItem menuItem = new MenuItem
                     {
                         Header = iMenuItem.Header,

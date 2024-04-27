@@ -160,7 +160,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             public int Y { get; set; }
         }
 
-        private POIPointResultDao poiPointResultDao = new POIPointResultDao();
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -179,7 +178,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         if (result.PoiResultDatas == null)
                         {
                             result.PoiResultDatas = new ObservableCollection<PoiResultData>();
-                            List<POIPointResultModel> POIPointResultModels = poiPointResultDao.GetAllByPid(result.Id);
+                            List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in POIPointResultModels)
                             {
                                 PoiResultData poiResult = new PoiResultData(item);
@@ -211,7 +210,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         if (result.PoiResultCIExyuvDatas == null)
                         {
                             result.PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
-                            List<POIPointResultModel> POIPointResultModels = poiPointResultDao.GetAllByPid(result.Id);
+                            List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in POIPointResultModels)
                             {
                                 PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(item);
@@ -243,7 +242,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         if (result.PoiResultCIEYDatas == null)
                         {
                             result.PoiResultCIEYDatas = new ObservableCollection<PoiResultCIEYData>();
-                            List<POIPointResultModel> POIPointResultModels = poiPointResultDao.GetAllByPid(result.Id);
+                            List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in POIPointResultModels)
                             {
                                 PoiResultCIEYData poiResultCIExyuvData = new PoiResultCIEYData(item);
