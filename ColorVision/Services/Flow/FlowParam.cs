@@ -1,7 +1,9 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Flow.Dao;
 using ColorVision.Services.Templates;
+using ColorVision.Settings;
 using ColorVision.UI;
 using System.Collections.Generic;
 using System.Windows;
@@ -9,22 +11,27 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Flow
 {
-    public class FlowPlugin : IPlugin
+    public class FlowPlugin : IMenuItem
     {
-        public string Name => "FlowPlugin";
+        public string? OwnerGuid => "Template";
 
-        public string Description => "FlowPlugin";
+        public string? Guid => "FlowParam";
+        public int Index => 0;
+        public string? Header => "FlowParam模板设置(_F)";
 
-        public void Execute()
-        {
-            MenuItem menuItem = new MenuItem() { Header = "流程模板设置(_F)" };
-            menuItem.Click += (s, e) =>
+        public string? InputGestureText { get; }
+
+        public string? Icon { get; }
+
+        public RelayCommand Command => new RelayCommand(a => {
+            SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
+            if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
             {
-                WindowTemplate windowTemplate = new WindowTemplate(TemplateType.FlowParam) { Owner = Application.Current.GetActiveWindow() };
-                windowTemplate.ShowDialog();
-            };
-            MenuManager.GetInstance().GetTemplateMenuItem()?.Items.Insert(0,menuItem);
-        }
+                MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
+                return;
+            }
+            new WindowTemplate(TemplateType.FlowParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        });
     }
 
 

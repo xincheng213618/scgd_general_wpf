@@ -1,4 +1,6 @@
-﻿using Microsoft.Win32;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

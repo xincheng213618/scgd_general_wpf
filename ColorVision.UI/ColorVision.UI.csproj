@@ -13,7 +13,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ColorVision.Common\ColorVision.Common.csproj" />
-    <ProjectReference Include="..\ColorVision.Util\ColorVision.Util.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -13,9 +13,6 @@ namespace ColorVision.UI
     }
 
 
-
-
-
     public class PluginLoader
     {
         public static List<T> LoadAssembly<T>(Assembly assembly)where T: IPlugin

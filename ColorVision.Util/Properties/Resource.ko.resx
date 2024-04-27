@@ -186,4 +186,10 @@
   <data name="fr" xml:space="preserve">
     <value>프랑스 국민</value>
   </data>
+  <data name="MenuTheme" xml:space="preserve">
+    <value>테마(_H)</value>
+  </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>언어(_L)</value>
+  </data>
 </root>

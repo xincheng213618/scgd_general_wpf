@@ -7,11 +7,13 @@ namespace ColorVision.UI
 {
     public interface IMenuItem
     {
-        int Index { get; }
-        string? Header { get; }
-        string? InputGestureText { get; }
-        string? Icon { get; }
-        RelayCommand Command { get; }
+        public string? OwnerGuid { get; }
+        public string? Guid { get;}
+        public int Index { get; }
+        public string? Header { get; }
+        public string? InputGestureText { get; }
+        public string? Icon { get; }
+        public RelayCommand Command { get; }
     }
 
 
@@ -29,20 +31,71 @@ namespace ColorVision.UI
 
         }
 
-        public static List<T> LoadAssembly<T>(Assembly assembly) where T : IMenuItem
+        public void LoadMenuItemFromAssembly<T>(Assembly assembly) where T : IMenuItem
         {
-            List<T> plugins = new List<T>();
-            foreach (Type type in assembly.GetTypes())
+            var menuItems = new Dictionary<string, MenuItem>();
+            menuItems.Add("File", GetFileMenuItem());
+            menuItems.Add("Template", GetTemplateMenuItem());
+            menuItems.Add("Tool", GetMenuToolItem());
+            foreach (Type type in assembly.GetTypes().Where(t => typeof(T).IsAssignableFrom(t) && !t.IsAbstract))
             {
-                if (type.GetInterfaces().Contains(typeof(T)))
+                if (Activator.CreateInstance(type) is T iMenuItem)
                 {
-                    if (Activator.CreateInstance(type) is T plugin)
+                    string GuidId = iMenuItem.Guid ?? Guid.NewGuid().ToString();
+                    MenuItem menuItem = new MenuItem
                     {
-                        plugins.Add(plugin);
+                        Header = iMenuItem.Header,
+                        Icon = iMenuItem.Icon,
+                        InputGestureText = iMenuItem.InputGestureText,
+                        Command = iMenuItem.Command,
+                        Tag = iMenuItem,
+                    };
+
+                    menuItems.Add(GuidId, menuItem);
+                }
+            }
+
+            foreach (var menuItem in menuItems.Values)
+            {
+                if (menuItem.Tag is IMenuItem iMenuItem)
+                {
+                    if (string.IsNullOrWhiteSpace(iMenuItem.OwnerGuid))
+                    {
+                        if (iMenuItem.Index < 0 || iMenuItem.Index > Menu.Items.Count)
+                        {
+                            Menu.Items.Add(menuItem);
+                        }
+                        else
+                        {
+                            Menu.Items.Insert(iMenuItem.Index, menuItem);
+                        }
+                    }
+                    else if (menuItems.TryGetValue(iMenuItem.OwnerGuid, out MenuItem parentItem))
+                    {
+                        if (iMenuItem.Index < 0 || iMenuItem.Index > Menu.Items.Count)
+                        {
+                            parentItem.Items.Add(menuItem);
+                        }
+                        else
+                        {
+                            parentItem.Items.Insert(iMenuItem.Index, menuItem);
+                        }
+                    }
+                    else
+                    {
+                        if (iMenuItem.Index < 0 || iMenuItem.Index > Menu.Items.Count)
+                        {
+                            Menu.Items.Add(menuItem);
+                        }
+                        else
+                        {
+                            Menu.Items.Insert(iMenuItem.Index, menuItem);
+                        }
                     }
                 }
             }
-            return plugins;
+
+
         }
 
         public MenuItem? GetFileMenuItem()
@@ -57,7 +110,7 @@ namespace ColorVision.UI
             return null;
         }
 
-        public MenuItem? GetTemplateMenuItem() 
+        public MenuItem? GetTemplateMenuItem()
         {
             foreach (var item in Menu.Items)
             {

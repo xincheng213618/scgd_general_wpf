@@ -1,6 +1,9 @@
-﻿using ColorVision.Services.Devices;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Services.Devices;
 using ColorVision.Services.Terminal;
 using ColorVision.Settings;
+using ColorVision.UI;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -9,6 +12,26 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services
 {
+    public class WindowDevicesMenuItem : IMenuItem
+    {
+        public string? OwnerGuid => "Tool";
+
+        public string? Guid { get; set; } = "WindowDevices";
+        public int Index => 3;
+        public string? Header => "设备配置(_D)";
+
+        public string? InputGestureText { get; set; }
+
+        public string? Icon { get; set; }
+
+        public RelayCommand Command => new RelayCommand(a =>
+        {
+            new WindowDevices() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        });
+
+    }
+
+
 
     /// <summary>
     /// WindowService.xaml 的交互逻辑

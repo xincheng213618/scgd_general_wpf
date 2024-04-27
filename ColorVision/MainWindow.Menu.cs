@@ -23,6 +23,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -70,12 +71,6 @@ namespace ColorVision
                         windowTemplate = new WindowTemplate(TemplateType.SMUParam);
                         windowTemplate.Owner = GetWindow(this);
                         windowTemplate.ShowDialog();
-                        break;
-                    case "ServiceParam":
-                        new WindowService() { Owner =this,WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-                        break;
-                    case "DeviceParam":
-                        new WindowDevices() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
                         break;
                     case "MeasureParm":
                         MeasureParamControl measure = new MeasureParamControl();
@@ -194,6 +189,7 @@ namespace ColorVision
         private void Menu_Initialized(object sender, EventArgs e)
         {
             MenuManager.GetInstance().Menu = Menu1;
+            MenuManager.GetInstance().LoadMenuItemFromAssembly<IMenuItem>(Assembly.GetExecutingAssembly());
             Application.Current.MainWindow = this;
             Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.Settings, new Hotkey(Key.I, ModifierKeys.Control), OpenSetting));
             Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.About, new Hotkey(Key.F1, ModifierKeys.Control), AboutMsg));
@@ -295,7 +291,6 @@ namespace ColorVision
                 LanguageItem.IsChecked = Thread.CurrentThread.CurrentUICulture.Name == item;
                 MenuLanguage.Items.Add(LanguageItem);
             }
-
         }
         private void MenuLanguage_Loaded(object sender, RoutedEventArgs e)
         {
@@ -304,7 +299,6 @@ namespace ColorVision
                 if (item is MenuItem LanguageItem && LanguageItem.Tag is string Language)
                     LanguageItem.IsChecked = Thread.CurrentThread.CurrentUICulture.Name == Language;
             }
-
         }
 
         private void MenuTheme_Loaded(object sender, RoutedEventArgs e)

@@ -213,6 +213,8 @@ namespace ColorVision
             PluginLoader.LoadPlugins("Plugins");
 
             PluginLoader.LoadAssembly<IPlugin>(Assembly.GetExecutingAssembly());
+
+
         }
 
         public async static Task EnsureLocalInfile()

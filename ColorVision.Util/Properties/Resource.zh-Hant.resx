@@ -186,4 +186,10 @@
   <data name="fr" xml:space="preserve">
     <value>法語</value>
   </data>
+  <data name="MenuTheme" xml:space="preserve">
+    <value>主題(H)</value>
+  </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>語言(_L）</value>
+  </data>
 </root>

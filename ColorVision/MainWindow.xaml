@@ -57,14 +57,12 @@
                         <MenuItem Header="{x:Static properties:Resource.WorkflowEngine_F}" Click="MenuItem9_Click"/>
                         <MenuItem Header="MQTT日志(_Q)" Click="MenuItem_Click"/>
                         <MenuItem Header="Msg列表(_L)" Click="MenuItem12_Click"/>
-                        <MenuItem Header="设备配置(_D)"  Tag="DeviceParam" Click="MenuItem_Template"/>
                         <MenuItem Header="校正生成工具"  Tag="" Click="MenuItem_Template"/>
                         <MenuItem Header="物理相机管理"  Tag="PhyCameraManager" Click="MenuItem_Template"/>
                         <MenuItem Header="{x:Static properties:Resource.Sign_in}"  Click="Login_Click"/>
                         <Separator/>
                         <MenuItem x:Name="MenuLanguage" Header="{x:Static properties:Resource.MenuLanguage}" Initialized="MenuLanguage_Initialized" Loaded="MenuLanguage_Loaded"/>
                         <MenuItem x:Name="MenuTheme" Header="{x:Static properties:Resource.MenuTheme}" Initialized="MenuTheme_Initialized" Loaded="MenuTheme_Loaded"/>
-
                         <MenuItem Header="{x:Static properties:Resource.MenuOptions}"  Click="MenuItem_Click_2"   InputGestureText="Ctrl + I"  >
                             <MenuItem.Icon >
                                 <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>

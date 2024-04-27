@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
@@ -15,27 +16,27 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Sensor.Templates
 {
-    public class CamerExpMenuItem : IPlugin
+    public class CamerExpMenuItem : IMenuItem
     {
-        public string Name => "CamerExp";
-        public string Description => "CamerExp";
+        public string OwnerGuid => "Template";
 
-        public void Execute()
-        {
+        public string? Guid => "CameraExposureParam";
+        public int Index => 5;
+        public string? Header => "机曝光模板设置(_B)";
+
+        public string? InputGestureText { get; }
+
+        public string? Icon { get; }
+
+        public RelayCommand Command => new RelayCommand(a => {
             SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
             if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-
-            MenuItem menuItem = new MenuItem() { Header = "相机曝光模板设置(_B)" };
-            menuItem.Click += (s, e) =>
-            {
-                new WindowTemplate(TemplateType.CameraExposureParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-            };
-            MenuManager.GetInstance().GetTemplateMenuItem()?.Items.Add(menuItem);
-        }
+            new WindowTemplate(TemplateType.CameraExposureParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        });
     }
 
     public class CameraExposureParam : ParamBase

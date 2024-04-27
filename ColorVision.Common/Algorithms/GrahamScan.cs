@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ColorVision.Common.Al
+namespace ColorVision.Common.Algorithms
 {
     //计算凸包Graham扫描算法
     public class GrahamScan

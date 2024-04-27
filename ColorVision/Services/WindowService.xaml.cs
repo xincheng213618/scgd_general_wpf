@@ -8,24 +8,26 @@ using System.Windows;
 using System.Windows.Controls;
 using ColorVision.UI;
 using ColorVision.Common.Utilities;
+using ColorVision.Common.MVVM;
 
 namespace ColorVision.Services
 {
-    public class WindowServiceMenuItem :IPlugin
+    public class WindowServiceMenuItem : IMenuItem
     {
-        public string Name => "服务设置";
-        public string Category => "设置";
-        public string Description => "服务设置";
+        public string? OwnerGuid => "Tool";
 
-        public void Execute()
+        public string? Guid { get; set; } = "WindowService";
+        public int Index => 3;
+        public string? Header => "管理员服务配置(_S)";
+
+        public string? InputGestureText { get; set; }
+
+        public string? Icon { get; set; }
+
+        public RelayCommand Command => new RelayCommand(a =>
         {
-            MenuItem menuItem = new MenuItem() { Header = "管理员服务配置(_S)" };
-            menuItem.Click += (s, e) =>
-            {
-                new WindowService() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-            };
-            MenuManager.GetInstance().GetMenuToolItem()?.Items.Insert(4,menuItem);
-        }
+            new WindowService() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        });
     }
 
 

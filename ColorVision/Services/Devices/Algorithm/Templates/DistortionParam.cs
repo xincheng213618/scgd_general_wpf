@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
@@ -11,27 +12,27 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {
-    public class GhostParamMenuItem : IPlugin
+    public class GhostParamMenuItem : IMenuItem
     {
-        public string Name => "GhostPara";
-        public string Description => "GhostPara";
+        public string? OwnerGuid => "Template";
 
-        public void Execute()
-        {
+        public string? Guid => "GhostParam";
+        public int Index => 3;
+        public string? Header => "GhostParam模板设置(_G)";
+
+        public string? InputGestureText { get; }
+
+        public string? Icon { get; }
+
+        public RelayCommand Command => new RelayCommand(a => {
             SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
             if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-
-            MenuItem menuItem = new MenuItem() { Header = "鬼影模板设置(_H)" };
-            menuItem.Click += (s, e) =>
-            {
-                new WindowTemplate(TemplateType.GhostParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-            };
-            MenuManager.GetInstance().GetTemplateMenuItem()?.Items.Add(menuItem);
-        }
+            new WindowTemplate(TemplateType.GhostParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        });
     }
     
 

@@ -186,4 +186,10 @@
   <data name="fr" xml:space="preserve">
     <value>French</value>
   </data>
+  <data name="MenuTheme" xml:space="preserve">
+    <value>T_heme</value>
+  </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>_Language</value>
+  </data>
 </root>

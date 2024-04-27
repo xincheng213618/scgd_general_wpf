@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
@@ -15,27 +16,27 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Sensor.Templates
 {
-    public class SensorHeYuanMenuItem : IPlugin
+    public class SensorHeYuanMenuItem : IMenuItem
     {
-        public string Name => "SensorHeYuan";
-        public string Description => "SensorHeYuan";
+        public string OwnerGuid => "Template";
 
-        public void Execute()
-        {
+        public string? Guid => "SensorHeYuan";
+        public int Index => 7;
+        public string? Header => "河源模板设置(_S)";
+
+        public string? InputGestureText { get; }
+
+        public string? Icon { get; }
+
+        public RelayCommand Command => new RelayCommand(a => {
             SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
             if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-
-            MenuItem menuItem = new MenuItem() { Header = "河源PG模板设置(_B)" };
-            menuItem.Click += (s, e) =>
-            {
-                new WindowTemplate(TemplateType.SensorHeYuan) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-            };
-            MenuManager.GetInstance().GetTemplateMenuItem()?.Items.Add(menuItem);
-        }
+            new WindowTemplate(TemplateType.SensorHeYuan) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        });
     }
 
     public class SensorHeYuan:ParamBase

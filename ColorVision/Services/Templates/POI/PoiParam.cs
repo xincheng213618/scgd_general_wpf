@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Settings;
 using ColorVision.UI;
@@ -10,27 +11,28 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Templates.POI
 {
-    public class PoiParamMenuItem : IPlugin
+    public class PoiParamMenuItem : IMenuItem
     {
-        public string Name => "PoiParam";
-        public string Description => "PoiParam";
+        public string? OwnerGuid => "Template";
 
-        public void Execute()
-        {
+        public string? Guid => "PoiParam";
+        public int Index => 1;
+        public string? Header => "POI模板设置(_P)";
+
+        public string? InputGestureText { get; }
+
+        public string? Icon { get; }
+
+        public RelayCommand Command => new RelayCommand(a => {
             SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
             if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
+            new WindowTemplate(TemplateType.PoiParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        });
 
-            MenuItem menuItem = new MenuItem() { Header = "关注点模板设置(_P)" };
-            menuItem.Click += (s, e) =>
-            {
-                new WindowTemplate(TemplateType.PoiParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-            };
-            MenuManager.GetInstance().GetTemplateMenuItem()?.Items.Insert(1,menuItem);
-        }
     }
 
 

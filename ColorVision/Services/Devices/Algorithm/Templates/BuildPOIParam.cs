@@ -1,4 +1,5 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Templates;
 using ColorVision.Services.Templates.POI;
@@ -11,27 +12,27 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {
-    public class BuildPOIMenuItem : IPlugin
+    public class BuildPOIMenuItem : IMenuItem
     {
-        public string Name => "BuildPOI";
-        public string Description => "BuildPOI";
+        public string? OwnerGuid => "Template";
 
-        public void Execute()
-        {
+        public string? Guid => "BuildPOI";
+        public int Index => 2;
+        public string? Header => "BuildPOI模板设置(_B)";
+
+        public string? InputGestureText { get; }
+
+        public string? Icon { get; }
+
+        public RelayCommand Command => new RelayCommand(a => {
             SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
             if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(),"数据库连接失败，请先连接数据库在操作", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-
-            MenuItem menuItem = new MenuItem() { Header = "BuildPOI模板设置(_B)" };
-            menuItem.Click += (s, e) =>
-            {
-                new WindowTemplate(TemplateType.BuildPOIParmam){ Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-            };
-            MenuManager.GetInstance().GetTemplateMenuItem()?.Items.Add(menuItem);
-        }
+            new WindowTemplate(TemplateType.BuildPOIParmam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        }); 
     }
 
 
