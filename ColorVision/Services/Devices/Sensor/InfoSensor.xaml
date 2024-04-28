@@ -87,12 +87,16 @@
                     <GroupBox Header="传感器设置" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel>
-                                <TextBlock Text="连接类型" Width="120"/>
-                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CommunicateType}" />
+                                <TextBlock Text="是否是串口" Width="120"/>
+                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.IsNet}" />
                             </DockPanel>
                             <DockPanel>
                                 <TextBlock Text="IP地址" Width="120"/>
                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SzIPAddress}" />
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBlock Text="串口" Width="120"/>
+                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.PorName}" />
                             </DockPanel>
                             <DockPanel>
                                 <TextBlock Text="端口" Width="120"/>
