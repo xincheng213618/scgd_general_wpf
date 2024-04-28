@@ -44,23 +44,24 @@ namespace ColorVision.Services.Devices.Sensor
                 DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
             };
 
-            Device.DeviceService.HeartbeatEvent += (arg) =>
+            Device.DeviceService.DeviceStatusChanged += (e) =>
             {
-
-                if (arg.DeviceStatus == DeviceStatusType.Opened)
+                switch (e)
                 {
-                    ButtonClose.Visibility = Visibility.Visible;
-                    ButtonOpen.Visibility = Visibility.Collapsed;
+                    case DeviceStatusType.Opened:
+                        ButtonClose.Visibility = Visibility.Visible;
+                        ButtonOpen.Visibility = Visibility.Collapsed;
+                        break;
+                    case DeviceStatusType.Closed:
+                        ButtonOpen.Visibility = Visibility.Visible;
+                        ButtonClose.Visibility = Visibility.Collapsed;
+                        break;
+                    default:
+                        ButtonOpen.Visibility = Visibility.Visible;
+                        ButtonClose.Visibility = Visibility.Collapsed;
+                        break;
                 }
-                else if (arg.DeviceStatus == DeviceStatusType.Closed)
-                {
-                    ButtonOpen.Visibility = Visibility.Visible;
-                    ButtonClose.Visibility = Visibility.Collapsed;
-                }
-
             };
-
-
         }
 
         public event RoutedEventHandler Selected;
