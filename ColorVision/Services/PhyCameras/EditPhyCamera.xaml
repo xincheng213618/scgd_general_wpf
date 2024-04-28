@@ -264,69 +264,6 @@
                         </StackPanel>
 
                     </GroupBox>
-
-
-                    <GroupBox Header="自动聚焦" Margin="0,5" >
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="电机配置:" Width="120"/>
-                                <ui:ToggleSwitch IsChecked="{Binding IsHaveMotor}"/>
-                            </DockPanel>
-                            <StackPanel Visibility="{Binding IsHaveMotor,Converter={StaticResource bool2VisibilityConverter}}">
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="电机类型:" Width="120"/>
-                                    <ComboBox x:Name="ComboxMotorType"  SelectedValue="{Binding MotorConfig.eFOCUSCOMMUN}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,0,0"/>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="串口:" Width="120"/>
-                                    <hc:ComboBox  x:Name="TextSerial" IsEditable="True" Text="{Binding MotorConfig.SzComName}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="波特率:" Width="120"/>
-                                    <hc:ComboBox x:Name="TextBaudRate" IsEditable="True" Text="{Binding MotorConfig.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
-                                </DockPanel>
-
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="评价函数类型:" Width="120"/>
-                                    <hc:ComboBox x:Name="ComboxeEvaFunc"  SelectedValue="{Binding MotorConfig.AutoFocusConfig.EvaFunc}" SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,10,0"/>
-                                </DockPanel>
-                                <DockPanel>
-                                    <TextBlock Text="超时时间:" Width="120"/>
-                                    <TextBox  Text="{Binding MotorConfig.AutoFocusConfig.nTimeout}" />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="电机移动区间下限:" Width="120"/>
-                                    <TextBox Text="{Binding MotorConfig.AutoFocusConfig.MinPosition}" />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="电机移动区间上限:" Width="120"/>
-                                    <TextBox Text="{Binding MotorConfig.AutoFocusConfig.MaxPosition}" />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="步径摆动范围:" Width="120"/>
-                                    <TextBox  Text="{Binding MotorConfig.AutoFocusConfig.Forwardparam}" />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="目前使用步径:" Width="120"/>
-                                    <TextBox  Text="{Binding MotorConfig.AutoFocusConfig.CurStep}" />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="步径每次缩诚系数:" Width="120"/>
-                                    <TextBox Text="{Binding MotorConfig.AutoFocusConfig.Curtailparam}" />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="停止步径:" Width="120"/>
-                                    <TextBox Text="{Binding MotorConfig.AutoFocusConfig.StopStep}" />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="最低评价值:" Width="120"/>
-                                    <TextBox Text="{Binding MotorConfig.AutoFocusConfig.MinValue}" />
-                                </DockPanel>
-                            </StackPanel>
-
-                        </StackPanel>
-                    </GroupBox>
-
                 </StackPanel>
             </Border>
         </ScrollViewer>

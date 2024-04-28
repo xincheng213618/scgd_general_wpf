@@ -231,24 +231,6 @@ namespace cvColorVision
         }
     }
 
-    public class ExpTimeCfg
-    {
-        public int autoExpTimeBegin { set; get; }
-        public bool autoExpFlag { set; get; }
-        //自动同步频率
-        public float autoExpSyncFreq { set; get; }
-        public float autoExpSaturation { set; get; }
-        public ushort autoExpSatMaxAD { set; get; }
-        //
-        public double autoExpMaxPecentage { set; get; }
-        //误差值
-        public float autoExpSatDev { set; get; }
-        //最大/小曝光
-        public float maxExpTime { set; get; }
-        public float minExpTime { set; get; }
-        //burst的阈值
-        public float burstThreshold { set; get; }
-    }
     public struct SIZE
     {
         public int cx;
@@ -493,13 +475,11 @@ namespace cvColorVision
 
     public class ProjectSysCfg
     {
-        public ExpTimeCfg expTimeCfg;
         public List<CalibrationItem> calibrationLibCfg;
         public List<ChannelCfg> channelCfg;
 
         public ProjectSysCfg()
         {
-            expTimeCfg = new ExpTimeCfg();
             calibrationLibCfg = new List<CalibrationItem>();
             channelCfg = new List<ChannelCfg>();
         }

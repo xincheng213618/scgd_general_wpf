@@ -27,6 +27,29 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder"  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel Margin="5" >
+                <GroupBox Header="通讯方式" Margin="5">
+                    <StackPanel>
+                        <DockPanel Margin="0,5" IsEnabled="False">
+                            <TextBlock Text="类别型号"/>
+                            <TextBox BorderThickness="0,0,0,1" Text="{Binding Config.Category}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,5" IsEnabled="False">
+                            <RadioButton Content="TCPIP通讯" IsChecked="{Binding  Config.IsNet}" Margin="0,0,5,0"/>
+                            <RadioButton Content="串口通讯"  IsChecked="{Binding  Config.IsNet,Converter={StaticResource Boolean2BooleanReConverter}}" Margin="0,0,5,0"/>
+                        </DockPanel>
+                        <UniformGrid IsEnabled="False" Columns="2">
+                            <DockPanel Margin="5">
+                                <TextBlock  x:Name="TextBlockPGIP"   Text="IP"/>
+                                <TextBox  x:Name="TextBoxPGIP" BorderThickness="0,0,0,1" Text="{Binding Config.Addr}"/>
+                            </DockPanel>
+                            <DockPanel Margin="5">
+                                <TextBlock  x:Name="TextBlockPGPort"  Text="Port"/>
+                                <TextBox  x:Name="TextBoxPGPort" BorderThickness="0,0,0,1" Text="{Binding Config.Port}"/>
+                            </DockPanel>
+                        </UniformGrid>
+                    </StackPanel>
+                </GroupBox>
+
                 <Button x:Name="ButtonOpen" Margin="0,2" Content="连接"  Click="Open_Click"/>
                 <Button x:Name="ButtonClose" Margin="0,2" Content="关闭"  Click="Close_Click" Visibility="Collapsed"/>
                 <DockPanel Margin="0,2">
@@ -37,7 +60,9 @@
                         <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0"  Click="MenuItem_Template"/>
                     </Grid>
                 </DockPanel>
-                <GroupBox Header="调试工具">
+                <CheckBox Content="调试模式"  IsChecked="False" x:Name="CheckBoxIsDeBug"/>
+
+                <GroupBox Header="调试工具" Visibility="{Binding ElementName=CheckBoxIsDeBug,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                     <StackPanel>
                         <DockPanel Margin="0,2">
                             <TextBlock Text="指令类型" Width="60"/>

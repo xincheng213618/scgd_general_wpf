@@ -1,9 +1,9 @@
 ﻿using Newtonsoft.Json;
 using ColorVision.Services.Devices;
-using cvColorVision;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Common.MVVM;
 using System;
+using cvColorVision;
 
 namespace ColorVision.Services.PhyCameras.Configs
 {
@@ -74,6 +74,7 @@ namespace ColorVision.Services.PhyCameras.Configs
 
         public CameraCfg CameraCfg { get; set; } = new CameraCfg();
         public CFWPORT CFW { get; set; } = new CFWPORT();
+        public ExpTimeCfg ExpTimeCfg { get; set; } = new ExpTimeCfg();
 
         public FileSeviceConfig FileServerCfg { get; set; } = new FileSeviceConfig();
     }
