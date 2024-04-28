@@ -1,4 +1,6 @@
-﻿using ColorVision.RecentFile;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.HotKey;
+using ColorVision.RecentFile;
 using ColorVision.Themes.Controls;
 using System;
 using System.Collections.ObjectModel;
@@ -10,6 +12,29 @@ using System.Windows.Input;
 
 namespace ColorVision.Solution
 {
+
+    public class HotKeyOpenSolution : IHotKey
+    {
+        public HotKeys HotKeys => new HotKeys(Properties.Resource.OpenSolution, new Hotkey(Key.O, ModifierKeys.Control), OpenSolutionWindow);
+
+        private void OpenSolutionWindow()
+        {
+            OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            openSolutionWindow.Closed += delegate
+            {
+                if (!string.IsNullOrWhiteSpace(openSolutionWindow.FullName))
+                {
+                    if (Directory.Exists(openSolutionWindow.FullName))
+                        SolutionManager.GetInstance().OpenSolution(openSolutionWindow.FullName);
+                    else
+                        MessageBox.Show(Application.Current.GetActiveWindow(),"找不到工程","ColorVision");
+                }
+
+            };
+            openSolutionWindow.Show();
+        }
+    }
+
     /// <summary>
     /// NewCreateWindow.xaml 的交互逻辑
     /// </summary>
@@ -33,7 +58,7 @@ namespace ColorVision.Solution
             
             foreach (var item in SolutionHistory.RecentFiles)
             {
-                DirectoryInfo Info = new DirectoryInfo(item);
+                FileInfo Info = new FileInfo(item);
                 if (Info.Exists)
                 {
                     SolutionInfos.Add(new SolutionInfo() { Name = Info.Name, FullName = Info.FullName, CreationTime = Info.CreationTime.ToString("yyyy/MM/dd H:mm") });
@@ -45,6 +70,7 @@ namespace ColorVision.Solution
             }
             SolutionInfosShow = new ObservableCollection<SolutionInfo>(SolutionInfos);
             ListView1.ItemsSource = SolutionInfosShow;
+            ListView1.Visibility = Visibility.Visible;
         }
 
 

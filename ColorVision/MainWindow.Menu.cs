@@ -190,9 +190,8 @@ namespace ColorVision
         {
             MenuManager.GetInstance().Menu = Menu1;
             MenuManager.GetInstance().LoadMenuItemFromAssembly<IMenuItem>(Assembly.GetExecutingAssembly());
+            this.LoadHotKeyFromAssembly<IHotKey>(Assembly.GetExecutingAssembly());
             Application.Current.MainWindow = this;
-            Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.Settings, new Hotkey(Key.I, ModifierKeys.Control), OpenSetting));
-            Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.About, new Hotkey(Key.F1, ModifierKeys.Control), AboutMsg));
             Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.MsgList, new Hotkey(Key.M, ModifierKeys.Control), MsgList));
         }
 
@@ -218,7 +217,7 @@ namespace ColorVision
         private void TextBlock_MouseLeftButtonDown1(object sender, MouseButtonEventArgs e)
         {
             new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
+        } 
         private void TextBlock_MouseLeftButtonDown_RC(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             new RCServiceConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();

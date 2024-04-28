@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Extension;
+using ColorVision.Common.Utilities;
 using ColorVision.HotKey;
 using ColorVision.Language;
 using ColorVision.MQTT;
@@ -19,6 +20,16 @@ using System.Windows.Media;
 
 namespace ColorVision.Settings
 {
+    public class HotKeySetting : IHotKey
+    {
+        public HotKeys HotKeys => new HotKeys(Properties.Resource.About, new Hotkey(Key.F1, ModifierKeys.Control), AboutMsg);
+        private void AboutMsg()
+        {
+            new SettingWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+    }
+
+
     /// <summary>
     /// SettingWindow.xaml 的交互逻辑
     /// </summary>

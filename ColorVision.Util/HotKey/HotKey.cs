@@ -4,6 +4,9 @@ using System.Windows.Input;
 
 namespace ColorVision.HotKey
 {
+
+
+
     public static class HotKeyExtension
     {
         public static int ToInt(this Hotkey hotkey) => Hotkey.ToInt(hotkey);

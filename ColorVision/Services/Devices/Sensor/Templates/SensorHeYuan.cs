@@ -22,7 +22,7 @@ namespace ColorVision.Services.Devices.Sensor.Templates
 
         public string? GuidId => "SensorHeYuan";
         public int Index => 7;
-        public string? Header => "河源模板设置(_S)";
+        public string? Header => "通用传感器模板设置(_S)";
 
         public string? InputGestureText { get; }
 

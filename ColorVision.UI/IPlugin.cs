@@ -18,15 +18,12 @@ namespace ColorVision.UI
         public static List<T> LoadAssembly<T>(Assembly assembly)where T: IPlugin
         {
             List<T> plugins = new List<T>();
-            foreach (Type type in assembly.GetTypes())
+            foreach (Type type in assembly.GetTypes().Where(t => typeof(T).IsAssignableFrom(t) && !t.IsAbstract))
             {
-                if (type.GetInterfaces().Contains(typeof(T)))
+                if (Activator.CreateInstance(type) is T plugin)
                 {
-                    if (Activator.CreateInstance(type) is T plugin)
-                    {
-                        plugin.Execute();
-                        plugins.Add(plugin);
-                    }
+                    plugin.Execute();
+                    plugins.Add(plugin);
                 }
             }
             return plugins;

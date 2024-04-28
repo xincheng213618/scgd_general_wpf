@@ -1,4 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.HotKey;
 using ColorVision.RecentFile;
 using ColorVision.Settings;
 using System;
@@ -6,9 +8,30 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.Solution
 {
+    public class HotKeyNewCreate : IHotKey
+    {
+        public HotKeys HotKeys => new HotKeys(Properties.Resource.NewSolution, new Hotkey(Key.N, ModifierKeys.Control), NewCreateWindow);
+
+        private void NewCreateWindow()
+        {
+            NewCreateWindow newCreatWindow = new NewCreateWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            newCreatWindow.Closed += delegate
+            {
+                if (newCreatWindow.IsCreate)
+                {
+                    string SolutionDirectoryPath = newCreatWindow.NewCreateViewMode.DirectoryPath + "\\" + newCreatWindow.NewCreateViewMode.Name;
+                    string name = SolutionManager.GetInstance().CreateSolution(new DirectoryInfo(SolutionDirectoryPath));
+                    SolutionManager.GetInstance().OpenSolution(name);
+                }
+            };
+            newCreatWindow.ShowDialog();
+        }
+    }
+
     public class NewCreateViewMode : ViewModelBase
     {
         public RecentFileList RecentNewCreateCache { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\RecentNewCreateCache") };

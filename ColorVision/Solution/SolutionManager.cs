@@ -152,8 +152,6 @@ namespace ColorVision.Solution
         public void AddHotKeys()
         {
             InitMenu();
-            Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.OpenSolution, new Hotkey(Key.O, ModifierKeys.Control), OpenSolutionWindow));
-            Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.NewSolution, new Hotkey(Key.N, ModifierKeys.Control), NewCreateWindow));
         }
 
 

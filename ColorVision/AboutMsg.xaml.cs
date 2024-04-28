@@ -1,4 +1,6 @@
 ﻿
+using ColorVision.Common.Utilities;
+using ColorVision.HotKey;
 using ColorVision.Settings;
 using ColorVision.Themes.Controls;
 using System;
@@ -12,6 +14,15 @@ using System.Windows.Media.Animation;
 
 namespace ColorVision
 {
+    public class HotKeyAboutMsg : IHotKey
+    {
+        public HotKeys HotKeys => new HotKeys(Properties.Resource.Settings, new Hotkey(Key.I, ModifierKeys.Control), OpenSetting);
+        private void OpenSetting()
+        {
+            new AboutMsgWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+    }
+
     /// <summary>
     /// AboutMsg.xaml 的交互逻辑
     /// </summary>
