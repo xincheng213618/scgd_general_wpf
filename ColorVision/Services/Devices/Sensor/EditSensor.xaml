@@ -53,7 +53,7 @@
                             </DockPanel>
                             <DockPanel Margin="0,2" >
                                 <TextBlock  x:Name="TextBlockPGIP"   Text="IP地址" Width="120"/>
-                                <TextBox Text="{Binding PorName}"/>
+                                <TextBox Text="{Binding Addr}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2" >
                                 <TextBlock  x:Name="TextBlockPGPort"   Text="端口" Width="120"/>

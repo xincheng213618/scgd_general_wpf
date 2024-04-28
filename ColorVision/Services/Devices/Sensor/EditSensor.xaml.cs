@@ -43,6 +43,11 @@ namespace ColorVision.Services.Devices.Sensor
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+
+            var liss = new Dictionary<string,string>() { { "河源指令集", "Sensor.HeYuan" } };
+
+            pgCategory.ItemsSource = liss;
+
             IsComm.Checked += (s,e)=>
             {
                 TextBlockPGIP.Text = "串口";

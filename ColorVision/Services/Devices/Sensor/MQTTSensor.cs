@@ -24,7 +24,7 @@ namespace ColorVision.Services.Devices.Sensor
             MsgSend msg = new MsgSend
             {
                 EventName = "Open",
-                Params = new Dictionary<string, object> { { "eCOM_Type", Config.CommunicateType }, { "szIPAddress", Config.SzIPAddress }, { "nPort", Config.Port } }
+                Params = new Dictionary<string, object> { { "eCOM_Type", Config.Category }, { "szIPAddress", Config.Addr }, { "nPort", Config.Port } }
             };
             PublishAsyncClient(msg);
         }
@@ -65,7 +65,7 @@ namespace ColorVision.Services.Devices.Sensor
             MsgSend msg = new MsgSend
             {
                 EventName = MQTTSensorEventEnum.Event_ExecCmd,
-                Params = new Dictionary<string, object> { { "eCOM_Type", Config.CommunicateType }, { "szIPAddress", Config.SzIPAddress }, { "nPort", Config.Port } ,{ "cmd",command} }
+                Params = new Dictionary<string, object> { { "eCOM_Type", Config.Category }, { "szIPAddress", Config.Addr }, { "nPort", Config.Port } ,{ "cmd",command} }
             };
             PublishAsyncClient(msg);
         }

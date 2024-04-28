@@ -87,20 +87,20 @@
                     <GroupBox Header="传感器设置" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel>
-                                <TextBlock Text="是否是串口" Width="120"/>
-                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.IsNet}" />
+                                <TextBlock Text="类别型号" Width="120"/>
+                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.Category}"/>
                             </DockPanel>
                             <DockPanel>
-                                <TextBlock Text="IP地址" Width="120"/>
-                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SzIPAddress}" />
+                                <TextBlock Text="通讯方式" Width="120"/>
+                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.IsNet}"/>
                             </DockPanel>
                             <DockPanel>
-                                <TextBlock Text="串口" Width="120"/>
-                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.PorName}" />
+                                <TextBlock  Text="IP地址" Width="120"/>
+                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.Addr}"/>
                             </DockPanel>
                             <DockPanel>
-                                <TextBlock Text="端口" Width="120"/>
-                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Port}" />
+                                <TextBlock  Text="端口" Width="120"/>
+                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.Port}"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
