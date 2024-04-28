@@ -3,6 +3,7 @@ using ColorVision.Extension;
 using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.Devices.Camera.Views;
 using ColorVision.Services.Msg;
+using ColorVision.Services.PhyCameras;
 using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
@@ -69,6 +70,11 @@ namespace ColorVision.Services.Devices.Camera
             ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreatEmpty();
             ComboxCalibrationTemplate.SelectedIndex = 0;
             Device.ConfigChanged += (s, e) =>
+            {
+                ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreatEmpty();
+                ComboxCalibrationTemplate.SelectedIndex = 0;
+            };
+            PhyCameraManager.GetInstance().Loaded += (s, e) =>
             {
                 ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreatEmpty();
                 ComboxCalibrationTemplate.SelectedIndex = 0;
