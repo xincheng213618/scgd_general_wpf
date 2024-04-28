@@ -16,11 +16,12 @@ namespace ColorVision
 {
     public class HotKeyAboutMsg : IHotKey
     {
-        public HotKeys HotKeys => new HotKeys(Properties.Resource.Settings, new Hotkey(Key.I, ModifierKeys.Control), OpenSetting);
-        private void OpenSetting()
+        public HotKeys HotKeys => new HotKeys(Properties.Resource.Settings, new Hotkey(Key.I, ModifierKeys.Control), Execute);
+        private void Execute()
         {
             new AboutMsgWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+
     }
 
     /// <summary>

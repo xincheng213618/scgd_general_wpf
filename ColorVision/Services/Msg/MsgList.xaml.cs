@@ -15,7 +15,6 @@ using System.Windows.Input;
 
 namespace ColorVision.Services.Msg
 {
-
     public class HotKeyMsgList : IHotKey, IMenuItem
     {
         public HotKeys HotKeys => new HotKeys(Properties.Resource.MsgList, new Hotkey(Key.M, ModifierKeys.Control), Execute);

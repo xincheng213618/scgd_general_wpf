@@ -25,7 +25,7 @@
                 <Menu x:Name="Menu1"  Initialized="Menu_Initialized">
                     <MenuItem x:Name="FileMenuItem" Header="{x:Static properties:Resource.MenuFile}">
                         <MenuItem Header="{x:Static properties:Resource.MenuNew}" Click="MenuItem_ProjectNew_Click" InputGestureText="Ctrl + N">
-                            <MenuItem.Icon >
+                            <MenuItem.Icon>
                                 <TextBlock Text="&#xE8F4;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
                             </MenuItem.Icon>
                         </MenuItem>
