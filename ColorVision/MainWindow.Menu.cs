@@ -165,15 +165,6 @@ namespace ColorVision
         }
         private DateTime lastClickTime = DateTime.MinValue;
 
-        private void MenuItem_Click_2(object sender, RoutedEventArgs e)
-        {
-            OpenSetting();
-        }
-
-        private void OpenSetting()
-        {
-            new SettingWindow() { Owner =this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
 
 
         private void MenuItem12_Click(object sender, RoutedEventArgs e)
@@ -245,15 +236,6 @@ namespace ColorVision
         private void MenuItem_Click(object sender, RoutedEventArgs e)
         {
             new MQTTLog() { Owner = this }.Show();
-        }
-        private void About_Click(object sender, RoutedEventArgs e)
-        {
-            AboutMsg();
-        }
-
-        private void AboutMsg()
-        {
-            new AboutMsgWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
 
 

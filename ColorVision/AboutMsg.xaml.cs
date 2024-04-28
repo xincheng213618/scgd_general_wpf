@@ -1,8 +1,11 @@
 ﻿
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.HotKey;
+using ColorVision.Properties;
 using ColorVision.Settings;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -14,14 +17,28 @@ using System.Windows.Media.Animation;
 
 namespace ColorVision
 {
-    public class HotKeyAboutMsg : IHotKey
+    public class HotKeyAboutMsg : IHotKey,IMenuItem
     {
-        public HotKeys HotKeys => new HotKeys(Properties.Resource.Settings, new Hotkey(Key.I, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new HotKeys(Properties.Resource.MenuAbout, new Hotkey(Key.F1, ModifierKeys.Control), Execute);
+
+        public string? OwnerGuid => "Help";
+
+        public string? GuidId => "AboutMsg";
+
+        public int Index => 99;
+
+        public string? Header => Resource.MenuAbout;
+
+        public string? InputGestureText => "Ctrl + F1";
+
+        public object? Icon { get; set; }
+
+        public RelayCommand Command => new RelayCommand(A=> Execute());
+
         private void Execute()
         {
             new AboutMsgWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-
     }
 
     /// <summary>

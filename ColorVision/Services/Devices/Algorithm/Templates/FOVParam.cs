@@ -21,7 +21,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
 
         public string? InputGestureText { get; }
 
-        public string? Icon { get; }
+        public object? Icon { get; }
 
         public RelayCommand Command => new RelayCommand(a => {
             SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;

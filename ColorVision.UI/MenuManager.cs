@@ -12,7 +12,7 @@ namespace ColorVision.UI
         public int Index { get; }
         public string? Header { get; }
         public string? InputGestureText { get; }
-        public string? Icon { get; }
+        public object? Icon { get; }
         public RelayCommand Command { get; }
     }
 
@@ -37,6 +37,8 @@ namespace ColorVision.UI
             menuItems.Add("File", GetFileMenuItem());
             menuItems.Add("Template", GetTemplateMenuItem());
             menuItems.Add("Tool", GetMenuToolItem());
+            menuItems.Add("Help", GetMenuHelp());
+
             foreach (Type type in assembly.GetTypes().Where(t => typeof(T).IsAssignableFrom(t) && !t.IsAbstract))
             {
                 if (Activator.CreateInstance(type) is T iMenuItem)
@@ -115,6 +117,18 @@ namespace ColorVision.UI
             foreach (var item in Menu.Items)
             {
                 if (item is MenuItem menuItem && menuItem.Header.ToString() == Properties.Resources.MenuTemplate)
+                {
+                    return menuItem;
+                }
+            }
+            return null;
+        }
+
+        public MenuItem? GetMenuHelp()
+        {
+            foreach (var item in Menu.Items)
+            {
+                if (item is MenuItem menuItem && menuItem.Header.ToString() == Properties.Resources.MenuHelp)
                 {
                     return menuItem;
                 }
