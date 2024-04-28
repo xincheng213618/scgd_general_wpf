@@ -17,7 +17,7 @@ namespace ColorVision.Services.Flow
 
         public string? GuidId => "FlowParam";
         public int Index => 0;
-        public string? Header => "FlowParam模板设置(_F)";
+        public string? Header => "流程模板设置(_F)";
 
         public string? InputGestureText { get; }
 
