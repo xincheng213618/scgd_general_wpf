@@ -42,6 +42,13 @@ namespace ColorVision.Services.Devices.Calibration
             DataContext = Device;
             ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams;
             ComboxCalibrationTemplate.SelectedIndex = 0;
+            Device.ConfigChanged += (s, e) =>
+            {
+                ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams;
+                ComboxCalibrationTemplate.SelectedIndex = 0;
+            };
+
+
             this.AddViewConfig(View, ComboxView);
             SelectChanged += (s, e) =>
             {

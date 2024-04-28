@@ -66,8 +66,13 @@ namespace ColorVision.Services.Devices.Camera
 
             this.AddViewConfig(View, ComboxView);
 
-            CalibrationParamInit();
-            Device.ConfigChanged +=(s,e)=> CalibrationParamInit();
+            ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreatEmpty();
+            ComboxCalibrationTemplate.SelectedIndex = 0;
+            Device.ConfigChanged += (s, e) =>
+            {
+                ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreatEmpty();
+                ComboxCalibrationTemplate.SelectedIndex = 0;
+            };
 
             StackPanelOpen.Visibility = Visibility.Visible;
             StackPanelImage.Visibility = Visibility.Collapsed;
@@ -151,11 +156,6 @@ namespace ColorVision.Services.Devices.Camera
 
 
 
-        private void CalibrationParamInit()
-        {
-            ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreatEmpty();
-            ComboxCalibrationTemplate.SelectedIndex = 0;
-        }
 
 
         private void CameraInit_Click(object sender, RoutedEventArgs e)
