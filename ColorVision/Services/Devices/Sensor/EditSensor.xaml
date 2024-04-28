@@ -44,7 +44,7 @@
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2" >
                                 <TextBlock Text="类别型号" Width="120"/>
-                                <ComboBox x:Name="pgCategory" DisplayMemberPath="Key" Text="{Binding Category}"/>
+                                <ComboBox x:Name="pgCategory" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding Category}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2" >
                                 <TextBlock Text="通讯方式" Width="120"/>
