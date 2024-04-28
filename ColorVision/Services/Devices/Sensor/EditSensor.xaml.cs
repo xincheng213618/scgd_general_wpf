@@ -13,6 +13,8 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Common.MVVM;
+using ColorVision.Services.Dao;
+using NPOI.SS.Formula.Functions;
 
 
 namespace ColorVision.Services.Devices.Sensor
@@ -43,8 +45,15 @@ namespace ColorVision.Services.Devices.Sensor
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            var list1 = SysDictionaryModDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 5 } });
 
-            var liss = new Dictionary<string,string>() { { "河源指令集", "Sensor.HeYuan" } };
+            var liss = new Dictionary<string, string>() {  };
+
+            foreach (var item in list1)
+            {
+                liss.Add(item.Name, item.Code);
+            }
+
 
             pgCategory.ItemsSource = liss;
 

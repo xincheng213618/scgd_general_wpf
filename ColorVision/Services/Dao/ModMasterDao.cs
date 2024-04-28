@@ -53,6 +53,9 @@ namespace ColorVision.Services.Dao
     }
     public class ModMasterDao : BaseDaoMaster<ModMasterModel>
     {
+
+        public static ModMasterDao Instance { get; set; } = new ModMasterDao();
+
         private string _code;
         public ModMasterDao(string code) : base("v_scgd_mod_master", "t_scgd_mod_param_master", "id", true)
         {
