@@ -1,4 +1,10 @@
-﻿using ColorVision.MQTT;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.HotKey;
+using ColorVision.MQTT;
+using ColorVision.Services.Templates;
+using ColorVision.Settings;
+using ColorVision.UI;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
@@ -9,6 +15,29 @@ using System.Windows.Input;
 
 namespace ColorVision.Services.Msg
 {
+
+    public class HotKeyMsgList : IHotKey, IMenuItem
+    {
+        public HotKeys HotKeys => new HotKeys(Properties.Resource.MsgList, new Hotkey(Key.M, ModifierKeys.Control), Execute);
+        private void Execute()
+        {
+            new MsgList() { Owner = Application.Current.GetActiveWindow() }.Show();
+        }
+
+        public string? OwnerGuid => "Tool";
+
+        public string? GuidId => "MsgList";
+        public int Index => 2;
+        public string? Header => "MQTTMsg(_L)";
+
+        public string? InputGestureText { get; } = "Ctrl + M";
+
+        public string? Icon { get; }
+
+        public RelayCommand Command => new RelayCommand(a => Execute());
+    }
+
+
     /// <summary>
     /// MsgList.xaml 的交互逻辑
     /// </summary>

@@ -6,7 +6,6 @@ using ColorVision.UI;
 using MQTTMessageLib;
 using MQTTMessageLib.Sensor;
 using System;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -34,6 +33,7 @@ namespace ColorVision.Services.Devices.Sensor
         {
             DataContext = Device;
             ComboxSensorTemplate.ItemsSource = SensorHeYuan.SensorHeYuans;
+            ComboBoxType.ItemsSource = Enum.GetValues(typeof(SensorCmdType));
 
             SelectChanged += (s, e) =>
             {
@@ -43,6 +43,24 @@ namespace ColorVision.Services.Devices.Sensor
             {
                 DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
             };
+
+            Device.DeviceService.HeartbeatEvent += (arg) =>
+            {
+
+                if (arg.DeviceStatus == DeviceStatusType.Opened)
+                {
+                    ButtonClose.Visibility = Visibility.Visible;
+                    ButtonOpen.Visibility = Visibility.Collapsed;
+                }
+                else if (arg.DeviceStatus == DeviceStatusType.Closed)
+                {
+                    ButtonOpen.Visibility = Visibility.Visible;
+                    ButtonClose.Visibility = Visibility.Collapsed;
+                }
+
+            };
+
+
         }
 
         public event RoutedEventHandler Selected;
@@ -71,28 +89,10 @@ namespace ColorVision.Services.Devices.Sensor
 
         private void SendCommand_Click(object sender, RoutedEventArgs e)
         {
-            //DeviceService.ExecCmd((string)ComboBoxCommand.SelectedValue);
-            string cmdValue = (string)ComboBoxCommand.SelectedValue;
-            string[] vals = cmdValue.Split(',');
-            SensorCmd cmd = new SensorCmd() { CmdType= SensorCmdType.Hex, Request= vals[0], Response= vals[1], Timeout=5000 };
-            DeviceService.ExecCmd(cmd);
-        }
-
-        private void ComboxSensorTemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (ComboxSensorTemplate.SelectedItem is TemplateModel<SensorHeYuan> sensorHeYuan)
+            if (ComboBoxType.SelectedItem is SensorCmdType CmdType)
             {
-                List<KeyValuePair<string, string>> keyValuePairs = new List<KeyValuePair<string, string>>();
-                
-                foreach (var item in sensorHeYuan.Value.GetType().GetProperties())
-                {
-                    if (item.PropertyType== typeof(string))
-                    {
-                        keyValuePairs.Add( new KeyValuePair<string, string>(item.Name,(string)item.GetValue(sensorHeYuan.Value)));
-                    }
-                }
-
-                ComboBoxCommand.ItemsSource = keyValuePairs;
+                SensorCmd cmd = new SensorCmd() { CmdType = CmdType, Request = TextBoxSendCommand.Text, Response = TextBoxResCommand.Text, Timeout = 5000 };
+                DeviceService.ExecCmd(cmd);
             }
         }
 
@@ -103,6 +103,16 @@ namespace ColorVision.Services.Devices.Sensor
                 CVTemplateParam templateParam = new CVTemplateParam() { ID= sensorHeYuan.Value.Id, Name= sensorHeYuan.Value.Name };
                 DeviceService.ExecCmd(templateParam);
             }
+        }
+
+        private void Close_Click(object sender, RoutedEventArgs e)
+        {
+            DeviceService.Close();
+        }
+
+        private void MenuItem_Template(object sender, RoutedEventArgs e)
+        {
+            new WindowTemplate(TemplateType.SensorHeYuan,false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         }
     }
 }

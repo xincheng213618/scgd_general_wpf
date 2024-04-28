@@ -183,7 +183,7 @@ namespace ColorVision
 
         private void MsgList()
         {
-            new MsgList() { Owner = this }.Show();
+            new MsgList() { Owner = Application.Current.GetActiveWindow() }.Show();
         }
 
         private void Menu_Initialized(object sender, EventArgs e)
@@ -192,7 +192,6 @@ namespace ColorVision
             MenuManager.GetInstance().LoadMenuItemFromAssembly<IMenuItem>(Assembly.GetExecutingAssembly());
             this.LoadHotKeyFromAssembly<IHotKey>(Assembly.GetExecutingAssembly());
             Application.Current.MainWindow = this;
-            Application.Current.MainWindow.AddHotKeys(new HotKeys(Properties.Resource.MsgList, new Hotkey(Key.M, ModifierKeys.Control), MsgList));
         }
 
         private void Update_Click(object sender, RoutedEventArgs e)

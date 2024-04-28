@@ -27,16 +27,35 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder"  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel Margin="5" >
-                <Button Margin="0,2" Content="连接"  Click="Open_Click"/>
-                <DockPanel>
-                    <Button DockPanel.Dock="Right" Content="发送" Margin="5,0,0,0" Click="SendTemp_Click"/>
-                    <ComboBox  x:Name="ComboxSensorTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" SelectionChanged="ComboxSensorTemplate_SelectionChanged" />
-                </DockPanel>
-
+                <Button x:Name="ButtonOpen" Margin="0,2" Content="连接"  Click="Open_Click"/>
+                <Button x:Name="ButtonClose" Margin="0,2" Content="关闭"  Click="Close_Click" Visibility="Collapsed"/>
                 <DockPanel Margin="0,2">
-                    <Button DockPanel.Dock="Right" Content="发送" Margin="5,0,0,0" Click="SendCommand_Click"/>
-                    <ComboBox Name="ComboBoxCommand"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
+                    <Button DockPanel.Dock="Right" Content="执行模板" Margin="5,0,0,0" Click="SendTemp_Click"/>
+                    <ComboBox  x:Name="ComboxSensorTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                    <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0"  Click="MenuItem_Template"/>
+                    </Grid>
                 </DockPanel>
+                <GroupBox Header="调试工具">
+                    <StackPanel>
+                        <DockPanel Margin="0,2">
+                            <TextBlock Text="指令类型" Width="60"/>
+                            <ComboBox x:Name="ComboBoxType" Style="{StaticResource ComboBox.Small}"/>
+                        </DockPanel>
+                        <DockPanel Margin="0,2">
+                            <TextBlock Text="发送指令" Width="60"/>
+                            <TextBox  x:Name="TextBoxSendCommand" Style="{StaticResource TextBox.Small}" Text=""/>
+                        </DockPanel>
+                        <DockPanel Margin="0,2">
+                            <TextBlock Text="返回指令" Width="60"/>
+                            <TextBox  x:Name="TextBoxResCommand" Style="{StaticResource TextBox.Small}"  Text=""/>
+                        </DockPanel>
+                        <Button DockPanel.Dock="Right" Content="发送" Click="SendCommand_Click"/>
+                    </StackPanel>
+                </GroupBox>
+
+
 
             </StackPanel>
         </Border>
