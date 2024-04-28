@@ -94,10 +94,14 @@ namespace ColorVision.Services.Devices.Camera
 
         public override void Save()
         {
-            base.Save();
             if (PhyCamera != null)
+            {
                 PhyCamera.SetDeviceCamera(this);
-
+                Config.IsChannelThree = PhyCamera.Config.IsChannelThree;
+                PhyCamera.Config.CameraCfg.CopyTo(Config.CameraCfg);
+                PhyCamera.Config.CFW.CopyTo(Config.CFW);
+            }
+            base.Save();
         }
 
         private void FetchLatestTemperature(object a)
