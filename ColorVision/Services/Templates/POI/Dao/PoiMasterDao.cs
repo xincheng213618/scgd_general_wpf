@@ -140,29 +140,29 @@ namespace ColorVision.Services.Templates.POI.Dao
             return row;
         }
 
-        public override DataTable CreateColumns(DataTable dInfo)
+        public override DataTable CreateColumns(DataTable dataTable)
         {
-            dInfo.Columns.Add("id", typeof(int));
-            dInfo.Columns.Add("name", typeof(string));
-            dInfo.Columns.Add("type", typeof(sbyte));
-            dInfo.Columns.Add("width", typeof(int));
-            dInfo.Columns.Add("height", typeof(int));
-            dInfo.Columns.Add("left_top_x", typeof(int));
-            dInfo.Columns.Add("left_top_y", typeof(int));
-            dInfo.Columns.Add("right_top_x", typeof(int));
-            dInfo.Columns.Add("right_top_y", typeof(int));
-            dInfo.Columns.Add("right_bottom_x", typeof(int));
-            dInfo.Columns.Add("right_bottom_y", typeof(int));
-            dInfo.Columns.Add("left_bottom_x", typeof(int));
-            dInfo.Columns.Add("left_bottom_y", typeof(int));
-            dInfo.Columns.Add("dynamics", typeof(bool));
-            dInfo.Columns.Add("cfg_json", typeof(string));
-            dInfo.Columns.Add("create_date", typeof(DateTime));
-            dInfo.Columns.Add("is_enable", typeof(bool));
-            dInfo.Columns.Add("is_delete", typeof(bool));
-            dInfo.Columns.Add("remark", typeof(string));
-            dInfo.Columns.Add("tenant_id", typeof(int));
-            return dInfo;
+            dataTable.Columns.Add("id", typeof(int));
+            dataTable.Columns.Add("name", typeof(string));
+            dataTable.Columns.Add("type", typeof(sbyte));
+            dataTable.Columns.Add("width", typeof(int));
+            dataTable.Columns.Add("height", typeof(int));
+            dataTable.Columns.Add("left_top_x", typeof(int));
+            dataTable.Columns.Add("left_top_y", typeof(int));
+            dataTable.Columns.Add("right_top_x", typeof(int));
+            dataTable.Columns.Add("right_top_y", typeof(int));
+            dataTable.Columns.Add("right_bottom_x", typeof(int));
+            dataTable.Columns.Add("right_bottom_y", typeof(int));
+            dataTable.Columns.Add("left_bottom_x", typeof(int));
+            dataTable.Columns.Add("left_bottom_y", typeof(int));
+            dataTable.Columns.Add("dynamics", typeof(bool));
+            dataTable.Columns.Add("cfg_json", typeof(string));
+            dataTable.Columns.Add("create_date", typeof(DateTime));
+            dataTable.Columns.Add("is_enable", typeof(bool));
+            dataTable.Columns.Add("is_delete", typeof(bool));
+            dataTable.Columns.Add("remark", typeof(string));
+            dataTable.Columns.Add("tenant_id", typeof(int));
+            return dataTable;
         }
     }
 }
