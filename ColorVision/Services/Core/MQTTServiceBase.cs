@@ -23,6 +23,8 @@ namespace ColorVision.Services.Core
         public MQTTSetting MQTTSetting { get; set; }
         public MQTTControl MQTTControl { get; set; }
 
+        public virtual DeviceStatusType DeviceStatus { get; set; }
+
         public event EventHandler Connected;
         public event EventHandler DisConnected;
 

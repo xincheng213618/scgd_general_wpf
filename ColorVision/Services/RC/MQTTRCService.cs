@@ -286,10 +286,12 @@ namespace ColorVision.Services.RC
                                             if (devNew.Code == baseDeviceConfig.Code)
                                             {
                                                 baseDeviceConfig.DeviceStatus = (DeviceStatusType)Enum.Parse(typeof(DeviceStatusType), devNew.Status);
-                                                if (dev is DeviceCamera deviceCamera)
+
+                                                if (dev is DeviceService deviceService && deviceService.GetMQTTService() is MQTTServiceBase serviceBase)
                                                 {
-                                                    deviceCamera.DeviceService.DeviceStatus = baseDeviceConfig.DeviceStatus;
+                                                    serviceBase.DeviceStatus = baseDeviceConfig.DeviceStatus;
                                                 }
+
                                                 if(updateTime) baseDeviceConfig.LastAliveTime = lastLive;
                                                 break;
                                             }

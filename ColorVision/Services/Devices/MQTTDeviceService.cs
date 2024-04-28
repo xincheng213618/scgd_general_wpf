@@ -12,7 +12,7 @@ namespace ColorVision.Services.Devices
     {
         public event DeviceStatusChangedHandler DeviceStatusChanged;
 
-        public DeviceStatusType DeviceStatus
+        public override DeviceStatusType DeviceStatus
         {
             get => _DeviceStatus; set
             {

@@ -28,7 +28,36 @@ namespace ColorVision.Services.Devices.PG
         }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            PGService.HeartbeatEvent += (e) => PGService_DeviceStatusHandler(e.DeviceStatus);
+            PGService.DeviceStatusChanged += (e) =>
+            {
+                switch (e)
+                {
+                    case DeviceStatusType.Unknown:
+                        break;
+                    case DeviceStatusType.OffLine:
+                        break;
+                    case DeviceStatusType.Closed:
+                        btn_open.Content = "打开";
+                        break;
+                    case DeviceStatusType.Closing:
+                        btn_open.Content = "关闭中";
+                        break;
+                    case DeviceStatusType.Opened:
+                        btn_open.Content = "关闭";
+                        break;
+                    case DeviceStatusType.Opening:
+                        btn_open.Content = "打开中";
+                        break;
+                    case DeviceStatusType.Busy:
+                        break;
+                    case DeviceStatusType.Free:
+                        break;
+                    case DeviceStatusType.LiveOpened:
+                        break;
+                    default:
+                        break;
+                }
+            };
 
             if (PGService.Config.IsNet)
             {
@@ -68,25 +97,6 @@ namespace ColorVision.Services.Devices.PG
             }
         }
 
-        private void PGService_DeviceStatusHandler(DeviceStatusType deviceStatus)
-        {
-            if (deviceStatus == DeviceStatusType.Opened)
-            {
-                btn_open.Content = "关闭";
-            }
-            else if (deviceStatus == DeviceStatusType.Closed)
-            {
-                btn_open.Content = "打开";
-            }
-            else if (deviceStatus == DeviceStatusType.Opening)
-            {
-                btn_open.Content = "打开中";
-            }
-            else if (deviceStatus == DeviceStatusType.Closing)
-            {
-                btn_open.Content = "关闭中";
-            }
-        }
 
         private void DoOpen(Button button)
         {
