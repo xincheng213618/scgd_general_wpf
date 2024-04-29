@@ -125,9 +125,9 @@ namespace ColorVision.Services.Devices.PG
         {
             //Dictionary<string, string> cmd = new Dictionary<string, string>() { { "CM_StartPG", "start\r" }, { "CM_StopPG", "stop\r" }, { "CM_SwitchUpPG", "Switch_UP\r" }, { "CM_SwitchDownPG", "Switch_DOWN\r" }, { "CM_SwitchFramePG", "frame {0}" } };
             //Dictionary<string, string> cmd = new Dictionary<string, string>() { { "CM_StartPG", "open\r" }, { "CM_StopPG", "close\r" }, { "CM_ReSetPG", "reset\r" } , { "CM_SwitchUpPG", "key UP\r" }, { "CM_SwitchDownPG", "key DN\r" }, { "CM_SwitchFramePG", "pat {0}\r" } };
-            Dictionary<string, string> cmd;
-            if (!PGCategoryLib.TryGetValue(Config.Category,out cmd))
-                cmd = new Dictionary<string, string>();
+            //Dictionary<string, string> cmd;
+            //if (!PGCategoryLib.TryGetValue(Config.Category,out cmd))
+            //    cmd = new Dictionary<string, string>();
 
             MsgSend msg = new MsgSend()
             {
