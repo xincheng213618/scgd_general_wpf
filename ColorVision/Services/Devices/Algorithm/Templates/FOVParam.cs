@@ -13,11 +13,11 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
 {
     public class BuildFOVMenuItem : IMenuItem
     {
-        public string? OwnerGuid => "Template";
+        public string? OwnerGuid => "TemplateAlgorithm";
 
-        public string? GuidId => "BuildFOV";
+        public string? GuidId => "FOV";
         public int Index => 9;
-        public string? Header => "BuildFOV模板设置(_B)";
+        public string? Header => "FOV模板设置(_B)";
 
         public string? InputGestureText { get; }
 

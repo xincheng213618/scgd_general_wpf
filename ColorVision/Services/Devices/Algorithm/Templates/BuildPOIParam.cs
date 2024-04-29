@@ -12,12 +12,28 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {
-    public class BuildPOIMenuItem : IMenuItem
+    public class TemplateAlgorithmMenuItem : IMenuItem
     {
         public string? OwnerGuid => "Template";
 
-        public string? GuidId => "BuildPOI";
+        public string? GuidId => "TemplateAlgorithm";
         public int Index => 2;
+        public string? Header => "算法";
+
+        public string? InputGestureText { get; }
+
+        public object? Icon { get; }
+
+        public RelayCommand Command {get; }
+    }
+
+
+    public class BuildPOIMenuItem : IMenuItem
+    {
+        public string? OwnerGuid => "TemplateAlgorithm";
+
+        public string? GuidId => "BuildPOI";
+        public int Index => 0;
         public string? Header => "BuildPOI模板设置(_B)";
 
         public string? InputGestureText { get; }

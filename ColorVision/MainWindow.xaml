@@ -28,20 +28,12 @@
                         <MenuItem Header="{x:Static properties:Resource.MenuExit}" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                     </MenuItem>
                     <MenuItem Header="{x:Static properties:Resource.MenuTemplate}">
-                        <MenuItem Header="测量模板设置(_S)" Tag="MeasureParm" Click="MenuItem_Template"/>
-                        <Separator/>
-                        <MenuItem Header="数据判断模板设置(_J)" Tag="LedReusltParams"  Click="MenuItem_Template"/>
+                        <MenuItem Header="测量模板设置(_S)" Visibility="Collapsed" Tag="MeasureParm" Click="MenuItem_Template"/>
                         <Separator/>
                         <MenuItem Header="PG模板设置(_G)" Tag="PGParam"  Click="MenuItem_Template"/>
                         <MenuItem Header="源表模板设置(_V)"  Tag="SMUParam" Click="MenuItem_Template"/>
                         <Separator/>
                         <MenuItem Header="_AOI参数模板设置" Tag="AoiParam" Click="MenuItem_Template"/>
-                        <MenuItem Header="MTF模板设置(_M)"  Tag="MTFParam" Click="MenuItem_Template"/>
-                        <MenuItem Header="SFR模板设置(_S)"  Tag="SFRParam" Click="MenuItem_Template"/>
-                        <MenuItem Header="_FOV模板设置"  Tag="FOVParam" Click="MenuItem_Template"/>
-                        <MenuItem Header="畸变模板设置(_D)"  Tag="DistortionParam" Click="MenuItem_Template"/>
-                        <MenuItem Header="灯珠检测模板设置(_L)"  Tag="LedCheckParam" Click="MenuItem_Template"/>
-                        <MenuItem Header="发光区检测模板设置(_P)"  Tag="FocusPointsParam" Click="MenuItem_Template"/>
                     </MenuItem>
                     <MenuItem Header="{x:Static properties:Resource.MenuTool}">
                         <MenuItem Header="{x:Static properties:Resource.WorkflowEngine_F}" Click="MenuItem9_Click"/>

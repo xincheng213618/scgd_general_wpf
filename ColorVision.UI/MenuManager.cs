@@ -74,7 +74,7 @@ namespace ColorVision.UI
                     }
                     else if (menuItems.TryGetValue(iMenuItem.OwnerGuid, out MenuItem parentItem))
                     {
-                        if (iMenuItem.Index < 0 || iMenuItem.Index > Menu.Items.Count)
+                        if (iMenuItem.Index < 0 || iMenuItem.Index > parentItem.Items.Count)
                         {
                             parentItem.Items.Add(menuItem);
                         }

@@ -22,7 +22,7 @@ namespace ColorVision.Services.Devices.Sensor.Templates
 
         public string? GuidId => "CameraExposureParam";
         public int Index => 5;
-        public string? Header => "机曝光模板设置(_B)";
+        public string? Header => "相机曝光模板设置(_B)";
 
         public string? InputGestureText { get; }
 

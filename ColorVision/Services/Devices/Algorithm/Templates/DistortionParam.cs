@@ -12,13 +12,13 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {
-    public class GhostParamMenuItem : IMenuItem
+    public class DistortionParamMenuItem : IMenuItem
     {
-        public string? OwnerGuid => "Template";
+        public string? OwnerGuid => "TemplateAlgorithm";
 
-        public string? GuidId => "GhostParam";
+        public string? GuidId => "DistortionParam";
         public int Index => 3;
-        public string? Header => "GhostParam模板设置(_G)";
+        public string? Header => "畸变模板设置(_D)";
 
         public string? InputGestureText { get; }
 
@@ -31,7 +31,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-            new WindowTemplate(TemplateType.GhostParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(TemplateType.DistortionParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
     }
     
