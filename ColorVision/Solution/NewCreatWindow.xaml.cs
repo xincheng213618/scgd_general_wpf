@@ -1,22 +1,53 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.HotKey;
+using ColorVision.Properties;
 using ColorVision.RecentFile;
 using ColorVision.Settings;
+using ColorVision.UI;
+using Mysqlx.Prepare;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.Solution
 {
-    public class HotKeyNewCreate : IHotKey
+    public class HotKeyNewCreate : IHotKey,IMenuItem
     {
-        public HotKeys HotKeys => new HotKeys(Properties.Resource.NewSolution, new Hotkey(Key.N, ModifierKeys.Control), NewCreateWindow);
 
-        private void NewCreateWindow()
+        public string? OwnerGuid => "File";
+
+        public string? GuidId => "MenuNew";
+
+        public int Index => 0;
+
+        public string? Header => Resource.MenuNew;
+
+        public string? InputGestureText => "Ctrl + N";
+
+        public object? Icon
+        {
+            get
+            {
+                TextBlock text = new TextBlock
+                {
+                    Text = "\uE8F4", // 使用Unicode字符
+                    FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                    FontSize = 15,
+                };
+                text.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+                return text;
+            }
+        }
+        public RelayCommand Command => new RelayCommand(A => Execute());
+
+        public HotKeys HotKeys => new HotKeys(Properties.Resource.NewSolution, new Hotkey(Key.N, ModifierKeys.Control), Execute);
+
+        private void Execute()
         {
             NewCreateWindow newCreatWindow = new NewCreateWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             newCreatWindow.Closed += delegate

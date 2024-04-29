@@ -2,6 +2,7 @@
 using ColorVision.Extension;
 using ColorVision.Services.Devices.Calibration.Views;
 using ColorVision.Services.Msg;
+using ColorVision.Services.PhyCameras;
 using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
@@ -42,6 +43,17 @@ namespace ColorVision.Services.Devices.Calibration
             DataContext = Device;
             ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams;
             ComboxCalibrationTemplate.SelectedIndex = 0;
+            Device.ConfigChanged += (s, e) =>
+            {
+                ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams;
+                ComboxCalibrationTemplate.SelectedIndex = 0;
+            };
+            PhyCameraManager.GetInstance().Loaded += (s, e) =>
+            {
+                ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams;
+                ComboxCalibrationTemplate.SelectedIndex = 0;
+            };
+            
             this.AddViewConfig(View, ComboxView);
             SelectChanged += (s, e) =>
             {

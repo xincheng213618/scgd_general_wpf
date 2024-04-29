@@ -135,8 +135,10 @@ namespace ColorVision.Services.PhyCameras
             LoadPhyCamera();
         }
 
-        public ObservableCollection<PhyCamera> PhyCameras { get; set; } = new ObservableCollection<PhyCamera>();
 
+        public EventHandler Loaded { get; set; }
+
+        public ObservableCollection<PhyCamera> PhyCameras { get; set; } = new ObservableCollection<PhyCamera>();
         public void LoadPhyCamera()
         {
             PhyCameras.Clear();
@@ -173,6 +175,7 @@ namespace ColorVision.Services.PhyCameras
                 }
 
             }
+            Loaded?.Invoke(this, new EventArgs());
         }
 
         public void LoadgroupResource(GroupResource groupResource)

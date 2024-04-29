@@ -24,16 +24,6 @@
             <Grid>
                 <Menu x:Name="Menu1"  Initialized="Menu_Initialized">
                     <MenuItem x:Name="FileMenuItem" Header="{x:Static properties:Resource.MenuFile}">
-                        <MenuItem Header="{x:Static properties:Resource.MenuNew}" Click="MenuItem_ProjectNew_Click" InputGestureText="Ctrl + N">
-                            <MenuItem.Icon>
-                                <TextBlock Text="&#xE8F4;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                            </MenuItem.Icon>
-                        </MenuItem>
-                        <MenuItem Header="{x:Static properties:Resource.MenuOpen}" Click="MenuItem_ProjectOpen_Click" InputGestureText="Ctrl + O">
-                            <MenuItem.Icon >
-                                <TextBlock Text="&#xE8E5;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                            </MenuItem.Icon>
-                        </MenuItem>
                         <Separator/>
                         <MenuItem Header="{x:Static properties:Resource.MenuExit}" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                     </MenuItem>
@@ -62,11 +52,6 @@
                         <Separator/>
                         <MenuItem x:Name="MenuLanguage" Header="{x:Static properties:Resource.MenuLanguage}" Initialized="MenuLanguage_Initialized" Loaded="MenuLanguage_Loaded"/>
                         <MenuItem x:Name="MenuTheme" Header="{x:Static properties:Resource.MenuTheme}" Initialized="MenuTheme_Initialized" Loaded="MenuTheme_Loaded"/>
-                        <MenuItem Header="{x:Static properties:Resource.MenuOptions}"  Click="MenuItem_Click_2"   InputGestureText="Ctrl + I"  >
-                            <MenuItem.Icon >
-                                <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                            </MenuItem.Icon>
-                        </MenuItem>
                     </MenuItem>
                     <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Header="{ x:Static properties:Resource.MenuView}">
                         <MenuItem Header="{x:Static properties:Resource.MenuViewStatusBar}" IsChecked="{Binding SoftwareSetting.IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
@@ -84,7 +69,6 @@
                         <MenuItem Header="{x:Static properties:Resource.Wizard}" Click="Wizard_Click"/>
                         <MenuItem Header="{x:Static properties:Resource.MenuUpdate}" Click="Update_Click"/>
                         <MenuItem Header="{x:Static properties:Resource.MyLicense_R}"  Click="License_Click"/>
-                        <MenuItem Header="{x:Static properties:Resource.MenuAbout}" Click="About_Click"/>
                     </MenuItem>
                 </Menu>
                 <Image Source="{DynamicResource DrawingImageUser}" Width="20" HorizontalAlignment="Right" Margin="0,0,10,0"/>

@@ -31,7 +31,7 @@ namespace ColorVision.Services.Msg
 
         public string? InputGestureText { get; } = "Ctrl + M";
 
-        public string? Icon { get; }
+        public object? Icon { get; }
 
         public RelayCommand Command => new RelayCommand(a => Execute());
     }

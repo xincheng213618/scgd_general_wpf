@@ -17,7 +17,7 @@ namespace ColorVision.Services.Dao.Validate
 
         public string? InputGestureText { get; }
 
-        public string? Icon { get; }
+        public object? Icon { get; }
 
         public RelayCommand Command => new RelayCommand(a => {
             new WindowTemplate(TemplateType.BuildPOIParmam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;

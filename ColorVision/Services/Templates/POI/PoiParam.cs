@@ -16,12 +16,12 @@ namespace ColorVision.Services.Templates.POI
         public string? OwnerGuid => "Template";
 
         public string? GuidId => "PoiParam";
-        public int Index => 1;
-        public string? Header => "POI模板设置(_P)";
+        public int Index => 0;
+        public string? Header => "关注点模板设置(_P)";
 
         public string? InputGestureText { get; }
 
-        public string? Icon { get; }
+        public object? Icon { get; }
 
         public RelayCommand Command => new RelayCommand(a => {
             SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;

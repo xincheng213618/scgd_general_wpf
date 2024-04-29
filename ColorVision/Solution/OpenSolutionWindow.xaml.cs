@@ -1,7 +1,11 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.HotKey;
+using ColorVision.Properties;
 using ColorVision.RecentFile;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
+using Mysqlx.Prepare;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -9,15 +13,46 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.Solution
 {
 
-    public class HotKeyOpenSolution : IHotKey
+    public class HotKeyOpenSolution : IHotKey,IMenuItem
     {
-        public HotKeys HotKeys => new HotKeys(Properties.Resource.OpenSolution, new Hotkey(Key.O, ModifierKeys.Control), OpenSolutionWindow);
+        public string? OwnerGuid => "File";
 
-        private void OpenSolutionWindow()
+        public string? GuidId => "OpenSolution";
+
+        public int Index => 1;
+
+        public string? Header => Resource.MenuOpen;
+
+        public string? InputGestureText => "Ctrl + O";
+
+        public object? Icon
+        {
+            get
+            {
+                TextBlock text = new TextBlock
+                {
+                    Text = "\uE8E5", // 使用Unicode字符
+                    FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                    FontSize = 15,
+                };
+                text.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+                return text;
+            }
+        }
+
+
+        public RelayCommand Command => new RelayCommand(A => Execute());
+
+
+        public HotKeys HotKeys => new HotKeys(Properties.Resource.OpenSolution, new Hotkey(Key.O, ModifierKeys.Control), Execute);
+
+
+        private void Execute()
         {
             OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             openSolutionWindow.Closed += delegate

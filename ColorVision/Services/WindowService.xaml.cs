@@ -22,7 +22,7 @@ namespace ColorVision.Services
 
         public string? InputGestureText { get; set; }
 
-        public string? Icon { get; set; }
+        public object? Icon { get; set; }
 
         public RelayCommand Command => new RelayCommand(a =>
         {

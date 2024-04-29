@@ -44,6 +44,17 @@ namespace ColorVision.Services.Devices.Sensor
                 DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
             };
 
+            if (Device.Config.IsNet)
+            {
+                TextBlockPGIP.Text = "IP地址";
+                TextBlockPGPort.Text = "端口";
+            }
+            else
+            {
+                TextBlockPGIP.Text = "串口";
+                TextBlockPGPort.Text = "波特率";
+            }
+
             Device.DeviceService.DeviceStatusChanged += (e) =>
             {
                 switch (e)

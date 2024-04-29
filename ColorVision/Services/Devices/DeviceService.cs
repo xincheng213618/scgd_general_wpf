@@ -210,10 +210,13 @@ namespace ColorVision.Services.Devices
             base.Save();
             SaveConfig();
             ///每次提交之后重启服务
-            MQTTRCService.GetInstance().RestartServices(SysResourceModel.TypeCode, SysResourceModel.PCode, Config.Code);
+            RestartRCService();
             ConfigChanged?.Invoke(this, new EventArgs());
         }
-
+        public void RestartRCService()
+        {
+            MQTTRCService.GetInstance().RestartServices(SysResourceModel.TypeCode, SysResourceModel.PCode, Config.Code);
+        }
 
 
         public override void Delete()

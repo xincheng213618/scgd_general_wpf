@@ -1,12 +1,15 @@
 ﻿using ColorVision.Common.Extension;
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.HotKey;
 using ColorVision.Language;
 using ColorVision.MQTT;
 using ColorVision.MySql;
+using ColorVision.Properties;
 using ColorVision.Services.RC;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -20,13 +23,40 @@ using System.Windows.Media;
 
 namespace ColorVision.Settings
 {
-    public class HotKeySetting : IHotKey
+    public class HotKeySetting : IHotKey,IMenuItem
     {
-        public HotKeys HotKeys => new HotKeys(Properties.Resource.About, new Hotkey(Key.F1, ModifierKeys.Control), AboutMsg);
-        private void AboutMsg()
+        public HotKeys HotKeys => new HotKeys(Properties.Resource.MenuOptions, new Hotkey(Key.I, ModifierKeys.Control), Execute);
+        private void Execute()
         {
             new SettingWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+
+        public string? OwnerGuid => "Tool";
+
+        public string? GuidId => "MenuOptions";
+
+        public int Index => 99;
+
+        public string? Header => Resource.MenuOptions;
+
+        public string? InputGestureText => "Ctrl + I";
+
+        public object? Icon { 
+            get
+            {
+                TextBlock text = new TextBlock
+                {
+                    Text = "\uE713", // 使用Unicode字符
+                    FontFamily = new FontFamily("Segoe MDL2 Assets"),
+                    FontSize = 15,
+                };
+                text.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
+                return text;
+            }
+        }
+
+
+        public RelayCommand Command => new RelayCommand(A => Execute());
     }
 
 
@@ -35,6 +65,7 @@ namespace ColorVision.Settings
     /// </summary>
     public partial class SettingWindow : BaseWindow
     {
+        
         public SoftwareConfig SoftwareConfig { get;set;}
         public SettingWindow()
         {
