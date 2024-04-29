@@ -511,7 +511,7 @@ namespace ColorVision.Services.Templates
 
         private void Button_Save_Click(object sender, RoutedEventArgs e)
         {
-            TemplateSave();
+            Close();
         }
 
         private void Button_New_Click(object sender, RoutedEventArgs e)
@@ -539,7 +539,6 @@ namespace ColorVision.Services.Templates
             {
                 TemplateControl.Save(TemplateType);
             }
-            Close();
         }
 
 
