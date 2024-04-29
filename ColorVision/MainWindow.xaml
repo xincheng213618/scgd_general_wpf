@@ -32,7 +32,7 @@
                         <Separator/>
                         <MenuItem Header="PG模板设置(_G)" Tag="PGParam"  Click="MenuItem_Template"/>
                         <MenuItem Header="源表模板设置(_V)"  Tag="SMUParam" Click="MenuItem_Template"/>
-                        <MenuItem Header="_AOI参数模板设置" Tag="AoiParam" Visibility="Hidden" Click="MenuItem_Template"/>
+                        <MenuItem Header="_AOI参数模板设置" Tag="AoiParam" Visibility="Collapsed" Click="MenuItem_Template"/>
                     </MenuItem>
                     <MenuItem Header="{x:Static properties:Resource.MenuTool}">
                         <MenuItem Header="{x:Static properties:Resource.WorkflowEngine_F}" Click="MenuItem9_Click"/>
