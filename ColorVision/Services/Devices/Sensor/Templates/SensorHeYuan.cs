@@ -43,6 +43,7 @@ namespace ColorVision.Services.Devices.Sensor.Templates
     {
         public static ObservableCollection<TemplateModel<SensorHeYuan>> SensorHeYuans { get; set; } = new ObservableCollection<TemplateModel<SensorHeYuan>>();
 
+
         public SensorHeYuan() : base()
         {
         }
