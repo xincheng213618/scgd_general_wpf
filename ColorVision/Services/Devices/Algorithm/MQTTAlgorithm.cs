@@ -14,8 +14,6 @@ namespace ColorVision.Services.Devices.Algorithm
 {
     public class MQTTAlgorithm : MQTTDeviceService<ConfigAlgorithm>
     {
-        public static Dictionary<string, ObservableCollection<string>> ServicesDevices { get; set; } = new Dictionary<string, ObservableCollection<string>>();
-
         public DeviceAlgorithm DeviceAlgorithm { get; set; }
 
         public MQTTAlgorithm(DeviceAlgorithm device, ConfigAlgorithm Config) : base(Config)
@@ -219,26 +217,6 @@ namespace ColorVision.Services.Devices.Algorithm
             return PublishAsyncClient(msg);
         }
 
-
-
-
-        private static string ToJsonFileList(ImageChannelType imageChannelType, params string[] FileNames)
-        {
-            Dictionary<string, object> file_data = new Dictionary<string, object>();
-
-            file_data.Add("eCalibType", cvColorVision.CalibrationType.DarkNoise);
-
-            List<Dictionary<string, object>> keyValuePairs = new List<Dictionary<string, object>>();
-            foreach (var item in FileNames)
-            {
-                Dictionary<string, object> keyValuePairs1 = new Dictionary<string, object>();
-                keyValuePairs1.Add("Type", imageChannelType);
-                keyValuePairs1.Add("filename", item);
-                keyValuePairs.Add(keyValuePairs1);
-            }
-            file_data.Add("list", keyValuePairs);
-            return JsonConvert.SerializeObject(file_data);
-        }
 
         public MsgRecord SFR(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
         {

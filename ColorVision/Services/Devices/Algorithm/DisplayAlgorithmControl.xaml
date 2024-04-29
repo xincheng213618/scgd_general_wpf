@@ -68,20 +68,23 @@
                         <TabItem Header="MTF">
                             <StackPanel Margin="0,5">
                                 <DockPanel Margin="0,2">
-                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="MTF_Click" />
-                                    <ComboBox  x:Name="ComboxMTFTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                    <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="MTFParam" Click="MenuItem_Template"/>
-                                    </Grid>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="POI" Width="30"/>
                                     <ComboBox  x:Name="ComboxPoiTemplate2"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                     <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                         <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
                                         <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusParm" Click="MenuItem_Template"/>
                                     </Grid>
                                 </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="MTF_Click" />
+                                    <TextBlock Text="MTF" Width="30"/>
+                                    <ComboBox  x:Name="ComboxMTFTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                    <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="MTFParam" Click="MenuItem_Template"/>
+                                    </Grid>
+                                </DockPanel>
+
                             </StackPanel>
                         </TabItem>
                         <TabItem Header="SFR">
@@ -126,20 +129,23 @@
                         <TabItem Header="灯珠检测">
                             <StackPanel>
                                 <DockPanel Margin="0,2">
-                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="LedCheck_Click" />
-                                    <ComboBox  x:Name="ComboxLedCheckTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                    <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="LedCheckParam" Click="MenuItem_Template"/>
-                                    </Grid>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="POI" Width="60"/>
                                     <ComboBox  x:Name="ComboxPoiTemplate1"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                     <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                         <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
                                         <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusParm" Click="MenuItem_Template"/>
                                     </Grid>
                                 </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="LedCheck_Click" />
+                                    <TextBlock Text="灯珠检测" Width="60"/>
+                                    <ComboBox  x:Name="ComboxLedCheckTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                    <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="LedCheckParam" Click="MenuItem_Template"/>
+                                    </Grid>
+                                </DockPanel>
+
                             </StackPanel>
                         </TabItem>
                         <TabItem Header="发光区检测">
