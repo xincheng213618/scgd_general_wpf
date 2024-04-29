@@ -199,6 +199,7 @@ namespace ColorVision.Services.Devices.Camera
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            DeviceCamera.PhyCamera?.ReleaseDeviceCamera();
             EditConfig.CopyTo(DeviceCamera.Config);
             Close();
         }

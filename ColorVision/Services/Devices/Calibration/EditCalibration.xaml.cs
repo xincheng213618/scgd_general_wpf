@@ -50,6 +50,7 @@ namespace ColorVision.Services.Devices.Calibration
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            DeviceCalibration.PhyCamera?.ReleaseCalibration();
             EditConfig.CopyTo(DeviceCalibration.Config);
             Close();
         }

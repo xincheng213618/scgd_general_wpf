@@ -20,6 +20,7 @@ using ColorVision.Services.Type;
 using ColorVision.Themes.Controls;
 using cvColorVision;
 using log4net;
+using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -100,7 +101,18 @@ namespace ColorVision.Services.PhyCameras
             QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
         }
 
-        public DeviceCamera DeviceCamera { get; set; }
+        public DeviceCamera? DeviceCamera { get; set; }
+
+        public void ReleaseDeviceCamera()
+        {
+            DeviceCamera = null;
+            if (CameraLicenseModel != null)
+            {
+                CameraLicenseModel.DevCameraId = null;
+                CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                RefreshLincense();
+            }
+        }
 
         public void SetDeviceCamera(DeviceCamera deviceCamera)
         {
@@ -112,7 +124,22 @@ namespace ColorVision.Services.PhyCameras
                 RefreshLincense();
             }
         }
-        public DeviceCalibration DeviceCalibration { get; set; }
+        public DeviceCalibration? DeviceCalibration { get; set; }
+
+        public void ReleaseCalibration() 
+        {
+            DeviceCalibration = null;
+
+            if (CameraLicenseModel != null)
+            {
+                CameraLicenseModel.DevCaliId = null;
+                CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                RefreshLincense();
+            }
+        }
+
+
+
         public void SetCalibration(DeviceCalibration deviceCalibration)
         {
             DeviceCalibration = deviceCalibration;
