@@ -109,6 +109,7 @@ namespace ColorVision.Services.PhyCameras
             {
                 CameraLicenseModel.DevCameraId = deviceCamera.SysResourceModel.Id;
                 CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                RefreshLincense();
             }
         }
         public DeviceCalibration DeviceCalibration { get; set; }
@@ -119,6 +120,19 @@ namespace ColorVision.Services.PhyCameras
             {
                 CameraLicenseModel.DevCaliId = deviceCalibration.SysResourceModel.Id;
                 CameraLicenseDao.Instance.Save(CameraLicenseModel);
+                RefreshLincense();
+                if (CameraLicenseModel.DevCameraId != null)
+                {
+                    ServiceManager.GetInstance().DeviceServices.Where(a => a.SysResourceModel.Id == CameraLicenseModel.DevCameraId).ToList().ForEach(a =>
+                    {
+                        if (a is DeviceCamera deviceCamera)
+                        {
+                            deviceCamera.RestartRCService();
+                        }
+                    });
+
+
+                }
             }
         }
 
