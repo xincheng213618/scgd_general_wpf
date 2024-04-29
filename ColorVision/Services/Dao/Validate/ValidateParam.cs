@@ -20,7 +20,7 @@ namespace ColorVision.Services.Dao.Validate
         public object? Icon { get; }
 
         public RelayCommand Command => new RelayCommand(a => {
-            new WindowTemplate(TemplateType.BuildPOIParmam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(TemplateType.ValidateParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
     }
 
