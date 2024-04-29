@@ -4,6 +4,7 @@ using ColorVision.Controls;
 using ColorVision.Interfaces;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.PG;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
 using ColorVision.Services.Templates;
@@ -43,14 +44,18 @@ namespace ColorVision.Services.Devices.Spectrum
                 window.ShowDialog();
             });
             DisplayLazy = new Lazy<DisplaySpectrumControl>(() => new DisplaySpectrumControl(this));
+
+            ResourceManagerCommand = new RelayCommand(a =>
+            {
+                SpectrumResourceControl calibration = SpectrumResourceParams.Count == 0 ? new SpectrumResourceControl(this) : new SpectrumResourceControl(this, this.SpectrumResourceParams[0].Value);
+                WindowTemplate windowTemplate = new WindowTemplate(TemplateType.SpectrumResourceParam, calibration, this);
+                windowTemplate.Owner = Application.Current.GetActiveWindow();
+                windowTemplate.ShowDialog();
+            });
         }
-
         public string Msg { get => _Msg; set { _Msg = value; Application.Current.Dispatcher.Invoke(() => NotifyPropertyChanged()); } }
-
         public ObservableCollection<string> UploadList { get; set; }
-
         private string _Msg;
-
         public event EventHandler UploadClosed;
 
         public void UploadResource(object sender)

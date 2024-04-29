@@ -47,6 +47,7 @@ namespace ColorVision.Services.Devices
         public RelayCommand CopyCommand { get; set; }
         public RelayCommand ResetCommand { get; set; }
         public RelayCommand ResourceManagerCommand { get; set; }
+        public RelayCommand RefreshCommand { get; set; }
 
         public RelayCommand EditCommand { get; set; }
 
@@ -175,6 +176,7 @@ namespace ColorVision.Services.Devices
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });
+            RefreshCommand = new RelayCommand(a => RestartRCService());
 
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Delete, Command = DeleteCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Export, Command = ExportCommand });
