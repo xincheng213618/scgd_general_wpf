@@ -77,37 +77,7 @@ namespace ColorVision
                         windowTemplate = new WindowTemplate(TemplateType.MeasureParam, measure);
                         windowTemplate.Owner = GetWindow(this);
                         windowTemplate.ShowDialog();
-                        break;
-                    case "MTFParam":
-                        windowTemplate = new WindowTemplate(TemplateType.MTFParam);
-                        windowTemplate.Owner = GetWindow(this);
-                        windowTemplate.ShowDialog();
-                        break;
-                    case "SFRParam":
-                        windowTemplate = new WindowTemplate(TemplateType.SFRParam);
-                        windowTemplate.Owner = GetWindow(this);
-                        windowTemplate.ShowDialog();
-                        break;
-                    case "FOVParam":
-                        windowTemplate = new WindowTemplate(TemplateType.FOVParam);
-                        windowTemplate.Owner = GetWindow(this);
-                        windowTemplate.ShowDialog();
-                        break;
-                    case "DistortionParam":
-                        windowTemplate = new WindowTemplate(TemplateType.DistortionParam);
-                        windowTemplate.Owner = GetWindow(this);
-                        windowTemplate.ShowDialog();
-                        break;
-                    case "LedCheckParam":
-                        windowTemplate = new WindowTemplate(TemplateType.LedCheckParam);
-                        windowTemplate.Owner = GetWindow(this);
-                        windowTemplate.ShowDialog();
-                        break;
-                    case "FocusPointsParam":
-                        windowTemplate = new WindowTemplate(TemplateType.FocusPointsParam);
-                        windowTemplate.Owner = GetWindow(this);
-                        windowTemplate.ShowDialog();
-                        break;
+                        break;      
                     case "CalibrationCorrection":
                         if (!File.Exists(ConfigHandler.GetInstance().SoftwareConfig.CalibToolsPath))
                         {
@@ -139,9 +109,6 @@ namespace ColorVision
                     case "PhyCameraManager":
                         PhyCameraManagerWindow phyCameraManager = new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow() };
                         phyCameraManager.Show();
-                        break;
-                    default:
-                        HandyControl.Controls.Growl.Info("开发中");
                         break;
                 }
             }
