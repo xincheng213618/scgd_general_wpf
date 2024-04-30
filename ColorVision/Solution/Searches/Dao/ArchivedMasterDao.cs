@@ -5,13 +5,16 @@ using System.Data;
 
 namespace ColorVision.Solution.Searches
 {
+
+
+
     public class ArchivedMasterModel : PKModel
     {
         public string? Code { get; set; }
         public string? Name { get; set; }
         public string? Data { get; set; }
         public string? Remark { get; set; }
-        public string? TenantId { get; set; }
+        public int? TenantId { get; set; }
 
         public DateTime? CreateDate { get; set; } = DateTime.Now;
         public DateTime? ArchDate { get; set; } = DateTime.Now;
@@ -21,16 +24,15 @@ namespace ColorVision.Solution.Searches
     {
         public static ArchivedMasterDao Instance { get; set; } = new ArchivedMasterDao();
 
-        public ArchivedMasterDao() : base("t_scgd_archived_master", "id")
+        public ArchivedMasterDao() : base("t_scgd_archived_master", "code")
         {
 
         }
 
         public override ArchivedMasterModel GetModelFromDataRow(DataRow item) => new ArchivedMasterModel()
         {
-            Id = item.Field<int>("id"),
             Name = item.Field<string?>("name"),
-            TenantId =item.Field<string?>("tenant_id"),
+            TenantId =item.Field<int?>("tenant_id"),
             Code = item.Field<string?>("code"),
             Data = item.Field<string?>("data"),
             Remark = item.Field<string?>("data"),

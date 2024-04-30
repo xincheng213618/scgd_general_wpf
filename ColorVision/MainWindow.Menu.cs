@@ -106,10 +106,6 @@ namespace ColorVision
                             MessageBox.Show(Application.Current.GetActiveWindow(),ex.Message);
                         }
                         break;
-                    case "PhyCameraManager":
-                        PhyCameraManagerWindow phyCameraManager = new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow() };
-                        phyCameraManager.Show();
-                        break;
                 }
             }
         }
@@ -194,10 +190,6 @@ namespace ColorVision
         private void SettingF_Click(object sender, RoutedEventArgs e)
         {
             Process.Start("explorer.exe", $"{Path.GetDirectoryName(ConfigHandler.GetInstance().SoftwareConfigFileName)}");
-        }
-        private void Log_Click(object sender, RoutedEventArgs e)
-        {
-            new WindowLog() { Owner = this }.Show();
         }
 
         private void MenuItem_Click(object sender, RoutedEventArgs e)

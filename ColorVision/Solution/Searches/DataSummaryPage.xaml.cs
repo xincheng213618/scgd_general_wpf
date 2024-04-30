@@ -144,8 +144,11 @@ namespace ColorVision.Solution.Searches
         }
         private void Arch_Click(object sender, RoutedEventArgs e)
         {
-            ViewBatchResult sel = (ViewBatchResult)listView1.SelectedValue;
-            MQTTRCService.GetInstance().Archived(sel.BatchCode);
+            if (sender is Button button && button.Tag is ViewBatchResult viewBatchResult)
+            {
+                MQTTRCService.GetInstance().Archived(viewBatchResult.BatchCode);
+                MessageBox.Show("归档指令已经发送");
+            }
         }
     }
 }

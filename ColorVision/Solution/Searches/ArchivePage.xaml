@@ -21,6 +21,7 @@
             </Grid.RowDefinitions>
             <Grid>
                 <DockPanel Margin="5" >
+                    <Button  Content="设置" DockPanel.Dock="Right" Click="Setting_Click" Margin="10,0"/>
                     <Button  Content="搜索" DockPanel.Dock="Right" Click="Query_Click" Margin="10,0"/>
                     <TextBox x:Name="SearchBox" BorderBrush="{DynamicResource PrimaryBrush}" BorderThickness="0"  VerticalContentAlignment="Center"  VerticalAlignment="Center" Text="" TextChanged="SearchBox_TextChanged"  InputMethod.IsInputMethodEnabled="True"  KeyDown="KeyEnter"  />
                 </DockPanel>
@@ -42,13 +43,6 @@
                                     <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                                 </Style>
                             </GridView.ColumnHeaderContainerStyle>
-                            <GridViewColumn  Header="序号">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:ViewArchiveResult}"  >
-                                        <TextBlock Text="{Binding Id}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
                             <GridViewColumn  Header="code">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewArchiveResult}"  >

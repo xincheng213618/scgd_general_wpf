@@ -10,6 +10,8 @@ using ColorVision.MQTT;
 
 namespace ColorVision
 {
+
+
     /// <summary>
     /// WindowLog.xaml 的交互逻辑
     /// </summary>

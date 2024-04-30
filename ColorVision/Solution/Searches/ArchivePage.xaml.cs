@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.IO;
 using ColorVision.Services.RC;
+using ColorVision.Common.Utilities;
 
 namespace ColorVision.Solution.Searches
 {
@@ -118,6 +119,23 @@ namespace ColorVision.Solution.Searches
         }
         private void listView1_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
+
+        }
+
+        private void Setting_Click(object sender, RoutedEventArgs e)
+        {
+            ConfigArchivedModel configArchivedModel = ConfigArchivedDao.Instance.GetById(1);
+            if (configArchivedModel == null)
+            {
+                MessageBox.Show("找不到归档配置信息");
+
+            }
+            else
+            {
+                EditArchived editArchived = new EditArchived(configArchivedModel) {  Owner =Application.Current.GetActiveWindow()};
+                editArchived.ShowDialog();
+            }
+
 
         }
     }

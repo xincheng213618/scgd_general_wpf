@@ -476,5 +476,10 @@ namespace ColorVision
             wizardWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
             wizardWindow.Show();
         }
+
+        private void Log_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }
