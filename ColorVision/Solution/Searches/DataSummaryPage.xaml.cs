@@ -11,10 +11,20 @@ using ColorVision.Services.RC;
 
 namespace ColorVision.Solution.Searches
 {
+    public enum ArchiveStatus
+    {
+        NotArchived = -1,
+        Pending = 0,
+        Archived = 1,
+        Failed = -2
+    }
+
     public class ViewBatchResult : ViewModelBase,ISortID,ISortCreateTime, ISortBatch
     {
+        public BatchResultMasterModel BatchResultMasterModel { get; set; }
         public ViewBatchResult(BatchResultMasterModel batchResultMasterModel)
         {
+            BatchResultMasterModel = batchResultMasterModel;
             Id = batchResultMasterModel.Id;
             Batch = batchResultMasterModel.Name;
             BatchCode = batchResultMasterModel.Code;
@@ -24,7 +34,11 @@ namespace ColorVision.Solution.Searches
 
         public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
-        public int IdShow { get; set; }
+
+        public ArchiveStatus ArchiveStatus { get => (ArchiveStatus)BatchResultMasterModel.ArchivedFlag; }
+
+        public bool IshowArch => ArchiveStatus == ArchiveStatus.Pending;
+
 
         public string? Batch { get { return _Batch; } set { _Batch = value; NotifyPropertyChanged(); } }
         private string? _Batch;

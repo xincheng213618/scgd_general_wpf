@@ -71,10 +71,13 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="归档">
+                            <GridViewColumn  Header="归档" Width="100">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewBatchResult}">
-                                        <Button Content="归档" Click="Arch_Click" Tag="{Binding .}"/>
+                                        <Grid>
+                                            <TextBlock Text="{Binding ArchiveStatus}" Visibility="{Binding IshowArch,Converter={StaticResource bool2VisibilityConverter1}}"/>
+                                            <Button Content="归档" Click="Arch_Click" Visibility="{Binding IshowArch,Converter={StaticResource bool2VisibilityConverter}}" Tag="{Binding .}"/>
+                                        </Grid>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

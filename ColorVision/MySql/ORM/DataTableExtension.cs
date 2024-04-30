@@ -16,6 +16,10 @@ namespace ColorVision.MySql.ORM
             return rows.Count == 1 ? rows[0] : null;
         }
 
+        public static object? IsDBNull<T> (T t)
+        {
+            return t != null ? t : DBNull.Value;
+        }
 
         public static DataRow GetRow<T>(this DataTable dataTable, T item) where T : IPKModel
         {

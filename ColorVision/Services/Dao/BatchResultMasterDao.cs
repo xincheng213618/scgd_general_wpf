@@ -29,6 +29,7 @@ namespace ColorVision.Services.DAO
         public DateTime? CreateDate { get; set; }
         public int? TotalTime { get; set; }
         public string? Result { get; set; }
+        public short ArchivedFlag { get; set; }
         public int TenantId { get; set; }
     }
     public class BatchResultMasterDao : BaseTableDao<BatchResultMasterModel>
@@ -51,6 +52,7 @@ namespace ColorVision.Services.DAO
                 TotalTime = item.Field<int?>("total_time"),
                 Result = item.Field<string>("result"),
                 CreateDate = item.Field<DateTime?>("create_date"),
+                ArchivedFlag = item.Field<short>("archived_flag")
             };
 
             return model;
@@ -67,6 +69,7 @@ namespace ColorVision.Services.DAO
                 row["result"] = item.Result;
                 row["total_time"] = item.TotalTime;
                 row["tenant_id"] = item.TenantId;
+                row["archived_flag"] = DataTableExtension.IsDBNull(item.ArchivedFlag);
             }
             return row;
         }

@@ -2,6 +2,7 @@
 using System.Data;
 using ColorVision.MySql;
 using ColorVision.MySql.ORM;
+using NPOI.SS.Formula.Functions;
 
 namespace ColorVision.Services.Dao
 {
@@ -53,9 +54,7 @@ namespace ColorVision.Services.Dao
                 if (item.Id > 0) row["id"] = item.Id;
                 if (item.Name != null) row["name"] = item.Name;
                 row["create_date"] = item.CreateDate;
-                //row["is_enable"] = item.IsEnable;
-                //row["is_delete"] = item.IsDelete;
-                if (item.Remark != null) row["remark"] = item.Remark;
+                row["remark"] = DataTableExtension.IsDBNull(item.Remark);
                 row["tenant_id"] = item.TenantId;
             }
             return row;
