@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using log4net;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Windows.Controls;
 
 namespace ColorVision.UI
@@ -39,23 +40,34 @@ namespace ColorVision.UI
             menuItems.Add("Tool", GetMenuToolItem());
             menuItems.Add("Help", GetMenuHelp());
 
+            List<T> iMenuItems = new List<T>();
+
             foreach (Type type in assembly.GetTypes().Where(t => typeof(T).IsAssignableFrom(t) && !t.IsAbstract))
             {
                 if (Activator.CreateInstance(type) is T iMenuItem)
                 {
-                    string GuidId = iMenuItem.GuidId ?? Guid.NewGuid().ToString();
-                    MenuItem menuItem = new MenuItem
-                    {
-                        Header = iMenuItem.Header,
-                        Icon = iMenuItem.Icon,
-                        InputGestureText = iMenuItem.InputGestureText,
-                        Command = iMenuItem.Command,
-                        Tag = iMenuItem,
-                    };
-
-                    menuItems.Add(GuidId, menuItem);
+                    iMenuItems.Add(iMenuItem);
                 }
             }
+
+            iMenuItems = iMenuItems.OrderBy(item => item.Index).ToList();
+
+            foreach (var iMenuItem in iMenuItems)
+            {
+                string GuidId = iMenuItem.GuidId ?? Guid.NewGuid().ToString();
+                MenuItem menuItem = new MenuItem
+                {
+                    Header = iMenuItem.Header,
+                    Icon = iMenuItem.Icon,
+                    InputGestureText = iMenuItem.InputGestureText,
+                    Command = iMenuItem.Command,
+                    Tag = iMenuItem,
+                };
+                menuItems.Add(GuidId, menuItem);
+            }
+
+
+
 
             foreach (var menuItem in menuItems.Values)
             {

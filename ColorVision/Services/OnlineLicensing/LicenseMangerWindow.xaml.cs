@@ -1,6 +1,10 @@
-﻿using ColorVision.Services.OnlineLicensing;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.HotKey;
+using ColorVision.Services.OnlineLicensing;
 using ColorVision.Settings;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -12,6 +16,30 @@ using System.Windows.Media;
 
 namespace ColorVision.Services.OnlineLicensing
 {
+
+    public class HotKeyLincense : IHotKey, IMenuItem
+    {
+        public HotKeys HotKeys => new HotKeys(Properties.Resource.MyLicense_R, new Hotkey(Key.L, ModifierKeys.Control), Execute);
+
+        public string? OwnerGuid => "Help";
+
+        public string? GuidId => "Lincense";
+
+        public int Index => 6;
+
+        public string? Header => Properties.Resource.MyLicense_R;
+
+        public string? InputGestureText => "Ctrl + L";
+
+        public object? Icon { get; set; }
+
+        public RelayCommand Command => new RelayCommand(A => Execute());
+
+        private void Execute()
+        {
+            new LicenseMangerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+    }
 
 
     /// <summary>

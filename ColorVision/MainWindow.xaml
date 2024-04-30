@@ -50,15 +50,12 @@
                         <MenuItem Header="{x:Static properties:Resource.ApplyWindowLayout}"  Click="MenuStatusBar_Click" />
                     </MenuItem>
                     <MenuItem x:Name="MenuHelp" Header="{x:Static properties:Resource.MenuHelp}">
-                        <MenuItem Header="打开日志(_L)"  Click="Log_Click"/>
                         <MenuItem Header="打开日志文件夹(_F)"  Click="LogF_Click"/>
                         <MenuItem Header="打开配置文件(_S)"  Click="Setting_Click"/>
                         <MenuItem Header="打开配置文件夹(_F)" Click="SettingF_Click"/>
                         <Separator/>
                         <MenuItem Header="{x:Static properties:Resource.ChangeLog}"  Click="ChangeLog_Clik"/>
                         <MenuItem Header="{x:Static properties:Resource.Wizard}" Click="Wizard_Click"/>
-                        <MenuItem Header="{x:Static properties:Resource.MenuUpdate}" Click="Update_Click"/>
-                        <MenuItem Header="{x:Static properties:Resource.MyLicense_R}"  Click="License_Click"/>
                     </MenuItem>
                 </Menu>
                 <Image Source="{DynamicResource DrawingImageUser}" Width="20" HorizontalAlignment="Right" Margin="0,0,10,0"/>

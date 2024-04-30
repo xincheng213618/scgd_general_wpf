@@ -148,14 +148,6 @@ namespace ColorVision
             Application.Current.MainWindow = this;
         }
 
-        private void Update_Click(object sender, RoutedEventArgs e)
-        {
-            AutoUpdater.GetInstance().CheckAndUpdate();
-        }
-        private void License_Click(object sender, RoutedEventArgs e)
-        {
-            new LicenseMangerWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
 
         private void MenuItem_Exit(object sender, RoutedEventArgs e)
         {
