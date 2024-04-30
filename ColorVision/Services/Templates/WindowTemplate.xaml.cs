@@ -453,62 +453,6 @@ namespace ColorVision.Services.Templates
             }
         }
 
-        private void CreateNewTemplateFromCsv()
-        {
-            switch (TemplateType)
-            {
-                case TemplateType.AoiParam:
-                    CreateNewTemplate(TemplateControl.AoiParams, TextBox1.Text, new AOIParam());
-                    break;
-                case TemplateType.Calibration:
-                    CreateNewTemplate(DeviceCamera.CalibrationParams, TextBox1.Text, new CalibrationParam());
-                    break;
-                case TemplateType.PGParam:
-                    CreateNewTemplate(TemplateControl.PGParams, TextBox1.Text, new PGParam());
-                    break;
-                case TemplateType.LedResult:
-                    CreateNewTemplate(TemplateControl.LedReusltParams, TextBox1.Text, new LedReusltParam());
-                    break;
-                case TemplateType.SMUParam:
-                    CreateNewTemplate(TemplateControl.SMUParams, TextBox1.Text, new SMUParam());
-                    break;
-                case TemplateType.MTFParam:
-                    CreateNewTemplate(TemplateControl.MTFParams, TextBox1.Text, new MTFParam() { });
-                    break;
-                case TemplateType.SFRParam:
-                    CreateNewTemplate(TemplateControl.SFRParams, TextBox1.Text, new SFRParam() { });
-                    break;
-                case TemplateType.FOVParam:
-                    CreateNewTemplate(TemplateControl.FOVParams, TextBox1.Text, new FOVParam() { });
-                    break;
-                case TemplateType.GhostParam:
-                    CreateNewTemplate(TemplateControl.GhostParams, TextBox1.Text, new GhostParam() { });
-                    break;
-                case TemplateType.DistortionParam:
-                    CreateNewTemplate(TemplateControl.DistortionParams, TextBox1.Text, new DistortionParam() { });
-                    break;
-                case TemplateType.FocusPointsParam:
-                    CreateNewTemplate(TemplateControl.FocusPointsParams, TextBox1.Text, new FocusPointsParam() { });
-                    break;
-                case TemplateType.LedCheckParam:
-                    CreateNewTemplate(TemplateControl.LedCheckParams, TextBox1.Text, new LedCheckParam() { });
-                    break;
-                case TemplateType.PoiParam:
-                    CreateNewTemplate(PoiParam.Params, TextBox1.Text , new PoiParam() { });
-                    break;
-                case TemplateType.FlowParam:
-                    CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, new FlowParam() { Name = TextBox1.Text });
-                    break;
-                case TemplateType.MeasureParam:
-                    CreateNewTemplate(TemplateControl.MeasureParams, TextBox1.Text, new MeasureParam() { Name = TextBox1.Text });
-                    break;
-                case TemplateType.BuildPOIParmam:
-                    CreateNewTemplate(TemplateControl.BuildPOIParams, TextBox1.Text, new BuildPOIParam() { });
-                    break;
-
-            }
-        }
-
         private void Button_Save_Click(object sender, RoutedEventArgs e)
         {
             Close();
@@ -546,14 +490,7 @@ namespace ColorVision.Services.Templates
         {
             if (!string.IsNullOrEmpty(TextBox1.Text))
             {
-                if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
-                {
-                    CreateNewTemplateFromDB();
-                }
-                else
-                {
-                    CreateNewTemplateFromCsv();
-                }
+                CreateNewTemplateFromDB();
                 TextBox1.Text = NewCreateFileName("default");
             }
             else

@@ -162,6 +162,7 @@ namespace ColorVision.Solution.Searches
             {
                 MQTTRCService.GetInstance().Archived(viewBatchResult.BatchCode);
                 MessageBox.Show("归档指令已经发送");
+                Frame.Refresh();
             }
         }
     }

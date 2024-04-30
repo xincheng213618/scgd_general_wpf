@@ -144,6 +144,9 @@
     <Compile Update="Services\Group\ResourceManager.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Services\Templates\CreateTemplate.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Update="Services\Terminal\CreateTerminal.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
