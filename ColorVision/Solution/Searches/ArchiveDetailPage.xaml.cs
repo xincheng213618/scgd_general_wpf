@@ -12,42 +12,39 @@ using ColorVision.Common.Utilities;
 
 namespace ColorVision.Solution.Searches
 {
-    public class ViewArchiveResult : ViewModelBase, ISortID,ISortCreateTime
+    public class ViewArchiveDetailResult : ViewModelBase
     {
-        public ViewArchiveResult(ArchivedMasterModel  archivedMasterModel)
+        public ViewArchiveDetailResult(ArchivedDetailModel  model)
         {
-            ArchivedMasterModel = archivedMasterModel;
+            ArchivedDetailModel = model;
         }
-        public ArchivedMasterModel ArchivedMasterModel { get; set; }
-        public int Id { get => ArchivedMasterModel.Id; set => throw new NotImplementedException(); }
 
-        public int IdShow { get => ArchivedMasterModel.Id;set { ArchivedMasterModel.Id = value; } }
-
-        public DateTime? CreateTime { get => ArchivedMasterModel.CreateDate; }
+        public ArchivedDetailModel ArchivedDetailModel { get; set; }
     }
 
 
     /// <summary>
-    /// ArchivePage.xaml 的交互逻辑
+    /// ArchiveDetailPage.xaml 的交互逻辑
     /// </summary>
-    public partial class ArchivePage : Page
+    public partial class ArchiveDetailPage : Page
     {
         public Frame Frame { get; set; }
-
-        public ArchivePage(Frame MainFrame)
+        public ViewArchiveResult ViewArchiveResult { get; set; }
+        public ArchiveDetailPage(Frame MainFrame , ViewArchiveResult viewArchiveResult)
         {
             Frame = MainFrame;
+            ViewArchiveResult = viewArchiveResult;
             InitializeComponent();
         }
 
 
-        public ObservableCollection<ViewArchiveResult> ViewResults { get; set; } = new ObservableCollection<ViewArchiveResult>();
+        public ObservableCollection<ViewArchiveDetailResult> ViewResults { get; set; } = new ObservableCollection<ViewArchiveDetailResult>();
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
-            foreach (var item in ArchivedMasterDao.Instance.GetAll())
+            foreach (var item in ArchivedDetailDao.Instance.GetAllByParam(new System.Collections.Generic.Dictionary<string, object>() { { "p_guid", ViewArchiveResult.ArchivedMasterModel.Code} }))
             {
-                ViewResults.Add(new ViewArchiveResult(item));
+                ViewResults.Add(new ViewArchiveDetailResult(item));
             }
         }
 
@@ -60,22 +57,6 @@ namespace ColorVision.Solution.Searches
         private void KeyEnter(object sender, KeyEventArgs e)
         {
 
-        }
-        private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            ViewResults.Clear();
-            foreach (var item in ArchivedMasterDao.Instance.ConditionalQuery(SearchBox.Text))
-            {
-                ViewResults.AddUnique(new ViewArchiveResult(item));
-            }
-        }
-
-        private void Query_Click(object sender, RoutedEventArgs e)
-        {
-            foreach (var item in ArchivedMasterDao.Instance.ConditionalQuery(SearchBox.Text))
-            {
-                ViewResults.AddUnique(new ViewArchiveResult(item));
-            }
         }
 
         private void listView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -102,11 +83,9 @@ namespace ColorVision.Solution.Searches
                         {
                             case "序号":
                                 item.IsSortD = !item.IsSortD;
-                                ViewResults.SortByID(item.IsSortD);
                                 break;
                             case "测量时间":
                                 item.IsSortD = !item.IsSortD;
-                                ViewResults.SortByCreateTime(item.IsSortD);
                                 break;
                             default:
                                 break;
@@ -119,10 +98,7 @@ namespace ColorVision.Solution.Searches
         }
         private void listView1_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (sender is ListView listView && listView.SelectedIndex > -1)
-            {
-                Frame.Navigate(new ArchiveDetailPage(Frame, ViewResults[listView.SelectedIndex]));
-            }
+
         }
 
         private void Setting_Click(object sender, RoutedEventArgs e)
