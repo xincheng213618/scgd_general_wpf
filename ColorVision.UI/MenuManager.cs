@@ -64,7 +64,7 @@ namespace ColorVision.UI
 
             foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
             {
-                if (Activator.CreateInstance(type) is IMenuItem iMenuItem)s
+                if (Activator.CreateInstance(type) is IMenuItem iMenuItem)
                 {
                     iMenuItems.Add(iMenuItem);
                 }
