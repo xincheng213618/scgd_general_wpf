@@ -13,7 +13,6 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindow}"
         Title="ColorVision" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
-    
     <Grid x:Name="Root">
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
@@ -24,20 +23,12 @@
             <Grid>
                 <Menu x:Name="Menu1"  Initialized="Menu_Initialized">
                     <MenuItem x:Name="FileMenuItem" Header="{x:Static properties:Resource.MenuFile}">
-                        <Separator/>
-                        <MenuItem Header="{x:Static properties:Resource.MenuExit}" InputGestureText="Alt + F4" Click="MenuItem_Exit"/>
                     </MenuItem>
                     <MenuItem Header="{x:Static properties:Resource.MenuTemplate}">
-                        <MenuItem Header="测量模板设置(_S)" Visibility="Collapsed" Tag="MeasureParm" Click="MenuItem_Template"/>
-                        <Separator/>
-                        <MenuItem Header="PG模板设置(_G)" Tag="PGParam"  Click="MenuItem_Template"/>
-                        <MenuItem Header="源表模板设置(_V)"  Tag="SMUParam" Click="MenuItem_Template"/>
-                        <MenuItem Header="_AOI参数模板设置" Tag="AoiParam" Visibility="Collapsed" Click="MenuItem_Template"/>
                     </MenuItem>
                     <MenuItem Header="{x:Static properties:Resource.MenuTool}">
                         <MenuItem Header="{x:Static properties:Resource.WorkflowEngine_F}" Click="MenuItem9_Click"/>
                         <MenuItem Header="{x:Static properties:Resource.Sign_in}"  Click="Login_Click"/>
-                        <Separator/>
                         <MenuItem x:Name="MenuLanguage" Header="{x:Static properties:Resource.MenuLanguage}" Initialized="MenuLanguage_Initialized" Loaded="MenuLanguage_Loaded"/>
                         <MenuItem x:Name="MenuTheme" Header="{x:Static properties:Resource.MenuTheme}" Initialized="MenuTheme_Initialized" Loaded="MenuTheme_Loaded"/>
                     </MenuItem>

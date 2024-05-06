@@ -24,7 +24,7 @@ namespace ColorVision.Solution
 
         public string? GuidId => "OpenSolution";
 
-        public int Index => 1;
+        public int Order => 1;
 
         public string? Header => Resource.MenuOpen;
 

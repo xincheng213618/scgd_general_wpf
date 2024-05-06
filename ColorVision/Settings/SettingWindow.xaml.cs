@@ -35,7 +35,7 @@ namespace ColorVision.Settings
 
         public string? GuidId => "MenuOptions";
 
-        public int Index => 99;
+        public int Order => 99;
 
         public string? Header => Resource.MenuOptions;
 

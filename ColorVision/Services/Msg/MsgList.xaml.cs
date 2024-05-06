@@ -26,7 +26,7 @@ namespace ColorVision.Services.Msg
         public string? OwnerGuid => "Tool";
 
         public string? GuidId => "MsgList";
-        public int Index => 2;
+        public int Order => 2;
         public string? Header => "MQTTMsg(_L)";
 
         public string? InputGestureText { get; } = "Ctrl + M";

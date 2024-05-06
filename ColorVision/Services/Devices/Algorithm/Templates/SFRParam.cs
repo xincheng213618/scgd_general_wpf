@@ -17,7 +17,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
         public string? OwnerGuid => "TemplateAlgorithm";
 
         public string? GuidId => "SFRParam";
-        public int Index => 2;
+        public int Order => 2;
         public string? Header => "SFR模板设置(_M)";
 
         public string? InputGestureText { get; }

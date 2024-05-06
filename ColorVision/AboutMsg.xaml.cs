@@ -25,7 +25,7 @@ namespace ColorVision
 
         public string? GuidId => "AboutMsg";
 
-        public int Index => 99;
+        public int Order => 99;
 
         public string? Header => Resource.MenuAbout;
 

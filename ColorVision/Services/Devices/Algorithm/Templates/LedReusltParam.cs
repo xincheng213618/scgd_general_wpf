@@ -16,7 +16,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
         public string? OwnerGuid => "TemplateAlgorithm";
 
         public string? GuidId => "LedReusltParam";
-        public int Index => 2;
+        public int Order => 2;
         public string? Header => "数据判断模板设置(_J)";
 
         public string? InputGestureText { get; }

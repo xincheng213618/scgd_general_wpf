@@ -1,11 +1,42 @@
 ﻿#pragma warning disable CS8603  
 
+using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Templates;
+using ColorVision.Settings;
+using ColorVision.UI;
 using System.Collections.Generic;
+using System.Windows;
 
 namespace ColorVision.Services.Devices.PG.Templates
 {
+
+    public class PGParamMenuItem : IMenuItem
+    {
+        public string OwnerGuid => "Template";
+
+        public string? GuidId => "PGParam";
+        public int Order => 11;
+        public string? Header => "PG模板设置(_G)";
+
+        public string? InputGestureText => null;
+
+        public object? Icon => null;
+
+        public RelayCommand Command => new RelayCommand(a =>
+        {
+            SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
+            if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
+                return;
+            }
+            new WindowTemplate(TemplateType.PGParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        });
+    }
+
+
     public class PGParam : ParamBase
     {
         public PGParam()

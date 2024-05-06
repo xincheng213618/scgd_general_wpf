@@ -17,7 +17,7 @@ namespace ColorVision.Services
         public string? OwnerGuid => "Tool";
 
         public string? GuidId { get; set; } = "WindowDevices";
-        public int Index => 3;
+        public int Order => 3;
         public string? Header => "设备配置(_D)";
 
         public string? InputGestureText { get; set; }

@@ -16,7 +16,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
         public string? OwnerGuid => "TemplateAlgorithm";
 
         public string? GuidId => "GhostParam";
-        public int Index => 3;
+        public int Order => 3;
         public string? Header => "鬼影模板设置(_G)";
 
         public string? InputGestureText { get; }

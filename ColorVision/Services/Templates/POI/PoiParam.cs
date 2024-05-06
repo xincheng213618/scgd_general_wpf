@@ -16,7 +16,7 @@ namespace ColorVision.Services.Templates.POI
         public string? OwnerGuid => "Template";
 
         public string? GuidId => "PoiParam";
-        public int Index => 0;
+        public int Order => 0;
         public string? Header => "关注点模板设置(_P)";
 
         public string? InputGestureText { get; }

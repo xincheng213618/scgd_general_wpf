@@ -21,7 +21,7 @@ namespace ColorVision.Services.Devices.Sensor.Templates
         public string OwnerGuid => "Template";
 
         public string? GuidId => "SensorHeYuan";
-        public int Index => 7;
+        public int Order => 21;
         public string? Header => "通用传感器模板设置(_S)";
 
         public string? InputGestureText { get; }

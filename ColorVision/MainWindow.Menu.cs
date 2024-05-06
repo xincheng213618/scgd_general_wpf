@@ -1,22 +1,14 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.Utilities;
-using ColorVision.Controls;
 using ColorVision.HotKey;
 using ColorVision.Language;
 using ColorVision.MQTT;
 using ColorVision.MySql;
-using ColorVision.Services;
 using ColorVision.Services.Flow;
-using ColorVision.Services.Msg;
-using ColorVision.Services.OnlineLicensing;
-using ColorVision.Services.PhyCameras;
 using ColorVision.Services.RC;
-using ColorVision.Services.Templates;
 using ColorVision.Settings;
-using ColorVision.Solution;
 using ColorVision.Themes;
 using ColorVision.UI;
-using ColorVision.Update;
 using log4net;
 using System;
 using System.Diagnostics;
@@ -38,79 +30,14 @@ namespace ColorVision
     /// </summary>
     public partial class MainWindow
     {
-
-        private void MenuItem_Template(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem)
-            {
-                SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-                WindowTemplate windowTemplate;
-                if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
-                {
-                    MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision");
-                    return;
-                }
-                switch (menuItem.Tag?.ToString()??string.Empty)
-                {
-                    case "AoiParam":
-                        windowTemplate = new WindowTemplate(TemplateType.AoiParam);
-                        windowTemplate.Owner = GetWindow(this);
-                        windowTemplate.ShowDialog();
-                        break;
-                    case "PGParam":
-                        windowTemplate = new WindowTemplate(TemplateType.PGParam);
-                        windowTemplate.Owner = GetWindow(this);
-                        windowTemplate.ShowDialog();
-                        break;
-                    case "LedReusltParams":
-                        windowTemplate = new WindowTemplate(TemplateType.LedResult);
-                        windowTemplate.Owner = GetWindow(this);
-                        windowTemplate.ShowDialog();
-                        break;
-                    case "SMUParam":
-                        windowTemplate = new WindowTemplate(TemplateType.SMUParam);
-                        windowTemplate.Owner = GetWindow(this);
-                        windowTemplate.ShowDialog();
-                        break;
-                    case "MeasureParm":
-                        MeasureParamControl measure = new MeasureParamControl();
-                        windowTemplate = new WindowTemplate(TemplateType.MeasureParam, measure);
-                        windowTemplate.Owner = GetWindow(this);
-                        windowTemplate.ShowDialog();
-                        break;      
-                }
-            }
-        }
-
-
         private void MenuItem9_Click(object sender, RoutedEventArgs e)
         {
             new WindowFlowEngine() { Owner = null, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
 
 
-        private void MenuItem_ProjectNew_Click(object sender, RoutedEventArgs e)
-        {
-            SolutionManager.GetInstance().NewCreateWindow();
-        }
-
-        private void MenuItem_ProjectOpen_Click(object sender, RoutedEventArgs e)
-        {
-            SolutionManager.GetInstance().OpenSolutionWindow();
-        }
         private DateTime lastClickTime = DateTime.MinValue;
 
-
-
-        private void MenuItem12_Click(object sender, RoutedEventArgs e)
-        {
-            MsgList();
-        }
-
-        private void MsgList()
-        {
-            new MsgList() { Owner = Application.Current.GetActiveWindow() }.Show();
-        }
 
         private void Menu_Initialized(object sender, EventArgs e)
         {
@@ -118,12 +45,6 @@ namespace ColorVision
             MenuManager.GetInstance().LoadMenuItemFromAssembly<IMenuItem>(Assembly.GetExecutingAssembly());
             this.LoadHotKeyFromAssembly<IHotKey>(Assembly.GetExecutingAssembly());
             Application.Current.MainWindow = this;
-        }
-
-
-        private void MenuItem_Exit(object sender, RoutedEventArgs e)
-        {
-            Environment.Exit(0);
         }
 
         private void TextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

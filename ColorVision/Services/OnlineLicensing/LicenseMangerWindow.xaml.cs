@@ -25,7 +25,7 @@ namespace ColorVision.Services.OnlineLicensing
 
         public string? GuidId => "Lincense";
 
-        public int Index => 6;
+        public int Order => 6;
 
         public string? Header => Properties.Resource.MyLicense_R;
 

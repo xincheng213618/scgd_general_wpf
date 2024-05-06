@@ -23,7 +23,7 @@ namespace ColorVision.Solution
 
         public string? GuidId => "MenuNew";
 
-        public int Index => 0;
+        public int Order => 0;
 
         public string? Header => Resource.MenuNew;
 

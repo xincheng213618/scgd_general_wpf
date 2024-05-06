@@ -1,34 +1,29 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.UI;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.Sensor.Templates
+namespace ColorVision.Services.Templates
 {
     public class CamerExpMenuItem : IMenuItem
     {
         public string OwnerGuid => "Template";
 
         public string? GuidId => "CameraExposureParam";
-        public int Index => 5;
+        public int Order => 22;
         public string? Header => "相机曝光模板设置(_B)";
 
         public string? InputGestureText { get; }
 
         public object? Icon { get; }
 
-        public RelayCommand Command => new RelayCommand(a => {
+        public RelayCommand Command => new RelayCommand(a =>
+        {
             SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
             if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
             {

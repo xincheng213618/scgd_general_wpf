@@ -1,23 +1,11 @@
-﻿using ColorVision.Common.MVVM;
-using log4net;
+﻿using log4net;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Windows.Controls;
 
 namespace ColorVision.UI
 {
-    public interface IMenuItem
-    {
-        public string? OwnerGuid { get; }
-        public string? GuidId { get;}
-        public int Index { get; }
-        public string? Header { get; }
-        public string? InputGestureText { get; }
-        public object? Icon { get; }
-        public RelayCommand Command { get; }
-    }
-
-
     public class MenuManager
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MenuManager));
@@ -35,10 +23,14 @@ namespace ColorVision.UI
         public void LoadMenuItemFromAssembly<T>(Assembly assembly) where T : IMenuItem
         {
             var menuItems = new Dictionary<string, MenuItem>();
-            menuItems.Add("File", GetFileMenuItem());
-            menuItems.Add("Template", GetTemplateMenuItem());
-            menuItems.Add("Tool", GetMenuToolItem());
-            menuItems.Add("Help", GetMenuHelp());
+            if (GetFileMenuItem() is MenuItem FilemenuItem)
+                menuItems.Add("File", FilemenuItem);
+            if (GetTemplateMenuItem() is MenuItem TemplateMenu)
+                menuItems.Add("Template", TemplateMenu);
+            if (GetMenuToolItem() is MenuItem MenuTool)
+                menuItems.Add("Tool", MenuTool);
+            if (GetMenuHelp() is MenuItem MenuHelp)
+                menuItems.Add("Help", MenuHelp);
 
             List<T> iMenuItems = new List<T>();
 
@@ -50,8 +42,40 @@ namespace ColorVision.UI
                 }
             }
 
-            iMenuItems = iMenuItems.OrderBy(item => item.Index).ToList();
+            void CreateMenu(MenuItem parentMenuItem,string OwnerGuid) 
+            {
+                var iMenuItems1 = iMenuItems.FindAll(a => a.OwnerGuid == OwnerGuid).OrderBy(a => a.Order).ToList();
+                for (int i = 0; i < iMenuItems1.Count; i++)
+                {
+                    var iMenuItem = iMenuItems1[i];
+                    string GuidId = iMenuItem.GuidId ?? Guid.NewGuid().ToString();
+                    MenuItem menuItem = new MenuItem
+                    {
+                        Header = iMenuItem.Header,
+                        Icon = iMenuItem.Icon,
+                        InputGestureText = iMenuItem.InputGestureText,
+                        Command = iMenuItem.Command,
+                        Tag = iMenuItem,
+                    };
+                    CreateMenu(menuItem, GuidId);
+                    if (i > 0 && (iMenuItem.Order - iMenuItems1[i - 1].Order > 4))
+                    {
+                        parentMenuItem.Items.Add(new Separator());
+                    }
+                    parentMenuItem.Items.Add(menuItem);
+                }
+                foreach (var item in iMenuItems1)
+                {
+                    iMenuItems.Remove(item);
+                }
+            }
 
+            foreach (var keyValuePair in menuItems)
+            {
+                CreateMenu(keyValuePair.Value, keyValuePair.Key);
+            }
+
+            iMenuItems = iMenuItems.OrderBy(item => item.Order).ToList();
             foreach (var iMenuItem in iMenuItems)
             {
                 string GuidId = iMenuItem.GuidId ?? Guid.NewGuid().ToString();
@@ -63,53 +87,8 @@ namespace ColorVision.UI
                     Command = iMenuItem.Command,
                     Tag = iMenuItem,
                 };
-                menuItems.Add(GuidId, menuItem);
+                Menu.Items.Add(menuItem);
             }
-
-
-
-
-            foreach (var menuItem in menuItems.Values)
-            {
-                if (menuItem.Tag is IMenuItem iMenuItem)
-                {
-                    if (string.IsNullOrWhiteSpace(iMenuItem.OwnerGuid))
-                    {
-                        if (iMenuItem.Index < 0 || iMenuItem.Index > Menu.Items.Count)
-                        {
-                            Menu.Items.Add(menuItem);
-                        }
-                        else
-                        {
-                            Menu.Items.Insert(iMenuItem.Index, menuItem);
-                        }
-                    }
-                    else if (menuItems.TryGetValue(iMenuItem.OwnerGuid, out MenuItem parentItem))
-                    {
-                        if (iMenuItem.Index < 0 || iMenuItem.Index > parentItem.Items.Count)
-                        {
-                            parentItem.Items.Add(menuItem);
-                        }
-                        else
-                        {
-                            parentItem.Items.Insert(iMenuItem.Index, menuItem);
-                        }
-                    }
-                    else
-                    {
-                        if (iMenuItem.Index < 0 || iMenuItem.Index > Menu.Items.Count)
-                        {
-                            Menu.Items.Add(menuItem);
-                        }
-                        else
-                        {
-                            Menu.Items.Insert(iMenuItem.Index, menuItem);
-                        }
-                    }
-                }
-            }
-
-
         }
 
         public MenuItem? GetFileMenuItem()
@@ -172,7 +151,6 @@ namespace ColorVision.UI
                 Menu.Items.Insert(index, menuItem);
             }
         }
-
 
         public void RemoveMenuItem(MenuItem menuItem)
         {

@@ -17,7 +17,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
         public string? OwnerGuid => "Template";
 
         public string? GuidId => "TemplateAlgorithm";
-        public int Index => 2;
+        public int Order => 2;
         public string? Header => "算法";
 
         public string? InputGestureText { get; }
@@ -33,7 +33,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
         public string? OwnerGuid => "TemplateAlgorithm";
 
         public string? GuidId => "BuildPOI";
-        public int Index => 0;
+        public int Order => 0;
         public string? Header => "BuildPOI模板设置(_B)";
 
         public string? InputGestureText { get; }

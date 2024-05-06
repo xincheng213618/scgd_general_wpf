@@ -16,7 +16,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
         public string? OwnerGuid => "TemplateAlgorithm";
 
         public string? GuidId => "FOV";
-        public int Index => 9;
+        public int Order => 5;
         public string? Header => "FOV模板设置(_B)";
 
         public string? InputGestureText { get; }

@@ -26,7 +26,7 @@ namespace ColorVision
 
         public string? GuidId => "MQTTLog";
 
-        public int Index => 1;
+        public int Order => 1;
 
         public string? Header => Resource.MQTTLog;
 

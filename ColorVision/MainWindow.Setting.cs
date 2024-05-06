@@ -35,7 +35,6 @@ namespace ColorVision
             base.OnSourceInitialized(e);
             IntPtr handle = new WindowInteropHelper(this).Handle;
             HwndSource.FromHwnd(handle).AddHook(new HwndSourceHook((IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled) => {
-
                 if (msg == WM_USER + 1)
                 {
                     try

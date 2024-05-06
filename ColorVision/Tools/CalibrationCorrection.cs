@@ -19,7 +19,7 @@ namespace ColorVision.Tools
 
         public string? GuidId => "CalibrationCorrection";
 
-        public int Index => 6;
+        public int Order => 6;
 
         public string? Header => "校正生成工具";
 

@@ -16,7 +16,7 @@ namespace ColorVision.Update
 
         public string? GuidId => "MenuUpdate";
 
-        public int Index => 9;
+        public int Order => 9;
 
         public string? Header => Properties.Resource.MenuUpdate;
 

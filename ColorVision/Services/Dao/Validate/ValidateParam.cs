@@ -12,7 +12,7 @@ namespace ColorVision.Services.Dao.Validate
         public string? OwnerGuid => "Template";
 
         public string? GuidId => "Validue";
-        public int Index => 2;
+        public int Order => 2;
         public string? Header => "关注点校验模板设置(_B)";
 
         public string? InputGestureText { get; }

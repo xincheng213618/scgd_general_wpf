@@ -17,7 +17,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
         public string? OwnerGuid => "TemplateAlgorithm";
 
         public string? GuidId => "DistortionParam";
-        public int Index => 3;
+        public int Order => 3;
         public string? Header => "畸变模板设置(_D)";
 
         public string? InputGestureText { get; }
