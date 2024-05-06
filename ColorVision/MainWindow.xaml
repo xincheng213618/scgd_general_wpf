@@ -43,8 +43,6 @@
                         <MenuItem Header="打开配置文件(_S)"  Click="Setting_Click"/>
                         <MenuItem Header="打开配置文件夹(_F)" Click="SettingF_Click"/>
                         <Separator/>
-                        <MenuItem Header="{x:Static properties:Resource.ChangeLog}"  Click="ChangeLog_Clik"/>
-                        <MenuItem Header="{x:Static properties:Resource.Wizard}" Click="Wizard_Click"/>
                     </MenuItem>
                 </Menu>
                 <Image Source="{DynamicResource DrawingImageUser}" Width="20" HorizontalAlignment="Right" Margin="0,0,10,0"/>

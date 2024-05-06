@@ -25,13 +25,13 @@ namespace ColorVision
 
         public string? GuidId => "AboutMsg";
 
-        public int Order => 99;
+        public int Order => 100000;
 
         public string? Header => Resource.MenuAbout;
 
         public string? InputGestureText => "Ctrl + F1";
 
-        public object? Icon { get; set; }
+        public object? Icon => null;
 
         public RelayCommand Command => new RelayCommand(A=> Execute());
 

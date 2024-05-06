@@ -1,12 +1,15 @@
-﻿using ColorVision.MQTT;
+﻿using ColorVision.HotKey;
+using ColorVision.MQTT;
 using ColorVision.MySql;
 using ColorVision.Services.RC;
 using ColorVision.Settings;
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Input;
 
 namespace ColorVision.Wizards
 {
+
     /// <summary>
     /// WizardWindow.xaml 的交互逻辑
     /// </summary>

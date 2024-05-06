@@ -17,7 +17,7 @@ using System.Windows.Media;
 namespace ColorVision.Services.OnlineLicensing
 {
 
-    public class HotKeyLincense : IHotKey, IMenuItem
+    public class ExportLincense : IHotKey, IMenuItem
     {
         public HotKeys HotKeys => new HotKeys(Properties.Resource.MyLicense_R, new Hotkey(Key.L, ModifierKeys.Control), Execute);
 
@@ -25,7 +25,7 @@ namespace ColorVision.Services.OnlineLicensing
 
         public string? GuidId => "Lincense";
 
-        public int Order => 6;
+        public int Order => 10003;
 
         public string? Header => Properties.Resource.MyLicense_R;
 

@@ -1,9 +1,7 @@
 ﻿using ColorVision.Adorners;
 using ColorVision.Common.Utilities;
-using ColorVision.Interfaces;
 using ColorVision.MySql;
 using ColorVision.Projects;
-using ColorVision.Services;
 using ColorVision.Services.Flow;
 using ColorVision.Services.RC;
 using ColorVision.Settings;
@@ -24,7 +22,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
-using System.ServiceProcess;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -464,22 +461,5 @@ namespace ColorVision
 
         }
 
-        private void ChangeLog_Clik(object sender, RoutedEventArgs e)
-        {
-            ChangelogWindow changelogWindow = new ChangelogWindow() { Owner = WindowHelpers.GetActiveWindow() ,WindowStartupLocation =WindowStartupLocation.CenterOwner };
-            changelogWindow.ShowDialog();
-        }
-
-        private void Wizard_Click(object sender, RoutedEventArgs e)
-        {
-            WizardWindow wizardWindow = new WizardWindow();
-            wizardWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-            wizardWindow.Show();
-        }
-
-        private void Log_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
     }
 }

@@ -7,8 +7,7 @@ using System.Windows.Input;
 
 namespace ColorVision.Update
 {
-
-    public class HotKeyUpdate: IHotKey, IMenuItem
+    public class ExportUpdate: IHotKey, IMenuItem
     {
         public HotKeys HotKeys => new HotKeys(Properties.Resource.MenuUpdate, new Hotkey(Key.U, ModifierKeys.Control), Execute);
 
@@ -16,7 +15,7 @@ namespace ColorVision.Update
 
         public string? GuidId => "MenuUpdate";
 
-        public int Order => 9;
+        public int Order => 10003;
 
         public string? Header => Properties.Resource.MenuUpdate;
 
