@@ -23,7 +23,7 @@ using System.Windows.Media;
 
 namespace ColorVision.Settings
 {
-    public class HotKeySetting : IHotKey,IMenuItem
+    public class ExportSetting : IHotKey,IMenuItem
     {
         public HotKeys HotKeys => new HotKeys(Properties.Resource.MenuOptions, new Hotkey(Key.I, ModifierKeys.Control), Execute);
         private void Execute()
@@ -35,7 +35,7 @@ namespace ColorVision.Settings
 
         public string? GuidId => "MenuOptions";
 
-        public int Order => 99;
+        public int Order => 100000;
 
         public string? Header => Resource.MenuOptions;
 
@@ -54,8 +54,6 @@ namespace ColorVision.Settings
                 return text;
             }
         }
-
-
         public RelayCommand Command => new RelayCommand(A => Execute());
     }
 

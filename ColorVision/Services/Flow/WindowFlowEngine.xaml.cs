@@ -10,9 +10,36 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Services.Templates;
+using ColorVision.HotKey;
+using ColorVision.Settings;
+using ColorVision.UI;
+using ColorVision.Common.MVVM;
+using ColorVision.Properties;
+using ColorVision.Common.Utilities;
 
 namespace ColorVision.Services.Flow
 {
+
+    public class ExportFlowEngin : IMenuItem
+    {
+        public string? OwnerGuid => "Tool";
+
+        public string? GuidId => "FlowEngin";
+
+        public int Order => 3;
+
+        public string? Header => Resource.WorkflowEngine_F;
+
+        public string? InputGestureText => null;
+
+        public object? Icon => null;
+        public RelayCommand Command => new RelayCommand(A =>
+        {
+            new WindowFlowEngine() { WindowStartupLocation = WindowStartupLocation.CenterScreen }.ShowDialog();
+        });
+    }
+
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>

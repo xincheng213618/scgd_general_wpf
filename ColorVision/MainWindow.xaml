@@ -27,8 +27,6 @@
                     <MenuItem Header="{x:Static properties:Resource.MenuTemplate}">
                     </MenuItem>
                     <MenuItem Header="{x:Static properties:Resource.MenuTool}">
-                        <MenuItem Header="{x:Static properties:Resource.WorkflowEngine_F}" Click="MenuItem9_Click"/>
-                        <MenuItem Header="{x:Static properties:Resource.Sign_in}"  Click="Login_Click"/>
                         <MenuItem x:Name="MenuLanguage" Header="{x:Static properties:Resource.MenuLanguage}" Initialized="MenuLanguage_Initialized" Loaded="MenuLanguage_Loaded"/>
                         <MenuItem x:Name="MenuTheme" Header="{x:Static properties:Resource.MenuTheme}" Initialized="MenuTheme_Initialized" Loaded="MenuTheme_Loaded"/>
                     </MenuItem>
