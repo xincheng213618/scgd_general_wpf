@@ -230,6 +230,7 @@ namespace ColorVision.Services.Flow
         {
             TemplateControl.GetInstance().LoadFlowParam();
             FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
+            FlowTemplate.SelectedIndex = 0;
         }
         FlowControl rcflowControl;
 
