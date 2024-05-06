@@ -11,9 +11,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Input;
-using System.Windows.Controls;
 using System.Windows.Media;
-using ColorVision.UI;
 
 namespace ColorVision.Solution
 {
@@ -105,53 +103,6 @@ namespace ColorVision.Solution
                 CurrentSolutionExplorer = new SolutionExplorer(solutionConfig.FullPath);
                 SolutionExplorers.Add(CurrentSolutionExplorer);
             }
-        }
-
-        public void InitMenu()
-        {
-            var FileMenuItem = MenuManager.GetInstance().GetFileMenuItem();       
-            MenuItem RecentListMenuItem = null;
-
-            RecentListMenuItem ??= new MenuItem();
-            RecentListMenuItem.Header = Properties.Resource.RecentFiles;
-            RecentListMenuItem.SubmenuOpened += (s, e) =>
-            {
-                var firstMenuItem = RecentListMenuItem.Items[0];
-                foreach (var item in SolutionHistory.RecentFiles)
-                {
-                    if (File.Exists(item))
-                    {
-                        MenuItem menuItem = new MenuItem();
-                        menuItem.Header = item;
-                        menuItem.Click += (sender, e) =>
-                        {
-                            OpenSolution(item);
-                        };
-                        RecentListMenuItem.Items.Add(menuItem);
-                    }
-                    else
-                    {
-                        SolutionHistory.RecentFiles.Remove(item);
-                    }
-                };
-                RecentListMenuItem.Items.Remove(firstMenuItem);
-
-            };
-            RecentListMenuItem.SubmenuClosed += (s, e) => {
-                RecentListMenuItem.Items.Clear();
-                RecentListMenuItem.Items.Add(new MenuItem());
-            };
-            RecentListMenuItem.Items.Add(new MenuItem());
-
-            FileMenuItem?.Items.Add(RecentListMenuItem);
-
-        }
-
-
-
-        public void AddHotKeys()
-        {
-            InitMenu();
         }
 
 

@@ -22,14 +22,9 @@
         <Border Grid.Row="0"  Height ="27 " BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
             <Grid>
                 <Menu x:Name="Menu1">
-                    <MenuItem x:Name="FileMenuItem" Header="{x:Static properties:Resource.MenuFile}">
-                    </MenuItem>
-                    <MenuItem Header="{x:Static properties:Resource.MenuTemplate}">
-                    </MenuItem>
-                    <MenuItem Header="{x:Static properties:Resource.MenuTool}">
-                        <MenuItem x:Name="MenuLanguage" Header="{x:Static properties:Resource.MenuLanguage}" Initialized="MenuLanguage_Initialized" Loaded="MenuLanguage_Loaded"/>
-                        <MenuItem x:Name="MenuTheme" Header="{x:Static properties:Resource.MenuTheme}" Initialized="MenuTheme_Initialized" Loaded="MenuTheme_Loaded"/>
-                    </MenuItem>
+                    <MenuItem x:Name="FileMenuItem" Header="{x:Static properties:Resource.MenuFile}"/>
+                    <MenuItem Header="{x:Static properties:Resource.MenuTemplate}"/>
+                    <MenuItem Header="{x:Static properties:Resource.MenuTool}"/>
                     <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Header="{ x:Static properties:Resource.MenuView}">
                         <MenuItem Header="{x:Static properties:Resource.MenuViewStatusBar}" IsChecked="{Binding SoftwareSetting.IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
                         <Separator/>

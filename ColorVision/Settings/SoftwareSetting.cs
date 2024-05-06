@@ -1,5 +1,5 @@
-﻿using ColorVision.Language;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Language;
 using log4net;
 using log4net.Core;
 using log4net.Repository.Hierarchy;
@@ -7,7 +7,6 @@ using System.Globalization;
 
 namespace ColorVision.Settings
 {
-
     public partial class SoftwareSetting
     {
         public bool IsRestoreWindow { get; set; }

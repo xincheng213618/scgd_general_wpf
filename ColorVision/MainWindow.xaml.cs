@@ -84,8 +84,6 @@ namespace ColorVision
         private void Window_Initialized(object sender, EventArgs e)
         {
             MenuManager.GetInstance().Menu = Menu1;
-            SolutionManager.GetInstance().AddHotKeys();
-
             if (MySqlControl.GetInstance().IsConnect)
             {
             }
