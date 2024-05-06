@@ -15,12 +15,16 @@
 
   <ItemGroup>
     <Compile Remove="Commands\**" />
+    <Compile Remove="MultilingualResources\**" />
     <Compile Remove="Services\Flow\新文件夹\**" />
     <EmbeddedResource Remove="Commands\**" />
+    <EmbeddedResource Remove="MultilingualResources\**" />
     <EmbeddedResource Remove="Services\Flow\新文件夹\**" />
     <None Remove="Commands\**" />
+    <None Remove="MultilingualResources\**" />
     <None Remove="Services\Flow\新文件夹\**" />
     <Page Remove="Commands\**" />
+    <Page Remove="MultilingualResources\**" />
     <Page Remove="Services\Flow\新文件夹\**" />
   </ItemGroup>
 
