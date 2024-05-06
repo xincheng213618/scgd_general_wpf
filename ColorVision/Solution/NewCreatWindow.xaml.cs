@@ -86,8 +86,6 @@ namespace ColorVision.Solution
                 if (Directory.Exists(Default))
                     Directory.CreateDirectory(Default);
             }
-
-
             DirectoryPath = RecentNewCreateCacheList[0];
             Name = NewCreateFileName(ConfigHandler.GetInstance().SoftwareConfig.SolutionSetting.DefaultCreatName);
             RecentNewCreateNameCacheList.Add(Name);

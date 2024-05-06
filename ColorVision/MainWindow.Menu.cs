@@ -30,22 +30,6 @@ namespace ColorVision
     /// </summary>
     public partial class MainWindow
     {
-        private void MenuItem9_Click(object sender, RoutedEventArgs e)
-        {
-            new WindowFlowEngine() { Owner = null, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
-        }
-
-
-        private DateTime lastClickTime = DateTime.MinValue;
-
-
-        private void Menu_Initialized(object sender, EventArgs e)
-        {
-            MenuManager.GetInstance().Menu = Menu1;
-            MenuManager.GetInstance().LoadMenuItemFromAssembly(Assembly.GetExecutingAssembly());
-            this.LoadHotKeyFromAssembly<IHotKey>(Assembly.GetExecutingAssembly());
-            Application.Current.MainWindow = this;
-        }
 
         private void TextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -60,9 +44,7 @@ namespace ColorVision
         {
             new RCServiceConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-        private void MenuItem10_Click(object sender, RoutedEventArgs e)
-        {
-        }
+
         private void LogF_Click(object sender, RoutedEventArgs e)
         {
             var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
@@ -86,69 +68,5 @@ namespace ColorVision
             if (!result)
                 Process.Start(result ? "explorer.exe" : "notepad.exe", fileName);
         }
-
-
-
-        private void MenuLanguage_Initialized(object sender, EventArgs e)
-        {
-            foreach (var item in LanguageManager.Current.Languages)
-            {
-                MenuItem LanguageItem = new MenuItem();
-                LanguageItem.Header = LanguageManager.keyValuePairs.TryGetValue(item, out string value) ? value : item;
-                LanguageItem.Click += (s, e) =>
-                {
-                    string temp = Thread.CurrentThread.CurrentUICulture.Name;
-                    ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.UICulture = item;
-                    ConfigHandler.GetInstance().SaveConfig();
-                    bool sucess = LanguageManager.Current.LanguageChange(item);
-                    if (!sucess)
-                    {
-                        ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.UICulture = temp;
-                        ConfigHandler.GetInstance().SaveConfig();
-                    }
-                };
-                LanguageItem.Tag = item;
-                LanguageItem.IsChecked = Thread.CurrentThread.CurrentUICulture.Name == item;
-                MenuLanguage.Items.Add(LanguageItem);
-            }
-        }
-        private void MenuLanguage_Loaded(object sender, RoutedEventArgs e)
-        {
-            foreach (var item in MenuTheme.Items)
-            {
-                if (item is MenuItem LanguageItem && LanguageItem.Tag is string Language)
-                    LanguageItem.IsChecked = Thread.CurrentThread.CurrentUICulture.Name == Language;
-            }
-        }
-
-        private void MenuTheme_Loaded(object sender, RoutedEventArgs e)
-        {
-            foreach (var item in MenuTheme.Items)
-            {
-                if (item is MenuItem ThemeItem && ThemeItem.Tag is Theme Theme)
-                    ThemeItem.IsChecked = ThemeManager.Current.CurrentTheme == Theme;
-            }
-
-        }
-
-        private void MenuTheme_Initialized(object sender, EventArgs e)
-        {
-            foreach (var item in Enum.GetValues(typeof(Theme)).Cast<Theme>())
-            {
-                MenuItem ThemeItem = new MenuItem();
-                ThemeItem.Header = Properties.Resource.ResourceManager.GetString(item.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
-                ThemeItem.Click += (s, e) =>
-                {
-                    ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.Theme = item;
-                    ConfigHandler.GetInstance().SaveConfig();
-                    Application.Current.ApplyTheme(item);
-                };
-                ThemeItem.Tag = item;
-                ThemeItem.IsChecked = ThemeManager.Current.CurrentTheme == item;
-                MenuTheme.Items.Add(ThemeItem);
-            }
-        }
-
-
     }
 }

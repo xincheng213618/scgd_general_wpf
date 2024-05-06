@@ -1,5 +1,6 @@
 ﻿using ColorVision.Adorners;
 using ColorVision.Common.Utilities;
+using ColorVision.HotKey;
 using ColorVision.MySql;
 using ColorVision.Projects;
 using ColorVision.Services.Flow;
@@ -82,8 +83,7 @@ namespace ColorVision
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            SolutionManager.GetInstance().AddHotKeys();
-
+            MenuManager.GetInstance().Menu = Menu1;
             if (MySqlControl.GetInstance().IsConnect)
             {
             }
@@ -154,6 +154,13 @@ namespace ColorVision
             };
             menulogs.Items.Insert(3, menulog3);
 
+            MenuItem menulogs1 = new MenuItem() { Header = "RC服务日志" };
+            menulogs1.Click += (s, e) =>
+            {
+                PlatformHelper.OpenFolder("http://localhost:8080/system/log");
+            };
+            menulogs.Items.Insert(0, menulogs1);
+
 #if (DEBUG == true)
             MenuItem menuItem = new MenuItem() { Header = Properties.Resource.ExperimentalFeature };
             MenuItem menuItem1 = new MenuItem() { Header = "折线图" };
@@ -178,28 +185,15 @@ namespace ColorVision
             };
             menuItem.Items.Add(menuItem4);
 
-
 #endif
-
             if (ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.IsAutoUpdate)
             {
                 Thread thread1 = new Thread(async () => await CheckUpdate()) { IsBackground = true };
                 thread1.Start();
             }
 
-            //string? RegistrationCenterServicePath = Tool.GetServicePath("RegistrationCenterService");
 
-            //if (RegistrationCenterServicePath != null)
-            {
-                //string Dir = Path.GetDirectoryName(RegistrationCenterServicePath);
-                //string FilePath = Dir + "//Log//" + DateTime.Now.ToString("yyyyMMdd") + ".log";
-                MenuItem menulogs1 = new MenuItem() { Header = "RC服务日志" };
-                menulogs1.Click += (s, e) =>
-                {
-                    PlatformHelper.OpenFolder("http://localhost:8080/system/log");
-                };
-                menulogs.Items.Insert(0, menulogs1);
-            }
+
             Task.Run(CheckVersion);
 
             Task.Run(CheckCertificate);
@@ -207,11 +201,14 @@ namespace ColorVision
             Task.Run(EnsureLocalInfile);
             SolutionTab1.Content = new TreeViewControl();
 
+            PluginLoader.LoadPluginsAssembly("Plugins");
+
             PluginLoader.LoadPlugins("Plugins");
-
             PluginLoader.LoadAssembly<IPlugin>(Assembly.GetExecutingAssembly());
+            MenuManager.GetInstance().LoadMenuItemFromAssembly(Assembly.GetExecutingAssembly());
+            this.LoadHotKeyFromAssembly<IHotKey>(Assembly.GetExecutingAssembly());
 
-
+            Application.Current.MainWindow = this;
         }
 
         public async static Task EnsureLocalInfile()
