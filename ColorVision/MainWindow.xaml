@@ -36,7 +36,6 @@
                     </MenuItem>
                     <MenuItem Header="{x:Static properties:Resource.MenuTool}">
                         <MenuItem Header="{x:Static properties:Resource.WorkflowEngine_F}" Click="MenuItem9_Click"/>
-                        <MenuItem Header="校正生成工具"  Tag="" Click="MenuItem_Template"/>
                         <MenuItem Header="{x:Static properties:Resource.Sign_in}"  Click="Login_Click"/>
                         <Separator/>
                         <MenuItem x:Name="MenuLanguage" Header="{x:Static properties:Resource.MenuLanguage}" Initialized="MenuLanguage_Initialized" Loaded="MenuLanguage_Loaded"/>

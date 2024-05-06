@@ -110,6 +110,7 @@ namespace ColorVision.Services.Devices.Camera
                     case DeviceStatusType.LiveOpened:
                     case DeviceStatusType.Opened:
                         ButtonInit.Visibility = Visibility.Collapsed;
+                        StackPanelOpen.Visibility = Visibility.Visible;
                         if (!DService.IsVideoOpen)
                             StackPanelImage.Visibility = Visibility.Visible;
 
