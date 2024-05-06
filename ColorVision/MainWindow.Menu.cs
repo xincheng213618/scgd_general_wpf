@@ -30,22 +30,6 @@ namespace ColorVision
     /// </summary>
     public partial class MainWindow
     {
-        private void MenuItem9_Click(object sender, RoutedEventArgs e)
-        {
-            new WindowFlowEngine() { Owner = null, WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
-        }
-
-
-        private DateTime lastClickTime = DateTime.MinValue;
-
-
-        private void Menu_Initialized(object sender, EventArgs e)
-        {
-            MenuManager.GetInstance().Menu = Menu1;
-            MenuManager.GetInstance().LoadMenuItemFromAssembly(Assembly.GetExecutingAssembly());
-            this.LoadHotKeyFromAssembly<IHotKey>(Assembly.GetExecutingAssembly());
-            Application.Current.MainWindow = this;
-        }
 
         private void TextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
@@ -60,9 +44,7 @@ namespace ColorVision
         {
             new RCServiceConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-        private void MenuItem10_Click(object sender, RoutedEventArgs e)
-        {
-        }
+
         private void LogF_Click(object sender, RoutedEventArgs e)
         {
             var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);

@@ -17,7 +17,7 @@ namespace ColorVision.UI
 
         public MenuManager()
         {
-
+            
         }
 
         public void LoadMenuItemFromAssembly(Assembly assembly)
@@ -64,11 +64,22 @@ namespace ColorVision.UI
 
             foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
             {
-                if (Activator.CreateInstance(type) is IMenuItem iMenuItem)s
+                if (Activator.CreateInstance(type) is IMenuItem iMenuItem)
                 {
                     iMenuItems.Add(iMenuItem);
                 }
             }
+            foreach (var item in PluginLoader.PluginAssembly)
+            {
+                foreach (Type type in item.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is IMenuItem iMenuItem)
+                    {
+                        iMenuItems.Add(iMenuItem);
+                    }
+                }
+            }
+
 
             foreach (var keyValuePair in menuItems)
             {

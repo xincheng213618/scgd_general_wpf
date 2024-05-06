@@ -143,7 +143,7 @@ namespace ColorVision.Solution
             };
             RecentListMenuItem.Items.Add(new MenuItem());
 
-            FileMenuItem?.Items.Insert(3, RecentListMenuItem);
+            FileMenuItem?.Items.Add(RecentListMenuItem);
 
         }
 

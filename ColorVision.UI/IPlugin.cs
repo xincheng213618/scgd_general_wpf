@@ -13,7 +13,7 @@ namespace ColorVision.UI
     }
 
 
-    public class PluginLoader
+    public static class PluginLoader
     {
         public static List<T> LoadAssembly<T>(Assembly assembly)where T: IPlugin
         {
@@ -27,6 +27,20 @@ namespace ColorVision.UI
                 }
             }
             return plugins;
+        }
+
+        public static List<Assembly> PluginAssembly { get; } = new List<Assembly>();
+
+        public static List<Assembly> LoadPluginsAssembly(string path)
+        {
+            if (!Directory.Exists(path)) return PluginAssembly;
+            // 获取所有 dll 文件
+            foreach (string file in Directory.GetFiles(path, "*.dll"))
+            {
+                Assembly assembly = Assembly.LoadFrom(file);
+                PluginAssembly.Add(assembly);
+            }
+            return PluginAssembly;
         }
 
         public static List<IPlugin> LoadPlugins(string path)
