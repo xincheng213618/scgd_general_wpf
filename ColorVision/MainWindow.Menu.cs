@@ -42,7 +42,7 @@ namespace ColorVision
         private void Menu_Initialized(object sender, EventArgs e)
         {
             MenuManager.GetInstance().Menu = Menu1;
-            MenuManager.GetInstance().LoadMenuItemFromAssembly<IMenuItem>(Assembly.GetExecutingAssembly());
+            MenuManager.GetInstance().LoadMenuItemFromAssembly(Assembly.GetExecutingAssembly());
             this.LoadHotKeyFromAssembly<IHotKey>(Assembly.GetExecutingAssembly());
             Application.Current.MainWindow = this;
         }

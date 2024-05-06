@@ -20,7 +20,7 @@ namespace ColorVision.UI
 
         }
 
-        public void LoadMenuItemFromAssembly<T>(Assembly assembly) where T : IMenuItem
+        public void LoadMenuItemFromAssembly(Assembly assembly)
         {
             var menuItems = new Dictionary<string, MenuItem>();
             if (GetFileMenuItem() is MenuItem FilemenuItem)
@@ -32,17 +32,9 @@ namespace ColorVision.UI
             if (GetMenuHelp() is MenuItem MenuHelp)
                 menuItems.Add("Help", MenuHelp);
 
-            List<T> iMenuItems = new List<T>();
+            List<IMenuItem> iMenuItems = new List<IMenuItem>();
 
-            foreach (Type type in assembly.GetTypes().Where(t => typeof(T).IsAssignableFrom(t) && !t.IsAbstract))
-            {
-                if (Activator.CreateInstance(type) is T iMenuItem)
-                {
-                    iMenuItems.Add(iMenuItem);
-                }
-            }
-
-            void CreateMenu(MenuItem parentMenuItem,string OwnerGuid) 
+            void CreateMenu(MenuItem parentMenuItem, string OwnerGuid)
             {
                 var iMenuItems1 = iMenuItems.FindAll(a => a.OwnerGuid == OwnerGuid).OrderBy(a => a.Order).ToList();
                 for (int i = 0; i < iMenuItems1.Count; i++)
@@ -67,6 +59,14 @@ namespace ColorVision.UI
                 foreach (var item in iMenuItems1)
                 {
                     iMenuItems.Remove(item);
+                }
+            }
+
+            foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
+            {
+                if (Activator.CreateInstance(type) is IMenuItem iMenuItem)s
+                {
+                    iMenuItems.Add(iMenuItem);
                 }
             }
 

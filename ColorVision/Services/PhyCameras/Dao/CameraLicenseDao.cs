@@ -117,8 +117,8 @@ namespace ColorVision.Services.PhyCameras.Dao
                 row["customer_name"] = item.CusTomerName;
                 row["create_date"] = item.CreateDate;
                 row["expired"] = item.ExpiryDate;
-                row["res_dev_cam_pid"] = item.DevCameraId ==null ? DBNull.Value : item.DevCameraId;
-                row["res_dev_cali_pid"] = item.DevCaliId == null ? DBNull.Value : item.DevCaliId;
+                row["res_dev_cam_pid"] = DataTableExtension.IsDBNull(item.DevCameraId);
+                row["res_dev_cali_pid"] = DataTableExtension.IsDBNull(item.DevCaliId);
             }
             return row;
         }
