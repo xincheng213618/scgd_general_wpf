@@ -684,4 +684,37 @@
   <data name="MsgList" xml:space="preserve">
     <value>메시지 목록</value>
   </data>
+  <data name="Filter" xml:space="preserve">
+    <value>필터</value>
+  </data>
+  <data name="Gain" xml:space="preserve">
+    <value>얻다</value>
+  </data>
+  <data name="AutoExposure" xml:space="preserve">
+    <value>자동 노출</value>
+  </data>
+  <data name="Calibration" xml:space="preserve">
+    <value>구경 측정</value>
+  </data>
+  <data name="Capture" xml:space="preserve">
+    <value>포착</value>
+  </data>
+  <data name="Sended" xml:space="preserve">
+    <value>보냄</value>
+  </data>
+  <data name="Timeout" xml:space="preserve">
+    <value>시간 초과</value>
+  </data>
+  <data name="MQTTLog" xml:space="preserve">
+    <value>MQTT 로그</value>
+  </data>
+  <data name="Topic" xml:space="preserve">
+    <value>주제</value>
+  </data>
+  <data name="SubscribedTopic" xml:space="preserve">
+    <value>구독한 주제</value>
+  </data>
+  <data name="MessageRetention" xml:space="preserve">
+    <value>메시지 보존</value>
+  </data>
 </root>

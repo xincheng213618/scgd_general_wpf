@@ -684,4 +684,37 @@
   <data name="MsgList" xml:space="preserve">
     <value>Message list</value>
   </data>
+  <data name="Filter" xml:space="preserve">
+    <value>Filter</value>
+  </data>
+  <data name="Gain" xml:space="preserve">
+    <value>Gain</value>
+  </data>
+  <data name="AutoExposure" xml:space="preserve">
+    <value>Auto Exposure</value>
+  </data>
+  <data name="Capture" xml:space="preserve">
+    <value>Capture</value>
+  </data>
+  <data name="Calibration" xml:space="preserve">
+    <value>Calibration</value>
+  </data>
+  <data name="Sended" xml:space="preserve">
+    <value>Sended</value>
+  </data>
+  <data name="Timeout" xml:space="preserve">
+    <value>Timeout</value>
+  </data>
+  <data name="MQTTLog" xml:space="preserve">
+    <value>MQTT logs</value>
+  </data>
+  <data name="Topic" xml:space="preserve">
+    <value>Topic</value>
+  </data>
+  <data name="SubscribedTopic" xml:space="preserve">
+    <value>Subscribed topics</value>
+  </data>
+  <data name="MessageRetention" xml:space="preserve">
+    <value>Message Retention</value>
+  </data>
 </root>

@@ -188,7 +188,7 @@ namespace ColorVision.Services.Core
 
             Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));
 
-            MsgRecord msgRecord = new MsgRecord { SendTopic = SendTopic, SubscribeTopic = SubscribeTopic, MsgID = msg.MsgID, SendTime = DateTime.Now, MsgSend = msg, MsgRecordState = MsgRecordState.Send };
+            MsgRecord msgRecord = new MsgRecord { SendTopic = SendTopic, SubscribeTopic = SubscribeTopic, MsgID = msg.MsgID, SendTime = DateTime.Now, MsgSend = msg, MsgRecordState = MsgRecordState.Sended };
 
             Application.Current.Dispatcher.Invoke(() =>
             {

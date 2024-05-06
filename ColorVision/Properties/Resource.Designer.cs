@@ -142,6 +142,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 自动曝光 的本地化字符串。
+        /// </summary>
+        public static string AutoExposure {
+            get {
+                return ResourceManager.GetString("AutoExposure", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 自动切换选中视图 的本地化字符串。
         /// </summary>
         public static string AutoSwitchSelectedView {
@@ -169,6 +178,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 校正 的本地化字符串。
+        /// </summary>
+        public static string Calibration {
+            get {
+                return ResourceManager.GetString("Calibration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 相机日志 的本地化字符串。
         /// </summary>
         public static string CameraLog {
@@ -183,6 +201,15 @@ namespace ColorVision.Properties {
         public static string Cancel {
             get {
                 return ResourceManager.GetString("Cancel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 取图 的本地化字符串。
+        /// </summary>
+        public static string Capture {
+            get {
+                return ResourceManager.GetString("Capture", resourceCulture);
             }
         }
         
@@ -556,6 +583,24 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 筛选 的本地化字符串。
+        /// </summary>
+        public static string Filter {
+            get {
+                return ResourceManager.GetString("Filter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 增益 的本地化字符串。
+        /// </summary>
+        public static string Gain {
+            get {
+                return ResourceManager.GetString("Gain", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 通用 的本地化字符串。
         /// </summary>
         public static string General {
@@ -925,6 +970,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 消息保留 的本地化字符串。
+        /// </summary>
+        public static string MessageRetention {
+            get {
+                return ResourceManager.GetString("MessageRetention", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 最小化 的本地化字符串。
         /// </summary>
         public static string Minimize {
@@ -948,6 +1002,15 @@ namespace ColorVision.Properties {
         public static string MqttConnectionConfiguration {
             get {
                 return ResourceManager.GetString("MqttConnectionConfiguration", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 MQTT日志 的本地化字符串。
+        /// </summary>
+        public static string MQTTLog {
+            get {
+                return ResourceManager.GetString("MQTTLog", resourceCulture);
             }
         }
         
@@ -1348,6 +1411,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 已经发送 的本地化字符串。
+        /// </summary>
+        public static string Sended {
+            get {
+                return ResourceManager.GetString("Sended", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 序列号 的本地化字符串。
         /// </summary>
         public static string SerialNumber {
@@ -1519,6 +1591,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 订阅的主题 的本地化字符串。
+        /// </summary>
+        public static string SubscribedTopic {
+            get {
+                return ResourceManager.GetString("SubscribedTopic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 成功 的本地化字符串。
         /// </summary>
         public static string Success {
@@ -1623,6 +1704,24 @@ namespace ColorVision.Properties {
         public static string TimeLeft {
             get {
                 return ResourceManager.GetString("TimeLeft", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 超时 的本地化字符串。
+        /// </summary>
+        public static string Timeout {
+            get {
+                return ResourceManager.GetString("Timeout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 话题 的本地化字符串。
+        /// </summary>
+        public static string Topic {
+            get {
+                return ResourceManager.GetString("Topic", resourceCulture);
             }
         }
         

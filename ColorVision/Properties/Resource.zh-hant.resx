@@ -684,4 +684,37 @@
   <data name="MsgList" xml:space="preserve">
     <value>訊息清單</value>
   </data>
+  <data name="Filter" xml:space="preserve">
+    <value>篩選</value>
+  </data>
+  <data name="Gain" xml:space="preserve">
+    <value>增益</value>
+  </data>
+  <data name="AutoExposure" xml:space="preserve">
+    <value>自動曝光</value>
+  </data>
+  <data name="Calibration" xml:space="preserve">
+    <value>校正</value>
+  </data>
+  <data name="Capture" xml:space="preserve">
+    <value>取圖</value>
+  </data>
+  <data name="Sended" xml:space="preserve">
+    <value>已經發送</value>
+  </data>
+  <data name="Timeout" xml:space="preserve">
+    <value>超時</value>
+  </data>
+  <data name="MQTTLog" xml:space="preserve">
+    <value>MQTT日誌</value>
+  </data>
+  <data name="Topic" xml:space="preserve">
+    <value>話題</value>
+  </data>
+  <data name="SubscribedTopic" xml:space="preserve">
+    <value>訂閱的主題</value>
+  </data>
+  <data name="MessageRetention" xml:space="preserve">
+    <value>訊息保留</value>
+  </data>
 </root>

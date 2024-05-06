@@ -8,7 +8,7 @@
         xmlns:SettingUp ="clr-namespace:ColorVision.Settings"
         xmlns:properties ="clr-namespace:ColorVision.Properties"
         d:DataContext="{d:DesignInstance SettingUp:ConfigHandler}"
-        Title="MQTT日志" Height="550" Width="800" Background="{StaticResource GlobalBackground}" >
+        Title="{x:Static properties:Resource.MQTTLog}" Height="550" Width="800" Background="{StaticResource GlobalBackground}" >
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -36,7 +36,7 @@
             </Grid>
             <Grid >
                 <StackPanel>
-                    <GroupBox Header="设置" Margin="5">
+                    <GroupBox Header="{x:Static properties:Resource.Settings}" Margin="5">
                         <StackPanel Margin="5">
                             <DockPanel >
                                 <ToggleButton HorizontalAlignment="Left" Height="16" Margin="2" Style="{StaticResource ToggleButtonSwitch}"  IsChecked="{Binding SoftwareConfig.MQTTSetting.IsShieldHeartbeat}"/>
@@ -51,8 +51,8 @@
                     <Border  Grid.Row="0"  BorderThickness="1" Margin="0" CornerRadius="5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="2">
-                                <TextBlock Text="主题" VerticalAlignment="Center" Width="50"/>
-                                <TextBox x:Name="TextBoxSubscribe"  ToolTip="订阅的主题"  VerticalAlignment="Center" TextWrapping="Wrap" Text="topic1"  />
+                                <TextBlock Text="{x:Static properties:Resource.Topic}" VerticalAlignment="Center" Width="50"/>
+                                <TextBox x:Name="TextBoxSubscribe"  ToolTip="{x:Static properties:Resource.SubscribedTopic}"  VerticalAlignment="Center" TextWrapping="Wrap" Text="topic1"  />
                             </DockPanel>
                             <UniformGrid Columns="3">
                                 <Grid/>
@@ -64,14 +64,14 @@
                     <Border  Grid.Row="1" BorderThickness="1" CornerRadius="5">
                         <StackPanel Orientation="Vertical" Margin="5">
                             <DockPanel Margin="5,2">
-                                <TextBlock Text="{x:Static properties:Resource.Theme}" VerticalAlignment="Center" Width="50"/>
+                                <TextBlock Text="{x:Static properties:Resource.Topic}" VerticalAlignment="Center" Width="50"/>
                                 <TextBox x:Name="TextBoxSubscribe1" ToolTip="发送的主题" TextWrapping="NoWrap" AcceptsReturn="True" Text="topic1"  />
                             </DockPanel>
                             <DockPanel Margin="5,2">
                                 <TextBlock Text="{x:Static properties:Resource.Send}" VerticalAlignment="Center" Width="50"/>
                                 <TextBox x:Name="TextBoxSend"  TextWrapping="NoWrap" AcceptsReturn="True" Text="topic1"  />
                             </DockPanel>
-                            <CheckBox x:Name="CheckBoxRetained" IsEnabled="False"  HorizontalAlignment="Right" Margin="5,2" Content="消息保留" VerticalAlignment="Center" ToolTip="是否保留"/>
+                            <CheckBox x:Name="CheckBoxRetained" IsEnabled="False"  HorizontalAlignment="Right" Margin="5,2" Content="{x:Static properties:Resource.MessageRetention}" VerticalAlignment="Center" />
                             <Button  Content="{x:Static properties:Resource.Send}" Click="Send_Click" HorizontalAlignment="Right"  Margin="2"  Width="80"/>
                         </StackPanel>
                     </Border>

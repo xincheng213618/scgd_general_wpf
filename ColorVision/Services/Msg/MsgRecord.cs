@@ -65,7 +65,7 @@ namespace ColorVision.Services.Msg
         private MsgRecordState _MsgRecordState { get; set; }
 
         [JsonIgnore]
-        public bool IsSend { get => MsgRecordState == MsgRecordState.Send; }
+        public bool IsSend { get => MsgRecordState == MsgRecordState.Sended; }
         [JsonIgnore]
         public bool IsRecive { get => MsgRecordState == MsgRecordState.Success || MsgRecordState == MsgRecordState.Fail; }
         [JsonIgnore]

@@ -684,4 +684,37 @@
   <data name="MsgList" xml:space="preserve">
     <value>メッセージ一覧</value>
   </data>
+  <data name="Filter" xml:space="preserve">
+    <value>フィルター</value>
+  </data>
+  <data name="Gain" xml:space="preserve">
+    <value>得</value>
+  </data>
+  <data name="AutoExposure" xml:space="preserve">
+    <value>自動露出</value>
+  </data>
+  <data name="Calibration" xml:space="preserve">
+    <value>較正</value>
+  </data>
+  <data name="Capture" xml:space="preserve">
+    <value>捕獲</value>
+  </data>
+  <data name="Sended" xml:space="preserve">
+    <value>送信済み</value>
+  </data>
+  <data name="Timeout" xml:space="preserve">
+    <value>タイムアウト</value>
+  </data>
+  <data name="MQTTLog" xml:space="preserve">
+    <value>MQTTログ</value>
+  </data>
+  <data name="Topic" xml:space="preserve">
+    <value>トピック</value>
+  </data>
+  <data name="SubscribedTopic" xml:space="preserve">
+    <value>購読済みのトピック</value>
+  </data>
+  <data name="MessageRetention" xml:space="preserve">
+    <value>メッセージの保持</value>
+  </data>
 </root>

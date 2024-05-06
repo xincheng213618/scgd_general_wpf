@@ -1,0 +1,809 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="zh-Hans" target-language="zh-Hant" original="COLORVISION/PROPERTIES/RESOURCE.RESX">
+    <body>
+      <group id="COLORVISION/PROPERTIES/RESOURCE.RESX" datatype="resx">
+        <trans-unit id="About" translate="yes" xml:space="preserve">
+          <source>关于</source>
+          <target state="new">關於</target>
+        </trans-unit>
+        <trans-unit id="Account" translate="yes" xml:space="preserve">
+          <source>账号</source>
+          <target state="new">賬號</target>
+        </trans-unit>
+        <trans-unit id="AccountLogin" translate="yes" xml:space="preserve">
+          <source>账号登录</source>
+          <target state="new">賬號登入</target>
+        </trans-unit>
+        <trans-unit id="Acquire" translate="yes" xml:space="preserve">
+          <source>采集</source>
+          <target state="new">採集</target>
+        </trans-unit>
+        <trans-unit id="Add" translate="yes" xml:space="preserve">
+          <source>添加</source>
+          <target state="new">添加</target>
+        </trans-unit>
+        <trans-unit id="AdvancedSettings" translate="yes" xml:space="preserve">
+          <source>高级设置</source>
+          <target state="new">進階設定</target>
+        </trans-unit>
+        <trans-unit id="ApplicationExit" translate="yes" xml:space="preserve">
+          <source>程序关闭</source>
+          <target state="new">程式關閉</target>
+        </trans-unit>
+        <trans-unit id="Apply" translate="yes" xml:space="preserve">
+          <source>应用</source>
+          <target state="new">應用</target>
+        </trans-unit>
+        <trans-unit id="ApplyWindowLayout" translate="yes" xml:space="preserve">
+          <source>应用窗口布局</source>
+          <target state="new">應用程式視窗佈局</target>
+        </trans-unit>
+        <trans-unit id="AutoExposure" translate="yes" xml:space="preserve">
+          <source>自动曝光</source>
+          <target state="new">自動曝光</target>
+        </trans-unit>
+        <trans-unit id="AutoSwitchSelectedView" translate="yes" xml:space="preserve">
+          <source>自动切换选中视图</source>
+          <target state="new">自動切換選取視圖</target>
+        </trans-unit>
+        <trans-unit id="BasicInformation" translate="yes" xml:space="preserve">
+          <source>基本信息</source>
+          <target state="new">基本訊息</target>
+        </trans-unit>
+        <trans-unit id="Calculate" translate="yes" xml:space="preserve">
+          <source>计算</source>
+          <target state="new">計算</target>
+        </trans-unit>
+        <trans-unit id="Calibration" translate="yes" xml:space="preserve">
+          <source>校正</source>
+          <target state="new">校正</target>
+        </trans-unit>
+        <trans-unit id="CameraLog" translate="yes" xml:space="preserve">
+          <source>相机日志</source>
+          <target state="new">相機日誌</target>
+        </trans-unit>
+        <trans-unit id="Cancel" translate="yes" xml:space="preserve">
+          <source>取消</source>
+          <target state="new">取消</target>
+        </trans-unit>
+        <trans-unit id="Capture" translate="yes" xml:space="preserve">
+          <source>取图</source>
+          <target state="new">取圖</target>
+        </trans-unit>
+        <trans-unit id="ChangeLog" translate="yes" xml:space="preserve">
+          <source>变更日志</source>
+          <target state="new">變更日誌</target>
+        </trans-unit>
+        <trans-unit id="CheckForUpdates" translate="yes" xml:space="preserve">
+          <source>检查更新</source>
+          <target state="new">檢查更新</target>
+        </trans-unit>
+        <trans-unit id="CheckUpdatesOnStartup" translate="yes" xml:space="preserve">
+          <source>软件启动时检测更新</source>
+          <target state="new">軟體啟動時偵測更新</target>
+        </trans-unit>
+        <trans-unit id="Clear" translate="yes" xml:space="preserve">
+          <source>清除</source>
+          <target state="new">清除</target>
+        </trans-unit>
+        <trans-unit id="ClearCache" translate="yes" xml:space="preserve">
+          <source>清除缓存</source>
+          <target state="new">清除快取</target>
+        </trans-unit>
+        <trans-unit id="ClearData" translate="yes" xml:space="preserve">
+          <source>清空数据</source>
+          <target state="new">清空數據</target>
+        </trans-unit>
+        <trans-unit id="Close" translate="yes" xml:space="preserve">
+          <source>关闭</source>
+          <target state="new">關閉</target>
+        </trans-unit>
+        <trans-unit id="Code" translate="yes" xml:space="preserve">
+          <source>标识</source>
+          <target state="new">程式碼</target>
+        </trans-unit>
+        <trans-unit id="ColorVisionUpdater" translate="yes" xml:space="preserve">
+          <source>ColorVision 更新程序</source>
+          <target state="new">ColorVision 更新程式</target>
+        </trans-unit>
+        <trans-unit id="ConfigurationComplete" translate="yes" xml:space="preserve">
+          <source>配置结束</source>
+          <target state="new">配置結束</target>
+        </trans-unit>
+        <trans-unit id="ConfigureNewProject" translate="yes" xml:space="preserve">
+          <source>配置新工程</source>
+          <target state="new">配置新工程</target>
+        </trans-unit>
+        <trans-unit id="ConfirmUpdate" translate="yes" xml:space="preserve">
+          <source>是否更新</source>
+          <target state="new">是否更新</target>
+        </trans-unit>
+        <trans-unit id="ConnectionName" translate="yes" xml:space="preserve">
+          <source>连接名</source>
+          <target state="new">連接名</target>
+        </trans-unit>
+        <trans-unit id="CopyConfigurationFile" translate="yes" xml:space="preserve">
+          <source>复制配置文件</source>
+          <target state="new">複製設定檔</target>
+        </trans-unit>
+        <trans-unit id="CopySerialNumber" translate="yes" xml:space="preserve">
+          <source>复制序列号</source>
+          <target state="new">複製序號</target>
+        </trans-unit>
+        <trans-unit id="Create" translate="yes" xml:space="preserve">
+          <source>创建</source>
+          <target state="new">創建</target>
+        </trans-unit>
+        <trans-unit id="CreateNewConfigurationFile" translate="yes" xml:space="preserve">
+          <source>新建配置文件</source>
+          <target state="new">新建設定檔</target>
+        </trans-unit>
+        <trans-unit id="CreateNewProjectOrFile" translate="yes" xml:space="preserve">
+          <source>创建一个新的的项目或文件</source>
+          <target state="new">建立一個新的專案或文件</target>
+        </trans-unit>
+        <trans-unit id="CreateProject" translate="yes" xml:space="preserve">
+          <source>创建工程</source>
+          <target state="new">創建工程</target>
+        </trans-unit>
+        <trans-unit id="Create_an_account" translate="yes" xml:space="preserve">
+          <source>注册一个</source>
+          <target state="new">創建一個帳號</target>
+        </trans-unit>
+        <trans-unit id="CurrentSpeed" translate="yes" xml:space="preserve">
+          <source>当前速度：</source>
+          <target state="new">目前速度：</target>
+        </trans-unit>
+        <trans-unit id="CurrentVersionIsUpToDate" translate="yes" xml:space="preserve">
+          <source>当前版本已经是最新版本</source>
+          <target state="new">目前版本已經是最新版本</target>
+        </trans-unit>
+        <trans-unit id="Database" translate="yes" xml:space="preserve">
+          <source>数据库名称</source>
+          <target state="new">資料庫名稱</target>
+        </trans-unit>
+        <trans-unit id="DatabaseConnectionFailed" translate="yes" xml:space="preserve">
+          <source>数据库连接失败，请先连接数据库在操作</source>
+          <target state="new">資料庫連線失敗，請先連接資料庫在操作</target>
+        </trans-unit>
+        <trans-unit id="DefaultExportStorageFormat" translate="yes" xml:space="preserve">
+          <source>默认导出存储格式</source>
+          <target state="new">預設導出儲存格式</target>
+        </trans-unit>
+        <trans-unit id="Delete" translate="yes" xml:space="preserve">
+          <source>删除</source>
+          <target state="new">刪除</target>
+        </trans-unit>
+        <trans-unit id="DeviceIdentification" translate="yes" xml:space="preserve">
+          <source>设备标识</source>
+          <target state="new">設備識別</target>
+        </trans-unit>
+        <trans-unit id="DeviceName" translate="yes" xml:space="preserve">
+          <source>设备名称</source>
+          <target state="new">設備名稱</target>
+        </trans-unit>
+        <trans-unit id="DisableHardwareAcceleration" translate="yes" xml:space="preserve">
+          <source>禁用硬件加速</source>
+          <target state="new">禁用硬體加速</target>
+        </trans-unit>
+        <trans-unit id="DownloadCancelled" translate="yes" xml:space="preserve">
+          <source>下载已取消</source>
+          <target state="new">下載已取消</target>
+        </trans-unit>
+        <trans-unit id="Edit" translate="yes" xml:space="preserve">
+          <source>编辑</source>
+          <target state="new">編輯</target>
+        </trans-unit>
+        <trans-unit id="EnableDatabase" translate="yes" xml:space="preserve">
+          <source>启用数据库</source>
+          <target state="new">啟用資料庫</target>
+        </trans-unit>
+        <trans-unit id="EnterAcquisitionWindow" translate="yes" xml:space="preserve">
+          <source>进入采集窗口</source>
+          <target state="new">進入採集視窗</target>
+        </trans-unit>
+        <trans-unit id="ErrorOccurred" translate="yes" xml:space="preserve">
+          <source>发生错误</source>
+          <target state="new">發生錯誤</target>
+        </trans-unit>
+        <trans-unit id="ExecutionProcess" translate="yes" xml:space="preserve">
+          <source>执行流程</source>
+          <target state="new">執行流程</target>
+        </trans-unit>
+        <trans-unit id="ExperimentalFeature" translate="yes" xml:space="preserve">
+          <source>实验性功能</source>
+          <target state="new">實驗性功能</target>
+        </trans-unit>
+        <trans-unit id="Export" translate="yes" xml:space="preserve">
+          <source>导出</source>
+          <target state="new">匯出</target>
+        </trans-unit>
+        <trans-unit id="Failure" translate="yes" xml:space="preserve">
+          <source>失败</source>
+          <target state="new">失敗</target>
+        </trans-unit>
+        <trans-unit id="Female" translate="yes" xml:space="preserve">
+          <source>女</source>
+          <target state="new">女</target>
+        </trans-unit>
+        <trans-unit id="FillAccount" translate="yes" xml:space="preserve">
+          <source>请输入账号</source>
+          <target state="new">請輸入帳號</target>
+        </trans-unit>
+        <trans-unit id="FillPassword" translate="yes" xml:space="preserve">
+          <source>请输入密码</source>
+          <target state="new">請輸入密碼</target>
+        </trans-unit>
+        <trans-unit id="Filter" translate="yes" xml:space="preserve">
+          <source>筛选</source>
+          <target state="new">篩選</target>
+        </trans-unit>
+        <trans-unit id="Gain" translate="yes" xml:space="preserve">
+          <source>增益</source>
+          <target state="new">增益</target>
+        </trans-unit>
+        <trans-unit id="General" translate="yes" xml:space="preserve">
+          <source>通用</source>
+          <target state="new">一般</target>
+        </trans-unit>
+        <trans-unit id="GeneralSettings" translate="yes" xml:space="preserve">
+          <source>通用设置</source>
+          <target state="new">通用設定</target>
+        </trans-unit>
+        <trans-unit id="HistoryCache" translate="yes" xml:space="preserve">
+          <source>历史缓存</source>
+          <target state="new">歷史緩存</target>
+        </trans-unit>
+        <trans-unit id="Host" translate="yes" xml:space="preserve">
+          <source>主机</source>
+          <target state="new">主機</target>
+        </trans-unit>
+        <trans-unit id="HotKeys" translate="yes" xml:space="preserve">
+          <source>快捷键</source>
+          <target state="new">快捷鍵</target>
+        </trans-unit>
+        <trans-unit id="Import" translate="yes" xml:space="preserve">
+          <source>导入</source>
+          <target state="new">導入</target>
+        </trans-unit>
+        <trans-unit id="ImportLicense" translate="yes" xml:space="preserve">
+          <source>导入许可证</source>
+          <target state="new">導入許可證</target>
+        </trans-unit>
+        <trans-unit id="InstallCertificate" translate="yes" xml:space="preserve">
+          <source>安装证书</source>
+          <target state="new">安裝證書</target>
+        </trans-unit>
+        <trans-unit id="Language" translate="yes" xml:space="preserve">
+          <source>用户界面语言</source>
+          <target state="new">語言</target>
+        </trans-unit>
+        <trans-unit id="LanguageResartSign" translate="yes" xml:space="preserve">
+          <source>您必须重新启动才能使用新的语言设置</source>
+          <target state="new">您必須重新啟動才能使用新的語言設定</target>
+        </trans-unit>
+        <trans-unit id="LaunchSoftwareWithLocalService" translate="yes" xml:space="preserve">
+          <source>软件启动时打开本地服务</source>
+          <target state="new">軟體啟動時開啟本機服務</target>
+        </trans-unit>
+        <trans-unit id="LaunchSuccess" translate="yes" xml:space="preserve">
+          <source>启动成功</source>
+          <target state="new">啟動成功</target>
+        </trans-unit>
+        <trans-unit id="LicenseManagement" translate="yes" xml:space="preserve">
+          <source>许可证管理</source>
+          <target state="new">許可證管理</target>
+        </trans-unit>
+        <trans-unit id="Loading" translate="yes" xml:space="preserve">
+          <source>加载</source>
+          <target state="new">載入</target>
+        </trans-unit>
+        <trans-unit id="Log" translate="yes" xml:space="preserve">
+          <source>日志</source>
+          <target state="new">紀錄</target>
+        </trans-unit>
+        <trans-unit id="LogLevel" translate="yes" xml:space="preserve">
+          <source>日志级别</source>
+          <target state="new">日誌等級</target>
+        </trans-unit>
+        <trans-unit id="MQTTLog" translate="yes" xml:space="preserve">
+          <source>MQTT日志</source>
+          <target state="new">MQTT日誌</target>
+        </trans-unit>
+        <trans-unit id="MTFToolTip" translate="yes" xml:space="preserve">
+          <source>调制传递函数</source>
+          <target state="new">調製傳遞函數</target>
+        </trans-unit>
+        <trans-unit id="Male" translate="yes" xml:space="preserve">
+          <source>男</source>
+          <target state="new">男</target>
+        </trans-unit>
+        <trans-unit id="Manager" translate="yes" xml:space="preserve">
+          <source>管理</source>
+          <target state="new">管理</target>
+        </trans-unit>
+        <trans-unit id="Maximize" translate="yes" xml:space="preserve">
+          <source>最大化</source>
+          <target state="new">最大化</target>
+        </trans-unit>
+        <trans-unit id="MenuAbout" translate="yes" xml:space="preserve">
+          <source>关于(_A)</source>
+          <target state="new">關於(_A)</target>
+        </trans-unit>
+        <trans-unit id="MenuCopy" translate="yes" xml:space="preserve">
+          <source>复制(_C)</source>
+          <target state="new">複製(_C)</target>
+        </trans-unit>
+        <trans-unit id="MenuCut" translate="yes" xml:space="preserve">
+          <source>剪切(_T)</source>
+          <target state="new">剪下(_T)</target>
+        </trans-unit>
+        <trans-unit id="MenuDelete" translate="yes" xml:space="preserve">
+          <source>删除(_D)</source>
+          <target state="new">刪除(_D)</target>
+        </trans-unit>
+        <trans-unit id="MenuEdit" translate="yes" xml:space="preserve">
+          <source>编辑(_E)</source>
+          <target state="new">編輯(_E)</target>
+        </trans-unit>
+        <trans-unit id="MenuExit" translate="yes" xml:space="preserve">
+          <source>退出(_X)</source>
+          <target state="new">退出(_X)</target>
+        </trans-unit>
+        <trans-unit id="MenuFile" translate="yes" xml:space="preserve">
+          <source>文件(_F)</source>
+          <target state="new">文件(_F)</target>
+        </trans-unit>
+        <trans-unit id="MenuFlow" translate="yes" xml:space="preserve">
+          <source>流程(_F)</source>
+          <target state="new">流程(F)</target>
+        </trans-unit>
+        <trans-unit id="MenuHelp" translate="yes" xml:space="preserve">
+          <source>帮助(_H)</source>
+          <target state="new">帮助(_H)</target>
+        </trans-unit>
+        <trans-unit id="MenuLanguage" translate="yes" xml:space="preserve">
+          <source>语言(_L)</source>
+          <target state="new">語言(_L）</target>
+        </trans-unit>
+        <trans-unit id="MenuNew" translate="yes" xml:space="preserve">
+          <source>新建(_N)</source>
+          <target state="new">新建(_N)</target>
+        </trans-unit>
+        <trans-unit id="MenuOpen" translate="yes" xml:space="preserve">
+          <source>打开(_O)</source>
+          <target state="new">打开(_O)</target>
+        </trans-unit>
+        <trans-unit id="MenuOptions" translate="yes" xml:space="preserve">
+          <source>选项(_O)</source>
+          <target state="new">選項(_O）</target>
+        </trans-unit>
+        <trans-unit id="MenuSettings" translate="yes" xml:space="preserve">
+          <source>设置(_S)</source>
+          <target state="new">設置(_S)</target>
+        </trans-unit>
+        <trans-unit id="MenuTemplate" translate="yes" xml:space="preserve">
+          <source>模板(_T)</source>
+          <target state="new">範本(T)</target>
+        </trans-unit>
+        <trans-unit id="MenuTheme" translate="yes" xml:space="preserve">
+          <source>主题(_H)</source>
+          <target state="new">主題(H)</target>
+        </trans-unit>
+        <trans-unit id="MenuTool" translate="yes" xml:space="preserve">
+          <source>工具(_T)</source>
+          <target state="new">工具(_T)</target>
+        </trans-unit>
+        <trans-unit id="MenuUndo" translate="yes" xml:space="preserve">
+          <source>撤销(_U)</source>
+          <target state="new">撤銷(_U)</target>
+        </trans-unit>
+        <trans-unit id="MenuUpdate" translate="yes" xml:space="preserve">
+          <source>检查更新(_U)</source>
+          <target state="new">檢查更新(_U)</target>
+        </trans-unit>
+        <trans-unit id="MenuView" translate="yes" xml:space="preserve">
+          <source>视图(_V)</source>
+          <target state="new">視圖(_V)</target>
+        </trans-unit>
+        <trans-unit id="MenuViewSidebar" translate="yes" xml:space="preserve">
+          <source>侧边栏</source>
+          <target state="new">側邊欄</target>
+        </trans-unit>
+        <trans-unit id="MenuViewStatusBar" translate="yes" xml:space="preserve">
+          <source>状态栏</source>
+          <target state="new">狀態欄</target>
+        </trans-unit>
+        <trans-unit id="MessageRetention" translate="yes" xml:space="preserve">
+          <source>消息保留</source>
+          <target state="new">訊息保留</target>
+        </trans-unit>
+        <trans-unit id="Minimize" translate="yes" xml:space="preserve">
+          <source>最小化</source>
+          <target state="new">最小化</target>
+        </trans-unit>
+        <trans-unit id="MqttConnection" translate="yes" xml:space="preserve">
+          <source>MQTT连接</source>
+          <target state="new">MQTT連接</target>
+        </trans-unit>
+        <trans-unit id="MqttConnectionConfiguration" translate="yes" xml:space="preserve">
+          <source>MQTT连接配置</source>
+          <target state="new">MQTT連接配置</target>
+        </trans-unit>
+        <trans-unit id="MsgList" translate="yes" xml:space="preserve">
+          <source>消息列表</source>
+          <target state="new">訊息清單</target>
+        </trans-unit>
+        <trans-unit id="MsgLogWindow" translate="yes" xml:space="preserve">
+          <source>Msg记录窗口</source>
+          <target state="new">Msg記錄視窗</target>
+        </trans-unit>
+        <trans-unit id="MyLicense_R" translate="yes" xml:space="preserve">
+          <source>我的许可证(_R)</source>
+          <target state="new">我的許可證(R)</target>
+        </trans-unit>
+        <trans-unit id="MysqlConnection" translate="yes" xml:space="preserve">
+          <source>Mysql连接</source>
+          <target state="new">Mysql連接</target>
+        </trans-unit>
+        <trans-unit id="MysqlConnectionConfiguration" translate="yes" xml:space="preserve">
+          <source>Mysql连接配置</source>
+          <target state="new">Mysql連線配置</target>
+        </trans-unit>
+        <trans-unit id="Name" translate="yes" xml:space="preserve">
+          <source>名称</source>
+          <target state="new">名称</target>
+        </trans-unit>
+        <trans-unit id="New" translate="yes" xml:space="preserve">
+          <source>新建</source>
+          <target state="new">新建</target>
+        </trans-unit>
+        <trans-unit id="NewProjectFormat" translate="yes" xml:space="preserve">
+          <source>新建工程格式</source>
+          <target state="new">新工程格式</target>
+        </trans-unit>
+        <trans-unit id="NewSolution" translate="yes" xml:space="preserve">
+          <source>新建工程</source>
+          <target state="new">新建工程</target>
+        </trans-unit>
+        <trans-unit id="NewVersionFound" translate="yes" xml:space="preserve">
+          <source>发现新版本</source>
+          <target state="new">發現新版本</target>
+        </trans-unit>
+        <trans-unit id="NoRelatedItemsFound" translate="yes" xml:space="preserve">
+          <source>未找到相关项目</source>
+          <target state="new">未找到相關項目</target>
+        </trans-unit>
+        <trans-unit id="NotRunAsAdmin" translate="yes" xml:space="preserve">
+          <source>以非管理员身份运行</source>
+          <target state="new">以非管理員身份執行</target>
+        </trans-unit>
+        <trans-unit id="OK" translate="yes" xml:space="preserve">
+          <source>确定</source>
+          <target state="new">確定</target>
+        </trans-unit>
+        <trans-unit id="Open" translate="yes" xml:space="preserve">
+          <source>打开</source>
+          <target state="new">打開</target>
+        </trans-unit>
+        <trans-unit id="OpenItem" translate="yes" xml:space="preserve">
+          <source>打开项目</source>
+          <target state="new">打開專案</target>
+        </trans-unit>
+        <trans-unit id="OpenLocalProjectOrFile" translate="yes" xml:space="preserve">
+          <source>打开本地的项目或文件</source>
+          <target state="new">開啟本地的項目或文件</target>
+        </trans-unit>
+        <trans-unit id="OpenSolution" translate="yes" xml:space="preserve">
+          <source>打开工程</source>
+          <target state="new">打開工程</target>
+        </trans-unit>
+        <trans-unit id="OutputView" translate="yes" xml:space="preserve">
+          <source>输出视图</source>
+          <target state="new">輸出視圖</target>
+        </trans-unit>
+        <trans-unit id="Password" translate="yes" xml:space="preserve">
+          <source>密码</source>
+          <target state="new">密碼</target>
+        </trans-unit>
+        <trans-unit id="PerformanceTest" translate="yes" xml:space="preserve">
+          <source>性能检测</source>
+          <target state="new">效能檢測</target>
+        </trans-unit>
+        <trans-unit id="Pin" translate="yes" xml:space="preserve">
+          <source>置顶</source>
+          <target state="new">置頂</target>
+        </trans-unit>
+        <trans-unit id="Port" translate="yes" xml:space="preserve">
+          <source>端口</source>
+          <target state="new">端口</target>
+        </trans-unit>
+        <trans-unit id="Project" translate="yes" xml:space="preserve">
+          <source>工程</source>
+          <target state="new">工程</target>
+        </trans-unit>
+        <trans-unit id="ProjectName" translate="yes" xml:space="preserve">
+          <source>项目名称</source>
+          <target state="new">項目名稱</target>
+        </trans-unit>
+        <trans-unit id="ProjectSettings" translate="yes" xml:space="preserve">
+          <source>工程设置</source>
+          <target state="new">工程設定</target>
+        </trans-unit>
+        <trans-unit id="Property" translate="yes" xml:space="preserve">
+          <source>属性</source>
+          <target state="new">屬性</target>
+        </trans-unit>
+        <trans-unit id="ReceiveChannel" translate="yes" xml:space="preserve">
+          <source>接收信道</source>
+          <target state="new">接收頻道</target>
+        </trans-unit>
+        <trans-unit id="RecentFiles" translate="yes" xml:space="preserve">
+          <source>最近使用过的文件(_F)</source>
+          <target state="new">最近使用過的檔案(_F)</target>
+        </trans-unit>
+        <trans-unit id="RecentUsedContent" translate="yes" xml:space="preserve">
+          <source>最近使用的内容</source>
+          <target state="new">最近使用的內容</target>
+        </trans-unit>
+        <trans-unit id="Refresh" translate="yes" xml:space="preserve">
+          <source>刷新</source>
+          <target state="new">重新整理</target>
+        </trans-unit>
+        <trans-unit id="RegistryCenter" translate="yes" xml:space="preserve">
+          <source>注册中心</source>
+          <target state="new">註冊中心</target>
+        </trans-unit>
+        <trans-unit id="Reset" translate="yes" xml:space="preserve">
+          <source>重置</source>
+          <target state="new">重置</target>
+        </trans-unit>
+        <trans-unit id="Reseted" translate="yes" xml:space="preserve">
+          <source>已重置</source>
+          <target state="new">已重置</target>
+        </trans-unit>
+        <trans-unit id="RestartService" translate="yes" xml:space="preserve">
+          <source>重启服务</source>
+          <target state="new">重啟服務</target>
+        </trans-unit>
+        <trans-unit id="Restore" translate="yes" xml:space="preserve">
+          <source>向下还原</source>
+          <target state="new">向下還原</target>
+        </trans-unit>
+        <trans-unit id="Rollback" translate="yes" xml:space="preserve">
+          <source>回退</source>
+          <target state="new">回退</target>
+        </trans-unit>
+        <trans-unit id="RunAsAdmin" translate="yes" xml:space="preserve">
+          <source>以管理员身份运行</source>
+          <target state="new">以管理員身份執行</target>
+        </trans-unit>
+        <trans-unit id="Save" translate="yes" xml:space="preserve">
+          <source>保存</source>
+          <target state="new">保存</target>
+        </trans-unit>
+        <trans-unit id="SaveWindowLayout" translate="yes" xml:space="preserve">
+          <source>保存窗口布局</source>
+          <target state="new">儲存視窗佈局</target>
+        </trans-unit>
+        <trans-unit id="SearchProjectFiles" translate="yes" xml:space="preserve">
+          <source>搜索工程文件</source>
+          <target state="new">搜尋工程文件</target>
+        </trans-unit>
+        <trans-unit id="SelectProjectSaveLocation" translate="yes" xml:space="preserve">
+          <source>选择项目保存位置</source>
+          <target state="new">選擇項目保存位置</target>
+        </trans-unit>
+        <trans-unit id="SelectResourceToLoad" translate="yes" xml:space="preserve">
+          <source>请选择您要加载的资源：</source>
+          <target state="new">請選擇您要載入的資源：</target>
+        </trans-unit>
+        <trans-unit id="Send" translate="yes" xml:space="preserve">
+          <source>发送</source>
+          <target state="new">傳送</target>
+        </trans-unit>
+        <trans-unit id="Sended" translate="yes" xml:space="preserve">
+          <source>已经发送</source>
+          <target state="new">已經發送</target>
+        </trans-unit>
+        <trans-unit id="SerialNumber" translate="yes" xml:space="preserve">
+          <source>序列号</source>
+          <target state="new">序號</target>
+        </trans-unit>
+        <trans-unit id="SerialNumber1" translate="yes" xml:space="preserve">
+          <source>序号</source>
+          <target state="new">序號</target>
+        </trans-unit>
+        <trans-unit id="ServiceAgreement" translate="yes" xml:space="preserve">
+          <source>服务协议</source>
+          <target state="new">服務協定</target>
+        </trans-unit>
+        <trans-unit id="ServiceConfiguration" translate="yes" xml:space="preserve">
+          <source>服务配置</source>
+          <target state="new">服務配置</target>
+        </trans-unit>
+        <trans-unit id="ServiceIdentifier" translate="yes" xml:space="preserve">
+          <source>服务标识</source>
+          <target state="new">服務標識</target>
+        </trans-unit>
+        <trans-unit id="ServiceName" translate="yes" xml:space="preserve">
+          <source>服务名称</source>
+          <target state="new">服務名稱</target>
+        </trans-unit>
+        <trans-unit id="Settings" translate="yes" xml:space="preserve">
+          <source>设置</source>
+          <target state="new">设置</target>
+        </trans-unit>
+        <trans-unit id="SetupWizard" translate="yes" xml:space="preserve">
+          <source>配置向导</source>
+          <target state="new">配置精靈</target>
+        </trans-unit>
+        <trans-unit id="Sign_in" translate="yes" xml:space="preserve">
+          <source>登录</source>
+          <target state="new">登入</target>
+        </trans-unit>
+        <trans-unit id="Sign_out" translate="yes" xml:space="preserve">
+          <source>退出</source>
+          <target state="new">退出</target>
+        </trans-unit>
+        <trans-unit id="SimulateReceive" translate="yes" xml:space="preserve">
+          <source>模拟接受</source>
+          <target state="new">模擬接受</target>
+        </trans-unit>
+        <trans-unit id="SimulateSend" translate="yes" xml:space="preserve">
+          <source>模拟发送</source>
+          <target state="new">類比發送</target>
+        </trans-unit>
+        <trans-unit id="SoftwareVersion" translate="yes" xml:space="preserve">
+          <source>软件版本</source>
+          <target state="new">軟體版本</target>
+        </trans-unit>
+        <trans-unit id="SpectrometerLog" translate="yes" xml:space="preserve">
+          <source>光谱仪日志</source>
+          <target state="new">光譜儀日誌</target>
+        </trans-unit>
+        <trans-unit id="StartRecoverUILayout" translate="yes" xml:space="preserve">
+          <source>恢复上次退出时窗口的大小和位置</source>
+          <target state="new">啟動復原介面佈局</target>
+        </trans-unit>
+        <trans-unit id="Status" translate="yes" xml:space="preserve">
+          <source>状态</source>
+          <target state="new">狀態</target>
+        </trans-unit>
+        <trans-unit id="StopProcess" translate="yes" xml:space="preserve">
+          <source>停止流程</source>
+          <target state="new">停止流程</target>
+        </trans-unit>
+        <trans-unit id="Submit" translate="yes" xml:space="preserve">
+          <source>提交</source>
+          <target state="new">提交</target>
+        </trans-unit>
+        <trans-unit id="Subscribe" translate="yes" xml:space="preserve">
+          <source>订阅</source>
+          <target state="new">訂閱</target>
+        </trans-unit>
+        <trans-unit id="SubscribedTopic" translate="yes" xml:space="preserve">
+          <source>订阅的主题</source>
+          <target state="new">訂閱的主題</target>
+        </trans-unit>
+        <trans-unit id="Success" translate="yes" xml:space="preserve">
+          <source>成功</source>
+          <target state="new">成功</target>
+        </trans-unit>
+        <trans-unit id="TbSettingsStartBoot" translate="yes" xml:space="preserve">
+          <source>开机启动(可能会不成功)</source>
+          <target state="new">開機啓動(可能會不成功)</target>
+        </trans-unit>
+        <trans-unit id="Template" translate="yes" xml:space="preserve">
+          <source>模板</source>
+          <target state="new">範本</target>
+        </trans-unit>
+        <trans-unit id="TemplateManagementWindow" translate="yes" xml:space="preserve">
+          <source>模板管理窗口</source>
+          <target state="new">範本管理視窗</target>
+        </trans-unit>
+        <trans-unit id="TemplateName" translate="yes" xml:space="preserve">
+          <source>模板名称</source>
+          <target state="new">模板名稱</target>
+        </trans-unit>
+        <trans-unit id="TesConnection" translate="yes" xml:space="preserve">
+          <source>测试连接</source>
+          <target state="new">測試連接</target>
+        </trans-unit>
+        <trans-unit id="Theme" translate="yes" xml:space="preserve">
+          <source>主题</source>
+          <target state="new">主題</target>
+        </trans-unit>
+        <trans-unit id="ThemeDark" translate="yes" xml:space="preserve">
+          <source>深色</source>
+          <target state="new">黑色</target>
+        </trans-unit>
+        <trans-unit id="ThemeLight" translate="yes" xml:space="preserve">
+          <source>浅色</source>
+          <target state="new">白色</target>
+        </trans-unit>
+        <trans-unit id="ThemePink" translate="yes" xml:space="preserve">
+          <source>粉色</source>
+          <target state="new">粉紅色</target>
+        </trans-unit>
+        <trans-unit id="ThemeUseSystem" translate="yes" xml:space="preserve">
+          <source>跟随系统</source>
+          <target state="new">跟随系统</target>
+        </trans-unit>
+        <trans-unit id="TimeLeft" translate="yes" xml:space="preserve">
+          <source>剩余时间：</source>
+          <target state="new">剩餘時間：</target>
+        </trans-unit>
+        <trans-unit id="Timeout" translate="yes" xml:space="preserve">
+          <source>超时</source>
+          <target state="new">超時</target>
+        </trans-unit>
+        <trans-unit id="Topic" translate="yes" xml:space="preserve">
+          <source>话题</source>
+          <target state="new">話題</target>
+        </trans-unit>
+        <trans-unit id="TransmitChannel" translate="yes" xml:space="preserve">
+          <source>发送信道</source>
+          <target state="new">傳送頻道</target>
+        </trans-unit>
+        <trans-unit id="TransparentWindow" translate="yes" xml:space="preserve">
+          <source>透明窗口</source>
+          <target state="new">透明視窗</target>
+        </trans-unit>
+        <trans-unit id="UnderDevelopment" translate="yes" xml:space="preserve">
+          <source>开发中</source>
+          <target state="new">開發中</target>
+        </trans-unit>
+        <trans-unit id="Unsubscribe" translate="yes" xml:space="preserve">
+          <source>退订</source>
+          <target state="new">退訂</target>
+        </trans-unit>
+        <trans-unit id="Upgrade" translate="yes" xml:space="preserve">
+          <source>升级</source>
+          <target state="new">升級</target>
+        </trans-unit>
+        <trans-unit id="UserName" translate="yes" xml:space="preserve">
+          <source>用户</source>
+          <target state="new">用戶</target>
+        </trans-unit>
+        <trans-unit id="UserPwd" translate="yes" xml:space="preserve">
+          <source>密码</source>
+          <target state="new">密碼</target>
+        </trans-unit>
+        <trans-unit id="ViewReceivedData" translate="yes" xml:space="preserve">
+          <source>查看接受数据</source>
+          <target state="new">查看接受數據</target>
+        </trans-unit>
+        <trans-unit id="ViewSentData" translate="yes" xml:space="preserve">
+          <source>查看发送数据</source>
+          <target state="new">查看發送數據</target>
+        </trans-unit>
+        <trans-unit id="WindowHidden" translate="yes" xml:space="preserve">
+          <source>隐藏</source>
+          <target state="new">隱藏</target>
+        </trans-unit>
+        <trans-unit id="WindowSingle" translate="yes" xml:space="preserve">
+          <source>独立窗口</source>
+          <target state="new">獨立視窗</target>
+        </trans-unit>
+        <trans-unit id="Wizard" translate="yes" xml:space="preserve">
+          <source>向导</source>
+          <target state="new">嚮導</target>
+        </trans-unit>
+        <trans-unit id="WorkflowEngineDebugWindow" translate="yes" xml:space="preserve">
+          <source>流程引擎调试窗口</source>
+          <target state="new">流程引擎調試視窗</target>
+        </trans-unit>
+        <trans-unit id="WorkflowEngine_F" translate="yes" xml:space="preserve">
+          <source>流程引擎(_F)</source>
+          <target state="new">流程引擎(F)</target>
+        </trans-unit>
+        <trans-unit id="x64ServiceLog" translate="yes" xml:space="preserve">
+          <source>x64服务日志</source>
+          <target state="new">x64服務日誌</target>
+        </trans-unit>
+      </group>
+    </body>
+  </file>
+</xliff>

@@ -44,7 +44,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.UI", "ColorVisi
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Plugin", "Plugin", "{3978403E-55E4-4AAC-8978-1D39651BEA7C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SerialPlugin", "SerialPlugin\SerialPlugin.csproj", "{AE482EF7-B08A-4BA0-992C-DB9A2B355410}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SerialPlugin", "SerialPlugin\SerialPlugin.csproj", "{AE482EF7-B08A-4BA0-992C-DB9A2B355410}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -280,9 +280,10 @@ Global
 		{AE482EF7-B08A-4BA0-992C-DB9A2B355410} = {3978403E-55E4-4AAC-8978-1D39651BEA7C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
-		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
-		RESX_NeutralResourcesLanguage = zh-Hans
+		RESX_EnableXlifSync = True
 		RESX_PrefixTranslations = False
+		RESX_NeutralResourcesLanguage = zh-Hans
+		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
 	EndGlobalSection
 EndGlobal

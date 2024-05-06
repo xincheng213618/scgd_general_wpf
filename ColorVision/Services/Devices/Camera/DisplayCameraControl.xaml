@@ -69,7 +69,7 @@
                 <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,3">
                     <DockPanel x:Name="ButtonOpen">
                         <Button  DockPanel.Dock="Right" Grid.Column="1" Margin="5,0,0,0" Content="视频模式"  Click="Video_Click"/>
-                        <Button  Grid.Column="0" Content="打开"  Click="Open_Click" />
+                        <Button  Grid.Column="0" Content="{x:Static properties:Resource.Open}"  Click="Open_Click" />
                     </DockPanel>
                     <Button x:Name="ButtonClose" Margin="0,0,0,3" Grid.Column="0" Content="关闭" Foreground="White" Background="Red"  Visibility="Collapsed" Click="Close_Click" />
                     <StackPanel Visibility="{Binding DeviceService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">
@@ -80,7 +80,7 @@
                         </DockPanel>
                         
                         <DockPanel Margin="0,2" >
-                            <TextBlock  Text="增益" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0"  Width="50" />
+                            <TextBlock  Text="{x:Static properties:Resource.Gain}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0"  Width="50" />
                             <TextBox DockPanel.Dock="Right" Text="{Binding Config.Gain}" MinWidth="50"/>
                             <hc:PreviewSlider TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.Gain}" Minimum="0" Maximum="5000"/>
                         </DockPanel>
@@ -116,18 +116,22 @@
                         <StackPanel Margin="0,2" Visibility="{Binding DeviceService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter1}}">
 
                             <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition  Width="*"/>
+                                    <ColumnDefinition  Width="Auto"/>
+                                </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <Button Content="自动曝光" Margin="0,2" Click="AutoExplose_Click"  HorizontalAlignment="Left"/>
+                                    <Button Content="{x:Static properties:Resource.AutoExposure}" Margin="0,2" Click="AutoExplose_Click"  HorizontalAlignment="Left"/>
                                     <DockPanel Margin="0,2">
-                                        <TextBlock Text="校正：" />
-                                        <ComboBox x:Name="ComboxCalibrationTemplate" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                        <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
                                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
                                             <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="Calibration"  Click="MenuItem_Template"/>
                                         </Grid>
+                                        <TextBlock Text="{x:Static properties:Resource.Calibration}"  Margin="0,0,5,0"/>
+                                        <ComboBox x:Name="ComboxCalibrationTemplate"   Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                     </DockPanel>
                                 </StackPanel>
-                                <Button Content="取图" FontSize="15" FontWeight="Bold" Click="GetData_Click" HorizontalAlignment="Right" Margin="0,2"/>
+                                <Button Grid.Column="1" Content="{x:Static properties:Resource.Capture}" FontSize="15" FontWeight="Bold" Click="GetData_Click" HorizontalAlignment="Right" Margin="2,2,0,2"/>
                             </Grid>
                         </StackPanel>
                         <GroupBox Header="电机操作" Visibility="{Binding Config.IsHaveMotor,Converter={StaticResource bool2VisibilityConverter}}">

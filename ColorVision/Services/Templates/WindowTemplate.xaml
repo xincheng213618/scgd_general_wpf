@@ -31,7 +31,7 @@
             </Grid.RowDefinitions>
             <Border Grid.Row="0" Grid.RowSpan="2" Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="0"/>
             <DockPanel Margin="5">
-                <TextBlock Text="筛选"  VerticalAlignment="Center" />
+                <TextBlock Text="{x:Static properties:Resource.Filter}"  VerticalAlignment="Center" />
                 <TextBox x:Name="Searchbox"  BorderBrush="#CCCEDB" MaxLength="15" VerticalContentAlignment="Center"  TextChanged="Searchbox_TextChanged"   Margin="10,0"   VerticalAlignment="Center"/>
             </DockPanel>
             <ListView Grid.Row="1" x:Name="ListView1" Margin="0,-8,0,0" Background="Transparent"  BorderThickness="0"  Style="{DynamicResource ListView.Small}"  Loaded="ListView1_Loaded"   ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">

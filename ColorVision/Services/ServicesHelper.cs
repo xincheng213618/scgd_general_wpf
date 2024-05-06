@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Services.Msg;
 using Panuon.WPF.UI;
 using System;
+using System.Globalization;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -38,7 +39,7 @@ namespace ColorVision.Services
                 try
                 {
                     handler?.UpdateMessage(e.ToDescription());
-                    if (e != MsgRecordState.Send)
+                    if (e != MsgRecordState.Sended)
                     {
                         handler?.Close();
                     }
@@ -74,7 +75,7 @@ namespace ColorVision.Services
         {
             if (sender is Button button)
             {
-                if (button.Content.ToString() == MsgRecordState.Send.ToDescription())
+                if (button.Content.ToString() == (Properties.Resource.ResourceManager.GetString(MsgRecordState.Sended.ToDescription(), CultureInfo.CurrentUICulture) ?? ""))
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), "已经发送,请耐心等待","ColorVison");
                     return null;
@@ -91,13 +92,14 @@ namespace ColorVision.Services
         public static void SendCommand(Button button, MsgRecord msgRecord, bool Reserve = true)
         {
             var temp = button.Content;
-            button.Content = msgRecord.MsgRecordState.ToDescription();
+            button.Content = Properties.Resource.ResourceManager.GetString(msgRecord.MsgRecordState.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
+
             MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
             msgRecordStateChangedHandler = async (e) =>
             {
-                button.Content = e.ToDescription();
+                button.Content = Properties.Resource.ResourceManager.GetString(e.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
                 await Task.Delay(100);
-                if (e != MsgRecordState.Send)
+                if (e != MsgRecordState.Sended)
                 {
                     button.Content = temp;
                 }

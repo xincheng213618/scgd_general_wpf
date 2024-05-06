@@ -119,7 +119,7 @@ namespace ColorVision.Solution
                 var firstMenuItem = RecentListMenuItem.Items[0];
                 foreach (var item in SolutionHistory.RecentFiles)
                 {
-                    if (Directory.Exists(item))
+                    if (File.Exists(item))
                     {
                         MenuItem menuItem = new MenuItem();
                         menuItem.Header = item;

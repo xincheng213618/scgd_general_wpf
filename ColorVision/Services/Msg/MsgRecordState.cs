@@ -4,13 +4,13 @@ namespace ColorVision.Services.Msg
 {
     public enum MsgRecordState
     {
-        [Description("已经发送")]
-        Send,
-        [Description("命令成功")]
+        [Description("Sended")]
+        Sended,
+        [Description("Success")]
         Success,
-        [Description("命令失败")]
+        [Description("Failure")]
         Fail,
-        [Description("命令超时")]
+        [Description("Timeout")]
         Timeout
     }
 

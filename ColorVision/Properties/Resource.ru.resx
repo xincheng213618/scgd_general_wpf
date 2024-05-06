@@ -684,4 +684,37 @@
   <data name="MsgList" xml:space="preserve">
     <value>Список сообщений</value>
   </data>
+  <data name="Filter" xml:space="preserve">
+    <value>фильтр</value>
+  </data>
+  <data name="Gain" xml:space="preserve">
+    <value>Прирост</value>
+  </data>
+  <data name="AutoExposure" xml:space="preserve">
+    <value>Автоматическая экспозиция</value>
+  </data>
+  <data name="Calibration" xml:space="preserve">
+    <value>Калибровка</value>
+  </data>
+  <data name="Capture" xml:space="preserve">
+    <value>Захватывать</value>
+  </data>
+  <data name="Sended" xml:space="preserve">
+    <value>Отправлено</value>
+  </data>
+  <data name="Timeout" xml:space="preserve">
+    <value>Тайм-аут</value>
+  </data>
+  <data name="MQTTLog" xml:space="preserve">
+    <value>Журнал MQTT</value>
+  </data>
+  <data name="Topic" xml:space="preserve">
+    <value>тема</value>
+  </data>
+  <data name="SubscribedTopic" xml:space="preserve">
+    <value>Подписанные темы</value>
+  </data>
+  <data name="MessageRetention" xml:space="preserve">
+    <value>сохранение сообщений</value>
+  </data>
 </root>
