@@ -1,15 +1,51 @@
 ﻿#pragma warning disable CS4014
+using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.HotKey;
 using ColorVision.MQTT;
+using ColorVision.Properties;
 using ColorVision.Services.Msg;
 using ColorVision.Settings;
+using ColorVision.Solution;
+using ColorVision.UI;
 using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision
 {
+
+
+    public class HotKeyNewCreate : IHotKey, IMenuItem
+    {
+
+        public string? OwnerGuid => "Tool";
+
+        public string? GuidId => "MQTTLog";
+
+        public int Index => 1;
+
+        public string? Header => Resource.MQTTLog;
+
+        public string? InputGestureText { get; }
+
+        public object? Icon { get; }
+
+        public RelayCommand Command => new RelayCommand(A => Execute());
+
+        public HotKeys HotKeys => new HotKeys(Resource.MQTTLog, new Hotkey(Key.Q, ModifierKeys.Control), Execute);
+
+        private void Execute()
+        {
+            new MQTTLog() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+    }
+
+
+
     public partial class MQTTLog : Window
     {
 

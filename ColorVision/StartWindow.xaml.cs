@@ -104,7 +104,7 @@ namespace ColorVision
             else
             {
                 Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}已经跳过数据库连接"; });
-                await Task.Delay(100);
+                await Task.Delay(10);
 
             }
             if (SoftwareConfig.IsUseMQTT)
@@ -143,7 +143,7 @@ namespace ColorVision
             else
             {
                 Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}已经跳过MQTT服务器连接"; });
-                await Task.Delay(100);
+                await Task.Delay(10);
             }
 
             if (MQTTControl.GetInstance().IsConnect)
@@ -182,24 +182,23 @@ namespace ColorVision
                 else
                 {
                     Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}已经跳过注册中心服务器连接"; });
-                    await Task.Delay(100);
+                    await Task.Delay(10);
                 }
             }
             else
             {
                 Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}注册中心需要MQTT连接成功，已经跳过注册中心服务器连接"; });
-                await Task.Delay(200);
+                await Task.Delay(20);
             }
 
-            await Task.Delay(50);
+            await Task.Delay(10);
             Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}正在加载工程"; });
             Application.Current.Dispatcher.Invoke(() => SolutionManager.GetInstance());
-            await Task.Delay(50);
+            await Task.Delay(10);
             Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}正在打开主窗口"; });
             Application.Current.Dispatcher.Invoke(() =>
             {
                 MainWindow mainWindow = new MainWindow();
-
                 ServiceManager ServiceManager = ServiceManager.GetInstance();
                 if (MySqlControl.GetInstance().IsConnect)
                 {

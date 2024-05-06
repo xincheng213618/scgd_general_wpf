@@ -184,10 +184,6 @@ namespace ColorVision
             Process.Start("explorer.exe", $"{Path.GetDirectoryName(ConfigHandler.GetInstance().SoftwareConfigFileName)}");
         }
 
-        private void MenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            new MQTTLog() { Owner = this }.Show();
-        }
 
 
         private void Setting_Click(object sender, RoutedEventArgs e)
