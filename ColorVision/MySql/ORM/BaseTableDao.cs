@@ -102,6 +102,7 @@ namespace ColorVision.MySql.ORM
             }
             catch (Exception ex)
             {
+                log.Warn(ex);
                 return list;
             }
 

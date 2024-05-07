@@ -518,12 +518,11 @@ namespace ColorVision.Services.Templates
             return null;
         }
 
-        private VSysResourceDao VSysResourceDao { get; set; } = new VSysResourceDao();
 
         internal ResourceParam? AddDeviceParam(string name, string code, int type, int pid)
         {
             SysResourceModel sysResource = new SysResourceModel(name, code, type, pid, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            VSysResourceDao.Save(sysResource);
+            VSysResourceDao.Instance.Save(sysResource);
             int pkId = sysResource.Id;
             if (pkId > 0)
             {
@@ -535,7 +534,7 @@ namespace ColorVision.Services.Templates
         internal ResourceParam? AddServiceParam(string name, string code, int type)
         {
             SysResourceModel sysResource = new SysResourceModel(name, code, type, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            VSysResourceDao.Save(sysResource);
+            VSysResourceDao.Instance.Save(sysResource);
             int pkId = sysResource.Id;
             if (pkId > 0)
             {
@@ -561,9 +560,10 @@ namespace ColorVision.Services.Templates
             if (model != null) return new MeasureParam(model);
             else return null;
         }
+
         private ResourceParam? LoadServiceParamById(int pkId)
         {
-            SysResourceModel model = VSysResourceDao.GetById(pkId);
+            SysResourceModel model = VSysResourceDao.Instance.GetById(pkId);
             if (model != null) return new ResourceParam(model);
             else return null;
         }

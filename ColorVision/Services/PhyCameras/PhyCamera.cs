@@ -179,6 +179,11 @@ namespace ColorVision.Services.PhyCameras
 
         public void RefreshLincense()
         {
+            if (SysResourceModel.Code == null)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "MAC为空", "ColorVision");
+                return;
+            }
             CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
         }
 
@@ -531,6 +536,7 @@ namespace ColorVision.Services.PhyCameras
                         }
                         catch (Exception ex)
                         {
+                            log.Warn(ex);
                             zipCalibrationGroup = JsonConvert.DeserializeObject<ZipCalibrationGroup>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
                         }
 
