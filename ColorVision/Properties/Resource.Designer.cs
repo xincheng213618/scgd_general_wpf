@@ -781,6 +781,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 算法(_A) 的本地化字符串。
+        /// </summary>
+        public static string MenuAlgorithm {
+            get {
+                return ResourceManager.GetString("MenuAlgorithm", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 复制(_C) 的本地化字符串。
         /// </summary>
         public static string MenuCopy {

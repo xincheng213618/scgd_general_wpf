@@ -717,4 +717,7 @@
   <data name="MessageRetention" xml:space="preserve">
     <value>메시지 보존</value>
   </data>
+  <data name="MenuAlgorithm" xml:space="preserve">
+    <value>알고리즘(A)</value>
+  </data>
 </root>

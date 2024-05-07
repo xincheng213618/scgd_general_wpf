@@ -331,6 +331,10 @@
           <source>关于(_A)</source>
           <target state="new">Об</target>
         </trans-unit>
+        <trans-unit id="MenuAlgorithm" translate="yes" xml:space="preserve">
+          <source>算法(_A)</source>
+          <target state="new">Алгоритм(А)</target>
+        </trans-unit>
         <trans-unit id="MenuCopy" translate="yes" xml:space="preserve">
           <source>复制(_C)</source>
           <target state="new">Копировать (С)</target>

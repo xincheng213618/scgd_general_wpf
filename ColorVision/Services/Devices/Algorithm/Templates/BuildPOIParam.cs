@@ -18,7 +18,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
 
         public string? GuidId => "TemplateAlgorithm";
         public int Order => 2;
-        public string? Header => "算法";
+        public string? Header => ColorVision.Properties.Resource.MenuAlgorithm;
 
         public string? InputGestureText { get; }
 
