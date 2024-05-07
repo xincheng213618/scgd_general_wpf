@@ -6,7 +6,7 @@ using System.Windows.Documents;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-namespace ColorVision.Media
+namespace ColorVision.UI.Media
 {
     public class TextShape : Shape
     {
