@@ -38,12 +38,6 @@ namespace ColorVision.Services.Templates
         private static readonly object _locker = new();
         public static TemplateControl GetInstance() { lock (_locker) { return _instance ??= new TemplateControl(); } }
 
-        private static string FileNameLedJudgeParams = "LedJudgeSetup";
-        private static string FileNameFlowParms = "FlowParmSetup";
-
-        public string TemplatePath { get; set; }
-
-
         public TemplateControl()
         {
             AoiParams = new ObservableCollection<TemplateModel<AOIParam>>();
@@ -151,21 +145,14 @@ namespace ColorVision.Services.Templates
             }
         }
 
-        public T? LoadCFG<T>(string cfgFile)
-        {
-            return CfgFile.Load<T>(TemplatePath + "\\CFG\\" + cfgFile + ".cfg");
-        }
-
-
-
         /// 这里是初始化模板的封装，因为模板的代码高度统一，所以使用泛型T来设置具体的模板参数。
         /// 最后在给模板的每一个元素加上一个切换的效果，即当某一个模板启用时，关闭其他已经启用的模板；
         /// 同一类型，只能存在一个启用的模板
-        private ObservableCollection<TemplateModel<T>> IDefault<T>(string FileName, T Default) where T : ParamBase
+        private static ObservableCollection<TemplateModel<T>> IDefault<T>(string FileName, T Default) where T : ParamBase
         {
             ObservableCollection<TemplateModel<T>> Params = new ObservableCollection<TemplateModel<T>>();
 
-            Params = LoadCFG<ObservableCollection<TemplateModel<T>>>(FileName) ?? new ObservableCollection<TemplateModel<T>>();
+            Params =  new ObservableCollection<TemplateModel<T>>();
             if (Params.Count == 0)
             {
                 Params.Add(new TemplateModel<T>("default", Default));
@@ -268,8 +255,6 @@ namespace ColorVision.Services.Templates
         {
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
                 Save2DB(t);
-            else
-                SaveDefault(code, t);
         }
 
 
@@ -289,7 +274,7 @@ namespace ColorVision.Services.Templates
         }
 
 
-        public void Save2DB(PoiParam poiParam)
+        public static void Save2DB(PoiParam poiParam)
         {
             PoiMasterModel poiMasterModel = new PoiMasterModel(poiParam);
             PoiMasterDao.Instance.Save(poiMasterModel);
@@ -300,17 +285,9 @@ namespace ColorVision.Services.Templates
                 PoiDetailModel poiDetail = new PoiDetailModel(poiParam.Id, pt);
                 poiDetails.Add(poiDetail);
             }
-            poiDetail.SaveByPid(poiParam.Id, poiDetails);
+            PoiDetailDao.Instance.SaveByPid(poiParam.Id, poiDetails);
         }
 
-
-        private void SaveDefault<T>(string FileNameParams, ObservableCollection<TemplateModel<T>> t) where T : ParamBase
-        {
-            CfgFile.Save(TemplatePath + "\\CFG\\" + FileNameParams + ".cfg", t);
-        }
-
-
-        private PoiDetailDao poiDetail = new PoiDetailDao();
 
         public static ObservableCollection<TemplateModel<PoiParam>> LoadPoiParam()
         {
@@ -326,10 +303,10 @@ namespace ColorVision.Services.Templates
 
 
 
-        internal void LoadPoiDetailFromDB(PoiParam poiParam)
+        internal static void LoadPoiDetailFromDB(PoiParam poiParam)
         {
             poiParam.PoiPoints.Clear();
-            List<PoiDetailModel> poiDetails = poiDetail.GetAllByPid(poiParam.Id);
+            List<PoiDetailModel> poiDetails = PoiDetailDao.Instance.GetAllByPid(poiParam.Id);
             foreach (var dbModel in poiDetails)
             {
                 poiParam.PoiPoints.AddUnique(new PoiParamData(dbModel));
@@ -474,31 +451,7 @@ namespace ColorVision.Services.Templates
         }
 
 
-        internal ResourceParam? AddDeviceParam(string name, string code, int type, int pid)
-        {
-            SysResourceModel sysResource = new SysResourceModel(name, code, type, pid, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            VSysResourceDao.Instance.Save(sysResource);
-            int pkId = sysResource.Id;
-            if (pkId > 0)
-            {
-                return LoadServiceParamById(pkId);
-            }
-            return null;
-        }
-
-        internal ResourceParam? AddServiceParam(string name, string code, int type)
-        {
-            SysResourceModel sysResource = new SysResourceModel(name, code, type, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            VSysResourceDao.Instance.Save(sysResource);
-            int pkId = sysResource.Id;
-            if (pkId > 0)
-            {
-                return LoadServiceParamById(pkId);
-            }
-            return null;
-        }
-
-        internal MeasureParam? AddMeasureParam(string name)
+        internal static MeasureParam? AddMeasureParam(string name)
         {
             MeasureMasterModel model = new MeasureMasterModel(name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             MeasureMasterDao.Instance.Save(model);
@@ -509,14 +462,14 @@ namespace ColorVision.Services.Templates
             }
             return null;
         }
-        private MeasureParam? LoadMeasureParamById(int pkId)
+        private static MeasureParam? LoadMeasureParamById(int pkId)
         {
             MeasureMasterModel model = MeasureMasterDao.Instance.GetById(pkId);
             if (model != null) return new MeasureParam(model);
             else return null;
         }
 
-        private ResourceParam? LoadServiceParamById(int pkId)
+        private static ResourceParam? LoadServiceParamById(int pkId)
         {
             SysResourceModel model = VSysResourceDao.Instance.GetById(pkId);
             if (model != null) return new ResourceParam(model);
@@ -611,13 +564,6 @@ namespace ColorVision.Services.Templates
                     var item = new TemplateModel<FlowParam>(dbModel.Name ?? "default", new FlowParam(dbModel, flowDetails));
                     FlowParams.Add(item);
                 }
-            }
-            else
-            {
-                var keyValuePairs = IDefault(FileNameFlowParms, new FlowParam());
-                foreach (var item in keyValuePairs)
-                    FlowParams.Add(item);
-
             }
             return FlowParams;
         }

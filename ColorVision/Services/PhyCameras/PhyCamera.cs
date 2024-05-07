@@ -433,7 +433,7 @@ namespace ColorVision.Services.PhyCameras
                             {
                                 if (item2 is CalibrationResource CalibrationResource)
                                 {
-                                    if (CalibrationResource.SysResourceModel.Code.Contains(md5) )
+                                    if (CalibrationResource.SysResourceModel.Code != null && CalibrationResource.SysResourceModel.Code.Contains(md5) )
                                     {
                                         keyValuePairs2.Add(item1.Title, CalibrationResource);
                                         isExist = true;
@@ -534,7 +534,7 @@ namespace ColorVision.Services.PhyCameras
                         try
                         {
                             zipCalibrationGroup = new ZipCalibrationGroup();
-                            zipCalibrationGroup.List = JsonConvert.DeserializeObject<List<ZipCalibrationItem>>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
+                            zipCalibrationGroup.List = JsonConvert.DeserializeObject<List<ZipCalibrationItem>>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk"))) ?? new List<ZipCalibrationItem>();
                         }
                         catch (Exception ex)
                         {

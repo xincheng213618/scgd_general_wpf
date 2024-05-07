@@ -40,11 +40,6 @@ namespace ColorVision.Services.Dao.Validate
             IsEnable = item.Field<bool>("is_enable"),
         };
 
-        public void SetValue<T>(T t, T t1)
-        {
-            if (t != null)
-                t1 = t;
-        }
 
         public override DataRow Model2Row(SysDictionaryModItemValidateModel item, DataRow row)
         {

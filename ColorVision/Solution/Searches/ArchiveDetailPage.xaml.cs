@@ -42,6 +42,7 @@ namespace ColorVision.Solution.Searches
         private void Page_Loaded(object sender, RoutedEventArgs e)
         {
             ViewResults.Clear();
+            if (ViewArchiveResult.ArchivedMasterModel.Code == null) return;
             foreach (var item in ArchivedDetailDao.Instance.GetAllByParam(new System.Collections.Generic.Dictionary<string, object>() { { "p_guid", ViewArchiveResult.ArchivedMasterModel.Code} }))
             {
                 ViewResults.Add(new ViewArchiveDetailResult(item));

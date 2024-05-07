@@ -36,6 +36,52 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
         });
     }
 
+
+    public interface ITemplate
+    {
+        public void Load();
+
+        public void Save();
+
+        public void Create();
+
+        public void Delete();
+
+        public void Export();
+        public void Import();
+    }
+
+    public class TemplateSFR : ITemplate
+    {
+        public static ObservableCollection<TemplateModel<SFRParam>> SFRParams { get; set; } = new ObservableCollection<TemplateModel<SFRParam>>();
+
+        public void Create()
+        {
+        }
+
+        public void Delete()
+        {
+        }
+
+        public void Export()
+        {
+        }
+
+        public void Import()
+        {
+        }
+
+        public void Load()
+        {
+        }
+
+        public void Save()
+        {
+        }
+    }
+
+
+
     public class SFRParam : ParamBase
     {
         public static ObservableCollection<TemplateModel<SFRParam>> SFRParams { get; set; } = new ObservableCollection<TemplateModel<SFRParam>>();

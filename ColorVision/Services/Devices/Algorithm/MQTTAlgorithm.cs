@@ -337,13 +337,13 @@ namespace ColorVision.Services.Devices.Algorithm
 
         public void UploadCIEFile(string fileName)
         {
-            //MsgSend msg = new MsgSend
-            //{
-            //    EventName = MQTTFileServerEventEnum.Event_File_Upload,
-            //    ServiceName = Config.Code,
-            //    Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", FileExtType.CIE } }
-            //};
-            //PublishAsyncClient(msg);
+            MsgSend msg = new MsgSend
+            {
+                EventName = MQTTFileServerEventEnum.Event_File_Upload,
+                ServiceName = Config.Code,
+                Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", FileExtType.CIE } }
+            };
+            PublishAsyncClient(msg);
         }
 
         public MsgRecord CacheClear()

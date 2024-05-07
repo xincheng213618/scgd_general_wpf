@@ -160,7 +160,7 @@ namespace ColorVision.Services.PhyCameras
                     {
                         GroupResource groupResource = new GroupResource(sysResourceModel);
                         phycamrea.AddChild(groupResource);
-                        LoadgroupResource(groupResource);
+                        GroupResource.LoadgroupResource(groupResource);
                     }
                     else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
                     {
@@ -178,7 +178,7 @@ namespace ColorVision.Services.PhyCameras
             Loaded?.Invoke(this, new EventArgs());
         }
 
-        public void LoadgroupResource(GroupResource groupResource)
+        public static void LoadgroupResource(GroupResource groupResource)
         {
             List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetGroupResourceItems(groupResource.SysResourceModel.Id);
             foreach (var sysResourceModel in sysResourceModels)
@@ -201,7 +201,6 @@ namespace ColorVision.Services.PhyCameras
                 }
             }
             groupResource.SetCalibrationResource();
-
         }
     }
 }

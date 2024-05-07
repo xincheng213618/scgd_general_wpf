@@ -505,7 +505,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                     return;
                 }
                 ImageView.ImageShow.Clear();
-                TemplateControl.GetInstance().LoadPoiDetailFromDB(poiParams);
+                TemplateControl.LoadPoiDetailFromDB(poiParams);
                 foreach (var item in poiParams.PoiPoints)
                 {
                     switch (item.PointType)

@@ -3,6 +3,7 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Type;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.Windows;
 
 namespace ColorVision.Services.Core
@@ -36,6 +37,31 @@ namespace ColorVision.Services.Core
 
     public class GroupResource: BaseFileResource
     {
+        public static void LoadgroupResource(GroupResource groupResource)
+        {
+            List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetGroupResourceItems(groupResource.SysResourceModel.Id);
+            foreach (var sysResourceModel in sysResourceModels)
+            {
+                if (sysResourceModel.Type == (int)ServiceTypes.Group)
+                {
+                    GroupResource groupResource1 = new GroupResource(sysResourceModel);
+                    LoadgroupResource(groupResource1);
+                    groupResource.AddChild(groupResource);
+                }
+                else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
+                {
+                    CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
+                    groupResource.AddChild(calibrationResource);
+                }
+                else
+                {
+                    BaseResource calibrationResource = new BaseResource(sysResourceModel);
+                    groupResource.AddChild(calibrationResource);
+                }
+            }
+            groupResource.SetCalibrationResource();
+        }
+
         public static GroupResource? AddGroupResource(ICalibrationService<BaseResourceObject> deviceService , string Name)
         {
             SysResourceModel sysResourceModel = new SysResourceModel() { Name = Name , Type = (int)Type.ServiceTypes.Group };

@@ -1,4 +1,6 @@
-﻿using ColorVision.MySql.ORM;
+﻿#pragma warning disable CA1720
+
+using ColorVision.MySql.ORM;
 using System;
 using System.Collections.Generic;
 using System.Data;

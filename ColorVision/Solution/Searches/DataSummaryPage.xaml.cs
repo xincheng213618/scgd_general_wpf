@@ -158,7 +158,7 @@ namespace ColorVision.Solution.Searches
         }
         private void Arch_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is Button button && button.Tag is ViewBatchResult viewBatchResult)
+            if (sender is Button button && button.Tag is ViewBatchResult viewBatchResult && viewBatchResult.BatchCode !=null)
             {
                 MQTTRCService.GetInstance().Archived(viewBatchResult.BatchCode);
                 MessageBox.Show("归档指令已经发送");

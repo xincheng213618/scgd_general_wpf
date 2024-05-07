@@ -29,7 +29,7 @@ using System.Windows.Input;
 
 namespace ColorVision.Services.Templates
 {
-    public interface ITemplateControl
+    public interface ITemplate
     {
         public void Load();
         public void Create();
@@ -38,6 +38,8 @@ namespace ColorVision.Services.Templates
         public void Import();
         public void Export();
     }
+
+
 
     /// <summary>
     /// CalibrationTemplate.xaml 的交互逻辑

@@ -46,7 +46,7 @@ namespace ColorVision.Solution.Searches
         {
             Id  =item.Field<int>("id"), 
             Path = item.Field<string?>("path"),
-            CronExpression = item.Field<string>("cron_expression"),
+            CronExpression = item.Field<string>("cron_expression") ?? string.Empty,
             DataSaveDays = item.Field<int>("data_save_days")
         };
 

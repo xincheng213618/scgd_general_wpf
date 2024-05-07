@@ -23,7 +23,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -151,7 +150,7 @@ namespace ColorVision.Services.Templates.POI
                 await Task.Delay(100);
 
                 if (SoftwareConfig.IsUseMySql)
-                    TemplateControl.GetInstance().LoadPoiDetailFromDB(PoiParam);
+                    TemplateControl.LoadPoiDetailFromDB(PoiParam);
 
                 WaitControlProgressBar.Value = 10;
 
@@ -1376,7 +1375,7 @@ namespace ColorVision.Services.Templates.POI
                     var SelectPoiParam = windowFocusPointAd.SelectPoiParam;
 
                     if (SoftwareConfig.IsUseMySql)
-                        TemplateControl.GetInstance().LoadPoiDetailFromDB(SelectPoiParam);
+                        TemplateControl.LoadPoiDetailFromDB(SelectPoiParam);
 
                     foreach (var item in SelectPoiParam.PoiPoints)
                     {

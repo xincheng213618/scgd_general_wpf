@@ -51,7 +51,8 @@ namespace ColorVision.Services.Devices.Sensor
 
             foreach (var item in list1)
             {
-                liss.Add(item.Name, item.Code);
+                if (item.Name !=null && item.Code !=null)
+                    liss.Add(item.Name, item.Code);
             }
 
 
