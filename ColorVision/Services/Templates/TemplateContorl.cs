@@ -273,7 +273,7 @@ namespace ColorVision.Services.Templates
             Save(value);
         }
 
-        public static void Save2DB(PoiParam poiParam)
+        public void Save2DB(PoiParam poiParam)
         {
             PoiMasterModel poiMasterModel = new PoiMasterModel(poiParam);
             PoiMasterDao.Instance.Save(poiMasterModel);
