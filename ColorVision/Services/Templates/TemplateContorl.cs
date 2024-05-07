@@ -164,9 +164,6 @@ namespace ColorVision.Services.Templates
                 case System.Type t when t == typeof(BuildPOIParam):
                     LoadModParam(BuildPOIParams, ModMasterType.BuildPOI);
                     break;
-                case System.Type t when t == typeof(BuildPOIParam):
-                    LoadModParam(BuildPOIParams, ModMasterType.BuildPOI);
-                    break;
                 default:
                     break;
 
