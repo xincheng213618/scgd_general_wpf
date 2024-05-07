@@ -2,7 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI.HotKey;
-using ColorVision.Language;
+using ColorVision.UI.Languages;
 using ColorVision.MQTT;
 using ColorVision.MySql;
 using ColorVision.Properties;

@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Language;
+using ColorVision.UI.Languages;
 using ColorVision.UI;
 using System.Threading;
 using System.Windows.Controls;

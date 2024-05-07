@@ -144,4 +144,31 @@
   <data name="HotKeySet2" xml:space="preserve">
     <value>Нажмите, чтобы установить сочетания клавиш</value>
   </data>
+  <data name="zh-Hans" xml:space="preserve">
+    <value>Упрощенный китайский</value>
+  </data>
+  <data name="zh-Hant" xml:space="preserve">
+    <value>традиционный китайский</value>
+  </data>
+  <data name="UseSystem" xml:space="preserve">
+    <value>Следуйте системе</value>
+  </data>
+  <data name="LanguageResartSign" xml:space="preserve">
+    <value>Необходимо перезагрузить компьютер, чтобы использовать новые языковые настройки</value>
+  </data>
+  <data name="en" xml:space="preserve">
+    <value>Английский</value>
+  </data>
+  <data name="fr" xml:space="preserve">
+    <value>Французский</value>
+  </data>
+  <data name="ja" xml:space="preserve">
+    <value>Японский</value>
+  </data>
+  <data name="ko" xml:space="preserve">
+    <value>Корейский</value>
+  </data>
+  <data name="ru" xml:space="preserve">
+    <value>Русский</value>
+  </data>
 </root>

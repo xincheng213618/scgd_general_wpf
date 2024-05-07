@@ -144,4 +144,31 @@
   <data name="HotKeySet2" xml:space="preserve">
     <value>點擊設置快捷鍵</value>
   </data>
+  <data name="zh-Hans" xml:space="preserve">
+    <value>簡體中文</value>
+  </data>
+  <data name="zh-Hant" xml:space="preserve">
+    <value>繁體中文</value>
+  </data>
+  <data name="UseSystem" xml:space="preserve">
+    <value>跟随系统</value>
+  </data>
+  <data name="LanguageResartSign" xml:space="preserve">
+    <value>您必須重新啟動才能使用新的語言設定</value>
+  </data>
+  <data name="en" xml:space="preserve">
+    <value>英語</value>
+  </data>
+  <data name="fr" xml:space="preserve">
+    <value>法語</value>
+  </data>
+  <data name="ja" xml:space="preserve">
+    <value>日語</value>
+  </data>
+  <data name="ko" xml:space="preserve">
+    <value>韓語</value>
+  </data>
+  <data name="ru" xml:space="preserve">
+    <value>俄語</value>
+  </data>
 </root>

@@ -144,4 +144,31 @@
   <data name="HotKeySet2" xml:space="preserve">
     <value>Click to Set Hotkeys</value>
   </data>
+  <data name="zh-Hans" xml:space="preserve">
+    <value>Simplified Chinese</value>
+  </data>
+  <data name="zh-Hant" xml:space="preserve">
+    <value>Traditional Chinese</value>
+  </data>
+  <data name="UseSystem" xml:space="preserve">
+    <value>UseSystem</value>
+  </data>
+  <data name="LanguageResartSign" xml:space="preserve">
+    <value>You must restart to apply your new language settings</value>
+  </data>
+  <data name="en" xml:space="preserve">
+    <value>English</value>
+  </data>
+  <data name="fr" xml:space="preserve">
+    <value>French</value>
+  </data>
+  <data name="ja" xml:space="preserve">
+    <value>Japanese</value>
+  </data>
+  <data name="ko" xml:space="preserve">
+    <value>Korean</value>
+  </data>
+  <data name="ru" xml:space="preserve">
+    <value>Russian</value>
+  </data>
 </root>

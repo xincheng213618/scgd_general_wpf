@@ -23,6 +23,10 @@
           <source>正常</source>
           <target state="new">正常</target>
         </trans-unit>
+        <trans-unit id="LanguageResartSign" translate="yes" xml:space="preserve">
+          <source>您必须重新启动才能使用新的语言设置</source>
+          <target state="new">您必須重新啟動才能使用新的語言設定</target>
+        </trans-unit>
         <trans-unit id="MenuFile" translate="yes" xml:space="preserve">
           <source>文件(_F)</source>
           <target state="new">文件(_F)</target>
@@ -38,6 +42,38 @@
         <trans-unit id="MenuTool" translate="yes" xml:space="preserve">
           <source>工具(_T)</source>
           <target state="new">工具(_T)</target>
+        </trans-unit>
+        <trans-unit id="UseSystem" translate="yes" xml:space="preserve">
+          <source>跟随系统</source>
+          <target state="new">跟随系统</target>
+        </trans-unit>
+        <trans-unit id="en" translate="yes" xml:space="preserve">
+          <source>英语</source>
+          <target state="new">英語</target>
+        </trans-unit>
+        <trans-unit id="fr" translate="yes" xml:space="preserve">
+          <source>法语</source>
+          <target state="new">法語</target>
+        </trans-unit>
+        <trans-unit id="ja" translate="yes" xml:space="preserve">
+          <source>日语</source>
+          <target state="new">日語</target>
+        </trans-unit>
+        <trans-unit id="ko" translate="yes" xml:space="preserve">
+          <source>韩语</source>
+          <target state="new">韓語</target>
+        </trans-unit>
+        <trans-unit id="ru" translate="yes" xml:space="preserve">
+          <source>俄语</source>
+          <target state="new">俄語</target>
+        </trans-unit>
+        <trans-unit id="zh-Hans" translate="yes" xml:space="preserve">
+          <source>简体中文</source>
+          <target state="new">簡體中文</target>
+        </trans-unit>
+        <trans-unit id="zh-Hant" translate="yes" xml:space="preserve">
+          <source>繁体中文</source>
+          <target state="new">繁體中文</target>
         </trans-unit>
       </group>
     </body>

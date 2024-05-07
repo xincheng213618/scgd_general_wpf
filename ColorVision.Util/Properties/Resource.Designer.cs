@@ -70,51 +70,6 @@ namespace ColorVision.Util.Properties {
         }
         
         /// <summary>
-        ///   查找类似 英语 的本地化字符串。
-        /// </summary>
-        public static string en {
-            get {
-                return ResourceManager.GetString("en", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 法语 的本地化字符串。
-        /// </summary>
-        public static string fr {
-            get {
-                return ResourceManager.GetString("fr", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 日语 的本地化字符串。
-        /// </summary>
-        public static string ja {
-            get {
-                return ResourceManager.GetString("ja", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 韩语 的本地化字符串。
-        /// </summary>
-        public static string ko {
-            get {
-                return ResourceManager.GetString("ko", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 您必须重新启动才能使用新的语言设置 的本地化字符串。
-        /// </summary>
-        public static string LanguageResartSign {
-            get {
-                return ResourceManager.GetString("LanguageResartSign", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 最大化 的本地化字符串。
         /// </summary>
         public static string Maximize {
@@ -169,15 +124,6 @@ namespace ColorVision.Util.Properties {
         }
         
         /// <summary>
-        ///   查找类似 俄语 的本地化字符串。
-        /// </summary>
-        public static string ru {
-            get {
-                return ResourceManager.GetString("ru", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 主题 的本地化字符串。
         /// </summary>
         public static string Theme {
@@ -219,24 +165,6 @@ namespace ColorVision.Util.Properties {
         public static string UseSystem {
             get {
                 return ResourceManager.GetString("UseSystem", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 简体中文 的本地化字符串。
-        /// </summary>
-        public static string zh_Hans {
-            get {
-                return ResourceManager.GetString("zh-Hans", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 繁体中文 的本地化字符串。
-        /// </summary>
-        public static string zh_Hant {
-            get {
-                return ResourceManager.GetString("zh-Hant", resourceCulture);
             }
         }
     }

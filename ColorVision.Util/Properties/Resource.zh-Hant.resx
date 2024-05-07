@@ -117,9 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="LanguageResartSign" xml:space="preserve">
-    <value>您必須重新啟動才能使用新的語言設定</value>
-  </data>
   <data name="Maximize" xml:space="preserve">
     <value>最大化</value>
   </data>
@@ -135,24 +132,6 @@
   <data name="Restore" xml:space="preserve">
     <value>向下還原</value>
   </data>
-  <data name="zh-Hans" xml:space="preserve">
-    <value>簡體中文</value>
-  </data>
-  <data name="zh-Hant" xml:space="preserve">
-    <value>繁體中文</value>
-  </data>
-  <data name="ja" xml:space="preserve">
-    <value>日語</value>
-  </data>
-  <data name="ko" xml:space="preserve">
-    <value>韓語</value>
-  </data>
-  <data name="en" xml:space="preserve">
-    <value>英語</value>
-  </data>
-  <data name="ru" xml:space="preserve">
-    <value>俄語</value>
-  </data>
   <data name="ThemeLight" xml:space="preserve">
     <value>白色</value>
   </data>
@@ -167,9 +146,6 @@
   </data>
   <data name="ThemePink" xml:space="preserve">
     <value>粉紅色</value>
-  </data>
-  <data name="fr" xml:space="preserve">
-    <value>法語</value>
   </data>
   <data name="MenuTheme" xml:space="preserve">
     <value>主題(H)</value>

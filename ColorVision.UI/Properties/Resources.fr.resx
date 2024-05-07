@@ -144,4 +144,31 @@
   <data name="HotKeySet2" xml:space="preserve">
     <value>Cliquez pour définir les touches de raccourci</value>
   </data>
+  <data name="zh-Hans" xml:space="preserve">
+    <value>Chinois simplifié</value>
+  </data>
+  <data name="zh-Hant" xml:space="preserve">
+    <value>chinois traditionnel</value>
+  </data>
+  <data name="UseSystem" xml:space="preserve">
+    <value>Suivez le système</value>
+  </data>
+  <data name="LanguageResartSign" xml:space="preserve">
+    <value>Vous devez redémarrer pour utiliser les nouveaux paramètres de langue</value>
+  </data>
+  <data name="en" xml:space="preserve">
+    <value>Anglais</value>
+  </data>
+  <data name="fr" xml:space="preserve">
+    <value>Français</value>
+  </data>
+  <data name="ja" xml:space="preserve">
+    <value>Japonais</value>
+  </data>
+  <data name="ko" xml:space="preserve">
+    <value>coréen</value>
+  </data>
+  <data name="ru" xml:space="preserve">
+    <value>russe</value>
+  </data>
 </root>

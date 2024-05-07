@@ -1,24 +1,13 @@
-﻿using ColorVision.Common.Extension;
-using ColorVision.Common.Utilities;
-using ColorVision.UI.HotKey;
-using ColorVision.Language;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.MQTT;
 using ColorVision.MySql;
-using ColorVision.Services.Flow;
 using ColorVision.Services.RC;
 using ColorVision.Settings;
-using ColorVision.Themes;
-using ColorVision.UI;
 using log4net;
-using System;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Threading;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ColorVision

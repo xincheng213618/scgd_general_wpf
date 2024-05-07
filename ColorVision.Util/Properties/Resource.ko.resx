@@ -117,9 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="LanguageResartSign" xml:space="preserve">
-    <value>새로운 언어 설정을 적용하려면 재시작해야 합니다</value>
-  </data>
   <data name="Maximize" xml:space="preserve">
     <value>최대화</value>
   </data>
@@ -135,24 +132,6 @@
   <data name="Restore" xml:space="preserve">
     <value>아래로 복원</value>
   </data>
-  <data name="zh-Hans" xml:space="preserve">
-    <value>중국어 간체</value>
-  </data>
-  <data name="zh-Hant" xml:space="preserve">
-    <value>중국어 번체</value>
-  </data>
-  <data name="ja" xml:space="preserve">
-    <value>일본어</value>
-  </data>
-  <data name="ko" xml:space="preserve">
-    <value>한국인</value>
-  </data>
-  <data name="en" xml:space="preserve">
-    <value>영어</value>
-  </data>
-  <data name="ru" xml:space="preserve">
-    <value>러시아인</value>
-  </data>
   <data name="ThemeLight" xml:space="preserve">
     <value>밝은</value>
   </data>
@@ -167,9 +146,6 @@
   </data>
   <data name="ThemePink" xml:space="preserve">
     <value>분홍색</value>
-  </data>
-  <data name="fr" xml:space="preserve">
-    <value>프랑스 국민</value>
   </data>
   <data name="MenuTheme" xml:space="preserve">
     <value>테마(_H)</value>

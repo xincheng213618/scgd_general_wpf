@@ -117,9 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="LanguageResartSign" xml:space="preserve">
-    <value>You must restart to apply your new language settings</value>
-  </data>
   <data name="Maximize" xml:space="preserve">
     <value>Maximize</value>
   </data>
@@ -135,24 +132,6 @@
   <data name="Restore" xml:space="preserve">
     <value>Restore</value>
   </data>
-  <data name="zh-Hans" xml:space="preserve">
-    <value>Simplified Chinese</value>
-  </data>
-  <data name="zh-Hant" xml:space="preserve">
-    <value>Traditional Chinese</value>
-  </data>
-  <data name="ja" xml:space="preserve">
-    <value>Japanese</value>
-  </data>
-  <data name="ko" xml:space="preserve">
-    <value>Korean</value>
-  </data>
-  <data name="en" xml:space="preserve">
-    <value>English</value>
-  </data>
-  <data name="ru" xml:space="preserve">
-    <value>Russian</value>
-  </data>
   <data name="ThemeLight" xml:space="preserve">
     <value>Light</value>
   </data>
@@ -167,9 +146,6 @@
   </data>
   <data name="ThemePink" xml:space="preserve">
     <value>Pink</value>
-  </data>
-  <data name="fr" xml:space="preserve">
-    <value>French</value>
   </data>
   <data name="MenuTheme" xml:space="preserve">
     <value>T_heme</value>
