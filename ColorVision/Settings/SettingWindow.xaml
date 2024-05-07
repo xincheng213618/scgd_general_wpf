@@ -184,18 +184,6 @@
                             <StackPanel>
                                 <Border Style="{StaticResource BorderModuleArea}" >
                                     <StackPanel Margin="5">
-                                        <DockPanel Margin="5" >
-                                            <TextBlock Text="当前工程路径： " />
-                                            <TextBlock Text="{Binding SolutionConfig.FullName}"  />
-                                        </DockPanel>
-
-                                        <DockPanel Margin="5" >
-                                            <TextBlock>
-                                                <Run Text="{Binding SolutionManager.CurrentSolutionExplorer.DriveInfo.AvailableFreeSpace,Mode=OneWay,Converter={StaticResource MemorySizeConverter}}"/>
-                                                <Run Text="可用，共"/>
-                                                <Run Text="{Binding SolutionManager.CurrentSolutionExplorer.DriveInfo.TotalSize,Mode=OneWay,Converter={StaticResource MemorySizeConverter}}"/>
-                                            </TextBlock>
-                                        </DockPanel>
 
                                         <DockPanel Margin="5" >
                                             <Button  DockPanel.Dock="Right"  Content="{x:Static properties:Resource.Clear}"    />
