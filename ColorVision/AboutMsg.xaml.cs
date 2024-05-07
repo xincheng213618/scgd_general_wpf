@@ -1,7 +1,7 @@
 ﻿
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.HotKey;
+using ColorVision.UI.HotKey;
 using ColorVision.Properties;
 using ColorVision.Settings;
 using ColorVision.Themes.Controls;

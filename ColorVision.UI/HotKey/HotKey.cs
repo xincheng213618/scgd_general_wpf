@@ -2,7 +2,7 @@
 using System.Text;
 using System.Windows.Input;
 
-namespace ColorVision.HotKey
+namespace ColorVision.UI.HotKey
 {
 
 

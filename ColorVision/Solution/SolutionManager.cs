@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Extension;
-using ColorVision.HotKey;
+using ColorVision.UI.HotKey;
 using ColorVision.Common.MVVM;
 using ColorVision.RecentFile;
 using ColorVision.Settings;

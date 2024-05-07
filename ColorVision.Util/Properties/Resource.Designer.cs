@@ -88,51 +88,6 @@ namespace ColorVision.Util.Properties {
         }
         
         /// <summary>
-        ///   查找类似 全局 的本地化字符串。
-        /// </summary>
-        public static string GlobalMode {
-            get {
-                return ResourceManager.GetString("GlobalMode", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 冲突 的本地化字符串。
-        /// </summary>
-        public static string HotkeyConflict {
-            get {
-                return ResourceManager.GetString("HotkeyConflict", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 正常 的本地化字符串。
-        /// </summary>
-        public static string HotkeyNormal {
-            get {
-                return ResourceManager.GetString("HotkeyNormal", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 按键盘设置快捷键 的本地化字符串。
-        /// </summary>
-        public static string HotKeySet1 {
-            get {
-                return ResourceManager.GetString("HotKeySet1", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 点击设置快捷键 的本地化字符串。
-        /// </summary>
-        public static string HotKeySet2 {
-            get {
-                return ResourceManager.GetString("HotKeySet2", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 日语 的本地化字符串。
         /// </summary>
         public static string ja {

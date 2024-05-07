@@ -135,21 +135,6 @@
   <data name="Restore" xml:space="preserve">
     <value>リセットする</value>
   </data>
-  <data name="GlobalMode" xml:space="preserve">
-    <value>グローバル</value>
-  </data>
-  <data name="HotkeyConflict" xml:space="preserve">
-    <value>衝突</value>
-  </data>
-  <data name="HotkeyNormal" xml:space="preserve">
-    <value>正常</value>
-  </data>
-  <data name="HotKeySet1" xml:space="preserve">
-    <value>Set Hotkeys by Pressing Keys</value>
-  </data>
-  <data name="HotKeySet2" xml:space="preserve">
-    <value>クリックしてホットキーを設定する</value>
-  </data>
   <data name="zh-Hans" xml:space="preserve">
     <value>簡体字中国語</value>
   </data>

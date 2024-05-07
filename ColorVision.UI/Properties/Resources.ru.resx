@@ -129,4 +129,19 @@
   <data name="MenuHelp" xml:space="preserve">
     <value>помощь</value>
   </data>
+  <data name="GlobalMode" xml:space="preserve">
+    <value>общая ситуация</value>
+  </data>
+  <data name="HotkeyNormal" xml:space="preserve">
+    <value>нормальный</value>
+  </data>
+  <data name="HotkeyConflict" xml:space="preserve">
+    <value>конфликт</value>
+  </data>
+  <data name="HotKeySet1" xml:space="preserve">
+    <value>Нажмите сочетание клавиш настройки клавиатуры</value>
+  </data>
+  <data name="HotKeySet2" xml:space="preserve">
+    <value>Нажмите, чтобы установить сочетания клавиш</value>
+  </data>
 </root>

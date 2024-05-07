@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="zh-Hans" target-language="fr" original="COLORVISION.UTIL/PROPERTIES/RESOURCE.RESX">
+    <body>
+      <group id="COLORVISION.UTIL/PROPERTIES/RESOURCE.RESX" datatype="resx">
+        <trans-unit id="Close" translate="yes" xml:space="preserve">
+          <source>关闭</source>
+          <target state="new">fermeture</target>
+        </trans-unit>
+        <trans-unit id="LanguageResartSign" translate="yes" xml:space="preserve">
+          <source>您必须重新启动才能使用新的语言设置</source>
+          <target state="new">Vous devez redémarrer pour utiliser les nouveaux paramètres de langue</target>
+        </trans-unit>
+        <trans-unit id="Maximize" translate="yes" xml:space="preserve">
+          <source>最大化</source>
+          <target state="new">maximiser</target>
+        </trans-unit>
+        <trans-unit id="MenuLanguage" translate="yes" xml:space="preserve">
+          <source>语言(_L)</source>
+          <target state="new">Langue(L)</target>
+        </trans-unit>
+        <trans-unit id="MenuTheme" translate="yes" xml:space="preserve">
+          <source>主题(_H)</source>
+          <target state="new">Sujet (H)</target>
+        </trans-unit>
+        <trans-unit id="Minimize" translate="yes" xml:space="preserve">
+          <source>最小化</source>
+          <target state="new">minimiser</target>
+        </trans-unit>
+        <trans-unit id="Pin" translate="yes" xml:space="preserve">
+          <source>置顶</source>
+          <target state="new">épingler en haut</target>
+        </trans-unit>
+        <trans-unit id="Restore" translate="yes" xml:space="preserve">
+          <source>向下还原</source>
+          <target state="new">Restaurer</target>
+        </trans-unit>
+        <trans-unit id="Theme" translate="yes" xml:space="preserve">
+          <source>主题</source>
+          <target state="new">thème</target>
+        </trans-unit>
+        <trans-unit id="ThemeDark" translate="yes" xml:space="preserve">
+          <source>深色</source>
+          <target state="new">Sombre</target>
+        </trans-unit>
+        <trans-unit id="ThemeLight" translate="yes" xml:space="preserve">
+          <source>浅色</source>
+          <target state="new">couleur claire</target>
+        </trans-unit>
+        <trans-unit id="ThemePink" translate="yes" xml:space="preserve">
+          <source>粉色</source>
+          <target state="new">rose</target>
+        </trans-unit>
+        <trans-unit id="UseSystem" translate="yes" xml:space="preserve">
+          <source>跟随系统</source>
+          <target state="new">Suivez le système</target>
+        </trans-unit>
+        <trans-unit id="en" translate="yes" xml:space="preserve">
+          <source>英语</source>
+          <target state="new">Anglais</target>
+        </trans-unit>
+        <trans-unit id="fr" translate="yes" xml:space="preserve">
+          <source>法语</source>
+          <target state="new">Français</target>
+        </trans-unit>
+        <trans-unit id="ja" translate="yes" xml:space="preserve">
+          <source>日语</source>
+          <target state="new">Japonais</target>
+        </trans-unit>
+        <trans-unit id="ko" translate="yes" xml:space="preserve">
+          <source>韩语</source>
+          <target state="new">coréen</target>
+        </trans-unit>
+        <trans-unit id="ru" translate="yes" xml:space="preserve">
+          <source>俄语</source>
+          <target state="new">russe</target>
+        </trans-unit>
+        <trans-unit id="zh-Hans" translate="yes" xml:space="preserve">
+          <source>简体中文</source>
+          <target state="new">Chinois simplifié</target>
+        </trans-unit>
+        <trans-unit id="zh-Hant" translate="yes" xml:space="preserve">
+          <source>繁体中文</source>
+          <target state="new">chinois traditionnel</target>
+        </trans-unit>
+      </group>
+    </body>
+  </file>
+</xliff>

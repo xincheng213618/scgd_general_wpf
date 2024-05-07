@@ -1,4 +1,4 @@
-﻿using ColorVision.HotKey;
+﻿using ColorVision.UI.HotKey;
 using ColorVision.MQTT;
 using ColorVision.MySql;
 using ColorVision.Services.RC;

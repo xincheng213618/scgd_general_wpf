@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CS4014
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.HotKey;
+using ColorVision.UI.HotKey;
 using ColorVision.MQTT;
 using ColorVision.Properties;
 using ColorVision.Services.Msg;

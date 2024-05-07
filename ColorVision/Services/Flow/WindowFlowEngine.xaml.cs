@@ -10,7 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Services.Templates;
-using ColorVision.HotKey;
+using ColorVision.UI.HotKey;
 using ColorVision.Settings;
 using ColorVision.UI;
 using ColorVision.Common.MVVM;

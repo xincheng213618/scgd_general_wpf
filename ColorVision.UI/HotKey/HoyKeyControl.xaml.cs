@@ -5,14 +5,14 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 
-namespace ColorVision.HotKey
+namespace ColorVision.UI.HotKey
 {
 
     public sealed class BoolToStringConverer : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            return (value is bool boll) && (boll) ? Util.Properties.Resource.HotkeyNormal : Util.Properties.Resource.HotkeyNormal;
+            return (value is bool boll) && (boll) ? Properties.Resources.HotkeyNormal : Properties.Resources.HotkeyNormal;
 
         }
 
@@ -111,14 +111,14 @@ namespace ColorVision.HotKey
         private void HotkeyTextBox_GotFocus(object sender, RoutedEventArgs e)
         {
             HotkeyTextBox1.Visibility = Visibility.Visible;
-            HotkeyTextBox1.Text = Util.Properties.Resource.HotKeySet1;
+            HotkeyTextBox1.Text = Properties.Resources.HotKeySet1;
         }
 
         private void HotkeyTextBox_LostFocus(object sender, RoutedEventArgs e)
         {
             if (HotkeyTextBox.Text == "<None>")
             {
-                HotkeyTextBox1.Text = Util.Properties.Resource.HotKeySet2;
+                HotkeyTextBox1.Text = Properties.Resources.HotKeySet2;
             }
             else
             {

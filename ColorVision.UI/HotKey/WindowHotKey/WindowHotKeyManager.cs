@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Windows.Controls;
 
-namespace ColorVision.HotKey.WindowHotKey
+namespace ColorVision.UI.HotKey.WindowHotKey
 {
 
 

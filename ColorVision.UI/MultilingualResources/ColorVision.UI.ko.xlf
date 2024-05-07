@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="zh-Hans" target-language="ko" original="COLORVISION.UI/PROPERTIES/RESOURCES.RESX">
+    <body>
+      <group id="COLORVISION.UI/PROPERTIES/RESOURCES.RESX" datatype="resx">
+        <trans-unit id="GlobalMode" translate="yes" xml:space="preserve">
+          <source>全局</source>
+          <target state="new">글로벌</target>
+        </trans-unit>
+        <trans-unit id="HotKeySet1" translate="yes" xml:space="preserve">
+          <source>按键盘设置快捷键</source>
+          <target state="new">Set Hotkeys by Pressing Keys</target>
+        </trans-unit>
+        <trans-unit id="HotKeySet2" translate="yes" xml:space="preserve">
+          <source>点击设置快捷键</source>
+          <target state="new">클릭하여 핫키 설정하기</target>
+        </trans-unit>
+        <trans-unit id="HotkeyConflict" translate="yes" xml:space="preserve">
+          <source>冲突</source>
+          <target state="new">충돌</target>
+        </trans-unit>
+        <trans-unit id="HotkeyNormal" translate="yes" xml:space="preserve">
+          <source>正常</source>
+          <target state="new">정상</target>
+        </trans-unit>
+        <trans-unit id="MenuFile" translate="yes" xml:space="preserve">
+          <source>文件(_F)</source>
+          <target state="new">파일 (_F)</target>
+        </trans-unit>
+        <trans-unit id="MenuHelp" translate="yes" xml:space="preserve">
+          <source>帮助(_H)</source>
+          <target state="new">도움 (_H)</target>
+        </trans-unit>
+        <trans-unit id="MenuTemplate" translate="yes" xml:space="preserve">
+          <source>模板(_T)</source>
+          <target state="new">템플릿(T)</target>
+        </trans-unit>
+        <trans-unit id="MenuTool" translate="yes" xml:space="preserve">
+          <source>工具(_T)</source>
+          <target state="new">도구 (_T)</target>
+        </trans-unit>
+      </group>
+    </body>
+  </file>
+</xliff>

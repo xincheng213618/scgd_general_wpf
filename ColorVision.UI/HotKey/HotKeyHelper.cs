@@ -1,5 +1,5 @@
-﻿using ColorVision.HotKey.GlobalHotKey;
-using ColorVision.HotKey.WindowHotKey;
+﻿using ColorVision.UI.HotKey.GlobalHotKey;
+using ColorVision.UI.HotKey.WindowHotKey;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -8,7 +8,7 @@ using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.HotKey
+namespace ColorVision.UI.HotKey
 {
     public interface IHotKey
     {

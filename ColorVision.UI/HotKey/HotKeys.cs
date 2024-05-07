@@ -1,5 +1,5 @@
-﻿using ColorVision.HotKey.GlobalHotKey;
-using ColorVision.HotKey.WindowHotKey;
+﻿using ColorVision.UI.HotKey.GlobalHotKey;
+using ColorVision.UI.HotKey.WindowHotKey;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -7,15 +7,8 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.HotKey
+namespace ColorVision.UI.HotKey
 {
-
-    public static partial class HotKeysExtension
-    {
-
-
-    }
-
 
     [Serializable]
     public class HotKeys : INotifyPropertyChanged

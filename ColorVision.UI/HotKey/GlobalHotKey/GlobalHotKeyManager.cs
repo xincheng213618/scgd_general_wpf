@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 
-namespace ColorVision.HotKey.GlobalHotKey
+namespace ColorVision.UI.HotKey.GlobalHotKey
 {
     public class GlobalHotKeyManager
     {

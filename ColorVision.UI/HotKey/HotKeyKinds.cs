@@ -1,4 +1,4 @@
-﻿namespace ColorVision.HotKey
+﻿namespace ColorVision.UI.HotKey
 {
     public enum HotKeyKinds
     {

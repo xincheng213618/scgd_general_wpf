@@ -2,7 +2,7 @@
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.HotKey.WindowHotKey
+namespace ColorVision.UI.HotKey.WindowHotKey
 {
     public class WindowHotKey
     {

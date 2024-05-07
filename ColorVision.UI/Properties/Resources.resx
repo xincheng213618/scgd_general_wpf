@@ -109,4 +109,19 @@
   <data name="MenuHelp" xml:space="preserve">
     <value>帮助(_H)</value>
   </data>
+  <data name="GlobalMode" xml:space="preserve">
+    <value>全局</value>
+  </data>
+  <data name="HotkeyNormal" xml:space="preserve">
+    <value>正常</value>
+  </data>
+  <data name="HotkeyConflict" xml:space="preserve">
+    <value>冲突</value>
+  </data>
+  <data name="HotKeySet1" xml:space="preserve">
+    <value>按键盘设置快捷键</value>
+  </data>
+  <data name="HotKeySet2" xml:space="preserve">
+    <value>点击设置快捷键</value>
+  </data>
 </root>

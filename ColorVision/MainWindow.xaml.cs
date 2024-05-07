@@ -1,6 +1,6 @@
 ﻿using ColorVision.Adorners;
 using ColorVision.Common.Utilities;
-using ColorVision.HotKey;
+using ColorVision.UI.HotKey;
 using ColorVision.MySql;
 using ColorVision.Projects;
 using ColorVision.Services.Flow;

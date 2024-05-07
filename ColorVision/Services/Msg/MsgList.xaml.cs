@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.HotKey;
+using ColorVision.UI.HotKey;
 using ColorVision.MQTT;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;

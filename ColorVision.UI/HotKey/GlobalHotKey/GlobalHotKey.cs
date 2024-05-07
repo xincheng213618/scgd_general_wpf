@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Input;
 using System.Windows.Interop;
 
-namespace ColorVision.HotKey.GlobalHotKey
+namespace ColorVision.UI.HotKey.GlobalHotKey
 {
 
     /// <summary>

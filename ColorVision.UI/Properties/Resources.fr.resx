@@ -129,4 +129,19 @@
   <data name="MenuHelp" xml:space="preserve">
     <value>Aide(H)</value>
   </data>
+  <data name="GlobalMode" xml:space="preserve">
+    <value>situation globale</value>
+  </data>
+  <data name="HotkeyNormal" xml:space="preserve">
+    <value>normale</value>
+  </data>
+  <data name="HotkeyConflict" xml:space="preserve">
+    <value>conflit</value>
+  </data>
+  <data name="HotKeySet1" xml:space="preserve">
+    <value>Définir des raccourcis clavier</value>
+  </data>
+  <data name="HotKeySet2" xml:space="preserve">
+    <value>Cliquez pour définir les touches de raccourci</value>
+  </data>
 </root>
