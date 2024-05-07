@@ -178,8 +178,8 @@ namespace ColorVision.Services.Templates
                     break;
                 case TemplateType.BuildPOIParmam:
                     if (IsReLoad)
-                        TemplateControl.LoadParams(TemplateControl.BuildPOIParams);
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.BuildPOIParams);
+                        TemplateControl.LoadParams(BuildPOIParam.BuildPOIParams);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(BuildPOIParam.BuildPOIParams);
                     Title = "BuildPOI算法设置";
                     break;
                 case TemplateType.SensorHeYuan:
@@ -437,7 +437,7 @@ namespace ColorVision.Services.Templates
                     break;
                 case TemplateType.BuildPOIParmam:
                     BuildPOIParam? buildPOIParam = TemplateControl.AddParamMode<BuildPOIParam>(ModMasterType.BuildPOI, TextBox1.Text);
-                    if (buildPOIParam != null) CreateNewTemplate(TemplateControl.BuildPOIParams, TextBox1.Text, buildPOIParam);
+                    if (buildPOIParam != null) CreateNewTemplate(BuildPOIParam.BuildPOIParams, TextBox1.Text, buildPOIParam);
                     else MessageBox.Show("数据库创建BuildPOI模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
                 case TemplateType.CameraExposureParam:
@@ -600,7 +600,7 @@ namespace ColorVision.Services.Templates
                             TemplateDel(TemplateControl.MeasureParams);
                             break;
                         case TemplateType.BuildPOIParmam:
-                            TemplateDel(TemplateControl.BuildPOIParams);
+                            TemplateDel(BuildPOIParam.BuildPOIParams);
                             break;
                         case TemplateType.CameraExposureParam:
                             TemplateDel(CameraExposureParam.CameraExposureParams);
@@ -995,7 +995,7 @@ namespace ColorVision.Services.Templates
                         BuildPOIParam? buildPOIParam = JsonConvert.DeserializeObject<BuildPOIParam>(File.ReadAllText(ofd.FileName));
                         if (buildPOIParam != null)
                         {
-                            CreateNewTemplate(TemplateControl.BuildPOIParams, name, buildPOIParam);
+                            CreateNewTemplate(BuildPOIParam.BuildPOIParams, name, buildPOIParam);
                             TemplateControl.GetInstance().Save2DB(buildPOIParam);
                         }
                         else MessageBox.Show("数据库创建BuildPOI模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);

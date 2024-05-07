@@ -6,6 +6,7 @@ using ColorVision.Services.Templates.POI;
 using ColorVision.Settings;
 using ColorVision.UI;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -54,6 +55,8 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
 
     public class BuildPOIParam : ParamBase
     {
+        public static ObservableCollection<TemplateModel<BuildPOIParam>> BuildPOIParams { get; set; } =  new ObservableCollection<TemplateModel<BuildPOIParam>>();
+
         public BuildPOIParam() { }
 
         public BuildPOIParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)

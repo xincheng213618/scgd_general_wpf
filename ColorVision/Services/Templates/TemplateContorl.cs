@@ -60,8 +60,6 @@ namespace ColorVision.Services.Templates
             LedCheckParams = new ObservableCollection<TemplateModel<LedCheckParam>>();
             FocusPointsParams = new ObservableCollection<TemplateModel<FocusPointsParam>>();
 
-            BuildPOIParams = new ObservableCollection<TemplateModel<BuildPOIParam>>();
-
             ConfigHandler.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
             {
                 if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
@@ -105,7 +103,7 @@ namespace ColorVision.Services.Templates
             LoadParams(DistortionParams);
             LoadParams(FocusPointsParams);
             LoadParams(LedCheckParams);
-            LoadParams(BuildPOIParams);
+            LoadModParam(BuildPOIParam.BuildPOIParams, ModMasterType.BuildPOI);
             LoadModParam(SensorHeYuan.SensorHeYuans, "Sensor.HeYuan");
             LoadModParam(CameraExposureParam.CameraExposureParams, "camera_exp_time");
 
@@ -160,9 +158,6 @@ namespace ColorVision.Services.Templates
                     break;
                 case System.Type t when t == typeof(MeasureParam):
                     LoadMeasureParams();
-                    break;
-                case System.Type t when t == typeof(BuildPOIParam):
-                    LoadModParam(BuildPOIParams, ModMasterType.BuildPOI);
                     break;
                 default:
                     break;
@@ -293,7 +288,7 @@ namespace ColorVision.Services.Templates
                     Save(LedCheckParams, ModMasterType.LedCheck);
                     break;
                 case TemplateType.BuildPOIParmam:
-                    Save(BuildPOIParams, ModMasterType.BuildPOI);
+                    Save(BuildPOIParam.BuildPOIParams, ModMasterType.BuildPOI);
                     break;
                 case TemplateType.SensorHeYuan:
                     Save(SensorHeYuan.SensorHeYuans, ModMasterType.SensorHeYuan);
@@ -703,8 +698,6 @@ namespace ColorVision.Services.Templates
 
         public ObservableCollection<TemplateModel<LedCheckParam>> LedCheckParams { get; set; }
         public ObservableCollection<TemplateModel<FocusPointsParam>> FocusPointsParams { get; set; }
-
-        public ObservableCollection<TemplateModel<BuildPOIParam>> BuildPOIParams { get; set; }
 
         public static ObservableCollection<TemplateModelBase> GetTemplateModelBases<T>(ObservableCollection<TemplateModel<T>> templateModels) where T : ParamBase
         {

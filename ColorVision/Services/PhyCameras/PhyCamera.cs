@@ -174,8 +174,10 @@ namespace ColorVision.Services.PhyCameras
 
         #region License
 
-        public CameraLicenseModel? CameraLicenseModel { get => _CameraLicenseModel; set { _CameraLicenseModel = value; NotifyPropertyChanged(); } }
+        public CameraLicenseModel? CameraLicenseModel { get => _CameraLicenseModel; set { _CameraLicenseModel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsLincensed)); } }
         private CameraLicenseModel? _CameraLicenseModel;
+
+        public bool IsLincensed { get => CameraLicenseModel != null;  }
 
         public void RefreshLincense()
         {

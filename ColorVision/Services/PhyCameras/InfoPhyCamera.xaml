@@ -33,6 +33,7 @@
                 </Grid.ColumnDefinitions>
                 <Border  Grid.Row="0" Background="{DynamicResource RegionBrush}" CornerRadius="5" >
                     <DockPanel  Margin="10,5">
+                        <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" Command="{Binding UploadLincenseCommand}" IsChecked="{Binding IsLincensed,Mode=OneWay}"/>
                         <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="20"/>
                     </DockPanel>
                 </Border>
@@ -66,7 +67,9 @@
                                 <Button Content="校正模板管理" Margin="5" Height="100" Width="180" Command="{Binding CalibrationEditCommand}"/>
                                 <Button Content="资源组管理" Margin="5" Height="100" Width="180" Command="{Binding ResourceManagerCommand}"/>
                             </UniformGrid>
-                            <TextBlock  Text="{Binding SysResourceModel.Code}" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+                            <StackPanel  HorizontalAlignment="Right" VerticalAlignment="Bottom">
+                                <TextBlock  Text="{Binding SysResourceModel.Code}" />
+                            </StackPanel>
                         </Grid>
 
                     </TabItem>

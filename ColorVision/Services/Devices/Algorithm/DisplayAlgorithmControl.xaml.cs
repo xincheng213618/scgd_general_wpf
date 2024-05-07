@@ -8,7 +8,6 @@ using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Themes;
 using log4net;
-using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
@@ -24,6 +23,7 @@ using ColorVision.Services.Devices.Calibration;
 using CVCommCore.CVAlgorithm;
 using ColorVision.UI;
 using ColorVision.Services.Templates.POI;
+using ColorVision.Services.Devices.Algorithm.Templates;
 
 namespace ColorVision.Services.Devices.Algorithm
 {
@@ -87,17 +87,17 @@ namespace ColorVision.Services.Devices.Algorithm
         {
             switch (data.ResultType)
             {
-                case AlgorithmResultType.POI_XY_UV:
-                case AlgorithmResultType.POI_Y:
+                case MQTTMessageLib.Algorithm.AlgorithmResultType.POI_XY_UV:
+                case MQTTMessageLib.Algorithm.AlgorithmResultType.POI_Y:
                     doOpen(data.FilePath, FileExtType.CIE);
                     break;
-                case AlgorithmResultType.SFR:
-                case AlgorithmResultType.MTF:
-                case AlgorithmResultType.FOV:
-                case AlgorithmResultType.Distortion:
+                case MQTTMessageLib.Algorithm.AlgorithmResultType.SFR:
+                case MQTTMessageLib.Algorithm.AlgorithmResultType.MTF:
+                case MQTTMessageLib.Algorithm.AlgorithmResultType.FOV:
+                case MQTTMessageLib.Algorithm.AlgorithmResultType.Distortion:
                     doOpenLocal(data.FilePath, FileExtType.Src);
                     break;
-                case AlgorithmResultType.Ghost:
+                case MQTTMessageLib.Algorithm.AlgorithmResultType.Ghost:
                     doOpenLocal(data.FilePath, FileExtType.Tif);
                     break;
                 default:
@@ -227,7 +227,7 @@ namespace ColorVision.Services.Devices.Algorithm
             ComboxFocusPointsTemplate.ItemsSource = TemplateControl.GetInstance().FocusPointsParams;
             ComboxFocusPointsTemplate.SelectedIndex = 0;
 
-            ComboxBuildPoiTemplate.ItemsSource = TemplateControl.GetInstance().BuildPOIParams;
+            ComboxBuildPoiTemplate.ItemsSource = BuildPOIParam.BuildPOIParams;
             ComboxBuildPoiTemplate.SelectedIndex = 0;
 
             this.AddViewConfig(View, ComboxView);
@@ -392,7 +392,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
-                var pm = TemplateControl.GetInstance().BuildPOIParams[ComboxBuildPoiTemplate.SelectedIndex].Value;
+                var pm = BuildPOIParam.BuildPOIParams[ComboxBuildPoiTemplate.SelectedIndex].Value;
                 var Params = new Dictionary<string, object>();
                 POIPointTypes POILayoutReq;
                 if ((bool)CircleChecked.IsChecked)
