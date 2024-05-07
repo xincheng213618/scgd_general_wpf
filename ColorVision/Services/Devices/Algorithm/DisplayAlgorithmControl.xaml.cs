@@ -200,31 +200,31 @@ namespace ColorVision.Services.Devices.Algorithm
             ComboxPoiTemplate.ItemsSource = PoiParam.Params;
             ComboxPoiTemplate.SelectedIndex = 0;
 
-            ComboxMTFTemplate.ItemsSource = TemplateControl.GetInstance().MTFParams;
+            ComboxMTFTemplate.ItemsSource = MTFParam.MTFParams;
             ComboxMTFTemplate.SelectedIndex = 0;
 
             ComboxPoiTemplate2.ItemsSource = PoiParam.Params;
             ComboxPoiTemplate2.SelectedIndex = 0;
 
-            ComboxSFRTemplate.ItemsSource = TemplateControl.GetInstance().SFRParams;
+            ComboxSFRTemplate.ItemsSource = SFRParam.SFRParams;
             ComboxSFRTemplate.SelectedIndex = 0;
 
-            ComboxGhostTemplate.ItemsSource = TemplateControl.GetInstance().GhostParams;
+            ComboxGhostTemplate.ItemsSource = GhostParam.GhostParams;
             ComboxGhostTemplate.SelectedIndex = 0;
 
-            ComboxFOVTemplate.ItemsSource = TemplateControl.GetInstance().FOVParams;
+            ComboxFOVTemplate.ItemsSource = FOVParam.FOVParams;
             ComboxFOVTemplate.SelectedIndex = 0;
 
-            ComboxDistortionTemplate.ItemsSource = TemplateControl.GetInstance().DistortionParams;
+            ComboxDistortionTemplate.ItemsSource = DistortionParam.DistortionParams;
             ComboxDistortionTemplate.SelectedIndex = 0;
 
-            ComboxLedCheckTemplate.ItemsSource = TemplateControl.GetInstance().LedCheckParams;  
+            ComboxLedCheckTemplate.ItemsSource = LedCheckParam.LedCheckParams;  
             ComboxLedCheckTemplate.SelectedIndex = 0;
 
             ComboxPoiTemplate1.ItemsSource = PoiParam.Params.CreatEmpty();
             ComboxPoiTemplate1.SelectedIndex = 0;
 
-            ComboxFocusPointsTemplate.ItemsSource = TemplateControl.GetInstance().FocusPointsParams;
+            ComboxFocusPointsTemplate.ItemsSource = FocusPointsParam.FocusPointsParams;
             ComboxFocusPointsTemplate.SelectedIndex = 0;
 
             ComboxBuildPoiTemplate.ItemsSource = BuildPOIParam.BuildPOIParams;
@@ -343,7 +343,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
-                var pm = TemplateControl.GetInstance().MTFParams[ComboxMTFTemplate.SelectedIndex].Value;
+                var pm = MTFParam.MTFParams[ComboxMTFTemplate.SelectedIndex].Value;
                 var poi_pm = PoiParam.Params[ComboxPoiTemplate2.SelectedIndex].Value;
                 TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
 
@@ -368,7 +368,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
-                var pm = TemplateControl.GetInstance().SFRParams[ComboxSFRTemplate.SelectedIndex].Value;
+                var pm = SFRParam.SFRParams[ComboxSFRTemplate.SelectedIndex].Value;
                 MsgRecord msg = null;
                 TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
                 if (imageDevice != null) msg = Service.SFR(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, imgFileName, fileExtType, pm.Id, ComboxSFRTemplate.Text, sn);
@@ -444,7 +444,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
-                var pm = TemplateControl.GetInstance().GhostParams[ComboxGhostTemplate.SelectedIndex].Value;
+                var pm = GhostParam.GhostParams[ComboxGhostTemplate.SelectedIndex].Value;
                 TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
                 MsgRecord msg = null;
                 if (imageDevice != null) msg= Service.Ghost(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, imgFileName, fileExtType, pm.Id, ComboxGhostTemplate.Text, sn);
@@ -466,7 +466,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
-                var pm = TemplateControl.GetInstance().DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value;
+                var pm = DistortionParam.DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value;
                 TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
                 MsgRecord msg = null;
                 if (imageDevice != null) msg= Service.Distortion(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, imgFileName, fileExtType, pm.Id, ComboxDistortionTemplate.Text, sn);
@@ -522,7 +522,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
-                var pm = TemplateControl.GetInstance().FOVParams[ComboxFOVTemplate.SelectedIndex].Value;
+                var pm = FOVParam.FOVParams[ComboxFOVTemplate.SelectedIndex].Value;
                 TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
                 MsgRecord msg = null;
                 if (imageDevice != null) msg = Service.FOV(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, imgFileName, fileExtType, pm.Id, ComboxFOVTemplate.Text, sn);
@@ -668,7 +668,6 @@ namespace ColorVision.Services.Devices.Algorithm
             }
         }
 
-
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
@@ -688,7 +687,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
-                var pm = TemplateControl.GetInstance().FocusPointsParams[ComboxFocusPointsTemplate.SelectedIndex].Value;
+                var pm = FocusPointsParam.FocusPointsParams[ComboxFocusPointsTemplate.SelectedIndex].Value;
                 TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
                 MsgRecord ss = null;
                 if (imageDevice != null) ss = Service.FocusPoints(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, ImageFile.Text, fileExtType, pm.Id, ComboxFocusPointsTemplate.Text, sn);
@@ -717,7 +716,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
-                var pm = TemplateControl.GetInstance().LedCheckParams[ComboxLedCheckTemplate.SelectedIndex].Value;
+                var pm = LedCheckParam.LedCheckParams[ComboxLedCheckTemplate.SelectedIndex].Value;
                 var poi_pm = PoiParam.Params[ComboxPoiTemplate1.SelectedIndex].Value;
                 TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
                 MsgRecord ss = null;

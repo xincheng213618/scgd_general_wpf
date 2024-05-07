@@ -8,6 +8,7 @@ using ColorVision.Settings;
 using ColorVision.UI;
 using cvColorVision;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 
@@ -39,6 +40,8 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
 
     public class MTFParam : ParamBase
     {
+        public static ObservableCollection<TemplateModel<MTFParam>> MTFParams { get; set; } = new ObservableCollection<TemplateModel<MTFParam>>();
+
         public MTFParam() { }
         public MTFParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
         {

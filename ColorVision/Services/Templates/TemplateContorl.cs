@@ -48,23 +48,12 @@ namespace ColorVision.Services.Templates
         {
             AoiParams = new ObservableCollection<TemplateModel<AOIParam>>();
             PGParams = new ObservableCollection<TemplateModel<PGParam>>();
-            LedReusltParams = new ObservableCollection<TemplateModel<LedReusltParam>>();
             SMUParams = new ObservableCollection<TemplateModel<SMUParam>>();
             FlowParams = new ObservableCollection<TemplateModel<FlowParam>>();
             MeasureParams = new ObservableCollection<TemplateModel<MeasureParam>>();
-            MTFParams = new ObservableCollection<TemplateModel<MTFParam>>();
-            SFRParams = new ObservableCollection<TemplateModel<SFRParam>>();
-            FOVParams = new ObservableCollection<TemplateModel<FOVParam>>();
-            GhostParams = new ObservableCollection<TemplateModel<GhostParam>>();
-            DistortionParams = new ObservableCollection<TemplateModel<DistortionParam>>();
-            LedCheckParams = new ObservableCollection<TemplateModel<LedCheckParam>>();
-            FocusPointsParams = new ObservableCollection<TemplateModel<FocusPointsParam>>();
 
             ConfigHandler.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
             {
-                if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
-                    CSVSave();
-
                 Thread thread = new Thread(async () =>
                 {
                     if (!MySqlControl.GetInstance().IsConnect)
@@ -85,24 +74,26 @@ namespace ColorVision.Services.Templates
             {
                 if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
                     return;
-                CSVSave();
             };
         }
         private void Init()
         {
-            LoadParams(LedReusltParams);
-            LoadParams(PoiParam.Params);
             LoadParams(FlowParams);
             LoadParams(AoiParams);
             LoadParams(SMUParams);
             LoadParams(PGParams);
-            LoadParams(SFRParams);
-            LoadParams(MTFParams);
-            LoadParams(FOVParams);
-            LoadParams(GhostParams);
-            LoadParams(DistortionParams);
-            LoadParams(FocusPointsParams);
-            LoadParams(LedCheckParams);
+
+
+            LoadParams(LedReusltParam.LedReusltParams);
+            LoadModParam(LedCheckParam.LedCheckParams, ModMasterType.LedCheck);
+
+            LoadModParam(FocusPointsParam.FocusPointsParams, ModMasterType.FocusPoints);
+            LoadModParam(PoiParam.Params, ModMasterType.POI);
+            LoadModParam(SFRParam.SFRParams, ModMasterType.SFR);
+            LoadModParam(MTFParam.MTFParams, ModMasterType.MTF);
+            LoadModParam(FOVParam.FOVParams, ModMasterType.FOV);
+            LoadModParam(GhostParam.GhostParams, ModMasterType.Ghost);
+            LoadModParam(DistortionParam.DistortionParams, ModMasterType.Distortion);
             LoadModParam(BuildPOIParam.BuildPOIParams, ModMasterType.BuildPOI);
             LoadModParam(SensorHeYuan.SensorHeYuans, "Sensor.HeYuan");
             LoadModParam(CameraExposureParam.CameraExposureParams, "camera_exp_time");
@@ -114,17 +105,11 @@ namespace ColorVision.Services.Templates
             {
                 case System.Type t when t == typeof(CalibrationParam):
                     break;
-                case System.Type t when t == typeof(LedReusltParam):
-                    IDefault(FileNameLedJudgeParams, new LedReusltParam());
-                    DicTemplate.TryAdd("LedReuslt", LedReusltParams);
-                    break;
                 case System.Type t when t == typeof(PoiParam):
                     LoadPoiParam();
-                    DicTemplate.TryAdd("Poi", PoiParam.Params);
                     break;
                 case System.Type t when t == typeof(FlowParam):
                     LoadFlowParam();
-                    DicTemplate.TryAdd("Flow", FlowParams);
                     break;
                 case System.Type t when t == typeof(AOIParam):
                     LoadModParam(AoiParams, ModMasterType.Aoi);
@@ -136,30 +121,31 @@ namespace ColorVision.Services.Templates
                     LoadModParam(PGParams, ModMasterType.PG);
                     break;
                 case System.Type t when t == typeof(SFRParam):
-                    LoadModParam(SFRParams, ModMasterType.SFR);
+                    LoadModParam(SFRParam.SFRParams, ModMasterType.SFR);
                     break;
                 case System.Type t when t == typeof(MTFParam):
-                    LoadModParam(MTFParams, ModMasterType.MTF);
+                    LoadModParam(MTFParam.MTFParams, ModMasterType.MTF);
                     break;
                 case System.Type t when t == typeof(FOVParam):
-                    LoadModParam(FOVParams, ModMasterType.FOV);
+                    LoadModParam(FOVParam.FOVParams, ModMasterType.FOV);
                     break;
                 case System.Type t when t == typeof(GhostParam):
-                    LoadModParam(GhostParams, ModMasterType.Ghost);
+                    LoadModParam(GhostParam.GhostParams, ModMasterType.Ghost);
                     break;
                 case System.Type t when t == typeof(DistortionParam):
-                    LoadModParam(DistortionParams, ModMasterType.Distortion);
+                    LoadModParam(DistortionParam.DistortionParams, ModMasterType.Distortion);
                     break;
                 case System.Type t when t == typeof(FocusPointsParam):
-                    LoadModParam(FocusPointsParams, ModMasterType.FocusPoints);
+                    LoadModParam(FocusPointsParam.FocusPointsParams, ModMasterType.FocusPoints);
                     break;
                 case System.Type t when t == typeof(LedCheckParam):
-                    LoadModParam(LedCheckParams, ModMasterType.LedCheck);
+                    LoadModParam(LedCheckParam.LedCheckParams, ModMasterType.LedCheck);
                     break;
                 case System.Type t when t == typeof(MeasureParam):
                     LoadMeasureParams();
                     break;
-                default:
+                case System.Type t when t == typeof(BuildPOIParam):
+                    LoadModParam(BuildPOIParam.BuildPOIParams, ModMasterType.LedCheck);
                     break;
 
             }
@@ -214,34 +200,11 @@ namespace ColorVision.Services.Templates
             return Params;
         }
 
-
-        private Dictionary<string, object> DicTemplate = new Dictionary<string, object>();
-
-        public void CSVSave()
-        {
-            foreach (var item in DicTemplate)
-            {
-                if (Directory.Exists(SolutionManager.GetInstance().CurrentSolution.FullPath))
-                {
-                    CfgFile.Save(SolutionManager.GetInstance().CurrentSolution.FullPath + "\\CFG\\" + item.Key + ".cfg", item.Value);
-                }
-                else
-                {
-                    CfgFile.Save(item.Key, item.Value);
-
-                }
-            }
-        }
-
-
         public void Save(TemplateType windowTemplateType)
         {
             switch (windowTemplateType)
             {
                 case TemplateType.Calibration:
-                    break;
-                case TemplateType.LedResult:
-                    SaveDefault(FileNameLedJudgeParams, LedReusltParams);
                     break;
                 case TemplateType.PoiParam:
                     foreach (var item in PoiParam.Params)
@@ -267,25 +230,25 @@ namespace ColorVision.Services.Templates
                     Save(SMUParams, ModMasterType.SMU);
                     break;
                 case TemplateType.MTFParam:
-                    Save(MTFParams, ModMasterType.MTF);
+                    Save(MTFParam.MTFParams, ModMasterType.MTF);
                     break;
                 case TemplateType.SFRParam:
-                    Save(SFRParams, ModMasterType.SFR);
+                    Save(SFRParam.SFRParams, ModMasterType.SFR);
                     break;
                 case TemplateType.FOVParam:
-                    Save(FOVParams, ModMasterType.FOV);
+                    Save(FOVParam.FOVParams, ModMasterType.FOV);
                     break;
                 case TemplateType.GhostParam:
-                    Save(GhostParams, ModMasterType.Ghost);
+                    Save(GhostParam.GhostParams, ModMasterType.Ghost);
                     break;
                 case TemplateType.DistortionParam:
-                    Save(DistortionParams, ModMasterType.Distortion);
+                    Save(DistortionParam.DistortionParams, ModMasterType.Distortion);
                     break;
                 case TemplateType.FocusPointsParam:
-                    Save(FocusPointsParams, ModMasterType.FocusPoints);
+                    Save(FocusPointsParam.FocusPointsParams, ModMasterType.FocusPoints);
                     break;
                 case TemplateType.LedCheckParam:
-                    Save(LedCheckParams, ModMasterType.LedCheck);
+                    Save(LedCheckParam.LedCheckParams, ModMasterType.LedCheck);
                     break;
                 case TemplateType.BuildPOIParmam:
                     Save(BuildPOIParam.BuildPOIParams, ModMasterType.BuildPOI);
@@ -562,7 +525,6 @@ namespace ColorVision.Services.Templates
 
         private void LoadModParam<T>(ObservableCollection<TemplateModel<T>> ParamModes, string ModeType) where T : ParamBase, new()
         {
-            DicTemplate.TryAdd(ModeType, ParamModes);
             ParamModes.Clear();
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
@@ -589,7 +551,6 @@ namespace ColorVision.Services.Templates
 
         public void LoadModCabParam<T>(ObservableCollection<TemplateModel<T>> CalibrationParamModes, int resourceId, string ModeType) where T : ParamBase, new()
         {
-            DicTemplate.TryAdd(ModeType, CalibrationParamModes);
             CalibrationParamModes.Clear();
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
@@ -677,7 +638,6 @@ namespace ColorVision.Services.Templates
             return MeasureParams;
         }
 
-
         internal void Save2DB(FlowParam flowParam)
         {
             Save(flowParam);
@@ -688,16 +648,8 @@ namespace ColorVision.Services.Templates
         public ObservableCollection<TemplateModel<AOIParam>> AoiParams { get; set; }
         public ObservableCollection<TemplateModel<PGParam>> PGParams { get; set; }
         public ObservableCollection<TemplateModel<SMUParam>> SMUParams { get; set; }
-        public ObservableCollection<TemplateModel<LedReusltParam>> LedReusltParams { get; set; }
-        public ObservableCollection<TemplateModel<FlowParam>> FlowParams { get; set; }
-        public ObservableCollection<TemplateModel<MTFParam>> MTFParams { get; set; }
-        public ObservableCollection<TemplateModel<SFRParam>> SFRParams { get; set; }
-        public ObservableCollection<TemplateModel<FOVParam>> FOVParams { get; set; }
-        public ObservableCollection<TemplateModel<GhostParam>> GhostParams { get; set; }
-        public ObservableCollection<TemplateModel<DistortionParam>> DistortionParams { get; set; }
 
-        public ObservableCollection<TemplateModel<LedCheckParam>> LedCheckParams { get; set; }
-        public ObservableCollection<TemplateModel<FocusPointsParam>> FocusPointsParams { get; set; }
+        public ObservableCollection<TemplateModel<FlowParam>> FlowParams { get; set; }
 
         public static ObservableCollection<TemplateModelBase> GetTemplateModelBases<T>(ObservableCollection<TemplateModel<T>> templateModels) where T : ParamBase
         {

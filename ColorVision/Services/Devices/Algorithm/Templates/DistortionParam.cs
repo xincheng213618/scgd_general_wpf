@@ -6,6 +6,7 @@ using ColorVision.Settings;
 using ColorVision.UI;
 using cvColorVision;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -38,6 +39,8 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
 
     public class DistortionParam : ParamBase
     {
+        public static ObservableCollection<TemplateModel<DistortionParam>> DistortionParams { get; set; } = new ObservableCollection<TemplateModel<DistortionParam>>();
+
         public DistortionParam() { }
         public DistortionParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
         {

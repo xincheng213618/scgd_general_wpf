@@ -8,6 +8,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Settings;
 using System.Windows;
 using ColorVision.Common.Utilities;
+using System.Collections.ObjectModel;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {
@@ -37,6 +38,8 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
 
     public class LedCheckParam : ParamBase
     {
+        public static ObservableCollection<TemplateModel<LedCheckParam>> LedCheckParams { get; set; } = new ObservableCollection<TemplateModel<LedCheckParam>>();
+
         public LedCheckParam() { }
         public LedCheckParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
         {

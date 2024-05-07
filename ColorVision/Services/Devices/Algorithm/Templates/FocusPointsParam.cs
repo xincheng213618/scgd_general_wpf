@@ -7,6 +7,7 @@ using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.UI;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Windows;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
@@ -37,6 +38,8 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
 
     public class FocusPointsParam : ParamBase
     {
+        public static ObservableCollection<TemplateModel<FocusPointsParam>> FocusPointsParams { get; set; } = new ObservableCollection<TemplateModel<FocusPointsParam>>();
+
         public FocusPointsParam() { }
         public FocusPointsParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
         {

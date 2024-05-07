@@ -6,6 +6,7 @@ using ColorVision.Settings;
 using ColorVision.UI;
 using cvColorVision;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 
@@ -36,6 +37,8 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
 
     public class FOVParam : ParamBase
     {
+        public static ObservableCollection<TemplateModel<FOVParam>> FOVParams { get; set; } = new ObservableCollection<TemplateModel<FOVParam>>();
+
         public FOVParam() { }
         public FOVParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
         {

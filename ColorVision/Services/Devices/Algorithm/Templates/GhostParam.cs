@@ -6,6 +6,7 @@ using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.UI;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 
@@ -36,6 +37,8 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
 
     public class GhostParam : ParamBase
     {
+        public static ObservableCollection<TemplateModel<GhostParam>> GhostParams { get; set; } = new ObservableCollection<TemplateModel<GhostParam>>();
+
         public GhostParam() { }
         public GhostParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
         {
