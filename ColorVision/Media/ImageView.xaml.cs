@@ -874,46 +874,42 @@ namespace ColorVision.Media
             RowDefinitionEnd.Height = new GridLength((170.0 / 255.0) * PseudoSlider.ValueStart);
             DebounceTimer.AddOrResetTimer("RenderPseudo",100, RenderPseudo);
         }
-        OpenCvSharp.Mat? mat;
+        List<float[]> bytes = new List<float[]>();
         private void ButtonCIE1931_Click(object sender, RoutedEventArgs e)
         {
             bool old = ToolBarTop.ShowImageInfo;
             ToolBarTop.ShowImageInfo = true; 
             WindowCIE windowCIE = new WindowCIE();
             windowCIE.Owner = Window.GetWindow(this);
+            CVCIEFile cVCIEFile = new CVCIEFile();
             if (FilePath!=null &&CVFileUtil.IsCIEFile(FilePath) && FilePath.Contains("cvcie"))
             {
-                mat = CVFileUtil.ReadCVCIE(FilePath);
+                CVFileUtil.ReadCIEFileHeader(FilePath, out cVCIEFile);
+                bytes = CVFileUtil.ReadCVCIE(FilePath);
             }
             else
             {
-                mat?.Dispose();
+                bytes.Clear();
             }
 
             MouseMoveColorHandler mouseMoveColorHandler = (s, e) =>
             {
-                if (mat != null)
+                if (bytes != null && bytes.Count ==3)
                 {
                     try
                     {
-                        if (e.X >= 0 && e.X < mat.Height && e.Y >= 0 && e.Y < mat.Width)
-                        {
-                            int xx = e.Y;
-                            int yy = e.X;
+                        int xx = e.Y;
+                        int yy = e.X;
+                        int index = xx * cVCIEFile.rows + yy;
 
-                            float X = mat.At<float>(xx, yy, 0);
-                            float Y = mat.At<float>(xx, yy, 1);
-                            float Z = mat.At<float>(xx, yy, 2);
+                        float X = bytes[0][index];
+                        float Y = bytes[1][index];
+                        float Z = bytes[2][index];
 
-                            double x = X / (X + Y + Z);
-                            double y = Y / (X + Y + Z);
+                        double x = X / (X + Y + Z);
+                        double y = Y / (X + Y + Z);
 
-                            windowCIE.ChangeSelect(x, y);
-                        }
-                        else
-                        {
-                            windowCIE.ChangeSelect(0, 0);
-                        }
+                        windowCIE.ChangeSelect(x, y);
                     }
                     catch (Exception ex)
                     {
@@ -923,7 +919,6 @@ namespace ColorVision.Media
                 else
                 {
                     windowCIE.ChangeSelect(e);
-
                 }
             };
             ToolBarTop.MouseMagnifier.MouseMoveColorHandler += mouseMoveColorHandler;
@@ -931,7 +926,7 @@ namespace ColorVision.Media
             {
                 ToolBarTop.MouseMagnifier.MouseMoveColorHandler -= mouseMoveColorHandler;
                 ToolBarTop.ShowImageInfo = old;
-                mat?.Dispose();
+                bytes.Clear();
             };
             windowCIE.Show();
         }

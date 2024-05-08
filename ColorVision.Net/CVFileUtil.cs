@@ -288,37 +288,33 @@ namespace ColorVision.Net
             return null;
         }
 
-        public static Mat? ReadCVCIE(string FileName)
+        public static List<float[]> ReadCVCIE(string FileName)
         {
+            List<float[]> bytes = new List<float[]>();
             CVCIEFile fileInfo = new CVCIEFile();
             int index = ReadCIEFileHeader(FileName, out fileInfo);
-            if (index < 0) return null ;
+            if (index < 0) return bytes;
             ReadCIEFileData(FileName, ref fileInfo, index);
 
             if (fileInfo.channels == 3)
             {
                 int singleChannelLength = fileInfo.cols * fileInfo.rows * (fileInfo.bpp / 8);
-                byte[] channel1Data = new byte[singleChannelLength];
-                byte[] channel2Data = new byte[singleChannelLength];
-                byte[] channel3Data = new byte[singleChannelLength];
+                int singleChannel = fileInfo.cols * fileInfo.rows;
 
-                // 假设数据是按顺序存储的：先全部的通道1，然后全部的通道2，最后全部的通道3
+                float[] channel1Data = new float[singleChannel];
+                float[] channel2Data = new float[singleChannel];
+                float[] channel3Data = new float[singleChannel];
                 Buffer.BlockCopy(fileInfo.data, 0, channel1Data, 0, singleChannelLength);
                 Buffer.BlockCopy(fileInfo.data, singleChannelLength, channel2Data, 0, singleChannelLength);
                 Buffer.BlockCopy(fileInfo.data, 2 * singleChannelLength, channel3Data, 0, singleChannelLength);
 
-                // 创建单通道Mat对象
-                Mat channel1 = new Mat(fileInfo.rows, fileInfo.cols, OpenCvSharp.MatType.MakeType(fileInfo.Depth, 1), channel1Data);
-                Mat channel2 = new Mat(fileInfo.rows, fileInfo.cols, OpenCvSharp.MatType.MakeType(fileInfo.Depth, 1), channel2Data);
-                Mat channel3 = new Mat(fileInfo.rows, fileInfo.cols, OpenCvSharp.MatType.MakeType(fileInfo.Depth, 1), channel3Data);
+                bytes.Add(channel1Data);
+                bytes.Add(channel2Data);
+                bytes.Add(channel3Data);
 
-                // 合并单通道成为一个三通道Mat对象
-                Mat[] channels = { channel1, channel2, channel3 };
-                Mat image = new Mat();
-                Cv2.Merge(channels, image);
-                return image;
+                return bytes;
             }
-            return null;
+            return bytes;
 
         }
 
