@@ -445,5 +445,15 @@ namespace ColorVision.Services
         {
             return svrType + ":" + svrCode;
         }
+
+        public void BeginNewBatch(string sn, string name)
+        {
+            BatchResultMasterModel batch = new BatchResultMasterModel();
+            batch.Name = string.IsNullOrEmpty(name) ? sn : name;
+            batch.Code = sn;
+            batch.CreateDate = DateTime.Now;
+            batch.TenantId = 0;
+            BatchResultMasterDao.Instance.Save(batch);
+        }
     }
 }
