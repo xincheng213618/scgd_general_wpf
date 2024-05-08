@@ -169,6 +169,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 选项(_O) 的本地化字符串。
+        /// </summary>
+        internal static string MenuOptions {
+            get {
+                return ResourceManager.GetString("MenuOptions", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 模板(_M) 的本地化字符串。
         /// </summary>
         internal static string MenuTemplate {

@@ -78,7 +78,7 @@ namespace ColorVision
                 IntPtr hWnd = CheckAppRunning.Check("ColorVision");
                 if (hWnd != IntPtr.Zero)
                 {
-                    if (args.Length > 0)
+                    if (args.Length > 0)  
                     {
                         ushort atom = GlobalAddAtom(args[0]);
                         SendMessage(hWnd, WM_USER + 1, (IntPtr)atom, IntPtr.Zero);  // ·¢ËÍÏûÏ¢

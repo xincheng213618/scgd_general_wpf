@@ -353,7 +353,7 @@
         </trans-unit>
         <trans-unit id="MenuCut" translate="yes" xml:space="preserve">
           <source>剪切(_T)</source>
-          <target state="new">Couper(T)</target>
+          <target state="new">Couper(_T)</target>
         </trans-unit>
         <trans-unit id="MenuDelete" translate="yes" xml:space="preserve">
           <source>删除(_D)</source>
@@ -381,7 +381,7 @@
         </trans-unit>
         <trans-unit id="MenuLanguage" translate="yes" xml:space="preserve">
           <source>语言(_L)</source>
-          <target state="new">Langue(L)</target>
+          <target state="new">_Langue</target>
         </trans-unit>
         <trans-unit id="MenuNew" translate="yes" xml:space="preserve">
           <source>新建(_N)</source>
@@ -401,7 +401,7 @@
         </trans-unit>
         <trans-unit id="MenuTemplate" translate="yes" xml:space="preserve">
           <source>模板(_M)</source>
-          <target state="new">Modèle (_M)</target>
+          <target state="new">_Modèle</target>
         </trans-unit>
         <trans-unit id="MenuTheme" translate="yes" xml:space="preserve">
           <source>主题(_H)</source>
@@ -417,7 +417,7 @@
         </trans-unit>
         <trans-unit id="MenuUpdate" translate="yes" xml:space="preserve">
           <source>检查更新(_U)</source>
-          <target state="new">Vérifier les mises à jour (U)</target>
+          <target state="new">Vérifier les mises à jour (_U)</target>
         </trans-unit>
         <trans-unit id="MenuView" translate="yes" xml:space="preserve">
           <source>视图(_V)</source>

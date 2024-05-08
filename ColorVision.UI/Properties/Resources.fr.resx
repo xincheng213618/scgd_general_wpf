@@ -121,7 +121,7 @@
     <value>Fichier(F)</value>
   </data>
   <data name="MenuTemplate" xml:space="preserve">
-    <value>Modèle (_M)</value>
+    <value>_Modèle</value>
   </data>
   <data name="MenuTool" xml:space="preserve">
     <value>Outil(T)</value>
@@ -170,5 +170,8 @@
   </data>
   <data name="ru" xml:space="preserve">
     <value>russe</value>
+  </data>
+  <data name="MenuOptions" xml:space="preserve">
+    <value>_Option</value>
   </data>
 </root>

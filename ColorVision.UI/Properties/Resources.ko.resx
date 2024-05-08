@@ -171,4 +171,7 @@
   <data name="ru" xml:space="preserve">
     <value>러시아인</value>
   </data>
+  <data name="MenuOptions" xml:space="preserve">
+    <value>옵션 (_O)</value>
+  </data>
 </root>

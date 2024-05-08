@@ -652,7 +652,7 @@
     <value>Process engine debug window</value>
   </data>
   <data name="MenuFlow" xml:space="preserve">
-    <value>_Process</value>
+    <value>_Flow</value>
   </data>
   <data name="Create" xml:space="preserve">
     <value>Create</value>

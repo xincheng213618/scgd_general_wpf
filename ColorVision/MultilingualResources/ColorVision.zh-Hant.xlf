@@ -405,7 +405,7 @@
         </trans-unit>
         <trans-unit id="MenuTheme" translate="yes" xml:space="preserve">
           <source>主题(_H)</source>
-          <target state="new">主題(H)</target>
+          <target state="new">主題(_H)</target>
         </trans-unit>
         <trans-unit id="MenuTool" translate="yes" xml:space="preserve">
           <source>工具(_T)</source>

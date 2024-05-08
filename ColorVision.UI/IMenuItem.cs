@@ -13,6 +13,8 @@ namespace ColorVision.UI
         public object? Icon { get; }
         public RelayCommand Command { get; }
     }
+
+
     public interface IMenuItemMeta : IMenuItem
     {
         public MenuItem MenuItem { get; }
