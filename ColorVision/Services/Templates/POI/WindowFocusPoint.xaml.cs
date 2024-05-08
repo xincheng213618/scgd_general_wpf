@@ -150,7 +150,7 @@ namespace ColorVision.Services.Templates.POI
                 await Task.Delay(100);
 
                 if (SoftwareConfig.IsUseMySql)
-                    TemplateControl.LoadPoiDetailFromDB(PoiParam);
+                    PoiParam.LoadPoiDetailFromDB(PoiParam);
 
                 WaitControlProgressBar.Value = 10;
 
@@ -198,7 +198,10 @@ namespace ColorVision.Services.Templates.POI
                         DrawingPolygonCache.Attribute.Points.Remove(DrawingPolygonCache.Attribute.Points.Last());
                         DrawingPolygonCache.Render();
                     }
-
+                }
+                if (e.KeyboardDevice.Modifiers == ModifierKeys.Control && e.Key ==Key.S)
+                {
+                    SavePoiParam();
                 }
             };
         }
@@ -1078,60 +1081,62 @@ namespace ColorVision.Services.Templates.POI
             }
         }
 
+        private void SavePoiParam()
+        {
+            PoiParam.PoiPoints.Clear();
+            foreach (var item in DrawingVisualLists)
+            {
+                DrawBaseAttribute drawAttributeBase = item.BaseAttribute;
+                if (drawAttributeBase is CircleAttribute circle)
+                {
+                    PoiParamData poiParamData = new PoiParamData()
+                    {
+                        Id = circle.ID,
+                        PointType = RiPointTypes.Circle,
+                        PixX = circle.Center.X,
+                        PixY = circle.Center.Y,
+                        PixWidth = circle.Radius * 2,
+                        PixHeight = circle.Radius * 2,
+                    };
+                    if (circle is CircleTextAttribute circleTextAttribute)
+                    {
+                        poiParamData.Name = circleTextAttribute.Text;
+                    }
+                    PoiParam.PoiPoints.Add(poiParamData);
+                }
+                else if (drawAttributeBase is RectangleAttribute rectangle)
+                {
+                    PoiParamData poiParamData = new PoiParamData()
+                    {
+                        Id = rectangle.ID,
+                        Name = rectangle.Name,
+                        PointType = RiPointTypes.Rect,
+                        PixX = rectangle.Rect.X,
+                        PixY = rectangle.Rect.Y,
+                        PixWidth = rectangle.Rect.Width,
+                        PixHeight = rectangle.Rect.Height,
+                    };
+                    PoiParam.PoiPoints.Add(poiParamData);
+                }
+            }
+            WaitControl.Visibility = Visibility.Visible;
+            WaitControlProgressBar.Visibility = Visibility.Collapsed;
+            WaitControlText.Text = "数据正在保存";
+            Thread thread = new Thread(() =>
+            {
+                PoiParam.Save2DB(PoiParam);
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    WaitControl.Visibility = Visibility.Collapsed;
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "保存成功", "ColorVision");
+                });
+            });
+            thread.Start();
+        }
+
         private void Button_Save_Click(object sender, RoutedEventArgs e)
         {
-            if (SoftwareConfig.IsUseMySql)
-            {
-                PoiParam.PoiPoints.Clear();
-                foreach (var item in DrawingVisualLists)
-                {
-                    DrawBaseAttribute drawAttributeBase = item.BaseAttribute;
-                    if (drawAttributeBase is CircleAttribute circle)
-                    {
-                        PoiParamData poiParamData = new PoiParamData()
-                        {
-                            Id = circle.ID,
-                            PointType = RiPointTypes.Circle,
-                            PixX = circle.Center.X,
-                            PixY = circle.Center.Y,
-                            PixWidth = circle.Radius * 2,
-                            PixHeight = circle.Radius * 2,
-                        };
-                        if (circle is CircleTextAttribute circleTextAttribute)
-                        {
-                            poiParamData.Name = circleTextAttribute.Text;
-                        }
-                        PoiParam.PoiPoints.Add(poiParamData);
-                    }
-                    else if (drawAttributeBase is RectangleAttribute rectangle)
-                    {
-                        PoiParamData poiParamData = new PoiParamData()
-                        {
-                            Id = rectangle.ID,
-                            Name = rectangle.Name,
-                            PointType = RiPointTypes.Rect,
-                            PixX = rectangle.Rect.X,
-                            PixY = rectangle.Rect.Y,
-                            PixWidth = rectangle.Rect.Width,
-                            PixHeight = rectangle.Rect.Height,
-                        };
-                        PoiParam.PoiPoints.Add(poiParamData);
-                    }
-                }
-                WaitControl.Visibility = Visibility.Visible;
-                WaitControlProgressBar.Visibility = Visibility.Collapsed;
-                WaitControlText.Text = "数据正在保存";
-                Thread thread = new Thread(() =>
-                {
-                    TemplateControl.GetInstance().Save2DB(PoiParam);
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        WaitControl.Visibility = Visibility.Collapsed;
-                        MessageBox.Show(WindowHelpers.GetActiveWindow(), "保存成功", "ColorVision");
-                    });
-                });
-                thread.Start();
-            }
+            SavePoiParam();
         }
 
         public LedCheckCfg ledCheckCfg { get; set; } = new LedCheckCfg();
@@ -1375,7 +1380,7 @@ namespace ColorVision.Services.Templates.POI
                     var SelectPoiParam = windowFocusPointAd.SelectPoiParam;
 
                     if (SoftwareConfig.IsUseMySql)
-                        TemplateControl.LoadPoiDetailFromDB(SelectPoiParam);
+                        PoiParam.LoadPoiDetailFromDB(SelectPoiParam);
 
                     foreach (var item in SelectPoiParam.PoiPoints)
                     {

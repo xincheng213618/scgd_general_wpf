@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS8604
-using ColorVision.Common.Extension;
 using ColorVision.Common.Sorts;
 using ColorVision.Common.Utilities;
 using ColorVision.MySql;
@@ -15,14 +14,11 @@ using ColorVision.Services.Templates.Measure;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Settings;
-using ColorVision.Solution;
 using ColorVision.UserSpace;
-using cvColorVision.Util;
 using CVCommCore;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Threading;
 using System.Windows;
 
@@ -59,11 +55,8 @@ namespace ColorVision.Services.Templates
                     });
                 });
                 thread.Start();
-
             };
-
             Init();
-
             Application.Current.MainWindow.Closed += (s, e) =>
             {
                 if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
@@ -100,7 +93,7 @@ namespace ColorVision.Services.Templates
                 case System.Type t when t == typeof(CalibrationParam):
                     break;
                 case System.Type t when t == typeof(PoiParam):
-                    LoadPoiParam();
+                     PoiParam.LoadPoiParam();
                     break;
                 case System.Type t when t == typeof(FlowParam):
                     LoadFlowParam();
@@ -267,50 +260,11 @@ namespace ColorVision.Services.Templates
         }
 
 
-
         public void Save2DB<T>(T value) where T : ParamBase
         {
             Save(value);
         }
 
-        public void Save2DB(PoiParam poiParam)
-        {
-            PoiMasterModel poiMasterModel = new PoiMasterModel(poiParam);
-            PoiMasterDao.Instance.Save(poiMasterModel);
-
-            List<PoiDetailModel> poiDetails = new List<PoiDetailModel>();
-            foreach (PoiParamData pt in poiParam.PoiPoints)
-            {
-                PoiDetailModel poiDetail = new PoiDetailModel(poiParam.Id, pt);
-                poiDetails.Add(poiDetail);
-            }
-            PoiDetailDao.Instance.SaveByPid(poiParam.Id, poiDetails);
-        }
-
-
-        public static ObservableCollection<TemplateModel<PoiParam>> LoadPoiParam()
-        {
-            PoiParam.Params.Clear();
-            List<PoiMasterModel> poiMasters = PoiMasterDao.Instance.GetAllByTenantId(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            foreach (var dbModel in poiMasters)
-            {
-                PoiParam.Params.Add(new TemplateModel<PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel)));
-            }
-            return PoiParam.Params;
-        }
-
-
-
-
-        internal static void LoadPoiDetailFromDB(PoiParam poiParam)
-        {
-            poiParam.PoiPoints.Clear();
-            List<PoiDetailModel> poiDetails = PoiDetailDao.Instance.GetAllByPid(poiParam.Id);
-            foreach (var dbModel in poiDetails)
-            {
-                poiParam.PoiPoints.AddUnique(new PoiParamData(dbModel));
-            }
-        }
 
         private ModMasterDao masterModDao = new ModMasterDao();
         private ModDetailDao detailDao = new ModDetailDao();

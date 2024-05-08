@@ -126,6 +126,7 @@ namespace ColorVision.Services.Templates
                     break;
                 case TemplateType.PoiParam:
                     if (IsReLoad)
+                        
                         TemplateControl.LoadParams(PoiParam.Params);
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(PoiParam.Params);
                     Title = "关注点设置";
@@ -838,7 +839,7 @@ namespace ColorVision.Services.Templates
                         if (poiParam != null)
                         {
                             CreateNewTemplate(PoiParam.Params, name, poiParam);
-                            TemplateControl.GetInstance().Save2DB(poiParam);
+                            PoiParam.Save2DB(poiParam);
                         }
                         else MessageBox.Show("数据库创建POI模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     }

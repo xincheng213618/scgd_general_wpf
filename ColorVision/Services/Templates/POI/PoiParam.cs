@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Sorts;
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Settings;
@@ -36,13 +37,47 @@ namespace ColorVision.Services.Templates.POI
     }
 
 
-
     /// <summary>
     /// 关注点模板
     /// </summary>
     public class PoiParam : ParamBase
     {
         public static ObservableCollection<TemplateModel<PoiParam>> Params { get; set; } = new ObservableCollection<TemplateModel<PoiParam>>();
+        public static void Save2DB(PoiParam poiParam)
+        {
+            PoiMasterModel poiMasterModel = new PoiMasterModel(poiParam);
+            PoiMasterDao.Instance.Save(poiMasterModel);
+
+            List<PoiDetailModel> poiDetails = new List<PoiDetailModel>();
+            foreach (PoiParamData pt in poiParam.PoiPoints)
+            {
+                PoiDetailModel poiDetail = new PoiDetailModel(poiParam.Id, pt);
+                poiDetails.Add(poiDetail);
+            }
+            PoiDetailDao.Instance.SaveByPid(poiParam.Id, poiDetails);
+        }
+
+        public static ObservableCollection<TemplateModel<PoiParam>> LoadPoiParam()
+        {
+            PoiParam.Params.Clear();
+            List<PoiMasterModel> poiMasters = PoiMasterDao.Instance.GetAllByTenantId(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            foreach (var dbModel in poiMasters)
+            {
+                PoiParam.Params.Add(new TemplateModel<PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel)));
+            }
+            return PoiParam.Params;
+        }
+
+        public static void LoadPoiDetailFromDB(PoiParam poiParam)
+        {
+            poiParam.PoiPoints.Clear();
+            List<PoiDetailModel> poiDetails = PoiDetailDao.Instance.GetAllByPid(poiParam.Id);
+            foreach (var dbModel in poiDetails)
+            {
+                poiParam.PoiPoints.AddUnique(new PoiParamData(dbModel));
+            }
+        }
+
 
         public static PoiParam? AddPoiParam(string TemplateName)
         {

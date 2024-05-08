@@ -422,7 +422,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
                     return;
                 }
                 ImageView.ImageShow.Clear();
-                TemplateControl.LoadPoiDetailFromDB(poiParams);
+                PoiParam.LoadPoiDetailFromDB(poiParams);
                 foreach (var item in poiParams.PoiPoints)
                 {
                     switch (item.PointType)
@@ -509,7 +509,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
                     return;
                 }
                 ImageView.ImageShow.Clear();
-                TemplateControl.LoadPoiDetailFromDB(poiParams);
+                PoiParam.LoadPoiDetailFromDB(poiParams);
                 foreach (var item in poiParams.PoiPoints)
                 {
                     switch (item.PointType)
