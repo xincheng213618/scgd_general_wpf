@@ -185,10 +185,13 @@ namespace ColorVision.Services.Flow
                     ButtonRun.Visibility = Visibility.Collapsed;
                     ButtonStop.Visibility = Visibility.Visible;
                     flowControl.Start(sn);
+                    string name = string.Empty;
+                    if (IsName.IsChecked.HasValue && IsName.IsChecked.Value) { name = TextBoxName.Text; }
+                    ServiceManager.GetInstance().BeginNewBatch(sn, name);
                 }
                 else
                 {
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败","ColorVision");
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
                 }
             }
         }

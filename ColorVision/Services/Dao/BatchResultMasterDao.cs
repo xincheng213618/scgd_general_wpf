@@ -64,6 +64,7 @@ namespace ColorVision.Services.DAO
             {
                 row["id"] = item.Id;
                 row["name"] = item.Name;
+                row["code"] = item.Code;
                 row["t_id"] = item.TId;
                 row["create_date"] = item.CreateDate;
                 row["result"] = item.Result;
