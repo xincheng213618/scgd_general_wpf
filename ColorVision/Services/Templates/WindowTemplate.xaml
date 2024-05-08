@@ -96,10 +96,7 @@
         </Grid>
 
         <StackPanel x:Name="CreateGrid"  Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" Margin="5">
-            <DockPanel Margin="3" >
-                <TextBlock Text="{x:Static properties:Resource.TemplateName}"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                <TextBox x:Name="TextBox1"  Margin="10,0"/>
-            </DockPanel>
+
             <StackPanel x:Name="FunctionGrid"  Orientation="Horizontal" Margin="0,5"    HorizontalAlignment="Stretch">
                 <Button  Click="Button_New_Click" HorizontalAlignment="Left">
                     <TextBlock Text="{x:Static properties:Resource.New}"/>
