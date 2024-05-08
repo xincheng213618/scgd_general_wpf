@@ -735,4 +735,22 @@
   <data name="MenuRename" xml:space="preserve">
     <value>名前を変更(_M)</value>
   </data>
+  <data name="MenuPhyCameraManager" xml:space="preserve">
+    <value>物理カメラ管理(_P)</value>
+  </data>
+  <data name="PhysicalCameraManager" xml:space="preserve">
+    <value>物理的なカメラの管理</value>
+  </data>
+  <data name="MenuDevice" xml:space="preserve">
+    <value>デバイス構成(_D)</value>
+  </data>
+  <data name="MenuService" xml:space="preserve">
+    <value>管理者サービス構成(_S)</value>
+  </data>
+  <data name="MenuLogin" xml:space="preserve">
+    <value>ログインアカウント(_L)</value>
+  </data>
+  <data name="MenuCalibrationTool" xml:space="preserve">
+    <value>キャリブレーション生成ツール(_C)</value>
+  </data>
 </root>

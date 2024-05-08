@@ -1,7 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.Services.Devices.PG.Templates;
 using ColorVision.Services.Msg;
-using ColorVision.Services.Templates;
 using MQTTMessageLib;
 using MQTTnet.Client;
 using Newtonsoft.Json;
@@ -167,7 +166,7 @@ namespace ColorVision.Services.Devices.PG
         public void ReLoadCategoryLib()
         {
             PGCategoryLib.Clear();
-            foreach (var item in TemplateControl.GetInstance().PGParams)
+            foreach (var item in PGParam.Params)
             {
                 PGCategoryLib.Add(item.Key, item.Value.ConvertToMap());
             }

@@ -446,7 +446,7 @@ namespace ColorVision.Services
             return svrType + ":" + svrCode;
         }
 
-        public void BeginNewBatch(string sn, string name)
+        public static void BeginNewBatch(string sn, string name)
         {
             BatchResultMasterModel batch = new BatchResultMasterModel();
             batch.Name = string.IsNullOrEmpty(name) ? sn : name;

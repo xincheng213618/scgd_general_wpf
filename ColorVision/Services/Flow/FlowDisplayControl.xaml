@@ -43,12 +43,22 @@
                     </Button>
                     <ComboBox  x:Name="FlowTemplate" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                 </DockPanel>
-                <StackPanel Margin="0,2" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <CheckBox x:Name="IsName" Content="别名" Margin="0,0,5,0"/>
-                    <TextBox x:Name="TextBoxName" BorderThickness="0,0,0,1" Width="150" Margin="0,0,5,0"/>
-                    <Button Content="{x:Static properties:Resource.ExecutionProcess}"  x:Name="ButtonRun" Click="Button_FlowRun_Click"/>
-                    <Button Content="{x:Static properties:Resource.StopProcess}"  x:Name="ButtonStop" Visibility="Collapsed"  Click="Button_FlowStop_Click"/>
-                </StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Orientation="Horizontal"  >
+                        <CheckBox x:Name="IsName" Content="别名" Margin="0,0,5,0"/>
+                        <TextBox x:Name="TextBoxName" Style="{StaticResource TextBox.Small}" Width="50" BorderThickness="0,0,0,1" Margin="0,0,5,0"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="0,2" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="{x:Static properties:Resource.ExecutionProcess}"  x:Name="ButtonRun" Click="Button_FlowRun_Click"/>
+                        <Button Content="{x:Static properties:Resource.StopProcess}"  x:Name="ButtonStop" Visibility="Collapsed"  Click="Button_FlowStop_Click"/>
+                    </StackPanel>
+                </Grid>
+
+
                 <DockPanel Margin="0,3" >
                     <TextBlock Text="{x:Static properties:Resource.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0" />
                     <ComboBox x:Name="ComboxView" Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"/>

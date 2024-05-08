@@ -735,4 +735,22 @@
   <data name="MenuRename" xml:space="preserve">
     <value>Renommer(M)</value>
   </data>
+  <data name="MenuPhyCameraManager" xml:space="preserve">
+    <value>Gestion des caméras physiques(_P)</value>
+  </data>
+  <data name="PhysicalCameraManager" xml:space="preserve">
+    <value>Gestion des caméras physiques</value>
+  </data>
+  <data name="MenuDevice" xml:space="preserve">
+    <value>Configuration de l'appareil (_D)</value>
+  </data>
+  <data name="MenuService" xml:space="preserve">
+    <value>Configuration(S) du service d'administrateur(_S)</value>
+  </data>
+  <data name="MenuLogin" xml:space="preserve">
+    <value>Compte de connexion (_L)</value>
+  </data>
+  <data name="MenuCalibrationTool" xml:space="preserve">
+    <value>Outil de génération d'étalonnage (_C)</value>
+  </data>
 </root>

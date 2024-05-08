@@ -1,24 +1,19 @@
 ﻿#pragma warning disable CS8604,CS8631
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Extension;
-using ColorVision.Handler;
-using ColorVision.Services.RC;
+using ColorVision.Interfaces;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Templates;
-using ColorVision.Common.Utilities;
+using ColorVision.Services.RC;
+using ColorVision.Services.Type;
+using ColorVision.UI;
 using Newtonsoft.Json;
 using System;
-using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using ColorVision.Services.Devices.Calibration;
-using ColorVision.Services.Type;
-using ColorVision.Services.PhyCameras.Templates;
-using ColorVision.Interfaces;
-using ColorVision.UI;
 
 namespace ColorVision.Services.Devices
 {

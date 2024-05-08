@@ -735,4 +735,22 @@
   <data name="MenuRename" xml:space="preserve">
     <value>重命名(_M)</value>
   </data>
+  <data name="MenuPhyCameraManager" xml:space="preserve">
+    <value>實體相機管理(_P)</value>
+  </data>
+  <data name="PhysicalCameraManager" xml:space="preserve">
+    <value>實體相機管理</value>
+  </data>
+  <data name="MenuDevice" xml:space="preserve">
+    <value>設備配置(_D)</value>
+  </data>
+  <data name="MenuService" xml:space="preserve">
+    <value>管理員服務配置(_S)</value>
+  </data>
+  <data name="MenuLogin" xml:space="preserve">
+    <value>登入帳號(_L)</value>
+  </data>
+  <data name="MenuCalibrationTool" xml:space="preserve">
+    <value>校正生成工具(_C)</value>
+  </data>
 </root>

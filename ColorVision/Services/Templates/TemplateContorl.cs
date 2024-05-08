@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS8604
-using ColorVision.Common.Utilities;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Algorithm.Templates;
@@ -7,12 +6,9 @@ using ColorVision.Services.Devices.PG.Templates;
 using ColorVision.Services.Devices.Sensor.Templates;
 using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Flow;
-using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates.Measure;
 using ColorVision.Services.Templates.POI;
-using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Settings;
-using CVCommCore;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -34,8 +30,6 @@ namespace ColorVision.Services.Templates
         public TemplateControl()
         {
             AoiParams = new ObservableCollection<TemplateModel<AOIParam>>();
-            PGParams = new ObservableCollection<TemplateModel<PGParam>>();
-            SMUParams = new ObservableCollection<TemplateModel<SMUParam>>();
             MeasureParams = new ObservableCollection<TemplateModel<MeasureParam>>();
 
             ConfigHandler.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
@@ -61,16 +55,13 @@ namespace ColorVision.Services.Templates
         }
         private void Init()
         {
-            LoadParams(AoiParams);
-            LoadParams(SMUParams);
-            LoadParams(PGParams);
-
-
-            LoadParams(LedReusltParam.LedReusltParams);
+            LoadModParam(AoiParams, ModMasterType.Aoi);
 
             PoiParam.LoadPoiParam();
-            LoadParams(FlowParam.Params);
+            FlowParam.LoadFlowParam();
 
+            LoadModParam(SMUParam.Params, ModMasterType.SMU);
+            LoadModParam(PGParam.Params, ModMasterType.PG);
             LoadModParam(LedCheckParam.LedCheckParams, ModMasterType.LedCheck);
             LoadModParam(FocusPointsParam.FocusPointsParams, ModMasterType.FocusPoints);     
             LoadModParam(SFRParam.SFRParams, ModMasterType.SFR);
@@ -83,60 +74,9 @@ namespace ColorVision.Services.Templates
             LoadModParam(CameraExposureParam.CameraExposureParams, "camera_exp_time");
 
         }
-        public void LoadParams<T>(ObservableCollection<TemplateModel<T>> TemplateModels) where T : ParamBase, new()
-        {
-            switch (typeof(T))
-            {
-                case System.Type t when t == typeof(CalibrationParam):
-                    break;
-                case System.Type t when t == typeof(PoiParam):
-                    PoiParam.LoadPoiParam();
-                    break;
-                case System.Type t when t == typeof(FlowParam):
-                    FlowParam.LoadFlowParam();
-                    break;
-                case System.Type t when t == typeof(AOIParam):
-                    LoadModParam(AoiParams, ModMasterType.Aoi);
-                    break;
-                case System.Type t when t == typeof(SMUParam):
-                    LoadModParam(SMUParams, ModMasterType.SMU);
-                    break;
-                case System.Type t when t == typeof(PGParam):
-                    LoadModParam(PGParams, ModMasterType.PG);
-                    break;
-                case System.Type t when t == typeof(SFRParam):
-                    LoadModParam(SFRParam.SFRParams, ModMasterType.SFR);
-                    break;
-                case System.Type t when t == typeof(MTFParam):
-                    LoadModParam(MTFParam.MTFParams, ModMasterType.MTF);
-                    break;
-                case System.Type t when t == typeof(FOVParam):
-                    LoadModParam(FOVParam.FOVParams, ModMasterType.FOV);
-                    break;
-                case System.Type t when t == typeof(GhostParam):
-                    LoadModParam(GhostParam.GhostParams, ModMasterType.Ghost);
-                    break;
-                case System.Type t when t == typeof(DistortionParam):
-                    LoadModParam(DistortionParam.DistortionParams, ModMasterType.Distortion);
-                    break;
-                case System.Type t when t == typeof(FocusPointsParam):
-                    LoadModParam(FocusPointsParam.FocusPointsParams, ModMasterType.FocusPoints);
-                    break;
-                case System.Type t when t == typeof(LedCheckParam):
-                    LoadModParam(LedCheckParam.LedCheckParams, ModMasterType.LedCheck);
-                    break;
-                case System.Type t when t == typeof(MeasureParam):
-                    LoadMeasureParams();
-                    break;
-                case System.Type t when t == typeof(BuildPOIParam):
-                    LoadModParam(BuildPOIParam.BuildPOIParams, ModMasterType.LedCheck);
-                    break;
-
-            }
-        }
 
 
-        public void Save2DB<T>(ObservableCollection<TemplateModel<T>> keyValuePairs) where T : ParamBase
+        public static void Save2DB<T>(ObservableCollection<TemplateModel<T>> keyValuePairs) where T : ParamBase
         {
             foreach (var item in keyValuePairs)
             {
@@ -145,9 +85,9 @@ namespace ColorVision.Services.Templates
         }
 
 
-        public void Save2DB<T>(T value) where T : ParamBase
+        public static void Save2DB<T>(T value) where T : ParamBase
         {
-            if (masterModDao.GetById(value.Id) is ModMasterModel modMasterModel && modMasterModel.Pcode != null)
+            if (ModMasterDao.Instance.GetById(value.Id) is ModMasterModel modMasterModel && modMasterModel.Pcode != null)
             {
                 modMasterModel.Name = value.Name;
                 ModMasterDao modMasterDao = new ModMasterDao(modMasterModel.Pcode);
@@ -155,22 +95,20 @@ namespace ColorVision.Services.Templates
             }
             List<ModDetailModel> list = new List<ModDetailModel>();
             value.GetDetail(list);
-            detailDao.UpdateByPid(value.Id, list);
+            ModDetailDao.Instance.UpdateByPid(value.Id, list);
         }
 
 
-        private ModMasterDao masterModDao = new ModMasterDao();
-        private ModDetailDao detailDao = new ModDetailDao();
 
-        public T? AddParamMode<T>(string code, string Name) where T : ParamBase, new()
+        public static T? AddParamMode<T>(string code, string Name) where T : ParamBase, new()
         {
             ModMasterModel modMaster = new ModMasterModel(code, Name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             Save(modMaster);
             int pkId = modMaster.Id;
             if (pkId > 0)
             {
-                ModMasterModel modMasterModel = masterModDao.GetById(pkId);
-                List<ModDetailModel> modDetailModels = detailDao.GetAllByPid(pkId);
+                ModMasterModel modMasterModel = ModMasterDao.Instance.GetById(pkId);
+                List<ModDetailModel> modDetailModels = ModDetailDao.Instance.GetAllByPid(pkId);
                 if (modMasterModel != null) return (T)Activator.CreateInstance(typeof(T), new object[] { modMasterModel, modDetailModels });
                 else return null;
             }
@@ -225,7 +163,7 @@ namespace ColorVision.Services.Templates
             else return null;
         }
 
-        private void LoadModParam<T>(ObservableCollection<TemplateModel<T>> ParamModes, string ModeType) where T : ParamBase, new()
+        public static void LoadModParam<T>(ObservableCollection<TemplateModel<T>> ParamModes, string ModeType) where T : ParamBase, new()
         {
             ParamModes.Clear();
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
@@ -235,7 +173,7 @@ namespace ColorVision.Services.Templates
                 List<ModMasterModel> smus = masterFlowDao.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in smus)
                 {
-                    List<ModDetailModel> smuDetails = detailDao.GetAllByPid(dbModel.Id);
+                    List<ModDetailModel> smuDetails = ModDetailDao.Instance.GetAllByPid(dbModel.Id);
                     foreach (var dbDetail in smuDetails)
                     {
                         dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
@@ -246,7 +184,7 @@ namespace ColorVision.Services.Templates
         }
         private ModMasterDao masterFlowDao = new ModMasterDao(ModMasterType.Flow);
 
-        public void LoadModCabParam<T>(ObservableCollection<TemplateModel<T>> CalibrationParamModes, int resourceId, string ModeType) where T : ParamBase, new()
+        public static void LoadModCabParam<T>(ObservableCollection<TemplateModel<T>> CalibrationParamModes, int resourceId, string ModeType) where T : ParamBase, new()
         {
             CalibrationParamModes.Clear();
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
@@ -255,7 +193,7 @@ namespace ColorVision.Services.Templates
                 List<ModMasterModel> smus = masterFlowDao.GetResourceAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId, resourceId);
                 foreach (var dbModel in smus)
                 {
-                    List<ModDetailModel> smuDetails = detailDao.GetAllByPid(dbModel.Id);
+                    List<ModDetailModel> smuDetails = ModDetailDao.Instance.GetAllByPid(dbModel.Id);
                     foreach (var dbDetail in smuDetails)
                     {
                         dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
@@ -281,9 +219,6 @@ namespace ColorVision.Services.Templates
             return null;
         }
 
-
-        private MeasureDetailDao measureDetail = new MeasureDetailDao();
-
         internal ObservableCollection<TemplateModel<MeasureParam>> LoadMeasureParams()
         {
             MeasureParams.Clear();
@@ -300,8 +235,6 @@ namespace ColorVision.Services.Templates
 
         public ObservableCollection<TemplateModel<MeasureParam>> MeasureParams { get; set; }
         public ObservableCollection<TemplateModel<AOIParam>> AoiParams { get; set; }
-        public ObservableCollection<TemplateModel<PGParam>> PGParams { get; set; }
-        public ObservableCollection<TemplateModel<SMUParam>> SMUParams { get; set; }
 
         public static ObservableCollection<TemplateModelBase> GetTemplateModelBases<T>(ObservableCollection<TemplateModel<T>> templateModels) where T : ParamBase
         {

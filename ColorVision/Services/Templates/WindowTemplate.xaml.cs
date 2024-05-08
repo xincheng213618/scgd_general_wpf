@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Extension;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Sorts;
 using ColorVision.Common.Utilities;
 using ColorVision.Extension;
@@ -7,7 +6,6 @@ using ColorVision.Properties;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Algorithm.Templates;
-using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Devices.PG.Templates;
 using ColorVision.Services.Devices.Sensor.Templates;
 using ColorVision.Services.Devices.SMU;
@@ -88,7 +86,7 @@ namespace ColorVision.Services.Templates
                     break;
                 case TemplateType.MeasureParam:
                     if (IsReLoad) 
-                        TemplateControl.LoadParams(TemplateControl.MeasureParams);
+                        TemplateControl.LoadMeasureParams();
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.MeasureParams);
                     Title = "测量设置";
                     break;
@@ -110,86 +108,85 @@ namespace ColorVision.Services.Templates
                     break;
                 case TemplateType.AoiParam:
                     if (IsReLoad)
-                        TemplateControl.LoadParams(TemplateControl.AoiParams);
+                        TemplateControl.LoadModParam(TemplateControl.AoiParams, ModMasterType.Aoi);
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.AoiParams);
                     Title = "AOI参数设置";
                     break;
                 case TemplateType.PGParam:
                     if (IsReLoad)
-                        TemplateControl.LoadParams(TemplateControl.PGParams);
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.PGParams);
+                        TemplateControl.LoadModParam(PGParam.Params, ModMasterType.PG);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(PGParam.Params);
                     Title = "PG参数设置";
                     break;
                 case TemplateType.SMUParam:
                     if (IsReLoad)
-                        TemplateControl.LoadParams(TemplateControl.SMUParams);
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.SMUParams);
+                        TemplateControl.LoadModParam(SMUParam.Params, ModMasterType.SMU);
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(SMUParam.Params);
                     Title = "源表模板设置";
                     break;
                 case TemplateType.PoiParam:
                     if (IsReLoad)
-                        
-                        TemplateControl.LoadParams(PoiParam.Params);
+                        PoiParam.LoadPoiParam();
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(PoiParam.Params);
                     Title = "关注点设置";
                     break;
                 case TemplateType.MTFParam:
                     if (IsReLoad)
-                        TemplateControl.LoadParams(MTFParam.MTFParams);
+                        TemplateControl.LoadModParam(MTFParam.MTFParams, ModMasterType.MTF);
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(MTFParam.MTFParams);
                     Title = "MTF算法设置";
                     break;
                 case TemplateType.SFRParam:
                     if (IsReLoad)
-                        TemplateControl.LoadParams(SFRParam.SFRParams);
+                        TemplateControl.LoadModParam(SFRParam.SFRParams, ModMasterType.SFR);
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(SFRParam.SFRParams);
                     Title = "SFR算法设置";
                     break;
                 case TemplateType.FOVParam:
                     if (IsReLoad)
-                        TemplateControl.LoadParams(FOVParam.FOVParams);
+                        TemplateControl.LoadModParam(FOVParam.FOVParams, ModMasterType.FOV);
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(FOVParam.FOVParams);
                     Title = "FOV算法设置";
                     break;
                 case TemplateType.GhostParam:
                     if (IsReLoad)
-                        TemplateControl.LoadParams(GhostParam.GhostParams);
+                        TemplateControl.LoadModParam(GhostParam.GhostParams, ModMasterType.Ghost);
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(GhostParam.GhostParams);
                     Title = "鬼影算法设置";
                     break;
                 case TemplateType.DistortionParam:
                     if (IsReLoad)
-                        TemplateControl.LoadParams(DistortionParam.DistortionParams);
+                        TemplateControl.LoadModParam(DistortionParam.DistortionParams, ModMasterType.Distortion);
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(DistortionParam.DistortionParams);
                     Title = "畸变算法设置";
                     break;
                 case TemplateType.LedCheckParam:
                     if (IsReLoad)
-                        TemplateControl.LoadParams(LedCheckParam.LedCheckParams);
+                        TemplateControl.LoadModParam(LedCheckParam.LedCheckParams, ModMasterType.LedCheck);
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(LedCheckParam.LedCheckParams);
                     Title = "灯光检测算法设置";
                     break;
                 case TemplateType.FocusPointsParam:
                     if (IsReLoad)
-                        TemplateControl.LoadParams(FocusPointsParam.FocusPointsParams);
+                        TemplateControl.LoadModParam(FocusPointsParam.FocusPointsParams, ModMasterType.FocusPoints);
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(FocusPointsParam.FocusPointsParams);
                     Title = "FocusPoints算法设置";
                     break;
                 case TemplateType.BuildPOIParmam:
                     if (IsReLoad)
-                        TemplateControl.LoadParams(BuildPOIParam.BuildPOIParams);
+                        TemplateControl.LoadModParam(BuildPOIParam.BuildPOIParams, ModMasterType.BuildPOI);
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(BuildPOIParam.BuildPOIParams);
                     Title = "BuildPOI算法设置";
                     break;
                 case TemplateType.SensorHeYuan:
                     if (IsReLoad)
-                        TemplateControl.LoadParams(SensorHeYuan.SensorHeYuans);
+                        TemplateControl.LoadModParam(SensorHeYuan.SensorHeYuans, ModMasterType.SensorHeYuan);
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(SensorHeYuan.SensorHeYuans);
                     Title = "SensorHeYuan算法设置";
                     break;
                 case TemplateType.CameraExposureParam:
                     if (IsReLoad)
-                        TemplateControl.LoadParams(CameraExposureParam.CameraExposureParams);
+                        TemplateControl.LoadModParam(CameraExposureParam.CameraExposureParams, ModMasterType.CameraExposure);
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(CameraExposureParam.CameraExposureParams);
                     Title = "相机曝光参数设置";
                     break;
@@ -214,8 +211,6 @@ namespace ColorVision.Services.Templates
             GridProperty.Children.Add(UserControl);
             Width = Width + 200;
         }
-
-
 
         public DeviceSpectrum DeviceSpectrum { get; set; }
         public WindowTemplate(TemplateType windowTemplateType, UserControl userControl, DeviceSpectrum deviceSpectrum, bool IsReLoad = true)
@@ -351,12 +346,12 @@ namespace ColorVision.Services.Templates
                     break;
                 case TemplateType.PGParam:
                     PGParam? pgParam = TemplateControl.AddParamMode<PGParam>(ModMasterType.PG, TemplateName);
-                    if (pgParam != null) CreateNewTemplate(TemplateControl.PGParams, TemplateName, pgParam);
+                    if (pgParam != null) CreateNewTemplate(PGParam.Params, TemplateName, pgParam);
                     else MessageBox.Show("数据库创建PG模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
                 case TemplateType.SMUParam:
                     SMUParam?  sMUParam = TemplateControl.AddParamMode<SMUParam>(ModMasterType.SMU, TemplateName);
-                    if (sMUParam != null) CreateNewTemplate(TemplateControl.SMUParams, TemplateName, sMUParam);
+                    if (sMUParam != null) CreateNewTemplate(SMUParam.Params, TemplateName, sMUParam);
                     else MessageBox.Show("数据库创建源表模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
                 case TemplateType.MTFParam:
@@ -467,10 +462,10 @@ namespace ColorVision.Services.Templates
                     TemplateControl.Save2DB(TemplateControl.AoiParams);
                     break;
                 case TemplateType.PGParam:
-                    TemplateControl.Save2DB(TemplateControl.PGParams);
+                    TemplateControl.Save2DB(PGParam.Params);
                     break;
                 case TemplateType.SMUParam:
-                    TemplateControl.Save2DB(TemplateControl.SMUParams);
+                    TemplateControl.Save2DB(SMUParam.Params);
                     break;
                 case TemplateType.MTFParam:
                     TemplateControl.Save2DB(MTFParam.MTFParams);
@@ -589,10 +584,10 @@ namespace ColorVision.Services.Templates
                             TemplateDel(DeviceSpectrum.SpectrumResourceParams);
                             break;
                         case TemplateType.PGParam:
-                            TemplateDel(TemplateControl.PGParams);
+                            TemplateDel(PGParam.Params);
                             break;
                         case TemplateType.SMUParam:
-                            TemplateDel(TemplateControl.SMUParams);
+                            TemplateDel(SMUParam.Params);
                             break;
                         case TemplateType.PoiParam:
                             PoiMasterDao poiMasterDao = new PoiMasterDao();
@@ -770,7 +765,7 @@ namespace ColorVision.Services.Templates
                             flowParam.DataBase64 = Tool.FileToBase64(ofd.FileName); ;
                             CreateNewTemplate(FlowParam.Params, name, flowParam);
 
-                            TemplateControl.GetInstance().Save2DB(flowParam);
+                            TemplateControl.Save2DB(flowParam);
                         }
                         else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     }
@@ -786,7 +781,7 @@ namespace ColorVision.Services.Templates
                         if (measureParam != null)
                         {
                             CreateNewTemplate(TemplateControl.MeasureParams, name, measureParam);
-                            TemplateControl.GetInstance().Save2DB(measureParam);
+                            TemplateControl.Save2DB(measureParam);
                         }
                         else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     }
@@ -806,7 +801,7 @@ namespace ColorVision.Services.Templates
                         if (calibrationParam != null)
                         {
                             CreateNewTemplate(DeviceCamera.CalibrationParams, name, calibrationParam);
-                            TemplateControl.GetInstance().Save2DB(calibrationParam);
+                            TemplateControl .Save2DB(calibrationParam);
                         }
                         else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     }
@@ -822,7 +817,7 @@ namespace ColorVision.Services.Templates
                         if (aoiParam != null)
                         {
                             CreateNewTemplate(TemplateControl.AoiParams, name, aoiParam);
-                            TemplateControl.GetInstance().Save2DB(aoiParam);
+                            TemplateControl.Save2DB(aoiParam);
                         }
                         else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     }
@@ -837,8 +832,8 @@ namespace ColorVision.Services.Templates
                         PGParam? pGParam = JsonConvert.DeserializeObject<PGParam>(File.ReadAllText(ofd.FileName));
                         if (pGParam != null)
                         {
-                            CreateNewTemplate(TemplateControl.PGParams, name, pGParam);
-                            TemplateControl.GetInstance().Save2DB(pGParam);
+                            CreateNewTemplate(PGParam.Params, name, pGParam);
+                            TemplateControl.Save2DB(pGParam);
                         }
                         else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     }
@@ -853,8 +848,8 @@ namespace ColorVision.Services.Templates
                         SMUParam? sMUParam = JsonConvert.DeserializeObject<SMUParam>(File.ReadAllText(ofd.FileName));
                         if (sMUParam != null)
                         {
-                            CreateNewTemplate(TemplateControl.SMUParams, name, sMUParam);
-                            TemplateControl.GetInstance().Save2DB(sMUParam);
+                            CreateNewTemplate(SMUParam.Params, name, sMUParam);
+                            TemplateControl.Save2DB(sMUParam);
                         }
                         else MessageBox.Show("数据库创建源表模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     }
@@ -886,7 +881,7 @@ namespace ColorVision.Services.Templates
                         if (mTFParam != null)
                         {
                             CreateNewTemplate(MTFParam.MTFParams, name, mTFParam);
-                            TemplateControl.GetInstance().Save2DB(mTFParam);
+                            TemplateControl.Save2DB(mTFParam);
                         }
                         else MessageBox.Show("数据库创建MTF模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     }
@@ -902,7 +897,7 @@ namespace ColorVision.Services.Templates
                         if (sFRParam != null)
                         {
                             CreateNewTemplate(SFRParam.SFRParams, name, sFRParam);
-                            TemplateControl.GetInstance().Save2DB(sFRParam);
+                            TemplateControl.Save2DB(sFRParam);
                         }
                         else MessageBox.Show("数据库创建SFR模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     }
@@ -918,7 +913,7 @@ namespace ColorVision.Services.Templates
                         if (fOVParam != null)
                         {
                             CreateNewTemplate(FOVParam.FOVParams, name, fOVParam);
-                            TemplateControl.GetInstance().Save2DB(fOVParam);
+                            TemplateControl.Save2DB(fOVParam);
                         }
                         else MessageBox.Show("数据库创建FOV模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     }
@@ -934,7 +929,7 @@ namespace ColorVision.Services.Templates
                         if (ghostParam != null)
                         {
                             CreateNewTemplate(GhostParam.GhostParams, name, ghostParam);
-                            TemplateControl.GetInstance().Save2DB(ghostParam);
+                            TemplateControl.Save2DB(ghostParam);
                         }
                         else MessageBox.Show("数据库创建Ghost模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     }
@@ -951,7 +946,7 @@ namespace ColorVision.Services.Templates
                         if (distortionParam != null)
                         {
                             CreateNewTemplate(DistortionParam.DistortionParams, name, distortionParam);
-                            TemplateControl.GetInstance().Save2DB(distortionParam);
+                            TemplateControl.Save2DB(distortionParam);
                         }
                         else MessageBox.Show("数据库创建Distortion模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     }
@@ -968,7 +963,7 @@ namespace ColorVision.Services.Templates
                         if (ledCheckParam != null)
                         {
                             CreateNewTemplate(LedCheckParam.LedCheckParams, name, ledCheckParam);
-                            TemplateControl.GetInstance().Save2DB(ledCheckParam);
+                            TemplateControl.Save2DB(ledCheckParam);
                         }
                         else MessageBox.Show("数据库创建灯光检测模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     }
@@ -985,7 +980,7 @@ namespace ColorVision.Services.Templates
                         if (focusPointsParam != null)
                         {
                             CreateNewTemplate(FocusPointsParam.FocusPointsParams, name, focusPointsParam);
-                            TemplateControl.GetInstance().Save2DB(focusPointsParam);
+                            TemplateControl.Save2DB(focusPointsParam);
                         }
                         else MessageBox.Show("数据库创建FocusPoints模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     }
@@ -1002,7 +997,7 @@ namespace ColorVision.Services.Templates
                         if (buildPOIParam != null)
                         {
                             CreateNewTemplate(BuildPOIParam.BuildPOIParams, name, buildPOIParam);
-                            TemplateControl.GetInstance().Save2DB(buildPOIParam);
+                            TemplateControl.Save2DB(buildPOIParam);
                         }
                         else MessageBox.Show("数据库创建BuildPOI模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     }
@@ -1019,7 +1014,7 @@ namespace ColorVision.Services.Templates
                         if (sensorHeYuan != null)
                         {
                             CreateNewTemplate(SensorHeYuan.SensorHeYuans, name, sensorHeYuan);
-                            TemplateControl.GetInstance().Save2DB(sensorHeYuan);
+                                TemplateControl.Save2DB(sensorHeYuan);
                         }
                         else MessageBox.Show("数据库创建SensorHeYuan模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     }
@@ -1036,7 +1031,7 @@ namespace ColorVision.Services.Templates
                         if (cameraExposureParam != null)
                         {
                             CreateNewTemplate(CameraExposureParam.CameraExposureParams, name, cameraExposureParam);
-                            TemplateControl.GetInstance().Save2DB(cameraExposureParam);
+                            TemplateControl.Save2DB(cameraExposureParam);
                         }
                         else MessageBox.Show("数据库创建CameraExposureParam模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     }

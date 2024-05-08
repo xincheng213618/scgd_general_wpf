@@ -5,7 +5,9 @@ using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.UI;
 using cvColorVision;
+using Org.BouncyCastle.Crypto.Operators;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Text;
 using System.Windows;
 
@@ -38,6 +40,8 @@ namespace ColorVision.Services.Devices.SMU
 
     public class SMUParam : ParamBase
     {
+        public static ObservableCollection<TemplateModel<SMUParam>> Params { get; set; } = new ObservableCollection<TemplateModel<SMUParam>>();
+
         public SMUParam() { }
 
         public SMUParam(ModMasterModel modMaster, List<ModDetailModel> sxDetail) : base(modMaster.Id, modMaster.Name ?? string.Empty, sxDetail) { }

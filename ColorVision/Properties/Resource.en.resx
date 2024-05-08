@@ -735,4 +735,22 @@
   <data name="MenuRename" xml:space="preserve">
     <value>Rena_me</value>
   </data>
+  <data name="MenuPhyCameraManager" xml:space="preserve">
+    <value>_Physical Camera Management</value>
+  </data>
+  <data name="PhysicalCameraManager" xml:space="preserve">
+    <value>Physical Camera Management</value>
+  </data>
+  <data name="MenuDevice" xml:space="preserve">
+    <value>_Device Configuration</value>
+  </data>
+  <data name="MenuService" xml:space="preserve">
+    <value>Administrator _Service Configuration</value>
+  </data>
+  <data name="MenuLogin" xml:space="preserve">
+    <value>_Login account</value>
+  </data>
+  <data name="MenuCalibrationTool" xml:space="preserve">
+    <value>_Calibration Generation Tool</value>
+  </data>
 </root>

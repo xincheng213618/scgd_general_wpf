@@ -1,19 +1,19 @@
 ﻿using ColorVision.Adorners;
 using ColorVision.Common.Utilities;
-using ColorVision.UI.HotKey;
 using ColorVision.MySql;
 using ColorVision.Projects;
 using ColorVision.Services.Flow;
 using ColorVision.Services.RC;
+using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.Solution.Searches;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.HotKey;
 using ColorVision.Update;
 using ColorVision.UserSpace;
 using ColorVision.Utils;
-using ColorVision.Wizards;
 using log4net;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
@@ -83,6 +83,7 @@ namespace ColorVision
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            TemplateControl.GetInstance();
             MenuManager.GetInstance().Menu = Menu1;
             if (MySqlControl.GetInstance().IsConnect)
             {

@@ -7,6 +7,7 @@ using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.UI;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Windows;
 
 namespace ColorVision.Services.Devices.PG.Templates
@@ -39,6 +40,8 @@ namespace ColorVision.Services.Devices.PG.Templates
 
     public class PGParam : ParamBase
     {
+        public static ObservableCollection<TemplateModel<PGParam>> Params { get; set; } = new ObservableCollection<TemplateModel<PGParam>>();
+
         public PGParam()
         {
         }

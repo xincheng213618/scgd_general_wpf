@@ -1,6 +1,4 @@
-﻿using ColorVision.Services.Dao;
-
-namespace ColorVision.Services.Templates
+﻿namespace ColorVision.Services.Templates
 {
     public enum TemplateType
     {

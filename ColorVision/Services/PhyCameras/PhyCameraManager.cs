@@ -1,20 +1,18 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.MySql;
+using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.PhyCameras.Dao;
 using ColorVision.Services.Type;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO.Compression;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Windows;
-using System.Windows.Documents;
-using ColorVision.Services.Core;
-using ColorVision.UserSpace;
-using System.Collections.Generic;
 
 namespace ColorVision.Services.PhyCameras
 {

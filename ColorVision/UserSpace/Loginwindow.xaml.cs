@@ -17,7 +17,7 @@ namespace ColorVision.UserSpace
 
         public int Order => 3;
 
-        public string? Header => Resource.Sign_in;
+        public string? Header =>ColorVision.Properties.Resource.MenuLogin;
 
         public string? InputGestureText => null;
 

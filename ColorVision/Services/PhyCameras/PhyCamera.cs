@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.MVVM.Json;
 using ColorVision.Common.Utilities;
 using ColorVision.Controls;
 using ColorVision.Extension;
@@ -20,7 +19,6 @@ using ColorVision.Services.Type;
 using ColorVision.Themes.Controls;
 using cvColorVision;
 using log4net;
-using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -86,7 +84,7 @@ namespace ColorVision.Services.PhyCameras
 
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
 
-            TemplateControl.GetInstance().LoadModCabParam(CalibrationParams, SysResourceModel.Id, ModMasterType.Calibration);
+            TemplateControl.LoadModCabParam(CalibrationParams, SysResourceModel.Id, ModMasterType.Calibration);
 
             CalibrationEditCommand = new RelayCommand(a =>
             {

@@ -187,7 +187,7 @@ namespace ColorVision.Services.Flow
                     flowControl.Start(sn);
                     string name = string.Empty;
                     if (IsName.IsChecked.HasValue && IsName.IsChecked.Value) { name = TextBoxName.Text; }
-                    ServiceManager.GetInstance().BeginNewBatch(sn, name);
+                    ServiceManager.BeginNewBatch(sn, name);
                 }
                 else
                 {

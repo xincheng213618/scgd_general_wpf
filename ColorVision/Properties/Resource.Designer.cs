@@ -817,6 +817,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 校正生成工具(_C) 的本地化字符串。
+        /// </summary>
+        public static string MenuCalibrationTool {
+            get {
+                return ResourceManager.GetString("MenuCalibrationTool", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 复制(_C) 的本地化字符串。
         /// </summary>
         public static string MenuCopy {
@@ -840,6 +849,15 @@ namespace ColorVision.Properties {
         public static string MenuDelete {
             get {
                 return ResourceManager.GetString("MenuDelete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 设备配置(_D) 的本地化字符串。
+        /// </summary>
+        public static string MenuDevice {
+            get {
+                return ResourceManager.GetString("MenuDevice", resourceCulture);
             }
         }
         
@@ -898,6 +916,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 登录账号(_L) 的本地化字符串。
+        /// </summary>
+        public static string MenuLogin {
+            get {
+                return ResourceManager.GetString("MenuLogin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 新建(_N) 的本地化字符串。
         /// </summary>
         public static string MenuNew {
@@ -925,11 +952,29 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 物理相机管理(_P) 的本地化字符串。
+        /// </summary>
+        public static string MenuPhyCameraManager {
+            get {
+                return ResourceManager.GetString("MenuPhyCameraManager", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 重命名(_M) 的本地化字符串。
         /// </summary>
         public static string MenuRename {
             get {
                 return ResourceManager.GetString("MenuRename", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 管理员服务配置(_S) 的本地化字符串。
+        /// </summary>
+        public static string MenuService {
+            get {
+                return ResourceManager.GetString("MenuService", resourceCulture);
             }
         }
         
@@ -1245,6 +1290,15 @@ namespace ColorVision.Properties {
         public static string PerformanceTest {
             get {
                 return ResourceManager.GetString("PerformanceTest", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 物理相机管理 的本地化字符串。
+        /// </summary>
+        public static string PhysicalCameraManager {
+            get {
+                return ResourceManager.GetString("PhysicalCameraManager", resourceCulture);
             }
         }
         

@@ -347,6 +347,10 @@
           <source>算法(_A)</source>
           <target state="new">_Algorithm</target>
         </trans-unit>
+        <trans-unit id="MenuCalibrationTool" translate="yes" xml:space="preserve">
+          <source>校正生成工具(_C)</source>
+          <target state="new">_Calibration Generation Tool</target>
+        </trans-unit>
         <trans-unit id="MenuCopy" translate="yes" xml:space="preserve">
           <source>复制(_C)</source>
           <target state="new">_Copy</target>
@@ -358,6 +362,10 @@
         <trans-unit id="MenuDelete" translate="yes" xml:space="preserve">
           <source>删除(_D)</source>
           <target state="new">_Delete</target>
+        </trans-unit>
+        <trans-unit id="MenuDevice" translate="yes" xml:space="preserve">
+          <source>设备配置(_D)</source>
+          <target state="new">_Device Configuration</target>
         </trans-unit>
         <trans-unit id="MenuEdit" translate="yes" xml:space="preserve">
           <source>编辑(_E)</source>
@@ -383,6 +391,10 @@
           <source>语言(_L)</source>
           <target state="new">_Language</target>
         </trans-unit>
+        <trans-unit id="MenuLogin" translate="yes" xml:space="preserve">
+          <source>登录账号(_L)</source>
+          <target state="new">_Login account</target>
+        </trans-unit>
         <trans-unit id="MenuNew" translate="yes" xml:space="preserve">
           <source>新建(_N)</source>
           <target state="new">_New</target>
@@ -395,9 +407,17 @@
           <source>选项(_O)</source>
           <target state="new">_Options</target>
         </trans-unit>
+        <trans-unit id="MenuPhyCameraManager" translate="yes" xml:space="preserve">
+          <source>物理相机管理(_P)</source>
+          <target state="new">_Physical Camera Management</target>
+        </trans-unit>
         <trans-unit id="MenuRename" translate="yes" xml:space="preserve">
           <source>重命名(_M)</source>
           <target state="new">Rena_me</target>
+        </trans-unit>
+        <trans-unit id="MenuService" translate="yes" xml:space="preserve">
+          <source>管理员服务配置(_S)</source>
+          <target state="new">Administrator _Service Configuration</target>
         </trans-unit>
         <trans-unit id="MenuSettings" translate="yes" xml:space="preserve">
           <source>设置(_S)</source>
@@ -530,6 +550,10 @@
         <trans-unit id="PerformanceTest" translate="yes" xml:space="preserve">
           <source>性能检测</source>
           <target state="new">Performance testing</target>
+        </trans-unit>
+        <trans-unit id="PhysicalCameraManager" translate="yes" xml:space="preserve">
+          <source>物理相机管理</source>
+          <target state="new">Physical Camera Management</target>
         </trans-unit>
         <trans-unit id="Pin" translate="yes" xml:space="preserve">
           <source>置顶</source>

@@ -18,7 +18,7 @@ namespace ColorVision.Services
 
         public string? GuidId { get; set; } = "WindowService";
         public int Order => 3;
-        public string? Header => "管理员服务配置(_S)";
+        public string? Header => ColorVision.Properties.Resource.MenuService;
 
         public string? InputGestureText { get; set; }
 

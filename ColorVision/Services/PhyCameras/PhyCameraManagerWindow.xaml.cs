@@ -1,20 +1,38 @@
-﻿using ColorVision.Services.PhyCameras;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.UI;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace ColorVision.Services.PhyCameras
 {
+
+    public class ExportPhyCamerManager : IMenuItem
+    {
+        public string? OwnerGuid => "Tool";
+
+        public string? GuidId => "PhyCamerManager";
+
+        public int Order => 9;
+
+        public string? Header => ColorVision.Properties.Resource.MenuPhyCameraManager;
+
+        public string? InputGestureText => null;
+
+        public object? Icon => null;
+
+        public RelayCommand Command => new RelayCommand(A => Execute());
+
+        private static void Execute()
+        {
+            new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
+        }
+    }
+
+
+
+
+
     /// <summary>
     /// PhyCameraManagerWindow.xaml 的交互逻辑
     /// </summary>

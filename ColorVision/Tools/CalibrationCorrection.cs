@@ -21,7 +21,7 @@ namespace ColorVision.Tools
 
         public int Order => 6;
 
-        public string? Header => "校正生成工具";
+        public string? Header => ColorVision.Properties.Resource.MenuCalibrationTool;
 
         public string? InputGestureText => null;
 
