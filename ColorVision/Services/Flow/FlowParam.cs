@@ -7,6 +7,7 @@ using ColorVision.Services.Templates.POI;
 using ColorVision.Settings;
 using ColorVision.UI;
 using ColorVision.UserSpace;
+using CVCommCore;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -111,6 +112,62 @@ namespace ColorVision.Services.Flow
             }
             return ret;
         }
+
+        public static void Save2DB<T>(ObservableCollection<TemplateModel<T>> keyValuePairs) where T : FlowParam
+        {
+            foreach (var item in keyValuePairs)
+            {
+                Save2DB(item.Value);
+            }
+        }
+
+        public static void Save2DB(FlowParam flowParam)
+        {
+            List<ModDetailModel> list = new List<ModDetailModel>();
+            flowParam.GetDetail(list);
+            if (list.Count > 0 && list[0] is ModDetailModel model)
+            {
+                if (int.TryParse(model.ValueA, out int id))
+                {
+                    SysResourceModel res = VSysResourceDao.Instance.GetById(id);
+                    if (res != null)
+                    {
+                        res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
+                        res.Name = flowParam.Name;
+                        res.Value = flowParam.DataBase64;
+                        VSysResourceDao.Instance.Save(res);
+                    }
+                    else
+                    {
+                        res = new SysResourceModel();
+                        res.Name = flowParam.Name;
+                        res.Type = (int)PhysicalResourceType.FlowFile;
+                        if (!string.IsNullOrEmpty(flowParam.DataBase64))
+                        {
+                            res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
+                            res.Value = flowParam.DataBase64;
+                        }
+                        VSysResourceDao.Instance.Save(res);
+                        model.ValueA = res.Id.ToString();
+                    }
+                }
+                else
+                {
+                    SysResourceModel res = new SysResourceModel();
+                    res.Name = flowParam.Name;
+                    res.Type = (int)PhysicalResourceType.FlowFile;
+                    if (!string.IsNullOrEmpty(flowParam.DataBase64))
+                    {
+                        res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
+                        res.Value = flowParam.DataBase64;
+                    }
+                    VSysResourceDao.Instance.Save(res);
+                    model.ValueA = res.Id.ToString();
+                }
+                ModDetailDao.Instance.UpdateByPid(flowParam.Id, list);
+            }
+        }
+
 
 
         public FlowParam()

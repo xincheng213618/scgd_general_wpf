@@ -1,5 +1,9 @@
-﻿using ColorVision.MQTT;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.MQTT;
+using ColorVision.Properties;
+using ColorVision.Services.Templates;
 using ColorVision.Solution;
+using ColorVision.UI;
 using FlowEngineLib.Base;
 using FlowEngineLib.Start;
 using Newtonsoft.Json;
@@ -9,13 +13,6 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using ColorVision.Services.Templates;
-using ColorVision.UI.HotKey;
-using ColorVision.Settings;
-using ColorVision.UI;
-using ColorVision.Common.MVVM;
-using ColorVision.Properties;
-using ColorVision.Common.Utilities;
 
 namespace ColorVision.Services.Flow
 {
@@ -219,7 +216,7 @@ namespace ColorVision.Services.Flow
             {
                 //FlowParam.FileName = Path.GetFileName(flowName);
                 FlowParam.DataBase64 = Convert.ToBase64String(data);
-                TemplateControl.GetInstance().Save2DB(FlowParam);
+                FlowParam.Save2DB(FlowParam);
             }
 
             MessageBox.Show("保存成功");

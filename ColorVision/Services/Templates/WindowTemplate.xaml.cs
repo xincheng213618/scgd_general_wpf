@@ -198,18 +198,6 @@ namespace ColorVision.Services.Templates
 
         public UserControl  UserControl { get; set; }
 
-        public WindowTemplate(TemplateType windowTemplateType,UserControl userControl,bool IsReLoad = true)
-        {
-            TemplateType = windowTemplateType;
-            TemplateControl = TemplateControl.GetInstance();
-            UserControl = userControl;
-            Load(windowTemplateType, IsReLoad);
-            InitializeComponent();
-            GridProperty.Children.Clear();
-            GridProperty.Margin = new Thickness(5,5,5,5);
-            GridProperty.Children.Add(UserControl);
-        }
-
         public ICalibrationService<BaseResourceObject> DeviceCamera { get; set; }
         public WindowTemplate(TemplateType windowTemplateType, UserControl userControl, ICalibrationService<BaseResourceObject> deviceCamera ,bool IsReLoad = true)
         {
@@ -465,18 +453,71 @@ namespace ColorVision.Services.Templates
 
         public void TemplateSave()
         {
-            if (TemplateType == TemplateType.Calibration)
+            switch (TemplateType)
             {
-                TemplateControl.Save2DB(DeviceCamera.CalibrationParams);
+                case TemplateType.Calibration:
+                    TemplateControl.Save2DB(DeviceCamera.CalibrationParams);
+                    break;
+                case TemplateType.SpectrumResourceParam:
+                    TemplateControl.Save2DB(DeviceSpectrum.SpectrumResourceParams);
+                    break;
+                case TemplateType.PoiParam:
+                    foreach (var item in PoiParam.Params)
+                    {
+                        var modMasterModel = PoiMasterDao.Instance.GetById(item.Id);
+                        if (modMasterModel != null)
+                        {
+                            modMasterModel.Name = item.Key;
+                            PoiMasterDao.Instance.Save(modMasterModel);
+                        }
+                    }
+                    break;
+                case TemplateType.FlowParam:
+                    FlowParam.Save2DB(FlowParam.Params);
+                    break;
+                case TemplateType.AoiParam:
+                    TemplateControl.Save2DB(TemplateControl.AoiParams);
+                    break;
+                case TemplateType.PGParam:
+                    TemplateControl.Save2DB(TemplateControl.PGParams);
+                    break;
+                case TemplateType.SMUParam:
+                    TemplateControl.Save2DB(TemplateControl.SMUParams);
+                    break;
+                case TemplateType.MTFParam:
+                    TemplateControl.Save2DB(MTFParam.MTFParams);
+                    break;
+                case TemplateType.SFRParam:
+                    TemplateControl.Save2DB(SFRParam.SFRParams);
+                    break;
+                case TemplateType.FOVParam:
+                    TemplateControl.Save2DB(FOVParam.FOVParams);
+                    break;
+                case TemplateType.GhostParam:
+                    TemplateControl.Save2DB(GhostParam.GhostParams);
+                    break;
+                case TemplateType.DistortionParam:
+                    TemplateControl.Save2DB(DistortionParam.DistortionParams);
+                    break;
+                case TemplateType.FocusPointsParam:
+                    TemplateControl.Save2DB(FocusPointsParam.FocusPointsParams);
+                    break;
+                case TemplateType.LedCheckParam:
+                    TemplateControl.Save2DB(LedCheckParam.LedCheckParams);
+                    break;
+                case TemplateType.BuildPOIParmam:
+                    TemplateControl.Save2DB(BuildPOIParam.BuildPOIParams);
+                    break;
+                case TemplateType.SensorHeYuan:
+                    TemplateControl.Save2DB(SensorHeYuan.SensorHeYuans);
+                    break;
+                case TemplateType.CameraExposureParam:
+                    TemplateControl.Save2DB(CameraExposureParam.CameraExposureParams);
+                    break;
+                default:
+                    break;
             }
-            if (TemplateType == TemplateType.SpectrumResourceParam)
-            {
-                TemplateControl.Save2DB(DeviceSpectrum.SpectrumResourceParams);
-            }
-            else
-            {
-                TemplateControl.Save(TemplateType);
-            }
+
         }
 
 

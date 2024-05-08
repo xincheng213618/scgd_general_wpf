@@ -135,118 +135,6 @@ namespace ColorVision.Services.Templates
             }
         }
 
-        /// 这里是初始化模板的封装，因为模板的代码高度统一，所以使用泛型T来设置具体的模板参数。
-        /// 最后在给模板的每一个元素加上一个切换的效果，即当某一个模板启用时，关闭其他已经启用的模板；
-        /// 同一类型，只能存在一个启用的模板
-        private static ObservableCollection<TemplateModel<T>> IDefault<T>(string FileName, T Default) where T : ParamBase
-        {
-            ObservableCollection<TemplateModel<T>> Params = new ObservableCollection<TemplateModel<T>>();
-
-            Params =  new ObservableCollection<TemplateModel<T>>();
-            if (Params.Count == 0)
-            {
-                Params.Add(new TemplateModel<T>("default", Default));
-            }
-
-            foreach (var item in Params)
-            {
-                item.Value.IsEnabledChanged += (s, e) =>
-                {
-                    foreach (var item2 in Params)
-                    {
-                        if (item2.Key != item.Key)
-                            item2.Value.IsEnable = false;
-                    }
-                };
-            }
-            Params.CollectionChanged += (s, e) =>
-            {
-                if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add)
-                {
-                    Params[e.NewStartingIndex].Value.IsEnabledChanged += (s, e1) =>
-                    {
-                        foreach (var item2 in Params)
-                        {
-                            if (item2.Key != Params[e.NewStartingIndex].Key)
-                                item2.Value.IsEnable = false;
-                        }
-                    };
-
-                }
-            };
-            return Params;
-        }
-
-        public void Save(TemplateType windowTemplateType)
-        {
-            switch (windowTemplateType)
-            {
-                case TemplateType.Calibration:
-                    break;
-                case TemplateType.PoiParam:
-                    foreach (var item in PoiParam.Params)
-                    {
-                        var modMasterModel = PoiMasterDao.Instance.GetById(item.Id);
-                        if (modMasterModel != null)
-                        {
-                            modMasterModel.Name = item.Key;
-                            PoiMasterDao.Instance.Save(modMasterModel);
-                        }
-                    }
-                    break;
-                case TemplateType.FlowParam:
-                    Save2DB(FlowParam.Params);
-                    break;
-                case TemplateType.AoiParam:
-                    Save2DB(AoiParams);
-                    break;
-                case TemplateType.PGParam:
-                    Save2DB(PGParams);
-                    break;
-                case TemplateType.SMUParam:
-                    Save2DB(SMUParams);
-                    break;
-                case TemplateType.MTFParam:
-                    Save2DB(MTFParam.MTFParams);
-                    break;
-                case TemplateType.SFRParam:
-                    Save2DB(SFRParam.SFRParams);
-                    break;
-                case TemplateType.FOVParam:
-                    Save2DB(FOVParam.FOVParams);
-                    break;
-                case TemplateType.GhostParam:
-                    Save2DB(GhostParam.GhostParams);
-                    break;
-                case TemplateType.DistortionParam:
-                    Save2DB(DistortionParam.DistortionParams);
-                    break;
-                case TemplateType.FocusPointsParam:
-                    Save2DB(FocusPointsParam.FocusPointsParams);
-                    break;
-                case TemplateType.LedCheckParam:
-                    Save2DB(LedCheckParam.LedCheckParams);
-                    break;
-                case TemplateType.BuildPOIParmam:
-                    Save2DB(BuildPOIParam.BuildPOIParams);
-                    break;
-                case TemplateType.SensorHeYuan:
-                    Save2DB(SensorHeYuan.SensorHeYuans);
-                    break;
-                case TemplateType.CameraExposureParam:
-                    Save2DB(CameraExposureParam.CameraExposureParams);
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        public void Save<T>(ObservableCollection<TemplateModel<T>> t) where T : ParamBase
-        {
-            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
-                Save2DB(t);
-        }
-
 
         public void Save2DB<T>(ObservableCollection<TemplateModel<T>> keyValuePairs) where T : ParamBase
         {
@@ -259,7 +147,15 @@ namespace ColorVision.Services.Templates
 
         public void Save2DB<T>(T value) where T : ParamBase
         {
-            Save(value);
+            if (masterModDao.GetById(value.Id) is ModMasterModel modMasterModel && modMasterModel.Pcode != null)
+            {
+                modMasterModel.Name = value.Name;
+                ModMasterDao modMasterDao = new ModMasterDao(modMasterModel.Pcode);
+                modMasterDao.Save(modMasterModel);
+            }
+            List<ModDetailModel> list = new List<ModDetailModel>();
+            value.GetDetail(list);
+            detailDao.UpdateByPid(value.Id, list);
         }
 
 
@@ -302,52 +198,6 @@ namespace ColorVision.Services.Templates
             return ret;
         }
 
-        public void Save(FlowParam flowParam)
-        {
-            List<ModDetailModel> list = new List<ModDetailModel>();
-            flowParam.GetDetail(list);
-            if (list.Count > 0 && list[0] is ModDetailModel model)
-            {
-                if (int.TryParse(model.ValueA, out int id))
-                {
-                    SysResourceModel res = resourceDao.GetById(id);
-                    if (res != null)
-                    {
-                        res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
-                        res.Name = flowParam.Name;
-                        res.Value = flowParam.DataBase64;
-                        resourceDao.Save(res);
-                    }
-                    else
-                    {
-                        res = new SysResourceModel();
-                        res.Name = flowParam.Name;
-                        res.Type = (int)PhysicalResourceType.FlowFile;
-                        if (!string.IsNullOrEmpty(flowParam.DataBase64))
-                        {
-                            res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
-                            res.Value = flowParam.DataBase64;
-                        }
-                        resourceDao.Save(res);
-                        model.ValueA = res.Id.ToString();
-                    }
-                }
-                else
-                {
-                    SysResourceModel res = new SysResourceModel();
-                    res.Name = flowParam.Name;
-                    res.Type = (int)PhysicalResourceType.FlowFile;
-                    if (!string.IsNullOrEmpty(flowParam.DataBase64))
-                    {
-                        res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
-                        res.Value = flowParam.DataBase64;
-                    }
-                    resourceDao.Save(res);
-                    model.ValueA = res.Id.ToString();
-                }
-                detailDao.UpdateByPid(flowParam.Id, list);
-            }
-        }
 
 
         internal static MeasureParam? AddMeasureParam(string name)
@@ -393,12 +243,6 @@ namespace ColorVision.Services.Templates
                     ParamModes.Add(new TemplateModel<T>(dbModel.Name ?? "default", (T)Activator.CreateInstance(typeof(T), new object[] { dbModel, smuDetails })));
                 }
             }
-            else
-            {
-                var keyValuePairs = IDefault(ModeType, new T());
-                foreach (var item in keyValuePairs)
-                    ParamModes.Add(item);
-            }
         }
         private ModMasterDao masterFlowDao = new ModMasterDao(ModMasterType.Flow);
 
@@ -420,20 +264,8 @@ namespace ColorVision.Services.Templates
                 }
             }
         }
-        internal void Save(ParamBase value)
-        {
-            if (masterModDao.GetById(value.Id) is ModMasterModel modMasterModel && modMasterModel.Pcode != null)
-            {
-                modMasterModel.Name = value.Name;
-                ModMasterDao modMasterDao = new ModMasterDao(modMasterModel.Pcode);
-                modMasterDao.Save(modMasterModel);
-            }
-            List<ModDetailModel> list = new List<ModDetailModel>();
-            value.GetDetail(list);
-            detailDao.UpdateByPid(value.Id, list);
-        }
 
-        public T? AddCalibrationParam<T>(string code, string Name, int resourceId) where T : ParamBase, new()
+        public static T? AddCalibrationParam<T>(string code, string Name, int resourceId) where T : ParamBase, new()
         {
             ModMasterModel modMaster = new ModMasterModel(code, Name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             modMaster.ResourceId = resourceId;
@@ -441,13 +273,14 @@ namespace ColorVision.Services.Templates
             int pkId = modMaster.Id;
             if (pkId > 0)
             {
-                ModMasterModel modMasterModel = masterModDao.GetById(pkId);
-                List<ModDetailModel> modDetailModels = detailDao.GetAllByPid(pkId);
+                ModMasterModel modMasterModel = ModMasterDao.Instance.GetById(pkId);
+                List<ModDetailModel> modDetailModels = ModDetailDao.Instance.GetAllByPid(pkId);
                 if (modMasterModel != null) return (T)Activator.CreateInstance(typeof(T), new object[] { modMasterModel, modDetailModels });
                 else return null;
             }
             return null;
         }
+
 
         private MeasureDetailDao measureDetail = new MeasureDetailDao();
 
@@ -464,12 +297,6 @@ namespace ColorVision.Services.Templates
             }
             return MeasureParams;
         }
-
-        internal void Save2DB(FlowParam flowParam)
-        {
-            Save(flowParam);
-        }
-
 
         public ObservableCollection<TemplateModel<MeasureParam>> MeasureParams { get; set; }
         public ObservableCollection<TemplateModel<AOIParam>> AoiParams { get; set; }
