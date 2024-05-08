@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS8604
-using ColorVision.Common.Sorts;
 using ColorVision.Common.Utilities;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
@@ -8,13 +7,11 @@ using ColorVision.Services.Devices.PG.Templates;
 using ColorVision.Services.Devices.Sensor.Templates;
 using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Flow;
-using ColorVision.Services.Flow.Dao;
 using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates.Measure;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Settings;
-using ColorVision.UserSpace;
 using CVCommCore;
 using System;
 using System.Collections.Generic;
@@ -39,7 +36,6 @@ namespace ColorVision.Services.Templates
             AoiParams = new ObservableCollection<TemplateModel<AOIParam>>();
             PGParams = new ObservableCollection<TemplateModel<PGParam>>();
             SMUParams = new ObservableCollection<TemplateModel<SMUParam>>();
-            FlowParams = new ObservableCollection<TemplateModel<FlowParam>>();
             MeasureParams = new ObservableCollection<TemplateModel<MeasureParam>>();
 
             ConfigHandler.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
@@ -65,17 +61,18 @@ namespace ColorVision.Services.Templates
         }
         private void Init()
         {
-            LoadParams(FlowParams);
             LoadParams(AoiParams);
             LoadParams(SMUParams);
             LoadParams(PGParams);
 
 
             LoadParams(LedReusltParam.LedReusltParams);
-            LoadModParam(LedCheckParam.LedCheckParams, ModMasterType.LedCheck);
 
-            LoadModParam(FocusPointsParam.FocusPointsParams, ModMasterType.FocusPoints);
-            LoadModParam(PoiParam.Params, ModMasterType.POI);
+            PoiParam.LoadPoiParam();
+            LoadParams(FlowParam.Params);
+
+            LoadModParam(LedCheckParam.LedCheckParams, ModMasterType.LedCheck);
+            LoadModParam(FocusPointsParam.FocusPointsParams, ModMasterType.FocusPoints);     
             LoadModParam(SFRParam.SFRParams, ModMasterType.SFR);
             LoadModParam(MTFParam.MTFParams, ModMasterType.MTF);
             LoadModParam(FOVParam.FOVParams, ModMasterType.FOV);
@@ -93,10 +90,10 @@ namespace ColorVision.Services.Templates
                 case System.Type t when t == typeof(CalibrationParam):
                     break;
                 case System.Type t when t == typeof(PoiParam):
-                     PoiParam.LoadPoiParam();
+                    PoiParam.LoadPoiParam();
                     break;
                 case System.Type t when t == typeof(FlowParam):
-                    LoadFlowParam();
+                    FlowParam.LoadFlowParam();
                     break;
                 case System.Type t when t == typeof(AOIParam):
                     LoadModParam(AoiParams, ModMasterType.Aoi);
@@ -198,53 +195,53 @@ namespace ColorVision.Services.Templates
                     }
                     break;
                 case TemplateType.FlowParam:
-                    Save(FlowParams, ModMasterType.Flow);
+                    Save2DB(FlowParam.Params);
                     break;
                 case TemplateType.AoiParam:
-                    Save(AoiParams, ModMasterType.Aoi);
+                    Save2DB(AoiParams);
                     break;
                 case TemplateType.PGParam:
-                    Save(PGParams, ModMasterType.PG);
+                    Save2DB(PGParams);
                     break;
                 case TemplateType.SMUParam:
-                    Save(SMUParams, ModMasterType.SMU);
+                    Save2DB(SMUParams);
                     break;
                 case TemplateType.MTFParam:
-                    Save(MTFParam.MTFParams, ModMasterType.MTF);
+                    Save2DB(MTFParam.MTFParams);
                     break;
                 case TemplateType.SFRParam:
-                    Save(SFRParam.SFRParams, ModMasterType.SFR);
+                    Save2DB(SFRParam.SFRParams);
                     break;
                 case TemplateType.FOVParam:
-                    Save(FOVParam.FOVParams, ModMasterType.FOV);
+                    Save2DB(FOVParam.FOVParams);
                     break;
                 case TemplateType.GhostParam:
-                    Save(GhostParam.GhostParams, ModMasterType.Ghost);
+                    Save2DB(GhostParam.GhostParams);
                     break;
                 case TemplateType.DistortionParam:
-                    Save(DistortionParam.DistortionParams, ModMasterType.Distortion);
+                    Save2DB(DistortionParam.DistortionParams);
                     break;
                 case TemplateType.FocusPointsParam:
-                    Save(FocusPointsParam.FocusPointsParams, ModMasterType.FocusPoints);
+                    Save2DB(FocusPointsParam.FocusPointsParams);
                     break;
                 case TemplateType.LedCheckParam:
-                    Save(LedCheckParam.LedCheckParams, ModMasterType.LedCheck);
+                    Save2DB(LedCheckParam.LedCheckParams);
                     break;
                 case TemplateType.BuildPOIParmam:
-                    Save(BuildPOIParam.BuildPOIParams, ModMasterType.BuildPOI);
+                    Save2DB(BuildPOIParam.BuildPOIParams);
                     break;
                 case TemplateType.SensorHeYuan:
-                    Save(SensorHeYuan.SensorHeYuans, ModMasterType.SensorHeYuan);
+                    Save2DB(SensorHeYuan.SensorHeYuans);
                     break;
                 case TemplateType.CameraExposureParam:
-                    Save(CameraExposureParam.CameraExposureParams, ModMasterType.CameraExposure);
+                    Save2DB(CameraExposureParam.CameraExposureParams);
                     break;
                 default:
                     break;
             }
         }
 
-        public void Save<T>(ObservableCollection<TemplateModel<T>> t, string code) where T : ParamBase
+        public void Save<T>(ObservableCollection<TemplateModel<T>> t) where T : ParamBase
         {
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
                 Save2DB(t);
@@ -268,6 +265,7 @@ namespace ColorVision.Services.Templates
 
         private ModMasterDao masterModDao = new ModMasterDao();
         private ModDetailDao detailDao = new ModDetailDao();
+
         public T? AddParamMode<T>(string code, string Name) where T : ParamBase, new()
         {
             ModMasterModel modMaster = new ModMasterModel(code, Name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
@@ -285,21 +283,21 @@ namespace ColorVision.Services.Templates
 
         private VSysResourceDao resourceDao = new VSysResourceDao();
 
-        public int Save(ModMasterModel modMaster)
+        public static int Save(ModMasterModel modMaster)
         {
             int ret = -1;
             SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(modMaster.Pcode, modMaster.TenantId);
             if (mod != null)
             {
                 modMaster.Pid = mod.Id;
-                ret = masterFlowDao.Save(modMaster);
+                ret = ModMasterDao.Instance.Save(modMaster);
                 List<ModDetailModel> list = new List<ModDetailModel>();
                 List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(modMaster.Pid);
                 foreach (var item in sysDic)
                 {
                     list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
                 }
-                detailDao.SaveByPid(modMaster.Id, list);
+                ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
             }
             return ret;
         }
@@ -349,58 +347,6 @@ namespace ColorVision.Services.Templates
                 }
                 detailDao.UpdateByPid(flowParam.Id, list);
             }
-        }
-
-        public static int Save1(ModMasterModel modMaster)
-        {
-            ModMasterDao modMasterDao = new ModMasterDao();
-            SysDictionaryModDao sysDicDao = new SysDictionaryModDao();
-            int ret = -1;
-            SysDictionaryModModel mod = sysDicDao.GetByCode(modMaster.Pcode, modMaster.TenantId);
-            if (mod != null)
-            {
-                modMaster.Pid = mod.Id;
-                ret = modMasterDao.Save(modMaster);
-                List<ModDetailModel> list = new List<ModDetailModel>();
-                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(modMaster.Pid);
-                foreach (var item in sysDic)
-                {
-                    list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
-                }
-                ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
-            }
-            return ret;
-        }
-
-        private ModFlowDetailDao detailFlowDao = new ModFlowDetailDao();
-
-        internal FlowParam? AddFlowParam(string text)
-        {
-            ModMasterModel flowMaster = new ModMasterModel(ModMasterType.Flow, text, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            Save(flowMaster);
-            int pkId = flowMaster.Id;
-            if (pkId > 0)
-            {
-                List<ModFlowDetailModel> flowDetail = detailFlowDao.GetAllByPid(pkId);
-                if (int.TryParse(flowDetail[0].ValueA, out int id))
-                {
-                    SysResourceModel sysResourceModeldefault = resourceDao.GetById(id);
-                    if (sysResourceModeldefault != null)
-                    {
-                        SysResourceModel sysResourceModel = new SysResourceModel();
-                        sysResourceModel.Name = flowMaster.Name;
-                        sysResourceModel.Code = sysResourceModeldefault.Code;
-                        sysResourceModel.Type = sysResourceModeldefault.Type;
-                        sysResourceModel.Value = sysResourceModeldefault.Value;
-                        resourceDao.Save(sysResourceModel);
-                        flowDetail[0].ValueA = sysResourceModel.Id.ToString();
-                        detailFlowDao.Save(flowDetail[0]);
-                    }
-                }
-                if (flowMaster != null) return new FlowParam(flowMaster, flowDetail);
-                else return null;
-            }
-            return null;
         }
 
 
@@ -454,6 +400,7 @@ namespace ColorVision.Services.Templates
                     ParamModes.Add(item);
             }
         }
+        private ModMasterDao masterFlowDao = new ModMasterDao(ModMasterType.Flow);
 
         public void LoadModCabParam<T>(ObservableCollection<TemplateModel<T>> CalibrationParamModes, int resourceId, string ModeType) where T : ParamBase, new()
         {
@@ -502,25 +449,6 @@ namespace ColorVision.Services.Templates
             return null;
         }
 
-        private ModMasterDao masterFlowDao = new ModMasterDao(ModMasterType.Flow);
-
-
-        internal ObservableCollection<TemplateModel<FlowParam>> LoadFlowParam()
-        {
-            FlowParams.Clear();
-            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
-            {
-                List<ModMasterModel> flows = masterFlowDao.GetAll(UserCenter.GetInstance().TenantId);
-                foreach (var dbModel in flows)
-                {
-                    List<ModFlowDetailModel> flowDetails = detailFlowDao.GetAllByPid(dbModel.Id);
-                    var item = new TemplateModel<FlowParam>(dbModel.Name ?? "default", new FlowParam(dbModel, flowDetails));
-                    FlowParams.Add(item);
-                }
-            }
-            return FlowParams;
-        }
-
         private MeasureDetailDao measureDetail = new MeasureDetailDao();
 
         internal ObservableCollection<TemplateModel<MeasureParam>> LoadMeasureParams()
@@ -547,8 +475,6 @@ namespace ColorVision.Services.Templates
         public ObservableCollection<TemplateModel<AOIParam>> AoiParams { get; set; }
         public ObservableCollection<TemplateModel<PGParam>> PGParams { get; set; }
         public ObservableCollection<TemplateModel<SMUParam>> SMUParams { get; set; }
-
-        public ObservableCollection<TemplateModel<FlowParam>> FlowParams { get; set; }
 
         public static ObservableCollection<TemplateModelBase> GetTemplateModelBases<T>(ObservableCollection<TemplateModel<T>> templateModels) where T : ParamBase
         {

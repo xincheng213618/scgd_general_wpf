@@ -46,7 +46,7 @@ namespace ColorVision.Services.Flow
             this.AddViewConfig(View, ComboxView);
             View.View.ViewIndex = 0;
 
-            FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
+            FlowTemplate.ItemsSource = FlowParam.Params;
             FlowTemplate.SelectionChanged += (s, e) =>
             {
                 if (FlowTemplate.SelectedValue is FlowParam flowParam)
@@ -228,8 +228,8 @@ namespace ColorVision.Services.Flow
 
         private void Button_Click_Refresh(object sender, RoutedEventArgs e)
         {
-            TemplateControl.GetInstance().LoadFlowParam();
-            FlowTemplate.ItemsSource = TemplateControl.GetInstance().FlowParams;
+            FlowParam.LoadFlowParam();
+            FlowTemplate.ItemsSource = FlowParam.Params;
             FlowTemplate.SelectedIndex = 0;
         }
         FlowControl rcflowControl;

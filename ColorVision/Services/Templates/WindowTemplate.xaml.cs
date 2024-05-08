@@ -79,9 +79,9 @@ namespace ColorVision.Services.Templates
             switch (TemplateType)
             {
                 case TemplateType.FlowParam:
-                    if (IsReLoad) 
-                        TemplateControl.LoadParams(TemplateControl.FlowParams);
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.FlowParams);
+                    if (IsReLoad)
+                        FlowParam.LoadFlowParam();
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(FlowParam.Params);
                     Title = "流程引擎";
                     break;
                 case TemplateType.MeasureParam:
@@ -420,8 +420,8 @@ namespace ColorVision.Services.Templates
                     else MessageBox.Show("数据库创建POI模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
                 case TemplateType.FlowParam:
-                    FlowParam? flowParam = TemplateControl.AddFlowParam(TextBox1.Text);
-                    if (flowParam != null) CreateNewTemplate(TemplateControl.FlowParams, TextBox1.Text, flowParam);
+                    FlowParam? flowParam = FlowParam.AddFlowParam(TextBox1.Text);
+                    if (flowParam != null) CreateNewTemplate(FlowParam.Params, TextBox1.Text, flowParam);
                     else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
                 case TemplateType.MeasureParam:
@@ -467,11 +467,11 @@ namespace ColorVision.Services.Templates
         {
             if (TemplateType == TemplateType.Calibration)
             {
-                TemplateControl.Save(DeviceCamera.CalibrationParams, ModMasterType.Calibration);
+                TemplateControl.Save2DB(DeviceCamera.CalibrationParams);
             }
             if (TemplateType == TemplateType.SpectrumResourceParam)
             {
-                TemplateControl.Save(DeviceSpectrum.SpectrumResourceParams, ModMasterType.SpectrumResource);
+                TemplateControl.Save2DB(DeviceSpectrum.SpectrumResourceParams);
             }
             else
             {
@@ -585,7 +585,7 @@ namespace ColorVision.Services.Templates
                             TemplateDel(LedCheckParam.LedCheckParams);
                             break;
                         case TemplateType.FlowParam:
-                            TemplateDel(TemplateControl.FlowParams);
+                            TemplateDel(FlowParam.Params);
                             break;
                         case TemplateType.MeasureParam:
                             TemplateDel(TemplateControl.MeasureParams);
@@ -696,9 +696,9 @@ namespace ColorVision.Services.Templates
                         ofd.AddExtension = false;
                         ofd.RestoreDirectory = true;
                         ofd.Title = "导出流程";
-                        ofd.FileName = TemplateControl.FlowParams[ListView1.SelectedIndex].Key;
+                        ofd.FileName = FlowParam.Params[ListView1.SelectedIndex].Key;
                         if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        Tool.Base64ToFile(TemplateControl.FlowParams[ListView1.SelectedIndex].Value.DataBase64, ofd.FileName);
+                        Tool.Base64ToFile(FlowParam.Params[ListView1.SelectedIndex].Value.DataBase64, ofd.FileName);
                     }
 
                     break;
@@ -733,11 +733,11 @@ namespace ColorVision.Services.Templates
                         ofd.Filter = "*.stn|*.stn";
                         if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                         string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-                        FlowParam? flowParam = TemplateControl.AddFlowParam(name);
+                        FlowParam? flowParam = FlowParam.AddFlowParam(name);
                         if (flowParam != null)
                         {
                             flowParam.DataBase64 = Tool.FileToBase64(ofd.FileName); ;
-                            CreateNewTemplate(TemplateControl.FlowParams, name, flowParam);
+                            CreateNewTemplate(FlowParam.Params, name, flowParam);
 
                             TemplateControl.GetInstance().Save2DB(flowParam);
                         }

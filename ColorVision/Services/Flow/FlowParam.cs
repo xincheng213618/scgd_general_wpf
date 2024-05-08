@@ -3,9 +3,12 @@ using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Flow.Dao;
 using ColorVision.Services.Templates;
+using ColorVision.Services.Templates.POI;
 using ColorVision.Settings;
 using ColorVision.UI;
+using ColorVision.UserSpace;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -40,6 +43,76 @@ namespace ColorVision.Services.Flow
     /// </summary>
     public class FlowParam : ParamBase
     {
+        public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
+
+        private static ModMasterDao masterFlowDao = new ModMasterDao(ModMasterType.Flow);
+
+        public static ObservableCollection<TemplateModel<FlowParam>> LoadFlowParam()
+        {
+            Params.Clear();
+            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
+            {
+                List<ModMasterModel> flows = masterFlowDao.GetAll(UserCenter.GetInstance().TenantId);
+                foreach (var dbModel in flows)
+                {
+                    List<ModFlowDetailModel> flowDetails = ModFlowDetailDao.Instance.GetAllByPid(dbModel.Id);
+                    var item = new TemplateModel<FlowParam>(dbModel.Name ?? "default", new FlowParam(dbModel, flowDetails));
+                    Params.Add(item);
+                }
+            }
+            return Params;
+        }
+
+        public static FlowParam? AddFlowParam(string text)
+        {
+            ModMasterModel flowMaster = new ModMasterModel(ModMasterType.Flow, text, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            Save(flowMaster);
+
+            int pkId = flowMaster.Id;
+            if (pkId > 0)
+            {
+                List<ModFlowDetailModel> flowDetail = ModFlowDetailDao.Instance.GetAllByPid(pkId);
+                if (int.TryParse(flowDetail[0].ValueA, out int id))
+                {
+                    SysResourceModel sysResourceModeldefault = VSysResourceDao.Instance.GetById(id);
+                    if (sysResourceModeldefault != null)
+                    {
+                        SysResourceModel sysResourceModel = new SysResourceModel();
+                        sysResourceModel.Name = flowMaster.Name;
+                        sysResourceModel.Code = sysResourceModeldefault.Code;
+                        sysResourceModel.Type = sysResourceModeldefault.Type;
+                        sysResourceModel.Value = sysResourceModeldefault.Value;
+                        VSysResourceDao.Instance.Save(sysResourceModel);
+                        flowDetail[0].ValueA = sysResourceModel.Id.ToString();
+                        ModFlowDetailDao.Instance.Save(flowDetail[0]);
+                    }
+                }
+                if (flowMaster != null) return new FlowParam(flowMaster, flowDetail);
+                else return null;
+            }
+            return null;
+        }
+
+        public static int Save(ModMasterModel modMaster)
+        {
+            int ret = -1;
+            SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(modMaster.Pcode, modMaster.TenantId);
+            if (mod != null)
+            {
+                modMaster.Pid = mod.Id;
+                ret = ModMasterDao.Instance.Save(modMaster);
+                List<ModDetailModel> list = new List<ModDetailModel>();
+                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(modMaster.Pid);
+                foreach (var item in sysDic)
+                {
+                    list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
+                }
+                ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
+            }
+            return ret;
+        }
+
+
         public FlowParam()
         {
 

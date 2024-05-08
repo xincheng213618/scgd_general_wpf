@@ -27,6 +27,8 @@ namespace ColorVision.Services.Flow.Dao
 
     public class ModFlowDetailDao : BaseDaoMaster<ModFlowDetailModel>
     {
+        public static ModFlowDetailDao Instance { get; set; } = new ModFlowDetailDao();
+
         public ModFlowDetailDao() : base("v_scgd_mod_detail_flow", "t_scgd_mod_param_detail", "id", true)
         {
 
