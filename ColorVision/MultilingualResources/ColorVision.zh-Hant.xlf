@@ -395,6 +395,10 @@
           <source>选项(_O)</source>
           <target state="new">選項(_O）</target>
         </trans-unit>
+        <trans-unit id="MenuRename" translate="yes" xml:space="preserve">
+          <source>重命名(_M)</source>
+          <target state="new">重命名(_M)</target>
+        </trans-unit>
         <trans-unit id="MenuSettings" translate="yes" xml:space="preserve">
           <source>设置(_S)</source>
           <target state="new">設置(_S)</target>

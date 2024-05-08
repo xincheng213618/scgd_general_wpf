@@ -732,4 +732,7 @@
   <data name="GhostShadow" xml:space="preserve">
     <value>귀신</value>
   </data>
+  <data name="MenuRename" xml:space="preserve">
+    <value>이름 바꾸기(_M)</value>
+  </data>
 </root>

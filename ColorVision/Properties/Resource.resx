@@ -732,4 +732,7 @@
   <data name="GhostShadow" xml:space="preserve">
     <value>鬼影</value>
   </data>
+  <data name="MenuRename" xml:space="preserve">
+    <value>重命名(_M)</value>
+  </data>
 </root>

@@ -34,10 +34,15 @@
                 <TextBlock Text="{x:Static properties:Resource.Filter}"  VerticalAlignment="Center" />
                 <TextBox x:Name="Searchbox"  BorderBrush="#CCCEDB" MaxLength="15" VerticalContentAlignment="Center"  TextChanged="Searchbox_TextChanged"   Margin="10,0"   VerticalAlignment="Center"/>
             </DockPanel>
-            <ListView Grid.Row="1" x:Name="ListView1" Margin="0,-8,0,0" Background="Transparent"  BorderThickness="0"  Style="{DynamicResource ListView.Small}"  Loaded="ListView1_Loaded"   ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">
+            <ListView Grid.Row="1" x:Name="ListView1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="0" Margin="2"  PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">
                 <ListView.Resources>
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
                 </ListView.Resources>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
+                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
                 <ListView.View>
                     <GridView >
                         <GridView.ColumnHeaderContainerStyle>
@@ -91,30 +96,27 @@
             <WindowsFormsHost>
                 <winf:PropertyGrid x:Name="PropertyGrid1" />
             </WindowsFormsHost>
-
-
         </Grid>
 
         <StackPanel x:Name="CreateGrid"  Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" Margin="5">
-
-            <StackPanel x:Name="FunctionGrid"  Orientation="Horizontal" Margin="0,5"    HorizontalAlignment="Stretch">
-                <Button  Click="Button_New_Click" HorizontalAlignment="Left">
+            <UniformGrid x:Name="FunctionGrid"  Margin="0,2"   Columns="5">
+                <Button  Click="Button_New_Click" Margin="2" >
                     <TextBlock Text="{x:Static properties:Resource.New}"/>
                 </Button>
-                <Button HorizontalAlignment="Right"   Click="Button_Del_Click" >
+                <Button   Click="Button_Del_Click"  Margin="2" >
                     <TextBlock Text="{x:Static properties:Resource.Delete}"/>
                 </Button>
-                <Button HorizontalAlignment="Right"   Click="Button_Save_Click" >
+                <Button   Click="Button_Save_Click" Margin="2" >
                     <TextBlock Text="{x:Static properties:Resource.Save}"/>
                 </Button>
-                <Button  HorizontalAlignment="Right"  Click="Button_Export_Click" >
+                <Button    Click="Button_Export_Click" Margin="2" >
                     <TextBlock Text="{x:Static properties:Resource.Export}"/>
                 </Button>
-                <Button HorizontalAlignment="Right"  Click="Button_Import_Click" >
+                <Button Click="Button_Import_Click" Margin="2" >
                     <TextBlock Text="{x:Static properties:Resource.Import}"/>
                 </Button>
 
-            </StackPanel>
+            </UniformGrid>
         </StackPanel>
 
 

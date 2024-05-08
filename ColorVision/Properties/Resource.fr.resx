@@ -732,4 +732,7 @@
   <data name="GhostShadow" xml:space="preserve">
     <value>fantôme</value>
   </data>
+  <data name="MenuRename" xml:space="preserve">
+    <value>Renommer(M)</value>
+  </data>
 </root>

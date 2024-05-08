@@ -3,11 +3,22 @@ using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Windows.Controls;
 
 namespace ColorVision.Services.Templates
 {
     public class TemplateModelBase : ViewModelBase, ISortID
     {
+        public ContextMenu ContentMenu { get; set; }
+        public RelayCommand ReNameCommand { get; set; }
+
+        public TemplateModelBase()
+        {
+
+        }
+
+
+
         public virtual int Id { get; set; }
 
         public virtual string Key { get; set; }
@@ -27,7 +38,11 @@ namespace ColorVision.Services.Templates
     {
         public TemplateModel()
         {
+            ReNameCommand = new RelayCommand(a => IsEditMode = true);
+            ContentMenu = new ContextMenu();
+            ContentMenu.Items.Add(new MenuItem() { Header = Properties.Resource.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
         }
+
         public TemplateModel(string Key, T Value)
         {
             this.Value = Value;

@@ -395,6 +395,10 @@
           <source>选项(_O)</source>
           <target state="new">Вариант(_О)</target>
         </trans-unit>
+        <trans-unit id="MenuRename" translate="yes" xml:space="preserve">
+          <source>重命名(_M)</source>
+          <target state="new">Переименовать(_М)</target>
+        </trans-unit>
         <trans-unit id="MenuSettings" translate="yes" xml:space="preserve">
           <source>设置(_S)</source>
           <target state="new">Настройки</target>

@@ -243,12 +243,12 @@ namespace ColorVision.Services.Templates
             switch (TemplateType)
             {
                 case TemplateType.PoiParam:
-                    MinWidth = 300;
-                    Width = 300;
+                    MinWidth = 350;
+                    Width = 350;
                     break;
                 case TemplateType.FlowParam:
-                    MinWidth = 300;
-                    Width = 300;
+                    MinWidth = 350;
+                    Width = 350;
                     break;
             }
         }
@@ -661,10 +661,6 @@ namespace ColorVision.Services.Templates
             e.Handled = true;
         }
 
-
-        private void ListView1_Loaded(object sender, RoutedEventArgs e)
-        {
-        }
 
         private void TextBox_LostFocus(object sender, RoutedEventArgs e)
         {

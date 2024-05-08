@@ -266,6 +266,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
                 if (File.Exists(data.FileUrl))
                 {
                     LocalFileName = data.FileUrl;
+                    ImageView.FilePath = LocalFileName;
                     var FileData = netFileUtil.OpenLocalCVFile(data.FileUrl);
                     OpenImage(FileData);
                 }
@@ -273,6 +274,8 @@ namespace ColorVision.Services.Devices.Calibration.Views
                 {
                     if (data.ResultCode == 0 && data.FilePath != null)
                     {
+                        ImageView.FilePath = data.FilePath;
+
                         string localName = netFileUtil.GetCacheFileFullName(data.FilePath);
                         FileExtType fileExt = FileExtType.Src;
                         switch (data.FileType)

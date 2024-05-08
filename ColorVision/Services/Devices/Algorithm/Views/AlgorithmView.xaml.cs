@@ -167,6 +167,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             if (listView1.Items[listView1.SelectedIndex] is AlgorithmResult result)
             {
                 ImageView.ImageShow.Clear();
+                ImageView.FilePath = result.FilePath;
                 List<POIPoint> DrawPoiPoint = new List<POIPoint>();
                 List<string> cieBdHeader = new List<string>();
                 List<string> cieHeader = new List<string>();

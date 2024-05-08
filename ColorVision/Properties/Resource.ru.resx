@@ -732,4 +732,7 @@
   <data name="GhostShadow" xml:space="preserve">
     <value>призрак</value>
   </data>
+  <data name="MenuRename" xml:space="preserve">
+    <value>Переименовать(_М)</value>
+  </data>
 </root>

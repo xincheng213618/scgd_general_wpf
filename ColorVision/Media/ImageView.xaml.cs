@@ -911,7 +911,7 @@ namespace ColorVision.Media
 
                         windowCIE.ChangeSelect(x, y);
                     }
-                    catch (Exception ex)
+                    catch 
                     {
 
                     }

@@ -925,6 +925,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 重命名(_M) 的本地化字符串。
+        /// </summary>
+        public static string MenuRename {
+            get {
+                return ResourceManager.GetString("MenuRename", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 设置(_S) 的本地化字符串。
         /// </summary>
         public static string MenuSettings {
