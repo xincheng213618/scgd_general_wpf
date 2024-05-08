@@ -490,7 +490,7 @@ namespace ColorVision.Media
                 }
             }
         }
-        private string? FilePath;
+        public string? FilePath { get; set; }
 
         public void OpenImage(CVCIEFile fileInfo)
         {
@@ -885,25 +885,39 @@ namespace ColorVision.Media
             {
                 mat = CVFileUtil.ReadCVCIE(FilePath);
             }
+            else
+            {
+                mat?.Dispose();
+            }
 
             MouseMoveColorHandler mouseMoveColorHandler = (s, e) =>
             {
                 if (mat != null)
                 {
-                    if (e.X >= 0 && e.X < mat.Height && e.Y >= 0 && e.Y < mat.Width)
+                    try
                     {
-                        float X = mat.At<float>(e.Y, e.X, 0);
-                        float Y = mat.At<float>(e.Y, e.X, 1);
-                        float Z = mat.At<float>(e.Y, e.X, 2);
+                        if (e.X >= 0 && e.X < mat.Height && e.Y >= 0 && e.Y < mat.Width)
+                        {
+                            int xx = e.Y;
+                            int yy = e.X;
 
-                        double x = X / (X + Y + Z);
-                        double y = Y / (X + Y + Z);
+                            float X = mat.At<float>(xx, yy, 0);
+                            float Y = mat.At<float>(xx, yy, 1);
+                            float Z = mat.At<float>(xx, yy, 2);
 
-                        windowCIE.ChangeSelect(x, y);
+                            double x = X / (X + Y + Z);
+                            double y = Y / (X + Y + Z);
+
+                            windowCIE.ChangeSelect(x, y);
+                        }
+                        else
+                        {
+                            windowCIE.ChangeSelect(0, 0);
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        windowCIE.ChangeSelect(0, 0);
+
                     }
                 }
                 else
@@ -912,12 +926,12 @@ namespace ColorVision.Media
 
                 }
             };
-
             ToolBarTop.MouseMagnifier.MouseMoveColorHandler += mouseMoveColorHandler;
             windowCIE.Closed += (s, e) =>
             {
                 ToolBarTop.MouseMagnifier.MouseMoveColorHandler -= mouseMoveColorHandler;
                 ToolBarTop.ShowImageInfo = old;
+                mat?.Dispose();
             };
             windowCIE.Show();
         }

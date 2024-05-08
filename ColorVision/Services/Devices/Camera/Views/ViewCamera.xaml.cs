@@ -265,6 +265,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                 if (File.Exists(data.FileUrl))
                 {
                     LocalFileName = data.FileUrl;
+                    ImageView.FilePath = LocalFileName;
                     var FileData = netFileUtil.OpenLocalCVFile(data.FileUrl);
                     OpenImage(FileData);
                 }
@@ -290,10 +291,12 @@ namespace ColorVision.Services.Devices.Camera.Views
                         }
                         if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
                         {
+                            ImageView.FilePath = localName;
                             MsgRecord msgRecord = DeviceService.DownloadFile(data.FilePath, fileExt);
                         }
                         else
                         {
+                            ImageView.FilePath = localName;
                             var FileData = netFileUtil.OpenLocalCVFile(localName, fileExt);
                             OpenImage(FileData);
                         }
