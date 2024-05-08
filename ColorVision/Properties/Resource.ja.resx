@@ -313,7 +313,7 @@
     <value>テンプレート</value>
   </data>
   <data name="MenuTemplate" xml:space="preserve">
-    <value>テンプレート(T)</value>
+    <value>テンプレート(_M)</value>
   </data>
   <data name="Open" xml:space="preserve">
     <value>開ける</value>
@@ -719,5 +719,17 @@
   </data>
   <data name="MenuAlgorithm" xml:space="preserve">
     <value>アルゴリズム(A)</value>
+  </data>
+  <data name="CreateDevice" xml:space="preserve">
+    <value>デバイスの作成</value>
+  </data>
+  <data name="Upload" xml:space="preserve">
+    <value>アップロード</value>
+  </data>
+  <data name="Local" xml:space="preserve">
+    <value>地元</value>
+  </data>
+  <data name="GhostShadow" xml:space="preserve">
+    <value>おばけ</value>
   </data>
 </root>

@@ -172,7 +172,7 @@
     <value>Настройки</value>
   </data>
   <data name="MenuOptions" xml:space="preserve">
-    <value>Вариант(О)</value>
+    <value>Вариант(_О)</value>
   </data>
   <data name="Account" xml:space="preserve">
     <value>счет</value>
@@ -313,7 +313,7 @@
     <value>шаблон</value>
   </data>
   <data name="MenuTemplate" xml:space="preserve">
-    <value>Шаблон(Т)</value>
+    <value>Шаблон(_M)</value>
   </data>
   <data name="Open" xml:space="preserve">
     <value>Открыть</value>
@@ -719,5 +719,17 @@
   </data>
   <data name="MenuAlgorithm" xml:space="preserve">
     <value>Алгоритм(А)</value>
+  </data>
+  <data name="CreateDevice" xml:space="preserve">
+    <value>Создать устройство</value>
+  </data>
+  <data name="Upload" xml:space="preserve">
+    <value>загрузить</value>
+  </data>
+  <data name="Local" xml:space="preserve">
+    <value>местный</value>
+  </data>
+  <data name="GhostShadow" xml:space="preserve">
+    <value>призрак</value>
   </data>
 </root>

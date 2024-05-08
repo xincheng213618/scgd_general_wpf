@@ -101,7 +101,7 @@
     <value>文件(_F)</value>
   </data>
   <data name="MenuTemplate" xml:space="preserve">
-    <value>模板(_T)</value>
+    <value>模板(_M)</value>
   </data>
   <data name="MenuTool" xml:space="preserve">
     <value>工具(_T)</value>

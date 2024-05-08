@@ -169,10 +169,10 @@
     <value>À propos de)</value>
   </data>
   <data name="MenuSettings" xml:space="preserve">
-    <value>Paramètres</value>
+    <value>Paramètre_s</value>
   </data>
   <data name="MenuOptions" xml:space="preserve">
-    <value>Option(O)</value>
+    <value>_Option</value>
   </data>
   <data name="Account" xml:space="preserve">
     <value>compte</value>
@@ -313,7 +313,7 @@
     <value>modèle</value>
   </data>
   <data name="MenuTemplate" xml:space="preserve">
-    <value>Modèle (T)</value>
+    <value>Modèle (_M)</value>
   </data>
   <data name="Open" xml:space="preserve">
     <value>Ouvrir</value>
@@ -719,5 +719,17 @@
   </data>
   <data name="MenuAlgorithm" xml:space="preserve">
     <value>Algorithme(A)</value>
+  </data>
+  <data name="CreateDevice" xml:space="preserve">
+    <value>Créer un appareil</value>
+  </data>
+  <data name="Upload" xml:space="preserve">
+    <value>télécharger</value>
+  </data>
+  <data name="Local" xml:space="preserve">
+    <value>locale</value>
+  </data>
+  <data name="GhostShadow" xml:space="preserve">
+    <value>fantôme</value>
   </data>
 </root>

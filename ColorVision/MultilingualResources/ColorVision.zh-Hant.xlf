@@ -135,6 +135,10 @@
           <source>创建</source>
           <target state="new">創建</target>
         </trans-unit>
+        <trans-unit id="CreateDevice" translate="yes" xml:space="preserve">
+          <source>创建设备</source>
+          <target state="new">創建設備</target>
+        </trans-unit>
         <trans-unit id="CreateNewConfigurationFile" translate="yes" xml:space="preserve">
           <source>新建配置文件</source>
           <target state="new">新建設定檔</target>
@@ -251,6 +255,10 @@
           <source>通用设置</source>
           <target state="new">通用設定</target>
         </trans-unit>
+        <trans-unit id="GhostShadow" translate="yes" xml:space="preserve">
+          <source>鬼影</source>
+          <target state="new">鬼影</target>
+        </trans-unit>
         <trans-unit id="HistoryCache" translate="yes" xml:space="preserve">
           <source>历史缓存</source>
           <target state="new">歷史緩存</target>
@@ -298,6 +306,10 @@
         <trans-unit id="Loading" translate="yes" xml:space="preserve">
           <source>加载</source>
           <target state="new">載入</target>
+        </trans-unit>
+        <trans-unit id="Local" translate="yes" xml:space="preserve">
+          <source>本地</source>
+          <target state="new">本地</target>
         </trans-unit>
         <trans-unit id="Log" translate="yes" xml:space="preserve">
           <source>日志</source>
@@ -388,8 +400,8 @@
           <target state="new">設置(_S)</target>
         </trans-unit>
         <trans-unit id="MenuTemplate" translate="yes" xml:space="preserve">
-          <source>模板(_T)</source>
-          <target state="new">範本(T)</target>
+          <source>模板(_M)</source>
+          <target state="new">範本(_M)</target>
         </trans-unit>
         <trans-unit id="MenuTheme" translate="yes" xml:space="preserve">
           <source>主题(_H)</source>
@@ -766,6 +778,10 @@
         <trans-unit id="Upgrade" translate="yes" xml:space="preserve">
           <source>升级</source>
           <target state="new">升級</target>
+        </trans-unit>
+        <trans-unit id="Upload" translate="yes" xml:space="preserve">
+          <source>上传</source>
+          <target state="new">上傳</target>
         </trans-unit>
         <trans-unit id="UserName" translate="yes" xml:space="preserve">
           <source>用户</source>

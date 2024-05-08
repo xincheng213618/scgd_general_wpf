@@ -121,7 +121,7 @@
     <value>Файл(Ф)</value>
   </data>
   <data name="MenuTemplate" xml:space="preserve">
-    <value>Шаблон(Т)</value>
+    <value>Шаблон(_M)</value>
   </data>
   <data name="MenuTool" xml:space="preserve">
     <value>Инструмент(Т)</value>

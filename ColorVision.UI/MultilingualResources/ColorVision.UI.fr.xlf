@@ -36,8 +36,8 @@
           <target state="new">Aide(H)</target>
         </trans-unit>
         <trans-unit id="MenuTemplate" translate="yes" xml:space="preserve">
-          <source>模板(_T)</source>
-          <target state="new">Modèle (T)</target>
+          <source>模板(_M)</source>
+          <target state="new">Modèle (_M)</target>
         </trans-unit>
         <trans-unit id="MenuTool" translate="yes" xml:space="preserve">
           <source>工具(_T)</source>

@@ -1,12 +1,13 @@
 ﻿#pragma warning disable CS8625
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
-using ColorVision.Common.MVVM;
 using ColorVision.Net;
 using ColorVision.Util.Draw.Special;
+using ColorVision.Utils;
+using CVCommCore.CVAlgorithm;
 using log4net;
-using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
 using OpenCvSharp.WpfExtensions;
 using SkiaSharp.Views.WPF;
@@ -15,19 +16,14 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
-using System.Timers;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using System.Windows.Markup;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using ColorVision.Solution;
-using System.Linq;
-using ColorVision.Utils;
-using CVCommCore.CVAlgorithm;
 
 namespace ColorVision.Media
 {
@@ -229,7 +225,6 @@ namespace ColorVision.Media
             {
                 ImageShow.ContextMenu = null;
             }
-
         }
         private void ListView1_PreviewKeyDown(object sender, KeyEventArgs e)
         {
@@ -495,6 +490,8 @@ namespace ColorVision.Media
                 }
             }
         }
+        private string? FilePath;
+
         public void OpenImage(CVCIEFile fileInfo)
         {
             if (fileInfo.FileExtType == FileExtType.Tif)
@@ -558,6 +555,7 @@ namespace ColorVision.Media
                 HImageCache = null;
             }
             GC.Collect();
+            FilePath = null;
         }
 
         public void OpenImage(string? filePath)
@@ -571,6 +569,7 @@ namespace ColorVision.Media
                     try
                     {
                         OpenImage(new NetFileUtil().OpenLocalCVFile(filePath, fileExtType));
+                        FilePath = filePath;
                     }
                     catch (Exception ex)
                     {
@@ -581,6 +580,7 @@ namespace ColorVision.Media
                 {
                     try
                     {
+                        FilePath = filePath;
                         BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
                         SetImageSource(bitmapImage);
                     }
@@ -874,17 +874,43 @@ namespace ColorVision.Media
             RowDefinitionEnd.Height = new GridLength((170.0 / 255.0) * PseudoSlider.ValueStart);
             DebounceTimer.AddOrResetTimer("RenderPseudo",100, RenderPseudo);
         }
-
+        OpenCvSharp.Mat? mat;
         private void ButtonCIE1931_Click(object sender, RoutedEventArgs e)
         {
             bool old = ToolBarTop.ShowImageInfo;
             ToolBarTop.ShowImageInfo = true; 
             WindowCIE windowCIE = new WindowCIE();
             windowCIE.Owner = Window.GetWindow(this);
+            if (FilePath!=null &&CVFileUtil.IsCIEFile(FilePath) && FilePath.Contains("cvcie"))
+            {
+                mat = CVFileUtil.ReadCVCIE(FilePath);
+            }
 
             MouseMoveColorHandler mouseMoveColorHandler = (s, e) =>
             {
-                windowCIE.ChangeSelect(e);
+                if (mat != null)
+                {
+                    if (e.X >= 0 && e.X < mat.Height && e.Y >= 0 && e.Y < mat.Width)
+                    {
+                        float X = mat.At<float>(e.Y, e.X, 0);
+                        float Y = mat.At<float>(e.Y, e.X, 1);
+                        float Z = mat.At<float>(e.Y, e.X, 2);
+
+                        double x = X / (X + Y + Z);
+                        double y = Y / (X + Y + Z);
+
+                        windowCIE.ChangeSelect(x, y);
+                    }
+                    else
+                    {
+                        windowCIE.ChangeSelect(0, 0);
+                    }
+                }
+                else
+                {
+                    windowCIE.ChangeSelect(e);
+
+                }
             };
 
             ToolBarTop.MouseMagnifier.MouseMoveColorHandler += mouseMoveColorHandler;

@@ -310,7 +310,7 @@
     <value>範本</value>
   </data>
   <data name="MenuTemplate" xml:space="preserve">
-    <value>範本(T)</value>
+    <value>範本(_M)</value>
   </data>
   <data name="Open" xml:space="preserve">
     <value>打開</value>
@@ -719,5 +719,17 @@
   </data>
   <data name="MenuAlgorithm" xml:space="preserve">
     <value>演算法(A)</value>
+  </data>
+  <data name="CreateDevice" xml:space="preserve">
+    <value>創建設備</value>
+  </data>
+  <data name="Upload" xml:space="preserve">
+    <value>上傳</value>
+  </data>
+  <data name="Local" xml:space="preserve">
+    <value>本地</value>
+  </data>
+  <data name="GhostShadow" xml:space="preserve">
+    <value>鬼影</value>
   </data>
 </root>

@@ -169,7 +169,7 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 模板(_T) 的本地化字符串。
+        ///   查找类似 模板(_M) 的本地化字符串。
         /// </summary>
         internal static string MenuTemplate {
             get {

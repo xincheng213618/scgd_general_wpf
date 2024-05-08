@@ -4,12 +4,12 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Services.Devices.Camera"
-        xmlns:resx="clr-namespace:ColorVision.Properties"
+        xmlns:properties="clr-namespace:ColorVision.Properties"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:CreateWindow}"
-        Title="创建设备" Height="250" Width="400" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resource.CreateDevice}" Height="250" Width="400" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -19,17 +19,17 @@
         <Border Grid.Row="0">
             <StackPanel>
                 <DockPanel Margin="2" >
-                    <TextBlock Text="标识" MinWidth="50" />
+                    <TextBlock Text="{x:Static properties:Resource.Code}" MinWidth="50" />
                     <hc:ComboBox x:Name="CreateCode" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"   />
                 </DockPanel>
                 <DockPanel Margin="2" >
-                    <TextBlock Text="名称" Width="50" />
+                    <TextBlock Text="{x:Static properties:Resource.Name}" Width="50" />
                     <hc:ComboBox  x:Name="CreateName" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"  />
                 </DockPanel>
             </StackPanel>
         </Border>
         <Grid Grid.Row="2">
-            <Button  Content="{x:Static resx:Resource.Submit}" Height="30" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click"  />
+            <Button  Content="{x:Static properties:Resource.Submit}" Height="30" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click"  />
         </Grid>
 
     </Grid>

@@ -367,6 +367,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 创建设备 的本地化字符串。
+        /// </summary>
+        public static string CreateDevice {
+            get {
+                return ResourceManager.GetString("CreateDevice", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 新建配置文件 的本地化字符串。
         /// </summary>
         public static string CreateNewConfigurationFile {
@@ -619,6 +628,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 鬼影 的本地化字符串。
+        /// </summary>
+        public static string GhostShadow {
+            get {
+                return ResourceManager.GetString("GhostShadow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 历史缓存 的本地化字符串。
         /// </summary>
         public static string HistoryCache {
@@ -723,6 +741,15 @@ namespace ColorVision.Properties {
         public static string Loading {
             get {
                 return ResourceManager.GetString("Loading", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 本地 的本地化字符串。
+        /// </summary>
+        public static string Local {
+            get {
+                return ResourceManager.GetString("Local", resourceCulture);
             }
         }
         
@@ -907,7 +934,7 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 模板(_T) 的本地化字符串。
+        ///   查找类似 模板(_M) 的本地化字符串。
         /// </summary>
         public static string MenuTemplate {
             get {
@@ -1776,6 +1803,15 @@ namespace ColorVision.Properties {
         public static string Upgrade {
             get {
                 return ResourceManager.GetString("Upgrade", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 上传 的本地化字符串。
+        /// </summary>
+        public static string Upload {
+            get {
+                return ResourceManager.GetString("Upload", resourceCulture);
             }
         }
         

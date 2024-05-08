@@ -121,7 +121,7 @@
     <value>Fichier(F)</value>
   </data>
   <data name="MenuTemplate" xml:space="preserve">
-    <value>Modèle (T)</value>
+    <value>Modèle (_M)</value>
   </data>
   <data name="MenuTool" xml:space="preserve">
     <value>Outil(T)</value>

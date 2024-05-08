@@ -135,6 +135,10 @@
           <source>创建</source>
           <target state="new">作成する</target>
         </trans-unit>
+        <trans-unit id="CreateDevice" translate="yes" xml:space="preserve">
+          <source>创建设备</source>
+          <target state="new">デバイスの作成</target>
+        </trans-unit>
         <trans-unit id="CreateNewConfigurationFile" translate="yes" xml:space="preserve">
           <source>新建配置文件</source>
           <target state="new">新しい設定ファイルを作成する</target>
@@ -251,6 +255,10 @@
           <source>通用设置</source>
           <target state="new">一般設定</target>
         </trans-unit>
+        <trans-unit id="GhostShadow" translate="yes" xml:space="preserve">
+          <source>鬼影</source>
+          <target state="new">おばけ</target>
+        </trans-unit>
         <trans-unit id="HistoryCache" translate="yes" xml:space="preserve">
           <source>历史缓存</source>
           <target state="new">履歴キャッシュ</target>
@@ -298,6 +306,10 @@
         <trans-unit id="Loading" translate="yes" xml:space="preserve">
           <source>加载</source>
           <target state="new">負荷</target>
+        </trans-unit>
+        <trans-unit id="Local" translate="yes" xml:space="preserve">
+          <source>本地</source>
+          <target state="new">地元</target>
         </trans-unit>
         <trans-unit id="Log" translate="yes" xml:space="preserve">
           <source>日志</source>
@@ -388,8 +400,8 @@
           <target state="new">設定 (_S)</target>
         </trans-unit>
         <trans-unit id="MenuTemplate" translate="yes" xml:space="preserve">
-          <source>模板(_T)</source>
-          <target state="new">テンプレート(T)</target>
+          <source>模板(_M)</source>
+          <target state="new">テンプレート(_M)</target>
         </trans-unit>
         <trans-unit id="MenuTheme" translate="yes" xml:space="preserve">
           <source>主题(_H)</source>
@@ -766,6 +778,10 @@
         <trans-unit id="Upgrade" translate="yes" xml:space="preserve">
           <source>升级</source>
           <target state="new">アップグレード</target>
+        </trans-unit>
+        <trans-unit id="Upload" translate="yes" xml:space="preserve">
+          <source>上传</source>
+          <target state="new">アップロード</target>
         </trans-unit>
         <trans-unit id="UserName" translate="yes" xml:space="preserve">
           <source>用户</source>

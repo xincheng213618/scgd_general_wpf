@@ -121,7 +121,7 @@
     <value>ファイル (_F)</value>
   </data>
   <data name="MenuTemplate" xml:space="preserve">
-    <value>テンプレート(T)</value>
+    <value>テンプレート(_M)</value>
   </data>
   <data name="MenuTool" xml:space="preserve">
     <value>ツール (_T)</value>

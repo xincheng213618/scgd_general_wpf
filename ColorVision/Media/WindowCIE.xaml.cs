@@ -87,6 +87,16 @@ namespace ColorVision.Media
 
         }
 
+        public void ChangeSelect(double x,double y)
+        {
+            x = 60 + 755 * x;
+            y = 689 - 755 * y;
+            x = x / ToolBarTop.Crosshair.Ratio;
+            y = y / ToolBarTop.Crosshair.Ratio;
+            ToolBarTop.Crosshair.DrawImage(new Point(x, y));
+        }
+
+
         public void ChangeSelect(ImageInfo imageInfo)
         {
             double[] doubles = CIEColorConverter.RgbToCie1931xy(imageInfo.R,imageInfo.G,imageInfo.B);

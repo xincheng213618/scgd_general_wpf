@@ -29,18 +29,5 @@ namespace ColorVision.Net
         public float[] exp;
         public string srcFileName;
         public byte[] data;
-
-        public CVCIEFile(CVCIEFile info)
-        {
-            FileExtType = info.FileExtType;
-            rows = info.rows;
-            cols = info.cols;
-            bpp = info.bpp;
-            channels = info.channels;
-            gain = info.gain;
-            exp = info.exp;
-            srcFileName = info.srcFileName;
-            data = info.data;
-        }
     }
 }

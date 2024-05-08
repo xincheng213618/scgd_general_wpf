@@ -43,7 +43,7 @@
                         <TabItem x:Name="POITabItem" Header="POI" IsSelected="True">
                             <StackPanel Margin="0,5" >
                                 <DockPanel Margin="0,2">
-                                    <Button  Content="计算" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="PoiClick" />
+                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="PoiClick" />
                                     <ComboBox  x:Name="ComboxPoiTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                     <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                         <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -114,8 +114,8 @@
                             </GroupBox>
 
                         </TabItem>
-                        <TabItem Header="鬼影">
-                            <GroupBox  Header="鬼影">
+                        <TabItem Header="{x:Static properties:Resource.GhostShadow}">
+                            <GroupBox  Header="{x:Static properties:Resource.GhostShadow}">
                                 <DockPanel Margin="0,2">
                                     <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Ghost_Click" />
                                     <ComboBox  x:Name="ComboxGhostTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
@@ -261,8 +261,8 @@
 
                                 </StackPanel>
  
-                                <Button DockPanel.Dock="Right" Content="上传" Click="Button_Click_Upload" Visibility="Collapsed" Width="0" />
-                                <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_Open" />
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.Upload}" Click="Button_Click_Upload" Visibility="Collapsed" Width="0" />
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.Open}" Click="Button_Click_Open" />
 
                                 <ComboBox x:Name="CB_CIEImageFiles" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}"  Width="130"/>
                             </DockPanel>
@@ -274,7 +274,7 @@
                     </GroupBox>
                     <StackPanel  Visibility="{Binding ElementName=POITabItem,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter1}}" >
                         <DockPanel Margin="0,2">
-                            <RadioButton Content="本地" IsChecked="True" GroupName="alg_src" Width="80"/>
+                            <RadioButton Content="{x:Static properties:Resource.Local}" IsChecked="True" GroupName="alg_src" Width="80"/>
                             <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
                             <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="150" HorizontalAlignment="Left" />
                         </DockPanel>
@@ -299,7 +299,7 @@
                                 </Button>
 
                             </StackPanel>
-                            <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_RawOpen" />
+                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.Open}" Click="Button_Click_RawOpen" />
                             <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}"  Width="150" HorizontalAlignment="Left" />
                         </DockPanel>
                         <DockPanel Margin="0,2">

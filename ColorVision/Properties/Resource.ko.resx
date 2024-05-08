@@ -313,7 +313,7 @@
     <value>주형</value>
   </data>
   <data name="MenuTemplate" xml:space="preserve">
-    <value>템플릿(T)</value>
+    <value>템플릿(_M)</value>
   </data>
   <data name="Open" xml:space="preserve">
     <value>열려 있는</value>
@@ -719,5 +719,17 @@
   </data>
   <data name="MenuAlgorithm" xml:space="preserve">
     <value>알고리즘(A)</value>
+  </data>
+  <data name="CreateDevice" xml:space="preserve">
+    <value>장치 만들기</value>
+  </data>
+  <data name="Upload" xml:space="preserve">
+    <value>업로드</value>
+  </data>
+  <data name="Local" xml:space="preserve">
+    <value>현지의</value>
+  </data>
+  <data name="GhostShadow" xml:space="preserve">
+    <value>귀신</value>
   </data>
 </root>

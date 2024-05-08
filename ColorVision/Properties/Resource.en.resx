@@ -313,7 +313,7 @@
     <value>Template</value>
   </data>
   <data name="MenuTemplate" xml:space="preserve">
-    <value>_Template</value>
+    <value>Te_mplate</value>
   </data>
   <data name="Open" xml:space="preserve">
     <value>Open</value>
@@ -719,5 +719,17 @@
   </data>
   <data name="MenuAlgorithm" xml:space="preserve">
     <value>_Algorithm</value>
+  </data>
+  <data name="CreateDevice" xml:space="preserve">
+    <value>Create a device</value>
+  </data>
+  <data name="Upload" xml:space="preserve">
+    <value>Upload</value>
+  </data>
+  <data name="Local" xml:space="preserve">
+    <value>local</value>
+  </data>
+  <data name="GhostShadow" xml:space="preserve">
+    <value>Ghost</value>
   </data>
 </root>
