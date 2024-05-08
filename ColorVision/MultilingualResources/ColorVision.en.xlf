@@ -373,7 +373,7 @@
         </trans-unit>
         <trans-unit id="MenuFlow" translate="yes" xml:space="preserve">
           <source>流程(_F)</source>
-          <target state="new">_Process</target>
+          <target state="new">_Flow</target>
         </trans-unit>
         <trans-unit id="MenuHelp" translate="yes" xml:space="preserve">
           <source>帮助(_H)</source>

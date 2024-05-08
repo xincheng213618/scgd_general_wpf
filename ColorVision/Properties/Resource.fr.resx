@@ -124,7 +124,7 @@
     <value>Aide(H)</value>
   </data>
   <data name="MenuCut" xml:space="preserve">
-    <value>Couper(T)</value>
+    <value>Couper(_T)</value>
   </data>
   <data name="MenuCopy" xml:space="preserve">
     <value>Copie(C)</value>
@@ -145,7 +145,7 @@
     <value>Ouvert(O)</value>
   </data>
   <data name="MenuUpdate" xml:space="preserve">
-    <value>Vérifier les mises à jour (U)</value>
+    <value>Vérifier les mises à jour (_U)</value>
   </data>
   <data name="MenuView" xml:space="preserve">
     <value>Vue(V)</value>
@@ -199,7 +199,7 @@
     <value>langue de l'interface utilisateur</value>
   </data>
   <data name="MenuLanguage" xml:space="preserve">
-    <value>Langue(L)</value>
+    <value>_Langue</value>
   </data>
   <data name="Theme" xml:space="preserve">
     <value>thème</value>
@@ -313,7 +313,7 @@
     <value>modèle</value>
   </data>
   <data name="MenuTemplate" xml:space="preserve">
-    <value>Modèle (_M)</value>
+    <value>_Modèle</value>
   </data>
   <data name="Open" xml:space="preserve">
     <value>Ouvrir</value>

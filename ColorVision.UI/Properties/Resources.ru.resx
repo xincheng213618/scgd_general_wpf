@@ -171,4 +171,7 @@
   <data name="ru" xml:space="preserve">
     <value>Русский</value>
   </data>
+  <data name="MenuOptions" xml:space="preserve">
+    <value>Вариант(О)</value>
+  </data>
 </root>

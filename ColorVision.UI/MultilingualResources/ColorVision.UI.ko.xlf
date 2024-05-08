@@ -35,6 +35,10 @@
           <source>帮助(_H)</source>
           <target state="new">도움 (_H)</target>
         </trans-unit>
+        <trans-unit id="MenuOptions" translate="yes" xml:space="preserve">
+          <source>选项(_O)</source>
+          <target state="new">옵션 (_O)</target>
+        </trans-unit>
         <trans-unit id="MenuTemplate" translate="yes" xml:space="preserve">
           <source>模板(_M)</source>
           <target state="new">템플릿(_M)</target>

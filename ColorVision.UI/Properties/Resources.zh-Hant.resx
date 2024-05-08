@@ -171,4 +171,7 @@
   <data name="ru" xml:space="preserve">
     <value>俄語</value>
   </data>
+  <data name="MenuOptions" xml:space="preserve">
+    <value>選項(_O）</value>
+  </data>
 </root>
