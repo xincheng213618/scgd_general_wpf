@@ -13,13 +13,13 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {
-    public class DistortionParamMenuItem : IMenuItem
+    public class ExportDistortionParam : IMenuItem
     {
         public string? OwnerGuid => "TemplateAlgorithm";
 
         public string? GuidId => "DistortionParam";
         public int Order => 3;
-        public string? Header => "畸变模板设置(_D)";
+        public string? Header => ColorVision.Properties.Resource.MenuDistortion;
 
         public string? InputGestureText { get; }
 

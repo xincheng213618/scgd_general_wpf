@@ -13,13 +13,13 @@ using System.Windows;
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {
 
-    public class MenuItemSFRParam : IMenuItem
+    public class ExportSFRParam : IMenuItem
     {
         public string? OwnerGuid => "TemplateAlgorithm";
 
         public string? GuidId => "SFRParam";
         public int Order => 2;
-        public string? Header => "SFR模板设置(_M)";
+        public string? Header => ColorVision.Properties.Resource.MenuSFR;
 
         public string? InputGestureText { get; }
 

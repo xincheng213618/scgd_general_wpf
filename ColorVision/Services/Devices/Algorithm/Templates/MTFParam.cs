@@ -15,13 +15,13 @@ using System.Windows;
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {
 
-    public class MenuItemMTFParam : IMenuItem
+    public class ExportMTFParam : IMenuItem
     {
         public string? OwnerGuid => "TemplateAlgorithm";
 
         public string? GuidId => "MTFParam";
         public int Order => 2;
-        public string? Header => "MTF模板设置(_M)";
+        public string? Header => ColorVision.Properties.Resource.MenuMTF;
 
         public string? InputGestureText { get; }
 

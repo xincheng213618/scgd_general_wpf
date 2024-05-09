@@ -10,13 +10,13 @@ using System.Windows;
 
 namespace ColorVision.Services.Templates
 {
-    public class CamerExpMenuItem : IMenuItem
+    public class ExportCameraExp : IMenuItem
     {
         public string OwnerGuid => "Template";
 
         public string? GuidId => "CameraExposureParam";
         public int Order => 22;
-        public string? Header => "相机曝光模板设置(_B)";
+        public string? Header => ColorVision.Properties.Resource.MenuCameraExp;
 
         public string? InputGestureText { get; }
 

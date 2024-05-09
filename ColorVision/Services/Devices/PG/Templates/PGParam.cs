@@ -13,13 +13,13 @@ using System.Windows;
 namespace ColorVision.Services.Devices.PG.Templates
 {
 
-    public class PGParamMenuItem : IMenuItem
+    public class ExportPGParam : IMenuItem
     {
         public string OwnerGuid => "Template";
 
         public string? GuidId => "PGParam";
         public int Order => 11;
-        public string? Header => "PG模板设置(_G)";
+        public string? Header => ColorVision.Properties.Resource.MenuPG;
 
         public string? InputGestureText => null;
 

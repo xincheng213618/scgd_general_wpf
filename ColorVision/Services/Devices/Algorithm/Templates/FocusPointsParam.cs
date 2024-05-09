@@ -13,13 +13,13 @@ using System.Windows;
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {
 
-    public class MenuItemFocusPoints : IMenuItem
+    public class ExportFocusPoints : IMenuItem
     {
         public string? OwnerGuid => "TemplateAlgorithm";
 
         public string? GuidId => "FocusPoints";
         public int Order => 2;
-        public string? Header => "发光区检测模板设置(_F)";
+        public string? Header => ColorVision.Properties.Resource.MenuFocusPoints;
 
         public string? InputGestureText { get; }
 

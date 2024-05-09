@@ -753,4 +753,49 @@
   <data name="MenuCalibrationTool" xml:space="preserve">
     <value>Outil de génération d'étalonnage (_C)</value>
   </data>
+  <data name="MenuBuildPOI" xml:space="preserve">
+    <value>Paramètres du modèle BuildPOI (B)</value>
+  </data>
+  <data name="MenuDistortion" xml:space="preserve">
+    <value>Paramètres du modèle de distorsion (D)</value>
+  </data>
+  <data name="MenuFocusPoints" xml:space="preserve">
+    <value>Paramètres du modèle de détection de zone lumineuse (F)</value>
+  </data>
+  <data name="MenuFOV" xml:space="preserve">
+    <value>Paramètres du modèle FOV (B)" ;</value>
+  </data>
+  <data name="MenuGhost" xml:space="preserve">
+    <value>Paramètres du modèle fantôme (G)</value>
+  </data>
+  <data name="MenuLedCheck" xml:space="preserve">
+    <value>Paramètre du modèle de détection de perles de lampe (L)</value>
+  </data>
+  <data name="MenuMTF" xml:space="preserve">
+    <value>Paramètres du modèle MTF (M)</value>
+  </data>
+  <data name="MenuSFR" xml:space="preserve">
+    <value>Paramètres du modèle SFR (M)</value>
+  </data>
+  <data name="MenuPG" xml:space="preserve">
+    <value>Paramètres du modèle PG</value>
+  </data>
+  <data name="MenuSUM" xml:space="preserve">
+    <value>Paramètres du modèle de table source (S)</value>
+  </data>
+  <data name="MenuSenSorHeYuan" xml:space="preserve">
+    <value>Paramètres du modèle de capteur générique (S)</value>
+  </data>
+  <data name="MenuPoi" xml:space="preserve">
+    <value>Paramètres du modèle de préoccupation (P)</value>
+  </data>
+  <data name="MenuCameraExp" xml:space="preserve">
+    <value>Paramètres du modèle d'exposition de l'appareil photo (B)</value>
+  </data>
+  <data name="MenuMeasure" xml:space="preserve">
+    <value>Paramètres du modèle de mesure</value>
+  </data>
+  <data name="MenuValidue" xml:space="preserve">
+    <value>Paramètres du modèle de vérification concerné (B)</value>
+  </data>
 </root>

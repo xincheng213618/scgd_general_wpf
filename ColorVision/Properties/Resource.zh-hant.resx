@@ -753,4 +753,49 @@
   <data name="MenuCalibrationTool" xml:space="preserve">
     <value>校正生成工具(_C)</value>
   </data>
+  <data name="MenuBuildPOI" xml:space="preserve">
+    <value>BuildPOI模板設定(B)</value>
+  </data>
+  <data name="MenuDistortion" xml:space="preserve">
+    <value>畸變模板設定(D)</value>
+  </data>
+  <data name="MenuFocusPoints" xml:space="preserve">
+    <value>發光區偵測模板設定(F)</value>
+  </data>
+  <data name="MenuFOV" xml:space="preserve">
+    <value>FOV模板設定(B)";</value>
+  </data>
+  <data name="MenuGhost" xml:space="preserve">
+    <value>鬼影模板設定(G)</value>
+  </data>
+  <data name="MenuLedCheck" xml:space="preserve">
+    <value>燈珠偵測模板設定(L)</value>
+  </data>
+  <data name="MenuMTF" xml:space="preserve">
+    <value>MTF模板設定(M)</value>
+  </data>
+  <data name="MenuSFR" xml:space="preserve">
+    <value>SFR模板設定(_S)</value>
+  </data>
+  <data name="MenuPG" xml:space="preserve">
+    <value>P_G模板設定</value>
+  </data>
+  <data name="MenuSUM" xml:space="preserve">
+    <value>源表模板設定(_S)</value>
+  </data>
+  <data name="MenuSenSorHeYuan" xml:space="preserve">
+    <value>通用感測器模板設定(_H)</value>
+  </data>
+  <data name="MenuPoi" xml:space="preserve">
+    <value>關注點模板設定(_P)</value>
+  </data>
+  <data name="MenuCameraExp" xml:space="preserve">
+    <value>相機曝光模板設定(_B)</value>
+  </data>
+  <data name="MenuMeasure" xml:space="preserve">
+    <value>測量模板設定</value>
+  </data>
+  <data name="MenuValidue" xml:space="preserve">
+    <value>關注點校驗範本設定(B)</value>
+  </data>
 </root>

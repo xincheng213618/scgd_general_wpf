@@ -13,7 +13,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {
-    public class TemplateAlgorithmMenuItem : IMenuItem
+    public class ExportTemplateAlgorithm : IMenuItem
     {
         public string? OwnerGuid => "Template";
 
@@ -29,13 +29,13 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
     }
 
 
-    public class BuildPOIMenuItem : IMenuItem
+    public class ExportBuildPOI : IMenuItem
     {
         public string? OwnerGuid => "TemplateAlgorithm";
 
         public string? GuidId => "BuildPOI";
         public int Order => 0;
-        public string? Header => "BuildPOI模板设置(_B)";
+        public string? Header => ColorVision.Properties.Resource.MenuBuildPOI;
 
         public string? InputGestureText { get; }
 

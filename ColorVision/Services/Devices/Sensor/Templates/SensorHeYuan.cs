@@ -16,13 +16,13 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Sensor.Templates
 {
-    public class SensorHeYuanMenuItem : IMenuItem
+    public class ExportSensorHeYuan : IMenuItem
     {
         public string OwnerGuid => "Template";
 
         public string? GuidId => "SensorHeYuan";
         public int Order => 21;
-        public string? Header => "通用传感器模板设置(_S)";
+        public string? Header => ColorVision.Properties.Resource.MenuSenSorHeYuan;
 
         public string? InputGestureText { get; }
 

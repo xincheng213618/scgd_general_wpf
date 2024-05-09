@@ -12,13 +12,13 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Templates.POI
 {
-    public class PoiParamMenuItem : IMenuItem
+    public class ExportPoiParam : IMenuItem
     {
         public string? OwnerGuid => "Template";
 
         public string? GuidId => "PoiParam";
         public int Order => 1;
-        public string? Header => "关注点模板设置(_P)";
+        public string? Header => ColorVision.Properties.Resource.MenuPoi;
 
         public string? InputGestureText => null;
 

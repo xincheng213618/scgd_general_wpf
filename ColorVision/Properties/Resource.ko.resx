@@ -753,4 +753,49 @@
   <data name="MenuCalibrationTool" xml:space="preserve">
     <value>교정 생성 도구(_C)</value>
   </data>
+  <data name="MenuBuildPOI" xml:space="preserve">
+    <value>BuildPOI 템플릿 설정(B)</value>
+  </data>
+  <data name="MenuDistortion" xml:space="preserve">
+    <value>왜곡 템플릿 설정(D)</value>
+  </data>
+  <data name="MenuFocusPoints" xml:space="preserve">
+    <value>발광 영역 감지 템플릿 설정(F)</value>
+  </data>
+  <data name="MenuFOV" xml:space="preserve">
+    <value>FOV 템플릿 설정(B)";</value>
+  </data>
+  <data name="MenuGhost" xml:space="preserve">
+    <value>고스트 템플릿 설정(G)</value>
+  </data>
+  <data name="MenuLedCheck" xml:space="preserve">
+    <value>램프 비드 감지 템플릿 설정(L)</value>
+  </data>
+  <data name="MenuMTF" xml:space="preserve">
+    <value>_MTF 템플릿 설정</value>
+  </data>
+  <data name="MenuSFR" xml:space="preserve">
+    <value>_SFR 템플릿 설정</value>
+  </data>
+  <data name="MenuPG" xml:space="preserve">
+    <value>PG 템플릿 설정</value>
+  </data>
+  <data name="MenuSUM" xml:space="preserve">
+    <value>소스 테이블 템플릿 설정(S)</value>
+  </data>
+  <data name="MenuSenSorHeYuan" xml:space="preserve">
+    <value>일반 센서 템플릿 설정(S)</value>
+  </data>
+  <data name="MenuPoi" xml:space="preserve">
+    <value>우려사항 템플릿 설정(P)</value>
+  </data>
+  <data name="MenuCameraExp" xml:space="preserve">
+    <value>카메라 노출 템플릿 설정(B)</value>
+  </data>
+  <data name="MenuMeasure" xml:space="preserve">
+    <value>측정 템플릿 설정</value>
+  </data>
+  <data name="MenuValidue" xml:space="preserve">
+    <value>우려사항 확인 템플릿 설정(B)</value>
+  </data>
 </root>

@@ -753,4 +753,49 @@
   <data name="MenuCalibrationTool" xml:space="preserve">
     <value>_Calibration Generation Tool</value>
   </data>
+  <data name="MenuBuildPOI" xml:space="preserve">
+    <value>_BuildPOI</value>
+  </data>
+  <data name="MenuDistortion" xml:space="preserve">
+    <value>_Distortion</value>
+  </data>
+  <data name="MenuFocusPoints" xml:space="preserve">
+    <value>Focus _Point</value>
+  </data>
+  <data name="MenuFOV" xml:space="preserve">
+    <value>_FOV</value>
+  </data>
+  <data name="MenuGhost" xml:space="preserve">
+    <value>_Ghost</value>
+  </data>
+  <data name="MenuLedCheck" xml:space="preserve">
+    <value>_Led Check</value>
+  </data>
+  <data name="MenuMTF" xml:space="preserve">
+    <value>_MTF</value>
+  </data>
+  <data name="MenuSFR" xml:space="preserve">
+    <value>_SFR</value>
+  </data>
+  <data name="MenuPG" xml:space="preserve">
+    <value>P_G</value>
+  </data>
+  <data name="MenuSUM" xml:space="preserve">
+    <value>Source table template settings(_S)</value>
+  </data>
+  <data name="MenuSenSorHeYuan" xml:space="preserve">
+    <value>Generic sensor template settings(_H)</value>
+  </data>
+  <data name="MenuPoi" xml:space="preserve">
+    <value>_POI</value>
+  </data>
+  <data name="MenuCameraExp" xml:space="preserve">
+    <value>Camera exposure template settings (_B)</value>
+  </data>
+  <data name="MenuMeasure" xml:space="preserve">
+    <value>Measurement template settings</value>
+  </data>
+  <data name="MenuValidue" xml:space="preserve">
+    <value>Focus point verification template settings (B)</value>
+  </data>
 </root>

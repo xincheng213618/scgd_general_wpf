@@ -817,11 +817,29 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 BuildPOI模板设置(_B) 的本地化字符串。
+        /// </summary>
+        public static string MenuBuildPOI {
+            get {
+                return ResourceManager.GetString("MenuBuildPOI", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 校正生成工具(_C) 的本地化字符串。
         /// </summary>
         public static string MenuCalibrationTool {
             get {
                 return ResourceManager.GetString("MenuCalibrationTool", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 相机曝光模板设置(_B) 的本地化字符串。
+        /// </summary>
+        public static string MenuCameraExp {
+            get {
+                return ResourceManager.GetString("MenuCameraExp", resourceCulture);
             }
         }
         
@@ -862,6 +880,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 畸变模板设置(_D) 的本地化字符串。
+        /// </summary>
+        public static string MenuDistortion {
+            get {
+                return ResourceManager.GetString("MenuDistortion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 编辑(_E) 的本地化字符串。
         /// </summary>
         public static string MenuEdit {
@@ -898,6 +925,33 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 发光区检测模板设置(_P) 的本地化字符串。
+        /// </summary>
+        public static string MenuFocusPoints {
+            get {
+                return ResourceManager.GetString("MenuFocusPoints", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 _FOV模板设置 的本地化字符串。
+        /// </summary>
+        public static string MenuFOV {
+            get {
+                return ResourceManager.GetString("MenuFOV", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 鬼影模板设置(_G) 的本地化字符串。
+        /// </summary>
+        public static string MenuGhost {
+            get {
+                return ResourceManager.GetString("MenuGhost", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 帮助(_H) 的本地化字符串。
         /// </summary>
         public static string MenuHelp {
@@ -916,11 +970,38 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 灯珠检测模板设置(_L) 的本地化字符串。
+        /// </summary>
+        public static string MenuLedCheck {
+            get {
+                return ResourceManager.GetString("MenuLedCheck", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 登录账号(_L) 的本地化字符串。
         /// </summary>
         public static string MenuLogin {
             get {
                 return ResourceManager.GetString("MenuLogin", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 测量模板设置 的本地化字符串。
+        /// </summary>
+        public static string MenuMeasure {
+            get {
+                return ResourceManager.GetString("MenuMeasure", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 _MTF模板设置 的本地化字符串。
+        /// </summary>
+        public static string MenuMTF {
+            get {
+                return ResourceManager.GetString("MenuMTF", resourceCulture);
             }
         }
         
@@ -952,6 +1033,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 P_G模板设置 的本地化字符串。
+        /// </summary>
+        public static string MenuPG {
+            get {
+                return ResourceManager.GetString("MenuPG", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 物理相机管理(_P) 的本地化字符串。
         /// </summary>
         public static string MenuPhyCameraManager {
@@ -961,11 +1051,29 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 关注点模板设置(_P) 的本地化字符串。
+        /// </summary>
+        public static string MenuPoi {
+            get {
+                return ResourceManager.GetString("MenuPoi", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 重命名(_M) 的本地化字符串。
         /// </summary>
         public static string MenuRename {
             get {
                 return ResourceManager.GetString("MenuRename", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 通用传感器模板设置(_S) 的本地化字符串。
+        /// </summary>
+        public static string MenuSenSorHeYuan {
+            get {
+                return ResourceManager.GetString("MenuSenSorHeYuan", resourceCulture);
             }
         }
         
@@ -984,6 +1092,24 @@ namespace ColorVision.Properties {
         public static string MenuSettings {
             get {
                 return ResourceManager.GetString("MenuSettings", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 _SFR模板设置 的本地化字符串。
+        /// </summary>
+        public static string MenuSFR {
+            get {
+                return ResourceManager.GetString("MenuSFR", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 源表模板设置(_S) 的本地化字符串。
+        /// </summary>
+        public static string MenuSUM {
+            get {
+                return ResourceManager.GetString("MenuSUM", resourceCulture);
             }
         }
         
@@ -1029,6 +1155,15 @@ namespace ColorVision.Properties {
         public static string MenuUpdate {
             get {
                 return ResourceManager.GetString("MenuUpdate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关注点校验模板设置(_B) 的本地化字符串。
+        /// </summary>
+        public static string MenuValidue {
+            get {
+                return ResourceManager.GetString("MenuValidue", resourceCulture);
             }
         }
         

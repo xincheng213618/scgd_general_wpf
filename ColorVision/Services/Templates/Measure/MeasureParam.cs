@@ -8,13 +8,13 @@ using System.Windows;
 namespace ColorVision.Services.Templates.Measure
 {
 
-    public class MeasureParamMenuItem : IMenuItem
+    public class ExportMeasureParam : IMenuItem
     {
         public string OwnerGuid => "Template";
 
         public string? GuidId => "MeasureParam";
         public int Order => 31;
-        public string? Header => "测量模板设置";
+        public string? Header => ColorVision.Properties.Resource.MenuMeasure;
 
         public string? InputGestureText => null;
 

@@ -7,13 +7,13 @@ using System.Windows;
 namespace ColorVision.Services.Dao.Validate
 {
 
-    public class BuildPOIMenuItem : IMenuItem
+    public class ExportValidue : IMenuItem
     {
         public string? OwnerGuid => "Template";
 
         public string? GuidId => "Validue";
         public int Order => 2;
-        public string? Header => "关注点校验模板设置(_B)";
+        public string? Header => ColorVision.Properties.Resource.MenuValidue;
 
         public string? InputGestureText { get; }
 

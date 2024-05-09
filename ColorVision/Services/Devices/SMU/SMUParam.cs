@@ -14,13 +14,13 @@ using System.Windows;
 namespace ColorVision.Services.Devices.SMU
 {
 
-    public class SMUParamMenuItem : IMenuItem
+    public class ExportSMUParam : IMenuItem
     {
         public string OwnerGuid => "Template";
 
         public string? GuidId => "SMUParam";
         public int Order => 12;
-        public string? Header => "源表模板设置(_S)";
+        public string? Header => ColorVision.Properties.Resource.MenuSUM;
 
         public string? InputGestureText => null;
 

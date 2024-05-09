@@ -753,4 +753,49 @@
   <data name="MenuCalibrationTool" xml:space="preserve">
     <value>キャリブレーション生成ツール(_C)</value>
   </data>
+  <data name="MenuBuildPOI" xml:space="preserve">
+    <value>BuildPOIテンプレート設定(B)</value>
+  </data>
+  <data name="MenuDistortion" xml:space="preserve">
+    <value>ディストーションテンプレート設定(D)</value>
+  </data>
+  <data name="MenuFocusPoints" xml:space="preserve">
+    <value>発光領域検出テンプレート設定(F)</value>
+  </data>
+  <data name="MenuFOV" xml:space="preserve">
+    <value>FOVテンプレート設定(B)」;</value>
+  </data>
+  <data name="MenuGhost" xml:space="preserve">
+    <value>ゴーストテンプレート設定(G)</value>
+  </data>
+  <data name="MenuLedCheck" xml:space="preserve">
+    <value>ランプ球検出テンプレート設定(L)</value>
+  </data>
+  <data name="MenuMTF" xml:space="preserve">
+    <value>MTF テンプレート設定(M)</value>
+  </data>
+  <data name="MenuSFR" xml:space="preserve">
+    <value>_SFR テンプレート設定</value>
+  </data>
+  <data name="MenuPG" xml:space="preserve">
+    <value>PGテンプレートの設定</value>
+  </data>
+  <data name="MenuSUM" xml:space="preserve">
+    <value>ソーステーブルテンプレート設定(S)</value>
+  </data>
+  <data name="MenuSenSorHeYuan" xml:space="preserve">
+    <value>汎用センサーテンプレート設定(S)</value>
+  </data>
+  <data name="MenuPoi" xml:space="preserve">
+    <value>懸念テンプレートの設定（P）</value>
+  </data>
+  <data name="MenuCameraExp" xml:space="preserve">
+    <value>カメラ露出テンプレート設定（B）</value>
+  </data>
+  <data name="MenuMeasure" xml:space="preserve">
+    <value>測定テンプレートの設定</value>
+  </data>
+  <data name="MenuValidue" xml:space="preserve">
+    <value>懸念事項検証テンプレートの設定（B）</value>
+  </data>
 </root>

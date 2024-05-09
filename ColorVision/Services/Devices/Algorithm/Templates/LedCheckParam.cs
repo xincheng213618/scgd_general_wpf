@@ -12,13 +12,13 @@ using System.Collections.ObjectModel;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {
-    public class LedCheckParamMenuItem : IMenuItem
+    public class ExportLedCheckParam : IMenuItem
     {
         public string? OwnerGuid => "TemplateAlgorithm";
 
         public string? GuidId => "LedCheckParam";
         public int Order => 2;
-        public string? Header => "灯珠检测模板设置(_L)";
+        public string? Header => ColorVision.Properties.Resource.MenuLedCheck;
 
         public string? InputGestureText { get; }
 

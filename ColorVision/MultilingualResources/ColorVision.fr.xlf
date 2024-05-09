@@ -347,9 +347,17 @@
           <source>算法(_A)</source>
           <target state="new">Algorithme(A)</target>
         </trans-unit>
+        <trans-unit id="MenuBuildPOI" translate="yes" xml:space="preserve">
+          <source>BuildPOI模板设置(_B)</source>
+          <target state="new">Paramètres du modèle BuildPOI (B)</target>
+        </trans-unit>
         <trans-unit id="MenuCalibrationTool" translate="yes" xml:space="preserve">
           <source>校正生成工具(_C)</source>
           <target state="new">Outil de génération d'étalonnage (_C)</target>
+        </trans-unit>
+        <trans-unit id="MenuCameraExp" translate="yes" xml:space="preserve">
+          <source>相机曝光模板设置(_B)</source>
+          <target state="new">Paramètres du modèle d'exposition de l'appareil photo (B)</target>
         </trans-unit>
         <trans-unit id="MenuCopy" translate="yes" xml:space="preserve">
           <source>复制(_C)</source>
@@ -367,6 +375,10 @@
           <source>设备配置(_D)</source>
           <target state="new">Configuration de l'appareil (_D)</target>
         </trans-unit>
+        <trans-unit id="MenuDistortion" translate="yes" xml:space="preserve">
+          <source>畸变模板设置(_D)</source>
+          <target state="new">Paramètres du modèle de distorsion (D)</target>
+        </trans-unit>
         <trans-unit id="MenuEdit" translate="yes" xml:space="preserve">
           <source>编辑(_E)</source>
           <target state="new">Modifier(E)</target>
@@ -374,6 +386,10 @@
         <trans-unit id="MenuExit" translate="yes" xml:space="preserve">
           <source>退出(_X)</source>
           <target state="new">Quitter (X)</target>
+        </trans-unit>
+        <trans-unit id="MenuFOV" translate="yes" xml:space="preserve">
+          <source>_FOV模板设置</source>
+          <target state="new">Paramètres du modèle FOV (B)" ;</target>
         </trans-unit>
         <trans-unit id="MenuFile" translate="yes" xml:space="preserve">
           <source>文件(_F)</source>
@@ -383,6 +399,14 @@
           <source>流程(_F)</source>
           <target state="new">_Processus</target>
         </trans-unit>
+        <trans-unit id="MenuFocusPoints" translate="yes" xml:space="preserve">
+          <source>发光区检测模板设置(_P)</source>
+          <target state="new">Paramètres du modèle de détection de zone lumineuse (F)</target>
+        </trans-unit>
+        <trans-unit id="MenuGhost" translate="yes" xml:space="preserve">
+          <source>鬼影模板设置(_G)</source>
+          <target state="new">Paramètres du modèle fantôme (G)</target>
+        </trans-unit>
         <trans-unit id="MenuHelp" translate="yes" xml:space="preserve">
           <source>帮助(_H)</source>
           <target state="new">Aide(H)</target>
@@ -391,9 +415,21 @@
           <source>语言(_L)</source>
           <target state="new">_Langue</target>
         </trans-unit>
+        <trans-unit id="MenuLedCheck" translate="yes" xml:space="preserve">
+          <source>灯珠检测模板设置(_L)</source>
+          <target state="new">Paramètre du modèle de détection de perles de lampe (L)</target>
+        </trans-unit>
         <trans-unit id="MenuLogin" translate="yes" xml:space="preserve">
           <source>登录账号(_L)</source>
           <target state="new">Compte de connexion (_L)</target>
+        </trans-unit>
+        <trans-unit id="MenuMTF" translate="yes" xml:space="preserve">
+          <source>_MTF模板设置</source>
+          <target state="new">Paramètres du modèle MTF (M)</target>
+        </trans-unit>
+        <trans-unit id="MenuMeasure" translate="yes" xml:space="preserve">
+          <source>测量模板设置</source>
+          <target state="new">Paramètres du modèle de mesure</target>
         </trans-unit>
         <trans-unit id="MenuNew" translate="yes" xml:space="preserve">
           <source>新建(_N)</source>
@@ -407,13 +443,33 @@
           <source>选项(_O)</source>
           <target state="new">_Option</target>
         </trans-unit>
+        <trans-unit id="MenuPG" translate="yes" xml:space="preserve">
+          <source>P_G模板设置</source>
+          <target state="new">Paramètres du modèle PG</target>
+        </trans-unit>
         <trans-unit id="MenuPhyCameraManager" translate="yes" xml:space="preserve">
           <source>物理相机管理(_P)</source>
           <target state="new">Gestion des caméras physiques(_P)</target>
         </trans-unit>
+        <trans-unit id="MenuPoi" translate="yes" xml:space="preserve">
+          <source>关注点模板设置(_P)</source>
+          <target state="new">Paramètres du modèle de préoccupation (P)</target>
+        </trans-unit>
         <trans-unit id="MenuRename" translate="yes" xml:space="preserve">
           <source>重命名(_M)</source>
           <target state="new">Renommer(M)</target>
+        </trans-unit>
+        <trans-unit id="MenuSFR" translate="yes" xml:space="preserve">
+          <source>_SFR模板设置</source>
+          <target state="new">Paramètres du modèle SFR (M)</target>
+        </trans-unit>
+        <trans-unit id="MenuSUM" translate="yes" xml:space="preserve">
+          <source>源表模板设置(_S)</source>
+          <target state="new">Paramètres du modèle de table source (S)</target>
+        </trans-unit>
+        <trans-unit id="MenuSenSorHeYuan" translate="yes" xml:space="preserve">
+          <source>通用传感器模板设置(_S)</source>
+          <target state="new">Paramètres du modèle de capteur générique (S)</target>
         </trans-unit>
         <trans-unit id="MenuService" translate="yes" xml:space="preserve">
           <source>管理员服务配置(_S)</source>
@@ -442,6 +498,10 @@
         <trans-unit id="MenuUpdate" translate="yes" xml:space="preserve">
           <source>检查更新(_U)</source>
           <target state="new">Vérifier les mises à jour (_U)</target>
+        </trans-unit>
+        <trans-unit id="MenuValidue" translate="yes" xml:space="preserve">
+          <source>关注点校验模板设置(_B)</source>
+          <target state="new">Paramètres du modèle de vérification concerné (B)</target>
         </trans-unit>
         <trans-unit id="MenuView" translate="yes" xml:space="preserve">
           <source>视图(_V)</source>

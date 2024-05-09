@@ -12,13 +12,13 @@ using System.Windows;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {
-    public class GhostParamMenuItem : IMenuItem
+    public class ExportGhostParam : IMenuItem
     {
         public string? OwnerGuid => "TemplateAlgorithm";
 
         public string? GuidId => "GhostParam";
         public int Order => 3;
-        public string? Header => "鬼影模板设置(_G)";
+        public string? Header => ColorVision.Properties.Resource.MenuGhost;
 
         public string? InputGestureText { get; }
 

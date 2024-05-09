@@ -12,13 +12,13 @@ using System.Windows;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {
-    public class BuildFOVMenuItem : IMenuItem
+    public class ExportFOV : IMenuItem
     {
         public string? OwnerGuid => "TemplateAlgorithm";
 
         public string? GuidId => "FOV";
         public int Order => 5;
-        public string? Header => "FOV模板设置(_B)";
+        public string? Header => ColorVision.Properties.Resource.MenuFOV;
 
         public string? InputGestureText { get; }
 

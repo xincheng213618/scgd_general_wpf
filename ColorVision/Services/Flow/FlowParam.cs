@@ -15,13 +15,13 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Flow
 {
-    public class FlowPlugin : IMenuItem
+    public class ExportFlow : IMenuItem
     {
         public string? OwnerGuid => "Template";
 
         public string? GuidId => "FlowParam";
         public int Order => 0;
-        public string? Header => "流程模板设置(_F)";
+        public string? Header => Properties.Resource.MenuFlow;
 
         public string? InputGestureText { get; }
 
