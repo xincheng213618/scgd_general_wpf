@@ -4,9 +4,10 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Media"
-          xmlns:draw ="clr-namespace:ColorVision.Draw;assembly=ColorVision.Util" d:DataContext="{d:DesignInstance Type=draw:ToolBarTop}"
+        xmlns:draw ="clr-namespace:ColorVision.Draw;assembly=ColorVision.Util"
+        d:DataContext="{d:DesignInstance Type=draw:ToolBarTop}"
         mc:Ignorable="d"
-        Title="WindowCIE" Height="450" Width="800" Icon="/Assets/Image/CIE1931xy.ico" Initialized="Window_Initialized">
+        Title="WindowCIE" Height="450" Width="400" Icon="/Assets/Image/CIE1931xy.ico" Initialized="Window_Initialized">
     <Grid>
         <Grid x:Name="ZoomGrid"  Grid.Column="0" Background="#c3c3c3">
             <Grid.RowDefinitions>

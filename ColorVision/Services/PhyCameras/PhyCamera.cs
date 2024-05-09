@@ -433,7 +433,7 @@ namespace ColorVision.Services.PhyCameras
                                 {
                                     if (CalibrationResource.SysResourceModel.Code != null && CalibrationResource.SysResourceModel.Code.Contains(md5) )
                                     {
-                                        keyValuePairs2.Add(item1.Title, CalibrationResource);
+                                        keyValuePairs2.TryAdd(item1.Title, CalibrationResource);
                                         isExist = true;
                                         continue;
                                     }
@@ -512,7 +512,7 @@ namespace ColorVision.Services.PhyCameras
                                     {
                                         AddChild(calibrationResource);
                                     });
-                                    keyValuePairs2.Add(item1.Title, calibrationResource);
+                                    keyValuePairs2.TryAdd(item1.Title, calibrationResource);
                                 }
                             }
 
