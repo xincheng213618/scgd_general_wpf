@@ -167,7 +167,10 @@
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMax}"  Margin="-5"/>
                     </ToggleButton>
                     <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
-                    <Button Content="属性" Command="{Binding OpenProperty}" />
+                    <Button   Command="{Binding OpenProperty}" Margin="1,0">
+                        <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" Margin="-5" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
+                    </Button>
+
                     <Button x:Name="reference"  Click="reference_Click" Margin="1,0" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource ConcentricCirclesDrawImg}"  Margin="-5"/>
                     </Button>
