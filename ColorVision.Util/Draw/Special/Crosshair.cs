@@ -33,7 +33,7 @@ namespace ColorVision.Draw.Special
             {
                 if (_IsShow == value) return;
                 _IsShow = value;
-                DrawVisualImageControl(_IsShow);
+                DrawVisualImageControl(value);
                 if (value)
                 {
                     DrawCanvas.MouseMove += MouseMove;
@@ -91,7 +91,16 @@ namespace ColorVision.Draw.Special
             }
         }
 
-        public double Ratio { get; set;}
+        public double Ratio { get
+            {
+                if (DrawCanvas.Source is BitmapSource bitmap)
+                {
+                    var controlWidth = DrawCanvas.ActualWidth;
+                    int imageWidth = bitmap.PixelWidth;
+                    return 1 / controlWidth * imageWidth;
+                }
+                return 1;
+            } }
 
         public void MouseMove(object sender, MouseEventArgs e)
         {
@@ -106,8 +115,6 @@ namespace ColorVision.Draw.Special
                 int imageWidth = bitmap.PixelWidth;
                 int imageHeight = bitmap.PixelHeight;
                 var actPoint = new Point(point.X, point.Y);
-
-                Ratio = 1 / controlWidth * imageWidth;
 
                 point.X = point.X / controlWidth * imageWidth;
                 point.Y = point.Y / controlHeight * imageHeight;

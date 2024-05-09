@@ -669,6 +669,7 @@ namespace ColorVision.Media
             {
                 ToolBarTop.CIEVisible = Visibility.Visible;
             }
+
             ViewBitmapSource = writeableBitmap;
             ImageShow.Source = ViewBitmapSource;
 

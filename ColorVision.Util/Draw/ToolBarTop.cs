@@ -46,7 +46,6 @@ namespace ColorVision.Draw
         public RelayCommand RotateLeftCommand { get; set; }
         public RelayCommand RotateRightCommand { get; set; }
 
-
         public RelayCommand SaveImageCommand { get; set; }
         public RelayCommand ClearImageCommand { get; set; }
         public EventHandler ClearImageEventHandler { get; set; }
@@ -162,6 +161,8 @@ namespace ColorVision.Draw
             }
 
         }
+
+
         public void AddContextMenu()
         {
             ContextMenu contextMenu = new ContextMenu();
@@ -398,6 +399,7 @@ namespace ColorVision.Draw
                 NotifyPropertyChanged();
             }
         }
+
         public Visibility PseudoVisible { get => _PseudoVisible; set { _PseudoVisible = value; NotifyPropertyChanged(); } }
         private Visibility _PseudoVisible = Visibility.Visible;
 
@@ -440,6 +442,8 @@ namespace ColorVision.Draw
                 NotifyPropertyChanged();
             }
         }
+
+
 
         public EventHandler<EditModeChangedEventArgs> EditModeChanged { get; set; }
 
