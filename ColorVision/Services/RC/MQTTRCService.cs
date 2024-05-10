@@ -67,6 +67,7 @@ namespace ColorVision.Services.RC
                 Params = new Dictionary<string, object> { { "Name", name }, { "FileName", fileName }, { "FileExtType", FileExtType.Calibration }, { "MD5", md5 } }
             };
 
+
             MsgRecord msgRecord = PublishAsyncClient(msg);
             MsgRecordStateChangedHandler handler = (sender) =>
             {
@@ -533,7 +534,7 @@ namespace ColorVision.Services.RC
                 DeviceCode = cameraID,
                 EventName = "PhysicalCamera_Load",
             };
-            PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(msg));
+            PublishAsyncClient(msg);
         }
 
 
