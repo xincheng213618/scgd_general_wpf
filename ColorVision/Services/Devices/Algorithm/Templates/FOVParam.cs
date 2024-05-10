@@ -31,8 +31,18 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-            new WindowTemplate(TemplateType.FOVParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateFOVParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
+    }
+
+    public class TemplateFOVParam : ITemplate<FOVParam>, IITemplateLoad
+    {
+        public TemplateFOVParam()
+        {
+            Title = "FOVParam算法设置";
+            Code = ModMasterType.FOV;
+            TemplateParams = FOVParam.FOVParams;
+        }
     }
 
     public class FOVParam : ParamBase

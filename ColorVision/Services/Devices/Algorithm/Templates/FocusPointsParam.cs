@@ -32,8 +32,18 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-            new WindowTemplate(TemplateType.FocusPointsParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateFocusPointsParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
+    }
+
+    public class TemplateFocusPointsParam : ITemplate<FocusPointsParam>, IITemplateLoad
+    {
+        public TemplateFocusPointsParam()
+        {
+            Title = "FocusPoints算法设置";
+            Code = ModMasterType.FocusPoints;
+            TemplateParams = FocusPointsParam.FocusPointsParams;
+        }
     }
 
     public class FocusPointsParam : ParamBase

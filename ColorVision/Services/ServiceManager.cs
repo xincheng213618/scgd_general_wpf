@@ -20,7 +20,7 @@ using ColorVision.Services.Devices.Spectrum.Dao;
 using ColorVision.Services.Flow;
 using ColorVision.Services.PhyCameras;
 using ColorVision.Services.Terminal;
-using ColorVision.Services.Type;
+using ColorVision.Services.Types;
 using ColorVision.Settings;
 using ColorVision.UI;
 using ColorVision.UserSpace;

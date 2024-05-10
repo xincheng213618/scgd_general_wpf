@@ -6,7 +6,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Common.Utilities;
-using ColorVision.Services.Type;
+using ColorVision.Services.Types;
 using ColorVision.Services.PhyCameras.Templates;
 
 namespace ColorVision.Services.PhyCameras.Templates

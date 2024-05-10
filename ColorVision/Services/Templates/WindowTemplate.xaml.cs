@@ -2,21 +2,10 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Properties;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Dao.Validate;
-using ColorVision.Services.Devices.Algorithm.Templates;
-using ColorVision.Services.Devices.PG.Templates;
-using ColorVision.Services.Devices.Sensor.Templates;
-using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Devices.Spectrum;
-using ColorVision.Services.Flow;
 using ColorVision.Services.PhyCameras.Templates;
-using ColorVision.Services.Templates.Measure;
-using ColorVision.Services.Templates.POI;
-using ColorVision.Services.Templates.POI.Dao;
-using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -30,89 +19,7 @@ namespace ColorVision.Services.Templates
     /// </summary>
     public partial class WindowTemplate : Window 
     {
-        TemplateType TemplateType { get; set; } = TemplateType.AoiParam;
-
         public ITemplate ITemplate { get; set; }
-
-        public WindowTemplate(TemplateType windowTemplateType, bool IsReLoad = true)
-        {
-            TemplateType = windowTemplateType;
-            Load(windowTemplateType, IsReLoad);
-            InitializeComponent();
-        }
-
-        public void Load(TemplateType windowTemplateType,bool IsReLoad = true)
-        {
-            switch (TemplateType)
-            {
-                case TemplateType.MeasureParam:
-                    if (IsReLoad)
-                        MeasureParam.LoadMeasureParams();
-                    ITemplate = new ITemplate<MeasureParam>() { TemplateParams = MeasureParam.MeasureParams, Title = "测量设置" };
-                    break;
-                case TemplateType.AoiParam:
-                    if (IsReLoad)
-                        TemplateControl.LoadModParam(TemplateControl.GetInstance().AoiParams, ModMasterType.Aoi);
-                    ITemplate = new ITemplate<AOIParam>() { TemplateParams = TemplateControl.GetInstance().AoiParams , Code = ModMasterType.Aoi, Title = "AOI参数设置" };
-                    break;
-                case TemplateType.PGParam:
-                    if (IsReLoad)
-                        TemplateControl.LoadModParam(PGParam.Params, ModMasterType.PG);
-                    ITemplate = new ITemplate<PGParam>() { TemplateParams = PGParam.Params, Code = ModMasterType.PG, Title = "PG参数设置" };
-                    break;
-                case TemplateType.SMUParam:
-                    if (IsReLoad)
-                        TemplateControl.LoadModParam(SMUParam.Params, ModMasterType.SMU);
-                    ITemplate = new ITemplate<SMUParam>() { TemplateParams = SMUParam.Params, Code = ModMasterType.SMU, Title = "源表模板设置" };
-                    break;
-                case TemplateType.MTFParam:
-                    if (IsReLoad)
-                        TemplateControl.LoadModParam(MTFParam.MTFParams, ModMasterType.MTF);
-                    ITemplate = new ITemplate<MTFParam>() { TemplateParams = MTFParam.MTFParams , Code = ModMasterType.MTF, Title= "MTF算法设置" };
-                    break;
-                case TemplateType.SFRParam:
-                    if (IsReLoad)
-                        TemplateControl.LoadModParam(SFRParam.SFRParams, ModMasterType.SFR);
-                    ITemplate = new ITemplate<SFRParam>() { TemplateParams = SFRParam.SFRParams , Code= ModMasterType.SFR, Title = "SFR算法设置"};
-                    break;
-                case TemplateType.FOVParam:
-                    if (IsReLoad)
-                        TemplateControl.LoadModParam(FOVParam.FOVParams, ModMasterType.FOV);
-                    ITemplate = new ITemplate<FOVParam>() { TemplateParams = FOVParam.FOVParams ,  Code = ModMasterType.FOV, Title = "FOV算法设置" };
-                    break;
-                case TemplateType.GhostParam:
-                    if (IsReLoad)
-                        TemplateControl.LoadModParam(GhostParam.GhostParams, ModMasterType.Ghost);
-                    ITemplate = new ITemplate<GhostParam>() { TemplateParams = GhostParam.GhostParams, Code = ModMasterType.Ghost, Title = "鬼影算法设置" };
-                    break;
-                case TemplateType.LedCheckParam:
-                    if (IsReLoad)
-                        TemplateControl.LoadModParam(LedCheckParam.LedCheckParams, ModMasterType.LedCheck);
-                    ITemplate = new ITemplate<LedCheckParam>() { TemplateParams = LedCheckParam.LedCheckParams , Code = ModMasterType.LedCheck, Title = "灯光检测算法设置" };
-                    break;
-                case TemplateType.FocusPointsParam:
-                    if (IsReLoad)
-                        TemplateControl.LoadModParam(FocusPointsParam.FocusPointsParams, ModMasterType.FocusPoints);
-                    ITemplate = new ITemplate<FocusPointsParam>() { TemplateParams = FocusPointsParam.FocusPointsParams , Code = ModMasterType.FocusPoints, Title = "FocusPoints算法设置" };
-                    break;
-                case TemplateType.SensorHeYuan:
-                    if (IsReLoad)
-                        TemplateControl.LoadModParam(SensorHeYuan.SensorHeYuans, ModMasterType.SensorHeYuan);
-                    ITemplate = new ITemplate<SensorHeYuan>() { TemplateParams = SensorHeYuan.SensorHeYuans , Code = ModMasterType.SensorHeYuan, Title = "SensorHeYuan算法设置" };
-                    break;
-                case TemplateType.CameraExposureParam:
-                    if (IsReLoad)
-                        TemplateControl.LoadModParam(CameraExposureParam.CameraExposureParams, ModMasterType.CameraExposure);
-                    ITemplate = new ITemplate<CameraExposureParam>() { TemplateParams = CameraExposureParam.CameraExposureParams , Code = ModMasterType.Calibration, Title = "相机曝光参数设置" };
-                    break;
-                case TemplateType.ValidateParam:
-                    ITemplate = new ITemplate<ValidateParam>() { TemplateParams = ValidateParam.Params , Code = "ValidateParam", Title = "校验参数设置" };
-                    break;
-                default:
-                    break;
-            }
-        }
-
 
         public WindowTemplate(ITemplate template, bool IsReLoad = true)
         {
@@ -124,7 +31,7 @@ namespace ColorVision.Services.Templates
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            if (ITemplate is TemplatePOI || ITemplate is TemplateFlow)
+            if (ITemplate.IsSideHide)
             {
                 GridProperty.Visibility = Visibility.Collapsed;
                 Grid.SetColumnSpan(TemplateGrid, 2);
@@ -185,7 +92,7 @@ namespace ColorVision.Services.Templates
 
                 }
 
-                //if (UserControl is MeasureParamControl mpc && MeasureParam.MeasureParams[listView.SelectedIndex].Value is MeasureParam mp)
+                //if (UserControl is MeasureParamControl mpc && MeasureParam.Params[listView.SelectedIndex].Value is MeasureParam mp)
                 //{
                 //    mpc.MasterID = mp.Id;
                 //    List<MeasureDetailModel> des = measureDetail.GetAllByPid(mp.Id); 
@@ -304,319 +211,320 @@ namespace ColorVision.Services.Templates
             }
 
 
-            switch (TemplateType)
-            {
-                case TemplateType.FlowParam:
-                    if (true)
-                    {
-                        System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
-                        ofd.DefaultExt = "stn";
-                        ofd.Filter = "*.stn|*.stn";
-                        ofd.AddExtension = false;
-                        ofd.RestoreDirectory = true;
-                        ofd.Title = "导出流程";
-                        ofd.FileName = FlowParam.Params[ListView1.SelectedIndex].Key;
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        Tool.Base64ToFile(FlowParam.Params[ListView1.SelectedIndex].Value.DataBase64, ofd.FileName);
-                    }
+            //switch (TemplateType)
+            //{
+            //    case TemplateType.FlowParam:
+            //        if (true)
+            //        {
+            //            System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
+            //            ofd.DefaultExt = "stn";
+            //            ofd.Filter = "*.stn|*.stn";
+            //            ofd.AddExtension = false;
+            //            ofd.RestoreDirectory = true;
+            //            ofd.Title = "导出流程";
+            //            ofd.FileName = FlowParam.Params[ListView1.SelectedIndex].Key;
+            //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //            Tool.Base64ToFile(FlowParam.Params[ListView1.SelectedIndex].Value.DataBase64, ofd.FileName);
+            //        }
 
-                    break;
-                default:
-                    if (true)
-                    {
-                        //System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
-                        //ofd.DefaultExt = "cfg";
-                        //ofd.Filter = "*.cfg|*.cfg";
-                        //ofd.AddExtension = false;
-                        //ofd.RestoreDirectory = true;
-                        //ofd.Title = "导出流程";
-                        //ofd.FileName = TemplateParams[ListView1.SelectedIndex].Key;
-                        //if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        //if (TemplateParams[ListView1.SelectedIndex].GetValue() is ViewModelBase viewModelBase)
-                        //{
-                        //    viewModelBase.ToJsonNFile(ofd.FileName);
-                        //}
-                    }
-                    break;
-            }
+            //        break;
+            //    default:
+            //        if (true)
+            //        {
+            //            //System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
+            //            //ofd.DefaultExt = "cfg";
+            //            //ofd.Filter = "*.cfg|*.cfg";
+            //            //ofd.AddExtension = false;
+            //            //ofd.RestoreDirectory = true;
+            //            //ofd.Title = "导出流程";
+            //            //ofd.FileName = TemplateParams[ListView1.SelectedIndex].Key;
+            //            //if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //            //if (TemplateParams[ListView1.SelectedIndex].GetValue() is ViewModelBase viewModelBase)
+            //            //{
+            //            //    viewModelBase.ToJsonNFile(ofd.FileName);
+            //            //}
+            //        }
+            //        break;
+            //}
+       
         }
 
         private void Button_Import_Click(object sender, RoutedEventArgs e)
         {
-            switch (TemplateType)
-            {
-                case TemplateType.FlowParam:
-                    if (true)
-                    {
-                        System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-                        ofd.Filter = "*.stn|*.stn";
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-                        FlowParam? flowParam = FlowParam.AddFlowParam(name);
-                        if (flowParam != null)
-                        {
-                            flowParam.DataBase64 = Tool.FileToBase64(ofd.FileName); ;
-                            CreateNewTemplate(FlowParam.Params, name, flowParam);
+            //switch (TemplateType)
+            //{
+            //    case TemplateType.FlowParam:
+            //        if (true)
+            //        {
+            //            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            //            ofd.Filter = "*.stn|*.stn";
+            //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //            string name = Path.GetFileNameWithoutExtension(ofd.FileName);
+            //            FlowParam? flowParam = FlowParam.AddFlowParam(name);
+            //            if (flowParam != null)
+            //            {
+            //                flowParam.DataBase64 = Tool.FileToBase64(ofd.FileName); ;
+            //                CreateNewTemplate(FlowParam.Params, name, flowParam);
 
-                            TemplateControl.Save2DB(flowParam);
-                        }
-                        else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    }
-                    break;
-                case TemplateType.MeasureParam:
-                    if (true)
-                    {
-                        System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-                        ofd.Filter = "*.cfg|*.cfg";
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-                        MeasureParam? measureParam = JsonConvert.DeserializeObject<MeasureParam>(File.ReadAllText(ofd.FileName));         
-                        if (measureParam != null)
-                        {
-                            CreateNewTemplate(MeasureParam.MeasureParams, name, measureParam);
-                            TemplateControl.Save2DB(measureParam);
-                        }
-                        else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    }
-                    break;
-                case TemplateType.Calibration:  
-                    if (true)
-                    {
-                    }
-                    break;
-                case TemplateType.AoiParam:
-                    if (true)
-                    {
-                        System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-                        ofd.Filter = "*.cfg|*.cfg";
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-                        AOIParam? aoiParam = JsonConvert.DeserializeObject<AOIParam>(File.ReadAllText(ofd.FileName));
-                        if (aoiParam != null)
-                        {
-                            CreateNewTemplate(TemplateControl.GetInstance().AoiParams, name, aoiParam);
-                            TemplateControl.Save2DB(aoiParam);
-                        }
-                        else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    }
-                    break;
-                case TemplateType.PGParam:
-                    if (true)
-                    {
-                        System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-                        ofd.Filter = "*.cfg|*.cfg";
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-                        PGParam? pGParam = JsonConvert.DeserializeObject<PGParam>(File.ReadAllText(ofd.FileName));
-                        if (pGParam != null)
-                        {
-                            CreateNewTemplate(PGParam.Params, name, pGParam);
-                            TemplateControl.Save2DB(pGParam);
-                        }
-                        else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    }
-                    break;
-                case TemplateType.SMUParam:
-                    if (true)
-                    {
-                        System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-                        ofd.Filter = "*.cfg|*.cfg";
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-                        SMUParam? sMUParam = JsonConvert.DeserializeObject<SMUParam>(File.ReadAllText(ofd.FileName));
-                        if (sMUParam != null)
-                        {
-                            CreateNewTemplate(SMUParam.Params, name, sMUParam);
-                            TemplateControl.Save2DB(sMUParam);
-                        }
-                        else MessageBox.Show("数据库创建源表模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    }
-                    break;  
-                case TemplateType.PoiParam:
-                    if (true)
-                    {
-                        System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-                        ofd.Filter = "*.cfg|*.cfg";
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-                        PoiParam? poiParam = JsonConvert.DeserializeObject<PoiParam>(File.ReadAllText(ofd.FileName));
-                        if (poiParam != null)
-                        {
-                            CreateNewTemplate(PoiParam.Params, name, poiParam);
-                            PoiParam.Save2DB(poiParam);
-                        }
-                        else MessageBox.Show("数据库创建POI模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    }
-                    break;
-                case TemplateType.MTFParam:
-                    if (true)
-                    {
-                        System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-                        ofd.Filter = "*.cfg|*.cfg";
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-                        MTFParam? mTFParam = JsonConvert.DeserializeObject<MTFParam>(File.ReadAllText(ofd.FileName));
-                        if (mTFParam != null)
-                        {
-                            CreateNewTemplate(MTFParam.MTFParams, name, mTFParam);
-                            TemplateControl.Save2DB(mTFParam);
-                        }
-                        else MessageBox.Show("数据库创建MTF模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    }
-                    break;
-                case TemplateType.SFRParam:
-                    if (true)
-                    {
-                        System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-                        ofd.Filter = "*.cfg|*.cfg";
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-                        SFRParam? sFRParam = JsonConvert.DeserializeObject<SFRParam>(File.ReadAllText(ofd.FileName));
-                        if (sFRParam != null)
-                        {
-                            CreateNewTemplate(SFRParam.SFRParams, name, sFRParam);
-                            TemplateControl.Save2DB(sFRParam);
-                        }
-                        else MessageBox.Show("数据库创建SFR模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    }
-                    break;
-                case TemplateType.FOVParam:
-                    if (true)
-                    {
-                        System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-                        ofd.Filter = "*.cfg|*.cfg";
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        FOVParam? fOVParam = JsonConvert.DeserializeObject<FOVParam>(File.ReadAllText(ofd.FileName));
-                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-                        if (fOVParam != null)
-                        {
-                            CreateNewTemplate(FOVParam.FOVParams, name, fOVParam);
-                            TemplateControl.Save2DB(fOVParam);
-                        }
-                        else MessageBox.Show("数据库创建FOV模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    }
-                    break;
-                case TemplateType.GhostParam:
-                    if (true)
-                    {
-                        System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-                        ofd.Filter = "*.cfg|*.cfg";
-                        GhostParam? ghostParam = JsonConvert.DeserializeObject<GhostParam>(File.ReadAllText(ofd.FileName));
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-                        if (ghostParam != null)
-                        {
-                            CreateNewTemplate(GhostParam.GhostParams, name, ghostParam);
-                            TemplateControl.Save2DB(ghostParam);
-                        }
-                        else MessageBox.Show("数据库创建Ghost模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    }
-                    break;
-                case TemplateType.DistortionParam:
-                    if (true)
-                    {
-                        System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-                        ofd.Filter = "*.cfg|*.cfg";
+            //                TemplateControl.Save2DB(flowParam);
+            //            }
+            //            else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+            //        }
+            //        break;
+            //    case TemplateType.MeasureParam:
+            //        if (true)
+            //        {
+            //            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            //            ofd.Filter = "*.cfg|*.cfg";
+            //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //            string name = Path.GetFileNameWithoutExtension(ofd.FileName);
+            //            MeasureParam? measureParam = JsonConvert.DeserializeObject<MeasureParam>(File.ReadAllText(ofd.FileName));         
+            //            if (measureParam != null)
+            //            {
+            //                CreateNewTemplate(MeasureParam.Params, name, measureParam);
+            //                TemplateControl.Save2DB(measureParam);
+            //            }
+            //            else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+            //        }
+            //        break;
+            //    case TemplateType.Calibration:  
+            //        if (true)
+            //        {
+            //        }
+            //        break;
+            //    case TemplateType.AoiParam:
+            //        if (true)
+            //        {
+            //            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            //            ofd.Filter = "*.cfg|*.cfg";
+            //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //            string name = Path.GetFileNameWithoutExtension(ofd.FileName);
+            //            AOIParam? aoiParam = JsonConvert.DeserializeObject<AOIParam>(File.ReadAllText(ofd.FileName));
+            //            if (aoiParam != null)
+            //            {
+            //                CreateNewTemplate(TemplateControl.GetInstance().AoiParams, name, aoiParam);
+            //                TemplateControl.Save2DB(aoiParam);
+            //            }
+            //            else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+            //        }
+            //        break;
+            //    case TemplateType.PGParam:
+            //        if (true)
+            //        {
+            //            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            //            ofd.Filter = "*.cfg|*.cfg";
+            //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //            string name = Path.GetFileNameWithoutExtension(ofd.FileName);
+            //            PGParam? pGParam = JsonConvert.DeserializeObject<PGParam>(File.ReadAllText(ofd.FileName));
+            //            if (pGParam != null)
+            //            {
+            //                CreateNewTemplate(PGParam.Params, name, pGParam);
+            //                TemplateControl.Save2DB(pGParam);
+            //            }
+            //            else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+            //        }
+            //        break;
+            //    case TemplateType.SMUParam:
+            //        if (true)
+            //        {
+            //            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            //            ofd.Filter = "*.cfg|*.cfg";
+            //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //            string name = Path.GetFileNameWithoutExtension(ofd.FileName);
+            //            SMUParam? sMUParam = JsonConvert.DeserializeObject<SMUParam>(File.ReadAllText(ofd.FileName));
+            //            if (sMUParam != null)
+            //            {
+            //                CreateNewTemplate(SMUParam.Params, name, sMUParam);
+            //                TemplateControl.Save2DB(sMUParam);
+            //            }
+            //            else MessageBox.Show("数据库创建源表模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+            //        }
+            //        break;  
+            //    case TemplateType.PoiParam:
+            //        if (true)
+            //        {
+            //            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            //            ofd.Filter = "*.cfg|*.cfg";
+            //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //            string name = Path.GetFileNameWithoutExtension(ofd.FileName);
+            //            PoiParam? poiParam = JsonConvert.DeserializeObject<PoiParam>(File.ReadAllText(ofd.FileName));
+            //            if (poiParam != null)
+            //            {
+            //                CreateNewTemplate(PoiParam.Params, name, poiParam);
+            //                PoiParam.Save2DB(poiParam);
+            //            }
+            //            else MessageBox.Show("数据库创建POI模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+            //        }
+            //        break;
+            //    case TemplateType.MTFParam:
+            //        if (true)
+            //        {
+            //            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            //            ofd.Filter = "*.cfg|*.cfg";
+            //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //            string name = Path.GetFileNameWithoutExtension(ofd.FileName);
+            //            MTFParam? mTFParam = JsonConvert.DeserializeObject<MTFParam>(File.ReadAllText(ofd.FileName));
+            //            if (mTFParam != null)
+            //            {
+            //                CreateNewTemplate(MTFParam.MTFParams, name, mTFParam);
+            //                TemplateControl.Save2DB(mTFParam);
+            //            }
+            //            else MessageBox.Show("数据库创建MTF模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+            //        }
+            //        break;
+            //    case TemplateType.SFRParam:
+            //        if (true)
+            //        {
+            //            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            //            ofd.Filter = "*.cfg|*.cfg";
+            //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //            string name = Path.GetFileNameWithoutExtension(ofd.FileName);
+            //            SFRParam? sFRParam = JsonConvert.DeserializeObject<SFRParam>(File.ReadAllText(ofd.FileName));
+            //            if (sFRParam != null)
+            //            {
+            //                CreateNewTemplate(SFRParam.SFRParams, name, sFRParam);
+            //                TemplateControl.Save2DB(sFRParam);
+            //            }
+            //            else MessageBox.Show("数据库创建SFR模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+            //        }
+            //        break;
+            //    case TemplateType.FOVParam:
+            //        if (true)
+            //        {
+            //            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            //            ofd.Filter = "*.cfg|*.cfg";
+            //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //            FOVParam? fOVParam = JsonConvert.DeserializeObject<FOVParam>(File.ReadAllText(ofd.FileName));
+            //            string name = Path.GetFileNameWithoutExtension(ofd.FileName);
+            //            if (fOVParam != null)
+            //            {
+            //                CreateNewTemplate(FOVParam.FOVParams, name, fOVParam);
+            //                TemplateControl.Save2DB(fOVParam);
+            //            }
+            //            else MessageBox.Show("数据库创建FOV模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+            //        }
+            //        break;
+            //    case TemplateType.GhostParam:
+            //        if (true)
+            //        {
+            //            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            //            ofd.Filter = "*.cfg|*.cfg";
+            //            GhostParam? ghostParam = JsonConvert.DeserializeObject<GhostParam>(File.ReadAllText(ofd.FileName));
+            //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //            string name = Path.GetFileNameWithoutExtension(ofd.FileName);
+            //            if (ghostParam != null)
+            //            {
+            //                CreateNewTemplate(GhostParam.GhostParams, name, ghostParam);
+            //                TemplateControl.Save2DB(ghostParam);
+            //            }
+            //            else MessageBox.Show("数据库创建Ghost模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+            //        }
+            //        break;
+            //    case TemplateType.DistortionParam:
+            //        if (true)
+            //        {
+            //            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            //            ofd.Filter = "*.cfg|*.cfg";
 
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-                        DistortionParam? distortionParam = JsonConvert.DeserializeObject<DistortionParam>(File.ReadAllText(ofd.FileName));
-                        if (distortionParam != null)
-                        {
-                            CreateNewTemplate(DistortionParam.DistortionParams, name, distortionParam);
-                            TemplateControl.Save2DB(distortionParam);
-                        }
-                        else MessageBox.Show("数据库创建Distortion模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    }
-                    break;
-                case TemplateType.LedCheckParam:
-                    if (true)
-                    {
-                        System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-                        ofd.Filter = "*.cfg|*.cfg";
+            //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //            string name = Path.GetFileNameWithoutExtension(ofd.FileName);
+            //            DistortionParam? distortionParam = JsonConvert.DeserializeObject<DistortionParam>(File.ReadAllText(ofd.FileName));
+            //            if (distortionParam != null)
+            //            {
+            //                CreateNewTemplate(DistortionParam.DistortionParams, name, distortionParam);
+            //                TemplateControl.Save2DB(distortionParam);
+            //            }
+            //            else MessageBox.Show("数据库创建Distortion模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+            //        }
+            //        break;
+            //    case TemplateType.LedCheckParam:
+            //        if (true)
+            //        {
+            //            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            //            ofd.Filter = "*.cfg|*.cfg";
 
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-                        LedCheckParam? ledCheckParam = JsonConvert.DeserializeObject<LedCheckParam>(File.ReadAllText(ofd.FileName));
-                        if (ledCheckParam != null)
-                        {
-                            CreateNewTemplate(LedCheckParam.LedCheckParams, name, ledCheckParam);
-                            TemplateControl.Save2DB(ledCheckParam);
-                        }
-                        else MessageBox.Show("数据库创建灯光检测模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    }
-                    break;
-                case TemplateType.FocusPointsParam:
-                    if (true)
-                    {
-                        System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-                        ofd.Filter = "*.cfg|*.cfg";
+            //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //            string name = Path.GetFileNameWithoutExtension(ofd.FileName);
+            //            LedCheckParam? ledCheckParam = JsonConvert.DeserializeObject<LedCheckParam>(File.ReadAllText(ofd.FileName));
+            //            if (ledCheckParam != null)
+            //            {
+            //                CreateNewTemplate(LedCheckParam.LedCheckParams, name, ledCheckParam);
+            //                TemplateControl.Save2DB(ledCheckParam);
+            //            }
+            //            else MessageBox.Show("数据库创建灯光检测模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+            //        }
+            //        break;
+            //    case TemplateType.FocusPointsParam:
+            //        if (true)
+            //        {
+            //            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            //            ofd.Filter = "*.cfg|*.cfg";
 
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-                        FocusPointsParam? focusPointsParam = JsonConvert.DeserializeObject<FocusPointsParam>(File.ReadAllText(ofd.FileName));
-                        if (focusPointsParam != null)
-                        {
-                            CreateNewTemplate(FocusPointsParam.FocusPointsParams, name, focusPointsParam);
-                            TemplateControl.Save2DB(focusPointsParam);
-                        }
-                        else MessageBox.Show("数据库创建FocusPoints模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    }
-                    break;
-                case TemplateType.BuildPOIParmam:
-                    if (true)
-                    {
-                        System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-                        ofd.Filter = "*.cfg|*.cfg";
+            //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //            string name = Path.GetFileNameWithoutExtension(ofd.FileName);
+            //            FocusPointsParam? focusPointsParam = JsonConvert.DeserializeObject<FocusPointsParam>(File.ReadAllText(ofd.FileName));
+            //            if (focusPointsParam != null)
+            //            {
+            //                CreateNewTemplate(FocusPointsParam.FocusPointsParams, name, focusPointsParam);
+            //                TemplateControl.Save2DB(focusPointsParam);
+            //            }
+            //            else MessageBox.Show("数据库创建FocusPoints模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+            //        }
+            //        break;
+            //    case TemplateType.BuildPOIParmam:
+            //        if (true)
+            //        {
+            //            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            //            ofd.Filter = "*.cfg|*.cfg";
 
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-                        BuildPOIParam? buildPOIParam = JsonConvert.DeserializeObject<BuildPOIParam>(File.ReadAllText(ofd.FileName));
-                        if (buildPOIParam != null)
-                        {
-                            CreateNewTemplate(BuildPOIParam.BuildPOIParams, name, buildPOIParam);
-                            TemplateControl.Save2DB(buildPOIParam);
-                        }
-                        else MessageBox.Show("数据库创建BuildPOI模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    }
-                    break;
-                case TemplateType.SensorHeYuan:
-                    if (true)
-                    {
-                        System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-                        ofd.Filter = "*.cfg|*.cfg";
+            //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //            string name = Path.GetFileNameWithoutExtension(ofd.FileName);
+            //            BuildPOIParam? buildPOIParam = JsonConvert.DeserializeObject<BuildPOIParam>(File.ReadAllText(ofd.FileName));
+            //            if (buildPOIParam != null)
+            //            {
+            //                CreateNewTemplate(BuildPOIParam.BuildPOIParams, name, buildPOIParam);
+            //                TemplateControl.Save2DB(buildPOIParam);
+            //            }
+            //            else MessageBox.Show("数据库创建BuildPOI模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+            //        }
+            //        break;
+            //    case TemplateType.SensorHeYuan:
+            //        if (true)
+            //        {
+            //            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            //            ofd.Filter = "*.cfg|*.cfg";
 
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-                        SensorHeYuan? sensorHeYuan = JsonConvert.DeserializeObject<SensorHeYuan>(File.ReadAllText(ofd.FileName));
-                        if (sensorHeYuan != null)
-                        {
-                            CreateNewTemplate(SensorHeYuan.SensorHeYuans, name, sensorHeYuan);
-                                TemplateControl.Save2DB(sensorHeYuan);
-                        }
-                        else MessageBox.Show("数据库创建SensorHeYuan模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    }
-                    break;
-                case TemplateType.CameraExposureParam:
-                    if (true)
-                    {
-                        System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-                        ofd.Filter = "*.cfg|*.cfg";
+            //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //            string name = Path.GetFileNameWithoutExtension(ofd.FileName);
+            //            SensorHeYuan? sensorHeYuan = JsonConvert.DeserializeObject<SensorHeYuan>(File.ReadAllText(ofd.FileName));
+            //            if (sensorHeYuan != null)
+            //            {
+            //                CreateNewTemplate(SensorHeYuan.SensorHeYuans, name, sensorHeYuan);
+            //                    TemplateControl.Save2DB(sensorHeYuan);
+            //            }
+            //            else MessageBox.Show("数据库创建SensorHeYuan模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+            //        }
+            //        break;
+            //    case TemplateType.CameraExposureParam:
+            //        if (true)
+            //        {
+            //            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            //            ofd.Filter = "*.cfg|*.cfg";
 
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-                        CameraExposureParam? cameraExposureParam = JsonConvert.DeserializeObject<CameraExposureParam>(File.ReadAllText(ofd.FileName));
-                        if (cameraExposureParam != null)
-                        {
-                            CreateNewTemplate(CameraExposureParam.CameraExposureParams, name, cameraExposureParam);
-                            TemplateControl.Save2DB(cameraExposureParam);
-                        }
-                        else MessageBox.Show("数据库创建CameraExposureParam模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    }
-                    break;
-                default:
-                    break;
-            }
+            //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            //            string name = Path.GetFileNameWithoutExtension(ofd.FileName);
+            //            CameraExposureParam? cameraExposureParam = JsonConvert.DeserializeObject<CameraExposureParam>(File.ReadAllText(ofd.FileName));
+            //            if (cameraExposureParam != null)
+            //            {
+            //                CreateNewTemplate(CameraExposureParam.Params, name, cameraExposureParam);
+            //                TemplateControl.Save2DB(cameraExposureParam);
+            //            }
+            //            else MessageBox.Show("数据库创建CameraExposureParam模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+            //        }
+            //        break;
+            //    default:
+            //        break;
+            //}
         }
 
         public ObservableCollection<TemplateModelBase> TemplateModelBaseResults { get; set; } = new ObservableCollection<TemplateModelBase>();

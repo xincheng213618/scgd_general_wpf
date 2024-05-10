@@ -39,10 +39,11 @@ namespace ColorVision.Services.Templates.POI
 
     }
 
-    public class TemplatePOI : ITemplate<PoiParam>
+    public class TemplatePOI : ITemplate<PoiParam>, IITemplateLoad
     {
         public TemplatePOI()
         {
+            IsSideHide = true;
             Title = "关注点设置";
             Code = ModMasterType.POI;
             TemplateParams = PoiParam.Params;

@@ -15,7 +15,7 @@ using ColorVision.Services.Devices.SMU.Configs;
 using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum;
-using ColorVision.Services.Type;
+using ColorVision.Services.Types;
 using ColorVision.Settings;
 using Newtonsoft.Json;
 using System;
@@ -35,7 +35,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Services.RC;
 using ColorVision.Services.Terminal;
 
-namespace ColorVision.Services.Type
+namespace ColorVision.Services.Types
 {
     /// <summary>
     /// EditTerminal.xaml 的交互逻辑

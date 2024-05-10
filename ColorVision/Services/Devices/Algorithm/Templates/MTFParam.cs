@@ -34,8 +34,19 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-            new WindowTemplate(TemplateType.MTFParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateMTFParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
+    }
+
+
+    public class TemplateMTFParam : ITemplate<MTFParam>, IITemplateLoad
+    {
+        public TemplateMTFParam()
+        {
+            Title = "MTFParam算法设置";
+            Code = ModMasterType.MTF;
+            TemplateParams = MTFParam.MTFParams;
+        }
     }
 
     public class MTFParam : ParamBase

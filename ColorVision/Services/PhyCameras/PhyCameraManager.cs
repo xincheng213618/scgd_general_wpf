@@ -4,7 +4,7 @@ using ColorVision.MySql;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.PhyCameras.Dao;
-using ColorVision.Services.Type;
+using ColorVision.Services.Types;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

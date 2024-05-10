@@ -3,7 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
 using ColorVision.Services.PhyCameras.Configs;
 using ColorVision.Services.RC;
-using ColorVision.Services.Type;
+using ColorVision.Services.Types;
 using ColorVision.Settings;
 using cvColorVision;
 using CVCommCore;

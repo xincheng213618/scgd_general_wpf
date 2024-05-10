@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Services.Dao;
 using ColorVision.Services.PhyCameras.Templates;
-using ColorVision.Services.Type;
+using ColorVision.Services.Types;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Windows;
@@ -64,7 +64,7 @@ namespace ColorVision.Services.Core
 
         public static GroupResource? AddGroupResource(ICalibrationService<BaseResourceObject> deviceService , string Name)
         {
-            SysResourceModel sysResourceModel = new SysResourceModel() { Name = Name , Type = (int)Type.ServiceTypes.Group };
+            SysResourceModel sysResourceModel = new SysResourceModel() { Name = Name , Type = (int)ServiceTypes.Group };
             sysResourceModel.Pid = deviceService.SysResourceModel.Id;
             sysResourceModel.TenantId = deviceService.SysResourceModel.TenantId;
 

@@ -1,4 +1,4 @@
-﻿using ColorVision.Services.Type;
+﻿using ColorVision.Services.Types;
 using cvColorVision;
 using System.ComponentModel;
 

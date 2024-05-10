@@ -9,7 +9,7 @@ using System.Windows;
 using System.Collections.Generic;
 using MQTTMessageLib;
 using MQTTMessageLib.Flow;
-using ColorVision.Services.Type;
+using ColorVision.Services.Types;
 using System.Linq;
 using FlowEngineLib;
 using ColorVision.Common.Utilities;

@@ -15,7 +15,7 @@ using ColorVision.Services.PhyCameras.Dao;
 using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.RC;
 using ColorVision.Services.Templates;
-using ColorVision.Services.Type;
+using ColorVision.Services.Types;
 using ColorVision.Themes.Controls;
 using cvColorVision;
 using log4net;

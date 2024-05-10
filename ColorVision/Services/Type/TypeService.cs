@@ -7,7 +7,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Type
+namespace ColorVision.Services.Types
 {
     public enum ServiceTypes
     {

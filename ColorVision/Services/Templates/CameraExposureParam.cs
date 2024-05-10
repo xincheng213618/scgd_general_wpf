@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Sensor.Templates;
 using ColorVision.Settings;
 using ColorVision.UI;
 using System.Collections.Generic;
@@ -30,13 +31,23 @@ namespace ColorVision.Services.Templates
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-            new WindowTemplate(TemplateType.CameraExposureParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateCameraExposureParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
+    }
+
+    public class TemplateCameraExposureParam : ITemplate<CameraExposureParam>, IITemplateLoad
+    {
+        public TemplateCameraExposureParam()
+        {
+            Title = "CameraExposureParam设置";
+            Code = ModMasterType.CameraExposure;
+            TemplateParams = CameraExposureParam.Params;
+        }
     }
 
     public class CameraExposureParam : ParamBase
     {
-        public static ObservableCollection<TemplateModel<CameraExposureParam>> CameraExposureParams { get; set; } = new ObservableCollection<TemplateModel<CameraExposureParam>>();
+        public static ObservableCollection<TemplateModel<CameraExposureParam>> Params { get; set; } = new ObservableCollection<TemplateModel<CameraExposureParam>>();
 
         public CameraExposureParam() : base()
         {

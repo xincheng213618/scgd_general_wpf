@@ -1,5 +1,21 @@
 #   CHANGELOAG
 
+## [1.0.11.1] 2024-05-11
+
+本次提交主要进行了代码的重构和优化。主要更改包括：
+
+1. 更改了`ColorVision.Services.Type`的引用为`ColorVision.Services.Types`，涉及多个文件，可能是因为类型服务的命名空间已经被重命名。
+2. 在多个文件中，模板类的实例化方式发生了变化，从使用枚举类型`TemplateType`实例化改为直接使用新的模板类实例化。
+3. 新增了实现了`IITemplateLoad`接口的模板类，可能是为了在模板类中添加新的加载方法。
+4. 简化了窗口模板的实例化方式，提高了代码的可读性。
+5. `Type.ServiceTypes.Group`的引用被更改为`ServiceTypes.Group`，可能是因为`ServiceTypes`的命名空间已经被更改。
+6. 在`ITemplate.cs`文件中，新增了`IITemplateLoad`接口和`IsSideHide`属性。
+7. `Params`属性的定义被移动到了模板类中，可能是为了更好地封装属性。
+8. 初始化方法`Init`的实现方式发生了变化，提高了代码的可读性和可维护性。
+9. 删除了`TemplateTypeFactory.cs`文件，可能是因为该文件中定义的枚举类型`TemplateType`已经不再使用。
+10. 进行了一些优化和重构，包括删除了一些不再需要的`using`语句，删除了`WindowTemplate`类中的`TemplateType`属性和`ITemplate`属性，修改了`Window_Initialized`方法中的一个条件判断，等等。
+11. 在多个源文件中，`ColorVision.Services.Type` 命名空间已被更改为 `ColorVision.Services.Types`。
+
 ## [1.0.10.16] 2024-05-08
 
 1.重构模板创建的修改逻辑

@@ -54,7 +54,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
         }); 
     }
 
-    public class TemplateBuildPOIParam : ITemplate<BuildPOIParam>
+    public class TemplateBuildPOIParam : ITemplate<BuildPOIParam>, IITemplateLoad
     {
         public TemplateBuildPOIParam()
         {

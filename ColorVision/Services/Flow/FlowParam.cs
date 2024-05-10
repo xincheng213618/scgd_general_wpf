@@ -39,10 +39,11 @@ namespace ColorVision.Services.Flow
         });
     }
 
-    public class TemplateFlow : ITemplate<FlowParam>
+    public class TemplateFlow : ITemplate<FlowParam>, IITemplateLoad
     {
         public TemplateFlow()
         {
+            IsSideHide = true;
             Title = "流程引擎";
             Code = ModMasterType.Flow;
             TemplateParams = FlowParam.Params;

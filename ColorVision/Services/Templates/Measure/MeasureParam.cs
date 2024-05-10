@@ -30,27 +30,41 @@ namespace ColorVision.Services.Templates.Measure
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-            new WindowTemplate(TemplateType.MeasureParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateMeasureParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
+    }
+
+
+    public class TemplateMeasureParam : ITemplate<MeasureParam>, IITemplateLoad
+    {
+        public TemplateMeasureParam()
+        {
+            Title = "MeasureParam";
+            TemplateParams = MeasureParam.Params;
+        }
+
+        public override void Load() => MeasureParam.LoadMeasureParams();
+
+        public override void Create(string templateName) => MeasureParam.AddMeasureParam(templateName);
     }
 
 
     public class MeasureParam : ParamBase
     {
-        public static ObservableCollection<TemplateModel<MeasureParam>> MeasureParams { get; set; } = new ObservableCollection<TemplateModel<MeasureParam>>();
+        public static ObservableCollection<TemplateModel<MeasureParam>> Params { get; set; } = new ObservableCollection<TemplateModel<MeasureParam>>();
 
         public static ObservableCollection<TemplateModel<MeasureParam>> LoadMeasureParams()
         {
-            MeasureParams.Clear();
+            Params.Clear();
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
                 List<MeasureMasterModel> devices = MeasureMasterDao.Instance.GetAllByTenantId(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in devices)
                 {
-                    MeasureParams.Add(new TemplateModel<MeasureParam>(dbModel.Name ?? "default", new MeasureParam(dbModel)));
+                    Params.Add(new TemplateModel<MeasureParam>(dbModel.Name ?? "default", new MeasureParam(dbModel)));
                 }
             }
-            return MeasureParams;
+            return Params;
         }
 
         public static MeasureParam? AddMeasureParam(string name)

@@ -6,7 +6,7 @@ using ColorVision.Interfaces;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.RC;
-using ColorVision.Services.Type;
+using ColorVision.Services.Types;
 using ColorVision.UI;
 using Newtonsoft.Json;
 using System;

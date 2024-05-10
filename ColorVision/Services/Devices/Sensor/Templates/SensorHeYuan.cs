@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.UI;
@@ -35,8 +36,18 @@ namespace ColorVision.Services.Devices.Sensor.Templates
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-            new WindowTemplate(TemplateType.SensorHeYuan) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateSensorHeYuan()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
+    }
+
+    public class TemplateSensorHeYuan : ITemplate<SensorHeYuan>, IITemplateLoad
+    {
+        public TemplateSensorHeYuan()
+        {
+            Title = "SensorHeYuan设置";
+            Code = ModMasterType.SensorHeYuan;
+            TemplateParams = SensorHeYuan.SensorHeYuans;
+        }
     }
 
     public class SensorHeYuan:ParamBase

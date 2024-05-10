@@ -31,8 +31,18 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-            new WindowTemplate(TemplateType.GhostParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateGhostParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
+    }
+
+    public class TemplateGhostParam : ITemplate<GhostParam>, IITemplateLoad
+    {
+        public TemplateGhostParam()
+        {
+            Title = "GhostParam算法设置";
+            Code = ModMasterType.Ghost;
+            TemplateParams = GhostParam.GhostParams;
+        }
     }
 
     public class GhostParam : ParamBase

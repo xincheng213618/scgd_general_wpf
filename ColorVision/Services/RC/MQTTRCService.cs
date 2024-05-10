@@ -5,7 +5,7 @@ using ColorVision.Services.Core;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Terminal;
-using ColorVision.Services.Type;
+using ColorVision.Services.Types;
 using ColorVision.Settings;
 using log4net;
 using MQTTMessageLib;

@@ -1,25 +1,19 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.Devices.PG.Templates;
-using ColorVision.Services.Devices.Spectrum;
-using ColorVision.Services.Flow;
-using ColorVision.Services.PhyCameras.Templates;
-using ColorVision.Services.Templates.POI;
-using NPOI.SS.Formula.Functions;
-using OpenCvSharp.Flann;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace ColorVision.Services.Templates
 {
+    public interface IITemplateLoad
+    {
+        public virtual void Load() { }
+    }
+
     public class ITemplate
     {
         public virtual IEnumerable ItemsSource { get; }
@@ -46,6 +40,9 @@ namespace ColorVision.Services.Templates
         {
 
         }
+
+        public bool IsSideHide { get; set; }
+
         public virtual void PreviewMouseDoubleClick(int index)
         {
 

@@ -32,55 +32,18 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-            new WindowTemplate(TemplateType.SFRParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateSFRParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
     }
-
-
-    public interface ITemplate
+    public class TemplateSFRParam : ITemplate<SFRParam>,IITemplateLoad
     {
-        public void Load();
-
-        public void Save();
-
-        public void Create();
-
-        public void Delete();
-
-        public void Export();
-        public void Import();
-    }
-
-    public class TemplateSFR : ITemplate
-    {
-        public static ObservableCollection<TemplateModel<SFRParam>> SFRParams { get; set; } = new ObservableCollection<TemplateModel<SFRParam>>();
-
-        public void Create()
+        public TemplateSFRParam()
         {
-        }
-
-        public void Delete()
-        {
-        }
-
-        public void Export()
-        {
-        }
-
-        public void Import()
-        {
-        }
-
-        public void Load()
-        {
-        }
-
-        public void Save()
-        {
+            Title = "SFRParam算法设置";
+            Code = ModMasterType.SFR;
+            TemplateParams = SFRParam.SFRParams;
         }
     }
-
-
 
     public class SFRParam : ParamBase
     {

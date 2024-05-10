@@ -37,7 +37,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
     }
 
 
-    public class TemplateDistortionParam : ITemplate<DistortionParam>
+    public class TemplateDistortionParam : ITemplate<DistortionParam>, IITemplateLoad
     {
         public TemplateDistortionParam()
         {

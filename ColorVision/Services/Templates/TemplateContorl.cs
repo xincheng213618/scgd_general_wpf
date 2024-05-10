@@ -1,16 +1,12 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Algorithm.Templates;
-using ColorVision.Services.Devices.PG.Templates;
-using ColorVision.Services.Devices.Sensor.Templates;
-using ColorVision.Services.Devices.SMU;
-using ColorVision.Services.Flow;
-using ColorVision.Services.Templates.POI;
 using ColorVision.Settings;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Windows;
 
@@ -53,21 +49,13 @@ namespace ColorVision.Services.Templates
         }
         private static void Init()
         {
-            PoiParam.LoadPoiParam();
-            FlowParam.LoadFlowParam();
-
-            LoadModParam(SMUParam.Params, ModMasterType.SMU);
-            LoadModParam(PGParam.Params, ModMasterType.PG);
-            LoadModParam(LedCheckParam.LedCheckParams, ModMasterType.LedCheck);
-            LoadModParam(FocusPointsParam.FocusPointsParams, ModMasterType.FocusPoints);     
-            LoadModParam(SFRParam.SFRParams, ModMasterType.SFR);
-            LoadModParam(MTFParam.MTFParams, ModMasterType.MTF);
-            LoadModParam(FOVParam.FOVParams, ModMasterType.FOV);
-            LoadModParam(GhostParam.GhostParams, ModMasterType.Ghost);
-            LoadModParam(DistortionParam.DistortionParams, ModMasterType.Distortion);
-            LoadModParam(BuildPOIParam.BuildPOIParams, ModMasterType.BuildPOI);
-            LoadModParam(SensorHeYuan.SensorHeYuans, "Sensor.HeYuan");
-            LoadModParam(CameraExposureParam.CameraExposureParams, "camera_exp_time");
+            foreach (var type in Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(IITemplateLoad).IsAssignableFrom(t) && !t.IsAbstract))
+            {
+                if (Activator.CreateInstance(type) is IITemplateLoad iITemplateLoad)
+                {
+                    iITemplateLoad.Load();
+                }
+            }
         }
 
 

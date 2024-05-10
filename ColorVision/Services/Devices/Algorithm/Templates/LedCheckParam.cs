@@ -31,10 +31,18 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-            new WindowTemplate(TemplateType.LedCheckParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateLedCheckParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
     }
-
+    public class TemplateLedCheckParam : ITemplate<LedCheckParam>, IITemplateLoad
+    {
+        public TemplateLedCheckParam()
+        {
+            Title = "LedCheckParam算法设置";
+            Code = ModMasterType.LedCheck;
+            TemplateParams = LedCheckParam.LedCheckParams;
+        }
+    }
 
     public class LedCheckParam : ParamBase
     {

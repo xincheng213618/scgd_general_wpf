@@ -7,7 +7,7 @@
         xmlns:system="clr-namespace:System;assembly=mscorlib"
         xmlns:device="clr-namespace:ColorVision.Services.Devices" 
         xmlns:terminal="clr-namespace:ColorVision.Services.Terminal" 
-        xmlns:type="clr-namespace:ColorVision.Services.Type" 
+        xmlns:type="clr-namespace:ColorVision.Services.Types" 
 
         xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
