@@ -87,7 +87,7 @@ namespace ColorVision.Services.Dao
                 if (item.Name != null) row["name"] = item.Name;
                 if (item.Code != null) row["code"] = item.Code;
                 if (item.Pid != null) row["pid"] = item.Pid;
-                if (item.Value != null) row["txt_value"] = item.Value;
+                row["txt_value"] = DataTableExtension.IsDBNull(item.Value);
                 if (item.Type >= 0) row["type"] = item.Type;
                 row["tenant_id"] = item.TenantId;
                 row["create_date"] = item.CreateDate;

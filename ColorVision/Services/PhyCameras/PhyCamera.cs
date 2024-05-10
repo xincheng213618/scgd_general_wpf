@@ -595,7 +595,8 @@ namespace ColorVision.Services.PhyCameras
 
         public override void Delete()
         {
-            base.Delete();
+            SysResourceModel.Value = null;
+            SysResourceDao.Instance.Save(SysResourceModel);
             PhyCameraManager.GetInstance().PhyCameras.Remove(this);
         }
 
