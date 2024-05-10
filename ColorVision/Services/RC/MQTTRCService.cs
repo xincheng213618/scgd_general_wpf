@@ -53,6 +53,16 @@ namespace ColorVision.Services.RC
 
         }
 
+        public void LoadPhysicalCamera(string cameraID)
+        {
+            MsgSend msg = new MsgSend
+            {
+                DeviceCode = cameraID,
+                EventName = "PhysicalCamera_Load",
+            };
+            PublishAsyncClient(msg);
+        }
+
         public async Task<MsgRecord> UploadCalibrationFileAsync(string cameraID,string name, string fileName, int fileType, int timeout = 50000)
         {
             var stopwatch = new Stopwatch();
@@ -527,18 +537,7 @@ namespace ColorVision.Services.RC
             });
         }
 
-        public void LoadPhysicalCamera(string cameraID)
-        {
-            MsgSend msg = new MsgSend
-            {
-                ServiceName =SysConfigTopic,
-                DeviceCode = cameraID,
-                EventName = "PhysicalCamera_Load",
-            };
-            SendTopic = SysConfigTopic;
-            SubscribeTopic = SysConfigRespTopic;
-            PublishAsyncClient(msg);
-        }
+
 
 
         public bool TryRegist(RCServiceConfig cfg)

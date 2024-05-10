@@ -120,7 +120,7 @@ namespace ColorVision.Services.PhyCameras
                 MessageBox.Show(Application.Current.GetActiveWindow(),"不允许创建没有Code的相机", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);    
             }
 
-            MQTTRCService.GetInstance().LoadPhysicalCamera(CreateConfig.CameraID);
+            MQTTFileUpload.GetInstance().LoadPhysicalCamera(CreateConfig.CameraID);
 
             PhyCameraManager.LoadPhyCamera();
             Close();
