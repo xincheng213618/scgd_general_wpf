@@ -1,10 +1,13 @@
-﻿#pragma warning disable CS8603,CS0649
+﻿#pragma warning disable CS8603,CS0649,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Templates;
+using ColorVision.Settings;
 using cvColorVision;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 
 namespace ColorVision.Services.PhyCameras.Templates
@@ -153,6 +156,26 @@ namespace ColorVision.Services.PhyCameras.Templates
 
     public class CalibrationParam : ParamBase
     {
+        public static void LoadResourceParams<T>(ObservableCollection<TemplateModel<T>> ResourceParams, int resourceId, string ModeType) where T : ParamBase, new()
+        {
+            ResourceParams.Clear();
+            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
+            {
+                ModMasterDao masterFlowDao = new ModMasterDao(ModeType);
+                List<ModMasterModel> smus = masterFlowDao.GetResourceAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId, resourceId);
+                foreach (var dbModel in smus)
+                {
+                    List<ModDetailModel> smuDetails = ModDetailDao.Instance.GetAllByPid(dbModel.Id);
+                    foreach (var dbDetail in smuDetails)
+                    {
+                        dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
+                    }
+                    ResourceParams.Add(new TemplateModel<T>(dbModel.Name ?? "default", (T)Activator.CreateInstance(typeof(T), new object[] { dbModel, smuDetails })));
+                }
+            }
+        }
+
+
         public string CalibrationMode { get { return GetValue(_CalibrationMode); } set { SetProperty(ref _CalibrationMode, value); } }
         private string _CalibrationMode;
 

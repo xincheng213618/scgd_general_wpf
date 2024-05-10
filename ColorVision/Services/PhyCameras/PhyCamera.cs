@@ -84,7 +84,7 @@ namespace ColorVision.Services.PhyCameras
 
             UploadCalibrationCommand = new RelayCommand(a => UploadCalibration(a));
 
-            TemplateControl.LoadModCabParam(CalibrationParams, SysResourceModel.Id, ModMasterType.Calibration);
+            CalibrationParam.LoadResourceParams(CalibrationParams, SysResourceModel.Id, ModMasterType.Calibration);
 
             CalibrationEditCommand = new RelayCommand(a =>
             {

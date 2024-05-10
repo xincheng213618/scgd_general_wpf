@@ -6,7 +6,6 @@ using ColorVision.Services.Devices.PG.Templates;
 using ColorVision.Services.Devices.Sensor.Templates;
 using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Flow;
-using ColorVision.Services.Templates.Measure;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Settings;
 using System;
@@ -111,26 +110,7 @@ namespace ColorVision.Services.Templates
             return null;
         }
 
-        private VSysResourceDao resourceDao = new VSysResourceDao();
 
-        public static int Save(ModMasterModel modMaster)
-        {
-            int ret = -1;
-            SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(modMaster.Pcode, modMaster.TenantId);
-            if (mod != null)
-            {
-                modMaster.Pid = mod.Id;
-                ret = ModMasterDao.Instance.Save(modMaster);
-                List<ModDetailModel> list = new List<ModDetailModel>();
-                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(modMaster.Pid);
-                foreach (var item in sysDic)
-                {
-                    list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
-                }
-                ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
-            }
-            return ret;
-        }
 
 
         public static void LoadModParam<T>(ObservableCollection<TemplateModel<T>> ParamModes, string ModeType) where T : ParamBase, new()
@@ -153,25 +133,6 @@ namespace ColorVision.Services.Templates
             }
         }
 
-        public static void LoadModCabParam<T>(ObservableCollection<TemplateModel<T>> CalibrationParamModes, int resourceId, string ModeType) where T : ParamBase, new()
-        {
-            CalibrationParamModes.Clear();
-            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
-            {
-                ModMasterDao masterFlowDao = new ModMasterDao(ModeType);
-                List<ModMasterModel> smus = masterFlowDao.GetResourceAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId, resourceId);
-                foreach (var dbModel in smus)
-                {
-                    List<ModDetailModel> smuDetails = ModDetailDao.Instance.GetAllByPid(dbModel.Id);
-                    foreach (var dbDetail in smuDetails)
-                    {
-                        dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
-                    }
-                    CalibrationParamModes.Add(new TemplateModel<T>(dbModel.Name ?? "default", (T)Activator.CreateInstance(typeof(T), new object[] { dbModel, smuDetails })));
-                }
-            }
-        }
-
         public static T? AddCalibrationParam<T>(string code, string Name, int resourceId) where T : ParamBase, new()
         {
             ModMasterModel modMaster = new ModMasterModel(code, Name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
@@ -186,6 +147,25 @@ namespace ColorVision.Services.Templates
                 else return null;
             }
             return null;
+        }
+
+        public static int Save(ModMasterModel modMaster)
+        {
+            int ret = -1;
+            SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(modMaster.Pcode, modMaster.TenantId);
+            if (mod != null)
+            {
+                modMaster.Pid = mod.Id;
+                ret = ModMasterDao.Instance.Save(modMaster);
+                List<ModDetailModel> list = new List<ModDetailModel>();
+                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(modMaster.Pid);
+                foreach (var item in sysDic)
+                {
+                    list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
+                }
+                ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
+            }
+            return ret;
         }
 
 

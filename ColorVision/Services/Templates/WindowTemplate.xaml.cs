@@ -24,6 +24,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 
@@ -44,7 +45,7 @@ namespace ColorVision.Services.Templates
     /// <summary>
     /// CalibrationTemplate.xaml 的交互逻辑
     /// </summary>
-    public partial class WindowTemplate : Window
+    public partial class WindowTemplate : Window 
     {
         TemplateType TemplateType { get; set; }
         TemplateControl TemplateControl { get;set; }
@@ -89,22 +90,6 @@ namespace ColorVision.Services.Templates
                         MeasureParam.LoadMeasureParams();
                     TemplateModelBases = TemplateControl.GetTemplateModelBases(MeasureParam.MeasureParams);
                     Title = "测量设置";
-                    break;
-                case TemplateType.Calibration:
-                    if (IsReLoad)
-                    {
-                        TemplateControl.LoadModCabParam(DeviceCamera.CalibrationParams, DeviceCamera.SysResourceModel.Id, ModMasterType.Calibration);
-                    }
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(DeviceCamera.CalibrationParams);
-                    Title = "校正参数设置";
-                    break;
-                case TemplateType.SpectrumResourceParam:
-                    if (IsReLoad)
-                    {
-                        TemplateControl.LoadModCabParam(DeviceSpectrum.SpectrumResourceParams, DeviceSpectrum.SysResourceModel.Id, ModMasterType.SpectrumResource);
-                    }
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(DeviceSpectrum.SpectrumResourceParams);
-                    Title = "校正参数设置";
                     break;
                 case TemplateType.AoiParam:
                     if (IsReLoad)
@@ -198,18 +183,25 @@ namespace ColorVision.Services.Templates
         public UserControl  UserControl { get; set; }
 
         public ICalibrationService<BaseResourceObject> DeviceCamera { get; set; }
+
         public WindowTemplate(TemplateType windowTemplateType, UserControl userControl, ICalibrationService<BaseResourceObject> deviceCamera ,bool IsReLoad = true)
         {
             DeviceCamera = deviceCamera;
             TemplateType = windowTemplateType;
             TemplateControl = TemplateControl.GetInstance();
             UserControl = userControl;
-            Load(windowTemplateType, IsReLoad);
             InitializeComponent();
             GridProperty.Children.Clear();
             GridProperty.Margin = new Thickness(5, 5, 5, 5);
             GridProperty.Children.Add(UserControl);
             Width = Width + 200;
+
+            if (IsReLoad)
+            {
+                CalibrationParam.LoadResourceParams(DeviceCamera.CalibrationParams, DeviceCamera.SysResourceModel.Id, ModMasterType.Calibration);
+            }
+            TemplateModelBases = TemplateControl.GetTemplateModelBases(DeviceCamera.CalibrationParams);
+            Title = "校正参数设置";
         }
 
         public DeviceSpectrum DeviceSpectrum { get; set; }
@@ -219,11 +211,17 @@ namespace ColorVision.Services.Templates
             TemplateType = windowTemplateType;
             TemplateControl = TemplateControl.GetInstance();
             UserControl = userControl;
-            Load(windowTemplateType, IsReLoad);
             InitializeComponent();
             GridProperty.Children.Clear();
             GridProperty.Margin = new Thickness(5, 5, 5, 5);
             GridProperty.Children.Add(UserControl);
+
+            if (IsReLoad)
+            {
+                CalibrationParam.LoadResourceParams(DeviceSpectrum.SpectrumResourceParams, DeviceSpectrum.SysResourceModel.Id, ModMasterType.SpectrumResource);
+            }
+            TemplateModelBases = TemplateControl.GetTemplateModelBases(DeviceSpectrum.SpectrumResourceParams);
+            Title = "校正参数设置";
         }
 
 
