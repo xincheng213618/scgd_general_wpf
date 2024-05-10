@@ -21,6 +21,8 @@ namespace ColorVision.Services.Templates
 
         public string Title { get; set; }
 
+        public string ModMasterType { get; set; }
+
         public virtual object GetValue()
         {
             throw new NotImplementedException();
@@ -94,6 +96,7 @@ namespace ColorVision.Services.Templates
 
         public override void Load()
         {
+
         }
 
         public override void Delete(int index)
@@ -121,7 +124,7 @@ namespace ColorVision.Services.Templates
 
         public override void Create(string templateName, int id =-1)
         {
-            T? param = TemplateControl.AddParamMode<T>(ModMasterType.Calibration, templateName, id);
+            T? param = TemplateControl.AddParamMode<T>(ModMasterType, templateName, id);
             if (param != null)
             {
                 var a = new TemplateModel<T>(templateName, param);

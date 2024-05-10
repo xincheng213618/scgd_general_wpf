@@ -60,7 +60,7 @@ namespace ColorVision.Services.Templates.POI
         public static ObservableCollection<TemplateModel<PoiParam>> LoadPoiParam()
         {
             PoiParam.Params.Clear();
-            List<PoiMasterModel> poiMasters = PoiMasterDao.Instance.GetAllByTenantId(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            List<PoiMasterModel> poiMasters = PoiMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId },{ "is_delete", 0 } });
             foreach (var dbModel in poiMasters)
             {
                 PoiParam.Params.Add(new TemplateModel<PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel)));
