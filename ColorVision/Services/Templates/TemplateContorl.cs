@@ -94,25 +94,6 @@ namespace ColorVision.Services.Templates
         }
 
 
-
-        public static T? AddParamMode<T>(string code, string Name) where T : ParamBase, new()
-        {
-            ModMasterModel modMaster = new ModMasterModel(code, Name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            Save(modMaster);
-            int pkId = modMaster.Id;
-            if (pkId > 0)
-            {
-                ModMasterModel modMasterModel = ModMasterDao.Instance.GetById(pkId);
-                List<ModDetailModel> modDetailModels = ModDetailDao.Instance.GetAllByPid(pkId);
-                if (modMasterModel != null) return (T)Activator.CreateInstance(typeof(T), new object[] { modMasterModel, modDetailModels });
-                else return null;
-            }
-            return null;
-        }
-
-
-
-
         public static void LoadModParam<T>(ObservableCollection<TemplateModel<T>> ParamModes, string ModeType) where T : ParamBase, new()
         {
             ParamModes.Clear();
@@ -133,10 +114,11 @@ namespace ColorVision.Services.Templates
             }
         }
 
-        public static T? AddCalibrationParam<T>(string code, string Name, int resourceId) where T : ParamBase, new()
+        public static T? AddParamMode<T>(string code, string Name, int resourceId =-1) where T : ParamBase, new()
         {
             ModMasterModel modMaster = new ModMasterModel(code, Name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            modMaster.ResourceId = resourceId;
+            if (resourceId>0)
+                modMaster.ResourceId = resourceId;
             Save(modMaster);
             int pkId = modMaster.Id;
             if (pkId > 0)
@@ -148,6 +130,7 @@ namespace ColorVision.Services.Templates
             }
             return null;
         }
+
 
         public static int Save(ModMasterModel modMaster)
         {
