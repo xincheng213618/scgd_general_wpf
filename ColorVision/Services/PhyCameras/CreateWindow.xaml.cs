@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
 using ColorVision.Services.PhyCameras.Configs;
+using ColorVision.Services.RC;
 using ColorVision.Services.Type;
 using ColorVision.Settings;
 using cvColorVision;
@@ -118,6 +119,9 @@ namespace ColorVision.Services.PhyCameras
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(),"不允许创建没有Code的相机", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);    
             }
+
+            MQTTRCService.GetInstance().LoadPhysicalCamera(CreateConfig.CameraID);
+
             PhyCameraManager.LoadPhyCamera();
             Close();
         }

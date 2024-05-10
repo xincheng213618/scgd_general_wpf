@@ -1,10 +1,8 @@
 ﻿#pragma warning disable CS8603
 using ColorVision.Common.Utilities;
 using ColorVision.MQTT;
-using ColorVision.Services;
 using ColorVision.Services.Core;
 using ColorVision.Services.Devices;
-using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Terminal;
 using ColorVision.Services.Type;
@@ -16,7 +14,6 @@ using MQTTMessageLib.RC;
 using MQTTMessageLib.Util;
 using MQTTnet.Client;
 using Newtonsoft.Json;
-using Org.BouncyCastle.Asn1.Ocsp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,8 +23,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Media.Media3D;
-using YamlDotNet.Core.Tokens;
 
 namespace ColorVision.Services.RC
 {
@@ -529,6 +524,14 @@ namespace ColorVision.Services.RC
                 QueryServices();
             });
         }
+
+        public void LoadPhysicalCamera(string cameraID)
+        {
+            MQTTRCServicesRestartRequest reg = new MQTTRCServicesRestartRequest(AppId, NodeName, Token.AccessToken, string.Empty, cameraID);
+            PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(reg));
+        }
+
+
         public bool TryRegist(RCServiceConfig cfg)
         {
             bool isok = false;
