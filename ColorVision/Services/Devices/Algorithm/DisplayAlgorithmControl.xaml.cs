@@ -221,7 +221,7 @@ namespace ColorVision.Services.Devices.Algorithm
             ComboxLedCheckTemplate.ItemsSource = LedCheckParam.LedCheckParams;  
             ComboxLedCheckTemplate.SelectedIndex = 0;
 
-            ComboxPoiTemplate1.ItemsSource = PoiParam.Params.CreatEmpty();
+            ComboxPoiTemplate1.ItemsSource = PoiParam.Params.CreateEmpty();
             ComboxPoiTemplate1.SelectedIndex = 0;
 
             ComboxFocusPointsTemplate.ItemsSource = FocusPointsParam.FocusPointsParams;

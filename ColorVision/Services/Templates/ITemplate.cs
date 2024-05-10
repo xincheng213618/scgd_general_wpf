@@ -6,6 +6,7 @@ using ColorVision.Services.PhyCameras.Templates;
 using NPOI.SS.Formula.Functions;
 using OpenCvSharp.Flann;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -16,7 +17,9 @@ namespace ColorVision.Services.Templates
 {
     public class ITemplate
     {
-        public virtual List<TemplateModelBase> Enumerables { get; }
+        public virtual IEnumerable ItemsSource { get; }
+
+        public string Title { get; set; }
 
         public virtual object GetValue()
         {
@@ -27,7 +30,6 @@ namespace ColorVision.Services.Templates
             throw new NotImplementedException();
         }
 
-
         public virtual string NewCreateFileName(string FileName)
         {
             throw new NotImplementedException();
@@ -36,6 +38,12 @@ namespace ColorVision.Services.Templates
         public virtual void  Save()
         {
 
+        }
+
+        public virtual void Load() { }
+
+        public virtual void Delete(int index)
+        {
         }
 
         public virtual void Create(string templateName, int id = -1)
@@ -61,7 +69,7 @@ namespace ColorVision.Services.Templates
         public override object GetValue() => TemplateParams;
         public override object GetValue(int index) => TemplateParams[index].Value;
 
-        public override List<TemplateModelBase> Enumerables => TemplateParams.OfType<TemplateModelBase>().ToList();
+        public override IEnumerable ItemsSource { get => TemplateParams; }
 
 
         public override string NewCreateFileName(string FileName)
@@ -83,6 +91,34 @@ namespace ColorVision.Services.Templates
         {
             TemplateControl.Save2DB(TemplateParams);
         }
+
+        public override void Load()
+        {
+        }
+
+        public override void Delete(int index)
+        {
+            if (index >= 0 && index < TemplateParams.Count)
+            {
+                int id = TemplateParams[index].Value.Id;
+                List<ModDetailModel> de = ModDetailDao.Instance.GetAllByPid(id);
+                int ret = ModMasterDao.Instance.DeleteById(id);
+                ModDetailDao.Instance.DeleteAllByPid(id);
+                if (de != null && de.Count > 0)
+                {
+                    string[] codes = new string[de.Count];
+                    int idx = 0;
+                    foreach (ModDetailModel model in de)
+                    {
+                        string code = model.GetValueMD5();
+                        codes[idx++] = code;
+                    }
+                    VSysResourceDao.Instance.DeleteInCodes(codes);
+                }
+                TemplateParams.RemoveAt(index);
+            }
+        }
+
         public override void Create(string templateName, int id =-1)
         {
             T? param = TemplateControl.AddParamMode<T>(ModMasterType.Calibration, templateName, id);

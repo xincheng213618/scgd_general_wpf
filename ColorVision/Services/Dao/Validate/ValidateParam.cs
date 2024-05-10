@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Templates;
 using ColorVision.UI;
+using System.Collections.ObjectModel;
 using System.Windows;
 
 namespace ColorVision.Services.Dao.Validate
@@ -26,6 +27,7 @@ namespace ColorVision.Services.Dao.Validate
 
     public class ValidateParam : ParamBase
     {
+        public static ObservableCollection<TemplateModel<ValidateParam>> Params { get; set; } = new ObservableCollection<TemplateModel<ValidateParam>>();
 
 
 

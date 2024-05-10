@@ -1,19 +1,14 @@
 // // Copyright (c) Microsoft. All rights reserved.
 // // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using ColorVision.Media;
 using ColorVision.NativeMethods;
-using ColorVision.Net;
-using ColorVision.Utils;
 using log4net;
 using System;
 using System.CodeDom.Compiler;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Windows;
 
 namespace ColorVision
 {

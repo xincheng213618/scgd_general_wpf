@@ -67,16 +67,16 @@ namespace ColorVision.Services.Devices.Camera
 
             this.AddViewConfig(View, ComboxView);
 
-            ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreatEmpty();
+            ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
             ComboxCalibrationTemplate.SelectedIndex = 0;
             Device.ConfigChanged += (s, e) =>
             {
-                ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreatEmpty();
+                ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
                 ComboxCalibrationTemplate.SelectedIndex = 0;
             };
             PhyCameraManager.GetInstance().Loaded += (s, e) =>
             {
-                ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreatEmpty();
+                ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
                 ComboxCalibrationTemplate.SelectedIndex = 0;
             };
 
