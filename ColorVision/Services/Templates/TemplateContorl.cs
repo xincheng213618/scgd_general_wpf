@@ -30,7 +30,6 @@ namespace ColorVision.Services.Templates
         public TemplateControl()
         {
             AoiParams = new ObservableCollection<TemplateModel<AOIParam>>();
-            MeasureParams = new ObservableCollection<TemplateModel<MeasureParam>>();
 
             ConfigHandler.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
             {
@@ -53,10 +52,8 @@ namespace ColorVision.Services.Templates
                     return;
             };
         }
-        private void Init()
+        private static void Init()
         {
-            LoadModParam(AoiParams, ModMasterType.Aoi);
-
             PoiParam.LoadPoiParam();
             FlowParam.LoadFlowParam();
 
@@ -83,7 +80,6 @@ namespace ColorVision.Services.Templates
                 Save2DB(item.Value);
             }
         }
-
 
         public static void Save2DB<T>(T value) where T : ParamBase
         {
@@ -137,32 +133,6 @@ namespace ColorVision.Services.Templates
         }
 
 
-
-        internal static MeasureParam? AddMeasureParam(string name)
-        {
-            MeasureMasterModel model = new MeasureMasterModel(name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-            MeasureMasterDao.Instance.Save(model);
-            int pkId = model.Id;
-            if (pkId > 0)
-            {
-                return LoadMeasureParamById(pkId);
-            }
-            return null;
-        }
-        private static MeasureParam? LoadMeasureParamById(int pkId)
-        {
-            MeasureMasterModel model = MeasureMasterDao.Instance.GetById(pkId);
-            if (model != null) return new MeasureParam(model);
-            else return null;
-        }
-
-        private static ResourceParam? LoadServiceParamById(int pkId)
-        {
-            SysResourceModel model = VSysResourceDao.Instance.GetById(pkId);
-            if (model != null) return new ResourceParam(model);
-            else return null;
-        }
-
         public static void LoadModParam<T>(ObservableCollection<TemplateModel<T>> ParamModes, string ModeType) where T : ParamBase, new()
         {
             ParamModes.Clear();
@@ -182,7 +152,6 @@ namespace ColorVision.Services.Templates
                 }
             }
         }
-        private ModMasterDao masterFlowDao = new ModMasterDao(ModMasterType.Flow);
 
         public static void LoadModCabParam<T>(ObservableCollection<TemplateModel<T>> CalibrationParamModes, int resourceId, string ModeType) where T : ParamBase, new()
         {
@@ -219,22 +188,9 @@ namespace ColorVision.Services.Templates
             return null;
         }
 
-        internal ObservableCollection<TemplateModel<MeasureParam>> LoadMeasureParams()
-        {
-            MeasureParams.Clear();
-            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
-            {
-                List<MeasureMasterModel> devices = MeasureMasterDao.Instance.GetAllByTenantId(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                foreach (var dbModel in devices)
-                {
-                    MeasureParams.Add(new TemplateModel<MeasureParam>(dbModel.Name ?? "default", new MeasureParam(dbModel)));
-                }
-            }
-            return MeasureParams;
-        }
 
-        public ObservableCollection<TemplateModel<MeasureParam>> MeasureParams { get; set; }
         public ObservableCollection<TemplateModel<AOIParam>> AoiParams { get; set; }
+
 
         public static ObservableCollection<TemplateModelBase> GetTemplateModelBases<T>(ObservableCollection<TemplateModel<T>> templateModels) where T : ParamBase
         {

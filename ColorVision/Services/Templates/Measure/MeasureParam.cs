@@ -3,6 +3,8 @@ using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
 using ColorVision.Settings;
 using ColorVision.UI;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Windows;
 
 namespace ColorVision.Services.Templates.Measure
@@ -35,6 +37,42 @@ namespace ColorVision.Services.Templates.Measure
 
     public class MeasureParam : ParamBase
     {
+        public static ObservableCollection<TemplateModel<MeasureParam>> MeasureParams { get; set; } = new ObservableCollection<TemplateModel<MeasureParam>>();
+
+        public static ObservableCollection<TemplateModel<MeasureParam>> LoadMeasureParams()
+        {
+            MeasureParams.Clear();
+            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
+            {
+                List<MeasureMasterModel> devices = MeasureMasterDao.Instance.GetAllByTenantId(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                foreach (var dbModel in devices)
+                {
+                    MeasureParams.Add(new TemplateModel<MeasureParam>(dbModel.Name ?? "default", new MeasureParam(dbModel)));
+                }
+            }
+            return MeasureParams;
+        }
+
+        public static MeasureParam? AddMeasureParam(string name)
+        {
+            MeasureMasterModel model = new MeasureMasterModel(name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            MeasureMasterDao.Instance.Save(model);
+            int pkId = model.Id;
+            if (pkId > 0)
+            {
+                return LoadMeasureParamById(pkId);
+            }
+            return null;
+        }
+        public static MeasureParam? LoadMeasureParamById(int pkId)
+        {
+            MeasureMasterModel model = MeasureMasterDao.Instance.GetById(pkId);
+            if (model != null) return new MeasureParam(model);
+            else return null;
+        }
+
+
+
         public MeasureParam() { }
         public MeasureParam(MeasureMasterModel dbModel)
         {

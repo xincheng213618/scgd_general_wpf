@@ -85,9 +85,9 @@ namespace ColorVision.Services.Templates
                     Title = "流程引擎";
                     break;
                 case TemplateType.MeasureParam:
-                    if (IsReLoad) 
-                        TemplateControl.LoadMeasureParams();
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.MeasureParams);
+                    if (IsReLoad)
+                        MeasureParam.LoadMeasureParams();
+                    TemplateModelBases = TemplateControl.GetTemplateModelBases(MeasureParam.MeasureParams);
                     Title = "测量设置";
                     break;
                 case TemplateType.Calibration:
@@ -396,8 +396,8 @@ namespace ColorVision.Services.Templates
                     else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
                 case TemplateType.MeasureParam:
-                    MeasureParam? measureParam = TemplateControl.AddMeasureParam(TemplateName);
-                    if (measureParam != null) CreateNewTemplate(TemplateControl.MeasureParams, TemplateName, measureParam);
+                    MeasureParam? measureParam = MeasureParam.AddMeasureParam(TemplateName);
+                    if (measureParam != null) CreateNewTemplate(MeasureParam.MeasureParams, TemplateName, measureParam);
                     else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
                 case TemplateType.BuildPOIParmam:
@@ -619,7 +619,7 @@ namespace ColorVision.Services.Templates
                             TemplateDel(FlowParam.Params);
                             break;
                         case TemplateType.MeasureParam:
-                            TemplateDel(TemplateControl.MeasureParams);
+                            TemplateDel(MeasureParam.MeasureParams);
                             break;
                         case TemplateType.BuildPOIParmam:
                             TemplateDel(BuildPOIParam.BuildPOIParams);
@@ -780,7 +780,7 @@ namespace ColorVision.Services.Templates
                         MeasureParam? measureParam = JsonConvert.DeserializeObject<MeasureParam>(File.ReadAllText(ofd.FileName));         
                         if (measureParam != null)
                         {
-                            CreateNewTemplate(TemplateControl.MeasureParams, name, measureParam);
+                            CreateNewTemplate(MeasureParam.MeasureParams, name, measureParam);
                             TemplateControl.Save2DB(measureParam);
                         }
                         else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
