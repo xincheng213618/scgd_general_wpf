@@ -151,18 +151,7 @@ namespace ColorVision.Services.Templates
             return ret;
         }
 
-
         public ObservableCollection<TemplateModel<AOIParam>> AoiParams { get; set; }
 
-
-        public static ObservableCollection<TemplateModelBase> GetTemplateModelBases<T>(ObservableCollection<TemplateModel<T>> templateModels) where T : ParamBase
-        {
-            ObservableCollection<TemplateModelBase> templateModelBases = new ObservableCollection<TemplateModelBase>();
-            foreach (var item in templateModels)
-            {
-                templateModelBases.Add(item);
-            }
-            return templateModelBases;
-        }
     }
 }

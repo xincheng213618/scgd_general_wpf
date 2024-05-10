@@ -123,6 +123,13 @@ namespace ColorVision.Services.Flow
 
         public static void Save2DB(FlowParam flowParam)
         {
+            if (ModMasterDao.Instance.GetById(flowParam.Id) is ModMasterModel modMasterModel && modMasterModel.Pcode != null)
+            {
+                modMasterModel.Name = flowParam.Name;
+                ModMasterDao modMasterDao = new ModMasterDao(modMasterModel.Pcode);
+                modMasterDao.Save(modMasterModel);
+            }
+
             List<ModDetailModel> list = new List<ModDetailModel>();
             flowParam.GetDetail(list);
             if (list.Count > 0 && list[0] is ModDetailModel model)
@@ -166,6 +173,7 @@ namespace ColorVision.Services.Flow
                 }
                 ModDetailDao.Instance.UpdateByPid(flowParam.Id, list);
             }
+
         }
 
 
