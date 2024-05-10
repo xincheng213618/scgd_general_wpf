@@ -27,6 +27,10 @@
           <source>高级设置</source>
           <target state="new">고급 설정</target>
         </trans-unit>
+        <trans-unit id="Alias" translate="yes" xml:space="preserve">
+          <source>别名</source>
+          <target state="new">별명</target>
+        </trans-unit>
         <trans-unit id="ApplicationExit" translate="yes" xml:space="preserve">
           <source>程序关闭</source>
           <target state="new">프로그램 종료</target>
@@ -243,6 +247,14 @@
           <source>筛选</source>
           <target state="new">필터</target>
         </trans-unit>
+        <trans-unit id="Flow" translate="yes" xml:space="preserve">
+          <source>流程</source>
+          <target state="new">프로세스</target>
+        </trans-unit>
+        <trans-unit id="FocusPoint" translate="yes" xml:space="preserve">
+          <source>关注点</source>
+          <target state="new">초점</target>
+        </trans-unit>
         <trans-unit id="Gain" translate="yes" xml:space="preserve">
           <source>增益</source>
           <target state="new">얻다</target>
@@ -279,6 +291,10 @@
           <source>导入许可证</source>
           <target state="new">수입 라이센스</target>
         </trans-unit>
+        <trans-unit id="Inquire" translate="yes" xml:space="preserve">
+          <source>查询</source>
+          <target state="new">문의</target>
+        </trans-unit>
         <trans-unit id="InstallCertificate" translate="yes" xml:space="preserve">
           <source>安装证书</source>
           <target state="new">인증서 설치</target>
@@ -298,6 +314,10 @@
         <trans-unit id="LaunchSuccess" translate="yes" xml:space="preserve">
           <source>启动成功</source>
           <target state="new">성공적으로 시작되었습니다</target>
+        </trans-unit>
+        <trans-unit id="Layers" translate="yes" xml:space="preserve">
+          <source>图层</source>
+          <target state="new">레이어</target>
         </trans-unit>
         <trans-unit id="LicenseManagement" translate="yes" xml:space="preserve">
           <source>许可证管理</source>
@@ -690,6 +710,10 @@
         <trans-unit id="SaveWindowLayout" translate="yes" xml:space="preserve">
           <source>保存窗口布局</source>
           <target state="new">창 레이아웃 저장</target>
+        </trans-unit>
+        <trans-unit id="Search" translate="yes" xml:space="preserve">
+          <source>搜索</source>
+          <target state="new">찾다</target>
         </trans-unit>
         <trans-unit id="SearchProjectFiles" translate="yes" xml:space="preserve">
           <source>搜索工程文件</source>

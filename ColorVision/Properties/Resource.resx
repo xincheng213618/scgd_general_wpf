@@ -798,4 +798,22 @@
   <data name="MenuValidue" xml:space="preserve">
     <value>关注点校验模板设置(_B)</value>
   </data>
+  <data name="Alias" xml:space="preserve">
+    <value>别名</value>
+  </data>
+  <data name="FocusPoint" xml:space="preserve">
+    <value>关注点</value>
+  </data>
+  <data name="Layers" xml:space="preserve">
+    <value>图层</value>
+  </data>
+  <data name="Inquire" xml:space="preserve">
+    <value>查询</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>搜索</value>
+  </data>
+  <data name="Flow" xml:space="preserve">
+    <value>流程</value>
+  </data>
 </root>

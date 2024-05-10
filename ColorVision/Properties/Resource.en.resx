@@ -798,4 +798,22 @@
   <data name="MenuValidue" xml:space="preserve">
     <value>Focus point verification template settings (B)</value>
   </data>
+  <data name="Alias" xml:space="preserve">
+    <value>Aliases</value>
+  </data>
+  <data name="FocusPoint" xml:space="preserve">
+    <value>Focus Point</value>
+  </data>
+  <data name="Layers" xml:space="preserve">
+    <value>Layers</value>
+  </data>
+  <data name="Inquire" xml:space="preserve">
+    <value>Inquire</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Flow" xml:space="preserve">
+    <value>Flow</value>
+  </data>
 </root>

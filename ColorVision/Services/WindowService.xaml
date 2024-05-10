@@ -31,19 +31,19 @@
                     <TreeView.Resources>
                         <HierarchicalDataTemplate DataType="{x:Type type:TypeService}" ItemsSource="{Binding VisualChildren}" >
                             <StackPanel >
-                                <TextBlock Text="{Binding Name}"/>
+                                <TextBlock Text="{Binding Config.Name}"/>
                             </StackPanel>
                         </HierarchicalDataTemplate>
                         <HierarchicalDataTemplate DataType="{x:Type terminal:TerminalService}" ItemsSource="{Binding VisualChildren}" >
                             <DockPanel>
                                 <Image Source="{Binding Icon}" Height="18" HorizontalAlignment="Left"  Margin="0,0,4,0"/>
-                                <TextBlock Text="{Binding Name}"/>
+                                <TextBlock Text="{Binding Config.Name}"/>
                             </DockPanel>
                         </HierarchicalDataTemplate>
                         <HierarchicalDataTemplate DataType="{x:Type devices:DeviceService}" >
                             <DockPanel>
                                 <Image Source="{Binding Icon}" Height="18" HorizontalAlignment="Left"  Margin="0,0,4,0"/>
-                                <TextBlock Text="{Binding Name}"/>
+                                <TextBlock Text="{Binding Config.Name}"/>
                             </DockPanel>
                         </HierarchicalDataTemplate>
                         <HierarchicalDataTemplate DataType="{x:Type core:GroupResource}" ItemsSource="{Binding VisualChildren}" >

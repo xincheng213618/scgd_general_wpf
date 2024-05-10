@@ -27,6 +27,10 @@
           <source>高级设置</source>
           <target state="new">расширенные настройки</target>
         </trans-unit>
+        <trans-unit id="Alias" translate="yes" xml:space="preserve">
+          <source>别名</source>
+          <target state="new">Псевдоним</target>
+        </trans-unit>
         <trans-unit id="ApplicationExit" translate="yes" xml:space="preserve">
           <source>程序关闭</source>
           <target state="new">Программа закрывается</target>
@@ -243,6 +247,14 @@
           <source>筛选</source>
           <target state="new">фильтр</target>
         </trans-unit>
+        <trans-unit id="Flow" translate="yes" xml:space="preserve">
+          <source>流程</source>
+          <target state="new">процесс</target>
+        </trans-unit>
+        <trans-unit id="FocusPoint" translate="yes" xml:space="preserve">
+          <source>关注点</source>
+          <target state="new">точка фокусировки</target>
+        </trans-unit>
         <trans-unit id="Gain" translate="yes" xml:space="preserve">
           <source>增益</source>
           <target state="new">Прирост</target>
@@ -279,6 +291,10 @@
           <source>导入许可证</source>
           <target state="new">Лицензия на импорт</target>
         </trans-unit>
+        <trans-unit id="Inquire" translate="yes" xml:space="preserve">
+          <source>查询</source>
+          <target state="new">Запросить</target>
+        </trans-unit>
         <trans-unit id="InstallCertificate" translate="yes" xml:space="preserve">
           <source>安装证书</source>
           <target state="new">Установить сертификат</target>
@@ -298,6 +314,10 @@
         <trans-unit id="LaunchSuccess" translate="yes" xml:space="preserve">
           <source>启动成功</source>
           <target state="new">Началось успешно</target>
+        </trans-unit>
+        <trans-unit id="Layers" translate="yes" xml:space="preserve">
+          <source>图层</source>
+          <target state="new">Слои</target>
         </trans-unit>
         <trans-unit id="LicenseManagement" translate="yes" xml:space="preserve">
           <source>许可证管理</source>
@@ -690,6 +710,10 @@
         <trans-unit id="SaveWindowLayout" translate="yes" xml:space="preserve">
           <source>保存窗口布局</source>
           <target state="new">Сохранить макет окна</target>
+        </trans-unit>
+        <trans-unit id="Search" translate="yes" xml:space="preserve">
+          <source>搜索</source>
+          <target state="new">поиск</target>
         </trans-unit>
         <trans-unit id="SearchProjectFiles" translate="yes" xml:space="preserve">
           <source>搜索工程文件</source>

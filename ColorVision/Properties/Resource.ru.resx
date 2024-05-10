@@ -798,4 +798,22 @@
   <data name="MenuValidue" xml:space="preserve">
     <value>Настройки шаблона проверки проблем (B)</value>
   </data>
+  <data name="Alias" xml:space="preserve">
+    <value>Псевдоним</value>
+  </data>
+  <data name="FocusPoint" xml:space="preserve">
+    <value>точка фокусировки</value>
+  </data>
+  <data name="Layers" xml:space="preserve">
+    <value>Слои</value>
+  </data>
+  <data name="Inquire" xml:space="preserve">
+    <value>Запросить</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>поиск</value>
+  </data>
+  <data name="Flow" xml:space="preserve">
+    <value>процесс</value>
+  </data>
 </root>

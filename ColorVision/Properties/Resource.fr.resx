@@ -798,4 +798,22 @@
   <data name="MenuValidue" xml:space="preserve">
     <value>Paramètres du modèle de vérification concerné (B)</value>
   </data>
+  <data name="Alias" xml:space="preserve">
+    <value>Alias</value>
+  </data>
+  <data name="FocusPoint" xml:space="preserve">
+    <value>point de concentration</value>
+  </data>
+  <data name="Layers" xml:space="preserve">
+    <value>Couches</value>
+  </data>
+  <data name="Inquire" xml:space="preserve">
+    <value>Renseigner</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>recherche</value>
+  </data>
+  <data name="Flow" xml:space="preserve">
+    <value>Processus</value>
+  </data>
 </root>

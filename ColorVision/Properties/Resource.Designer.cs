@@ -115,6 +115,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 别名 的本地化字符串。
+        /// </summary>
+        public static string Alias {
+            get {
+                return ResourceManager.GetString("Alias", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 程序关闭 的本地化字符串。
         /// </summary>
         public static string ApplicationExit {
@@ -601,6 +610,24 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 流程 的本地化字符串。
+        /// </summary>
+        public static string Flow {
+            get {
+                return ResourceManager.GetString("Flow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 关注点 的本地化字符串。
+        /// </summary>
+        public static string FocusPoint {
+            get {
+                return ResourceManager.GetString("FocusPoint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 增益 的本地化字符串。
         /// </summary>
         public static string Gain {
@@ -682,6 +709,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 查询 的本地化字符串。
+        /// </summary>
+        public static string Inquire {
+            get {
+                return ResourceManager.GetString("Inquire", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 安装证书 的本地化字符串。
         /// </summary>
         public static string InstallCertificate {
@@ -723,6 +759,15 @@ namespace ColorVision.Properties {
         public static string LaunchSuccess {
             get {
                 return ResourceManager.GetString("LaunchSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 图层 的本地化字符串。
+        /// </summary>
+        public static string Layers {
+            get {
+                return ResourceManager.GetString("Layers", resourceCulture);
             }
         }
         
@@ -1605,6 +1650,15 @@ namespace ColorVision.Properties {
         public static string SaveWindowLayout {
             get {
                 return ResourceManager.GetString("SaveWindowLayout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 搜索 的本地化字符串。
+        /// </summary>
+        public static string Search {
+            get {
+                return ResourceManager.GetString("Search", resourceCulture);
             }
         }
         

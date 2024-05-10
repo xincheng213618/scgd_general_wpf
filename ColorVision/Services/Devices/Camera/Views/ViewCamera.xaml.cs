@@ -387,37 +387,6 @@ namespace ColorVision.Services.Devices.Camera.Views
             }
         }
 
-        private void Order_Click(object sender, RoutedEventArgs e)
-        {
-            OrderPopup.IsOpen = true;
-        }
-
-        private void Radio_Checked(object sender, RoutedEventArgs e)
-        {
-            if (RadioID?.IsChecked == true)
-            {
-                ViewResultCameras.SortByID(RadioUp?.IsChecked == false);
-            }
-
-            if (RadioBatch?.IsChecked == true)
-            {
-                ViewResultCameras.SortByBatch(RadioUp?.IsChecked == false);
-            }
-
-            if (RadioFilePath?.IsChecked == true)
-            {
-                ViewResultCameras.SortByFilePath(RadioUp?.IsChecked == false);
-            }
-
-            if (RadioCreateTime?.IsChecked == true)
-            {
-                ViewResultCameras.SortByCreateTime(RadioUp?.IsChecked == false);
-            }
-
-            OrderPopup.IsOpen = false;
-        }
-
-
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content !=null)

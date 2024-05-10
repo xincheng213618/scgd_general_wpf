@@ -144,7 +144,7 @@ namespace ColorVision.Services.Flow
                         res.Type = (int)PhysicalResourceType.FlowFile;
                         if (!string.IsNullOrEmpty(flowParam.DataBase64))
                         {
-                            res.Code = Cryptography.GetMd5Hash(flowParam.DataBase64);
+                            res.Code = flowParam.Id + Cryptography.GetMd5Hash(flowParam.DataBase64);
                             res.Value = flowParam.DataBase64;
                         }
                         VSysResourceDao.Instance.Save(res);

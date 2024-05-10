@@ -798,4 +798,22 @@
   <data name="MenuValidue" xml:space="preserve">
     <value>懸念事項検証テンプレートの設定（B）</value>
   </data>
+  <data name="Alias" xml:space="preserve">
+    <value>エイリアス</value>
+  </data>
+  <data name="FocusPoint" xml:space="preserve">
+    <value>フォーカスポイント</value>
+  </data>
+  <data name="Layers" xml:space="preserve">
+    <value>レイヤー</value>
+  </data>
+  <data name="Inquire" xml:space="preserve">
+    <value>お問い合わせ</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>検索</value>
+  </data>
+  <data name="Flow" xml:space="preserve">
+    <value>プロセス</value>
+  </data>
 </root>
