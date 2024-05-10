@@ -16,30 +16,21 @@ using ColorVision.Services.Templates.Measure;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Settings;
-using cvColorVision;
 using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Net.Sockets;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ColorVision.Services.Templates
 {
-    public interface ITemplate
-    {
-        public void Load();
-        public void Create();
-        public void Save();
-        public void Delete();
-        public void Import();
-        public void Export();
-    }
-
 
 
     /// <summary>
@@ -49,15 +40,14 @@ namespace ColorVision.Services.Templates
     {
         TemplateType TemplateType { get; set; }
         TemplateControl TemplateControl { get;set; }
-
-        public ObservableCollection<TemplateModelBase> TemplateModelBases { get; set; } = new ObservableCollection<TemplateModelBase>();
+        public ITemplate ITemplate { get; set; }
 
         public WindowTemplate(TemplateType windowTemplateType, bool IsReLoad = true)
         {
             TemplateType = windowTemplateType;
             TemplateControl = TemplateControl.GetInstance();
-            Load(windowTemplateType, IsReLoad);
             InitializeComponent();
+            Load(windowTemplateType, IsReLoad);
             switch (TemplateType)
             {
                 case TemplateType.FlowParam:
@@ -82,97 +72,112 @@ namespace ColorVision.Services.Templates
                 case TemplateType.FlowParam:
                     if (IsReLoad)
                         FlowParam.LoadFlowParam();
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(FlowParam.Params);
+                    ITemplate = new ITemplate<FlowParam>() { TemplateParams = FlowParam.Params };
+                    ListView1.ItemsSource = FlowParam.Params;
                     Title = "流程引擎";
                     break;
                 case TemplateType.MeasureParam:
                     if (IsReLoad)
                         MeasureParam.LoadMeasureParams();
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(MeasureParam.MeasureParams);
+                    ListView1.ItemsSource = MeasureParam.MeasureParams;
                     Title = "测量设置";
                     break;
                 case TemplateType.AoiParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(TemplateControl.AoiParams, ModMasterType.Aoi);
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(TemplateControl.AoiParams);
+                    ITemplate = new ITemplate<AOIParam>() { TemplateParams = TemplateControl.AoiParams };
+                    ListView1.ItemsSource = TemplateControl.AoiParams;
                     Title = "AOI参数设置";
                     break;
                 case TemplateType.PGParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(PGParam.Params, ModMasterType.PG);
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(PGParam.Params);
+                    ITemplate = new ITemplate<PGParam>() { TemplateParams = PGParam.Params };
+                    ListView1.ItemsSource = PGParam.Params;
                     Title = "PG参数设置";
                     break;
                 case TemplateType.SMUParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(SMUParam.Params, ModMasterType.SMU);
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(SMUParam.Params);
+                    ITemplate = new ITemplate<SMUParam>() { TemplateParams = SMUParam.Params };
+                    ListView1.ItemsSource = SMUParam.Params;
                     Title = "源表模板设置";
                     break;
                 case TemplateType.PoiParam:
                     if (IsReLoad)
                         PoiParam.LoadPoiParam();
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(PoiParam.Params);
+                    ITemplate = new ITemplate<PoiParam>() { TemplateParams = PoiParam.Params };
+                    ListView1.ItemsSource = PoiParam.Params;
                     Title = "关注点设置";
                     break;
                 case TemplateType.MTFParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(MTFParam.MTFParams, ModMasterType.MTF);
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(MTFParam.MTFParams);
+                    ITemplate = new ITemplate<MTFParam>() { TemplateParams = MTFParam.MTFParams };
+                    ListView1.ItemsSource = MTFParam.MTFParams;
                     Title = "MTF算法设置";
                     break;
                 case TemplateType.SFRParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(SFRParam.SFRParams, ModMasterType.SFR);
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(SFRParam.SFRParams);
+                    ITemplate = new ITemplate<SFRParam>() { TemplateParams = SFRParam.SFRParams };
+                    ListView1.ItemsSource = SFRParam.SFRParams;
                     Title = "SFR算法设置";
                     break;
                 case TemplateType.FOVParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(FOVParam.FOVParams, ModMasterType.FOV);
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(FOVParam.FOVParams);
+                    ITemplate = new ITemplate<FOVParam>() { TemplateParams = FOVParam.FOVParams };
+                    ListView1.ItemsSource = FOVParam.FOVParams;
                     Title = "FOV算法设置";
                     break;
                 case TemplateType.GhostParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(GhostParam.GhostParams, ModMasterType.Ghost);
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(GhostParam.GhostParams);
+                    ITemplate = new ITemplate<GhostParam>() { TemplateParams = GhostParam.GhostParams };
+                    ListView1.ItemsSource = GhostParam.GhostParams;
                     Title = "鬼影算法设置";
                     break;
                 case TemplateType.DistortionParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(DistortionParam.DistortionParams, ModMasterType.Distortion);
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(DistortionParam.DistortionParams);
+                    ITemplate = new ITemplate<DistortionParam>() { TemplateParams = DistortionParam.DistortionParams };
+                    ListView1.ItemsSource = DistortionParam.DistortionParams;
                     Title = "畸变算法设置";
                     break;
                 case TemplateType.LedCheckParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(LedCheckParam.LedCheckParams, ModMasterType.LedCheck);
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(LedCheckParam.LedCheckParams);
+                    ITemplate = new ITemplate<LedCheckParam>() { TemplateParams = LedCheckParam.LedCheckParams };
+                    ListView1.ItemsSource = LedCheckParam.LedCheckParams;
                     Title = "灯光检测算法设置";
                     break;
                 case TemplateType.FocusPointsParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(FocusPointsParam.FocusPointsParams, ModMasterType.FocusPoints);
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(FocusPointsParam.FocusPointsParams);
+                    ITemplate = new ITemplate<FocusPointsParam>() { TemplateParams = FocusPointsParam.FocusPointsParams };
+                    ListView1.ItemsSource = FocusPointsParam.FocusPointsParams;
                     Title = "FocusPoints算法设置";
                     break;
                 case TemplateType.BuildPOIParmam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(BuildPOIParam.BuildPOIParams, ModMasterType.BuildPOI);
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(BuildPOIParam.BuildPOIParams);
+                    ITemplate = new ITemplate<BuildPOIParam>() { TemplateParams = BuildPOIParam.BuildPOIParams };
+                    ListView1.ItemsSource =     BuildPOIParam.BuildPOIParams;
                     Title = "BuildPOI算法设置";
                     break;
                 case TemplateType.SensorHeYuan:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(SensorHeYuan.SensorHeYuans, ModMasterType.SensorHeYuan);
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(SensorHeYuan.SensorHeYuans);
+                    ITemplate = new ITemplate<SensorHeYuan>() { TemplateParams = SensorHeYuan.SensorHeYuans };
+                    ListView1.ItemsSource = SensorHeYuan.SensorHeYuans;
                     Title = "SensorHeYuan算法设置";
                     break;
                 case TemplateType.CameraExposureParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(CameraExposureParam.CameraExposureParams, ModMasterType.CameraExposure);
-                    TemplateModelBases = TemplateControl.GetTemplateModelBases(CameraExposureParam.CameraExposureParams);
+                    ITemplate = new ITemplate<CameraExposureParam>() { TemplateParams = CameraExposureParam.CameraExposureParams };
+                    ListView1.ItemsSource = CameraExposureParam.CameraExposureParams;
                     Title = "相机曝光参数设置";
                     break;
                 default:
@@ -194,7 +199,7 @@ namespace ColorVision.Services.Templates
             {
                 CalibrationParam.LoadResourceParams(DeviceCamera.CalibrationParams, DeviceCamera.SysResourceModel.Id, ModMasterType.Calibration);
             }
-            TemplateModelBases = TemplateControl.GetTemplateModelBases(DeviceCamera.CalibrationParams);
+            ITemplate = new ITemplate<CalibrationParam>() { TemplateParams = DeviceCamera.CalibrationParams };
             Title = "校正参数设置";
 
             InitializeComponent();
@@ -202,6 +207,7 @@ namespace ColorVision.Services.Templates
             GridProperty.Margin = new Thickness(5, 5, 5, 5);
             GridProperty.Children.Add(UserControl);
             Width = Width + 200;
+            ListView1.ItemsSource = DeviceCamera.CalibrationParams;
 
 
         }
@@ -217,19 +223,19 @@ namespace ColorVision.Services.Templates
             {
                 CalibrationParam.LoadResourceParams(DeviceSpectrum.SpectrumResourceParams, DeviceSpectrum.SysResourceModel.Id, ModMasterType.SpectrumResource);
             }
-            TemplateModelBases = TemplateControl.GetTemplateModelBases(DeviceSpectrum.SpectrumResourceParams);
-            Title = "校正参数设置";
+            ITemplate = new ITemplate<SpectrumResourceParam>() { TemplateParams = DeviceSpectrum.SpectrumResourceParams };
+            Title = "SpectrumResourceParams";
 
             InitializeComponent();
             GridProperty.Children.Clear();
             GridProperty.Margin = new Thickness(5, 5, 5, 5);
             GridProperty.Children.Add(UserControl);
+            ListView1.ItemsSource = DeviceSpectrum.SpectrumResourceParams;
         }
 
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            ListView1.ItemsSource = TemplateModelBases;
             ListView1.SelectedIndex = 0;
             if (ListView1.View is GridView gridView1)
                 GridViewColumnVisibility.AddGridViewColumn(gridView1.Columns, GridViewColumnVisibilitys);
@@ -260,21 +266,13 @@ namespace ColorVision.Services.Templates
                 switch (TemplateType)
                 {
                     case TemplateType.PoiParam:
-                        if (TemplateModelBases[listView.SelectedIndex].GetValue() is PoiParam poiParam)
-                        {
-                            var WindowFocusPoint = new WindowFocusPoint(poiParam) { Owner = this };
-                            WindowFocusPoint.Closed += async (s, e) =>
-                            {
-                                await Task.Delay(30);
-                                TemplateModelBases[listView.SelectedIndex].Tag = $"{poiParam.Width}*{poiParam.Height}{(ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql ? "" : $"_{poiParam.PoiPoints.Count}")}";
-                            };
-                            WindowFocusPoint.Show();
-                        }
+                        var WindowFocusPoint = new WindowFocusPoint(PoiParam.Params[listView.SelectedIndex].Value) { Owner = this };
+                        WindowFocusPoint.Show();
                         break;
                     case TemplateType.FlowParam:
-                        if (TemplateModelBases[listView.SelectedIndex].GetValue() is FlowParam flowParam)
+                        if (FlowParam.Params[listView.SelectedIndex].Value is FlowParam flowParam)
                         {
-                            flowParam.Name ??= TemplateModelBases[listView.SelectedIndex].Key;
+                            flowParam.Name ??= FlowParam.Params[listView.SelectedIndex].Key;
                             new WindowFlowEngine(flowParam) { Owner =null }.Show();
                             Close();
                         }
@@ -292,19 +290,19 @@ namespace ColorVision.Services.Templates
                 switch (TemplateType)
                 {
                     case TemplateType.Calibration:
-                        if (UserControl is CalibrationControl calibration && TemplateModelBases[listView.SelectedIndex].GetValue() is CalibrationParam calibrationParam)
+                        if (UserControl is CalibrationControl calibration)
                         {
-                            calibration.Initializedsss(DeviceCamera, calibrationParam);
+                            calibration.Initializedsss(DeviceCamera, DeviceCamera.CalibrationParams[listView.SelectedIndex].Value);
                         }
                         break;
                     case TemplateType.SpectrumResourceParam:
-                        if (UserControl is SpectrumResourceControl spectrumResourceControl && TemplateModelBases[listView.SelectedIndex].GetValue() is SpectrumResourceParam spectrumResourceParam)
+                        if (UserControl is SpectrumResourceControl spectrumResourceControl)
                         {
-                            spectrumResourceControl.Initializedsss(DeviceSpectrum, spectrumResourceParam);
+                            spectrumResourceControl.Initializedsss(DeviceSpectrum, DeviceSpectrum.SpectrumResourceParams[listView.SelectedIndex].Value);
                         }
                         break;
                     case TemplateType.MeasureParam:
-                        if (UserControl is MeasureParamControl mpc && TemplateModelBases[listView.SelectedIndex].GetValue() is MeasureParam mp)
+                        if (UserControl is MeasureParamControl mpc && MeasureParam.MeasureParams[listView.SelectedIndex].Value is MeasureParam mp)
                         {
                             mpc.MasterID = mp.Id;
                             List<MeasureDetailModel> des = measureDetail.GetAllByPid(mp.Id); 
@@ -319,7 +317,7 @@ namespace ColorVision.Services.Templates
                         }
                         break;
                     default:
-                        PropertyGrid1.SelectedObject = TemplateModelBases[listView.SelectedIndex].GetValue();
+                        PropertyGrid1.SelectedObject = ITemplate.GetValue(listView.SelectedIndex);
                         break;
                 }
             }
@@ -506,7 +504,7 @@ namespace ColorVision.Services.Templates
 
         public void TemplateNew()
         {
-            CreateTemplate createWindow = new CreateTemplate(TemplateModelBases,TemplateType) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            CreateTemplate createWindow = new CreateTemplate(ITemplate) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
             createWindow.Closed += (s, e) =>
             {
                 if (!string.IsNullOrEmpty(createWindow.CreateName))
@@ -526,11 +524,10 @@ namespace ColorVision.Services.Templates
 
         private void CreateNewTemplate<T>(ObservableCollection<TemplateModel<T>> keyValuePairs, string Name, T t) where T : ParamBase
         {
-            keyValuePairs.Add(new TemplateModel<T>(Name, t));
-            TemplateModel<T> config = new TemplateModel<T> {Value = t, Key = Name, };
-            TemplateModelBases.Add(config);
-            ListView1.SelectedIndex = TemplateModelBases.Count - 1;
-            ListView1.ScrollIntoView(config);
+            var a = new TemplateModel<T>(Name, t);
+            keyValuePairs.Add(a);
+            ListView1.SelectedIndex = keyValuePairs.Count - 1;
+            ListView1.ScrollIntoView(a);
         }
 
         private ModMasterDao masterFlowDao = new ModMasterDao(ModMasterType.Flow);
@@ -632,8 +629,6 @@ namespace ColorVision.Services.Templates
                             break;
                     }
 
-                    TemplateModelBases.RemoveAt(ListView1.SelectedIndex);
-                    ListView1.SelectedIndex = TemplateModelBases.Count - 1;
                     if (ListView1.SelectedIndex < 0)
                     {
                         if (UserControl is MeasureParamControl mpc)
@@ -731,18 +726,18 @@ namespace ColorVision.Services.Templates
                 default:
                     if (true)
                     {
-                        System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
-                        ofd.DefaultExt = "cfg";
-                        ofd.Filter = "*.cfg|*.cfg";
-                        ofd.AddExtension = false;
-                        ofd.RestoreDirectory = true;
-                        ofd.Title = "导出流程";
-                        ofd.FileName = TemplateModelBases[ListView1.SelectedIndex].Key;
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        if (TemplateModelBases[ListView1.SelectedIndex].GetValue() is ViewModelBase viewModelBase)
-                        {
-                            viewModelBase.ToJsonNFile(ofd.FileName);
-                        }
+                        //System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
+                        //ofd.DefaultExt = "cfg";
+                        //ofd.Filter = "*.cfg|*.cfg";
+                        //ofd.AddExtension = false;
+                        //ofd.RestoreDirectory = true;
+                        //ofd.Title = "导出流程";
+                        //ofd.FileName = TemplateParams[ListView1.SelectedIndex].Key;
+                        //if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+                        //if (TemplateParams[ListView1.SelectedIndex].GetValue() is ViewModelBase viewModelBase)
+                        //{
+                        //    viewModelBase.ToJsonNFile(ofd.FileName);
+                        //}
                     }
                     break;
             }
@@ -1052,13 +1047,13 @@ namespace ColorVision.Services.Templates
                     SearchNoneText.Visibility = Visibility.Hidden;
                 if (string.IsNullOrEmpty(textBox.Text))
                 {
-                    ListView1.ItemsSource = TemplateModelBases;
+                    ListView1.ItemsSource = (IEnumerable)ITemplate.GetValue();
 
                 }
                 else
                 {
                     TemplateModelBaseResults = new ObservableCollection<TemplateModelBase>();
-                    foreach (var item in TemplateModelBases)
+                    foreach (var item in ITemplate.Enumerables)
                     {
                         if (item.Key.Contains(textBox.Text))
                             TemplateModelBaseResults.Add(item);
@@ -1097,5 +1092,6 @@ namespace ColorVision.Services.Templates
                 }
             }
         }
+
     }
 }

@@ -1,34 +1,47 @@
-﻿using System;
+﻿using ColorVision.Services.Devices.Algorithm.Templates;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 
 namespace ColorVision.Services.Templates
 {
-    /// <summary>
-    /// EditTerminal.xaml 的交互逻辑
-    /// </summary>
-    public partial class CreateTemplate : Window
+    public class ITemplate
     {
-        public ObservableCollection<TemplateModelBase> TemplateModelBases { get; set; } = new ObservableCollection<TemplateModelBase>();
-        public TemplateType TemplateType { get; set; }
-        public CreateTemplate(ObservableCollection<TemplateModelBase> templateModelBases, TemplateType templateType)
+        public List<TemplateModelBase> Enumerables { get; }
+
+        public virtual object GetValue()
         {
-            TemplateModelBases = templateModelBases;
-            TemplateType = templateType;
-            InitializeComponent();
+            throw new NotImplementedException();
+        }
+        public virtual object GetValue(int index)
+        {
+            throw new NotImplementedException();
         }
 
-        private void Window_Initialized(object sender, EventArgs e)
-        {
-            CreateCode.Text = NewCreateFileName("default");
-        }
 
-        public string NewCreateFileName(string FileName)
+        public virtual string NewCreateFileName(string FileName)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class ITemplate<T>: ITemplate where T: ParamBase,new ()
+    {
+        public ObservableCollection<TemplateModel<T>> TemplateParams { get; set; } = new ObservableCollection<TemplateModel<T>>();
+       
+        public override object GetValue() => TemplateParams;
+        public override object GetValue(int index) => TemplateParams[index].Value;
+
+        public new List<TemplateModelBase> Enumerables => TemplateParams.OfType<TemplateModelBase>().ToList();
+
+
+        public override string NewCreateFileName(string FileName)
         {
             List<string> Names = new List<string>();
-            foreach (var item in TemplateModelBases)
+            foreach (var item in TemplateParams)
             {
                 Names.Add(item.Key);
             }
@@ -39,6 +52,28 @@ namespace ColorVision.Services.Templates
             }
             return FileName;
         }
+    }
+
+    /// <summary>
+    /// EditTerminal.xaml 的交互逻辑
+    /// </summary>
+    public partial class CreateTemplate : Window
+    {
+
+        public ITemplate ITemplate { get; set; }
+
+        public CreateTemplate(ITemplate template)  
+        {
+            ITemplate = template;
+            InitializeComponent();
+        }
+
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            CreateCode.Text = ITemplate.NewCreateFileName("default");
+        }
+
+
         public string CreateName { get; set; }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
