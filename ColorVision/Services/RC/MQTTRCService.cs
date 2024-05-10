@@ -531,6 +531,7 @@ namespace ColorVision.Services.RC
         {
             MsgSend msg = new MsgSend
             {
+                ServiceName =RCPublicTopic,
                 DeviceCode = cameraID,
                 EventName = "PhysicalCamera_Load",
             };
