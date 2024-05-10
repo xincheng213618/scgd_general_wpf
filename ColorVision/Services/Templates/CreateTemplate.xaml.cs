@@ -28,6 +28,13 @@ namespace ColorVision.Services.Templates
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             CreateName = CreateCode.Text;
+
+            if (string.IsNullOrEmpty(CreateName))
+            {
+                MessageBox.Show("请输入模板名称", "ColorVision");
+                return;
+            }
+            ITemplate.Create(CreateName);
             this.Close();
         }
 

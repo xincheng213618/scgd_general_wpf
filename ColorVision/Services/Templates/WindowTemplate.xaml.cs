@@ -68,9 +68,9 @@ namespace ColorVision.Services.Templates
             switch (TemplateType)
             {
                 case TemplateType.FlowParam:
+                    ITemplate = new TemplateFlow() { TemplateParams = FlowParam.Params };
                     if (IsReLoad)
-                        FlowParam.LoadFlowParam();
-                    ITemplate = new ITemplate<FlowParam>() { TemplateParams = FlowParam.Params , Code = ModMasterType.Flow, Title = "流程引擎" };
+                        ITemplate.Load();
                     break;
                 case TemplateType.MeasureParam:
                     if (IsReLoad)
@@ -93,9 +93,9 @@ namespace ColorVision.Services.Templates
                     ITemplate = new ITemplate<SMUParam>() { TemplateParams = SMUParam.Params, Code = ModMasterType.SMU, Title = "源表模板设置" };
                     break;
                 case TemplateType.PoiParam:
+                    ITemplate = new TemplatePOI{ TemplateParams = PoiParam.Params};
                     if (IsReLoad)
-                        PoiParam.LoadPoiParam();
-                    ITemplate = new ITemplate<PoiParam>() { TemplateParams = PoiParam.Params , Code = ModMasterType.POI, Title = "关注点设置"};
+                        ITemplate.Load();
                     break;
                 case TemplateType.MTFParam:
                     if (IsReLoad)
@@ -257,36 +257,6 @@ namespace ColorVision.Services.Templates
             }
         }
 
-        private void CreateNewTemplateFromDB(string TemplateName)
-        {
-            switch (TemplateType)
-            {
-                case TemplateType.Calibration:
-                    ITemplate.Create(TemplateName);
-                    break;
-                case TemplateType.SpectrumResourceParam:
-                    ITemplate.Create(TemplateName);
-                    break;
-                case TemplateType.PoiParam:
-                    PoiParam? poiParam = PoiParam.AddPoiParam(TemplateName);
-                    if (poiParam != null) CreateNewTemplate(PoiParam.Params, TemplateName, poiParam);
-                    else MessageBox.Show("数据库创建POI模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    break;
-                case TemplateType.FlowParam:
-                    FlowParam? flowParam = FlowParam.AddFlowParam(TemplateName);
-                    if (flowParam != null) CreateNewTemplate(FlowParam.Params, TemplateName, flowParam);
-                    else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    break;
-                case TemplateType.MeasureParam:
-                    MeasureParam? measureParam = MeasureParam.AddMeasureParam(TemplateName);
-                    if (measureParam != null) CreateNewTemplate(MeasureParam.MeasureParams, TemplateName, measureParam);
-                    else MessageBox.Show("数据库创建测量模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    break;
-                default:
-                    ITemplate.Create(TemplateName);
-                    break;
-            }
-        }
 
         private void Button_Save_Click(object sender, RoutedEventArgs e)
         {
@@ -295,7 +265,8 @@ namespace ColorVision.Services.Templates
 
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
-            TemplateNew();
+            CreateTemplate createWindow = new CreateTemplate(ITemplate) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            createWindow.ShowDialog();
         }
 
 
@@ -326,26 +297,6 @@ namespace ColorVision.Services.Templates
                     ITemplate.Save();
                     break;
             }
-
-        }
-
-
-        public void TemplateNew()
-        {
-            CreateTemplate createWindow = new CreateTemplate(ITemplate) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            createWindow.Closed += (s, e) =>
-            {
-                if (!string.IsNullOrEmpty(createWindow.CreateName))
-                {
-                    CreateNewTemplateFromDB(createWindow.CreateName);
-                }
-                else
-                {
-                    MessageBox.Show("请输入模板名称", Application.Current.MainWindow.Title, MessageBoxButton.OK);
-                }
-            };
-            createWindow.Show();
-
         }
 
         private void CreateNewTemplate<T>(ObservableCollection<TemplateModel<T>> keyValuePairs, string Name, T t) where T : ParamBase

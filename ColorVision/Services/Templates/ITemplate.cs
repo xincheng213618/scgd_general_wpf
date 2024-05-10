@@ -4,7 +4,9 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Devices.PG.Templates;
 using ColorVision.Services.Devices.Spectrum;
+using ColorVision.Services.Flow;
 using ColorVision.Services.PhyCameras.Templates;
+using ColorVision.Services.Templates.POI;
 using NPOI.SS.Formula.Functions;
 using OpenCvSharp.Flann;
 using System;
@@ -129,6 +131,56 @@ namespace ColorVision.Services.Templates
             }
         }
     }
+    public class TemplateFlow: ITemplate<FlowParam>
+    {
+        public TemplateFlow()
+        {
+            Title = "流程引擎";
+            Code = ModMasterType.Flow;
+        }
+
+        public override void Load() => FlowParam.LoadFlowParam();
+
+        public override void Create(string templateName)
+        {
+            FlowParam? param = FlowParam.AddFlowParam(templateName);
+            if (param != null)
+            {
+                var a = new TemplateModel<FlowParam>(templateName, param);
+                TemplateParams.Add(a);
+            }
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(T)}模板失败", "ColorVision");
+            }
+        }
+    }
+
+    public class TemplatePOI : ITemplate<PoiParam>
+    {
+        public TemplatePOI()
+        {
+            Title = "关注点设置";
+            Code = ModMasterType.POI;
+        }
+
+        public override void Load() => FlowParam.LoadFlowParam();
+
+        public override void Create(string templateName)
+        {
+            PoiParam? param = PoiParam.AddPoiParam(templateName);
+            if (param != null)
+            {
+                var a = new TemplateModel<PoiParam>(templateName, param);
+                TemplateParams.Add(a);
+            }
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(T)}模板失败", "ColorVision");
+            }
+        }
+    }
+
 
     public class ITemplate<T> : ITemplate where T : ParamBase, new()
     {
