@@ -436,12 +436,6 @@ namespace ColorVision.Services.Templates
         {
             switch (TemplateType)
             {
-                case TemplateType.Calibration:
-                    TemplateControl.Save2DB(DeviceCamera.CalibrationParams);
-                    break;
-                case TemplateType.SpectrumResourceParam:
-                    TemplateControl.Save2DB(DeviceSpectrum.SpectrumResourceParams);
-                    break;
                 case TemplateType.PoiParam:
                     foreach (var item in PoiParam.Params)
                     {
@@ -459,43 +453,8 @@ namespace ColorVision.Services.Templates
                 case TemplateType.AoiParam:
                     TemplateControl.Save2DB(TemplateControl.AoiParams);
                     break;
-                case TemplateType.PGParam:
-                    TemplateControl.Save2DB(PGParam.Params);
-                    break;
-                case TemplateType.SMUParam:
-                    TemplateControl.Save2DB(SMUParam.Params);
-                    break;
-                case TemplateType.MTFParam:
-                    TemplateControl.Save2DB(MTFParam.MTFParams);
-                    break;
-                case TemplateType.SFRParam:
-                    TemplateControl.Save2DB(SFRParam.SFRParams);
-                    break;
-                case TemplateType.FOVParam:
-                    TemplateControl.Save2DB(FOVParam.FOVParams);
-                    break;
-                case TemplateType.GhostParam:
-                    TemplateControl.Save2DB(GhostParam.GhostParams);
-                    break;
-                case TemplateType.DistortionParam:
-                    TemplateControl.Save2DB(DistortionParam.DistortionParams);
-                    break;
-                case TemplateType.FocusPointsParam:
-                    TemplateControl.Save2DB(FocusPointsParam.FocusPointsParams);
-                    break;
-                case TemplateType.LedCheckParam:
-                    TemplateControl.Save2DB(LedCheckParam.LedCheckParams);
-                    break;
-                case TemplateType.BuildPOIParmam:
-                    TemplateControl.Save2DB(BuildPOIParam.BuildPOIParams);
-                    break;
-                case TemplateType.SensorHeYuan:
-                    TemplateControl.Save2DB(SensorHeYuan.SensorHeYuans);
-                    break;
-                case TemplateType.CameraExposureParam:
-                    TemplateControl.Save2DB(CameraExposureParam.CameraExposureParams);
-                    break;
                 default:
+                    ITemplate.Save();
                     break;
             }
 
@@ -530,20 +489,17 @@ namespace ColorVision.Services.Templates
             ListView1.ScrollIntoView(a);
         }
 
-        private ModMasterDao masterFlowDao = new ModMasterDao(ModMasterType.Flow);
         private ModMasterDao masterModDao = new ModMasterDao();
 
-        private ModDetailDao detailDao = new ModDetailDao();
         private VSysResourceDao resourceDao = new VSysResourceDao();
 
         public void TemplateDel()
         {
-
             void MasterDeleteById(int id)
             {
-                List<ModDetailModel> de = detailDao.GetAllByPid(id);
-                int ret = masterFlowDao.DeleteById(id);
-                detailDao.DeleteAllByPid(id);
+                List<ModDetailModel> de = ModDetailDao.Instance.GetAllByPid(id);
+                int ret = ModMasterDao.Instance.DeleteById(id);
+                ModDetailDao.Instance.DeleteAllByPid(id);
                 if (de != null && de.Count > 0)
                 {
                     string[] codes = new string[de.Count];
@@ -556,6 +512,7 @@ namespace ColorVision.Services.Templates
                     resourceDao.DeleteInCodes(codes);
                 }
             }
+
             void TemplateDel<T>(ObservableCollection<TemplateModel<T>> keyValuePairs) where T : ParamBase
             {
                 if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
