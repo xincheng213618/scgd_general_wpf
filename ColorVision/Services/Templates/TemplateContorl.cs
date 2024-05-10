@@ -68,7 +68,6 @@ namespace ColorVision.Services.Templates
             LoadModParam(BuildPOIParam.BuildPOIParams, ModMasterType.BuildPOI);
             LoadModParam(SensorHeYuan.SensorHeYuans, "Sensor.HeYuan");
             LoadModParam(CameraExposureParam.CameraExposureParams, "camera_exp_time");
-
         }
 
 

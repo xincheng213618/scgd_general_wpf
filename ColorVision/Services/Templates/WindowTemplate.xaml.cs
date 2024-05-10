@@ -189,7 +189,7 @@ namespace ColorVision.Services.Templates
 
         public ICalibrationService<BaseResourceObject> DeviceCamera { get; set; }
 
-        public WindowTemplate(TemplateType windowTemplateType, UserControl userControl, ICalibrationService<BaseResourceObject> deviceCamera ,bool IsReLoad = true)
+        public WindowTemplate(TemplateType windowTemplateType, CalibrationControl userControl, ICalibrationService<BaseResourceObject> deviceCamera ,bool IsReLoad = true)
         {
             DeviceCamera = deviceCamera;
             TemplateType = windowTemplateType;
@@ -199,7 +199,7 @@ namespace ColorVision.Services.Templates
             {
                 CalibrationParam.LoadResourceParams(DeviceCamera.CalibrationParams, DeviceCamera.SysResourceModel.Id, ModMasterType.Calibration);
             }
-            ITemplate = new ITemplate<CalibrationParam>() { TemplateParams = DeviceCamera.CalibrationParams };
+            ITemplate = new TemplateCalibrationParam (){ TemplateParams = DeviceCamera.CalibrationParams ,CalibrationControl = userControl };
             Title = "校正参数设置";
 
             InitializeComponent();
@@ -290,9 +290,9 @@ namespace ColorVision.Services.Templates
                 switch (TemplateType)
                 {
                     case TemplateType.Calibration:
-                        if (UserControl is CalibrationControl calibration)
+                        if (ITemplate is TemplateCalibrationParam template)
                         {
-                            calibration.Initializedsss(DeviceCamera, DeviceCamera.CalibrationParams[listView.SelectedIndex].Value);
+                            template.CalibrationControl.Initializedsss(DeviceCamera, template.TemplateParams[listView.SelectedIndex].Value);
                         }
                         break;
                     case TemplateType.SpectrumResourceParam:
@@ -414,8 +414,6 @@ namespace ColorVision.Services.Templates
                 }
             };
             createWindow.Show();
-
-
 
         }
 

@@ -2,6 +2,7 @@
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Devices.PG.Templates;
+using ColorVision.Services.PhyCameras.Templates;
 using NPOI.SS.Formula.Functions;
 using OpenCvSharp.Flann;
 using System;
@@ -9,6 +10,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Services.Templates
 {
@@ -40,6 +42,16 @@ namespace ColorVision.Services.Templates
         {
 
         }
+
+
+    }
+
+    public class TemplateCalibrationParam : ITemplate<CalibrationParam>
+    {
+        public CalibrationControl CalibrationControl { get; set; }
+
+
+
     }
 
     public class ITemplate<T> : ITemplate where T : ParamBase, new()
