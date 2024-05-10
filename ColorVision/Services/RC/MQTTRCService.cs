@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -527,8 +528,12 @@ namespace ColorVision.Services.RC
 
         public void LoadPhysicalCamera(string cameraID)
         {
-            MQTTRCServicesRestartRequest reg = new MQTTRCServicesRestartRequest(AppId, NodeName, Token.AccessToken, string.Empty, cameraID);
-            PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(reg));
+            MsgSend msg = new MsgSend
+            {
+                DeviceCode = cameraID,
+                EventName = "PhysicalCamera_Load",
+            };
+            PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(msg));
         }
 
 
