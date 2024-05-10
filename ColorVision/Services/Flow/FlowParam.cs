@@ -8,6 +8,7 @@ using ColorVision.Settings;
 using ColorVision.UI;
 using ColorVision.UserSpace;
 using CVCommCore;
+using NPOI.SS.Formula.Functions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -34,8 +35,41 @@ namespace ColorVision.Services.Flow
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-            new WindowTemplate(TemplateType.FlowParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateFlow()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
+    }
+
+    public class TemplateFlow : ITemplate<FlowParam>
+    {
+        public TemplateFlow()
+        {
+            Title = "流程引擎";
+            Code = ModMasterType.Flow;
+            TemplateParams = FlowParam.Params;
+        }
+
+        public override void PreviewMouseDoubleClick(int index)
+        {
+            new WindowFlowEngine(TemplateParams[index].Value) { Owner = null }.Show();
+        }
+
+        public override void Load() => FlowParam.LoadFlowParam();
+
+        public override void Save() => FlowParam.Save2DB(TemplateParams);
+
+        public override void Create(string templateName)
+        {
+            FlowParam? param = FlowParam.AddFlowParam(templateName);
+            if (param != null)
+            {
+                var a = new TemplateModel<FlowParam>(templateName, param);
+                TemplateParams.Add(a);
+            }
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(T)}模板失败", "ColorVision");
+            }
+        }
     }
 
 

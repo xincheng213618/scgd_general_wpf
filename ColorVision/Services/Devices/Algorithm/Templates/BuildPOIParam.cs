@@ -1,10 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Flow;
 using ColorVision.Services.Templates;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Settings;
 using ColorVision.UI;
+using NPOI.SS.Formula.Functions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -48,8 +50,18 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-            new WindowTemplate(TemplateType.BuildPOIParmam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateBuildPOIParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         }); 
+    }
+
+    public class TemplateBuildPOIParam : ITemplate<BuildPOIParam>
+    {
+        public TemplateBuildPOIParam()
+        {
+            Title = "BuildPOI算法设置";
+            Code = ModMasterType.BuildPOI;
+            TemplateParams = BuildPOIParam.BuildPOIParams;
+        }
     }
 
 

@@ -1,9 +1,6 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Sorts;
+﻿using ColorVision.Common.Sorts;
 using ColorVision.Common.Utilities;
-using ColorVision.Extension;
 using ColorVision.Properties;
-using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Dao.Validate;
 using ColorVision.Services.Devices.Algorithm.Templates;
@@ -16,16 +13,10 @@ using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates.Measure;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Services.Templates.POI.Dao;
-using ColorVision.Settings;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Net.Sockets;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -48,30 +39,12 @@ namespace ColorVision.Services.Templates
             TemplateType = windowTemplateType;
             Load(windowTemplateType, IsReLoad);
             InitializeComponent();
-            switch (TemplateType)
-            {
-                case TemplateType.FlowParam:
-                case TemplateType.PoiParam:
-                    GridProperty.Visibility = Visibility.Collapsed;
-                    Grid.SetColumnSpan(TemplateGrid, 2);
-                    Grid.SetRowSpan(TemplateGrid, 1);
-                    Grid.SetColumnSpan(CreateGrid, 2);
-                    Grid.SetColumn(CreateGrid, 0);
-                    break;
-                default:
-                    break;
-            }
         }
 
         public void Load(TemplateType windowTemplateType,bool IsReLoad = true)
         {
             switch (TemplateType)
             {
-                case TemplateType.FlowParam:
-                    ITemplate = new TemplateFlow() { TemplateParams = FlowParam.Params };
-                    if (IsReLoad)
-                        ITemplate.Load();
-                    break;
                 case TemplateType.MeasureParam:
                     if (IsReLoad)
                         MeasureParam.LoadMeasureParams();
@@ -91,11 +64,6 @@ namespace ColorVision.Services.Templates
                     if (IsReLoad)
                         TemplateControl.LoadModParam(SMUParam.Params, ModMasterType.SMU);
                     ITemplate = new ITemplate<SMUParam>() { TemplateParams = SMUParam.Params, Code = ModMasterType.SMU, Title = "源表模板设置" };
-                    break;
-                case TemplateType.PoiParam:
-                    ITemplate = new TemplatePOI{ TemplateParams = PoiParam.Params};
-                    if (IsReLoad)
-                        ITemplate.Load();
                     break;
                 case TemplateType.MTFParam:
                     if (IsReLoad)
@@ -117,11 +85,6 @@ namespace ColorVision.Services.Templates
                         TemplateControl.LoadModParam(GhostParam.GhostParams, ModMasterType.Ghost);
                     ITemplate = new ITemplate<GhostParam>() { TemplateParams = GhostParam.GhostParams, Code = ModMasterType.Ghost, Title = "鬼影算法设置" };
                     break;
-                case TemplateType.DistortionParam:
-                    if (IsReLoad)
-                        TemplateControl.LoadModParam(DistortionParam.DistortionParams, ModMasterType.Distortion);
-                    ITemplate = new ITemplate<DistortionParam>() { TemplateParams = DistortionParam.DistortionParams , Code = ModMasterType.Distortion, Title = "畸变算法设置" };
-                    break;
                 case TemplateType.LedCheckParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(LedCheckParam.LedCheckParams, ModMasterType.LedCheck);
@@ -131,11 +94,6 @@ namespace ColorVision.Services.Templates
                     if (IsReLoad)
                         TemplateControl.LoadModParam(FocusPointsParam.FocusPointsParams, ModMasterType.FocusPoints);
                     ITemplate = new ITemplate<FocusPointsParam>() { TemplateParams = FocusPointsParam.FocusPointsParams , Code = ModMasterType.FocusPoints, Title = "FocusPoints算法设置" };
-                    break;
-                case TemplateType.BuildPOIParmam:
-                    if (IsReLoad)
-                        TemplateControl.LoadModParam(BuildPOIParam.BuildPOIParams, ModMasterType.BuildPOI);
-                    ITemplate = new ITemplate<BuildPOIParam>() { TemplateParams = BuildPOIParam.BuildPOIParams , Code = ModMasterType.BuildPOI, Title = "BuildPOI算法设置" };
                     break;
                 case TemplateType.SensorHeYuan:
                     if (IsReLoad)
@@ -166,6 +124,18 @@ namespace ColorVision.Services.Templates
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            if (ITemplate is TemplatePOI || ITemplate is TemplateFlow)
+            {
+                GridProperty.Visibility = Visibility.Collapsed;
+                Grid.SetColumnSpan(TemplateGrid, 2);
+                Grid.SetRowSpan(TemplateGrid, 1);
+                Grid.SetColumnSpan(CreateGrid, 2);
+                Grid.SetColumn(CreateGrid, 0);
+
+                MinWidth = 350;
+                Width = 350;
+            }
+
             if (ITemplate.IsUserControl)
             {
                 GridProperty.Children.Clear();
@@ -180,44 +150,18 @@ namespace ColorVision.Services.Templates
             if (ListView1.View is GridView gridView1)
                 GridViewColumnVisibility.AddGridViewColumn(gridView1.Columns, GridViewColumnVisibilitys);
             Closed += WindowTemplate_Closed;
-
-            switch (TemplateType)
-            {
-                case TemplateType.PoiParam:
-                    MinWidth = 350;
-                    Width = 350;
-                    break;
-                case TemplateType.FlowParam:
-                    MinWidth = 350;
-                    Width = 350;
-                    break;
-            }
         }
 
         private void WindowTemplate_Closed(object? sender, EventArgs e)
         {
-            TemplateSave();
+            ITemplate.Save();
         }
 
         private void ListView1_PreviewMouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
-                switch (TemplateType)
-                {
-                    case TemplateType.PoiParam:
-                        var WindowFocusPoint = new WindowFocusPoint(PoiParam.Params[listView.SelectedIndex].Value) { Owner = this };
-                        WindowFocusPoint.Show();
-                        break;
-                    case TemplateType.FlowParam:
-                        if (FlowParam.Params[listView.SelectedIndex].Value is FlowParam flowParam)
-                        {
-                            flowParam.Name ??= FlowParam.Params[listView.SelectedIndex].Key;
-                            new WindowFlowEngine(flowParam) { Owner =null }.Show();
-                            Close();
-                        }
-                        break;
-                }
+                ITemplate.PreviewMouseDoubleClick(listView.SelectedIndex);
             }
         }
         private MeasureMasterDao measureMaster = new MeasureMasterDao();
@@ -275,30 +219,6 @@ namespace ColorVision.Services.Templates
             TemplateDel();
         }
 
-        public void TemplateSave()
-        {
-            switch (TemplateType)
-            {
-                case TemplateType.PoiParam:
-                    foreach (var item in PoiParam.Params)
-                    {
-                        var modMasterModel = PoiMasterDao.Instance.GetById(item.Id);
-                        if (modMasterModel != null)
-                        {
-                            modMasterModel.Name = item.Key;
-                            PoiMasterDao.Instance.Save(modMasterModel);
-                        }
-                    }
-                    break;
-                case TemplateType.FlowParam:
-                    FlowParam.Save2DB(FlowParam.Params);
-                    break;
-                default:
-                    ITemplate.Save();
-                    break;
-            }
-        }
-
         private void CreateNewTemplate<T>(ObservableCollection<TemplateModel<T>> keyValuePairs, string Name, T t) where T : ParamBase
         {
             var a = new TemplateModel<T>(Name, t);
@@ -313,18 +233,7 @@ namespace ColorVision.Services.Templates
             {
                 if (MessageBox.Show(Application.Current.GetActiveWindow() ,$"是否删除模板{ListView1.SelectedIndex + 1},删除后无法恢复!", Application.Current.MainWindow.Title, MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
                 {
-                    switch (TemplateType)
-                    {
-                        case TemplateType.PoiParam:
-                            PoiMasterDao poiMasterDao = new PoiMasterDao();
-                            poiMasterDao.DeleteById(PoiParam.Params[ListView1.SelectedIndex].Value.Id);
-                            PoiParam.Params.RemoveAt(ListView1.SelectedIndex);
-                            break;
-                        default:
-                            ITemplate.Delete(ListView1.SelectedIndex);
-                            break;
-                    }
-
+                    ITemplate.Delete(ListView1.SelectedIndex);
                 }
             }
             else

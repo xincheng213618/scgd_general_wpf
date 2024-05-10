@@ -637,9 +637,7 @@ namespace ColorVision.Services.Devices.Algorithm
                         windowTemplate.ShowDialog();
                         break;
                     case "DistortionParam":
-                        windowTemplate = new WindowTemplate(TemplateType.DistortionParam, false);
-                        windowTemplate.Owner = Window.GetWindow(this);
-                        windowTemplate.ShowDialog();
+                        new WindowTemplate(new TemplateDistortionParam(), false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "LedCheckParam":
                         windowTemplate = new WindowTemplate(TemplateType.LedCheckParam, false);
@@ -652,14 +650,10 @@ namespace ColorVision.Services.Devices.Algorithm
                         windowTemplate.ShowDialog();
                         break;
                     case "FocusParm":
-                        windowTemplate = new WindowTemplate(TemplateType.PoiParam);
-                        windowTemplate.Owner = Window.GetWindow(this);
-                        windowTemplate.ShowDialog();
+                        new WindowTemplate(new TemplatePOI(),false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
                         break;
                     case "BuildPOIParmam":
-                        windowTemplate = new WindowTemplate(TemplateType.BuildPOIParmam, false);
-                        windowTemplate.Owner = Window.GetWindow(this);
-                        windowTemplate.ShowDialog();
+                        new WindowTemplate(new TemplateBuildPOIParam(), false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");

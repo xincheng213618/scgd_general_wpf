@@ -1,10 +1,13 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Sorts;
 using ColorVision.Common.Utilities;
+using ColorVision.Services.Dao;
+using ColorVision.Services.Flow;
 using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Settings;
 using ColorVision.UI;
 using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -31,11 +34,60 @@ namespace ColorVision.Services.Templates.POI
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-            new WindowTemplate(TemplateType.PoiParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplatePOI()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
 
     }
 
+    public class TemplatePOI : ITemplate<PoiParam>
+    {
+        public TemplatePOI()
+        {
+            Title = "关注点设置";
+            Code = ModMasterType.POI;
+            TemplateParams = PoiParam.Params;
+        }
+        public override void PreviewMouseDoubleClick(int index)
+        {
+            var WindowFocusPoint = new WindowFocusPoint(PoiParam.Params[index].Value) { Owner = Application.Current.GetActiveWindow() };
+            WindowFocusPoint.ShowDialog();
+        }
+
+        public override void Load() => PoiParam.LoadPoiParam();
+
+        public override void Save()
+        {
+            foreach (var item in TemplateParams)
+            {
+                var modMasterModel = PoiMasterDao.Instance.GetById(item.Id);
+                if (modMasterModel != null)
+                {
+                    modMasterModel.Name = item.Key;
+                    PoiMasterDao.Instance.Save(modMasterModel);
+                }
+            }
+        }
+        public override void Delete(int index)
+        {
+            PoiMasterDao poiMasterDao = new PoiMasterDao();
+            poiMasterDao.DeleteById(TemplateParams[index].Value.Id);
+            TemplateParams.RemoveAt(index);
+        }
+
+        public override void Create(string templateName)
+        {
+            PoiParam? param = PoiParam.AddPoiParam(templateName);
+            if (param != null)
+            {
+                var a = new TemplateModel<PoiParam>(templateName, param);
+                TemplateParams.Add(a);
+            }
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(T)}模板失败", "ColorVision");
+            }
+        }
+    }
 
     /// <summary>
     /// 关注点模板

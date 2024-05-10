@@ -1,5 +1,7 @@
 ﻿#pragma warning disable CS8603,CS0649,CS8604
 using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Templates;
@@ -8,6 +10,8 @@ using cvColorVision;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Windows;
+using System.Windows.Controls;
 
 
 namespace ColorVision.Services.PhyCameras.Templates
@@ -153,6 +157,43 @@ namespace ColorVision.Services.PhyCameras.Templates
 
         public CalibrationBase LumMultiColor { get; set; }
     }
+
+
+    public class TemplateCalibrationParam : ITemplate<CalibrationParam>
+    {
+        public TemplateCalibrationParam()
+        {
+            IsUserControl = true;
+            Code = ModMasterType.Calibration;
+        }
+
+        public CalibrationControl CalibrationControl { get; set; }
+        public override UserControl GetUserControl() => CalibrationControl;
+
+        public ICalibrationService<BaseResourceObject> Device { get; set; }
+
+
+        public override void Load()
+        {
+            base.Load();
+            CalibrationParam.LoadResourceParams(TemplateParams, Device.SysResourceModel.Id, Code);
+        }
+        public override void Create(string templateName)
+        {
+            CalibrationParam? param = TemplateControl.AddParamMode<CalibrationParam>(Code, templateName, Device.SysResourceModel.Id);
+            if (param != null)
+            {
+                var a = new TemplateModel<CalibrationParam>(templateName, param);
+                TemplateParams.Add(a);
+            }
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(CalibrationParam)}模板失败", "ColorVision");
+            }
+        }
+    }
+
+
 
     public class CalibrationParam : ParamBase
     {

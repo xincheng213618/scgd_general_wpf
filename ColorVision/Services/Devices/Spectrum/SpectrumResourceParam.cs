@@ -1,11 +1,49 @@
-﻿using ColorVision.Services.Dao;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Services.Dao;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Services.Devices.Spectrum
 {
+    public class TemplateSpectrumResourceParam : ITemplate<SpectrumResourceParam>
+    {
+        public TemplateSpectrumResourceParam()
+        {
+            IsUserControl = true;
+            Code = ModMasterType.SpectrumResource;
+        }
+
+        public SpectrumResourceControl SpectrumResourceControl { get; set; }
+        public override UserControl GetUserControl() => SpectrumResourceControl;
+
+        public DeviceSpectrum Device { get; set; }
+
+
+        public override void Load()
+        {
+            base.Load();
+            SpectrumResourceParam.Load(TemplateParams, Device.SysResourceModel.Id, Code);
+        }
+
+        public override void Create(string templateName)
+        {
+            SpectrumResourceParam? param = TemplateControl.AddParamMode<SpectrumResourceParam>(Code, templateName, Device.SysResourceModel.Id);
+            if (param != null)
+            {
+                var a = new TemplateModel<SpectrumResourceParam>(templateName, param);
+                TemplateParams.Add(a);
+            }
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(SpectrumResourceParam)}模板失败", "ColorVision");
+            }
+        }
+    }
+
     public class SpectrumResourceParam:ParamBase
     {
         public static void Load(ObservableCollection<TemplateModel<SpectrumResourceParam>> CalibrationParamModes, int resourceId, string ModeType)

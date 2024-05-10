@@ -16,6 +16,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.Services.Templates
 {
@@ -45,6 +46,10 @@ namespace ColorVision.Services.Templates
         {
 
         }
+        public virtual void PreviewMouseDoubleClick(int index)
+        {
+
+        }
 
         public virtual void Load() { }
 
@@ -63,123 +68,6 @@ namespace ColorVision.Services.Templates
         }
     }
 
-    public class TemplateSpectrumResourceParam : ITemplate<SpectrumResourceParam>
-    {
-        public TemplateSpectrumResourceParam()
-        {
-            IsUserControl = true;
-            Code = ModMasterType.SpectrumResource;
-        }
-
-        public SpectrumResourceControl SpectrumResourceControl { get; set; }
-        public override UserControl GetUserControl() => SpectrumResourceControl;
-
-        public DeviceSpectrum Device { get; set; }
-
-
-        public override void Load()
-        {
-            base.Load();
-            SpectrumResourceParam.Load(TemplateParams, Device.SysResourceModel.Id, Code);
-        }
-
-        public override void Create(string templateName)
-        {
-            SpectrumResourceParam? param = TemplateControl.AddParamMode<SpectrumResourceParam>(Code, templateName, Device.SysResourceModel.Id);
-            if (param != null)
-            {
-                var a = new TemplateModel<SpectrumResourceParam>(templateName, param);
-                TemplateParams.Add(a);
-            }
-            else
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(T)}模板失败", "ColorVision");
-            }
-        }
-    }
-
-    public class TemplateCalibrationParam : ITemplate<CalibrationParam>
-    {
-        public TemplateCalibrationParam()
-        {
-            IsUserControl = true;
-            Code = ModMasterType.Calibration;
-        }
-
-        public CalibrationControl CalibrationControl { get; set; }
-        public override UserControl GetUserControl() => CalibrationControl;
-
-        public ICalibrationService<BaseResourceObject> Device { get; set; }
-
-
-        public override void Load()
-        {
-            base.Load();
-            CalibrationParam.LoadResourceParams(TemplateParams, Device.SysResourceModel.Id, Code);
-        }
-        public override void Create(string templateName)
-        {
-            CalibrationParam? param = TemplateControl.AddParamMode<CalibrationParam>(Code, templateName, Device.SysResourceModel.Id);
-            if (param != null)
-            {
-                var a = new TemplateModel<CalibrationParam>(templateName, param);
-                TemplateParams.Add(a);
-            }
-            else
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(T)}模板失败", "ColorVision");
-            }
-        }
-    }
-    public class TemplateFlow: ITemplate<FlowParam>
-    {
-        public TemplateFlow()
-        {
-            Title = "流程引擎";
-            Code = ModMasterType.Flow;
-        }
-
-        public override void Load() => FlowParam.LoadFlowParam();
-
-        public override void Create(string templateName)
-        {
-            FlowParam? param = FlowParam.AddFlowParam(templateName);
-            if (param != null)
-            {
-                var a = new TemplateModel<FlowParam>(templateName, param);
-                TemplateParams.Add(a);
-            }
-            else
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(T)}模板失败", "ColorVision");
-            }
-        }
-    }
-
-    public class TemplatePOI : ITemplate<PoiParam>
-    {
-        public TemplatePOI()
-        {
-            Title = "关注点设置";
-            Code = ModMasterType.POI;
-        }
-
-        public override void Load() => FlowParam.LoadFlowParam();
-
-        public override void Create(string templateName)
-        {
-            PoiParam? param = PoiParam.AddPoiParam(templateName);
-            if (param != null)
-            {
-                var a = new TemplateModel<PoiParam>(templateName, param);
-                TemplateParams.Add(a);
-            }
-            else
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(T)}模板失败", "ColorVision");
-            }
-        }
-    }
 
 
     public class ITemplate<T> : ITemplate where T : ParamBase, new()
@@ -212,10 +100,7 @@ namespace ColorVision.Services.Templates
             TemplateControl.Save2DB(TemplateParams);
         }
 
-        public override void Load()
-        {
-
-        }
+        public override void Load() => TemplateControl.LoadModParam(TemplateParams,Code);
 
         public override void Delete(int index)
         {

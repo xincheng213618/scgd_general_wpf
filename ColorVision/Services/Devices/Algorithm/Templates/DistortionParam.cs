@@ -32,10 +32,20 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-            new WindowTemplate(TemplateType.DistortionParam) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateDistortionParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
     }
-    
+
+
+    public class TemplateDistortionParam : ITemplate<DistortionParam>
+    {
+        public TemplateDistortionParam()
+        {
+            Title = "畸变算法设置";
+            Code = ModMasterType.Distortion;
+            TemplateParams = DistortionParam.DistortionParams;
+        }
+    }
 
     public class DistortionParam : ParamBase
     {
