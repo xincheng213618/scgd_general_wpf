@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Extension;
+using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.Devices.Camera.Views;
 using ColorVision.Services.Msg;
@@ -342,7 +343,9 @@ namespace ColorVision.Services.Devices.Camera
                         {
                             calibration = new CalibrationControl(Device.PhyCamera);
                         }
-                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, Device.PhyCamera, false);
+                        var ITemplate = new TemplateCalibrationParam() { Device = Device.PhyCamera, TemplateParams = Device.PhyCamera.CalibrationParams, CalibrationControl = calibration, Code = ModMasterType.Calibration, Title = "校正参数设置" };
+
+                        windowTemplate = new WindowTemplate(ITemplate, false);
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;

@@ -48,7 +48,9 @@ namespace ColorVision.Services.Devices.Spectrum
             ResourceManagerCommand = new RelayCommand(a =>
             {
                 SpectrumResourceControl calibration = SpectrumResourceParams.Count == 0 ? new SpectrumResourceControl(this) : new SpectrumResourceControl(this, this.SpectrumResourceParams[0].Value);
-                WindowTemplate windowTemplate = new WindowTemplate(TemplateType.SpectrumResourceParam, calibration, this);
+                var ITemplate = new TemplateSpectrumResourceParam() {  Device =this,TemplateParams = this.SpectrumResourceParams, SpectrumResourceControl = calibration, Title = "SpectrumResourceParams" };
+
+                WindowTemplate windowTemplate = new WindowTemplate(ITemplate);
                 windowTemplate.Owner = Application.Current.GetActiveWindow();
                 windowTemplate.ShowDialog();
             });

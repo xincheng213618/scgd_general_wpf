@@ -1,5 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Extension;
+using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.PG;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
 using ColorVision.Services.Templates;
@@ -363,7 +365,10 @@ namespace ColorVision.Services.Devices.Spectrum
                 {
                     case "SpectrumResourceParam":
                         SpectrumResourceControl calibration = DeviceSpectrum.SpectrumResourceParams.Count == 0 ? new SpectrumResourceControl(DeviceSpectrum) : new SpectrumResourceControl(DeviceSpectrum, DeviceSpectrum.SpectrumResourceParams[0].Value);
-                        windowTemplate = new WindowTemplate(TemplateType.SpectrumResourceParam, calibration, DeviceSpectrum,false);
+                        var  ITemplate = new TemplateSpectrumResourceParam() { Device = DeviceSpectrum, TemplateParams = DeviceSpectrum.SpectrumResourceParams, SpectrumResourceControl = calibration, Title = "SpectrumResourceParams" };
+
+
+                        windowTemplate = new WindowTemplate(ITemplate, false);
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;

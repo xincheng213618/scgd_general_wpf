@@ -1,4 +1,6 @@
 ﻿using ColorVision.Common.Sorts;
+using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.PhyCameras.Dao;
 using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates;
@@ -48,7 +50,9 @@ namespace ColorVision.Services.PhyCameras
                 {
                     case "Calibration":
                         CalibrationControl calibration = Device.CalibrationParams.Count == 0 ? new CalibrationControl(Device) : new CalibrationControl(Device, Device.CalibrationParams[0].Value);
-                        windowTemplate = new WindowTemplate(TemplateType.Calibration, calibration, Device);
+
+                        var ITemplate = new TemplateCalibrationParam() { Device = Device, TemplateParams = Device.CalibrationParams, CalibrationControl = calibration, Code = ModMasterType.Calibration, Title = "校正参数设置" };
+                        windowTemplate = new WindowTemplate(ITemplate);
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;

@@ -39,7 +39,8 @@ namespace ColorVision.Services.Templates
     /// </summary>
     public partial class WindowTemplate : Window 
     {
-        TemplateType TemplateType { get; set; }
+        TemplateType TemplateType { get; set; } = TemplateType.AoiParam;
+
         public ITemplate ITemplate { get; set; }
 
         public WindowTemplate(TemplateType windowTemplateType, bool IsReLoad = true)
@@ -69,7 +70,7 @@ namespace ColorVision.Services.Templates
                 case TemplateType.FlowParam:
                     if (IsReLoad)
                         FlowParam.LoadFlowParam();
-                    ITemplate = new ITemplate<FlowParam>() { TemplateParams = FlowParam.Params , ModMasterType = ModMasterType.Flow, Title = "流程引擎" };
+                    ITemplate = new ITemplate<FlowParam>() { TemplateParams = FlowParam.Params , Code = ModMasterType.Flow, Title = "流程引擎" };
                     break;
                 case TemplateType.MeasureParam:
                     if (IsReLoad)
@@ -79,126 +80,100 @@ namespace ColorVision.Services.Templates
                 case TemplateType.AoiParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(TemplateControl.GetInstance().AoiParams, ModMasterType.Aoi);
-                    ITemplate = new ITemplate<AOIParam>() { TemplateParams = TemplateControl.GetInstance().AoiParams , ModMasterType = ModMasterType.Aoi, Title = "AOI参数设置" };
+                    ITemplate = new ITemplate<AOIParam>() { TemplateParams = TemplateControl.GetInstance().AoiParams , Code = ModMasterType.Aoi, Title = "AOI参数设置" };
                     break;
                 case TemplateType.PGParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(PGParam.Params, ModMasterType.PG);
-                    ITemplate = new ITemplate<PGParam>() { TemplateParams = PGParam.Params, ModMasterType = ModMasterType.PG, Title = "PG参数设置" };
+                    ITemplate = new ITemplate<PGParam>() { TemplateParams = PGParam.Params, Code = ModMasterType.PG, Title = "PG参数设置" };
                     break;
                 case TemplateType.SMUParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(SMUParam.Params, ModMasterType.SMU);
-                    ITemplate = new ITemplate<SMUParam>() { TemplateParams = SMUParam.Params, ModMasterType = ModMasterType.SMU, Title = "源表模板设置" };
+                    ITemplate = new ITemplate<SMUParam>() { TemplateParams = SMUParam.Params, Code = ModMasterType.SMU, Title = "源表模板设置" };
                     break;
                 case TemplateType.PoiParam:
                     if (IsReLoad)
                         PoiParam.LoadPoiParam();
-                    ITemplate = new ITemplate<PoiParam>() { TemplateParams = PoiParam.Params , ModMasterType = ModMasterType.POI, Title = "关注点设置"};
+                    ITemplate = new ITemplate<PoiParam>() { TemplateParams = PoiParam.Params , Code = ModMasterType.POI, Title = "关注点设置"};
                     break;
                 case TemplateType.MTFParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(MTFParam.MTFParams, ModMasterType.MTF);
-                    ITemplate = new ITemplate<MTFParam>() { TemplateParams = MTFParam.MTFParams , ModMasterType = ModMasterType.MTF, Title= "MTF算法设置" };
+                    ITemplate = new ITemplate<MTFParam>() { TemplateParams = MTFParam.MTFParams , Code = ModMasterType.MTF, Title= "MTF算法设置" };
                     break;
                 case TemplateType.SFRParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(SFRParam.SFRParams, ModMasterType.SFR);
-                    ITemplate = new ITemplate<SFRParam>() { TemplateParams = SFRParam.SFRParams , ModMasterType= ModMasterType.SFR, Title = "SFR算法设置"};
+                    ITemplate = new ITemplate<SFRParam>() { TemplateParams = SFRParam.SFRParams , Code= ModMasterType.SFR, Title = "SFR算法设置"};
                     break;
                 case TemplateType.FOVParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(FOVParam.FOVParams, ModMasterType.FOV);
-                    ITemplate = new ITemplate<FOVParam>() { TemplateParams = FOVParam.FOVParams ,  ModMasterType = ModMasterType.FOV, Title = "FOV算法设置" };
+                    ITemplate = new ITemplate<FOVParam>() { TemplateParams = FOVParam.FOVParams ,  Code = ModMasterType.FOV, Title = "FOV算法设置" };
                     break;
                 case TemplateType.GhostParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(GhostParam.GhostParams, ModMasterType.Ghost);
-                    ITemplate = new ITemplate<GhostParam>() { TemplateParams = GhostParam.GhostParams, ModMasterType = ModMasterType.Ghost, Title = "鬼影算法设置" };
+                    ITemplate = new ITemplate<GhostParam>() { TemplateParams = GhostParam.GhostParams, Code = ModMasterType.Ghost, Title = "鬼影算法设置" };
                     break;
                 case TemplateType.DistortionParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(DistortionParam.DistortionParams, ModMasterType.Distortion);
-                    ITemplate = new ITemplate<DistortionParam>() { TemplateParams = DistortionParam.DistortionParams , ModMasterType = ModMasterType.Distortion, Title = "畸变算法设置" };
+                    ITemplate = new ITemplate<DistortionParam>() { TemplateParams = DistortionParam.DistortionParams , Code = ModMasterType.Distortion, Title = "畸变算法设置" };
                     break;
                 case TemplateType.LedCheckParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(LedCheckParam.LedCheckParams, ModMasterType.LedCheck);
-                    ITemplate = new ITemplate<LedCheckParam>() { TemplateParams = LedCheckParam.LedCheckParams , ModMasterType = ModMasterType.LedCheck, Title = "灯光检测算法设置" };
+                    ITemplate = new ITemplate<LedCheckParam>() { TemplateParams = LedCheckParam.LedCheckParams , Code = ModMasterType.LedCheck, Title = "灯光检测算法设置" };
                     break;
                 case TemplateType.FocusPointsParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(FocusPointsParam.FocusPointsParams, ModMasterType.FocusPoints);
-                    ITemplate = new ITemplate<FocusPointsParam>() { TemplateParams = FocusPointsParam.FocusPointsParams , ModMasterType = ModMasterType.FocusPoints, Title = "FocusPoints算法设置" };
+                    ITemplate = new ITemplate<FocusPointsParam>() { TemplateParams = FocusPointsParam.FocusPointsParams , Code = ModMasterType.FocusPoints, Title = "FocusPoints算法设置" };
                     break;
                 case TemplateType.BuildPOIParmam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(BuildPOIParam.BuildPOIParams, ModMasterType.BuildPOI);
-                    ITemplate = new ITemplate<BuildPOIParam>() { TemplateParams = BuildPOIParam.BuildPOIParams , ModMasterType = ModMasterType.BuildPOI, Title = "BuildPOI算法设置" };
+                    ITemplate = new ITemplate<BuildPOIParam>() { TemplateParams = BuildPOIParam.BuildPOIParams , Code = ModMasterType.BuildPOI, Title = "BuildPOI算法设置" };
                     break;
                 case TemplateType.SensorHeYuan:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(SensorHeYuan.SensorHeYuans, ModMasterType.SensorHeYuan);
-                    ITemplate = new ITemplate<SensorHeYuan>() { TemplateParams = SensorHeYuan.SensorHeYuans , ModMasterType = ModMasterType.SensorHeYuan, Title = "SensorHeYuan算法设置" };
+                    ITemplate = new ITemplate<SensorHeYuan>() { TemplateParams = SensorHeYuan.SensorHeYuans , Code = ModMasterType.SensorHeYuan, Title = "SensorHeYuan算法设置" };
                     break;
                 case TemplateType.CameraExposureParam:
                     if (IsReLoad)
                         TemplateControl.LoadModParam(CameraExposureParam.CameraExposureParams, ModMasterType.CameraExposure);
-                    ITemplate = new ITemplate<CameraExposureParam>() { TemplateParams = CameraExposureParam.CameraExposureParams , ModMasterType = ModMasterType.Calibration, Title = "相机曝光参数设置" };
+                    ITemplate = new ITemplate<CameraExposureParam>() { TemplateParams = CameraExposureParam.CameraExposureParams , Code = ModMasterType.Calibration, Title = "相机曝光参数设置" };
                     break;
                 case TemplateType.ValidateParam:
-                    ITemplate = new ITemplate<ValidateParam>() { TemplateParams = ValidateParam.Params , ModMasterType = "ValidateParam", Title = "校验参数设置" };
+                    ITemplate = new ITemplate<ValidateParam>() { TemplateParams = ValidateParam.Params , Code = "ValidateParam", Title = "校验参数设置" };
                     break;
                 default:
                     break;
             }
         }
 
-        public UserControl  UserControl { get; set; }
 
-        public ICalibrationService<BaseResourceObject> DeviceCamera { get; set; }
-
-        public WindowTemplate(TemplateType windowTemplateType, CalibrationControl userControl, ICalibrationService<BaseResourceObject> deviceCamera ,bool IsReLoad = true)
+        public WindowTemplate(ITemplate template, bool IsReLoad = true)
         {
-            DeviceCamera = deviceCamera;
-            TemplateType = windowTemplateType;
-            UserControl = userControl;
-            if (IsReLoad)
-            {
-                CalibrationParam.LoadResourceParams(DeviceCamera.CalibrationParams, DeviceCamera.SysResourceModel.Id, ModMasterType.Calibration);
-            }
-            ITemplate = new TemplateCalibrationParam (){ TemplateParams = DeviceCamera.CalibrationParams ,CalibrationControl = userControl , ModMasterType = ModMasterType.Calibration, Title = "校正参数设置"};
-            
+            ITemplate = template;
+            if (IsReLoad) template.Load();
             InitializeComponent();
-            GridProperty.Children.Clear();
-            GridProperty.Margin = new Thickness(5, 5, 5, 5);
-            GridProperty.Children.Add(UserControl);
-            Width = Width + 200;
-            ListView1.ItemsSource = DeviceCamera.CalibrationParams;
-
-
-        }
-
-        public DeviceSpectrum DeviceSpectrum { get; set; }
-        public WindowTemplate(TemplateType windowTemplateType, UserControl userControl, DeviceSpectrum deviceSpectrum, bool IsReLoad = true)
-        {
-            DeviceSpectrum = deviceSpectrum;
-            TemplateType = windowTemplateType;
-            UserControl = userControl;
-            if (IsReLoad)
-            {
-                CalibrationParam.LoadResourceParams(DeviceSpectrum.SpectrumResourceParams, DeviceSpectrum.SysResourceModel.Id, ModMasterType.SpectrumResource);
-            }
-            ITemplate = new ITemplate<SpectrumResourceParam>() { TemplateParams = DeviceSpectrum.SpectrumResourceParams , ModMasterType = ModMasterType.SpectrumResource, Title = "SpectrumResourceParams" };
-            InitializeComponent();
-            GridProperty.Children.Clear();
-            GridProperty.Margin = new Thickness(5, 5, 5, 5);
-            GridProperty.Children.Add(UserControl);
         }
 
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            if (ITemplate.IsUserControl)
+            {
+                GridProperty.Children.Clear();
+                GridProperty.Margin = new Thickness(5, 5, 5, 5);
+                GridProperty.Children.Add(ITemplate.GetUserControl());
+                Width = Width + 200;
+            }
+
             Title = ITemplate.Title;
             ListView1.ItemsSource = ITemplate.ItemsSource;
             ListView1.SelectedIndex = 0;
@@ -252,39 +227,33 @@ namespace ColorVision.Services.Templates
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
-                switch (TemplateType)
+                if (ITemplate is TemplateCalibrationParam template)
                 {
-                    case TemplateType.Calibration:
-                        if (ITemplate is TemplateCalibrationParam template)
-                        {
-                            template.CalibrationControl.Initializedsss(DeviceCamera, template.TemplateParams[listView.SelectedIndex].Value);
-                        }
-                        break;
-                    case TemplateType.SpectrumResourceParam:
-                        if (UserControl is SpectrumResourceControl spectrumResourceControl)
-                        {
-                            spectrumResourceControl.Initializedsss(DeviceSpectrum, DeviceSpectrum.SpectrumResourceParams[listView.SelectedIndex].Value);
-                        }
-                        break;
-                    case TemplateType.MeasureParam:
-                        if (UserControl is MeasureParamControl mpc && MeasureParam.MeasureParams[listView.SelectedIndex].Value is MeasureParam mp)
-                        {
-                            mpc.MasterID = mp.Id;
-                            List<MeasureDetailModel> des = measureDetail.GetAllByPid(mp.Id); 
-                            mpc.Reload(des);
-                            mpc.ModTypeConfigs.Clear();
-                            mpc.ModTypeConfigs.Add(new MParamConfig(-1,"关注点","POI"));
-                            List<SysModMasterModel> sysModMaster = SysModMasterDao.Instance.GetAllById(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
-                            foreach (SysModMasterModel model in sysModMaster)
-                            {
-                                mpc.ModTypeConfigs.Add(new MParamConfig(model));
-                            }
-                        }
-                        break;
-                    default:
-                        PropertyGrid1.SelectedObject = ITemplate.GetValue(listView.SelectedIndex);
-                        break;
+                    template.CalibrationControl.Initializedsss(template.Device, template.TemplateParams[listView.SelectedIndex].Value);
                 }
+                else if (ITemplate is TemplateSpectrumResourceParam templateSpectrumResourceParam)
+                {
+                    templateSpectrumResourceParam.SpectrumResourceControl.Initializedsss(templateSpectrumResourceParam.Device, templateSpectrumResourceParam.TemplateParams[listView.SelectedIndex].Value);
+                }
+                else
+                {
+                    PropertyGrid1.SelectedObject = ITemplate.GetValue(listView.SelectedIndex);
+
+                }
+
+                //if (UserControl is MeasureParamControl mpc && MeasureParam.MeasureParams[listView.SelectedIndex].Value is MeasureParam mp)
+                //{
+                //    mpc.MasterID = mp.Id;
+                //    List<MeasureDetailModel> des = measureDetail.GetAllByPid(mp.Id); 
+                //    mpc.Reload(des);
+                //    mpc.ModTypeConfigs.Clear();
+                //    mpc.ModTypeConfigs.Add(new MParamConfig(-1,"关注点","POI"));
+                //    List<SysModMasterModel> sysModMaster = SysModMasterDao.Instance.GetAllById(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                //    foreach (SysModMasterModel model in sysModMaster)
+                //    {
+                //        mpc.ModTypeConfigs.Add(new MParamConfig(model));
+                //    }
+                //}
             }
         }
 
@@ -293,10 +262,10 @@ namespace ColorVision.Services.Templates
             switch (TemplateType)
             {
                 case TemplateType.Calibration:
-                    ITemplate.Create(TemplateName, DeviceCamera.SysResourceModel.Id);
+                    ITemplate.Create(TemplateName);
                     break;
                 case TemplateType.SpectrumResourceParam:
-                    ITemplate.Create(TemplateName, DeviceSpectrum.SysResourceModel.Id);
+                    ITemplate.Create(TemplateName);
                     break;
                 case TemplateType.PoiParam:
                     PoiParam? poiParam = PoiParam.AddPoiParam(TemplateName);
@@ -405,13 +374,6 @@ namespace ColorVision.Services.Templates
                             break;
                     }
 
-                    if (ListView1.SelectedIndex < 0)
-                    {
-                        if (UserControl is MeasureParamControl mpc)
-                        {
-                            mpc.ListConfigs.Clear();
-                        }
-                    }
                 }
             }
             else
@@ -560,21 +522,6 @@ namespace ColorVision.Services.Templates
                 case TemplateType.Calibration:  
                     if (true)
                     {
-                        System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-                        ofd.Filter = "*.cfg|*.cfg";
-                        if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-                        string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-
-                        CalibrationParam? calibrationParam1 = JsonConvert.DeserializeObject<CalibrationParam>(File.ReadAllText(ofd.FileName));
-                        CalibrationParam? calibrationParam = TemplateControl.AddParamMode<CalibrationParam>(ModMasterType.Calibration, name);
-                        if (calibrationParam1 != null && calibrationParam!=null)
-                            calibrationParam1.CopyTo(calibrationParam);
-                        if (calibrationParam != null)
-                        {
-                            CreateNewTemplate(DeviceCamera.CalibrationParams, name, calibrationParam);
-                            TemplateControl .Save2DB(calibrationParam);
-                        }
-                        else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     }
                     break;
                 case TemplateType.AoiParam:

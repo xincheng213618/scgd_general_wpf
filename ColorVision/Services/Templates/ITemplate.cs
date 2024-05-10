@@ -1,7 +1,9 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Devices.PG.Templates;
+using ColorVision.Services.Devices.Spectrum;
 using ColorVision.Services.PhyCameras.Templates;
 using NPOI.SS.Formula.Functions;
 using OpenCvSharp.Flann;
@@ -21,7 +23,7 @@ namespace ColorVision.Services.Templates
 
         public string Title { get; set; }
 
-        public string ModMasterType { get; set; }
+        public string Code { get; set; }
 
         public virtual object GetValue()
         {
@@ -48,20 +50,84 @@ namespace ColorVision.Services.Templates
         {
         }
 
-        public virtual void Create(string templateName, int id = -1)
+        public virtual void Create(string templateName)
         {
 
         }
+        public bool IsUserControl { get; set; }
+        public virtual UserControl GetUserControl()
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class TemplateSpectrumResourceParam : ITemplate<SpectrumResourceParam>
+    {
+        public TemplateSpectrumResourceParam()
+        {
+            IsUserControl = true;
+            Code = ModMasterType.SpectrumResource;
+        }
+
+        public SpectrumResourceControl SpectrumResourceControl { get; set; }
+        public override UserControl GetUserControl() => SpectrumResourceControl;
+
+        public DeviceSpectrum Device { get; set; }
 
 
+        public override void Load()
+        {
+            base.Load();
+            SpectrumResourceParam.Load(TemplateParams, Device.SysResourceModel.Id, Code);
+        }
+
+        public override void Create(string templateName)
+        {
+            SpectrumResourceParam? param = TemplateControl.AddParamMode<SpectrumResourceParam>(Code, templateName, Device.SysResourceModel.Id);
+            if (param != null)
+            {
+                var a = new TemplateModel<SpectrumResourceParam>(templateName, param);
+                TemplateParams.Add(a);
+            }
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(T)}模板失败", "ColorVision");
+            }
+        }
     }
 
     public class TemplateCalibrationParam : ITemplate<CalibrationParam>
     {
+        public TemplateCalibrationParam()
+        {
+            IsUserControl = true;
+            Code = ModMasterType.Calibration;
+        }
+
         public CalibrationControl CalibrationControl { get; set; }
+        public override UserControl GetUserControl() => CalibrationControl;
+
+        public ICalibrationService<BaseResourceObject> Device { get; set; }
 
 
-
+        public override void Load()
+        {
+            base.Load();
+            CalibrationParam.LoadResourceParams(TemplateParams, Device.SysResourceModel.Id, Code);
+        }
+        public override void Create(string templateName)
+        {
+            CalibrationParam? param = TemplateControl.AddParamMode<CalibrationParam>(Code, templateName, Device.SysResourceModel.Id);
+            if (param != null)
+            {
+                var a = new TemplateModel<CalibrationParam>(templateName, param);
+                TemplateParams.Add(a);
+            }
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(T)}模板失败", "ColorVision");
+            }
+        }
     }
 
     public class ITemplate<T> : ITemplate where T : ParamBase, new()
@@ -122,9 +188,9 @@ namespace ColorVision.Services.Templates
             }
         }
 
-        public override void Create(string templateName, int id =-1)
+        public override void Create(string templateName)
         {
-            T? param = TemplateControl.AddParamMode<T>(ModMasterType, templateName, id);
+            T? param = TemplateControl.AddParamMode<T>(Code, templateName);
             if (param != null)
             {
                 var a = new TemplateModel<T>(templateName, param);
