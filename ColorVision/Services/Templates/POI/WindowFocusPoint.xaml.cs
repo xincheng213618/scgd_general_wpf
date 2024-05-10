@@ -162,6 +162,8 @@ namespace ColorVision.Services.Templates.POI
                 DatumSet();
                 RenderDatumArea();
                 PoiParamToDrawingVisual(PoiParam);
+                WaitControl.Visibility = Visibility.Collapsed;
+                WaitControlProgressBar.Visibility = Visibility.Collapsed;
                 log.Debug("Render Poi end");
             }
             else
@@ -367,8 +369,8 @@ namespace ColorVision.Services.Templates.POI
                     }
                     if (Init)
                     {
-                        WaitControl.Visibility = Visibility.Hidden;
-                        WaitControlProgressBar.Visibility = Visibility.Hidden;
+                        WaitControl.Visibility = Visibility.Collapsed;
+                        WaitControlProgressBar.Visibility = Visibility.Collapsed;
                     }
                     Init = true;
                     ImageShow.ImageInitialize();
@@ -431,8 +433,8 @@ namespace ColorVision.Services.Templates.POI
                             Circle.Attribute.Radius = item.PixWidth/2;
                             Circle.Attribute.Brush = Brushes.Transparent;
                             Circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Circle.Attribute.ID = item.IdShow;
-                            Circle.Attribute.Text = item.Name;
+                            Circle.Attribute.ID =i;
+                            Circle.Attribute.Text = i.ToString();
                             Circle.Render();
                             ImageShow.AddVisual(Circle);
                             break;
@@ -441,8 +443,8 @@ namespace ColorVision.Services.Templates.POI
                             Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Rectangle.Attribute.ID = item.IdShow;
-                            Rectangle.Attribute.Name = item.Name;
+                            Rectangle.Attribute.ID = i;
+                            Rectangle.Attribute.Name = i.ToString();
                             Rectangle.Render();
                             ImageShow.AddVisual(Rectangle);
                             break;
@@ -454,8 +456,8 @@ namespace ColorVision.Services.Templates.POI
 
                 if (Init)
                 {
-                    WaitControl.Visibility = Visibility.Hidden;
-                    WaitControlProgressBar.Visibility = Visibility.Hidden;
+                    WaitControl.Visibility = Visibility.Collapsed;
+                    WaitControlProgressBar.Visibility = Visibility.Collapsed;
                 }
                 Init = true;
             }

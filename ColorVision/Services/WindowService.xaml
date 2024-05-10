@@ -31,7 +31,7 @@
                     <TreeView.Resources>
                         <HierarchicalDataTemplate DataType="{x:Type type:TypeService}" ItemsSource="{Binding VisualChildren}" >
                             <StackPanel >
-                                <TextBlock Text="{Binding Config.Name}"/>
+                                <TextBlock Text="{Binding Name}"/>
                             </StackPanel>
                         </HierarchicalDataTemplate>
                         <HierarchicalDataTemplate DataType="{x:Type terminal:TerminalService}" ItemsSource="{Binding VisualChildren}" >
