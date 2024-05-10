@@ -535,6 +535,8 @@ namespace ColorVision.Services.RC
                 DeviceCode = cameraID,
                 EventName = "PhysicalCamera_Load",
             };
+            SendTopic = SysConfigTopic;
+            SubscribeTopic = SysConfigRespTopic;
             PublishAsyncClient(msg);
         }
 
