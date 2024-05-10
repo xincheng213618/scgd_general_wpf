@@ -1,9 +1,14 @@
-﻿using ColorVision.Services.Devices.PG.Templates;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Camera;
+using ColorVision.Services.Devices.PG.Templates;
+using NPOI.SS.Formula.Functions;
 using OpenCvSharp.Flann;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Windows;
 
 namespace ColorVision.Services.Templates
 {
@@ -27,6 +32,11 @@ namespace ColorVision.Services.Templates
         }
 
         public virtual void  Save()
+        {
+
+        }
+
+        public virtual void Create(string templateName, int id = -1)
         {
 
         }
@@ -57,9 +67,22 @@ namespace ColorVision.Services.Templates
             return FileName;
         }
 
-        public override void Save() 
+        public override void Save()
         {
             TemplateControl.Save2DB(TemplateParams);
+        }
+        public override void Create(string templateName, int id =-1)
+        {
+            T? param = TemplateControl.AddParamMode<T>(ModMasterType.Calibration, templateName, id);
+            if (param != null)
+            {
+                var a = new TemplateModel<T>(templateName, param);
+                TemplateParams.Add(a);
+            }
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(T)}模板失败", "ColorVision");
+            }
         }
     }
 }

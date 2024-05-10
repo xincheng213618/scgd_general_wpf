@@ -328,60 +328,10 @@ namespace ColorVision.Services.Templates
             switch (TemplateType)
             {
                 case TemplateType.Calibration:
-                    CalibrationParam? CalibrationParam = TemplateControl.AddParamMode<CalibrationParam>(ModMasterType.Calibration, TemplateName,DeviceCamera.SysResourceModel.Id);
-                    if (CalibrationParam != null) CreateNewTemplate(DeviceCamera.CalibrationParams, TemplateName, CalibrationParam);
-                    else MessageBox.Show("数据库创建CalibrationParam模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    ITemplate.Create(TemplateName, DeviceCamera.SysResourceModel.Id);
                     break;
                 case TemplateType.SpectrumResourceParam:
-                    SpectrumResourceParam? SpectrumResourceParam = TemplateControl.AddParamMode<SpectrumResourceParam>(ModMasterType.SpectrumResource, TemplateName, DeviceSpectrum.SysResourceModel.Id);
-                    if (SpectrumResourceParam != null) CreateNewTemplate(DeviceSpectrum.SpectrumResourceParams, TemplateName, SpectrumResourceParam);
-                    else MessageBox.Show("数据库创建SpectrumResourceParams模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    break;
-                case TemplateType.AoiParam:
-                    AOIParam? aoiParam = TemplateControl.AddParamMode<AOIParam>(ModMasterType.Aoi, TemplateName);
-                    if (aoiParam != null) CreateNewTemplate(TemplateControl.AoiParams, TemplateName, aoiParam);
-                    else MessageBox.Show("数据库创建AOI模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    break;
-                case TemplateType.PGParam:
-                    PGParam? pgParam = TemplateControl.AddParamMode<PGParam>(ModMasterType.PG, TemplateName);
-                    if (pgParam != null) CreateNewTemplate(PGParam.Params, TemplateName, pgParam);
-                    else MessageBox.Show("数据库创建PG模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    break;
-                case TemplateType.SMUParam:
-                    SMUParam?  sMUParam = TemplateControl.AddParamMode<SMUParam>(ModMasterType.SMU, TemplateName);
-                    if (sMUParam != null) CreateNewTemplate(SMUParam.Params, TemplateName, sMUParam);
-                    else MessageBox.Show("数据库创建源表模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    break;
-                case TemplateType.MTFParam:
-                    MTFParam? mTFParam = TemplateControl.AddParamMode<MTFParam>(ModMasterType.MTF, TemplateName);
-                    if (mTFParam != null) CreateNewTemplate(MTFParam.MTFParams, TemplateName, mTFParam);
-                    else MessageBox.Show("数据库创建MTF模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    break;
-                case TemplateType.SFRParam:
-                    SFRParam? sFRParam = TemplateControl.AddParamMode<SFRParam>(ModMasterType.SFR, TemplateName);
-                    if (sFRParam != null) CreateNewTemplate(SFRParam.SFRParams, TemplateName, sFRParam);
-                    else MessageBox.Show("数据库创建MTF模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly); break;
-                case TemplateType.FOVParam:
-                    FOVParam? fOVParam = TemplateControl.AddParamMode<FOVParam>(ModMasterType.FOV, TemplateName);
-                    if (fOVParam != null) CreateNewTemplate(FOVParam.FOVParams, TemplateName, fOVParam);
-                    else MessageBox.Show("数据库创建FOV模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly); break;
-                case TemplateType.GhostParam:
-                    GhostParam? ghostParam = TemplateControl.AddParamMode<GhostParam>(ModMasterType.Ghost, TemplateName);
-                    if (ghostParam != null) CreateNewTemplate(GhostParam.GhostParams, TemplateName, ghostParam);
-                    else MessageBox.Show("数据库创建Ghost模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly); break;
-                case TemplateType.DistortionParam:
-                    DistortionParam? distortionParam = TemplateControl.AddParamMode<DistortionParam>(ModMasterType.Distortion, TemplateName);
-                    if (distortionParam != null) CreateNewTemplate(DistortionParam.DistortionParams, TemplateName, distortionParam);
-                    else MessageBox.Show("数据库创建Distortion模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly); break;
-                case TemplateType.FocusPointsParam:
-                    FocusPointsParam? focusPointsParam = TemplateControl.AddParamMode<FocusPointsParam>(ModMasterType.FocusPoints,TemplateName);
-                    if (focusPointsParam != null) CreateNewTemplate(FocusPointsParam.FocusPointsParams, TemplateName, focusPointsParam);
-                    else MessageBox.Show("数据库创建FocusPoints模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    break;
-                case TemplateType.LedCheckParam:
-                    LedCheckParam? ledCheckParam = TemplateControl.AddParamMode<LedCheckParam>(ModMasterType.LedCheck, TemplateName);
-                    if (ledCheckParam != null) CreateNewTemplate(LedCheckParam.LedCheckParams, TemplateName, ledCheckParam);
-                    else MessageBox.Show("数据库创建灯光检测模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    ITemplate.Create(TemplateName, DeviceSpectrum.SysResourceModel.Id);
                     break;
                 case TemplateType.PoiParam:
                     PoiParam? poiParam = PoiParam.AddPoiParam(TemplateName);
@@ -396,22 +346,10 @@ namespace ColorVision.Services.Templates
                 case TemplateType.MeasureParam:
                     MeasureParam? measureParam = MeasureParam.AddMeasureParam(TemplateName);
                     if (measureParam != null) CreateNewTemplate(MeasureParam.MeasureParams, TemplateName, measureParam);
-                    else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                    else MessageBox.Show("数据库创建测量模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                     break;
-                case TemplateType.BuildPOIParmam:
-                    BuildPOIParam? buildPOIParam = TemplateControl.AddParamMode<BuildPOIParam>(ModMasterType.BuildPOI, TemplateName);
-                    if (buildPOIParam != null) CreateNewTemplate(BuildPOIParam.BuildPOIParams, TemplateName, buildPOIParam);
-                    else MessageBox.Show("数据库创建BuildPOI模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    break;
-                case TemplateType.CameraExposureParam:
-                    CameraExposureParam? cameraExposureParam = TemplateControl.AddParamMode<CameraExposureParam>(ModMasterType.CameraExposure, TemplateName);
-                    if (cameraExposureParam != null) CreateNewTemplate(CameraExposureParam.CameraExposureParams, TemplateName, cameraExposureParam);
-                    else MessageBox.Show("数据库创建CameraExposureParam模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-                    break;
-                case TemplateType.SensorHeYuan:
-                    SensorHeYuan? sensorHeYuan = TemplateControl.AddParamMode<SensorHeYuan>(ModMasterType.SensorHeYuan, TemplateName);
-                    if (sensorHeYuan != null) CreateNewTemplate(SensorHeYuan.SensorHeYuans, TemplateName, sensorHeYuan);
-                    else MessageBox.Show("数据库创建SensorHeYuan模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                default:
+                    ITemplate.Create(TemplateName);
                     break;
             }
         }
