@@ -70,7 +70,7 @@ namespace ColorVision.Services.Devices.Camera.Views
             listView1.ItemsSource = ViewResultCameras;
 
 
-            ComboxPOITemplate.ItemsSource = PoiParam.Params.CreatEmpty();
+            ComboxPOITemplate.ItemsSource = PoiParam.Params.CreateEmpty();
             ComboxPOITemplate.SelectedIndex = 0;
 
             if (listView1.View is GridView gridView)

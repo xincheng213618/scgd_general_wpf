@@ -5,15 +5,14 @@ namespace ColorVision.Services.Templates
 {
     public static class TemplateHelpers
     {
-        public static ObservableCollection<TemplateModel<T>> CreatEmpty<T>(this ObservableCollection<TemplateModel<T>>? templateModels) where T : ParamBase, new()
+        public static ObservableCollection<TemplateModel<T>> CreateEmpty<T>(this ObservableCollection<TemplateModel<T>>? templateModels) where T : ParamBase, new()
         {
-            return CreatTemplateModelEmpty<T>(templateModels);
+            return CreateTemplateModelEmpty<T>(templateModels);
         }
 
-        public static ObservableCollection<TemplateModel<T>> CreatTemplateModelEmpty<T>(ObservableCollection<TemplateModel<T>>? templateModels) where T : ParamBase, new()
+        public static ObservableCollection<TemplateModel<T>> CreateTemplateModelEmpty<T>(ObservableCollection<TemplateModel<T>>? templateModels) where T : ParamBase, new()
         {
             var templateModels1 = new ObservableCollection<TemplateModel<T>>();
-            templateModels1 = new ObservableCollection<TemplateModel<T>>();
             templateModels1.Insert(0, new TemplateModel<T>("Empty", new T() { Id = -1 }));
 
             if (templateModels != null)
