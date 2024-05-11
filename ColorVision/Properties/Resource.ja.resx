@@ -891,4 +891,19 @@
   <data name="ImageSource" xml:space="preserve">
     <value>画像ソース</value>
   </data>
+  <data name="SaveDataColumn" xml:space="preserve">
+    <value>セーブデータ欄」</value>
+  </data>
+  <data name="Chart" xml:space="preserve">
+    <value>チャート</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>位置</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>サイズ</value>
+  </data>
+  <data name="Shape" xml:space="preserve">
+    <value>形</value>
+  </data>
 </root>

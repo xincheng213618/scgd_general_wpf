@@ -91,6 +91,10 @@
           <source>变更日志</source>
           <target state="new">變更日誌</target>
         </trans-unit>
+        <trans-unit id="Chart" translate="yes" xml:space="preserve">
+          <source>图表</source>
+          <target state="new">圖表</target>
+        </trans-unit>
         <trans-unit id="CheckForUpdates" translate="yes" xml:space="preserve">
           <source>检查更新</source>
           <target state="new">檢查更新</target>
@@ -723,6 +727,10 @@
           <source>端口</source>
           <target state="new">端口</target>
         </trans-unit>
+        <trans-unit id="Position" translate="yes" xml:space="preserve">
+          <source>位置</source>
+          <target state="new">位置</target>
+        </trans-unit>
         <trans-unit id="Project" translate="yes" xml:space="preserve">
           <source>工程</source>
           <target state="new">工程</target>
@@ -795,6 +803,10 @@
           <source>保存</source>
           <target state="new">保存</target>
         </trans-unit>
+        <trans-unit id="SaveDataColumn" translate="yes" xml:space="preserve">
+          <source>保存数据列" </source>
+          <target state="new">儲存資料列"</target>
+        </trans-unit>
         <trans-unit id="SaveWindowLayout" translate="yes" xml:space="preserve">
           <source>保存窗口布局</source>
           <target state="new">儲存視窗佈局</target>
@@ -855,6 +867,10 @@
           <source>配置向导</source>
           <target state="new">配置精靈</target>
         </trans-unit>
+        <trans-unit id="Shape" translate="yes" xml:space="preserve">
+          <source>形状</source>
+          <target state="new">形狀</target>
+        </trans-unit>
         <trans-unit id="Sign_in" translate="yes" xml:space="preserve">
           <source>登录</source>
           <target state="new">登入</target>
@@ -870,6 +886,10 @@
         <trans-unit id="SimulateSend" translate="yes" xml:space="preserve">
           <source>模拟发送</source>
           <target state="new">類比發送</target>
+        </trans-unit>
+        <trans-unit id="Size" translate="yes" xml:space="preserve">
+          <source>大小</source>
+          <target state="new">大小</target>
         </trans-unit>
         <trans-unit id="SoftwareVersion" translate="yes" xml:space="preserve">
           <source>软件版本</source>

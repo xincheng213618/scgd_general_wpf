@@ -891,4 +891,19 @@
   <data name="ImageSource" xml:space="preserve">
     <value>图像源</value>
   </data>
+  <data name="SaveDataColumn" xml:space="preserve">
+    <value>保存数据列" </value>
+  </data>
+  <data name="Chart" xml:space="preserve">
+    <value>图表</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>位置</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>大小</value>
+  </data>
+  <data name="Shape" xml:space="preserve">
+    <value>形状</value>
+  </data>
 </root>

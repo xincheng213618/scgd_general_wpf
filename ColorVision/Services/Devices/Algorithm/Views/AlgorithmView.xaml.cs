@@ -220,7 +220,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         }
 
                         cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
-                        cieHeader = new List<string> { "名称", "位置", "大小", "形状", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
+                        cieHeader = new List<string> { ColorVision.Properties.Resource.Name, ColorVision.Properties.Resource.Position, ColorVision.Properties.Resource.Size, ColorVision.Properties.Resource.Shape, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
 
                         if (listViewSide.View is GridView gridViewPOI_XY_UV)
                         {

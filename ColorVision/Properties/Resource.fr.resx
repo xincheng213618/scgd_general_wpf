@@ -891,4 +891,19 @@
   <data name="ImageSource" xml:space="preserve">
     <value>source d'images</value>
   </data>
+  <data name="SaveDataColumn" xml:space="preserve">
+    <value>Enregistrer la colonne de données"</value>
+  </data>
+  <data name="Chart" xml:space="preserve">
+    <value>graphique</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>Emplacement</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>taille</value>
+  </data>
+  <data name="Shape" xml:space="preserve">
+    <value>forme</value>
+  </data>
 </root>

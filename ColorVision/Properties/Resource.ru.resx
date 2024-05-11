@@ -891,4 +891,19 @@
   <data name="ImageSource" xml:space="preserve">
     <value>источник изображения</value>
   </data>
+  <data name="SaveDataColumn" xml:space="preserve">
+    <value>Сохранить столбец данных"</value>
+  </data>
+  <data name="Chart" xml:space="preserve">
+    <value>диаграмма</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>Расположение</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>размер</value>
+  </data>
+  <data name="Shape" xml:space="preserve">
+    <value>форма</value>
+  </data>
 </root>

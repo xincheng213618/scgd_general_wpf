@@ -259,6 +259,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 图表 的本地化字符串。
+        /// </summary>
+        public static string Chart {
+            get {
+                return ResourceManager.GetString("Chart", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 检查更新 的本地化字符串。
         /// </summary>
         public static string CheckForUpdates {
@@ -1681,6 +1690,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 位置 的本地化字符串。
+        /// </summary>
+        public static string Position {
+            get {
+                return ResourceManager.GetString("Position", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 工程 的本地化字符串。
         /// </summary>
         public static string Project {
@@ -1843,6 +1861,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 保存数据列&quot;  的本地化字符串。
+        /// </summary>
+        public static string SaveDataColumn {
+            get {
+                return ResourceManager.GetString("SaveDataColumn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 保存窗口布局 的本地化字符串。
         /// </summary>
         public static string SaveWindowLayout {
@@ -1978,6 +2005,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 形状 的本地化字符串。
+        /// </summary>
+        public static string Shape {
+            get {
+                return ResourceManager.GetString("Shape", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 登录 的本地化字符串。
         /// </summary>
         public static string Sign_in {
@@ -2010,6 +2046,15 @@ namespace ColorVision.Properties {
         public static string SimulateSend {
             get {
                 return ResourceManager.GetString("SimulateSend", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 大小 的本地化字符串。
+        /// </summary>
+        public static string Size {
+            get {
+                return ResourceManager.GetString("Size", resourceCulture);
             }
         }
         

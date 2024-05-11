@@ -78,8 +78,8 @@
                             </Border>
                         </Popup>
 
-                        <Button x:Name="Button222" Content="保存数据列"  Click="SideSave_Click"/>
-                        <Button x:Name="ButtonChart" Content="图表" Click="ButtonChart_Click"/>
+                        <Button x:Name="Button222" Content="{x:Static properties:Resource.SaveDataColumn}" Click="SideSave_Click"/>
+                        <Button x:Name="ButtonChart" Content="{x:Static properties:Resource.Chart}" Click="ButtonChart_Click"/>
                     </ToolBar>
                 </ToolBarTray>
                 <ListView Grid.Row="1" x:Name="listView1" BorderThickness="0"  Padding="0" ScrollViewer.VerticalScrollBarVisibility="Visible" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >

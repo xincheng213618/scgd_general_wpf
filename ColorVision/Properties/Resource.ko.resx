@@ -891,4 +891,19 @@
   <data name="ImageSource" xml:space="preserve">
     <value>이미지 소스</value>
   </data>
+  <data name="SaveDataColumn" xml:space="preserve">
+    <value>데이터 열 저장"</value>
+  </data>
+  <data name="Chart" xml:space="preserve">
+    <value>차트</value>
+  </data>
+  <data name="Position" xml:space="preserve">
+    <value>위치</value>
+  </data>
+  <data name="Size" xml:space="preserve">
+    <value>크기</value>
+  </data>
+  <data name="Shape" xml:space="preserve">
+    <value>모양</value>
+  </data>
 </root>
