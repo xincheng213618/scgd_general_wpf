@@ -98,7 +98,7 @@
                         <Button x:Name="ButtonChart" Content="图表" Click="ButtonChart_Click"/>
                     </ToolBar>
                 </ToolBarTray>
-                <ListView Grid.Row="1" x:Name="listView1" BorderThickness="0"  Margin="-3" ScrollViewer.VerticalScrollBarVisibility="Visible" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                <ListView Grid.Row="1" x:Name="listView1" BorderThickness="0"  Padding="0" ScrollViewer.VerticalScrollBarVisibility="Visible" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
                     <ListView.Resources >
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                     </ListView.Resources>
@@ -168,7 +168,7 @@
             </Grid>
             <GridSplitter  Grid.Row="1"  Panel.ZIndex="999" Background="#EEF4F9"  Height="2" HorizontalAlignment="Stretch" VerticalAlignment="Top"  DragCompleted="GridSplitter_DragCompleted"  />
         </Grid>
-        <ListView x:Name="listViewSide" BorderThickness="0"  Margin="-3" Grid.Column="1">
+        <ListView x:Name="listViewSide" BorderThickness="0" Padding="0" Grid.Column="1">
             <ListView.Resources >
                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu1_Opened" />
             </ListView.Resources>
