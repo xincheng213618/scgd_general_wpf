@@ -816,4 +816,7 @@
   <data name="Flow" xml:space="preserve">
     <value>Processus</value>
   </data>
+  <data name="QuickPreview" xml:space="preserve">
+    <value>aperçu rapide</value>
+  </data>
 </root>

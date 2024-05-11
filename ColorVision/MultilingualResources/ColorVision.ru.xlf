@@ -659,6 +659,10 @@
           <source>属性</source>
           <target state="new">Атрибуты</target>
         </trans-unit>
+        <trans-unit id="QuickPreview" translate="yes" xml:space="preserve">
+          <source>快速预览</source>
+          <target state="new">быстрый предварительный просмотр</target>
+        </trans-unit>
         <trans-unit id="ReceiveChannel" translate="yes" xml:space="preserve">
           <source>接收信道</source>
           <target state="new">канал приема</target>

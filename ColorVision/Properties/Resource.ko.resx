@@ -816,4 +816,7 @@
   <data name="Flow" xml:space="preserve">
     <value>프로세스</value>
   </data>
+  <data name="QuickPreview" xml:space="preserve">
+    <value>빠른 미리보기</value>
+  </data>
 </root>

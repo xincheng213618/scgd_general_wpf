@@ -816,4 +816,7 @@
   <data name="Flow" xml:space="preserve">
     <value>Flow</value>
   </data>
+  <data name="QuickPreview" xml:space="preserve">
+    <value>Quick Preview</value>
+  </data>
 </root>

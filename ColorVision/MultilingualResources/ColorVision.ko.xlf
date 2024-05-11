@@ -659,6 +659,10 @@
           <source>属性</source>
           <target state="new">속성</target>
         </trans-unit>
+        <trans-unit id="QuickPreview" translate="yes" xml:space="preserve">
+          <source>快速预览</source>
+          <target state="new">빠른 미리보기</target>
+        </trans-unit>
         <trans-unit id="ReceiveChannel" translate="yes" xml:space="preserve">
           <source>接收信道</source>
           <target state="new">수신 채널</target>

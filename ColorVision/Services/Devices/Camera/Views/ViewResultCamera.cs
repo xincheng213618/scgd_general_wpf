@@ -8,6 +8,7 @@ using ColorVision.Net;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Export;
 using MQTTMessageLib.Camera;
+using MQTTMessageLib.FileServer;
 using System;
 using System.IO;
 using System.Windows;
@@ -60,10 +61,11 @@ namespace ColorVision.Services.Devices.Camera.Views
             if (File.Exists(FileUrl))
             {
                 ImageView imageView = new ImageView();
+
                 CVFileUtil.ReadCVRaw(FileUrl, out CVCIEFile fileInfo);
-                Window window = new Window() { Title = "快速预览", Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                Window window = new Window() { Title = ColorVision.Properties.Resource.QuickPreview, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 window.Content = imageView;
-                imageView.OpenImage(fileInfo);
+                imageView.OpenImage(new NetFileUtil().OpenLocalCVFile(FileUrl));
 
                 window.Show();
                 window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() => {

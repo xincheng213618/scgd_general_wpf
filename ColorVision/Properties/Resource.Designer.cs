@@ -1537,6 +1537,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 快速预览 的本地化字符串。
+        /// </summary>
+        public static string QuickPreview {
+            get {
+                return ResourceManager.GetString("QuickPreview", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 接收信道 的本地化字符串。
         /// </summary>
         public static string ReceiveChannel {

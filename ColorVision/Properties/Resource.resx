@@ -816,4 +816,7 @@
   <data name="Flow" xml:space="preserve">
     <value>流程</value>
   </data>
+  <data name="QuickPreview" xml:space="preserve">
+    <value>快速预览</value>
+  </data>
 </root>
