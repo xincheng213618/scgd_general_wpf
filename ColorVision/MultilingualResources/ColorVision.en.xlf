@@ -223,6 +223,10 @@
           <source>禁用硬件加速</source>
           <target state="new">Disable hardware acceleration</target>
         </trans-unit>
+        <trans-unit id="DisplayAlgorithmControl_CIE图像数据区" translate="yes" xml:space="preserve">
+          <source>CIE图像数据区</source>
+          <target state="new">CIE Image Data Area</target>
+        </trans-unit>
         <trans-unit id="DownloadCancelled" translate="yes" xml:space="preserve">
           <source>下载已取消</source>
           <target state="new">Download canceled</target>
@@ -346,6 +350,10 @@
         <trans-unit id="ImageInfo" translate="yes" xml:space="preserve">
           <source>图像信息</source>
           <target state="new">ImageInfo</target>
+        </trans-unit>
+        <trans-unit id="ImageSource" translate="yes" xml:space="preserve">
+          <source>图像源</source>
+          <target state="new">Image source</target>
         </trans-unit>
         <trans-unit id="Import" translate="yes" xml:space="preserve">
           <source>导入</source>

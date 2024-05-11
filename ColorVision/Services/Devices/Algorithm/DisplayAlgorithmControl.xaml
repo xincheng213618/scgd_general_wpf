@@ -35,7 +35,7 @@
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel Margin="5" >
                 <DockPanel Margin="0,2">
-                    <TextBlock Text="图像源" Margin="0,0,10,0"/>
+                    <TextBlock Text="{x:Static properties:Resource.ImageSource}" Margin="0,0,10,0"/>
                     <ComboBox x:Name="CB_SourceImageFiles"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value"  DisplayMemberPath="Key" />
                 </DockPanel>
                 <StackPanel>
@@ -100,8 +100,8 @@
                                 </DockPanel>
                             </GroupBox>
                         </TabItem>
-                        <TabItem Header="畸变">
-                            <GroupBox  Header="畸变">
+                        <TabItem Header="Distortion">
+                            <GroupBox  Header="Distortion">
                                 <DockPanel Margin="0,2">
                                     <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Distortion_Click" />
                                     <ComboBox  x:Name="ComboxDistortionTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
@@ -126,7 +126,7 @@
                                 </DockPanel>
                             </GroupBox>
                         </TabItem>
-                        <TabItem Header="灯珠检测">
+                        <TabItem Header="LedCheck">
                             <StackPanel>
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="POI" Width="60"/>
@@ -138,7 +138,7 @@
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
                                     <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="LedCheck_Click" />
-                                    <TextBlock Text="灯珠检测" Width="60"/>
+                                    <TextBlock Text="LedCheck" Width="60"/>
                                     <ComboBox  x:Name="ComboxLedCheckTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                     <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                         <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -148,8 +148,8 @@
 
                             </StackPanel>
                         </TabItem>
-                        <TabItem Header="发光区检测">
-                            <GroupBox  Header="发光区检测">
+                        <TabItem Header="FocusPointsParam">
+                            <GroupBox  Header="FocusPointsParam">
                                 <DockPanel Margin="0,2">
                                     <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FocusPoints_Click" />
                                     <ComboBox  x:Name="ComboxFocusPointsTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
@@ -234,7 +234,7 @@
                     <GroupBox Visibility="{Binding ElementName=POITabItem,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter}}">
                         <GroupBox.Header>
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="CIE图像数据区"/>
+                                <TextBlock Text="{x:Static properties:Resource.DisplayAlgorithmControl_CIE图像数据区}"/>
                                 <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="需要矫正后的数据才可以计算"/>
                             </StackPanel>
                         </GroupBox.Header>
@@ -303,7 +303,7 @@
                             <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}"  Width="150" HorizontalAlignment="Left" />
                         </DockPanel>
                         <DockPanel Margin="0,2">
-                            <RadioButton x:Name="AlgBatchSelect" Content="批次号" GroupName="alg_src" Width="80"/>
+                            <RadioButton x:Name="AlgBatchSelect" Content="{x:Static properties:Resource.BatchNumber}" GroupName="alg_src" Width="80"/>
                             <TextBox x:Name="AlgBatchCode" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="150" HorizontalAlignment="Left" />
                         </DockPanel>
                     </StackPanel>

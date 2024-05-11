@@ -885,4 +885,10 @@
   <data name="DeviceCameraSign1" xml:space="preserve">
     <value>デバイスはオフラインです。最初にカメラ ID を設定してください</value>
   </data>
+  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
+    <value>CIE画像データ領域</value>
+  </data>
+  <data name="ImageSource" xml:space="preserve">
+    <value>画像ソース</value>
+  </data>
 </root>

@@ -885,4 +885,10 @@
   <data name="DeviceCameraSign1" xml:space="preserve">
     <value>기기가 오프라인 상태입니다. 먼저 카메라 ID를 구성하세요.</value>
   </data>
+  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
+    <value>CIE 이미지 데이터 영역</value>
+  </data>
+  <data name="ImageSource" xml:space="preserve">
+    <value>이미지 소스</value>
+  </data>
 </root>

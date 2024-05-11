@@ -885,4 +885,10 @@
   <data name="DeviceCameraSign1" xml:space="preserve">
     <value>Устройство не в сети. Сначала настройте идентификатор камеры.</value>
   </data>
+  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
+    <value>Область данных изображения CIE</value>
+  </data>
+  <data name="ImageSource" xml:space="preserve">
+    <value>источник изображения</value>
+  </data>
 </root>

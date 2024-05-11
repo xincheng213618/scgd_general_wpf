@@ -885,4 +885,10 @@
   <data name="DeviceCameraSign1" xml:space="preserve">
     <value>设备离线，请先配置相机ID</value>
   </data>
+  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
+    <value>CIE图像数据区</value>
+  </data>
+  <data name="ImageSource" xml:space="preserve">
+    <value>图像源</value>
+  </data>
 </root>

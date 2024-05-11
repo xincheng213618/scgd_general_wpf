@@ -885,4 +885,10 @@
   <data name="DeviceCameraSign1" xml:space="preserve">
     <value>L'appareil est hors ligne, veuillez d'abord configurer l'ID de la caméra</value>
   </data>
+  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
+    <value>Zone de données d'image CIE</value>
+  </data>
+  <data name="ImageSource" xml:space="preserve">
+    <value>source d'images</value>
+  </data>
 </root>

@@ -885,4 +885,10 @@
   <data name="DeviceCameraSign1" xml:space="preserve">
     <value>The device is offline, please configure the camera ID first</value>
   </data>
+  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
+    <value>CIE Image Data Area</value>
+  </data>
+  <data name="ImageSource" xml:space="preserve">
+    <value>Image source</value>
+  </data>
 </root>

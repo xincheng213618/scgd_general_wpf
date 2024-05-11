@@ -556,6 +556,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 CIE图像数据区 的本地化字符串。
+        /// </summary>
+        public static string DisplayAlgorithmControl_CIE图像数据区 {
+            get {
+                return ResourceManager.GetString("DisplayAlgorithmControl_CIE图像数据区", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 下载已取消 的本地化字符串。
         /// </summary>
         public static string DownloadCancelled {
@@ -831,6 +840,15 @@ namespace ColorVision.Properties {
         public static string ImageInfo {
             get {
                 return ResourceManager.GetString("ImageInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 图像源 的本地化字符串。
+        /// </summary>
+        public static string ImageSource {
+            get {
+                return ResourceManager.GetString("ImageSource", resourceCulture);
             }
         }
         
