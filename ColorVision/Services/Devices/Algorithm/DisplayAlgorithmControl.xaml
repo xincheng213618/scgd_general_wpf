@@ -148,17 +148,15 @@
 
                             </StackPanel>
                         </TabItem>
-                        <TabItem Header="FocusPointsParam">
-                            <GroupBox  Header="FocusPointsParam">
-                                <DockPanel Margin="0,2">
-                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FocusPoints_Click" />
-                                    <ComboBox  x:Name="ComboxFocusPointsTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                                    <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusPointsParam" Click="MenuItem_Template"/>
-                                    </Grid>
-                                </DockPanel>
-                            </GroupBox>
+                        <TabItem Header="FocusPoints">
+                            <DockPanel Margin="0,2">
+                                <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FocusPoints_Click" />
+                                <ComboBox  x:Name="ComboxFocusPointsTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusPointsParam" Click="MenuItem_Template"/>
+                                </Grid>
+                            </DockPanel>
                         </TabItem>
                         <TabItem Header="BuildPoi">
                             <GroupBox  Header="BuildPoi">
