@@ -864,4 +864,7 @@
   <data name="ImageInfo" xml:space="preserve">
     <value>影像資訊</value>
   </data>
+  <data name="AdvanceSearch" xml:space="preserve">
+    <value>進階查詢</value>
+  </data>
 </root>

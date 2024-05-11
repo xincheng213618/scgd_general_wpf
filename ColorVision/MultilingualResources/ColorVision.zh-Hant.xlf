@@ -23,9 +23,17 @@
           <source>添加</source>
           <target state="new">添加</target>
         </trans-unit>
+        <trans-unit id="AdvanceSearch" translate="yes" xml:space="preserve">
+          <source>高级查询</source>
+          <target state="new">進階查詢</target>
+        </trans-unit>
         <trans-unit id="AdvancedSettings" translate="yes" xml:space="preserve">
           <source>高级设置</source>
           <target state="new">進階設定</target>
+        </trans-unit>
+        <trans-unit id="AlgorithmView_类型" translate="yes" xml:space="preserve">
+          <source>类型</source>
+          <target state="new"></target>
         </trans-unit>
         <trans-unit id="Alias" translate="yes" xml:space="preserve">
           <source>别名</source>
@@ -158,6 +166,10 @@
         <trans-unit id="CreateProject" translate="yes" xml:space="preserve">
           <source>创建工程</source>
           <target state="new">創建工程</target>
+        </trans-unit>
+        <trans-unit id="CreateTime" translate="yes" xml:space="preserve">
+          <source>测量时间</source>
+          <target state="new"></target>
         </trans-unit>
         <trans-unit id="Create_an_account" translate="yes" xml:space="preserve">
           <source>注册一个</source>

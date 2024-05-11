@@ -864,4 +864,7 @@
   <data name="ImageInfo" xml:space="preserve">
     <value>Информация об изображении</value>
   </data>
+  <data name="AdvanceSearch" xml:space="preserve">
+    <value>Расширенный поиск</value>
+  </data>
 </root>

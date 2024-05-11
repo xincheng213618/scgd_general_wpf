@@ -864,4 +864,13 @@
   <data name="ImageInfo" xml:space="preserve">
     <value>图像信息</value>
   </data>
+  <data name="AdvanceSearch" xml:space="preserve">
+    <value>高级查询</value>
+  </data>
+  <data name="AlgorithmView_类型" xml:space="preserve">
+    <value>类型</value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value>测量时间</value>
+  </data>
 </root>

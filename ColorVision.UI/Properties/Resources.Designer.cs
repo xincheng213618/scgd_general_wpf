@@ -19,10 +19,10 @@ namespace ColorVision.UI.Properties {
     // 类通过类似于 ResGen 或 Visual Studio 的工具自动生成的。
     // 若要添加或移除成员，请编辑 .ResX 文件，然后重新运行 ResGen
     // (以 /str 作为命令选项)，或重新生成 VS 项目。
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    internal class Resources {
+    public class Resources {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
@@ -36,7 +36,7 @@ namespace ColorVision.UI.Properties {
         ///   返回此类使用的缓存的 ResourceManager 实例。
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Resources.ResourceManager ResourceManager {
+        public static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
                     global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("ColorVision.UI.Properties.Resources", typeof(Resources).Assembly);
@@ -51,7 +51,7 @@ namespace ColorVision.UI.Properties {
         ///   使用此强类型资源类的所有资源查找执行重写。
         /// </summary>
         [global::System.ComponentModel.EditorBrowsableAttribute(global::System.ComponentModel.EditorBrowsableState.Advanced)]
-        internal static global::System.Globalization.CultureInfo Culture {
+        public static global::System.Globalization.CultureInfo Culture {
             get {
                 return resourceCulture;
             }
@@ -63,7 +63,7 @@ namespace ColorVision.UI.Properties {
         /// <summary>
         ///   查找类似 英语 的本地化字符串。
         /// </summary>
-        internal static string en {
+        public static string en {
             get {
                 return ResourceManager.GetString("en", resourceCulture);
             }
@@ -72,7 +72,7 @@ namespace ColorVision.UI.Properties {
         /// <summary>
         ///   查找类似 法语 的本地化字符串。
         /// </summary>
-        internal static string fr {
+        public static string fr {
             get {
                 return ResourceManager.GetString("fr", resourceCulture);
             }
@@ -81,7 +81,7 @@ namespace ColorVision.UI.Properties {
         /// <summary>
         ///   查找类似 全局 的本地化字符串。
         /// </summary>
-        internal static string GlobalMode {
+        public static string GlobalMode {
             get {
                 return ResourceManager.GetString("GlobalMode", resourceCulture);
             }
@@ -90,7 +90,7 @@ namespace ColorVision.UI.Properties {
         /// <summary>
         ///   查找类似 冲突 的本地化字符串。
         /// </summary>
-        internal static string HotkeyConflict {
+        public static string HotkeyConflict {
             get {
                 return ResourceManager.GetString("HotkeyConflict", resourceCulture);
             }
@@ -99,7 +99,7 @@ namespace ColorVision.UI.Properties {
         /// <summary>
         ///   查找类似 正常 的本地化字符串。
         /// </summary>
-        internal static string HotkeyNormal {
+        public static string HotkeyNormal {
             get {
                 return ResourceManager.GetString("HotkeyNormal", resourceCulture);
             }
@@ -108,7 +108,7 @@ namespace ColorVision.UI.Properties {
         /// <summary>
         ///   查找类似 按键盘设置快捷键 的本地化字符串。
         /// </summary>
-        internal static string HotKeySet1 {
+        public static string HotKeySet1 {
             get {
                 return ResourceManager.GetString("HotKeySet1", resourceCulture);
             }
@@ -117,7 +117,7 @@ namespace ColorVision.UI.Properties {
         /// <summary>
         ///   查找类似 点击设置快捷键 的本地化字符串。
         /// </summary>
-        internal static string HotKeySet2 {
+        public static string HotKeySet2 {
             get {
                 return ResourceManager.GetString("HotKeySet2", resourceCulture);
             }
@@ -126,7 +126,7 @@ namespace ColorVision.UI.Properties {
         /// <summary>
         ///   查找类似 日语 的本地化字符串。
         /// </summary>
-        internal static string ja {
+        public static string ja {
             get {
                 return ResourceManager.GetString("ja", resourceCulture);
             }
@@ -135,7 +135,7 @@ namespace ColorVision.UI.Properties {
         /// <summary>
         ///   查找类似 韩语 的本地化字符串。
         /// </summary>
-        internal static string ko {
+        public static string ko {
             get {
                 return ResourceManager.GetString("ko", resourceCulture);
             }
@@ -144,7 +144,7 @@ namespace ColorVision.UI.Properties {
         /// <summary>
         ///   查找类似 您必须重新启动才能使用新的语言设置 的本地化字符串。
         /// </summary>
-        internal static string LanguageResartSign {
+        public static string LanguageResartSign {
             get {
                 return ResourceManager.GetString("LanguageResartSign", resourceCulture);
             }
@@ -153,7 +153,7 @@ namespace ColorVision.UI.Properties {
         /// <summary>
         ///   查找类似 文件(_F) 的本地化字符串。
         /// </summary>
-        internal static string MenuFile {
+        public static string MenuFile {
             get {
                 return ResourceManager.GetString("MenuFile", resourceCulture);
             }
@@ -162,7 +162,7 @@ namespace ColorVision.UI.Properties {
         /// <summary>
         ///   查找类似 帮助(_H) 的本地化字符串。
         /// </summary>
-        internal static string MenuHelp {
+        public static string MenuHelp {
             get {
                 return ResourceManager.GetString("MenuHelp", resourceCulture);
             }
@@ -171,7 +171,7 @@ namespace ColorVision.UI.Properties {
         /// <summary>
         ///   查找类似 选项(_O) 的本地化字符串。
         /// </summary>
-        internal static string MenuOptions {
+        public static string MenuOptions {
             get {
                 return ResourceManager.GetString("MenuOptions", resourceCulture);
             }
@@ -180,7 +180,7 @@ namespace ColorVision.UI.Properties {
         /// <summary>
         ///   查找类似 模板(_M) 的本地化字符串。
         /// </summary>
-        internal static string MenuTemplate {
+        public static string MenuTemplate {
             get {
                 return ResourceManager.GetString("MenuTemplate", resourceCulture);
             }
@@ -189,7 +189,7 @@ namespace ColorVision.UI.Properties {
         /// <summary>
         ///   查找类似 工具(_T) 的本地化字符串。
         /// </summary>
-        internal static string MenuTool {
+        public static string MenuTool {
             get {
                 return ResourceManager.GetString("MenuTool", resourceCulture);
             }
@@ -198,7 +198,7 @@ namespace ColorVision.UI.Properties {
         /// <summary>
         ///   查找类似 俄语 的本地化字符串。
         /// </summary>
-        internal static string ru {
+        public static string ru {
             get {
                 return ResourceManager.GetString("ru", resourceCulture);
             }
@@ -207,7 +207,7 @@ namespace ColorVision.UI.Properties {
         /// <summary>
         ///   查找类似 跟随系统 的本地化字符串。
         /// </summary>
-        internal static string UseSystem {
+        public static string UseSystem {
             get {
                 return ResourceManager.GetString("UseSystem", resourceCulture);
             }
@@ -216,7 +216,7 @@ namespace ColorVision.UI.Properties {
         /// <summary>
         ///   查找类似 简体中文 的本地化字符串。
         /// </summary>
-        internal static string zh_Hans {
+        public static string zh_Hans {
             get {
                 return ResourceManager.GetString("zh-Hans", resourceCulture);
             }
@@ -225,7 +225,7 @@ namespace ColorVision.UI.Properties {
         /// <summary>
         ///   查找类似 繁体中文 的本地化字符串。
         /// </summary>
-        internal static string zh_Hant {
+        public static string zh_Hant {
             get {
                 return ResourceManager.GetString("zh-Hant", resourceCulture);
             }

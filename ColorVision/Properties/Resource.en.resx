@@ -864,4 +864,7 @@
   <data name="ImageInfo" xml:space="preserve">
     <value>ImageInfo</value>
   </data>
+  <data name="AdvanceSearch" xml:space="preserve">
+    <value>Advanced Search</value>
+  </data>
 </root>

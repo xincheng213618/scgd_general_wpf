@@ -115,6 +115,24 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 高级查询 的本地化字符串。
+        /// </summary>
+        public static string AdvanceSearch {
+            get {
+                return ResourceManager.GetString("AdvanceSearch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 类型 的本地化字符串。
+        /// </summary>
+        public static string AlgorithmView_类型 {
+            get {
+                return ResourceManager.GetString("AlgorithmView_类型", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 别名 的本地化字符串。
         /// </summary>
         public static string Alias {
@@ -417,6 +435,15 @@ namespace ColorVision.Properties {
         public static string CreateProject {
             get {
                 return ResourceManager.GetString("CreateProject", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 测量时间 的本地化字符串。
+        /// </summary>
+        public static string CreateTime {
+            get {
+                return ResourceManager.GetString("CreateTime", resourceCulture);
             }
         }
         

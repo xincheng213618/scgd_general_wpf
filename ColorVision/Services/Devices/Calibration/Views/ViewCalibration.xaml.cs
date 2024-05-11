@@ -388,28 +388,27 @@ namespace ColorVision.Services.Devices.Calibration.Views
                 {
                     if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
                     {
-                        switch (item.ColumnName)
+                        string Name = item.ColumnName.ToString();
+                        if (Name == ColorVision.Properties.Resource.SerialNumber1)
                         {
-                            case "序号":
-                                item.IsSortD = !item.IsSortD;
-                                ViewResultCalibrations.SortByID(item.IsSortD);
-                                break;
-                            case "测量时间":
-                                item.IsSortD = !item.IsSortD;
-                                ViewResultCalibrations.SortByCreateTime(item.IsSortD);
-                                break;
-                            case "批次号":
-                                item.IsSortD = !item.IsSortD;
-                                ViewResultCalibrations.SortByBatch(item.IsSortD);
-                                break;
-                            case "图像数据文件":
-                                item.IsSortD = !item.IsSortD;
-                                ViewResultCalibrations.SortByFilePath(item.IsSortD);
-                                break;
-                            default:
-                                break;
+                            item.IsSortD = !item.IsSortD;
+                            ViewResultCalibrations.SortByID(item.IsSortD);
                         }
-                        break;
+                        else if (Name == Properties.Resource.Duration)
+                        {
+                            item.IsSortD = !item.IsSortD;
+                            ViewResultCalibrations.SortByCreateTime(item.IsSortD);
+                        }
+                        else if (Name == ColorVision.Properties.Resource.BatchNumber)
+                        {
+                            item.IsSortD = !item.IsSortD;
+                            ViewResultCalibrations.SortByBatch(item.IsSortD);
+                        }
+                        else if (Name == ColorVision.Properties.Resource.File)
+                        {
+                            item.IsSortD = !item.IsSortD;
+                            ViewResultCalibrations.SortByFilePath(item.IsSortD);
+                        }
                     }
                 }
             }
