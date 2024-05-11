@@ -804,8 +804,8 @@
           <target state="new">сохранять</target>
         </trans-unit>
         <trans-unit id="SaveDataColumn" translate="yes" xml:space="preserve">
-          <source>保存数据列" </source>
-          <target state="new">Сохранить столбец данных"</target>
+          <source>保存数据列</source>
+          <target state="new">Сохранить столбец данных</target>
         </trans-unit>
         <trans-unit id="SaveWindowLayout" translate="yes" xml:space="preserve">
           <source>保存窗口布局</source>

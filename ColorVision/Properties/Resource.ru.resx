@@ -892,7 +892,7 @@
     <value>источник изображения</value>
   </data>
   <data name="SaveDataColumn" xml:space="preserve">
-    <value>Сохранить столбец данных"</value>
+    <value>Сохранить столбец данных</value>
   </data>
   <data name="Chart" xml:space="preserve">
     <value>диаграмма</value>

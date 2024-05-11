@@ -892,7 +892,7 @@
     <value>이미지 소스</value>
   </data>
   <data name="SaveDataColumn" xml:space="preserve">
-    <value>데이터 열 저장"</value>
+    <value>데이터 열 저장</value>
   </data>
   <data name="Chart" xml:space="preserve">
     <value>차트</value>

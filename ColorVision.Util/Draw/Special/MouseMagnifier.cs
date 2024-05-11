@@ -67,7 +67,7 @@ namespace ColorVision.Util.Draw.Special
         }
         private bool _IsShow;
 
-        public void DrawImageCVCIE(ImageInfo imageInfo,double X,double Y, double Z,double x,double y,double u,double v)
+        public void DrawImageCVCIE(ImageInfo imageInfo,double XVal,double YVal, double ZVal,double x,double y,double u,double v)
         {
             Point actPoint = imageInfo.ActPoint;
             Point disPoint = imageInfo.BitmapPoint;
@@ -122,7 +122,7 @@ namespace ColorVision.Util.Draw.Special
                 FormattedText formattedTex3 = new FormattedText($"{imageInfo.Hex}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                 dc.DrawText(formattedTex3, new Point(x1 + 5, y1 + height + 18));
 
-                FormattedText formattedTex4 = new FormattedText($"X:{X:F1},Y:{Y:F1},Z:{Z:F1}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+                FormattedText formattedTex4 = new FormattedText($"X:{XVal:F1},Y:{YVal:F1},Z:{ZVal:F1}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                 dc.DrawText(formattedTex4, new Point(x1 + 5, y1 + height + 44));
 
                 FormattedText formattedTex5 = new FormattedText($"x:{x:F2},y:{y:F2},u:{u:F2},v:{v:F2}", System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);

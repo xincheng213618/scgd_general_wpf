@@ -1861,7 +1861,7 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 保存数据列&quot;  的本地化字符串。
+        ///   查找类似 保存数据列 的本地化字符串。
         /// </summary>
         public static string SaveDataColumn {
             get {
