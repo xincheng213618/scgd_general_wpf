@@ -834,4 +834,34 @@
   <data name="BatchNumber" xml:space="preserve">
     <value>批次編號</value>
   </data>
+  <data name="ImageFile" xml:space="preserve">
+    <value>圖片檔案</value>
+  </data>
+  <data name="File" xml:space="preserve">
+    <value>文件</value>
+  </data>
+  <data name="DeviceCode" xml:space="preserve">
+    <value>設備碼</value>
+  </data>
+  <data name="StartTime" xml:space="preserve">
+    <value>開始時間</value>
+  </data>
+  <data name="Deadline" xml:space="preserve">
+    <value>截至時間</value>
+  </data>
+  <data name="Parameter" xml:space="preserve">
+    <value>參數</value>
+  </data>
+  <data name="Result" xml:space="preserve">
+    <value>結果</value>
+  </data>
+  <data name="Info" xml:space="preserve">
+    <value>資訊</value>
+  </data>
+  <data name="Duration" xml:space="preserve">
+    <value>用時</value>
+  </data>
+  <data name="ImageInfo" xml:space="preserve">
+    <value>影像資訊</value>
+  </data>
 </root>

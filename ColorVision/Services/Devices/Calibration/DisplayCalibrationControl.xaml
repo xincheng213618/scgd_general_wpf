@@ -8,7 +8,7 @@
              xmlns:properties="clr-namespace:ColorVision.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceCalibration}"
-             d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized" >
+             d:DesignHeight="450" d:DesignWidth="300" Width="300" Initialized="UserControl_Initialized" >
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -33,7 +33,7 @@
             </Grid>        </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}"  Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel   Margin="5" >
-                <GroupBox  Header="图片文件">
+                <GroupBox  Header="{x:Static properties:Resource.ImageFile}">
                     <StackPanel  Margin="5" >
                         <DockPanel Margin="0,2">
                             <RadioButton x:Name="RadioLocal"  Content="{x:Static properties:Resource.Local}" IsChecked="True" GroupName="alg_src"/>
@@ -81,9 +81,9 @@
                     </hc:PreviewSlider>
                 </DockPanel>
                 <DockPanel Margin="0,2">
-                    <TextBlock Text="{x:Static properties:Resource.Calibration}" />
+                    <TextBlock Text="{x:Static properties:Resource.Calibration}"  Margin="0,0,5,0"/>
                     <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resource.Calculate}"  HorizontalAlignment="Right" Click="Calibration_Click" />
-                    <ComboBox  x:Name="ComboxCalibrationTemplate" Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                    <ComboBox  x:Name="ComboxCalibrationTemplate" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                     <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                         <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
                         <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="Calibration"  Click="MenuItem_Template"/>

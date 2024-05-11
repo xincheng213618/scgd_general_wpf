@@ -832,6 +832,36 @@
     <value>Exposure R</value>
   </data>
   <data name="BatchNumber" xml:space="preserve">
-    <value>batch number</value>
+    <value>BatchNumber</value>
+  </data>
+  <data name="ImageFile" xml:space="preserve">
+    <value>Image File</value>
+  </data>
+  <data name="File" xml:space="preserve">
+    <value>File</value>
+  </data>
+  <data name="DeviceCode" xml:space="preserve">
+    <value>Device Code</value>
+  </data>
+  <data name="StartTime" xml:space="preserve">
+    <value>Starting time</value>
+  </data>
+  <data name="Deadline" xml:space="preserve">
+    <value>Deadline</value>
+  </data>
+  <data name="Parameter" xml:space="preserve">
+    <value>Parameter</value>
+  </data>
+  <data name="Result" xml:space="preserve">
+    <value>Result</value>
+  </data>
+  <data name="Info" xml:space="preserve">
+    <value>Info</value>
+  </data>
+  <data name="Duration" xml:space="preserve">
+    <value>Duration</value>
+  </data>
+  <data name="ImageInfo" xml:space="preserve">
+    <value>ImageInfo</value>
   </data>
 </root>

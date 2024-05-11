@@ -834,4 +834,34 @@
   <data name="BatchNumber" xml:space="preserve">
     <value>серийный номер</value>
   </data>
+  <data name="ImageFile" xml:space="preserve">
+    <value>Файлы изображений</value>
+  </data>
+  <data name="File" xml:space="preserve">
+    <value>документ</value>
+  </data>
+  <data name="DeviceCode" xml:space="preserve">
+    <value>Код устройства</value>
+  </data>
+  <data name="StartTime" xml:space="preserve">
+    <value>Время начала</value>
+  </data>
+  <data name="Deadline" xml:space="preserve">
+    <value>Крайний срок</value>
+  </data>
+  <data name="Parameter" xml:space="preserve">
+    <value>параметр</value>
+  </data>
+  <data name="Result" xml:space="preserve">
+    <value>результат</value>
+  </data>
+  <data name="Info" xml:space="preserve">
+    <value>информация</value>
+  </data>
+  <data name="Duration" xml:space="preserve">
+    <value>затраты времени</value>
+  </data>
+  <data name="ImageInfo" xml:space="preserve">
+    <value>Информация об изображении</value>
+  </data>
 </root>

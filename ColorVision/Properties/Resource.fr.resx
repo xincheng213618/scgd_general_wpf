@@ -834,4 +834,34 @@
   <data name="BatchNumber" xml:space="preserve">
     <value>numéro de lot</value>
   </data>
+  <data name="ImageFile" xml:space="preserve">
+    <value>Fichiers images</value>
+  </data>
+  <data name="File" xml:space="preserve">
+    <value>document</value>
+  </data>
+  <data name="DeviceCode" xml:space="preserve">
+    <value>Code de l'appareil</value>
+  </data>
+  <data name="StartTime" xml:space="preserve">
+    <value>Heure de départ</value>
+  </data>
+  <data name="Deadline" xml:space="preserve">
+    <value>Date limite</value>
+  </data>
+  <data name="Parameter" xml:space="preserve">
+    <value>paramètre</value>
+  </data>
+  <data name="Result" xml:space="preserve">
+    <value>résultat</value>
+  </data>
+  <data name="Info" xml:space="preserve">
+    <value>information</value>
+  </data>
+  <data name="Duration" xml:space="preserve">
+    <value>coût du temps</value>
+  </data>
+  <data name="ImageInfo" xml:space="preserve">
+    <value>Informations sur les images</value>
+  </data>
 </root>

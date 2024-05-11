@@ -179,6 +179,10 @@
           <source>数据库连接失败，请先连接数据库在操作</source>
           <target state="new">データベース接続に失敗しました。操作する前にデータベースに接続してください</target>
         </trans-unit>
+        <trans-unit id="Deadline" translate="yes" xml:space="preserve">
+          <source>截至时间</source>
+          <target state="new">締め切り</target>
+        </trans-unit>
         <trans-unit id="DefaultExportStorageFormat" translate="yes" xml:space="preserve">
           <source>默认导出存储格式</source>
           <target state="new">デフォルトのエクスポート保存形式</target>
@@ -186,6 +190,10 @@
         <trans-unit id="Delete" translate="yes" xml:space="preserve">
           <source>删除</source>
           <target state="new">消去</target>
+        </trans-unit>
+        <trans-unit id="DeviceCode" translate="yes" xml:space="preserve">
+          <source>设备码</source>
+          <target state="new">デバイスコード</target>
         </trans-unit>
         <trans-unit id="DeviceIdentification" translate="yes" xml:space="preserve">
           <source>设备标识</source>
@@ -202,6 +210,10 @@
         <trans-unit id="DownloadCancelled" translate="yes" xml:space="preserve">
           <source>下载已取消</source>
           <target state="new">ダウンロードがキャンセルされました</target>
+        </trans-unit>
+        <trans-unit id="Duration" translate="yes" xml:space="preserve">
+          <source>用时</source>
+          <target state="new">時間コスト</target>
         </trans-unit>
         <trans-unit id="Edit" translate="yes" xml:space="preserve">
           <source>编辑</source>
@@ -255,6 +267,10 @@
           <source>女</source>
           <target state="new">女性</target>
         </trans-unit>
+        <trans-unit id="File" translate="yes" xml:space="preserve">
+          <source>文件</source>
+          <target state="new">書類</target>
+        </trans-unit>
         <trans-unit id="FillAccount" translate="yes" xml:space="preserve">
           <source>请输入账号</source>
           <target state="new">アカウントを入力してください</target>
@@ -303,6 +319,14 @@
           <source>快捷键</source>
           <target state="new">ショートカットキー</target>
         </trans-unit>
+        <trans-unit id="ImageFile" translate="yes" xml:space="preserve">
+          <source>图片文件</source>
+          <target state="new">画像ファイル</target>
+        </trans-unit>
+        <trans-unit id="ImageInfo" translate="yes" xml:space="preserve">
+          <source>图像信息</source>
+          <target state="new">画像情報</target>
+        </trans-unit>
         <trans-unit id="Import" translate="yes" xml:space="preserve">
           <source>导入</source>
           <target state="new">輸入</target>
@@ -310,6 +334,10 @@
         <trans-unit id="ImportLicense" translate="yes" xml:space="preserve">
           <source>导入许可证</source>
           <target state="new">輸入ライセンス</target>
+        </trans-unit>
+        <trans-unit id="Info" translate="yes" xml:space="preserve">
+          <source>信息</source>
+          <target state="new">情報</target>
         </trans-unit>
         <trans-unit id="Inquire" translate="yes" xml:space="preserve">
           <source>查询</source>
@@ -643,6 +671,10 @@
           <source>输出视图</source>
           <target state="new">出力ビュー</target>
         </trans-unit>
+        <trans-unit id="Parameter" translate="yes" xml:space="preserve">
+          <source>参数</source>
+          <target state="new">パラメータ</target>
+        </trans-unit>
         <trans-unit id="Password" translate="yes" xml:space="preserve">
           <source>密码</source>
           <target state="new">パスワード</target>
@@ -718,6 +750,10 @@
         <trans-unit id="Restore" translate="yes" xml:space="preserve">
           <source>向下还原</source>
           <target state="new">リセットする</target>
+        </trans-unit>
+        <trans-unit id="Result" translate="yes" xml:space="preserve">
+          <source>结果</source>
+          <target state="new">結果</target>
         </trans-unit>
         <trans-unit id="Rollback" translate="yes" xml:space="preserve">
           <source>回退</source>
@@ -818,6 +854,10 @@
         <trans-unit id="StartRecoverUILayout" translate="yes" xml:space="preserve">
           <source>恢复上次退出时窗口的大小和位置</source>
           <target state="new">回復インターフェイスのレイアウトを開始します</target>
+        </trans-unit>
+        <trans-unit id="StartTime" translate="yes" xml:space="preserve">
+          <source>开始时间</source>
+          <target state="new">開始時間</target>
         </trans-unit>
         <trans-unit id="Status" translate="yes" xml:space="preserve">
           <source>状态</source>

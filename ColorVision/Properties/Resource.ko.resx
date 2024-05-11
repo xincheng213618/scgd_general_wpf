@@ -834,4 +834,34 @@
   <data name="BatchNumber" xml:space="preserve">
     <value>배치 번호</value>
   </data>
+  <data name="ImageFile" xml:space="preserve">
+    <value>이미지 파일</value>
+  </data>
+  <data name="File" xml:space="preserve">
+    <value>문서</value>
+  </data>
+  <data name="DeviceCode" xml:space="preserve">
+    <value>장치 코드</value>
+  </data>
+  <data name="StartTime" xml:space="preserve">
+    <value>시작 시간</value>
+  </data>
+  <data name="Deadline" xml:space="preserve">
+    <value>마감 시간</value>
+  </data>
+  <data name="Parameter" xml:space="preserve">
+    <value>매개변수</value>
+  </data>
+  <data name="Result" xml:space="preserve">
+    <value>결과</value>
+  </data>
+  <data name="Info" xml:space="preserve">
+    <value>정보</value>
+  </data>
+  <data name="Duration" xml:space="preserve">
+    <value>시간 비용</value>
+  </data>
+  <data name="ImageInfo" xml:space="preserve">
+    <value>이미지 정보</value>
+  </data>
 </root>

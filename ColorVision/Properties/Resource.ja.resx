@@ -834,4 +834,34 @@
   <data name="BatchNumber" xml:space="preserve">
     <value>バッチ番号</value>
   </data>
+  <data name="ImageFile" xml:space="preserve">
+    <value>画像ファイル</value>
+  </data>
+  <data name="File" xml:space="preserve">
+    <value>書類</value>
+  </data>
+  <data name="DeviceCode" xml:space="preserve">
+    <value>デバイスコード</value>
+  </data>
+  <data name="StartTime" xml:space="preserve">
+    <value>開始時間</value>
+  </data>
+  <data name="Deadline" xml:space="preserve">
+    <value>締め切り</value>
+  </data>
+  <data name="Parameter" xml:space="preserve">
+    <value>パラメータ</value>
+  </data>
+  <data name="Result" xml:space="preserve">
+    <value>結果</value>
+  </data>
+  <data name="Info" xml:space="preserve">
+    <value>情報</value>
+  </data>
+  <data name="Duration" xml:space="preserve">
+    <value>時間コスト</value>
+  </data>
+  <data name="ImageInfo" xml:space="preserve">
+    <value>画像情報</value>
+  </data>
 </root>

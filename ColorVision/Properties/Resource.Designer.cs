@@ -457,6 +457,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 截至时间 的本地化字符串。
+        /// </summary>
+        public static string Deadline {
+            get {
+                return ResourceManager.GetString("Deadline", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 默认导出存储格式 的本地化字符串。
         /// </summary>
         public static string DefaultExportStorageFormat {
@@ -471,6 +480,15 @@ namespace ColorVision.Properties {
         public static string Delete {
             get {
                 return ResourceManager.GetString("Delete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 设备码 的本地化字符串。
+        /// </summary>
+        public static string DeviceCode {
+            get {
+                return ResourceManager.GetString("DeviceCode", resourceCulture);
             }
         }
         
@@ -507,6 +525,15 @@ namespace ColorVision.Properties {
         public static string DownloadCancelled {
             get {
                 return ResourceManager.GetString("DownloadCancelled", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 用时 的本地化字符串。
+        /// </summary>
+        public static string Duration {
+            get {
+                return ResourceManager.GetString("Duration", resourceCulture);
             }
         }
         
@@ -628,6 +655,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 文件 的本地化字符串。
+        /// </summary>
+        public static string File {
+            get {
+                return ResourceManager.GetString("File", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 请输入账号 的本地化字符串。
         /// </summary>
         public static string FillAccount {
@@ -736,6 +772,24 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 图片文件 的本地化字符串。
+        /// </summary>
+        public static string ImageFile {
+            get {
+                return ResourceManager.GetString("ImageFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 图像信息 的本地化字符串。
+        /// </summary>
+        public static string ImageInfo {
+            get {
+                return ResourceManager.GetString("ImageInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 导入 的本地化字符串。
         /// </summary>
         public static string Import {
@@ -750,6 +804,15 @@ namespace ColorVision.Properties {
         public static string ImportLicense {
             get {
                 return ResourceManager.GetString("ImportLicense", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 信息 的本地化字符串。
+        /// </summary>
+        public static string Info {
+            get {
+                return ResourceManager.GetString("Info", resourceCulture);
             }
         }
         
@@ -1501,6 +1564,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 参数 的本地化字符串。
+        /// </summary>
+        public static string Parameter {
+            get {
+                return ResourceManager.GetString("Parameter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 密码 的本地化字符串。
         /// </summary>
         public static string Password {
@@ -1668,6 +1740,15 @@ namespace ColorVision.Properties {
         public static string Restore {
             get {
                 return ResourceManager.GetString("Restore", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 结果 的本地化字符串。
+        /// </summary>
+        public static string Result {
+            get {
+                return ResourceManager.GetString("Result", resourceCulture);
             }
         }
         
@@ -1893,6 +1974,15 @@ namespace ColorVision.Properties {
         public static string StartRecoverUILayout {
             get {
                 return ResourceManager.GetString("StartRecoverUILayout", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 开始时间 的本地化字符串。
+        /// </summary>
+        public static string StartTime {
+            get {
+                return ResourceManager.GetString("StartTime", resourceCulture);
             }
         }
         
