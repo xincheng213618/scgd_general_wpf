@@ -6,6 +6,7 @@ using ColorVision.Draw.Ruler;
 using ColorVision.Net;
 using ColorVision.Util.Draw.Special;
 using ColorVision.Utils;
+using cvColorVision;
 using CVCommCore.CVAlgorithm;
 using log4net;
 using MQTTMessageLib.FileServer;
@@ -903,14 +904,40 @@ namespace ColorVision.Media
                         int yy = e.X;
                         int index = xx * cVCIEFile.rows + yy;
 
-                        float X = bytes[0][index];
-                        float Y = bytes[1][index];
-                        float Z = bytes[2][index];
 
-                        double x = X / (X + Y + Z);
-                        double y = Y / (X + Y + Z);
+                        //cvCameraCSLib.CM_InitXYZ(intPtr);
+                        //cvCameraCSLib.CM_SetBufferXYZ(intPtr, w, h, dstbpp, channels, rawArray);
+                        //cvCameraCSLib.CM_GetXYZxyuvRect(intPtr, xx, yy, ref dXVal , ref dYVal, ref dZVal, ref x, ref y, ref u, ref v, 200, 200);
 
-                        windowCIE.ChangeSelect(x, y);
+                        float dXVal  = bytes[0][index];
+                        float dYVal = bytes[1][index];
+                        float dZVal = bytes[2][index];
+
+                        double dx, dy,du,dv;
+
+                        if ((dXVal + dYVal + dZVal) == 0)
+                        {
+                            dx = 0;
+                            dy = 0;
+                        }
+                        else
+                        {
+                            dx = dXVal / (dXVal + dYVal + dZVal);
+                            dy = dYVal / (dXVal + dYVal + dZVal);
+                        }
+                        if ((dXVal + dYVal * 15 + dZVal * 3) == 0)
+                        {
+                            du = 0;
+                            dv = 0;
+                        }
+                        else
+                        {
+                            du = (4 * dXVal) / (dXVal + dYVal * 15 + dZVal * 3);
+                            dv = (9 * dYVal) / (dXVal + dYVal * 15 + dZVal * 3);
+                        }
+                        ToolBarTop.MouseMagnifier.DrawImageCVCIE(e, dXVal, dYVal, dZVal,dx,dy,du,dv);
+
+                        windowCIE.ChangeSelect(dx, dy);
                     }
                     catch 
                     {
