@@ -819,4 +819,19 @@
   <data name="QuickPreview" xml:space="preserve">
     <value>快速預覽</value>
   </data>
+  <data name="Exchange" xml:space="preserve">
+    <value>交換</value>
+  </data>
+  <data name="ExposureB" xml:space="preserve">
+    <value>曝光B</value>
+  </data>
+  <data name="ExposureG" xml:space="preserve">
+    <value>曝光G</value>
+  </data>
+  <data name="ExposureR" xml:space="preserve">
+    <value>曝光R</value>
+  </data>
+  <data name="BatchNumber" xml:space="preserve">
+    <value>批次編號</value>
+  </data>
 </root>

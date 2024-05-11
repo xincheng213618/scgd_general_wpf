@@ -178,6 +178,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 批次号 的本地化字符串。
+        /// </summary>
+        public static string BatchNumber {
+            get {
+                return ResourceManager.GetString("BatchNumber", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 计算 的本地化字符串。
         /// </summary>
         public static string Calculate {
@@ -538,6 +547,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 交换 的本地化字符串。
+        /// </summary>
+        public static string Exchange {
+            get {
+                return ResourceManager.GetString("Exchange", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 执行流程 的本地化字符串。
         /// </summary>
         public static string ExecutionProcess {
@@ -561,6 +579,33 @@ namespace ColorVision.Properties {
         public static string Export {
             get {
                 return ResourceManager.GetString("Export", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 曝光B 的本地化字符串。
+        /// </summary>
+        public static string ExposureB {
+            get {
+                return ResourceManager.GetString("ExposureB", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 曝光G 的本地化字符串。
+        /// </summary>
+        public static string ExposureG {
+            get {
+                return ResourceManager.GetString("ExposureG", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 曝光R 的本地化字符串。
+        /// </summary>
+        public static string ExposureR {
+            get {
+                return ResourceManager.GetString("ExposureR", resourceCulture);
             }
         }
         

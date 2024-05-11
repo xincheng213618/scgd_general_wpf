@@ -819,4 +819,19 @@
   <data name="QuickPreview" xml:space="preserve">
     <value>Quick Preview</value>
   </data>
+  <data name="Exchange" xml:space="preserve">
+    <value>Exchange</value>
+  </data>
+  <data name="ExposureB" xml:space="preserve">
+    <value>Exposure B</value>
+  </data>
+  <data name="ExposureG" xml:space="preserve">
+    <value>Exposure G</value>
+  </data>
+  <data name="ExposureR" xml:space="preserve">
+    <value>Exposure R</value>
+  </data>
+  <data name="BatchNumber" xml:space="preserve">
+    <value>batch number</value>
+  </data>
 </root>

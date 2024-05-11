@@ -819,4 +819,19 @@
   <data name="QuickPreview" xml:space="preserve">
     <value>빠른 미리보기</value>
   </data>
+  <data name="Exchange" xml:space="preserve">
+    <value>교환</value>
+  </data>
+  <data name="ExposureB" xml:space="preserve">
+    <value>노출 B</value>
+  </data>
+  <data name="ExposureG" xml:space="preserve">
+    <value>노출G</value>
+  </data>
+  <data name="ExposureR" xml:space="preserve">
+    <value>노출 R</value>
+  </data>
+  <data name="BatchNumber" xml:space="preserve">
+    <value>배치 번호</value>
+  </data>
 </root>

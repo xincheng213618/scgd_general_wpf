@@ -55,6 +55,10 @@
           <source>基本信息</source>
           <target state="new">Основная информация</target>
         </trans-unit>
+        <trans-unit id="BatchNumber" translate="yes" xml:space="preserve">
+          <source>批次号</source>
+          <target state="new">серийный номер</target>
+        </trans-unit>
         <trans-unit id="Calculate" translate="yes" xml:space="preserve">
           <source>计算</source>
           <target state="new">вычислить</target>
@@ -215,6 +219,10 @@
           <source>发生错误</source>
           <target state="new">Произошла ошибка</target>
         </trans-unit>
+        <trans-unit id="Exchange" translate="yes" xml:space="preserve">
+          <source>交换</source>
+          <target state="new">обмен</target>
+        </trans-unit>
         <trans-unit id="ExecutionProcess" translate="yes" xml:space="preserve">
           <source>执行流程</source>
           <target state="new">Процесс</target>
@@ -226,6 +234,18 @@
         <trans-unit id="Export" translate="yes" xml:space="preserve">
           <source>导出</source>
           <target state="new">Экспорт</target>
+        </trans-unit>
+        <trans-unit id="ExposureB" translate="yes" xml:space="preserve">
+          <source>曝光B</source>
+          <target state="new">Экспозиция Б</target>
+        </trans-unit>
+        <trans-unit id="ExposureG" translate="yes" xml:space="preserve">
+          <source>曝光G</source>
+          <target state="new">ЭкспозицияG</target>
+        </trans-unit>
+        <trans-unit id="ExposureR" translate="yes" xml:space="preserve">
+          <source>曝光R</source>
+          <target state="new">Экспозиция R</target>
         </trans-unit>
         <trans-unit id="Failure" translate="yes" xml:space="preserve">
           <source>失败</source>

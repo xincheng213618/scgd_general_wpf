@@ -36,25 +36,25 @@
                 <GroupBox  Header="图片文件">
                     <StackPanel  Margin="5" >
                         <DockPanel Margin="0,2">
-                            <RadioButton x:Name="RadioLocal"  Content="本地" IsChecked="True" GroupName="alg_src"/>
+                            <RadioButton x:Name="RadioLocal"  Content="{x:Static properties:Resource.Local}" IsChecked="True" GroupName="alg_src"/>
                             <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
                             <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="160"/>
                         </DockPanel>
                         <DockPanel Margin="0,2">
                             <RadioButton x:Name="AlgRawSelect" GroupName="alg_src"/>
-                            <Button Content="刷新" Click="Button_Click_RawRefresh" />
-                            <Button DockPanel.Dock="Right" Content="打开" Click="Button_Click_RawOpen" />
+                            <Button Content="{x:Static properties:Resource.Refresh}" Click="Button_Click_RawRefresh" />
+                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.Open}" Click="Button_Click_RawOpen" />
                             <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}" Width="150" />
                         </DockPanel>
                         <DockPanel Margin="0,2">
-                            <RadioButton x:Name="AlgBatchSelect" Content="批次号" GroupName="alg_src"/>
+                            <RadioButton x:Name="AlgBatchSelect" Content="{x:Static properties:Resource.BatchNumber}" GroupName="alg_src"/>
                             <TextBox x:Name="AlgBatchCode" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" />
                         </DockPanel>
                     </StackPanel>
                 </GroupBox>
 
                 <DockPanel Margin="0,2"  Visibility="{Binding  ElementName=RadioLocal,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
-                    <TextBlock  Text="曝光R" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                    <TextBlock  Text="{x:Static properties:Resource.ExposureR}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                     <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeR}"  Width="50"/>
                     <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeR}" Minimum="1" Maximum="6000">
                         <hc:PreviewSlider.PreviewContent>
@@ -63,7 +63,7 @@
                     </hc:PreviewSlider>
                 </DockPanel>
                 <DockPanel Margin="0,2"  Visibility="{Binding  ElementName=RadioLocal,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
-                    <TextBlock  Text="曝光G" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                    <TextBlock  Text="{x:Static properties:Resource.ExposureG}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                     <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeG}"  Width="50"/>
                     <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeG}" Minimum="1" Maximum="6000">
                         <hc:PreviewSlider.PreviewContent>
@@ -72,7 +72,7 @@
                     </hc:PreviewSlider>
                 </DockPanel>
                 <DockPanel Margin="0,2"  Visibility="{Binding  ElementName=RadioLocal,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
-                    <TextBlock  Text="曝光B" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                    <TextBlock  Text="{x:Static properties:Resource.ExposureB}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
                     <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeB}"  Width="50"/>
                     <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeB}" Minimum="1" Maximum="6000">
                         <hc:PreviewSlider.PreviewContent>
@@ -81,8 +81,8 @@
                     </hc:PreviewSlider>
                 </DockPanel>
                 <DockPanel Margin="0,2">
-                    <TextBlock Text="校正：" />
-                    <Button  DockPanel.Dock="Right" Content="计算"  HorizontalAlignment="Right" Click="Calibration_Click" />
+                    <TextBlock Text="{x:Static properties:Resource.Calibration}" />
+                    <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resource.Calculate}"  HorizontalAlignment="Right" Click="Calibration_Click" />
                     <ComboBox  x:Name="ComboxCalibrationTemplate" Width="150" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                     <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                         <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>

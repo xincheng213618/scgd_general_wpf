@@ -641,35 +641,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             SerchPopup.IsOpen = false;
         }
 
-        private void Order_Click(object sender, RoutedEventArgs e)
-        {
-            OrderPopup.IsOpen = true;
-        }
-
-        private void Radio_Checked(object sender, RoutedEventArgs e)
-        {
-            if (RadioID?.IsChecked == true)
-            {
-                AlgResults.SortByID(RadioUp?.IsChecked == false);
-            }
-
-            if (RadioBatch?.IsChecked == true)
-            {
-                AlgResults.SortByBatch(RadioUp?.IsChecked == false);
-            }
-
-            if (RadioFilePath?.IsChecked == true)
-            {
-                AlgResults.SortByFilePath(RadioUp?.IsChecked == false);
-            }
-
-            if (RadioCreateTime?.IsChecked == true)
-            {
-                AlgResults.SortByCreateTime(RadioUp?.IsChecked == false);
-            }
-
-            OrderPopup.IsOpen = false;
-        }
         public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
         private void ContextMenu1_Opened(object sender, RoutedEventArgs e)

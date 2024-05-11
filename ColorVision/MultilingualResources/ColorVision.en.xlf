@@ -55,6 +55,10 @@
           <source>基本信息</source>
           <target state="new">Basic Information</target>
         </trans-unit>
+        <trans-unit id="BatchNumber" translate="yes" xml:space="preserve">
+          <source>批次号</source>
+          <target state="new">batch number</target>
+        </trans-unit>
         <trans-unit id="Calculate" translate="yes" xml:space="preserve">
           <source>计算</source>
           <target state="new">Calculate</target>
@@ -215,6 +219,10 @@
           <source>发生错误</source>
           <target state="new">An error occurred</target>
         </trans-unit>
+        <trans-unit id="Exchange" translate="yes" xml:space="preserve">
+          <source>交换</source>
+          <target state="new">Exchange</target>
+        </trans-unit>
         <trans-unit id="ExecutionProcess" translate="yes" xml:space="preserve">
           <source>执行流程</source>
           <target state="new">Implementation process</target>
@@ -226,6 +234,18 @@
         <trans-unit id="Export" translate="yes" xml:space="preserve">
           <source>导出</source>
           <target state="new">Export</target>
+        </trans-unit>
+        <trans-unit id="ExposureB" translate="yes" xml:space="preserve">
+          <source>曝光B</source>
+          <target state="new">Exposure B</target>
+        </trans-unit>
+        <trans-unit id="ExposureG" translate="yes" xml:space="preserve">
+          <source>曝光G</source>
+          <target state="new">Exposure G</target>
+        </trans-unit>
+        <trans-unit id="ExposureR" translate="yes" xml:space="preserve">
+          <source>曝光R</source>
+          <target state="new">Exposure R</target>
         </trans-unit>
         <trans-unit id="Failure" translate="yes" xml:space="preserve">
           <source>失败</source>
