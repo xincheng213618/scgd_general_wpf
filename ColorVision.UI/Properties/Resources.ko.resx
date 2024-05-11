@@ -174,4 +174,7 @@
   <data name="MenuOptions" xml:space="preserve">
     <value>옵션 (_O)</value>
   </data>
+  <data name="AutoAdjustColumnWidth" xml:space="preserve">
+    <value>열 너비 자동 조정</value>
+  </data>
 </root>

@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.Sorts;
+﻿using ColorVision.UI.Sorts;
 using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 using System;

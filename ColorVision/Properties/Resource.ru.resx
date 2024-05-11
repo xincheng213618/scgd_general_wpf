@@ -867,4 +867,22 @@
   <data name="AdvanceSearch" xml:space="preserve">
     <value>Расширенный поиск</value>
   </data>
+  <data name="AlgorithmView_类型" xml:space="preserve">
+    <value>тип</value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value>измерять время</value>
+  </data>
+  <data name="ViewCamera_图像数据文件" xml:space="preserve">
+    <value>файл данных изображения</value>
+  </data>
+  <data name="Exposure" xml:space="preserve">
+    <value>контакт</value>
+  </data>
+  <data name="Video" xml:space="preserve">
+    <value>видео режим</value>
+  </data>
+  <data name="DeviceCameraSign1" xml:space="preserve">
+    <value>Устройство не в сети. Сначала настройте идентификатор камеры.</value>
+  </data>
 </root>

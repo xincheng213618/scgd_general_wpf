@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.Sorts;
+﻿using ColorVision.UI.Sorts;
 using ColorVision.Services.Templates.POI.Dao;
 
 namespace ColorVision.Services.Templates.POI

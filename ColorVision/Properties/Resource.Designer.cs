@@ -511,6 +511,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 设备离线，请先配置相机ID 的本地化字符串。
+        /// </summary>
+        public static string DeviceCameraSign1 {
+            get {
+                return ResourceManager.GetString("DeviceCameraSign1", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 设备码 的本地化字符串。
         /// </summary>
         public static string DeviceCode {
@@ -633,6 +642,15 @@ namespace ColorVision.Properties {
         public static string Export {
             get {
                 return ResourceManager.GetString("Export", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 曝光 的本地化字符串。
+        /// </summary>
+        public static string Exposure {
+            get {
+                return ResourceManager.GetString("Exposure", resourceCulture);
             }
         }
         
@@ -2253,6 +2271,24 @@ namespace ColorVision.Properties {
         public static string UserPwd {
             get {
                 return ResourceManager.GetString("UserPwd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 视频模式 的本地化字符串。
+        /// </summary>
+        public static string Video {
+            get {
+                return ResourceManager.GetString("Video", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 图像数据文件 的本地化字符串。
+        /// </summary>
+        public static string ViewCamera_图像数据文件 {
+            get {
+                return ResourceManager.GetString("ViewCamera_图像数据文件", resourceCulture);
             }
         }
         

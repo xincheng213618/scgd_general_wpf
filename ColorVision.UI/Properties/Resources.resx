@@ -154,4 +154,7 @@
   <data name="MenuOptions" xml:space="preserve">
     <value>选项(_O)</value>
   </data>
+  <data name="AutoAdjustColumnWidth" xml:space="preserve">
+    <value>自动调整列宽</value>
+  </data>
 </root>

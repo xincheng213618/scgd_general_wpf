@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Sorts;
+using ColorVision.UI.Sorts;
 using ColorVision.Services.Dao;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;

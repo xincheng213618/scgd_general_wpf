@@ -2,7 +2,7 @@
 using System.Linq;
 using ColorVision.NativeMethods;
 
-namespace ColorVision.Common.Sorts
+namespace ColorVision.UI.Sorts
 {
     public interface ISortBatch
     {

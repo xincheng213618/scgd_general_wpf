@@ -1,19 +1,20 @@
 ﻿using System.Collections.ObjectModel;
 using System.Linq;
+using ColorVision.NativeMethods;
 
-namespace ColorVision.Common.Sorts
+namespace ColorVision.UI.Sorts
 {
-    public interface ISortName
+    public interface ISortFilePath
     {
-        public string? Name { get; set; }
+        public string? FilePath { get; set; }
     }
 
     public static partial class SortableExtension
     {
-        public static void SortByName<T>(this ObservableCollection<T> collection, bool descending = false) where T : ISortName
+        public static void SortByFilePath<T>(this ObservableCollection<T> collection, bool descending = false) where T : ISortFilePath
         {
             var sortedItems = collection.ToList();
-            sortedItems.Sort((x, y) => descending ? string.Compare(y.Name, x.Name, System.StringComparison.Ordinal) : string.Compare(x.Name, y.Name, System.StringComparison.Ordinal));
+            sortedItems.Sort((x, y) => descending ? Shlwapi.CompareLogical(y.FilePath??string.Empty, x.FilePath ?? string.Empty) : Shlwapi.CompareLogical(x.FilePath ?? string.Empty, y.FilePath ?? string.Empty));
 
             int index = 0;
             while (index < sortedItems.Count)

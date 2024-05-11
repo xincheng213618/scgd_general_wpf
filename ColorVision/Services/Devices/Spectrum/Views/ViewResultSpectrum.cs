@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.ObjectModel;
 using System.Drawing;
-using ColorVision.Common.Sorts;
+using ColorVision.UI.Sorts;
 using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.Spectrum.Dao;
 using Newtonsoft.Json;

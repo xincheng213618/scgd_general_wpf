@@ -1,4 +1,4 @@
-﻿namespace ColorVision.Common.Sorts
+﻿namespace ColorVision.UI.Sorts
 {
     public interface ISortable : ISortID, ISortCreateTime, ISortBatch, ISortBatchID
     {

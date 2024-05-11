@@ -1,5 +1,5 @@
 ﻿#pragma warning disable CS8604,CS8629
-using ColorVision.Common.Sorts;
+using ColorVision.UI.Sorts;
 using ColorVision.Common.Utilities;
 using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
@@ -395,28 +395,27 @@ namespace ColorVision.Services.Devices.Camera.Views
                 {
                     if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
                     {
-                        switch (item.ColumnName)
+                        string Name = item.ColumnName.ToString();
+                        if (Name == ColorVision.Properties.Resource.SerialNumber1)
                         {
-                            case "序号":
-                                item.IsSortD = !item.IsSortD;
-                                ViewResultCameras.SortByID(item.IsSortD);
-                                break;
-                            case "测量时间":
-                                item.IsSortD = !item.IsSortD;
-                                ViewResultCameras.SortByCreateTime(item.IsSortD);
-                                break;
-                            case "批次号":
-                                item.IsSortD = !item.IsSortD;
-                                ViewResultCameras.SortByBatch(item.IsSortD);
-                                break;
-                            case "图像数据文件":
-                                item.IsSortD = !item.IsSortD;
-                                ViewResultCameras.SortByFilePath(item.IsSortD);
-                                break;
-                            default:
-                                break;
+                            item.IsSortD = !item.IsSortD;
+                            ViewResultCameras.SortByID(item.IsSortD);
                         }
-                        break;
+                        else if (Name == ColorVision.Properties.Resource.CreateTime)
+                        {
+                            item.IsSortD = !item.IsSortD;
+                            ViewResultCameras.SortByCreateTime(item.IsSortD);
+                        }
+                        else if (Name == ColorVision.Properties.Resource.BatchNumber)
+                        {
+                            item.IsSortD = !item.IsSortD;
+                            ViewResultCameras.SortByBatch(item.IsSortD);
+                        }
+                        else if (Name == ColorVision.Properties.Resource.File)
+                        {
+                            item.IsSortD = !item.IsSortD;
+                            ViewResultCameras.SortByFilePath(item.IsSortD);
+                        }
                     }
                 }
             }

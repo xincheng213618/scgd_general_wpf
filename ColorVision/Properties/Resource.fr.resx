@@ -867,4 +867,22 @@
   <data name="AdvanceSearch" xml:space="preserve">
     <value>Recherche Avancée</value>
   </data>
+  <data name="AlgorithmView_类型" xml:space="preserve">
+    <value>taper</value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value>mesurer le temps</value>
+  </data>
+  <data name="ViewCamera_图像数据文件" xml:space="preserve">
+    <value>fichier de données d'image</value>
+  </data>
+  <data name="Exposure" xml:space="preserve">
+    <value>exposition</value>
+  </data>
+  <data name="Video" xml:space="preserve">
+    <value>mode vidéo</value>
+  </data>
+  <data name="DeviceCameraSign1" xml:space="preserve">
+    <value>L'appareil est hors ligne, veuillez d'abord configurer l'ID de la caméra</value>
+  </data>
 </root>

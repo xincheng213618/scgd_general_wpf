@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.Sorts;
+﻿using ColorVision.UI.Sorts;
 using ColorVision.Update;
 using System;
 using System.Collections.Generic;

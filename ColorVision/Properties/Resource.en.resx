@@ -867,4 +867,22 @@
   <data name="AdvanceSearch" xml:space="preserve">
     <value>Advanced Search</value>
   </data>
+  <data name="AlgorithmView_类型" xml:space="preserve">
+    <value>Type</value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value>CreateTime</value>
+  </data>
+  <data name="ViewCamera_图像数据文件" xml:space="preserve">
+    <value>Image data file</value>
+  </data>
+  <data name="Exposure" xml:space="preserve">
+    <value>Exposure</value>
+  </data>
+  <data name="Video" xml:space="preserve">
+    <value>Video Mode</value>
+  </data>
+  <data name="DeviceCameraSign1" xml:space="preserve">
+    <value>The device is offline, please configure the camera ID first</value>
+  </data>
 </root>

@@ -2,7 +2,7 @@
 using System.Collections.ObjectModel;
 using System.Linq;
 
-namespace ColorVision.Common.Sorts
+namespace ColorVision.UI.Sorts
 {
     public interface ISortCreateTime
     {

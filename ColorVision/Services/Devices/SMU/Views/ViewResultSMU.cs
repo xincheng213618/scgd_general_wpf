@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Sorts;
+using ColorVision.UI.Sorts;
 using ColorVision.Services.Devices.SMU.Dao;
 using Newtonsoft.Json;
 using ScottPlot;

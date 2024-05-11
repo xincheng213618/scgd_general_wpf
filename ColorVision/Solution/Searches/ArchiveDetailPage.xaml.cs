@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.Sorts;
+﻿using ColorVision.UI.Sorts;
 using ColorVision.Common.MVVM;
 using ColorVision.Services.DAO;
 using System;

@@ -1,20 +1,27 @@
 ﻿using System.Collections.ObjectModel;
 using System.Linq;
-using ColorVision.NativeMethods;
 
-namespace ColorVision.Common.Sorts
+namespace ColorVision.UI.Sorts
 {
-    public interface ISortFilePath
+    public interface ISortID
     {
-        public string? FilePath { get; set; }
+        public int Id { get;  }
     }
 
     public static partial class SortableExtension
     {
-        public static void SortByFilePath<T>(this ObservableCollection<T> collection, bool descending = false) where T : ISortFilePath
+        public static void AddUnique<T>(this ObservableCollection<T> collection,T item) where T : ISortID
+        {
+            if (!collection.Any(existingItem => existingItem.Id == item.Id))
+            {
+                collection.Add(item);
+            }
+        }
+
+        public static void SortByID<T>(this ObservableCollection<T> collection, bool descending = false) where T : ISortID
         {
             var sortedItems = collection.ToList();
-            sortedItems.Sort((x, y) => descending ? Shlwapi.CompareLogical(y.FilePath??string.Empty, x.FilePath ?? string.Empty) : Shlwapi.CompareLogical(x.FilePath ?? string.Empty, y.FilePath ?? string.Empty));
+            sortedItems.Sort((x, y) => descending ? y.Id.CompareTo(x.Id) : x.Id.CompareTo(y.Id));
 
             int index = 0;
             while (index < sortedItems.Count)

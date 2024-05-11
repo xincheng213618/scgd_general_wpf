@@ -6,7 +6,7 @@ using System.Linq;
 using System.Windows.Controls;
 using System.Windows.Data;
 
-namespace ColorVision.Common.Sorts
+namespace ColorVision.UI.Sorts
 {
     public static class GridViewColumnVisibilityExtension
     {
@@ -102,7 +102,7 @@ namespace ColorVision.Common.Sorts
         public static void GenContentMenuGridViewColumn(ContextMenu contextMenu,GridViewColumnCollection gridViewColumns, ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys)
         {
             MenuItem menuItemAuto = new MenuItem();
-            menuItemAuto.Header = "自动调整列宽";
+            menuItemAuto.Header = ColorVision.UI.Properties.Resources.AutoAdjustColumnWidth;
             menuItemAuto.Click += (s, e) =>
             {
                 AdjustGridViewColumnAuto(gridViewColumns, gridViewColumnVisibilitys);

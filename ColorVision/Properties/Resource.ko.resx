@@ -867,4 +867,22 @@
   <data name="AdvanceSearch" xml:space="preserve">
     <value>고급 검색</value>
   </data>
+  <data name="AlgorithmView_类型" xml:space="preserve">
+    <value>유형</value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value>시간을 측정하다</value>
+  </data>
+  <data name="ViewCamera_图像数据文件" xml:space="preserve">
+    <value>이미지 데이터 파일</value>
+  </data>
+  <data name="Exposure" xml:space="preserve">
+    <value>노출</value>
+  </data>
+  <data name="Video" xml:space="preserve">
+    <value>비디오 모드</value>
+  </data>
+  <data name="DeviceCameraSign1" xml:space="preserve">
+    <value>기기가 오프라인 상태입니다. 먼저 카메라 ID를 구성하세요.</value>
+  </data>
 </root>

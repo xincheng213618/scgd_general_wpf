@@ -3,6 +3,10 @@
   <file datatype="xml" source-language="zh-Hans" target-language="ko" original="COLORVISION.UI/PROPERTIES/RESOURCES.RESX">
     <body>
       <group id="COLORVISION.UI/PROPERTIES/RESOURCES.RESX" datatype="resx">
+        <trans-unit id="AutoAdjustColumnWidth" translate="yes" xml:space="preserve">
+          <source>自动调整列宽</source>
+          <target state="new">열 너비 자동 조정</target>
+        </trans-unit>
         <trans-unit id="GlobalMode" translate="yes" xml:space="preserve">
           <source>全局</source>
           <target state="new">글로벌</target>

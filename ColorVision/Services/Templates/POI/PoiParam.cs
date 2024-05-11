@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Sorts;
+using ColorVision.UI.Sorts;
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Flow;

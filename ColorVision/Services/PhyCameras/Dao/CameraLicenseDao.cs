@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using Newtonsoft.Json;
-using ColorVision.Common.Sorts;
+using ColorVision.UI.Sorts;
 using ColorVision.MySql.ORM;
 
 namespace ColorVision.Services.PhyCameras.Dao

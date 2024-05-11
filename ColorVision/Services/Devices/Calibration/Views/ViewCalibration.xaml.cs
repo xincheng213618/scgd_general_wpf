@@ -17,7 +17,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Services.Templates;
 using ColorVision.Services.Templates.POI;
-using ColorVision.Common.Sorts;
+using ColorVision.UI.Sorts;
 using ColorVision.Services.Devices.Camera.Views;
 using MQTTMessageLib.Camera;
 using System.Linq;

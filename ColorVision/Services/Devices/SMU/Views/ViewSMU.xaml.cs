@@ -10,7 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using ColorVision.Common.Sorts;
+using ColorVision.UI.Sorts;
 
 namespace ColorVision.Services.Devices.SMU.Views
 {

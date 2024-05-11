@@ -867,4 +867,22 @@
   <data name="AdvanceSearch" xml:space="preserve">
     <value>高度な検索</value>
   </data>
+  <data name="AlgorithmView_类型" xml:space="preserve">
+    <value>タイプ</value>
+  </data>
+  <data name="CreateTime" xml:space="preserve">
+    <value>時間を計る</value>
+  </data>
+  <data name="ViewCamera_图像数据文件" xml:space="preserve">
+    <value>画像データファイル</value>
+  </data>
+  <data name="Exposure" xml:space="preserve">
+    <value>暴露</value>
+  </data>
+  <data name="Video" xml:space="preserve">
+    <value>ビデオモード</value>
+  </data>
+  <data name="DeviceCameraSign1" xml:space="preserve">
+    <value>デバイスはオフラインです。最初にカメラ ID を設定してください</value>
+  </data>
 </root>

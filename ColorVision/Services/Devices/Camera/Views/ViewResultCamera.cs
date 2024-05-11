@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CS8604,CS8629
 using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Sorts;
+using ColorVision.UI.Sorts;
 using ColorVision.Common.Utilities;
 using ColorVision.Media;
 using ColorVision.Net;

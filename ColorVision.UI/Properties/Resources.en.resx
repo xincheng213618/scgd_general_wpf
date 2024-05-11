@@ -174,4 +174,7 @@
   <data name="MenuOptions" xml:space="preserve">
     <value>_Options</value>
   </data>
+  <data name="AutoAdjustColumnWidth" xml:space="preserve">
+    <value>Auto Adjust Column Width</value>
+  </data>
 </root>

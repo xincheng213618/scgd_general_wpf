@@ -873,4 +873,16 @@
   <data name="CreateTime" xml:space="preserve">
     <value>测量时间</value>
   </data>
+  <data name="ViewCamera_图像数据文件" xml:space="preserve">
+    <value>图像数据文件</value>
+  </data>
+  <data name="Exposure" xml:space="preserve">
+    <value>曝光</value>
+  </data>
+  <data name="Video" xml:space="preserve">
+    <value>视频模式</value>
+  </data>
+  <data name="DeviceCameraSign1" xml:space="preserve">
+    <value>设备离线，请先配置相机ID</value>
+  </data>
 </root>

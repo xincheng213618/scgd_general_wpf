@@ -1,27 +1,19 @@
 ﻿using System.Collections.ObjectModel;
 using System.Linq;
 
-namespace ColorVision.Common.Sorts
+namespace ColorVision.UI.Sorts
 {
-    public interface ISortID
+    public interface ISortName
     {
-        public int Id { get;  }
+        public string? Name { get; set; }
     }
 
     public static partial class SortableExtension
     {
-        public static void AddUnique<T>(this ObservableCollection<T> collection,T item) where T : ISortID
-        {
-            if (!collection.Any(existingItem => existingItem.Id == item.Id))
-            {
-                collection.Add(item);
-            }
-        }
-
-        public static void SortByID<T>(this ObservableCollection<T> collection, bool descending = false) where T : ISortID
+        public static void SortByName<T>(this ObservableCollection<T> collection, bool descending = false) where T : ISortName
         {
             var sortedItems = collection.ToList();
-            sortedItems.Sort((x, y) => descending ? y.Id.CompareTo(x.Id) : x.Id.CompareTo(y.Id));
+            sortedItems.Sort((x, y) => descending ? string.Compare(y.Name, x.Name, System.StringComparison.Ordinal) : string.Compare(x.Name, y.Name, System.StringComparison.Ordinal));
 
             int index = 0;
             while (index < sortedItems.Count)
