@@ -111,14 +111,14 @@ namespace ColorVision.Settings
             SoftwareConfig.MQTTConfig.UserPwd = Cryptography.AESEncrypt(SoftwareConfig.MQTTConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
             SoftwareConfig.UserConfig.UserPwd = Cryptography.AESEncrypt(SoftwareConfig.UserConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
 
-            List<string> MySqlConfigsPwd = new List<string>();
+            List<string> MySqlConfigsPwd = new();
             foreach (var item in SoftwareConfig.MySqlConfigs)
             {
                 MySqlConfigsPwd.Add(item.UserPwd);
                 item.UserPwd = Cryptography.AESEncrypt(item.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
             }
 
-            List<string> MQTTConfigsPwd = new List<string>();
+            List<string> MQTTConfigsPwd = new();
             foreach (var item in SoftwareConfig.MQTTConfigs)
             {
                 MQTTConfigsPwd.Add(item.UserPwd);
@@ -137,7 +137,7 @@ namespace ColorVision.Settings
                 SoftwareConfig.MQTTConfigs[i].UserPwd = MQTTConfigsPwd[i];
         }
 
-        private static JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions() { WriteIndented = true,DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+        private static JsonSerializerOptions jsonSerializerOptions = new() { WriteIndented = true,DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
         private static T? ReadConfig<T>(string fileName)
         {
             if (File.Exists(fileName))
@@ -172,7 +172,7 @@ namespace ColorVision.Settings
 
             if (File.Exists(fileName))
             {
-                FileInfo fileInfo = new FileInfo(fileName);
+                FileInfo fileInfo = new(fileName);
                 fileInfo.IsReadOnly = false;
             }
 

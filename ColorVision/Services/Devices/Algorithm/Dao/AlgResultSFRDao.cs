@@ -25,7 +25,7 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
 
         public override AlgResultSFRModel GetModelFromDataRow(DataRow item)
         {
-            AlgResultSFRModel model = new AlgResultSFRModel
+            AlgResultSFRModel model = new()
             {
                 Id = item.Field<int>("id"),
                 Pid = item.Field<int?>("pid") ?? -1,

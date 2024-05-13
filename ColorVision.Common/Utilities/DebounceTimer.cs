@@ -6,7 +6,7 @@ namespace ColorVision.Common.Utilities
 {
     public static class DebounceTimer
     {
-        private static readonly ConcurrentDictionary<string, Timer> _timers = new ConcurrentDictionary<string, Timer>();
+        private static readonly ConcurrentDictionary<string, Timer> _timers = new();
 
 
         public static void AddOrResetTimer<T>(string actionType, int delayMilliseconds, Action<T> action, T parameter)

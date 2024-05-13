@@ -34,7 +34,7 @@ namespace ColorVision.Solution
         {
             get
             {
-                TextBlock text = new TextBlock
+                TextBlock text = new()
                 {
                     Text = "\uE8E5", // 使用Unicode字符
                     FontFamily = new FontFamily("Segoe MDL2 Assets"),
@@ -46,15 +46,15 @@ namespace ColorVision.Solution
         }
 
 
-        public RelayCommand Command => new RelayCommand(A => Execute());
+        public RelayCommand Command => new(A => Execute());
 
 
-        public HotKeys HotKeys => new HotKeys(Properties.Resource.OpenSolution, new Hotkey(Key.O, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(Properties.Resource.OpenSolution, new Hotkey(Key.O, ModifierKeys.Control), Execute);
 
 
         private void Execute()
         {
-            OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            OpenSolutionWindow openSolutionWindow = new() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             openSolutionWindow.Closed += delegate
             {
                 if (!string.IsNullOrWhiteSpace(openSolutionWindow.FullName))
@@ -81,7 +81,7 @@ namespace ColorVision.Solution
         }
         public string FullName { get; set; } = string.Empty;
 
-        RecentFileList SolutionHistory = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
+        RecentFileList SolutionHistory = new() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
 
         public ObservableCollection<SolutionInfo> SolutionInfos { get; set; }= new ObservableCollection<SolutionInfo>();
         public ObservableCollection<SolutionInfo> SolutionInfosShow { get; set; }
@@ -93,7 +93,7 @@ namespace ColorVision.Solution
             
             foreach (var item in SolutionHistory.RecentFiles)
             {
-                FileInfo Info = new FileInfo(item);
+                FileInfo Info = new(item);
                 if (Info.Exists)
                 {
                     SolutionInfos.Add(new SolutionInfo() { Name = Info.Name, FullName = Info.FullName, CreationTime = Info.CreationTime.ToString("yyyy/MM/dd H:mm") });

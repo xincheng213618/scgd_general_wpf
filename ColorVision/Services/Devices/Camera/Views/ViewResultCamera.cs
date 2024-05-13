@@ -53,17 +53,17 @@ namespace ColorVision.Services.Devices.Camera.Views
 
         public void Export()
         {
-            ExportCVCIE exportCVCIE = new ExportCVCIE(FileUrl);
+            ExportCVCIE exportCVCIE = new(FileUrl);
             exportCVCIE.Show();
         }
         public void Open()
         {
             if (File.Exists(FileUrl))
             {
-                ImageView imageView = new ImageView();
+                ImageView imageView = new();
 
                 CVFileUtil.ReadCVRaw(FileUrl, out CVCIEFile fileInfo);
-                Window window = new Window() { Title = ColorVision.Properties.Resource.QuickPreview, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                Window window = new() { Title = ColorVision.Properties.Resource.QuickPreview, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 window.Content = imageView;
                 imageView.OpenImage(new NetFileUtil().OpenLocalCVFile(FileUrl));
 

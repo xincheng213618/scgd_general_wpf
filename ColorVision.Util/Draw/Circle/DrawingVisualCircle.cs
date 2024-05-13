@@ -25,7 +25,7 @@ namespace ColorVision.Draw
             Attribute.PropertyChanged += (s,e)=> { if (AutoAttributeChanged && e.PropertyName != "ID") Render(); };
         }
 
-        private TextAttribute TextAttribute = new TextAttribute();
+        private TextAttribute TextAttribute = new();
 
         public bool IsDrawing { get; set; }
 
@@ -35,13 +35,13 @@ namespace ColorVision.Draw
             {
                 TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
                 string Text = Attribute.Center.X.ToString("F0") + "," + Attribute.Center.Y.ToString("F0");
-                FormattedText formattedText = new FormattedText(Text, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                FormattedText formattedText = new(Text, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 
                 using DrawingContext dc = RenderOpen();
                 dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.Radius);
                 dc.DrawText(formattedText, Attribute.Center);
 
-                FormattedText RadiusText = new FormattedText(Attribute.Radius.ToString("F2"), CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                FormattedText RadiusText = new(Attribute.Radius.ToString("F2"), CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 dc.DrawText(RadiusText,  new Point(Attribute.Radius + Attribute.Center.X, Attribute.Center.Y));
             }
             else

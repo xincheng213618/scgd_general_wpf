@@ -26,7 +26,7 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
 
         public override AlgResultDistortionModel GetModelFromDataRow(DataRow item)
         {
-            AlgResultDistortionModel model = new AlgResultDistortionModel
+            AlgResultDistortionModel model = new()
             {
                 Id = item.Field<int>("id"),
                 Pid = item.Field<int?>("pid") ?? -1,

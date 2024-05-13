@@ -27,7 +27,7 @@ namespace ColorVision.Services.Dao.Validate
 
         }
 
-        public override SysDictionaryModItemValidateModel GetModelFromDataRow(DataRow item) => new SysDictionaryModItemValidateModel
+        public override SysDictionaryModItemValidateModel GetModelFromDataRow(DataRow item) => new()
         {
             Id = item.Field<int>("id"),
             Pid = item.Field<int>("pid"),

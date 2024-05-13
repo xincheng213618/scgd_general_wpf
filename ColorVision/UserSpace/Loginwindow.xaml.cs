@@ -11,7 +11,7 @@ namespace ColorVision.UserSpace
 {
     public class ExportLogin : IMenuItem
     {
-        public string? OwnerGuid => "Tool";
+        public string? OwnerGuid => "Help";
 
         public string? GuidId => "Login";
 
@@ -22,7 +22,7 @@ namespace ColorVision.UserSpace
         public string? InputGestureText => null;
 
         public object? Icon => null;
-        public RelayCommand Command => new RelayCommand(A =>
+        public RelayCommand Command => new(A =>
         {
             if (UserManager.Current.UserConfig != null)
             {
@@ -55,7 +55,7 @@ namespace ColorVision.UserSpace
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            UserDao userDao = new UserDao();
+            UserDao userDao = new();
             if (userDao.Checklogin(Account1.Text, PasswordBox1.Password))
             {
                 Close();

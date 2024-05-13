@@ -114,7 +114,7 @@ namespace ColorVision.Services.Devices
             ContextMenu = new ContextMenu();
 
             ExportCommand = new RelayCommand(a => {
-                System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
+                System.Windows.Forms.SaveFileDialog ofd = new();
                 ofd.Filter = "*.config|*.config";
                 ofd.FileName = Config?.Name;
                 ofd.RestoreDirectory = true;
@@ -140,13 +140,13 @@ namespace ColorVision.Services.Devices
 
             ResourceManagerCommand = new RelayCommand(a => 
             {
-                ResourceManager resourceManager = new ResourceManager(this) { Owner = WindowHelpers.GetActiveWindow() };
+                ResourceManager resourceManager = new(this) { Owner = WindowHelpers.GetActiveWindow() };
                 resourceManager.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 resourceManager.ShowDialog();
             });
 
             ImportCommand = new RelayCommand(a => {
-                System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
+                System.Windows.Forms.SaveFileDialog ofd = new();
                 ofd.Filter = "*.config|*.config";
                 ofd.RestoreDirectory = true;
                 ofd.SupportMultiDottedExtensions = false;
@@ -165,7 +165,7 @@ namespace ColorVision.Services.Devices
 
             PropertyCommand = new RelayCommand((e) =>
             {
-                Window window = new Window() { Width = 700, Height = 400, Icon = Icon,Title = Properties.Resource.Property };
+                Window window = new() { Width = 700, Height = 400, Icon = Icon,Title = Properties.Resource.Property };
                 window.Content = GetDeviceInfo();
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;

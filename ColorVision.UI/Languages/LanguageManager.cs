@@ -24,7 +24,7 @@ namespace ColorVision.UI.Languages
 
         public static List<string> GetDefaultLanguages(string DefalutProcessDllName = "ColorVision.resources.dll")
         {
-            List<string> list = new List<string>() { };
+            List<string> list = new() { };
             string exeFolderPath = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
             foreach (var subDirectory in Directory.GetDirectories(exeFolderPath ?? string.Empty))
             {
@@ -46,7 +46,7 @@ namespace ColorVision.UI.Languages
             keyValuePairs ??= new Dictionary<string, string>();
             keyValuePairs.Clear();
 
-            List<string>  list =  new List<string>() { };
+            List<string>  list =  new() { };
             list.Add(Thread.CurrentThread.CurrentUICulture.Name);
 
             if (Thread.CurrentThread.CurrentUICulture.Name == CultureInfo.InstalledUICulture.Name)

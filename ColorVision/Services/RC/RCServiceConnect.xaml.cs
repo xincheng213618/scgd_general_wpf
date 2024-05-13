@@ -120,13 +120,13 @@ namespace ColorVision.Services.RC
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
         {
-            RCServiceConfig rCServiceConfig = new RCServiceConfig();
+            RCServiceConfig rCServiceConfig = new();
             rcServiceConfigs.Add(rCServiceConfig);
             ListViewRC.SelectedValue = rCServiceConfig;
         }
         private void Button_Click_Copy(object sender, RoutedEventArgs e)
         {
-            RCServiceConfig newCfg = new RCServiceConfig();
+            RCServiceConfig newCfg = new();
             rcServiceConfig.CopyTo(newCfg);
 
             newCfg.Name = newCfg.Name + "_1";
@@ -135,7 +135,7 @@ namespace ColorVision.Services.RC
 
         private void Button_Click_New(object sender, RoutedEventArgs e)
         {
-            RCServiceConfig newCfg = new RCServiceConfig();
+            RCServiceConfig newCfg = new();
             newCfg.Name = "New Profile";
             rcServiceConfigs.Add(newCfg);
         }

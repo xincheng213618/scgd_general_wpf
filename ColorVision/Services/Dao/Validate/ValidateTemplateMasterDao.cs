@@ -32,7 +32,7 @@ namespace ColorVision.Services.DAO.Validate
         }
         public override BatchResultMasterModel GetModelFromDataRow(DataRow item)
         {
-            BatchResultMasterModel model = new BatchResultMasterModel
+            BatchResultMasterModel model = new()
             {
                 Id = item.Field<int>("id"),
                 TId = item.Field<int?>("t_id"),

@@ -27,14 +27,14 @@ namespace ColorVision.Tools
 
         public object? Icon => null;
 
-        public RelayCommand Command => new RelayCommand(A => Execute());
+        public RelayCommand Command => new(A => Execute());
 
         private static void Execute()
         {
             if (!File.Exists(ConfigHandler.GetInstance().SoftwareConfig.CalibToolsPath))
             {
                 if (MessageBox.Show(Application.Current.GetActiveWindow(), "I can't find CalibTools (CalibTools.exe). Would you like to help me find it?", "Open in CalibTools", MessageBoxButton.YesNo) == MessageBoxResult.No) return;
-                using (System.Windows.Forms.OpenFileDialog openFileDialog = new System.Windows.Forms.OpenFileDialog())
+                using (System.Windows.Forms.OpenFileDialog openFileDialog = new())
                 {
                     openFileDialog.Title = "Select CalibTools.exe";
                     openFileDialog.Filter = "CalibTools.exe|CalibTools.exe";

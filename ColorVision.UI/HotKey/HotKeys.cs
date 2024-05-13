@@ -13,8 +13,8 @@ namespace ColorVision.UI.HotKey
     [Serializable]
     public class HotKeys : INotifyPropertyChanged
     {
-        public static readonly List<HotKeys> HotKeysList = new List<HotKeys>();
-        public static readonly Dictionary<HotKeys,Hotkey> HotKeysDefaultHotkey = new Dictionary<HotKeys, Hotkey>();
+        public static readonly List<HotKeys> HotKeysList = new();
+        public static readonly Dictionary<HotKeys,Hotkey> HotKeysDefaultHotkey = new();
 
         /// <summary>
         /// 设置为默认方法

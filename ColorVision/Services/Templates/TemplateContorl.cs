@@ -28,7 +28,7 @@ namespace ColorVision.Services.Templates
 
             ConfigHandler.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
             {
-                Thread thread = new Thread(async () =>
+                Thread thread = new(async () =>
                 {
                     if (!MySqlControl.GetInstance().IsConnect)
                         await MySqlControl.GetInstance().Connect();
@@ -72,10 +72,10 @@ namespace ColorVision.Services.Templates
             if (ModMasterDao.Instance.GetById(value.Id) is ModMasterModel modMasterModel && modMasterModel.Pcode != null)
             {
                 modMasterModel.Name = value.Name;
-                ModMasterDao modMasterDao = new ModMasterDao(modMasterModel.Pcode);
+                ModMasterDao modMasterDao = new(modMasterModel.Pcode);
                 modMasterDao.Save(modMasterModel);
             }
-            List<ModDetailModel> list = new List<ModDetailModel>();
+            List<ModDetailModel> list = new();
             value.GetDetail(list);
             ModDetailDao.Instance.UpdateByPid(value.Id, list);
         }
@@ -86,7 +86,7 @@ namespace ColorVision.Services.Templates
             ParamModes.Clear();
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                ModMasterDao masterFlowDao = new ModMasterDao(ModeType);
+                ModMasterDao masterFlowDao = new(ModeType);
 
                 List<ModMasterModel> smus = masterFlowDao.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in smus)
@@ -103,7 +103,7 @@ namespace ColorVision.Services.Templates
 
         public static T? AddParamMode<T>(string code, string Name, int resourceId =-1) where T : ParamBase, new()
         {
-            ModMasterModel modMaster = new ModMasterModel(code, Name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            ModMasterModel modMaster = new(code, Name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             if (resourceId>0)
                 modMaster.ResourceId = resourceId;
             Save(modMaster);
@@ -127,7 +127,7 @@ namespace ColorVision.Services.Templates
             {
                 modMaster.Pid = mod.Id;
                 ret = ModMasterDao.Instance.Save(modMaster);
-                List<ModDetailModel> list = new List<ModDetailModel>();
+                List<ModDetailModel> list = new();
                 List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(modMaster.Pid);
                 foreach (var item in sysDic)
                 {

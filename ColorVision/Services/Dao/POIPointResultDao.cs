@@ -29,7 +29,7 @@ namespace ColorVision.Services.Dao
 
         public override POIPointResultModel GetModelFromDataRow(DataRow item)
         {
-            POIPointResultModel model = new POIPointResultModel
+            POIPointResultModel model = new()
             {
                 Id = item.Field<int>("id"),
                 Pid = item.Field<int?>("pid"),

@@ -24,7 +24,7 @@ namespace ColorVision.Services
 
         public object? Icon { get; set; }
 
-        public RelayCommand Command => new RelayCommand(a =>
+        public RelayCommand Command => new(a =>
         {
             new WindowService() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         });

@@ -103,7 +103,7 @@ namespace ColorVision.Services.Devices.Sensor
         {
             if (ComboBoxType.SelectedItem is SensorCmdType CmdType)
             {
-                SensorCmd cmd = new SensorCmd() { CmdType = CmdType, Request = TextBoxSendCommand.Text, Response = TextBoxResCommand.Text, Timeout = 5000 };
+                SensorCmd cmd = new() { CmdType = CmdType, Request = TextBoxSendCommand.Text, Response = TextBoxResCommand.Text, Timeout = 5000 };
                 DeviceService.ExecCmd(cmd);
             }
         }
@@ -112,7 +112,7 @@ namespace ColorVision.Services.Devices.Sensor
         {
             if (ComboxSensorTemplate.SelectedItem is TemplateModel<SensorHeYuan> sensorHeYuan)
             {
-                CVTemplateParam templateParam = new CVTemplateParam() { ID= sensorHeYuan.Value.Id, Name= sensorHeYuan.Value.Name };
+                CVTemplateParam templateParam = new() { ID= sensorHeYuan.Value.Id, Name= sensorHeYuan.Value.Name };
                 DeviceService.ExecCmd(templateParam);
             }
         }

@@ -135,7 +135,7 @@ namespace ColorVision.MySql
 
         private void Button_Click_Copy(object sender, RoutedEventArgs e)
         {
-            MySqlConfig mySqlConfig = new MySqlConfig() { };
+            MySqlConfig mySqlConfig = new() { };
             mySqlConfig.Name = mySqlConfig.Name + "_1";
 
             MySqlConfig.CopyTo(mySqlConfig);
@@ -144,7 +144,7 @@ namespace ColorVision.MySql
 
         private void Button_Click_New(object sender, RoutedEventArgs e)
         {
-            MySqlConfig newCfg = new MySqlConfig();
+            MySqlConfig newCfg = new();
             newCfg.Name = "New Profile";
             MySqlConfigs.Add(newCfg);
         }

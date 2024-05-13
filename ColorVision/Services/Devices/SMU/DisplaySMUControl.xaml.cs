@@ -124,7 +124,7 @@ namespace ColorVision.Services.Devices.SMU
             }
         }
 
-        PassSxSource passSxSource = new PassSxSource();
+        PassSxSource passSxSource = new();
 
         private void DoOpenByDll(Button button)
         {

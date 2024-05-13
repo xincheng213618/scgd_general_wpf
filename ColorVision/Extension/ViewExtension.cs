@@ -27,7 +27,7 @@ namespace ColorVision.Extension
 
             void ViewMaxChangedEvent(int max)
             {
-                List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>
+                List<KeyValuePair<string, int>> KeyValues = new()
                 {
                     new KeyValuePair<string, int>(Properties.Resource.WindowSingle, -2),
                     new KeyValuePair<string, int>(Properties.Resource.WindowHidden, -1)

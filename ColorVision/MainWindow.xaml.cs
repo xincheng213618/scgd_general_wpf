@@ -1,5 +1,6 @@
 ﻿using ColorVision.Adorners;
 using ColorVision.Common.Utilities;
+using ColorVision.MQTT;
 using ColorVision.MySql;
 using ColorVision.Projects;
 using ColorVision.Services.Flow;
@@ -21,6 +22,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
@@ -28,6 +30,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision
@@ -107,9 +110,9 @@ namespace ColorVision
                 Title = WindowConfig.Title ?? Title;
             }
 
-            ViewGridManager SolutionViewGridManager = new ViewGridManager();
+            ViewGridManager SolutionViewGridManager = new();
             SolutionViewGridManager.MainView = SolutionGrid;
-            SolutionView solutionView = new SolutionView();
+            SolutionView solutionView = new();
             SolutionViewGridManager.AddView(0, solutionView);
             solutionView.View.ViewIndex = 0;
             SolutionViewGridManager.SetViewNum(-1);
@@ -123,24 +126,24 @@ namespace ColorVision
             Closed += (s, e) => { Environment.Exit(-1); };
             Debug.WriteLine(Properties.Resource.LaunchSuccess);
 
-            MenuItem menulogs = new MenuItem() { Header = Properties.Resource.Log };
+            MenuItem menulogs = new() { Header = Properties.Resource.Log };
             MenuHelp.Items.Insert(0, menulogs);
 
-            MenuItem menulog = new MenuItem() { Header = Properties.Resource.x64ServiceLog };
+            MenuItem menulog = new() { Header = Properties.Resource.x64ServiceLog };
             menulog.Click += (s, e) =>
             {
                 PlatformHelper.OpenFolder("http://localhost:8064/system/log");
             };
             menulogs.Items.Insert(0, menulog);
 
-            MenuItem menulog1 = new MenuItem() { Header = Properties.Resource.CameraLog };
+            MenuItem menulog1 = new() { Header = Properties.Resource.CameraLog };
             menulog1.Click += (s, e) =>
             {
                 PlatformHelper.OpenFolder("http://localhost:8064/system/device/camera/log");
             };
             menulogs.Items.Insert(1, menulog1);
 
-            MenuItem menulog2 = new MenuItem() { Header = "x86服务相机日志" };
+            MenuItem menulog2 = new() { Header = "x86服务相机日志" };
             menulog2.Click += (s, e) =>
             {
                 PlatformHelper.OpenFolder("http://localhost:8086/system/log");
@@ -148,47 +151,31 @@ namespace ColorVision
             };
             menulogs.Items.Insert(2, menulog2);
 
-            MenuItem menulog3 = new MenuItem() { Header = Properties.Resource.SpectrometerLog };
+            MenuItem menulog3 = new() { Header = Properties.Resource.SpectrometerLog };
             menulog3.Click += (s, e) =>
             {
                 PlatformHelper.OpenFolder("http://localhost:8086/system/device/Spectrum/log");
             };
             menulogs.Items.Insert(3, menulog3);
 
-            MenuItem menulogs1 = new MenuItem() { Header = "RC服务日志" };
+            MenuItem menulogs1 = new() { Header = "RC服务日志" };
             menulogs1.Click += (s, e) =>
             {
                 PlatformHelper.OpenFolder("http://localhost:8080/system/log");
             };
             menulogs.Items.Insert(0, menulogs1);
 
-            MenuItem menuItem4 = new MenuItem() { Header = "河源精电" };
+            MenuItem menuItem4 = new() { Header = "河源精电" };
             menuItem4.Click += (s, e) =>
             {
-                ProjectHeyuan projectHeiyuan = new ProjectHeyuan();
+                ProjectHeyuan projectHeiyuan = new();
                 projectHeiyuan.Show();
             };
             menulogs.Items.Add(menuItem4);
 
-#if (DEBUG == true)
-            MenuItem menuItem = new MenuItem() { Header = Properties.Resource.ExperimentalFeature };
-            MenuItem menuItem1 = new MenuItem() { Header = "折线图" };
-            menuItem1.Click += Test_Click;
-            menuItem.Items.Add(menuItem1);
-            Menu1.Items.Add(menuItem);
-
-
-            MenuItem menuItem3 = new MenuItem() { Header = Properties.Resource.RestartService };
-            menuItem3.Click += (s, e) =>
-            {
-                RCManager.GetInstance().OpenCVWinSMS();
-            };
-            menuItem.Items.Add(menuItem3);
-
-#endif
             if (ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.IsAutoUpdate)
             {
-                Thread thread1 = new Thread(async () => await CheckUpdate()) { IsBackground = true };
+                Thread thread1 = new(async () => await CheckUpdate()) { IsBackground = true };
                 thread1.Start();
             }
 
@@ -199,6 +186,8 @@ namespace ColorVision
             Task.Run(CheckCertificate);
 
             Task.Run(EnsureLocalInfile);
+
+
             SolutionTab1.Content = new TreeViewControl();
 
             PluginLoader.LoadPluginsAssembly("Plugins");
@@ -238,7 +227,7 @@ namespace ColorVision
                 X509Certificate2 x509Certificate2 = GetCertificateFromSignedFile(Process.GetCurrentProcess()?.MainModule?.FileName);
                 if (x509Certificate2 != null)
                 {
-                    MenuItem menuItem = new MenuItem() { Header = Properties.Resource.InstallCertificate };
+                    MenuItem menuItem = new() { Header = Properties.Resource.InstallCertificate };
                     menuItem.Click += (s, e) =>
                     {
                         InstallCertificate(x509Certificate2);
@@ -268,7 +257,7 @@ namespace ColorVision
         {
             try
             {
-                X509Store store = new X509Store(StoreName.Root, StoreLocation.CurrentUser);
+                X509Store store = new(StoreName.Root, StoreLocation.CurrentUser);
                 store.Open(OpenFlags.ReadWrite);
                 store.Add(cert);
                 store.Close();
@@ -399,7 +388,7 @@ namespace ColorVision
                 };
 
 
-                FluidMoveBehavior fluidMoveBehavior = new FluidMoveBehavior
+                FluidMoveBehavior fluidMoveBehavior = new()
                 {
                     AppliesTo = FluidMoveScope.Children,
                     Duration = TimeSpan.FromSeconds(0.1)
@@ -437,11 +426,44 @@ namespace ColorVision
             }
         }
 
-        private void Test_Click(object sender, RoutedEventArgs e)
+        private void TextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            Window1 window1 = new Window1();
-            window1.Show();
+            new MQTTConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+
+        private void TextBlock_MouseLeftButtonDown1(object sender, MouseButtonEventArgs e)
+        {
+            new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+        private void TextBlock_MouseLeftButtonDown_RC(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            new RCServiceConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        private void LogF_Click(object sender, RoutedEventArgs e)
+        {
+            var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
+            if (fileAppender != null)
+            {
+                Process.Start("explorer.exe", $"{Path.GetDirectoryName(fileAppender.File)}");
+            }
+        }
+
+        private void SettingF_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start("explorer.exe", $"{Path.GetDirectoryName(ConfigHandler.GetInstance().SoftwareConfigFileName)}");
+        }
+
+
+
+        private void Setting_Click(object sender, RoutedEventArgs e)
+        {
+            string fileName = ConfigHandler.GetInstance().SoftwareConfigFileName;
+            bool result = Tool.HasDefaultProgram(fileName);
+            if (!result)
+                Process.Start(result ? "explorer.exe" : "notepad.exe", fileName);
+        }
+
 
         private void Login_Click(object sender, RoutedEventArgs e)
         {

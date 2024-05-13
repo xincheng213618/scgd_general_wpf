@@ -53,7 +53,7 @@ namespace ColorVision.NativeMethods
         /// <returns>图标</returns>
         public static Icon? GetFileIcon(string path, bool smallIcon = false)
         {
-            SHFILEINFO _SHFILEINFO = new SHFILEINFO();
+            SHFILEINFO _SHFILEINFO = new();
             uint flag = (uint)(SHGFI.ICON | SHGFI.USEFILEATTRIBUTES | (smallIcon ? SHGFI.SMALLICON : SHGFI.LARGEICON));
             IntPtr _IconIntPtr = SHGetFileInfo(path, 0, ref _SHFILEINFO, (uint)Marshal.SizeOf(_SHFILEINFO), flag);
             if (_IconIntPtr.Equals(IntPtr.Zero)) return null;
@@ -67,7 +67,7 @@ namespace ColorVision.NativeMethods
         /// <returns>图标</returns>
         public static Icon? GetDirectoryIcon(bool smallIcon = false)
         {
-            SHFILEINFO _SHFILEINFO = new SHFILEINFO();
+            SHFILEINFO _SHFILEINFO = new();
             uint flag = (uint)(SHGFI.ICON | (smallIcon ? SHGFI.SMALLICON : SHGFI.LARGEICON));
             IntPtr _IconIntPtr = SHGetFileInfo(@"", 0, ref _SHFILEINFO, (uint)Marshal.SizeOf(_SHFILEINFO), flag);
             if (_IconIntPtr.Equals(IntPtr.Zero)) return null;

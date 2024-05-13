@@ -42,7 +42,7 @@ namespace ColorVision.Services.Dao
 
         public override MeasureImgResultModel GetModelFromDataRow(DataRow item)
         {
-            MeasureImgResultModel model = new MeasureImgResultModel
+            MeasureImgResultModel model = new()
             {
                 Id = item.Field<int>("id"),
                 BatchId = item.Field<int?>("batch_id") ?? -1,
@@ -67,7 +67,7 @@ namespace ColorVision.Services.Dao
 
         public List<MeasureImgResultModel> ConditionalQuery(string id, string batch_code, string file_url, string device_code,DateTime dateTimeSTART, DateTime dateTimeEnd)
         {
-            Dictionary<string, object> keyValuePairs = new Dictionary<string, object>(0);
+            Dictionary<string, object> keyValuePairs = new(0);
             keyValuePairs.Add("id", id);
             keyValuePairs.Add("batch_code", batch_code);
             keyValuePairs.Add("raw_file", file_url);

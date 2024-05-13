@@ -61,8 +61,8 @@ namespace ColorVision.Services.Devices.SMU.Views
         public void Gen()
         {
 
-            List<double> listV = new List<double>();
-            List<double> listI = new List<double>();
+            List<double> listV = new();
+            List<double> listI = new();
             double VMax = 0, IMax = 0, VMin = 10000, IMin = 10000;
             for (int i = 0; i < VList.Length; i++)
             {

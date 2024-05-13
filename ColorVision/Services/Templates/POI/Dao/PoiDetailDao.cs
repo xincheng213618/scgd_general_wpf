@@ -70,7 +70,7 @@ namespace ColorVision.Services.Templates.POI.Dao
 
         public override PoiDetailModel GetModelFromDataRow(DataRow item)
         {
-            PoiDetailModel model = new PoiDetailModel
+            PoiDetailModel model = new()
             {
                 Id = item.Field<int>("id"),
                 Name = item.Field<string?>("name"),

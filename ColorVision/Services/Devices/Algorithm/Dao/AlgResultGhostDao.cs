@@ -31,7 +31,7 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
 
         public override AlgResultGhostModel GetModelFromDataRow(DataRow item)
         {
-            AlgResultGhostModel model = new AlgResultGhostModel
+            AlgResultGhostModel model = new()
             {
                 Id = item.Field<int>("id"),
                 Pid = item.Field<int?>("pid") ?? -1,

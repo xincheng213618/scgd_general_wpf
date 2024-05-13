@@ -57,7 +57,7 @@ namespace ColorVision.Services.Devices
             {
                 if (dev_heartbeat.DeviceName.Equals(Config.Code, StringComparison.Ordinal))
                 {
-                    HeartbeatParam heartbeat = new HeartbeatParam();
+                    HeartbeatParam heartbeat = new();
                     heartbeat.DeviceStatus = dev_heartbeat.DeviceStatus;
                     DoHeartbeat(heartbeat);
                 }

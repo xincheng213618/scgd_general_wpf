@@ -20,7 +20,7 @@ namespace ColorVision
                     if (Path.GetExtension(iconPath).Contains("ico"))
                     {
                         using var stream = new MemoryStream();
-                        using System.Drawing.Icon icon = new System.Drawing.Icon(iconPath);
+                        using System.Drawing.Icon icon = new(iconPath);
                         var bitmap = icon.ToBitmap();
                         bitmap.Save(stream, System.Drawing.Imaging.ImageFormat.Png);
                         stream.Seek(0, SeekOrigin.Begin);

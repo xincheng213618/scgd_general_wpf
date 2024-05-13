@@ -18,7 +18,7 @@ namespace ColorVision.Adorners
 
         #region フィールド
         /// <summary>挿入位置カーソルコントロール</summary>
-        private readonly Path _insertionCursor = new Path();
+        private readonly Path _insertionCursor = new();
         #endregion
 
         //=================================================

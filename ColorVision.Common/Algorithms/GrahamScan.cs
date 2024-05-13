@@ -28,7 +28,7 @@ namespace ColorVision.Common.Algorithms
             });
 
             // 初始化栈
-            Stack<Point> stack = new Stack<Point>();
+            Stack<Point> stack = new();
             stack.Push(p0);
             stack.Push(points[0]);
             stack.Push(points[1]);

@@ -46,7 +46,7 @@ namespace ColorVision.Services.Export
         }
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-            System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog();
+            System.Windows.Forms.FolderBrowserDialog dialog = new();
             dialog.UseDescriptionForTitle = true;
             dialog.Description = "为新项目选择位置";
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
@@ -62,7 +62,7 @@ namespace ColorVision.Services.Export
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            Thread thread = new Thread(() => VExportCIE.SaveToTif(VExportCIE));
+            Thread thread = new(() => VExportCIE.SaveToTif(VExportCIE));
             thread.Start();
             Close();
         }

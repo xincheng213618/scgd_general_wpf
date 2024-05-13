@@ -63,7 +63,7 @@ namespace ColorVision.Services.Types
 
             OpenCreateWindowCommand = new RelayCommand(a =>
             {
-                CreateType createType = new CreateType(this);
+                CreateType createType = new(this);
                 createType.Owner = Application.Current.GetActiveWindow();
                 createType.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 createType.ShowDialog();
@@ -76,7 +76,7 @@ namespace ColorVision.Services.Types
         { 
             get
             {
-                List<string> codes = new List<string>();
+                List<string> codes = new();
                 foreach (var item in VisualChildren)
                 {
                     if (item is TerminalService serviceTerminal)

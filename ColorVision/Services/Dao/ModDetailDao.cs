@@ -40,7 +40,7 @@ namespace ColorVision.Services.Dao
 
         public override ModDetailModel GetModelFromDataRow(DataRow item)
         {
-            ModDetailModel model = new ModDetailModel
+            ModDetailModel model = new()
             {
                 Id = item.Field<int>("id"),
                 SysPid = item.Field<int>("cc_pid"),

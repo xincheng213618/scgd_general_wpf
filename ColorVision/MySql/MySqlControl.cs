@@ -87,7 +87,7 @@ namespace ColorVision.MySql
             int count = -1;
             try
             {
-                MySqlCommand command = new MySqlCommand(sql, MySqlConnection);
+                MySqlCommand command = new(sql, MySqlConnection);
                 if (param != null)
                 {
                     foreach (var item in param)

@@ -135,7 +135,7 @@ namespace ColorVision.Solution.Searches
             }
             else
             {
-                EditArchived editArchived = new EditArchived(configArchivedModel) {  Owner =Application.Current.GetActiveWindow()};
+                EditArchived editArchived = new(configArchivedModel) {  Owner =Application.Current.GetActiveWindow()};
                 editArchived.ShowDialog();
             }
 

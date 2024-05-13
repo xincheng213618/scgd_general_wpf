@@ -91,14 +91,14 @@ namespace ColorVision.Services
         }
         public List<MQTTServiceInfo> GetServiceJsonList()
         {
-            List<MQTTServiceInfo> result = new List<MQTTServiceInfo>();
+            List<MQTTServiceInfo> result = new();
             foreach (var item in ServiceTokens)
             {
-                MQTTServiceInfo serviceInfo = new MQTTServiceInfo() { PublishTopic = item.PublishTopic, ServiceCode = item.ServiceCode, ServiceType = item.ServiceType, Token = item.Token, SubscribeTopic = item.SubscribeTopic };
+                MQTTServiceInfo serviceInfo = new() { PublishTopic = item.PublishTopic, ServiceCode = item.ServiceCode, ServiceType = item.ServiceType, Token = item.Token, SubscribeTopic = item.SubscribeTopic };
                 result.Add(serviceInfo);
                 foreach (var dev in item.Devices)
                 {
-                    MQTTDeviceInfo device = new MQTTDeviceInfo() { ID = dev.Value.ID, DeviceCode = dev.Value.DeviceCode };
+                    MQTTDeviceInfo device = new() { ID = dev.Value.ID, DeviceCode = dev.Value.DeviceCode };
                     serviceInfo.Devices.Add(dev.Key, device);
                 }
             }
@@ -130,7 +130,7 @@ namespace ColorVision.Services
             }
             LastGenControl = DeviceServices;
         }
-        private Dictionary<string, List<MQTTServiceBase>> svrDevices = new Dictionary<string, List<MQTTServiceBase>>();
+        private Dictionary<string, List<MQTTServiceBase>> svrDevices = new();
 
         public void LoadServices()
         {
@@ -144,7 +144,7 @@ namespace ColorVision.Services
             TypeServices.Clear();
             foreach (var type in ServiceTypess)
             {
-                TypeService typeService = new TypeService();
+                TypeService typeService = new();
                 var sysDictionaryModel = SysDictionaryModels.Find((x)=>x.Value ==(int)type);
                 if (sysDictionaryModel == null) continue;
                 typeService.Name = sysDictionaryModel.Name ?? type.ToString();
@@ -199,62 +199,62 @@ namespace ColorVision.Services
 
                             if (terminalService.MQTTServiceTerminalBase is MQTTTerminalCamera cameraService)
                             {
-                                DeviceCamera deviceCamera = new DeviceCamera(sysResourceModel, cameraService);
+                                DeviceCamera deviceCamera = new(sysResourceModel, cameraService);
                                 svrObj = deviceCamera.DeviceService;
                                 terminalService.AddChild(deviceCamera);
                                 DeviceServices.Add(deviceCamera);
                             }
                             break;
                         case ServiceTypes.PG:
-                            DevicePG devicePG = new DevicePG(sysResourceModel);
+                            DevicePG devicePG = new(sysResourceModel);
                             svrObj = devicePG.DeviceService;
                             terminalService.AddChild(devicePG);
                             DeviceServices.Add(devicePG);
                             break;
                         case ServiceTypes.Spectrum:
-                            DeviceSpectrum deviceSpectrum = new DeviceSpectrum(sysResourceModel);
+                            DeviceSpectrum deviceSpectrum = new(sysResourceModel);
                             svrObj = deviceSpectrum.DeviceService;
                             terminalService.AddChild(deviceSpectrum);
                             DeviceServices.Add(deviceSpectrum);
                             break;
                         case ServiceTypes.SMU:
-                            DeviceSMU deviceSMU = new DeviceSMU(sysResourceModel);
+                            DeviceSMU deviceSMU = new(sysResourceModel);
                             svrObj = deviceSMU.Service;
                             terminalService.AddChild(deviceSMU);
                             DeviceServices.Add(deviceSMU);
                             break;
                         case ServiceTypes.Sensor:
-                            DeviceSensor device1 = new DeviceSensor(sysResourceModel);
+                            DeviceSensor device1 = new(sysResourceModel);
                             svrObj = device1.DeviceService;
                             terminalService.AddChild(device1);
                             DeviceServices.Add(device1);
                             break;
                         case ServiceTypes.FileServer:
-                            DeviceFileServer img = new DeviceFileServer(sysResourceModel);
+                            DeviceFileServer img = new(sysResourceModel);
                             svrObj = img.MQTTFileServer;
                             terminalService.AddChild(img);
                             DeviceServices.Add(img);
                             break;
                         case ServiceTypes.Algorithm:
-                            DeviceAlgorithm alg = new DeviceAlgorithm(sysResourceModel);
+                            DeviceAlgorithm alg = new(sysResourceModel);
                             svrObj = alg.MQTTService;
                             terminalService.AddChild(alg);
                             DeviceServices.Add(alg);
                             break;
                         case ServiceTypes.Calibration:
-                            DeviceCalibration deviceCalibration = new DeviceCalibration(sysResourceModel);
+                            DeviceCalibration deviceCalibration = new(sysResourceModel);
                             svrObj = deviceCalibration.DeviceService;
                             terminalService.AddChild(deviceCalibration);
                             DeviceServices.Add(deviceCalibration);
                             break;
                         case ServiceTypes.CfwPort:
-                            DeviceCfwPort deviceCfwPort = new DeviceCfwPort(sysResourceModel);
+                            DeviceCfwPort deviceCfwPort = new(sysResourceModel);
                             svrObj = deviceCfwPort.DeviceService;
                             terminalService.AddChild(deviceCfwPort);
                             DeviceServices.Add(deviceCfwPort);
                             break;
                         case ServiceTypes.Motor:
-                            DeviceMotor deviceMotor = new DeviceMotor(sysResourceModel);
+                            DeviceMotor deviceMotor = new(sysResourceModel);
                             svrObj = deviceMotor.DeviceService;
                             terminalService.AddChild(deviceMotor);
                             DeviceServices.Add(deviceMotor);
@@ -283,18 +283,18 @@ namespace ColorVision.Services
                 {
                     if (sysResourceModel.Type == (int)ServiceTypes.Group)
                     {
-                        GroupResource groupResource = new GroupResource(sysResourceModel);
+                        GroupResource groupResource = new(sysResourceModel);
                         phycamrea.AddChild(groupResource);
                         GroupResources.Add(groupResource);
                     }
                     else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
                     {
-                        CalibrationResource calibrationResource = new CalibrationResource(sysResourceModel);
+                        CalibrationResource calibrationResource = new(sysResourceModel);
                         phycamrea.AddChild(calibrationResource);
                     }
                     else
                     {
-                        BaseFileResource calibrationResource = new BaseFileResource(sysResourceModel);
+                        BaseFileResource calibrationResource = new(sysResourceModel);
                         phycamrea.AddChild(calibrationResource);
                     }
                 }
@@ -307,7 +307,7 @@ namespace ColorVision.Services
                 {
                     if (sysResourceModel.Type == (int)ServiceTypes.Group)
                     {
-                        GroupResource groupResource = new GroupResource(sysResourceModel);
+                        GroupResource groupResource = new(sysResourceModel);
                         deviceService.AddChild(groupResource);
                         GroupResources.Add(groupResource);
                     }
@@ -318,7 +318,7 @@ namespace ColorVision.Services
                     }
                     else
                     {
-                        BaseFileResource calibrationResource = new BaseFileResource(sysResourceModel);
+                        BaseFileResource calibrationResource = new(sysResourceModel);
                         deviceService.AddChild(calibrationResource);
                     }
                 }
@@ -338,7 +338,7 @@ namespace ColorVision.Services
             {
                 if (sysResourceModel.Type == (int)ServiceTypes.Group)
                 {
-                    GroupResource groupResource1 = new GroupResource(sysResourceModel);
+                    GroupResource groupResource1 = new(sysResourceModel);
                     LoadgroupResource(groupResource1);
                     groupResource.AddChild(groupResource);
                     GroupResources.Add(groupResource);
@@ -350,7 +350,7 @@ namespace ColorVision.Services
                 }
                 else
                 {
-                    BaseResource calibrationResource = new BaseResource(sysResourceModel);
+                    BaseResource calibrationResource = new(sysResourceModel);
                     groupResource.AddChild(calibrationResource);
                 }
             }
@@ -364,11 +364,11 @@ namespace ColorVision.Services
         }
 
 
-        private SMUResultDao smuDao = new SMUResultDao();
+        private SMUResultDao smuDao = new();
 
         public void SpectrumDrawPlotFromDB(string bid)
         {
-            List<SpectrumData> datas = new List<SpectrumData>();
+            List<SpectrumData> datas = new();
             List<SpectumResultModel> resultSpec;
             List<SMUResultModel> resultSMU;
             BatchResultMasterModel batch = BatchResultMasterDao.Instance.GetByCode(bid);
@@ -386,7 +386,7 @@ namespace ColorVision.Services
             for (int i = 0; i < resultSpec.Count; i++)
             {
                 var item = resultSpec[i];
-                cvColorVision.GCSDLL.ColorParam param = new cvColorVision.GCSDLL.ColorParam()
+                cvColorVision.GCSDLL.ColorParam param = new()
                 {
                     fx = item.fx ?? 0,
                     fy = item.fy ?? 0,
@@ -413,7 +413,7 @@ namespace ColorVision.Services
                     fPL = JsonConvert.DeserializeObject<float[]>(item.fPL ?? string.Empty) ?? Array.Empty<float>(),
                     fRi = JsonConvert.DeserializeObject<float[]>(item.fRi ?? string.Empty) ?? Array.Empty<float>(),
                 };
-                SpectrumData data = new SpectrumData(item.Id, param);
+                SpectrumData data = new(item.Id, param);
                 if (i < resultSMU.Count)
                 {
                     data.V = resultSMU[i].VResult;
@@ -448,7 +448,7 @@ namespace ColorVision.Services
 
         public static void BeginNewBatch(string sn, string name)
         {
-            BatchResultMasterModel batch = new BatchResultMasterModel();
+            BatchResultMasterModel batch = new();
             batch.Name = string.IsNullOrEmpty(name) ? sn : name;
             batch.Code = sn;
             batch.CreateDate = DateTime.Now;

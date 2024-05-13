@@ -11,7 +11,7 @@ namespace ColorVision.Common.Utilities
     /// </summary>
     public static class ImageUtil
     {
-        private static BrushConverter brushConverter = new BrushConverter();
+        private static BrushConverter brushConverter = new();
 
         public static Brush? ConvertFromString(string colorCode)
         {
@@ -20,11 +20,11 @@ namespace ColorVision.Common.Utilities
 
         private static BitmapImage BitmapToImageSource(System.Drawing.Bitmap bitmap)
         {
-            using (MemoryStream memory = new MemoryStream())
+            using (MemoryStream memory = new())
             {
                 bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
                 memory.Position = 0;
-                BitmapImage bitmapImage = new BitmapImage();
+                BitmapImage bitmapImage = new();
                 bitmapImage.BeginInit();
                 bitmapImage.StreamSource = memory;
                 bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
@@ -49,7 +49,7 @@ namespace ColorVision.Common.Utilities
         public static BitmapImage ByteArrayToBitmapImage(byte[] byteArray)
         {
             using Stream stream = new MemoryStream(byteArray);
-            BitmapImage image = new BitmapImage();
+            BitmapImage image = new();
             stream.Position = 0;
             image.BeginInit();
             image.CacheOption = BitmapCacheOption.OnLoad;
@@ -67,7 +67,7 @@ namespace ColorVision.Common.Utilities
         public static BitmapImage CreateSolidColorBitmap(int width, int height, Color color)
         {
             // 创建一个 WriteableBitmap，用于绘制纯色图像
-            WriteableBitmap writeableBitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Pbgra32, null);
+            WriteableBitmap writeableBitmap = new(width, height, 96, 96, PixelFormats.Pbgra32, null);
 
             // 将所有像素设置为指定的颜色
 
@@ -92,7 +92,7 @@ namespace ColorVision.Common.Utilities
 
             writeableBitmap.Unlock();
 
-            BitmapImage bitmapImage = new BitmapImage();
+            BitmapImage bitmapImage = new();
             using (var stream = new System.IO.MemoryStream())
             {
                 BitmapEncoder encoder = new PngBitmapEncoder();

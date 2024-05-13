@@ -29,7 +29,7 @@ namespace ColorVision.Solution.Searches
 
         }
 
-        public override ArchivedMasterModel GetModelFromDataRow(DataRow item) => new ArchivedMasterModel()
+        public override ArchivedMasterModel GetModelFromDataRow(DataRow item) => new()
         {
             Name = item.Field<string?>("name"),
             TenantId =item.Field<int?>("tenant_id"),

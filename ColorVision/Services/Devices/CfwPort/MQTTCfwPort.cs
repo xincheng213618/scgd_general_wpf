@@ -73,7 +73,7 @@ namespace ColorVision.Services.Devices.CfwPort
         public MsgRecord Open()
         {
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "Open",
                 //Params = new Dictionary<string, object>() { {"CodeID", Config.Code }, { "szComName", Config.SzComName },{ "BaudRate", Config.BaudRate } }
@@ -85,7 +85,7 @@ namespace ColorVision.Services.Devices.CfwPort
         public MsgRecord SetPort(int port)
         {
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "SetPort",
                 Params = new Dictionary<string, object>() { { "szComName", port } }
@@ -97,7 +97,7 @@ namespace ColorVision.Services.Devices.CfwPort
         public MsgRecord GetPort()
         {
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "GetPort",
                 Params = new Dictionary<string, object>() { }

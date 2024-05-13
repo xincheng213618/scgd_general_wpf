@@ -52,9 +52,9 @@ namespace ColorVision
                 {
                     if (Sysargs[i].EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
                     {
-                        ImageView imageView = new ImageView();
+                        ImageView imageView = new();
                         CVFileUtil.ReadCVRaw(Sysargs[i], out CVCIEFile fileInfo);
-                        Window window = new Window() { Title = "快速预览" };
+                        Window window = new() { Title = "快速预览" };
                         window.Content = imageView;
                         imageView.OpenImage(fileInfo);
                         window.Show();
@@ -62,8 +62,8 @@ namespace ColorVision
                     }
                     else if (Tool.IsImageFile(Sysargs[i]))
                     {
-                        ImageView imageView = new ImageView();
-                        Window window = new Window() { Title = "快速预览" };
+                        ImageView imageView = new();
+                        Window window = new() { Title = "快速预览" };
                         window.Content = imageView;
                         imageView.OpenImage(Sysargs[i]);
                         window.Show();
@@ -83,14 +83,14 @@ namespace ColorVision
             //代码先进入启动窗口
             if (!SoftwareSetting.WizardCompletionKey)
             {
-                WizardWindow wizardWindow = new WizardWindow();
+                WizardWindow wizardWindow = new();
                 wizardWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
                 wizardWindow.Show();
             }
             else if (!IsReStart)
             {
                 ///正常进入窗口
-                StartWindow StartWindow = new StartWindow();
+                StartWindow StartWindow = new();
                 StartWindow.Show();
             }
             else
@@ -101,7 +101,7 @@ namespace ColorVision
                     await MQTTRCService.GetInstance().Connect();
                 };
                 Task.Run(() => MQTTControl.GetInstance().Connect());
-                MainWindow MainWindow = new MainWindow();
+                MainWindow MainWindow = new();
                 ServiceManager.GetInstance().GenDeviceDisplayControl();
                 MainWindow.Show();
             }

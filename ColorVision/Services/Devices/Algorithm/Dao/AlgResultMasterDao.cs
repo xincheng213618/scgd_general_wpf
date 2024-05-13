@@ -66,7 +66,7 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
 
         public List<AlgResultMasterModel> ConditionalQuery(string id, string batchid, string ImageType, string fileName ,DateTime? dateTimeStart,DateTime? dateTimeEnd)
         {
-            Dictionary<string, object> keyValuePairs = new Dictionary<string, object>(0);
+            Dictionary<string, object> keyValuePairs = new(0);
             keyValuePairs.Add("id", id);
             keyValuePairs.Add("batch_id", batchid);
             keyValuePairs.Add("img_file_type", ImageType);
@@ -101,7 +101,7 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
 
         public override AlgResultMasterModel GetModelFromDataRow(DataRow item)
         {
-            AlgResultMasterModel model = new AlgResultMasterModel
+            AlgResultMasterModel model = new()
             {
                 Id = item.Field<int>("id"),
                 BatchId = item.Field<int?>("batch_id"),

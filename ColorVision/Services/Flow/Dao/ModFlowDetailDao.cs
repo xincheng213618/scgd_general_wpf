@@ -36,7 +36,7 @@ namespace ColorVision.Services.Flow.Dao
 
         public override ModFlowDetailModel GetModelFromDataRow(DataRow item)
         {
-            ModFlowDetailModel model = new ModFlowDetailModel
+            ModFlowDetailModel model = new()
             {
                 Id = item.Field<int>("id"),
                 SysPid = item.Field<int>("cc_pid"),

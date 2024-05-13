@@ -24,7 +24,7 @@ namespace ColorVision.Services
 
         public object? Icon { get; set; }
 
-        public RelayCommand Command => new RelayCommand(a =>
+        public RelayCommand Command => new(a =>
         {
             new WindowDevices() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         });
@@ -77,7 +77,7 @@ namespace ColorVision.Services
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            WindowDevicesSetting Service = new WindowDevicesSetting(MQTTDevices) { Owner = this,WindowStartupLocation =WindowStartupLocation.CenterOwner };
+            WindowDevicesSetting Service = new(MQTTDevices) { Owner = this,WindowStartupLocation =WindowStartupLocation.CenterOwner };
             Service.Closed += async (s, e) =>
             {
                 if (Service.MQTTDevices1.Count > 0)

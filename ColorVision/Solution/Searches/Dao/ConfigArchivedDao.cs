@@ -42,7 +42,7 @@ namespace ColorVision.Solution.Searches
             return dataTable;
         }
 
-        public override ConfigArchivedModel GetModelFromDataRow(DataRow item) => new ConfigArchivedModel()
+        public override ConfigArchivedModel GetModelFromDataRow(DataRow item) => new()
         {
             Id  =item.Field<int>("id"), 
             Path = item.Field<string?>("path"),

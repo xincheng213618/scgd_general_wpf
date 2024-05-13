@@ -36,7 +36,7 @@ namespace ColorVision.Services.Devices.Camera.Video
                     UdpClient?.Dispose();
                 }
                 IPAddress locateIp = IPAddress.Parse(Host);
-                IPEndPoint locatePoint = new IPEndPoint(locateIp, Port);
+                IPEndPoint locatePoint = new(locateIp, Port);
                 UdpClient = new UdpClient(locatePoint);
                 OpenVideo = true;
                 headLen = 9;
@@ -50,7 +50,7 @@ namespace ColorVision.Services.Devices.Camera.Video
                         {
                             if (UdpClient != null)
                             {
-                                IPEndPoint remotePoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 1);
+                                IPEndPoint remotePoint = new(IPAddress.Parse("127.0.0.1"), 1);
                                 var received = UdpClient.Receive(ref remotePoint);
                                 if (received.Length > 0)
                                 {

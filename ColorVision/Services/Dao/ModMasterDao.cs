@@ -79,7 +79,7 @@ namespace ColorVision.Services.Dao
 
         public override ModMasterModel GetModelFromDataRow(DataRow item)
         {
-            ModMasterModel model = new ModMasterModel
+            ModMasterModel model = new()
             {
                 Id = item.Field<int>("id"),
                 Name = item.Field<string?>("name"),
@@ -119,7 +119,7 @@ namespace ColorVision.Services.Dao
 
         public List<ModMasterModel> GetResourceAll(int tenantId, int resourceId)
         {
-            List<ModMasterModel> list = new List<ModMasterModel>();
+            List<ModMasterModel> list = new();
             DataTable d_info = GetTableAllByTenantIdAdnResId(tenantId, resourceId);
             foreach (var item in d_info.AsEnumerable())
             {
@@ -135,7 +135,7 @@ namespace ColorVision.Services.Dao
 
         public new List<ModMasterModel> GetAll(int tenantId)
         {
-            List<ModMasterModel> list = new List<ModMasterModel>();
+            List<ModMasterModel> list = new();
             DataTable d_info = GetTableAllByTenantId(tenantId);
             foreach (var item in d_info.AsEnumerable())
             {

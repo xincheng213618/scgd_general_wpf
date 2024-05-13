@@ -24,7 +24,7 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
 
         public override AlgResultFOVModel GetModelFromDataRow(DataRow item)
         {
-            AlgResultFOVModel model = new AlgResultFOVModel
+            AlgResultFOVModel model = new()
             {
                 Id = item.Field<int>("id"),
                 Pid = item.Field<int?>("pid") ?? -1,

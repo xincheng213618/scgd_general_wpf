@@ -28,7 +28,7 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
 
         public override AlgResultMTFModel GetModelFromDataRow(DataRow item)
         {
-            AlgResultMTFModel model = new AlgResultMTFModel
+            AlgResultMTFModel model = new()
             {
                 Id = item.Field<int>("id"),
                 Pid = item.Field<int?>("pid"),

@@ -19,17 +19,17 @@ namespace ColorVision.Settings
         public string? InputGestureText => "Ctrl + Shift + L";
 
         public object? Icon => null;
-        public RelayCommand Command => new RelayCommand(a => { });
+        public RelayCommand Command => new(a => { });
 
         public MenuItem MenuItem
         {
             get
             {
-                MenuItem MenuLanguage = new MenuItem { Header = Header, InputGestureText = InputGestureText };
+                MenuItem MenuLanguage = new() { Header = Header, InputGestureText = InputGestureText };
 
                 foreach (var item in LanguageManager.Current.Languages)
                 {
-                    MenuItem LanguageItem = new MenuItem();
+                    MenuItem LanguageItem = new();
                     LanguageItem.Header = LanguageManager.keyValuePairs.TryGetValue(item, out string value) ? value : item;
                     LanguageItem.Click += (s, e) =>
                     {

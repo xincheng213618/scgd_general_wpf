@@ -32,7 +32,7 @@ namespace ColorVision.Draw
             Brush brush = Brushes.Red;
             Brush brush1 = Brushes.Pink;
 
-            FontFamily fontFamily = new FontFamily("Arial");
+            FontFamily fontFamily = new("Arial");
             double fontSize = Attribute.Pen.Thickness*10;
 
             using DrawingContext dc = RenderOpen();
@@ -50,7 +50,7 @@ namespace ColorVision.Draw
 
             if (Points.Count > 0)
             {
-                FormattedText formattedText1 = new FormattedText("起点", CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                FormattedText formattedText1 = new("起点", CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                 formattedText1.TextAlignment = TextAlignment.Center;
                 dc.DrawText(formattedText1, Points[0]);
 
@@ -60,7 +60,7 @@ namespace ColorVision.Draw
                     double len = GetDistance(Points[i], Points[i - 1]);
                     len = len * ActualLength;
                     lenAll += len;
-                    FormattedText formattedText2 = new FormattedText(len.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                    FormattedText formattedText2 = new(len.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                     dc.DrawText(formattedText2, Points[i]);
                 }
 
@@ -72,12 +72,12 @@ namespace ColorVision.Draw
                     {
                         lenAll += Lastlen;
 
-                        FormattedText formattedText2 = new FormattedText("总长" + lenAll.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                        FormattedText formattedText2 = new("总长" + lenAll.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                         dc.DrawText(formattedText2, Points[^1]);
                     }
                     else
                     {
-                        FormattedText formattedText2 = new FormattedText(Lastlen.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                        FormattedText formattedText2 = new(Lastlen.ToString("F2") + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                         dc.DrawText(formattedText2, Points[^1]);
                     }
                 }

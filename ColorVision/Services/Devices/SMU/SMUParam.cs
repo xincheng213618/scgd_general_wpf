@@ -27,7 +27,7 @@ namespace ColorVision.Services.Devices.SMU
 
         public object? Icon => null;
 
-        public RelayCommand Command => new RelayCommand(a =>
+        public RelayCommand Command => new(a =>
         {
             SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
             if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)

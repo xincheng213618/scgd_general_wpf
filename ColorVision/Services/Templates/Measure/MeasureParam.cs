@@ -22,7 +22,7 @@ namespace ColorVision.Services.Templates.Measure
 
         public object? Icon => null;
 
-        public RelayCommand Command => new RelayCommand(a =>
+        public RelayCommand Command => new(a =>
         {
             SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
             if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
@@ -69,7 +69,7 @@ namespace ColorVision.Services.Templates.Measure
 
         public static MeasureParam? AddMeasureParam(string name)
         {
-            MeasureMasterModel model = new MeasureMasterModel(name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            MeasureMasterModel model = new(name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             MeasureMasterDao.Instance.Save(model);
             int pkId = model.Id;
             if (pkId > 0)

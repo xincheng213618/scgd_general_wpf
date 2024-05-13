@@ -26,19 +26,19 @@ namespace ColorVision.Solution.Searches
 
             if (Application.Current.FindResource("MenuItem4FrameStyle") is Style style)
             {
-                ContextMenu content1 = new ContextMenu() { ItemContainerStyle = style };
+                ContextMenu content1 = new() { ItemContainerStyle = style };
                 content1.SetBinding(ItemsControl.ItemsSourceProperty, new Binding { Path = new PropertyPath("BackStack"), Source = MainFrame });
                 BackStack.ContextMenu = content1;
 
-                ContextMenu content2 = new ContextMenu() { ItemContainerStyle = style };
+                ContextMenu content2 = new() { ItemContainerStyle = style };
                 content2.SetBinding(ItemsControl.ItemsSourceProperty, new Binding { Path = new PropertyPath("ForwardStack"), Source = MainFrame });
                 BrowseForward.ContextMenu = content2;
             }
 
 
-            ContextMenu contextMenu = new ContextMenu();
+            ContextMenu contextMenu = new();
             MainSetting.ContextMenu = contextMenu;
-            MenuItem menuItem = new MenuItem() { Header = "独立窗口" };
+            MenuItem menuItem = new() { Header = "独立窗口" };
             menuItem.Click += (s, e) =>
             {
                 View.ViewIndex = -2;
@@ -50,8 +50,8 @@ namespace ColorVision.Solution.Searches
         {
             if (index == -2)
             {
-                ContextMenu contextMenu = new ContextMenu();
-                MenuItem menuItem = new MenuItem() { Header = "还原" };
+                ContextMenu contextMenu = new();
+                MenuItem menuItem = new() { Header = "还原" };
                 menuItem.Click += (s, e) =>
                 {
                     View.ViewIndex = 0;
@@ -62,8 +62,8 @@ namespace ColorVision.Solution.Searches
             }
             if (index == 0)
             {
-                ContextMenu contextMenu = new ContextMenu();
-                MenuItem menuItem = new MenuItem() { Header = "独立窗口" };
+                ContextMenu contextMenu = new();
+                MenuItem menuItem = new() { Header = "独立窗口" };
                 menuItem.Click += (s, e) =>
                 {
                     View.ViewIndex = -2;

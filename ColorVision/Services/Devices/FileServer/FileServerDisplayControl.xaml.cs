@@ -163,8 +163,8 @@ namespace ColorVision.Services.Devices.FileServer
 
         private static byte[] ReadFile(string path)
         {
-            FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read);
-            BinaryReader binaryReader = new BinaryReader(fileStream);
+            FileStream fileStream = new(path, FileMode.Open, FileAccess.Read);
+            BinaryReader binaryReader = new(fileStream);
             //获取文件长度
             long length = fileStream.Length;
             byte[] bytes = new byte[length];

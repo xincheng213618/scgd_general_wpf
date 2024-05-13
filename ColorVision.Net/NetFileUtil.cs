@@ -39,7 +39,7 @@ namespace ColorVision.Net
             if (File.Exists(fileName)) return fileName;
             if (!string.IsNullOrWhiteSpace(FileCachePath))
             {
-                DirectoryInfo directoryInfo = new DirectoryInfo(FileCachePath);
+                DirectoryInfo directoryInfo = new(FileCachePath);
                 if (!directoryInfo.Exists) return string.Empty;
                 directoryInfo.GetFiles();
                 foreach (var item in directoryInfo.GetFiles())
@@ -149,7 +149,7 @@ namespace ColorVision.Net
             try
             {
                 client = new DealerSocket(serverEndpoint);
-                List<byte[]> data = new List<byte[]>();
+                List<byte[]> data = new();
                 bool? ret = client?.TryReceiveMultipartBytes(TimeSpan.FromSeconds(5),ref data,1);
                 if (data != null && data.Count == 1)
                 {
@@ -199,7 +199,7 @@ namespace ColorVision.Net
         {
             DealerSocket client = null;
             var message = new List<byte[]>();
-            CVCIEFile fileData = new CVCIEFile();
+            CVCIEFile fileData = new();
             int code = ReadLocalBinaryFile(fileName, out fileData);
             bool? sendResult = false;
             string signRecv;
@@ -240,8 +240,8 @@ namespace ColorVision.Net
             int code = -1;
             if (File.Exists(path))
             {
-                System.IO.FileStream fileStream = new System.IO.FileStream(path, FileMode.Open, FileAccess.Read);
-                System.IO.BinaryReader binaryReader = new System.IO.BinaryReader(fileStream);
+                System.IO.FileStream fileStream = new(path, FileMode.Open, FileAccess.Read);
+                System.IO.BinaryReader binaryReader = new(fileStream);
                 //获取文件长度
                 long length = fileStream.Length;
                 if (length > 0)
@@ -267,8 +267,8 @@ namespace ColorVision.Net
 
         public static void WriteLocalBinaryFile(string fileName, byte[] data)
         {
-            using (System.IO.FileStream fileStream = new System.IO.FileStream(fileName, FileMode.Create))
-            using (System.IO.BinaryWriter writer = new System.IO.BinaryWriter(fileStream))
+            using (System.IO.FileStream fileStream = new(fileName, FileMode.Create))
+            using (System.IO.BinaryWriter writer = new(fileStream))
             {
                 writer.Write(data);
             }
@@ -276,7 +276,7 @@ namespace ColorVision.Net
 
         public static void CreateDirectory(string dir)
         {
-            System.IO.DirectoryInfo folder = new System.IO.DirectoryInfo(dir);
+            System.IO.DirectoryInfo folder = new(dir);
             if (!folder.Exists)
             {
                 try
@@ -292,7 +292,7 @@ namespace ColorVision.Net
         {
             int code = -1;
             int channel = -1;
-            CVCIEFile data = new CVCIEFile();
+            CVCIEFile data = new();
             switch (channelType)
             {
                 case CVImageChannelType.SRC:
@@ -394,8 +394,8 @@ namespace ColorVision.Net
         {
             if (CVFileUtil.ReadCVRaw(fileName, out fileInfo))
             {
-                OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
-                OpenCvSharp.Mat dst = new OpenCvSharp.Mat();
+                OpenCvSharp.Mat src = new(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
+                OpenCvSharp.Mat dst = new();
                 if (fileInfo.bpp == 32)
                 {
                     OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
@@ -450,18 +450,18 @@ namespace ColorVision.Net
             else if (fileInfo.bpp == 32)
             {
                 int len = (int)(fileInfo.rows * fileInfo.cols * (fileInfo.bpp / 8));
-                OpenCvSharp.Mat dst = new OpenCvSharp.Mat();
+                OpenCvSharp.Mat dst = new();
                 if (fileInfo.channels == 3)
                 {
                     byte[] data = new byte[len];
                     Buffer.BlockCopy(fileInfo.data, len, data, 0, data.Length);
-                    OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileInfo.rows, (int)fileInfo.cols, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
+                    OpenCvSharp.Mat src = new((int)fileInfo.rows, (int)fileInfo.cols, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
                     OpenCvSharp.Cv2.Normalize(src, src, 0, 1, OpenCvSharp.NormTypes.MinMax);
                     src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U, 255);
                 }
                 else
                 {
-                    OpenCvSharp.Mat src = new OpenCvSharp.Mat((int)fileInfo.cols, (int)fileInfo.rows, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), fileInfo.data);
+                    OpenCvSharp.Mat src = new((int)fileInfo.cols, (int)fileInfo.rows, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), fileInfo.data);
                     OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
                     src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
                 }
@@ -512,7 +512,7 @@ namespace ColorVision.Net
             if (bpp == 32)
             {
                 OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
-                OpenCvSharp.Mat dst = new OpenCvSharp.Mat();
+                OpenCvSharp.Mat dst = new();
                 src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
                 string fullFileName = FileCachePath + Path.DirectorySeparatorChar + Path.GetFileName(fileName);
                 OpenCvSharp.Cv2.ImWrite(fullFileName, dst);

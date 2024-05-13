@@ -42,7 +42,7 @@ namespace ColorVision.Services.DAO
 
         public override BatchResultMasterModel GetModelFromDataRow(DataRow item)
         {
-            BatchResultMasterModel model = new BatchResultMasterModel
+            BatchResultMasterModel model = new()
             {
                 Id = item.Field<int>("id"),
                 TId = item.Field<int?>("t_id"),
@@ -77,7 +77,7 @@ namespace ColorVision.Services.DAO
 
         public List<BatchResultMasterModel> ConditionalQuery(string batchCode)
         {
-            Dictionary<string, object> keyValuePairs = new Dictionary<string, object>(0);
+            Dictionary<string, object> keyValuePairs = new(0);
             keyValuePairs.Add("code", batchCode);
             return ConditionalQuery(keyValuePairs);
         }
@@ -85,7 +85,7 @@ namespace ColorVision.Services.DAO
         public BatchResultMasterModel? GetByCode(string code)
         {
             string sql = $"select * from {TableName} where code=@code";
-            Dictionary<string, object> param = new Dictionary<string, object>
+            Dictionary<string, object> param = new()
             {
                 { "code", code }
             };

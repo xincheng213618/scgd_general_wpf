@@ -43,7 +43,7 @@ namespace ColorVision
                         int size = GlobalGetAtomName((ushort)wParam, chars, chars.Length);
                         if (size > 0)
                         {
-                            string result = new string(chars, 0, size);
+                            string result = new(chars, 0, size);
                             GlobalDeleteAtom((short)wParam);
 
                             if (File.Exists(result))
@@ -54,9 +54,9 @@ namespace ColorVision
                                 }
                                 if (result.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
                                 {
-                                    ImageView imageView = new ImageView();
+                                    ImageView imageView = new();
                                     CVFileUtil.ReadCVRaw(result, out CVCIEFile fileInfo);
-                                    Window window = new Window() { Title = "快速预览", Owner = Application.Current.MainWindow};
+                                    Window window = new() { Title = "快速预览", Owner = Application.Current.MainWindow};
                                     window.Content = imageView;
                                     imageView.OpenImage(fileInfo);
 

@@ -32,7 +32,7 @@ namespace ColorVision.UI
             if (GetMenuHelp() is MenuItem MenuHelp)
                 menuItems.Add("Help", MenuHelp);
 
-            List<IMenuItem> iMenuItems = new List<IMenuItem>();
+            List<IMenuItem> iMenuItems = new();
 
             void CreateMenu(MenuItem parentMenuItem, string OwnerGuid)
             {
@@ -99,7 +99,7 @@ namespace ColorVision.UI
             foreach (var iMenuItem in iMenuItems)
             {
                 string GuidId = iMenuItem.GuidId ?? Guid.NewGuid().ToString();
-                MenuItem menuItem = new MenuItem
+                MenuItem menuItem = new()
                 {
                     Header = iMenuItem.Header,
                     Icon = iMenuItem.Icon,

@@ -21,7 +21,7 @@ namespace ColorVision.Services.PhyCameras
 
         public object? Icon => null;
 
-        public RelayCommand Command => new RelayCommand(A => Execute());
+        public RelayCommand Command => new(A => Execute());
 
         private static void Execute()
         {

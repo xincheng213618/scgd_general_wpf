@@ -12,7 +12,7 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
         {
             WindowHandle = intPtr;
         }
-        private static readonly object locker = new object();
+        private static readonly object locker = new();
 
         public static GlobalHotKeyManager GetInstance(Window window)
         {

@@ -15,7 +15,7 @@ namespace ColorVision.Util.Draw.Rectangle
                 X += vPoints[i].X;
                 Y += vPoints[i].Y;
             }
-            Point center = new Point((int)X / vPoints.Count, (int)Y / vPoints.Count);
+            Point center = new((int)X / vPoints.Count, (int)Y / vPoints.Count);
             //冒泡排序
             for (int i = 0; i < vPoints.Count - 1; i++)
             {

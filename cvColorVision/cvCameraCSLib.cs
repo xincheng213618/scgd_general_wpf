@@ -549,7 +549,7 @@ namespace cvColorVision
 
         public static bool GetCameraID(CameraType eType, ref string szText)
         {
-            StringBuilder builder = new StringBuilder(256);
+            StringBuilder builder = new(256);
 
             if (GetCameraID(eType, builder, 256))
             {
@@ -563,7 +563,7 @@ namespace cvColorVision
         private unsafe static extern bool GetAllCameraID_Gen(CameraType eType, StringBuilder sn, int len);
         public static bool GetAllCameraID(CameraType eType, ref string szText)
         {
-            StringBuilder builder = new StringBuilder(256);
+            StringBuilder builder = new(256);
             if (GetAllCameraID_Gen(eType, builder, 256))
             {
                 szText = builder.ToString();
@@ -705,7 +705,7 @@ namespace cvColorVision
 
         public static string CM_GetSN(IntPtr handle)
         {
-            StringBuilder builder = new StringBuilder(50);
+            StringBuilder builder = new(50);
             CM_GetSN(handle, builder, 50);
             return builder.ToString();
         }
@@ -747,13 +747,13 @@ namespace cvColorVision
         public static void CM_GetFrame_TIFF(IntPtr handle, GetFrameParam param, bool isburst)
         {
             string json1 = JsonConvert.SerializeObject(param);
-            Thread thread = new Thread(() => workTiffThread(handle, json1, isburst));
+            Thread thread = new(() => workTiffThread(handle, json1, isburst));
             thread.Start();
         }
 
         private static void workTiffThread(IntPtr handle, object json1, bool isburst)
         {
-            StringBuilder json = new StringBuilder();
+            StringBuilder json = new();
             json.Append(json1);
             string tifjson = json.ToString();
             if (isburst)
@@ -779,7 +779,7 @@ namespace cvColorVision
 
         public static string GetSysCfgJson(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault)
         {
-            StringBuilder builder = new StringBuilder(10240);
+            StringBuilder builder = new(10240);
             GetSysCfgJson_Gen(handle, builder, 10240, bDefault);
             string json1 = builder.ToString();
             return UnicodeToGB(json1);
@@ -789,7 +789,7 @@ namespace cvColorVision
         private unsafe static extern void GetDefaultSysCfgJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
         public static string GetDefaultSysCfgJson(IntPtr handle, bool bDefault)
         {
-            StringBuilder builder = new StringBuilder(10240);
+            StringBuilder builder = new(10240);
             GetDefaultSysCfgJson_Gen(handle, builder, 10240, bDefault);
             string json1 = builder.ToString();
             return UnicodeToGB(json1);
@@ -799,7 +799,7 @@ namespace cvColorVision
         private unsafe static extern void GetDefaultCameraCfgToJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
         public static string GetDefaultCameraCfgToJson(IntPtr handle, bool bDefault)
         {
-            StringBuilder builder = new StringBuilder(10240);
+            StringBuilder builder = new(10240);
             CM_GetCfgToJson(handle, ConfigType.Cfg_Camera, builder, 10240, bDefault);
             string json1 = builder.ToString();
             return UnicodeToGB(json1);
@@ -809,7 +809,7 @@ namespace cvColorVision
         private unsafe static extern void GetDefaultExpTimeCfgToJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
         public static string GetDefaultExpTimeCfgToJson(IntPtr handle, bool bDefault)
         {
-            StringBuilder builder = new StringBuilder(10240);
+            StringBuilder builder = new(10240);
             CM_GetCfgToJson(handle, ConfigType.Cfg_ExpTime, builder, 10240, bDefault);
             string json1 = builder.ToString();
             return UnicodeToGB(json1);
@@ -819,7 +819,7 @@ namespace cvColorVision
         private unsafe static extern void GetDefaultCaliLibCfgToJson_Gen(IntPtr handle, StringBuilder jsonCfg, int len, bool bDefault);
         public static string GetDefaultCaliLibCfgToJson(IntPtr handle, bool bDefault)
         {
-            StringBuilder builder = new StringBuilder(10240);
+            StringBuilder builder = new(10240);
             CM_GetCfgToJson(handle, ConfigType.Cfg_Calibration, builder, 10240, bDefault);
             string json1 = builder.ToString();
             return UnicodeToGB(json1);
@@ -830,7 +830,7 @@ namespace cvColorVision
 
         public static string GetDefaultChannelsCfgToJson(IntPtr handle, bool bDefault)
         {
-            StringBuilder builder = new StringBuilder(10240);
+            StringBuilder builder = new(10240);
             GetDefaultChannelsCfgToJson_Gen(handle, builder, 10240, bDefault);
             string json1 = builder.ToString();
             return UnicodeToGB(json1);
@@ -911,6 +911,9 @@ namespace cvColorVision
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetXYZxyuvRect", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_GetXYZxyuvRect(IntPtr handle, int pX, int pY, ref float X, ref float Y, ref float Z , ref float x, ref float y, ref float u, ref float v, int nRw, int nRh);
+       
+        
+        
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetXYZCircle", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern bool CM_GetXYZCircle(IntPtr handle, int nX, int nY, ref float dX, ref float dY, ref float dZ,  double nRadius = 0.0);
 
@@ -1364,7 +1367,7 @@ namespace cvColorVision
 
                     if (pm == null)
                         return false;
-                    HImage himage_Fov = new HImage();
+                    HImage himage_Fov = new();
                     himage_Fov.nWidth = wRGB;
                     himage_Fov.nHeight = hRGB;
                     himage_Fov.nBpp = bppRGB;
@@ -1484,8 +1487,8 @@ namespace cvColorVision
             path += $"{(path.Substring(path.Length - 1, 1) != "/" ? "\\" : "")}FOVResult_{DateTime.Now:yyyyMMddhhmmss}.csv";
             if (!File.Exists(path))
                 cvCameraCSLib.CSVinitialized(path, new List<string>() { "FovPattern", "FovType", "Value" });
-            using FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
-            using StreamWriter sw = new StreamWriter(fs, Encoding.UTF8);
+            using FileStream fs = new(path, FileMode.Append, FileAccess.Write);
+            using StreamWriter sw = new(fs, Encoding.UTF8);
             sw.WriteLine($"{fovPattern},{fovType},{fovDegrees}");
         }
 
@@ -1549,7 +1552,7 @@ namespace cvColorVision
             if (distoData.wRGB > 0&& distoData.hRGB >0&& distoData.bppRGB >0&& distoData.channalsRGB >0)
             {
                 //初始化HImage
-                HImage tImg = new HImage();
+                HImage tImg = new();
                 tImg.nBpp = distoData.bppRGB;
                 tImg.nChannels = distoData.channalsRGB;
                 tImg.nWidth = distoData.wRGB;
@@ -1560,7 +1563,7 @@ namespace cvColorVision
                     GCHandle hObject = GCHandle.Alloc(distoData.srcrawRGB, GCHandleType.Pinned);
                     tImg.pData = hObject.AddrOfPinnedObject();
                     //初始化SIZE
-                    SIZE sIZE = new SIZE();
+                    SIZE sIZE = new();
                     sIZE.cx = blobThreParams.cx;
                     sIZE.cy = blobThreParams.cy;
                     //初始化输出的理想坐标点系XY坐标集
@@ -1659,8 +1662,8 @@ namespace cvColorVision
                 cvCameraCSLib.CSVinitialized(path, new List<string>() { "Time", "pointx", "pointy", "maxErrorRatio", "t", "DistortionType" });
 
 
-            using FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
-            using StreamWriter sw = new StreamWriter(fs, Encoding.UTF8);
+            using FileStream fs = new(path, FileMode.Append, FileAccess.Write);
+            using StreamWriter sw = new(fs, Encoding.UTF8);
             sw.Write(DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss.fff"));
             sw.Write(",");
             sw.Write(pointx);
@@ -1734,8 +1737,8 @@ namespace cvColorVision
             return path + (path.Substring(path.Length - 1, 1) != "/"? "\\":"");
         }
 
-        private List<System.Drawing.Point> listGhostH = new List<System.Drawing.Point>();
-        private List<System.Drawing.Point> listGhostL = new List<System.Drawing.Point>();
+        private List<System.Drawing.Point> listGhostH = new();
+        private List<System.Drawing.Point> listGhostL = new();
         private  void save_Ghost_result(string path, int nxN, float[] centersX, float[] centersY, float[] blobGray, float[] dstGray, int numArrH, int[] arrH, int[] dataH_X, int[] dataH_Y, int numArrL, int[] arrL, int[] dataL_X, int[] dataL_Y)
         {
             listGhostH ??= new List<System.Drawing.Point>();
@@ -1752,8 +1755,8 @@ namespace cvColorVision
             path += $"{(path.Substring(path.Length - 1, 1) != "/" ? "\\" : "")}GhostXYResult_{DateTime.Now:yyyyMMddhhmmss}.csv";
             if (!File.Exists(path))
                 cvCameraCSLib.CSVinitialized(path, new List<string>() { "centersX", "centersY", "blobGray", "dstGray" });
-            using FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
-            using StreamWriter sw = new StreamWriter(fs, Encoding.UTF8);
+            using FileStream fs = new(path, FileMode.Append, FileAccess.Write);
+            using StreamWriter sw = new(fs, Encoding.UTF8);
             for (int i = 0; i < nxN; i++)
                 sw.WriteLine($"{centersX[i]},{centersY[i]},{blobGray[i]},{dstGray[i]}");
         }
@@ -1766,8 +1769,8 @@ namespace cvColorVision
             if (!File.Exists(path))
                 cvCameraCSLib.CSVinitialized(path, new List<string>() { "X", "Y" });
 
-            using FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
-            using StreamWriter sw = new StreamWriter(fs, Encoding.UTF8);
+            using FileStream fs = new(path, FileMode.Append, FileAccess.Write);
+            using StreamWriter sw = new(fs, Encoding.UTF8);
             int idx = 0;
             for (int x = 0; x < numArr; x++)
                 for (int y = 0; y < arr[x]; y++)
@@ -1976,10 +1979,10 @@ namespace cvColorVision
                 ErrorData = "四色校正保存异常";
                 return false;
             }
-            FourLumChromaParam lumChroma = new FourLumChromaParam(0, 0, 0, 1, 1, 1, (float)vcdRltData[0], (float)vcdRltData[1], (float)vcdRltData[2], (float)vcdRltData[3], vcdRltData[4], vcdRltData[5], vcdRltData[6], vcdRltData[7], vcdRltData[8]);
+            FourLumChromaParam lumChroma = new(0, 0, 0, 1, 1, 1, (float)vcdRltData[0], (float)vcdRltData[1], (float)vcdRltData[2], (float)vcdRltData[3], vcdRltData[4], vcdRltData[5], vcdRltData[6], vcdRltData[7], vcdRltData[8]);
             string szFileName = calibrationName + ".dat";
             string jsonData = JsonConvert.SerializeObject(lumChroma);
-            using StreamWriter sw = new StreamWriter(szFileName);
+            using StreamWriter sw = new(szFileName);
             sw.Write(jsonData);
             return true;
         }
@@ -2141,7 +2144,7 @@ namespace cvColorVision
             {
                 return false;
             }
-            List<Point3f> vecImgxyz = new List<Point3f>(0);
+            List<Point3f> vecImgxyz = new(0);
             int ntype = Gettype((int)vImgM[0].iBpp, (int)vImgM[0].iChannels);
             if (ntype == -1)
             {
@@ -2150,7 +2153,7 @@ namespace cvColorVision
             }
             for (int i = 0; i < 4; i++)
             {
-                Mat matSrc = new Mat((int)vImgM[i].iHei, (int)vImgM[i].iWid, ntype, vImgM[i].pData);
+                Mat matSrc = new((int)vImgM[i].iHei, (int)vImgM[i].iWid, ntype, vImgM[i].pData);
 
                 Mat src_x;
                 Mat src_y;
@@ -2278,7 +2281,7 @@ namespace cvColorVision
             if (imageData != null && imageData.pData != null && imageData.pData.Length != 0 )
             {
                 //伪彩色只支持8bits1通道或者3通道，根据我们的需求只做单通道的部分
-                Mat showChannel = new Mat((int)imageData.iHei, (int)imageData.iWid, MatType.CV_8UC1);
+                Mat showChannel = new((int)imageData.iHei, (int)imageData.iWid, MatType.CV_8UC1);
                 //原始图像为8bits的时候
                 if (imageData.iBpp == 8)
                 {
@@ -2288,7 +2291,7 @@ namespace cvColorVision
                     }
                     else if (imageData.iChannels == 3)
                     {
-                        Mat srcChannel = new Mat((int)imageData.iHei, (int)imageData.iWid, MatType.CV_8UC1, imageData.pData);
+                        Mat srcChannel = new((int)imageData.iHei, (int)imageData.iWid, MatType.CV_8UC1, imageData.pData);
                         Mat[] dstChannel = new Mat[3];
                         Cv2.Split(srcChannel, out dstChannel);
                         showChannel = dstChannel[channelNum];
@@ -2299,13 +2302,13 @@ namespace cvColorVision
                 {
                     if (imageData.iChannels == 1)
                     {
-                        Mat srcChannel = new Mat((int)imageData.iHei, (int)imageData.iWid, MatType.CV_16UC1, imageData.pData);
+                        Mat srcChannel = new((int)imageData.iHei, (int)imageData.iWid, MatType.CV_16UC1, imageData.pData);
                         Mat mat = srcChannel.Clone();
                         showChannel = mat;
                     }
                     else if (imageData.iChannels == 3)
                     {
-                        Mat srcChannel = new Mat((int)imageData.iHei, (int)imageData.iWid, MatType.CV_16UC3, imageData.pData);
+                        Mat srcChannel = new((int)imageData.iHei, (int)imageData.iWid, MatType.CV_16UC3, imageData.pData);
                         Mat[] dstChannel = new Mat[3];
                         Cv2.Split(srcChannel, out dstChannel);
                         Mat mat = dstChannel[channelNum].Clone();
@@ -2317,7 +2320,7 @@ namespace cvColorVision
                 {
                     if (imageData.iChannels == 1)
                     {
-                        Mat srcChannel = new Mat((int)imageData.iHei, (int)imageData.iWid, MatType.CV_32FC1, imageData.pData);
+                        Mat srcChannel = new((int)imageData.iHei, (int)imageData.iWid, MatType.CV_32FC1, imageData.pData);
                         Mat mat = srcChannel.Clone();
                         Cv2.Normalize(srcChannel, mat, 255, 0);
                         srcChannel.ConvertTo(mat, MatType.CV_8UC1);
@@ -2325,7 +2328,7 @@ namespace cvColorVision
                     }
                     else if (imageData.iChannels == 3)
                     {
-                        Mat srcChannel = new Mat((int)imageData.iHei, (int)imageData.iWid, MatType.CV_32FC3, imageData.pData);
+                        Mat srcChannel = new((int)imageData.iHei, (int)imageData.iWid, MatType.CV_32FC3, imageData.pData);
                         Mat[] dstChannel = new Mat[3];
                         Cv2.Split(srcChannel, out dstChannel);
                         Mat mat = dstChannel[channelNum].Clone();

@@ -84,7 +84,7 @@ namespace ColorVision.Services.Devices.Camera
             }
             SysDeviceModel sysDevModel = null;
 
-            SysResourceModel sysResource = new SysResourceModel(CreateName.Text, CreateCode.Text, TerminalService.SysResourceModel.Type, TerminalService.SysResourceModel.Id, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            SysResourceModel sysResource = new(CreateName.Text, CreateCode.Text, TerminalService.SysResourceModel.Type, TerminalService.SysResourceModel.Id, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             CreateConfig.Id = CreateCode.Text;
             CreateConfig.Name = CreateName.Text;
             CreateConfig.SendTopic = TerminalService.Config.SendTopic;

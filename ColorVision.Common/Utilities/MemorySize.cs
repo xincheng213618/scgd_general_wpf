@@ -10,7 +10,7 @@ namespace ColorVision.Common.Utilities
         public static long FileSize(string filePath)
         {
             //定义一个FileInfo对象，是指与filePath所指向的文件相关联，以获取其大小
-            FileInfo fileInfo = new FileInfo(filePath);
+            FileInfo fileInfo = new(filePath);
             return fileInfo.Length;
         }
 
@@ -31,7 +31,7 @@ namespace ColorVision.Common.Utilities
             else
             {
                 //定义一个DirectoryInfo对象
-                DirectoryInfo di = new DirectoryInfo(dirPath);
+                DirectoryInfo di = new(dirPath);
 
                 //通过GetFiles方法，获取di目录中的所有文件的大小
                 foreach (FileInfo fi in di.GetFiles())
@@ -67,7 +67,7 @@ namespace ColorVision.Common.Utilities
             else
             {
                 //定义一个DirectoryInfo对象
-                DirectoryInfo di = new DirectoryInfo(dirPath);
+                DirectoryInfo di = new(dirPath);
 
                 //通过GetFiles方法，获取di目录中的所有文件的大小
                 foreach (FileInfo fi in di.GetFiles())

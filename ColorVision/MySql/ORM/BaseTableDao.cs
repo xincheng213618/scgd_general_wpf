@@ -87,7 +87,7 @@ namespace ColorVision.MySql.ORM
             string sql = $"SELECT * FROM {TableName} {whereClause}";
             DataTable d_info = GetData(sql, param);
 
-            List<T> list = new List<T>();
+            List<T> list = new();
             try
             {
                 foreach (var item in d_info.AsEnumerable())
@@ -110,7 +110,7 @@ namespace ColorVision.MySql.ORM
 
         public List<T> ConditionalQuery(Dictionary<string, object> param)
         {
-            List<T> list = new List<T>();
+            List<T> list = new();
             string sql = $"select * from {TableName} where 1=1";
             // 遍历字典，为每个键值对构建查询条件
             foreach (var pair in param)

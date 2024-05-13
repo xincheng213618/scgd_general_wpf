@@ -69,16 +69,16 @@ namespace ColorVision.Services.Types
             }
 
 
-            SysResourceModel sysResource = new SysResourceModel(CreateName.Text, CreateCode.Text, TypeService.SysDictionaryModel.Value, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            SysResourceModel sysResource = new(CreateName.Text, CreateCode.Text, TypeService.SysDictionaryModel.Value, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
 
-            TerminalServiceConfig terminalServiceConfig = new TerminalServiceConfig() { HeartbeatTime = 5000 };
+            TerminalServiceConfig terminalServiceConfig = new() { HeartbeatTime = 5000 };
 
             terminalServiceConfig.SendTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/CMD/{ConfigHandler.GetInstance().SoftwareConfig.RcServiceConfig.RCName}";
             terminalServiceConfig.SubscribeTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/STATUS/{ConfigHandler.GetInstance().SoftwareConfig.RcServiceConfig.RCName}";
 
             sysResource.Value = JsonConvert.SerializeObject(terminalServiceConfig);
 
-            VSysResourceDao resourceDao = new VSysResourceDao();
+            VSysResourceDao resourceDao = new();
             resourceDao.Save(sysResource);
 
             int pkId = sysResource.Id;

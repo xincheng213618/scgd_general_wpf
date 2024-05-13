@@ -44,7 +44,7 @@ namespace ColorVision.Services.Core
             {
                 if (sysResourceModel.Type == (int)ServiceTypes.Group)
                 {
-                    GroupResource groupResource1 = new GroupResource(sysResourceModel);
+                    GroupResource groupResource1 = new(sysResourceModel);
                     LoadgroupResource(groupResource1);
                     groupResource.AddChild(groupResource);
                 }
@@ -55,7 +55,7 @@ namespace ColorVision.Services.Core
                 }
                 else
                 {
-                    BaseResource calibrationResource = new BaseResource(sysResourceModel);
+                    BaseResource calibrationResource = new(sysResourceModel);
                     groupResource.AddChild(calibrationResource);
                 }
             }
@@ -64,7 +64,7 @@ namespace ColorVision.Services.Core
 
         public static GroupResource? AddGroupResource(ICalibrationService<BaseResourceObject> deviceService , string Name)
         {
-            SysResourceModel sysResourceModel = new SysResourceModel() { Name = Name , Type = (int)ServiceTypes.Group };
+            SysResourceModel sysResourceModel = new() { Name = Name , Type = (int)ServiceTypes.Group };
             sysResourceModel.Pid = deviceService.SysResourceModel.Id;
             sysResourceModel.TenantId = deviceService.SysResourceModel.TenantId;
 
@@ -73,7 +73,7 @@ namespace ColorVision.Services.Core
             int pkId = sysResourceModel.Id;
             if (pkId > 0 && SysResourceDao.Instance.GetById(pkId) is SysResourceModel model)
             {
-                GroupResource groupResource = new GroupResource(model);
+                GroupResource groupResource = new(model);
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     deviceService.AddChild(groupResource);

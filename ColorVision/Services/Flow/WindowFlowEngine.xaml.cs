@@ -30,7 +30,7 @@ namespace ColorVision.Services.Flow
         public string? InputGestureText => null;
 
         public object? Icon => null;
-        public RelayCommand Command => new RelayCommand(A =>
+        public RelayCommand Command => new(A =>
         {
             new WindowFlowEngine() { WindowStartupLocation = WindowStartupLocation.CenterScreen }.ShowDialog();
         });
@@ -131,7 +131,7 @@ namespace ColorVision.Services.Flow
 
         private void Button_Click_New(object sender, RoutedEventArgs e)
         {
-            System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
+            System.Windows.Forms.SaveFileDialog ofd = new();
             ofd.Filter = "*.stn|*.stn";
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
@@ -155,7 +155,7 @@ namespace ColorVision.Services.Flow
 
         private void Button_Click_Open(object sender, RoutedEventArgs e)
         {
-            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            System.Windows.Forms.OpenFileDialog ofd = new();
             ofd.Filter = "*.stn|*.stn";
             ofd.InitialDirectory = SolutionManager.GetInstance().CurrentSolution.FullPath;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
@@ -240,7 +240,7 @@ namespace ColorVision.Services.Flow
                 if (button.Content.ToString() == "开始流程")
                 {
                     svrName = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-                    CVBaseDataFlow baseEvent = new CVBaseDataFlow(svrName, "Start", TextBoxsn.Text);
+                    CVBaseDataFlow baseEvent = new(svrName, "Start", TextBoxsn.Text);
                     await MQTTControl.GetInstance().PublishAsyncClient(GetTopic(), JsonConvert.SerializeObject(baseEvent), false);
                     
                     button.Content = "停止流程";
@@ -249,7 +249,7 @@ namespace ColorVision.Services.Flow
                 }
                 else
                 {
-                    CVBaseDataFlow baseEvent = new CVBaseDataFlow(svrName, "Stop", TextBoxsn.Text);
+                    CVBaseDataFlow baseEvent = new(svrName, "Stop", TextBoxsn.Text);
                     await MQTTControl.GetInstance().PublishAsyncClient(GetTopic(), JsonConvert.SerializeObject(baseEvent), false);
                     button.Content = "开始流程";
                     ButtonFlowPause.Visibility = Visibility.Collapsed;
@@ -266,13 +266,13 @@ namespace ColorVision.Services.Flow
             {
                 if (button.Content.ToString() == "暂停流程")
                 {
-                    CVBaseDataFlow baseEvent = new CVBaseDataFlow(svrName, "Pause", TextBoxsn.Text);
+                    CVBaseDataFlow baseEvent = new(svrName, "Pause", TextBoxsn.Text);
                     await MQTTControl.GetInstance().PublishAsyncClient(GetTopic(), JsonConvert.SerializeObject(baseEvent), false);
                     button.Content = "恢复流程";
                 }
                 else
                 {
-                    CVBaseDataFlow baseEvent = new CVBaseDataFlow(svrName, "Start", TextBoxsn.Text);
+                    CVBaseDataFlow baseEvent = new(svrName, "Start", TextBoxsn.Text);
                     await MQTTControl.GetInstance().PublishAsyncClient(GetTopic(), JsonConvert.SerializeObject(baseEvent), false);
                     button.Content = "暂停流程";
                 }

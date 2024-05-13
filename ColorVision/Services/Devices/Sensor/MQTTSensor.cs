@@ -21,7 +21,7 @@ namespace ColorVision.Services.Devices.Sensor
 
         public void Open()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "Open",
                 Params = new Dictionary<string, object> { { "eCOM_Type", Config.Category }, { "szIPAddress", Config.Addr }, { "nPort", Config.Port } }
@@ -34,9 +34,9 @@ namespace ColorVision.Services.Devices.Sensor
         /// <param name="command"></param>
         public void ExecCmd(SensorCmd command)
         {
-            SensorExecCmdParam req = new SensorExecCmdParam();
+            SensorExecCmdParam req = new();
             req.Cmd = command;
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTSensorEventEnum.Event_ExecCmd,
                 Params = req,
@@ -49,10 +49,10 @@ namespace ColorVision.Services.Devices.Sensor
         /// <param name="temp"></param>
         public void ExecCmd(CVTemplateParam temp)
         {
-            SensorExecCmdParam req = new SensorExecCmdParam();
+            SensorExecCmdParam req = new();
             req.TemplateParam = temp;
             req.Cmd = new SensorCmd() { CmdType= SensorCmdType.None };
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTSensorEventEnum.Event_ExecCmd,
                 Params = req,
@@ -62,7 +62,7 @@ namespace ColorVision.Services.Devices.Sensor
 
         public void ExecCmd(string command)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTSensorEventEnum.Event_ExecCmd,
                 Params = new Dictionary<string, object> { { "eCOM_Type", Config.Category }, { "szIPAddress", Config.Addr }, { "nPort", Config.Port } ,{ "cmd",command} }
@@ -71,7 +71,7 @@ namespace ColorVision.Services.Devices.Sensor
         }
         public void Close()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "Close",
             };

@@ -6,7 +6,7 @@ namespace ColorVision.Draw
 {
     public class DefalutTextAttribute : BaseAttribute
     {
-        public static DefalutTextAttribute Defalut = new DefalutTextAttribute()
+        public static DefalutTextAttribute Defalut = new()
         {
             Brush = Brushes.Red,
             FontFamily = new FontFamily("Arial"),

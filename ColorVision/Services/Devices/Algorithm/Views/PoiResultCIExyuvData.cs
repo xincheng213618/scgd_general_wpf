@@ -17,7 +17,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
         public static void SaveCsv(ObservableCollection<PoiResultCIExyuvData> poiResultCIExyuvDatas, string FileName)
         {
             var csvBuilder = new StringBuilder();
-            List<string> properties = new List<string> { "名称", "位置", "大小", "形状", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
+            List<string> properties = new() { "名称", "位置", "大小", "形状", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
 
             // 写入列头
             csvBuilder.AppendLine(string.Join(",", properties));
@@ -25,7 +25,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             // 写入数据行
             foreach (var item in poiResultCIExyuvDatas)
             {
-                List<string> values = new List<string>
+                List<string> values = new()
                 {
                     item.Name,
                     $"{item.Point.PixelX}|{item.Point.PixelY}" ,
@@ -99,8 +99,8 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             csvBuilder.AppendLine("属性,最大值,最小值,平均值,方差");
             foreach (var property in properties.Skip(4)) // 假设前三个属性不是数字
             {
-                List<string> stats = new List<string>
-        {
+                List<string> stats = new()
+                {
             property,
             maxValues[property].ToString(CultureInfo.InvariantCulture),
             minValues[property].ToString(CultureInfo.InvariantCulture),

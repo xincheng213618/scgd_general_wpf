@@ -54,7 +54,7 @@ namespace ColorVision.Themes.Controls
 
         public void ChoiceFile()
         {
-            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
+            Microsoft.Win32.OpenFileDialog openFileDialog = new();
 
             openFileDialog.Filter = Filter;
             openFileDialog.Multiselect = false;

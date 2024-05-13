@@ -53,7 +53,7 @@ namespace ColorVision.MQTT
             timer.Start();
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
             {
-                JsonSerializerSettings settings = new JsonSerializerSettings
+                JsonSerializerSettings settings = new()
                 {
                     Formatting = Formatting.Indented
                 };

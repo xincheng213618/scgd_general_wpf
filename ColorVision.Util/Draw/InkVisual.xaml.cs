@@ -24,7 +24,7 @@ namespace ColorVision.Draw
 
         private void inkCanvas_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            Ellipse ellipse = new Ellipse()
+            Ellipse ellipse = new()
             {
                 Width = 50,
                 Height = 50,
@@ -55,7 +55,7 @@ namespace ColorVision.Draw
         {
             if (filePath != null && File.Exists(filePath))
             {
-                BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
+                BitmapImage bitmapImage = new(new Uri(filePath));
                 drawCanvas.Source = bitmapImage;
                 Zoombox1.ZoomUniform();
             }

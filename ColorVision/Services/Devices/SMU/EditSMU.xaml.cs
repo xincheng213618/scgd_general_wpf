@@ -40,9 +40,9 @@ namespace ColorVision.Services.Devices.SMU
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            List<string> Serials = new List<string> { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8" };
+            List<string> Serials = new() { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8" };
             TextSerial.ItemsSource = Serials;
-            List<string> devTypes = new List<string> { "Keithley_2400", "Keithley_2600", "Precise_S100" };
+            List<string> devTypes = new() { "Keithley_2400", "Keithley_2600", "Precise_S100" };
             SMUType.ItemsSource = devTypes;
             DataContext = Device;
 

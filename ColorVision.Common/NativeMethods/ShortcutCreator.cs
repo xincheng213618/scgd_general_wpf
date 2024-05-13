@@ -13,7 +13,7 @@ namespace ColorVision.Common.NativeMethods
         public static void CreateShortcut(string shortcutName, string shortcutPath, string targetFileLocation)
         {
             // Create a new WshShell object to access WSH functionality
-            WshShell shell = new WshShell();
+            WshShell shell = new();
 
             // Create the shortcut object
             IWshShortcut shortcut = (IWshShortcut)shell.CreateShortcut(shortcutPath + "\\" + shortcutName + ".lnk");

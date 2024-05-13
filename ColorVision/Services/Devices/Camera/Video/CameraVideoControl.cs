@@ -55,9 +55,9 @@ namespace ColorVision.Services.Devices.Camera.Video
         private System.Drawing.Bitmap ReSize(System.Drawing.Bitmap bmp)
         {
             var data = bmp.LockBits(new System.Drawing.Rectangle(new System.Drawing.Point(0, 0), bmp.Size), System.Drawing.Imaging.ImageLockMode.ReadOnly, bmp.PixelFormat);
-            OpenCvSharp.Mat src = new OpenCvSharp.Mat(bmp.Height, bmp.Width, OpenCvSharp.MatType.CV_8UC3, data.Scan0);
+            OpenCvSharp.Mat src = new(bmp.Height, bmp.Width, OpenCvSharp.MatType.CV_8UC3, data.Scan0);
             bmp.UnlockBits(data);
-            OpenCvSharp.Mat dst = new OpenCvSharp.Mat();
+            OpenCvSharp.Mat dst = new();
             OpenCvSharp.Cv2.Resize(src, dst, new OpenCvSharp.Size(width, height));
             return dst.ToBitmap();
         }

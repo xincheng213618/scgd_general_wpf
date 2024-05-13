@@ -101,7 +101,7 @@ namespace ColorVision.UI.Sorts
 
         public static void GenContentMenuGridViewColumn(ContextMenu contextMenu,GridViewColumnCollection gridViewColumns, ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys)
         {
-            MenuItem menuItemAuto = new MenuItem();
+            MenuItem menuItemAuto = new();
             menuItemAuto.Header = ColorVision.UI.Properties.Resources.AutoAdjustColumnWidth;
             menuItemAuto.Click += (s, e) =>
             {
@@ -111,9 +111,9 @@ namespace ColorVision.UI.Sorts
             contextMenu.Items.Add(new Separator());
             foreach (var item in gridViewColumnVisibilitys)
             {
-                MenuItem menuItem = new MenuItem();
+                MenuItem menuItem = new();
                 menuItem.Header = item.ColumnName;
-                Binding binding = new Binding("IsVisible")
+                Binding binding = new("IsVisible")
                 {
                     Source = item,
                     Mode = BindingMode.TwoWay // 双向绑定

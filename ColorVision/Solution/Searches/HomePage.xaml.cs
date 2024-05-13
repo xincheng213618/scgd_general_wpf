@@ -35,7 +35,7 @@ namespace ColorVision.Solution.Searches
 
         private void Page_Initialized(object sender, EventArgs e) 
         {
-            FluidMoveBehavior fluidMoveBehavior = new FluidMoveBehavior
+            FluidMoveBehavior fluidMoveBehavior = new()
             {
                 AppliesTo = FluidMoveScope.Children,
                 Duration = TimeSpan.FromSeconds(0.1)

@@ -6,7 +6,7 @@ using System.Windows;
 
 namespace ColorVision.Wizards
 {
-    public class WizardMenuITem :IMenuItem
+    public class WizardExport :IMenuItem
     {
         public string? OwnerGuid => "Help";
         public string? GuidId => "Wizard";
@@ -17,7 +17,7 @@ namespace ColorVision.Wizards
 
         public object? Icon => null;
 
-        public RelayCommand Command => new RelayCommand(A => Execute());
+        public RelayCommand Command => new(A => Execute());
 
         private static void Execute()
         {

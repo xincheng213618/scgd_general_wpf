@@ -62,7 +62,7 @@ namespace ColorVision.Common.Utilities
 
             public static string Sign(string Text, string PrivateKey)
             {
-                RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
+                RSACryptoServiceProvider rsa = new();
                 rsa.FromXmlString(PrivateKey);
                 return Convert.ToBase64String(rsa.SignData(Encoding.UTF8.GetBytes(Text), "MD5"));
             }
@@ -109,10 +109,10 @@ namespace ColorVision.Common.Utilities
                 Aes Ae = Aes.Create();
                 try
                 {
-                    using (MemoryStream Memory = new MemoryStream())
+                    using (MemoryStream Memory = new())
                     {
                         //把内存流对象包装成加密流对象
-                        using (CryptoStream Encryptor = new CryptoStream(Memory, Ae.CreateEncryptor(bKey, bVector), CryptoStreamMode.Write))
+                        using (CryptoStream Encryptor = new(Memory, Ae.CreateEncryptor(bKey, bVector), CryptoStreamMode.Write))
                         {
                             Encryptor.Write(Data, 0, Data.Length);
                             Encryptor.FlushFinalBlock();
@@ -145,13 +145,13 @@ namespace ColorVision.Common.Utilities
                 Aes Ae = Aes.Create();
                 try
                 {
-                    using (MemoryStream Memory = new MemoryStream(Data))
+                    using (MemoryStream Memory = new(Data))
                     {
                         //把内存流对象包装成加密对象
-                        using (CryptoStream Decrypt = new CryptoStream(Memory, Ae.CreateDecryptor(bKey, bVector), CryptoStreamMode.Read))
+                        using (CryptoStream Decrypt = new(Memory, Ae.CreateDecryptor(bKey, bVector), CryptoStreamMode.Read))
                         {
                             //明文存储区
-                            using (MemoryStream originalMemory = new MemoryStream())
+                            using (MemoryStream originalMemory = new())
                             {
                                 byte[] Buffer = new byte[1024];
                                 int readBytes = 0;
@@ -188,7 +188,7 @@ namespace ColorVision.Common.Utilities
             byte[] hashBytes = MD5.HashData(inputBytes);
 #pragma warning restore CA5351
 
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             for (int i = 0; i < hashBytes.Length; i++)
             {
                 sb.Append(hashBytes[i].ToString("x2"));
@@ -201,7 +201,7 @@ namespace ColorVision.Common.Utilities
             byte[] inputBytes = Encoding.UTF8.GetBytes(input);
             byte[] hashBytes = SHA256.HashData(inputBytes);
 
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             for (int i = 0; i < hashBytes.Length; i++)
             {
                 sb.Append(hashBytes[i].ToString("x2"));

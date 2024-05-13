@@ -59,7 +59,7 @@ namespace ColorVision.Services.Terminal
             RefreshCommand = new RelayCommand(a => MQTTRCService.GetInstance().RestartServices(Config.ServiceType.ToString(),sysResourceModel.Code ??string.Empty));
             EditCommand = new RelayCommand(a =>
             {
-                EditTerminal window = new EditTerminal(this);
+                EditTerminal window = new(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
@@ -67,7 +67,7 @@ namespace ColorVision.Services.Terminal
 
             OpenCreateWindowCommand = new RelayCommand(a =>
             {
-                CreateTerminal createTerminal = new CreateTerminal(this);
+                CreateTerminal createTerminal = new(this);
                 createTerminal.Owner = Application.Current.GetActiveWindow();
                 createTerminal.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 createTerminal.ShowDialog();
@@ -108,7 +108,7 @@ namespace ColorVision.Services.Terminal
             }
 
             ContextMenu = new ContextMenu();
-            MenuItem menuItem = new MenuItem() { Header = ColorVision.Properties.Resource.Delete };
+            MenuItem menuItem = new() { Header = ColorVision.Properties.Resource.Delete };
             menuItem.Click += (s, e) => Delete();
             ContextMenu.Items.Add(menuItem);
         }
@@ -130,7 +130,7 @@ namespace ColorVision.Services.Terminal
         {
             get
             {
-                List<string> codes = new List<string>();
+                List<string> codes = new();
                 foreach (var item in VisualChildren)
                 {
                     if (item is DeviceService baseChannel)

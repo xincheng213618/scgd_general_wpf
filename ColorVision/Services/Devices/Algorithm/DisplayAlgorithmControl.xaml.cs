@@ -257,19 +257,19 @@ namespace ColorVision.Services.Devices.Algorithm
 
         private void GetImageDevices()
         {
-            ObservableCollection<TemplateModel<ImageDevice>> deves = new ObservableCollection<TemplateModel<ImageDevice>>();
+            ObservableCollection<TemplateModel<ImageDevice>> deves = new();
             foreach (var item in ServiceManager.GetInstance().DeviceServices)
             {
                 if (item is DeviceCamera camera)
                 {
-                    TemplateModel<ImageDevice> model = new TemplateModel<ImageDevice>()
+                    TemplateModel<ImageDevice> model = new()
                     {
                         Value = new ImageDevice() { Name = item.Name, DeviceCode = item.Code, DeviceType = "Camera" },
                     };
                     deves.Add(model);
                 }else if (item is DeviceCalibration cali)
                 {
-                    TemplateModel<ImageDevice> model = new TemplateModel<ImageDevice>()
+                    TemplateModel<ImageDevice> model = new()
                     {
                         Value = new ImageDevice() { Name = item.Name, DeviceCode = item.Code, DeviceType = "Calibration" },
                     };

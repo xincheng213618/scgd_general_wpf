@@ -163,7 +163,7 @@ namespace ColorVision.Services.Devices.Camera
 
         public MsgRecord Init()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "Init",
             };
@@ -194,7 +194,7 @@ namespace ColorVision.Services.Devices.Camera
 
         public MsgRecord SetCfg(CameraConfigType configType)
         {
-            MsgSend msg = new MsgSend { EventName = "SetCfg" };
+            MsgSend msg = new() { EventName = "SetCfg" };
 
             var Params = new Dictionary<string,object>();
             Params.Add("ConfigType", configType);
@@ -224,18 +224,18 @@ namespace ColorVision.Services.Devices.Camera
 
         public MsgRecord CfwPortSetPort(int nIndex, int nPort, int eImgChlType)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "SetParam",
                 Params = new Dictionary<string, object>() { { "Func",new List<ParamFunction> (){
-                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", nIndex }, { "nPort", nPort },{ "eImgChlType" , eImgChlType } }  } } } }
+                    new() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", nIndex }, { "nPort", nPort },{ "eImgChlType" , eImgChlType } }  } } } }
             };
             return PublishAsyncClient(msg);
         }
         public MsgRecord Calibration(CalibrationParam item)
         {
-            Dictionary<string, object> Params = new Dictionary<string, object>();
-            MsgSend msg = new MsgSend
+            Dictionary<string, object> Params = new();
+            MsgSend msg = new()
             {
                 EventName = "Calibration",
                 Params = Params
@@ -263,7 +263,7 @@ namespace ColorVision.Services.Devices.Camera
                 Params.Add("CalibTypeFileName", item.Color.LumMultiColor.FilePath);
             }
 
-            List<Dictionary<string, object>> List = new List<Dictionary<string, object>>
+            List<Dictionary<string, object>> List = new()
             {
                 item.Normal.ToDictionary(),
             };
@@ -278,7 +278,7 @@ namespace ColorVision.Services.Devices.Camera
             CurrentTakeImageMode = TakeImageMode.Live;
             IsVideoOpen = true;
             bool IsLocal = (host=="127.0.0.1");
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "OpenLive",
                 Params = new Dictionary<string, object>() { { "RemoteIp", host }, { "RemotePort", port }, { "Gain", Config.Gain }, { "ExpTime", Config.ExpTime }, { "IsLocal", IsLocal } }
@@ -290,7 +290,7 @@ namespace ColorVision.Services.Devices.Camera
         public MsgRecord Open(string CameraID, TakeImageMode TakeImageMode, int ImageBpp)
         {
             CurrentTakeImageMode = TakeImageMode;
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "Open",
                 Params = new Dictionary<string, object>() { { "TakeImageMode", (int)TakeImageMode }, { "CameraID", CameraID }, { "Bpp", ImageBpp },{ "remoteIp", Config.VideoConfig.Host },{ "remotePort", Config.VideoConfig.Port } }
@@ -302,7 +302,7 @@ namespace ColorVision.Services.Devices.Camera
         {
             var Params = new Dictionary<string, object>() { };
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "SetParam",
                 Params = Params
@@ -380,7 +380,7 @@ namespace ColorVision.Services.Devices.Camera
         {
             var Params = new Dictionary<string, object>() { };
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "AutoFocus",
                 Params = Params
@@ -404,7 +404,7 @@ namespace ColorVision.Services.Devices.Camera
 
         public MsgRecord GetAutoExpTime()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "GetAutoExpTime",
             };
@@ -413,7 +413,7 @@ namespace ColorVision.Services.Devices.Camera
 
         public MsgRecord SetLicense(string md5, string FileData)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "SaveLicense",
                 Params = new Dictionary<string, object>() { { "FileName", md5 }, { "FileData", FileData }, { "eType", 0 }}
@@ -424,7 +424,7 @@ namespace ColorVision.Services.Devices.Camera
 
         public MsgRecord Close()
         {
-            MsgSend msg = new MsgSend {  EventName = "Close" };
+            MsgSend msg = new() {  EventName = "Close" };
             return PublishAsyncClient(msg);
         }
 
@@ -432,7 +432,7 @@ namespace ColorVision.Services.Devices.Camera
         public MsgRecord Move(int nPosition, bool IsbAbs = true, int dwTimeOut = 5000)
         {
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "Move",
                 Params = new Dictionary<string, object>() {
@@ -444,7 +444,7 @@ namespace ColorVision.Services.Devices.Camera
         public MsgRecord MoveDiaphragm(double dPosition, int dwTimeOut = 5000)
         {
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "MoveDiaphragm",
                 Params = new Dictionary<string, object>() { { "dPosition", dPosition }, { "dwTimeOut", Config.MotorConfig.DwTimeOut } }
@@ -457,7 +457,7 @@ namespace ColorVision.Services.Devices.Camera
 
         public MsgRecord GoHome()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "GoHome",
                 Params = new Dictionary<string, object>() { { "dwTimeOut", Config.MotorConfig.DwTimeOut } }
@@ -467,7 +467,7 @@ namespace ColorVision.Services.Devices.Camera
 
         public MsgRecord GetPosition()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "GetPosition",
                 Params = new Dictionary<string, object>() { { "dwTimeOut", Config.MotorConfig.DwTimeOut } }
@@ -477,7 +477,7 @@ namespace ColorVision.Services.Devices.Camera
 
         public MsgRecord DownloadFile(string fileName, FileExtType extType)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTFileServerEventEnum.Event_File_Download,
                 Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", extType } }
@@ -487,7 +487,7 @@ namespace ColorVision.Services.Devices.Camera
 
         public MsgRecord CacheClear()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTCameraEventEnum.Event_Delete_Data,
                 Params = new Dictionary<string, object> { }
@@ -497,7 +497,7 @@ namespace ColorVision.Services.Devices.Camera
 
         public MsgRecord GetChannel(int recId, CVImageChannelType chType)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTFileServerEventEnum.Event_File_GetChannel,
                 Params = new Dictionary<string, object> { { "RecID", recId }, { "ChannelType", chType } }

@@ -28,11 +28,11 @@ namespace ColorVision.Net
         {
             if (!File.Exists(filePath)) return false;
 
-            using FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read);
             if (fs.Length < HeaderSize) return false;
 
-            using BinaryReader br = new BinaryReader(fs);
-            string fileHeader = new string(br.ReadChars(HeaderSize));
+            using BinaryReader br = new(fs);
+            string fileHeader = new(br.ReadChars(HeaderSize));
             return fileHeader == MagicHeader;
         }
 
@@ -48,11 +48,11 @@ namespace ColorVision.Net
         {
             cvcie = new CVCIEFile();
             if (!File.Exists(filePath)) return -1;
-            using FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read);
+            using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read);
             if (fs.Length < MinimumFileSize) return -1;
 
-            using BinaryReader br = new BinaryReader(fs);
-            string fileHeader = new string(br.ReadChars(HeaderSize));
+            using BinaryReader br = new(fs);
+            string fileHeader = new(br.ReadChars(HeaderSize));
             if (fileHeader != MagicHeader) return -1;
 
             cvcie.FileExtType = filePath.Contains(".cvraw") ? FileExtType.Raw : filePath.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
@@ -128,8 +128,8 @@ namespace ColorVision.Net
 
         public static bool ReadCIEFileData(string filePath, ref CVCIEFile fileInfo, int dataStartIndex)
         {
-            using FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read);
-            using BinaryReader br = new BinaryReader(fs);
+            using FileStream fs = new(filePath, FileMode.Open, FileAccess.Read);
+            using BinaryReader br = new(fs);
             if (fs.Length < dataStartIndex)
             {
                 return false; // The data start index is beyond the file length
@@ -166,8 +166,8 @@ namespace ColorVision.Net
                 return false; // The data start index is beyond the byte array length
             }
 
-            using MemoryStream ms = new MemoryStream(fileData);
-            using BinaryReader br = new BinaryReader(ms);
+            using MemoryStream ms = new(fileData);
+            using BinaryReader br = new(ms);
 
             ms.Position = dataStartIndex; // Set the stream position to the start of the data
 
@@ -208,8 +208,8 @@ namespace ColorVision.Net
         public static int WriteFile(string fileName, CVCIEFile fileInfo)
         {
 
-            using FileStream fileStream = new FileStream(fileName, FileMode.Create);
-            using BinaryWriter writer = new BinaryWriter(fileStream);
+            using FileStream fileStream = new(fileName, FileMode.Create);
+            using BinaryWriter writer = new(fileStream);
             int ver = 1;
             char[] hd = { 'C', 'V', 'C', 'I', 'E' };
             writer.Write(hd);
@@ -276,8 +276,8 @@ namespace ColorVision.Net
         {
             if (File.Exists(fileName))
             {
-                FileStream fileStream = new FileStream(fileName, FileMode.Open, FileAccess.Read);
-                BinaryReader binaryReader = new BinaryReader(fileStream);
+                FileStream fileStream = new(fileName, FileMode.Open, FileAccess.Read);
+                BinaryReader binaryReader = new(fileStream);
                 //获取文件长度
                 long length = fileStream.Length;
                 byte[] bytes = new byte[length];
@@ -289,8 +289,8 @@ namespace ColorVision.Net
         }
         public static List<float[]> ReadCVCIE(string FileName)
         {
-            List<float[]> bytes = new List<float[]>();
-            CVCIEFile fileInfo = new CVCIEFile();
+            List<float[]> bytes = new();
+            CVCIEFile fileInfo = new();
             int index = ReadCIEFileHeader(FileName, out fileInfo);
             if (index < 0) return bytes;
             ReadCIEFileData(FileName, ref fileInfo, index);
@@ -353,7 +353,7 @@ namespace ColorVision.Net
                 fileOut.channels = 1;
                 if (fileIn.channels > 1)
                 {
-                    Mat src = new Mat(fileIn.cols, fileIn.rows, MatType.MakeType(fileOut.Depth, fileIn.channels), fileIn.data);
+                    Mat src = new(fileIn.cols, fileIn.rows, MatType.MakeType(fileOut.Depth, fileIn.channels), fileIn.data);
                     Mat[] srces = src.Split();
                     int len = fileOut.cols * fileOut.rows * fileOut.bpp / 8;
                     fileOut.data = new byte[len];

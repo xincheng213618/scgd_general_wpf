@@ -40,7 +40,7 @@ namespace ColorVision.Services.Devices.Spectrum.Views
             Blue = Math.Round(sum1 / sum2 * 100, 2).ToString();
             for (int i = 0; i <= (780 - 380) * 10; i += 10)
             {
-                SpectralData SpectralData = new SpectralData();
+                SpectralData SpectralData = new();
                 SpectralData.Wavelength = i / 10 + 380;
                 SpectralData.RelativeSpectrum = fPL[i];
                 SpectralData.AbsoluteSpectrum = fPL[i] * fPlambda;

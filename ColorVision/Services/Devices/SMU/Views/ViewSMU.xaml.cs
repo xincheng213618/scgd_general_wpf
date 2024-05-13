@@ -27,7 +27,7 @@ namespace ColorVision.Services.Devices.SMU.Views
         }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            TextBox TextBox1 = new TextBox() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };
+            TextBox TextBox1 = new() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };
             Grid.SetColumn(TextBox1, 0);
             Grid.SetRow(TextBox1, 0);
             MainGrid.Children.Insert(0, TextBox1);
@@ -159,12 +159,12 @@ namespace ColorVision.Services.Devices.SMU.Views
             }
         }
 
-        List<PassSxSource> PassSxSources = new List<PassSxSource>();
+        List<PassSxSource> PassSxSources = new();
 
         public void DrawPlot(bool isSourceV, double endVal,double[] VList, double[] IList)
         {
 
-            ViewResultSMU viewResultSMU = new ViewResultSMU(isSourceV? MeasurementType.Voltage: MeasurementType.Current, (float)endVal, VList, IList);
+            ViewResultSMU viewResultSMU = new(isSourceV? MeasurementType.Voltage: MeasurementType.Current, (float)endVal, VList, IList);
             ViewResultSMUs.Add(viewResultSMU);
             ToggleButtonChoice.IsChecked = viewResultSMU.MeasurementType == MeasurementType.Voltage;
 
@@ -403,13 +403,13 @@ namespace ColorVision.Services.Devices.SMU.Views
         }
 
 
-        MRSmuScanDao MRSmuScanDao = new MRSmuScanDao();
+        MRSmuScanDao MRSmuScanDao = new();
         private void Search_Click(object sender, RoutedEventArgs e)
         {
             ViewResultSMUs.Clear();
             foreach (var item in MRSmuScanDao.GetAll())
             {
-                ViewResultSMU viewResultSMU = new ViewResultSMU(item);
+                ViewResultSMU viewResultSMU = new(item);
                 ViewResultSMUs.Add(viewResultSMU);
                 ToggleButtonChoice.IsChecked = viewResultSMU.MeasurementType == MeasurementType.Voltage;
             }
@@ -422,7 +422,7 @@ namespace ColorVision.Services.Devices.SMU.Views
             {
                 foreach (var item in MRSmuScanDao.GetAll())
                 {
-                    ViewResultSMU viewResultSMU = new ViewResultSMU(item);
+                    ViewResultSMU viewResultSMU = new(item);
                     ViewResultSMUs.Add(viewResultSMU);
                 };
             }
@@ -432,7 +432,7 @@ namespace ColorVision.Services.Devices.SMU.Views
                 var list = MRSmuScanDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text ,SearchTimeSart.SelectedDateTime, SearchTimeEnd.SelectedDateTime);
                 foreach (var item in list)
                 {
-                    ViewResultSMU viewResultSMU = new ViewResultSMU(item);
+                    ViewResultSMU viewResultSMU = new(item);
                     ViewResultSMUs.Add(viewResultSMU);
                 };
             }

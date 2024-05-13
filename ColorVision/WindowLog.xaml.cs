@@ -7,9 +7,38 @@ using System.Windows.Controls;
 using log4net.Appender;
 using log4net.Core;
 using ColorVision.MQTT;
+using ColorVision.UI.HotKey;
+using ColorVision.UI;
+using System.Windows.Input;
+using ColorVision.Properties;
+using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 
 namespace ColorVision
 {
+    public class WindowLogExport : IHotKey, IMenuItem
+    {
+        public HotKeys HotKeys => new(Properties.Resource.MenuAbout, new Hotkey(Key.F2, ModifierKeys.Control), Execute);
+
+        public string? OwnerGuid => "Help";
+
+        public string? GuidId => "WindowLog";
+
+        public int Order => 10005;
+
+        public string? Header => ColorVision.Properties.Resource.Log;
+
+        public string? InputGestureText => "Ctrl + F2";
+
+        public object? Icon => null;
+
+        public RelayCommand Command => new(A => Execute());
+
+        private void Execute()
+        {
+            new WindowLog() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+        }
+    }
 
 
     /// <summary>

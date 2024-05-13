@@ -64,7 +64,7 @@ namespace ColorVision.Services.Dao
 
         public override SysResourceModel GetModelFromDataRow(DataRow item)
         {
-            SysResourceModel model = new SysResourceModel
+            SysResourceModel model = new()
             {
                 Id = item.Field<int>("id"),
                 Name = item.Field<string>("name"),
@@ -107,7 +107,7 @@ namespace ColorVision.Services.Dao
 
         public List<SysResourceModel> GetGroupResourceItems(int groupId)
         {
-            List<SysResourceModel> list = new List<SysResourceModel>();
+            List<SysResourceModel> list = new();
 
             string sql = "SELECT rg.group_id, r.id, r.name, r.code, r.type , r.pid, r.txt_value, r.create_date, r.tenant_id, r.remark FROM t_scgd_sys_resource_group rg JOIN t_scgd_sys_resource r ON rg.resource_id = r.id WHERE  rg.group_id =@groupId";
             var parameters = new Dictionary<string, object>();
@@ -145,7 +145,7 @@ namespace ColorVision.Services.Dao
 
         public List<SysResourceModel> GetResourceItems(int pid, int tenantId = 0)
         {
-            List<SysResourceModel> list = new List<SysResourceModel>();
+            List<SysResourceModel> list = new();
 
             string sql = $"SELECT * FROM {TableName} where 1=1 {(tenantId != 1 ? "and tenant_id=@tenantId" : "")} and pid=@pid and is_delete = 0 and is_enable = 1";
             var parameters = new Dictionary<string, object>();
@@ -187,7 +187,7 @@ namespace ColorVision.Services.Dao
 
         public override SysResourceModel GetModelFromDataRow(DataRow item)
         {
-            SysResourceModel model = new SysResourceModel
+            SysResourceModel model = new()
             {
                 Id = item.Field<int>("id"),
                 Name = item.Field<string>("name"),
@@ -222,7 +222,7 @@ namespace ColorVision.Services.Dao
 
         internal List<SysResourceModel> GetServices(int tenantId)
         {
-            List<SysResourceModel> list = new List<SysResourceModel>();
+            List<SysResourceModel> list = new();
             DataTable d_info = GetTablePidIsNullByPPcodeAndTenantId(tenantId);
             foreach (var item in d_info.AsEnumerable())
             {

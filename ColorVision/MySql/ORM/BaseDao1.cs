@@ -18,7 +18,7 @@ namespace ColorVision.MySql.ORM
         public DataTable SelectById(int id)
         {
             string sql = $"select * from {TableName} where id=@id" + GetDelSQL(true);
-            Dictionary<string, object> param = new Dictionary<string, object>
+            Dictionary<string, object> param = new()
             {
                 { "id",  id}
             };

@@ -9,7 +9,7 @@ namespace ColorVision.Update
 {
     public class ExportUpdate: IHotKey, IMenuItem
     {
-        public HotKeys HotKeys => new HotKeys(Properties.Resource.MenuUpdate, new Hotkey(Key.U, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(Properties.Resource.MenuUpdate, new Hotkey(Key.U, ModifierKeys.Control), Execute);
 
         public string? OwnerGuid => "Help";
 
@@ -23,7 +23,7 @@ namespace ColorVision.Update
 
         public object? Icon { get; set; }
 
-        public RelayCommand Command => new RelayCommand(A => Execute());
+        public RelayCommand Command => new(A => Execute());
 
         private void Execute()
         {

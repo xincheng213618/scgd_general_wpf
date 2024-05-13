@@ -23,7 +23,7 @@ namespace ColorVision.Services.Dao
 
         public override MeasureDetailModel GetModelFromDataRow(DataRow item)
         {
-            MeasureDetailModel model = new MeasureDetailModel
+            MeasureDetailModel model = new()
             {
                 Id = item.Field<int>("id"),
                 TID = item.Field<int>("t_id"),

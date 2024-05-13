@@ -22,7 +22,7 @@ namespace ColorVision.Adorners
         private readonly ContentPresenter _contentPresenter;
 
         /// <summary>移動トランスフォーム</summary>
-        private TranslateTransform _translate = new TranslateTransform(0.0, 0.0);
+        private TranslateTransform _translate = new(0.0, 0.0);
 
         /// <summary>オフセット位置</summary>
         private Point _offset;
@@ -43,10 +43,10 @@ namespace ColorVision.Adorners
         {
             // ドラッグするコントロールをイメージに変換
             Rect bounds = VisualTreeHelper.GetDescendantBounds(draggedControl);
-            DrawingVisual dv = new DrawingVisual();
+            DrawingVisual dv = new();
             using (DrawingContext ctx = dv.RenderOpen())
             {
-                VisualBrush vb = new VisualBrush(draggedControl)
+                VisualBrush vb = new(draggedControl)
                 {
                     Stretch = Stretch.None // 防止VisualBrush缩放
                 };

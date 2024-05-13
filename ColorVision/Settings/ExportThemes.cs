@@ -25,15 +25,15 @@ namespace ColorVision.Settings
         public string? InputGestureText => "Ctrl + Shift + T";
 
         public object? Icon => null;
-        public RelayCommand Command => new RelayCommand(a => { });
+        public RelayCommand Command => new(a => { });
 
         public MenuItem MenuItem { get
             { 
-                MenuItem MenuTheme = new MenuItem { Header = Header,InputGestureText =InputGestureText };
+                MenuItem MenuTheme = new() { Header = Header,InputGestureText =InputGestureText };
 
                 foreach (var item in Enum.GetValues(typeof(Theme)).Cast<Theme>())
                 {
-                    MenuItem ThemeItem = new MenuItem();
+                    MenuItem ThemeItem = new();
                     ThemeItem.Header = Properties.Resource.ResourceManager.GetString(item.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
                     ThemeItem.Click += (s, e) =>
                     {
@@ -57,7 +57,7 @@ namespace ColorVision.Settings
                 return MenuTheme;
             } }
 
-        public HotKeys HotKeys => new HotKeys(Properties.Resource.Theme, new Hotkey(Key.T, ModifierKeys.Control | ModifierKeys.Shift), Execute);
+        public HotKeys HotKeys => new(Properties.Resource.Theme, new Hotkey(Key.T, ModifierKeys.Control | ModifierKeys.Shift), Execute);
 
         private void Execute()
         {

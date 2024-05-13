@@ -81,14 +81,14 @@ namespace ColorVision.Services.Terminal
             DeviceService deviceService = null;
 
 
-            SysResourceModel sysResource = new SysResourceModel(CreateName.Text, CreateCode.Text, TerminalService.SysResourceModel.Type, TerminalService.SysResourceModel.Id, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            SysResourceModel sysResource = new(CreateName.Text, CreateCode.Text, TerminalService.SysResourceModel.Type, TerminalService.SysResourceModel.Id, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             SysDeviceModel sysDevModel = null;
             DeviceServiceConfig deviceConfig;
             int fromPort;
             switch (TerminalService.ServiceType)
             {
                 case ServiceTypes.PG:
-                    ConfigPG pGConfig = new ConfigPG
+                    ConfigPG pGConfig = new()
                     {
                         Id = CreateCode.Text,
                         Name = CreateName.Text,

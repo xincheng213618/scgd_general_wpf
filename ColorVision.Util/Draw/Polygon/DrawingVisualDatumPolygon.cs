@@ -36,7 +36,7 @@ namespace ColorVision.Draw
 
             if (Attribute.Points.Count > 1)
             {
-                Pen whiteOutlinePen = new Pen(Brushes.White, Attribute.Pen.Thickness + 2); // 描边比实际线条厚2个单位
+                Pen whiteOutlinePen = new(Brushes.White, Attribute.Pen.Thickness + 2); // 描边比实际线条厚2个单位
                 for (int i = 0; i < Attribute.Points.Count - 1; i++)
                 {
                     dc.DrawLine(whiteOutlinePen, Attribute.Points[i], Attribute.Points[i+1]);

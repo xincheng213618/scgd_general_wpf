@@ -49,8 +49,8 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
 
 
 
-        static Dictionary<int, HotKeyCallBackHanlder> keymap = new Dictionary<int, HotKeyCallBackHanlder>();
-        static List<HwndSource> HwndHook = new List<HwndSource>();
+        static Dictionary<int, HotKeyCallBackHanlder> keymap = new();
+        static List<HwndSource> HwndHook = new();
         static int keyid;
 
         /// <summary>

@@ -16,7 +16,7 @@ namespace ColorVision.Services.Devices.Sensor
             DeviceService = new MQTTSensor(Config);
             EditCommand = new RelayCommand(a =>
             {
-                EditSensor window = new EditSensor(this);
+                EditSensor window = new(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();

@@ -62,7 +62,7 @@ namespace ColorVision.Services.Templates
         {
             InitializeComponent();
         }
-        private MeasureDetailDao measureDetail = new MeasureDetailDao();
+        private MeasureDetailDao measureDetail = new();
         public int MasterID { get; set; }
         public ObservableCollection<MParamConfig> ListConfigs { get; set; } = new ObservableCollection<MParamConfig>();
         public ObservableCollection<MParamConfig> ModTypeConfigs { get; set; } = new ObservableCollection<MParamConfig>();
@@ -73,7 +73,7 @@ namespace ColorVision.Services.Templates
             Mod_Type.ItemsSource = ModTypeConfigs;
             Mod_Master.ItemsSource = ModMasterConfigs;
         }
-        private ModMasterDao masterModDao = new ModMasterDao();
+        private ModMasterDao masterModDao = new();
 
         private void ModTypeSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -103,7 +103,7 @@ namespace ColorVision.Services.Templates
         {
             if (Mod_Type.SelectedItem != null)
             {
-                MeasureDetailModel detailModel = new MeasureDetailModel();
+                MeasureDetailModel detailModel = new();
                 MParamConfig config = (MParamConfig)Mod_Type.SelectedItem;
                 if (config.Type!=null&&config.Type.Equals("POI", StringComparison.Ordinal))
                 {

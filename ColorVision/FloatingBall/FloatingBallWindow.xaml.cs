@@ -33,13 +33,13 @@ namespace ColorVision.FloatingBall
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            ContextMenu contextMenu = new ContextMenu();
-            MenuItem menuItem1 = new MenuItem() { Header = "隐藏界面" };
+            ContextMenu contextMenu = new();
+            MenuItem menuItem1 = new() { Header = "隐藏界面" };
             menuItem1.Click += (s, e) => { Close(); };
             contextMenu.Items.Add(menuItem1);
 
 
-            MenuItem menuItem = new MenuItem() { Header ="退出程序" };
+            MenuItem menuItem = new() { Header ="退出程序" };
             menuItem.Click += (s, e) => { Environment.Exit(0); };
             contextMenu.Items.Add(menuItem);
 

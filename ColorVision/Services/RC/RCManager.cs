@@ -75,7 +75,7 @@ namespace ColorVision.Services.RC
             try
             {
                 string excmd = string.Empty;
-                ServiceController sc = new ServiceController("RegistrationCenterService");
+                ServiceController sc = new("RegistrationCenterService");
                 if (sc.Status == ServiceControllerStatus.Stopped)
                 {
                     excmd += "net start RegistrationCenterService";

@@ -45,7 +45,7 @@ namespace ColorVision.Draw.Ruler
         {
             Lastlength = length;
             Brush brush = Brushes.Red;
-            FontFamily fontFamily = new FontFamily("Arial");
+            FontFamily fontFamily = new("Arial");
             double fontSize = 10;
             using (var dc = visual.RenderOpen())
             {
@@ -70,7 +70,7 @@ namespace ColorVision.Draw.Ruler
                     dc.DrawLine(new Pen(Brushes.Black, 2), new Point(X + 100 * result / length, Y + 1), new Point(X + 100 * result / length, Y - 8));
                     dc.DrawLine(new Pen(Brushes.Black, 2), new Point(X, Y), new Point(X + 100 * result / length, Y));
 
-                    FormattedText formattedText1 = new FormattedText((result * ActualLength).ToString("F0") + " " + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
+                    FormattedText formattedText1 = new((result * ActualLength).ToString("F0") + " " + PhysicalUnit, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
                     formattedText1.TextAlignment = TextAlignment.Center;
                     formattedText1.MaxTextWidth = 100 * result / length;
                     dc.DrawText(formattedText1, new Point(X, Y - 20));

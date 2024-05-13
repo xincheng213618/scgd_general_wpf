@@ -47,7 +47,7 @@ namespace ColorVision.UI.HotKey
     public class HotKeyHelper
     {
         private static HotKeyHelper instance;
-        private static readonly object locker = new object();
+        private static readonly object locker = new();
         public static HotKeyHelper GetInstance()
         {
             lock (locker) {

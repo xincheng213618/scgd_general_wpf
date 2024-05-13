@@ -112,7 +112,7 @@ namespace ColorVision.Services.Devices.Camera.Views
             }
         }
 
-        private MeasureImgResultDao measureImgResultDao = new MeasureImgResultDao();
+        private MeasureImgResultDao measureImgResultDao = new();
         string LocalFileName;
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
@@ -320,7 +320,7 @@ namespace ColorVision.Services.Devices.Camera.Views
 
         public void ShowResult(MeasureImgResultModel model)
         {
-            ViewResultCamera result = new ViewResultCamera(model);
+            ViewResultCamera result = new(model);
             ViewResultCameras.AddUnique(result);
 
             if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
@@ -328,7 +328,7 @@ namespace ColorVision.Services.Devices.Camera.Views
         }
 
 
-        MeasureImgResultDao MeasureImgResultDao = new MeasureImgResultDao();
+        MeasureImgResultDao MeasureImgResultDao = new();
 
         private void Search_Click(object sender, RoutedEventArgs e)
         {
@@ -336,7 +336,7 @@ namespace ColorVision.Services.Devices.Camera.Views
             List<MeasureImgResultModel> algResults = MeasureImgResultDao.GetAll();
             foreach (var item in algResults)
             {
-                ViewResultCamera CameraImgResult = new ViewResultCamera(item);
+                ViewResultCamera CameraImgResult = new(item);
                 ViewResultCameras.AddUnique(CameraImgResult);
             }
         }
@@ -348,7 +348,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                 ViewResultCameras.Clear();
                 foreach (var item in MeasureImgResultDao.GetAll())
                 {
-                    ViewResultCamera algorithmResult = new ViewResultCamera(item);
+                    ViewResultCamera algorithmResult = new(item);
                     ViewResultCameras.AddUnique(algorithmResult);
                 }
                 return;
@@ -359,7 +359,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                 List<MeasureImgResultModel> algResults = MeasureImgResultDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, TextBoxFile.Text, TbDeviceCode.Text, SearchTimeSart.DisplayDateTime,SearchTimeEnd.DisplayDateTime);
                 foreach (var item in algResults)
                 {
-                    ViewResultCamera algorithmResult = new ViewResultCamera(item);
+                    ViewResultCamera algorithmResult = new(item);
                     ViewResultCameras.AddUnique(algorithmResult);
                 }
 
@@ -482,7 +482,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                     switch (item.PointType)
                     {
                         case RiPointTypes.Circle:
-                            DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
+                            DrawingVisualCircleWord Circle = new();
                             Circle.Attribute.Center = new Point(item.PixX, item.PixY);
                             Circle.Attribute.Radius = item.PixHeight/2;
                             Circle.Attribute.Brush = Brushes.Transparent;
@@ -493,7 +493,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                             ImageView.ImageShow.AddVisual(Circle);
                             break;
                         case RiPointTypes.Rect:
-                            DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
+                            DrawingVisualRectangleWord Rectangle = new();
                             Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
@@ -517,7 +517,7 @@ namespace ColorVision.Services.Devices.Camera.Views
             {
                 if (File.Exists(viewCamera.FileUrl))
                 {
-                    ExportCVCIE exportCamera = new ExportCVCIE(viewCamera.FileUrl) { Icon = Device.Icon };
+                    ExportCVCIE exportCamera = new(viewCamera.FileUrl) { Icon = Device.Icon };
                     exportCamera.Owner = Application.Current.GetActiveWindow();
                     exportCamera.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                     exportCamera.ShowDialog();
@@ -531,7 +531,7 @@ namespace ColorVision.Services.Devices.Camera.Views
 
         private void CalculPOI_Click(object sender, RoutedEventArgs e)
         {
-            Window window = new Window();
+            Window window = new();
             window.Show();
         }
     }

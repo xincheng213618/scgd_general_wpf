@@ -23,7 +23,7 @@ namespace ColorVision.Services.Templates
 
         public object? Icon { get; }
 
-        public RelayCommand Command => new RelayCommand(a =>
+        public RelayCommand Command => new(a =>
         {
             SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
             if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)

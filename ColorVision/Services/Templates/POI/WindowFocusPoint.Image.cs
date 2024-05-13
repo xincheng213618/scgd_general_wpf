@@ -55,12 +55,12 @@ namespace ColorVision.Services.Templates.POI
             {
                 var ContextMenu = new ContextMenu();
 
-                MenuItem menuItem = new MenuItem() { Header = "隐藏(_H)" };
+                MenuItem menuItem = new() { Header = "隐藏(_H)" };
                 menuItem.Click += (s, e) =>
                 {
                     drawing.BaseAttribute.IsShow = false;
                 };
-                MenuItem menuIte2 = new MenuItem() { Header = "删除(_D)" };
+                MenuItem menuIte2 = new() { Header = "删除(_D)" };
 
                 menuIte2.Click += (s, e) =>
                 {
@@ -84,7 +84,7 @@ namespace ColorVision.Services.Templates.POI
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
         }
 
-        private DrawingVisual SelectRect = new DrawingVisual();
+        private DrawingVisual SelectRect = new();
 
         private bool IsMouseDown;
         private Point MouseDownP;

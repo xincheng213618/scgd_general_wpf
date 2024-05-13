@@ -17,9 +17,9 @@ using System.Windows.Media.Animation;
 
 namespace ColorVision
 {
-    public class HotKeyAboutMsg : IHotKey,IMenuItem
+    public class AboutMsgExport : IHotKey,IMenuItem
     {
-        public HotKeys HotKeys => new HotKeys(Properties.Resource.MenuAbout, new Hotkey(Key.F1, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(Properties.Resource.MenuAbout, new Hotkey(Key.F1, ModifierKeys.Control), Execute);
 
         public string? OwnerGuid => "Help";
 
@@ -33,7 +33,7 @@ namespace ColorVision
 
         public object? Icon => null;
 
-        public RelayCommand Command => new RelayCommand(A=> Execute());
+        public RelayCommand Command => new(A=> Execute());
 
         private void Execute()
         {
@@ -78,7 +78,7 @@ namespace ColorVision
                 }
             };
 
-            DoubleAnimationUsingKeyFrames doubleAnimationUsingKeyFramesX = new DoubleAnimationUsingKeyFrames();
+            DoubleAnimationUsingKeyFrames doubleAnimationUsingKeyFramesX = new();
             doubleAnimationUsingKeyFramesX.Duration = TimeSpan.FromSeconds(0.8);
             doubleAnimationUsingKeyFramesX.RepeatBehavior = RepeatBehavior.Forever;
             doubleAnimationUsingKeyFramesX.KeyFrames.Add(new LinearDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0))));
@@ -92,7 +92,7 @@ namespace ColorVision
             doubleAnimationUsingKeyFramesX.KeyFrames.Add(new LinearDoubleKeyFrame(0, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0.2))));
             AnimationClock myClockX = doubleAnimationUsingKeyFramesX.CreateClock();
 
-            DoubleAnimationUsingKeyFrames doubleAnimationUsingKeyFramesY = new DoubleAnimationUsingKeyFrames();
+            DoubleAnimationUsingKeyFrames doubleAnimationUsingKeyFramesY = new();
             doubleAnimationUsingKeyFramesY.Duration = TimeSpan.FromSeconds(0.2);
             doubleAnimationUsingKeyFramesY.RepeatBehavior = RepeatBehavior.Forever;
             doubleAnimationUsingKeyFramesY.KeyFrames.Add(new LinearDoubleKeyFrame(1, KeyTime.FromTimeSpan(TimeSpan.FromSeconds(0))));
@@ -108,7 +108,7 @@ namespace ColorVision
 
 
 
-            TranslateTransform translateTransform = new TranslateTransform();
+            TranslateTransform translateTransform = new();
             translateTransform.ApplyAnimationClock(TranslateTransform.XProperty, myClockX);
             translateTransform.ApplyAnimationClock(TranslateTransform.YProperty, myClockY);
             ImageLogo.RenderTransform = translateTransform;
@@ -117,14 +117,14 @@ namespace ColorVision
 
         private static double GetRandomNumber(double minimum, double maximum)
         {
-            Random random = new Random();
+            Random random = new();
             return random.NextDouble() * (maximum - minimum) + minimum;
         }
 
         private static SolidColorBrush RainbowAnimation()
         {
             Color[] colors = { Colors.Red, Colors.Orange, Colors.Yellow, Colors.Green, Colors.DarkGreen, Colors.Blue, Colors.Violet };
-            ColorAnimationUsingKeyFrames colorAnimation = new ColorAnimationUsingKeyFrames();
+            ColorAnimationUsingKeyFrames colorAnimation = new();
             colorAnimation.Duration = TimeSpan.FromSeconds(7*0.3);
             colorAnimation.FillBehavior = FillBehavior.Stop;
             colorAnimation.RepeatBehavior = RepeatBehavior.Forever;
@@ -135,7 +135,7 @@ namespace ColorVision
                 z++;
             }
 
-            SolidColorBrush background = new SolidColorBrush();
+            SolidColorBrush background = new();
             AnimationClock myClock = colorAnimation.CreateClock();
             background.ApplyAnimationClock(SolidColorBrush.ColorProperty, myClock);
             return background;

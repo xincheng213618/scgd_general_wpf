@@ -97,7 +97,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
             }
         }
 
-        private MeasureImgResultDao measureImgResultDao = new MeasureImgResultDao();
+        private MeasureImgResultDao measureImgResultDao = new();
         string LocalFileName;
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
@@ -203,7 +203,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
 
         public void ShowResult(MeasureImgResultModel model)
         {
-            ViewResultCalibration result = new ViewResultCalibration(model);
+            ViewResultCalibration result = new(model);
             ViewResultCalibrations.AddUnique(result);
 
             if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
@@ -321,7 +321,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
             ImageView.OpenImage(fileData);
         }
 
-        MeasureImgResultDao MeasureImgResultDao = new MeasureImgResultDao();
+        MeasureImgResultDao MeasureImgResultDao = new();
 
         private void Search_Click(object sender, RoutedEventArgs e)
         {
@@ -329,7 +329,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
             List<MeasureImgResultModel> algResults = MeasureImgResultDao.GetAll();
             foreach (var item in algResults)
             {
-                ViewResultCalibration CameraImgResult = new ViewResultCalibration(item);
+                ViewResultCalibration CameraImgResult = new(item);
                 ViewResultCalibrations.AddUnique(CameraImgResult);
             }
         }
@@ -341,7 +341,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
                 ViewResultCalibrations.Clear();
                 foreach (var item in MeasureImgResultDao.GetAllDevice(Device.Code))
                 {
-                    ViewResultCalibration algorithmResult = new ViewResultCalibration(item);
+                    ViewResultCalibration algorithmResult = new(item);
                     ViewResultCalibrations.AddUnique(algorithmResult);
                 }
                 return;
@@ -352,7 +352,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
                 List<MeasureImgResultModel> algResults = MeasureImgResultDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, TextBoxFile.Text, Device.Code, SearchTimeSart.DisplayDateTime,SearchTimeEnd.DisplayDateTime);
                 foreach (var item in algResults)
                 {
-                    ViewResultCalibration algorithmResult = new ViewResultCalibration(item);
+                    ViewResultCalibration algorithmResult = new(item);
                     ViewResultCalibrations.AddUnique(algorithmResult);
                 }
 
@@ -430,7 +430,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
                     switch (item.PointType)
                     {
                         case RiPointTypes.Circle:
-                            DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
+                            DrawingVisualCircleWord Circle = new();
                             Circle.Attribute.Center = new Point(item.PixX, item.PixY);
                             Circle.Attribute.Radius = item.PixWidth;
                             Circle.Attribute.Brush = Brushes.Transparent;
@@ -441,7 +441,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
                             ImageView.ImageShow.AddVisual(Circle);
                             break;
                         case RiPointTypes.Rect:
-                            DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
+                            DrawingVisualRectangleWord Rectangle = new();
                             Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
@@ -517,7 +517,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
                     switch (item.PointType)
                     {
                         case RiPointTypes.Circle:
-                            DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
+                            DrawingVisualCircleWord Circle = new();
                             Circle.Attribute.Center = new Point(item.PixX, item.PixY);
                             Circle.Attribute.Radius = item.PixHeight / 2;
                             Circle.Attribute.Brush = Brushes.Transparent;
@@ -528,7 +528,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
                             ImageView.ImageShow.AddVisual(Circle);
                             break;
                         case RiPointTypes.Rect:
-                            DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
+                            DrawingVisualRectangleWord Rectangle = new();
                             Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);

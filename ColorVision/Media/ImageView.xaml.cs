@@ -183,7 +183,7 @@ namespace ColorVision.Media
             using DrawingContext dc = drawingVisual.RenderOpen();
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
         }
-        private DrawingVisual SelectRect = new DrawingVisual();
+        private DrawingVisual SelectRect = new();
 
         private bool IsMouseDown;
         private Point MouseDownP;
@@ -207,12 +207,12 @@ namespace ColorVision.Media
             if (DrawingVisual != null && DrawingVisual is IDrawingVisual drawing)
             {
                 var ContextMenu = new ContextMenu();
-                MenuItem menuItem = new MenuItem() { Header = "隐藏(_H)" };
+                MenuItem menuItem = new() { Header = "隐藏(_H)" };
                 menuItem.Click += (s, e) =>
                 {
                     drawing.BaseAttribute.IsShow = false;
                 };
-                MenuItem menuIte2 = new MenuItem() { Header = "删除(_D)" };
+                MenuItem menuIte2 = new() { Header = "删除(_D)" };
                 menuIte2.Click += (s, e) =>
                 {
                     ImageShow.RemoveVisual(DrawingVisual);
@@ -504,7 +504,7 @@ namespace ColorVision.Media
             {
                 logger.Info("OpenImage .....");
 
-                OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
+                OpenCvSharp.Mat src = new(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
                 OpenCvSharp.Mat dst = null;
                 if (fileInfo.bpp == 32)
                 {
@@ -524,7 +524,7 @@ namespace ColorVision.Media
             {
                 logger.Info("OpenImage .....");
 
-                OpenCvSharp.Mat src = new OpenCvSharp.Mat(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
+                OpenCvSharp.Mat src = new(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
                 OpenCvSharp.Mat dst = null;
                 if (fileInfo.bpp == 32)
                 {
@@ -582,7 +582,7 @@ namespace ColorVision.Media
                     try
                     {
                         FilePath = filePath;
-                        BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
+                        BitmapImage bitmapImage = new(new Uri(filePath));
                         SetImageSource(bitmapImage);
                     }
                     catch(Exception ex)
@@ -695,7 +695,7 @@ namespace ColorVision.Media
         }
         private void Pseudo_MouseDoubleClick(object sender, RoutedEventArgs e)
         {
-            PseudoColor pseudoColor = new PseudoColor();
+            PseudoColor pseudoColor = new();
             pseudoColor.Closed += (s, e) =>
             {
                 ColormapTypes = pseudoColor.ColormapTypes;
@@ -747,7 +747,7 @@ namespace ColorVision.Media
             foreach (var item in points)
             {
                 id++;
-                DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
+                DrawingVisualCircleWord Circle = new();
                 Circle.Attribute.Center = item;
                 Circle.Attribute.Radius = 20 / Zoombox1.ContentMatrix.M11;
                 Circle.Attribute.Brush = Brushes.Transparent;
@@ -760,7 +760,7 @@ namespace ColorVision.Media
 
         public void AddRect(Rect rect)
         {
-            DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
+            DrawingVisualRectangleWord Rectangle = new();
             Rectangle.Attribute.Rect = new Rect(rect.X, rect.Y, rect.Width, rect.Height);
             Rectangle.Attribute.Brush = Brushes.Transparent;
             Rectangle.Attribute.Pen = new Pen(Brushes.Red, rect.Width / 30.0);
@@ -775,7 +775,7 @@ namespace ColorVision.Media
                 switch (item.PointType)
                 {   
                     case POIPointTypes.Circle:
-                        DrawingVisualCircleWord Circle = new DrawingVisualCircleWord();
+                        DrawingVisualCircleWord Circle = new();
                         Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
                         Circle.Attribute.Radius = item.Radius;
                         Circle.Attribute.Brush = Brushes.Transparent;
@@ -786,7 +786,7 @@ namespace ColorVision.Media
                         ImageShow.AddVisual(Circle);
                         break;
                     case POIPointTypes.Rect:
-                        DrawingVisualRectangleWord Rectangle = new DrawingVisualRectangleWord();
+                        DrawingVisualRectangleWord Rectangle = new();
                         Rectangle.Attribute.Rect = new Rect(item.PixelX, item.PixelY, item.Width, item.Height);
                         Rectangle.Attribute.Brush = Brushes.Transparent;
                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
@@ -876,15 +876,15 @@ namespace ColorVision.Media
             RowDefinitionEnd.Height = new GridLength((170.0 / 255.0) * PseudoSlider.ValueStart);
             DebounceTimer.AddOrResetTimer("RenderPseudo",100, RenderPseudo);
         }
-        List<float[]> bytes = new List<float[]>();
+        List<float[]> bytes = new();
         private void ButtonCIE1931_Click(object sender, RoutedEventArgs e)
         {
             bool old = ToolBarTop.ShowImageInfo;
             ToolBarTop.ShowImageInfo = true; 
-            WindowCIE windowCIE = new WindowCIE();
+            WindowCIE windowCIE = new();
             windowCIE.Owner = Window.GetWindow(this);
-            CVCIEFile cVCIEFile = new CVCIEFile();
-            IntPtr intPtr = new IntPtr();
+            CVCIEFile cVCIEFile = new();
+            IntPtr intPtr = new();
 
             if (FilePath!=null &&CVFileUtil.IsCIEFile(FilePath) && FilePath.Contains("cvcie"))
             {
@@ -894,8 +894,6 @@ namespace ColorVision.Media
                 bytes = CVFileUtil.ReadCVCIE(FilePath);
                 cvCameraCSLib.CM_InitXYZ(intPtr);
                 cvCameraCSLib.CM_SetBufferXYZ(intPtr, (uint)cVCIEFile.cols, (uint)cVCIEFile.rows, (uint)cVCIEFile.bpp, (uint)cVCIEFile.channels, cVCIEFile.data);
-
-
             }
             else
             {

@@ -98,17 +98,17 @@ namespace ColorVision.Services.Devices.PG
         }
 
 
-        public void PGStartPG() => SetParam(new List<ParamFunction>() { new ParamFunction() { Name = PGParam.StartKey } });
-        public void PGStopPG() => SetParam(new List<ParamFunction>() { new ParamFunction() { Name = PGParam.StopKey } });
-        public void PGReSetPG() => SetParam(new List<ParamFunction>() { new ParamFunction() { Name = PGParam.ReSetKey } });
-        public void PGSwitchUpPG() => SetParam(new List<ParamFunction>() { new ParamFunction() { Name = PGParam.SwitchUpKey } });
-        public void PGSwitchDownPG() => SetParam(new List<ParamFunction>() { new ParamFunction() { Name = PGParam.SwitchDownKey } });
-        public void PGSwitchFramePG(int index) => SetParam(new List<ParamFunction>() { new ParamFunction() { Name = PGParam.SwitchFrameKey, Params = new Dictionary<string, object>() { { "index", index } } } });
+        public void PGStartPG() => SetParam(new List<ParamFunction>() { new() { Name = PGParam.StartKey } });
+        public void PGStopPG() => SetParam(new List<ParamFunction>() { new() { Name = PGParam.StopKey } });
+        public void PGReSetPG() => SetParam(new List<ParamFunction>() { new() { Name = PGParam.ReSetKey } });
+        public void PGSwitchUpPG() => SetParam(new List<ParamFunction>() { new() { Name = PGParam.SwitchUpKey } });
+        public void PGSwitchDownPG() => SetParam(new List<ParamFunction>() { new() { Name = PGParam.SwitchDownKey } });
+        public void PGSwitchFramePG(int index) => SetParam(new List<ParamFunction>() { new() { Name = PGParam.SwitchFrameKey, Params = new Dictionary<string, object>() { { "index", index } } } });
 
 
         public bool SetParam(List<ParamFunction> Functions)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "SetParam",
                 ServiceName = Config.Code,
@@ -128,7 +128,7 @@ namespace ColorVision.Services.Devices.PG
             //if (!PGCategoryLib.TryGetValue(Config.Category,out cmd))
             //    cmd = new Dictionary<string, string>();
 
-            MsgSend msg = new MsgSend()
+            MsgSend msg = new()
             {
                 EventName = "Open",
                 ServiceName = Config.Code,
@@ -144,7 +144,7 @@ namespace ColorVision.Services.Devices.PG
 
         public bool GetData()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "GetData",
             };
@@ -154,7 +154,7 @@ namespace ColorVision.Services.Devices.PG
 
         public bool Close()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "Close",
                 ServiceName = Config.Code,
@@ -176,13 +176,13 @@ namespace ColorVision.Services.Devices.PG
         {
             text = text.Replace("\\r","\r");
             text = text.Replace("\\n","\n");
-            SetParam(new List<ParamFunction>() { new ParamFunction() { Name = PGParam.CustomKey, Params = new Dictionary<string, object>() { { "cmdTxt", text } } } });
+            SetParam(new List<ParamFunction>() { new() { Name = PGParam.CustomKey, Params = new Dictionary<string, object>() { { "cmdTxt", text } } } });
         }
 
         public override void UpdateStatus(MQTTNodeService nodeService)
         {
             base.UpdateStatus(nodeService);
-            HeartbeatParam heartbeat = new HeartbeatParam();
+            HeartbeatParam heartbeat = new();
             foreach (var item in nodeService.Devices)
             {
                 if (Config.Code.Equals(item.Key, System.StringComparison.Ordinal))

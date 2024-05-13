@@ -35,7 +35,7 @@ namespace ColorVision.Services.Dao
 
         public override MeasureMasterModel GetModelFromDataRow(DataRow item)
         {
-            MeasureMasterModel model = new MeasureMasterModel
+            MeasureMasterModel model = new()
             {
                 Id = item.Field<int>("id"),
                 Name = item.Field<string>("name"),

@@ -17,7 +17,7 @@ namespace SerialPlugin
 
         public void Execute()
         {
-            MenuItem menuItem = new MenuItem() { Header = "SerialPlugin" };
+            MenuItem menuItem = new() { Header = "SerialPlugin" };
             menuItem.Click += (s, e) =>
             {
                 MessageBox.Show("SerialPlugin");

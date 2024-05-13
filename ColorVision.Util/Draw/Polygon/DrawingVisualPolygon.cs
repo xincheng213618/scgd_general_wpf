@@ -34,7 +34,7 @@ namespace ColorVision.Draw
         public override void Render()
         {
             using DrawingContext dc = RenderOpen();
-            Pen whiteOutlinePen = new Pen(Brushes.White, Attribute.Pen.Thickness + 2); // 描边比实际线条厚2个单位
+            Pen whiteOutlinePen = new(Brushes.White, Attribute.Pen.Thickness + 2); // 描边比实际线条厚2个单位
 
             if (Points.Count >= 1)
             {

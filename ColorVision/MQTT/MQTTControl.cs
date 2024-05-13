@@ -52,7 +52,7 @@ namespace ColorVision.MQTT
             IsConnect = false;
             MQTTClient?.Dispose();
 
-            MqttClientOptionsBuilder OptionsBuilder = new MqttClientOptionsBuilder();
+            MqttClientOptionsBuilder OptionsBuilder = new();
             OptionsBuilder.WithTcpServer(MQTTConfig.Host, MQTTConfig.Port); // 设置MQTT服务器地址
             if (!string.IsNullOrWhiteSpace(MQTTConfig.UserName))
                 OptionsBuilder.WithCredentials(MQTTConfig.UserName, MQTTConfig.UserPwd);  // 设置鉴权参数
@@ -99,7 +99,7 @@ namespace ColorVision.MQTT
 
         private async Task ReConnectAsync()
         {
-            MqttClientOptionsBuilder mqttClientOptionsBuilder = new MqttClientOptionsBuilder();
+            MqttClientOptionsBuilder mqttClientOptionsBuilder = new();
             mqttClientOptionsBuilder.WithTcpServer(Config.Host, Config.Port);          // 设置MQTT服务器地址
             if (!string.IsNullOrEmpty(Config.UserName))
                 mqttClientOptionsBuilder.WithCredentials(Config.UserName, Config.UserPwd);  // 设置鉴权参数
@@ -109,7 +109,7 @@ namespace ColorVision.MQTT
         }
         public static async Task<bool> TestConnect(MQTTConfig MQTTConfig)
         {
-            MqttClientOptionsBuilder mqttClientOptionsBuilder = new MqttClientOptionsBuilder();
+            MqttClientOptionsBuilder mqttClientOptionsBuilder = new();
             mqttClientOptionsBuilder.WithTcpServer(MQTTConfig.Host, MQTTConfig.Port);          // 设置MQTT服务器地址
             if (!string.IsNullOrEmpty(MQTTConfig.UserName))
                 mqttClientOptionsBuilder.WithCredentials(MQTTConfig.UserName, MQTTConfig.UserPwd);  // 设置鉴权参数
@@ -137,7 +137,7 @@ namespace ColorVision.MQTT
         }
 
 
-        List<string> SubscribeTopicCache = new List<string>();
+        List<string> SubscribeTopicCache = new();
         public void SubscribeCache(string SubscribeTopic)
         {
             if (string.IsNullOrEmpty(SubscribeTopic))
@@ -212,7 +212,7 @@ namespace ColorVision.MQTT
         {
             if (MQTTClient ==null)
                 return;
-            MqttApplicationMessageBuilder mqttApplicationMessageBuilder = new MqttApplicationMessageBuilder();
+            MqttApplicationMessageBuilder mqttApplicationMessageBuilder = new();
             mqttApplicationMessageBuilder.WithTopic(topic)          // 主题
                                         .WithPayload(msg)           // 信息
                                         .WithRetainFlag(retained);  // 保留

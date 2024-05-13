@@ -10,7 +10,7 @@ namespace ColorVision.Draw
     public class DrawCanvas : Image
     {
 
-        private List<Visual> visuals = new List<Visual>();
+        private List<Visual> visuals = new();
 
         protected override Visual GetVisualChild(int index) => visuals[index];
 
@@ -92,12 +92,12 @@ namespace ColorVision.Draw
             return hitResult.VisualHit as DrawingVisual;
         }
 
-        private List<DrawingVisual> hits = new List<DrawingVisual>();
+        private List<DrawingVisual> hits = new();
         public List<DrawingVisual> GetVisuals(Geometry region)
         {
             hits.Clear();
-            GeometryHitTestParameters parameters = new GeometryHitTestParameters(region);
-            HitTestResultCallback callback = new HitTestResultCallback(HitTestCallback);
+            GeometryHitTestParameters parameters = new(region);
+            HitTestResultCallback callback = new(HitTestCallback);
             VisualTreeHelper.HitTest(this, null, callback, parameters);
             return hits;
         }
