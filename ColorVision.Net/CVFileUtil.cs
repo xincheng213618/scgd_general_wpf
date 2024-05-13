@@ -287,7 +287,6 @@ namespace ColorVision.Net
             }
             return null;
         }
-
         public static List<float[]> ReadCVCIE(string FileName)
         {
             List<float[]> bytes = new List<float[]>();

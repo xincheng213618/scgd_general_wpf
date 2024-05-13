@@ -884,10 +884,18 @@ namespace ColorVision.Media
             WindowCIE windowCIE = new WindowCIE();
             windowCIE.Owner = Window.GetWindow(this);
             CVCIEFile cVCIEFile = new CVCIEFile();
+            IntPtr intPtr = new IntPtr();
+
             if (FilePath!=null &&CVFileUtil.IsCIEFile(FilePath) && FilePath.Contains("cvcie"))
             {
-                CVFileUtil.ReadCIEFileHeader(FilePath, out cVCIEFile);
+                int index = CVFileUtil.ReadCIEFileHeader(FilePath, out cVCIEFile);
+
+                CVFileUtil.ReadCIEFileData(FilePath, ref cVCIEFile, index);
                 bytes = CVFileUtil.ReadCVCIE(FilePath);
+                cvCameraCSLib.CM_InitXYZ(intPtr);
+                cvCameraCSLib.CM_SetBufferXYZ(intPtr, (uint)cVCIEFile.cols, (uint)cVCIEFile.rows, (uint)cVCIEFile.bpp, (uint)cVCIEFile.channels, cVCIEFile.data);
+
+
             }
             else
             {
@@ -905,15 +913,12 @@ namespace ColorVision.Media
                         int index = xx * cVCIEFile.rows + yy;
 
 
-                        //cvCameraCSLib.CM_InitXYZ(intPtr);
-                        //cvCameraCSLib.CM_SetBufferXYZ(intPtr, w, h, dstbpp, channels, rawArray);
-                        //cvCameraCSLib.CM_GetXYZxyuvRect(intPtr, xx, yy, ref dXVal , ref dYVal, ref dZVal, ref x, ref y, ref u, ref v, 200, 200);
 
                         float dXVal  = bytes[0][index];
                         float dYVal = bytes[1][index];
                         float dZVal = bytes[2][index];
 
-                        double dx, dy,du,dv;
+                        float dx, dy,du,dv;
 
                         if ((dXVal + dYVal + dZVal) == 0)
                         {
@@ -935,6 +940,8 @@ namespace ColorVision.Media
                             du = (4 * dXVal) / (dXVal + dYVal * 15 + dZVal * 3);
                             dv = (9 * dYVal) / (dXVal + dYVal * 15 + dZVal * 3);
                         }
+                        cvCameraCSLib.CM_GetXYZxyuvRect(intPtr, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 200, 200);
+
                         ToolBarTop.MouseMagnifier.DrawImageCVCIE(e, dXVal, dYVal, dZVal,dx,dy,du,dv);
 
                         windowCIE.ChangeSelect(dx, dy);

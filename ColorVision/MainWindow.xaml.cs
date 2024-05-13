@@ -162,6 +162,14 @@ namespace ColorVision
             };
             menulogs.Items.Insert(0, menulogs1);
 
+            MenuItem menuItem4 = new MenuItem() { Header = "河源精电" };
+            menuItem4.Click += (s, e) =>
+            {
+                ProjectHeyuan projectHeiyuan = new ProjectHeyuan();
+                projectHeiyuan.Show();
+            };
+            menulogs.Items.Add(menuItem4);
+
 #if (DEBUG == true)
             MenuItem menuItem = new MenuItem() { Header = Properties.Resource.ExperimentalFeature };
             MenuItem menuItem1 = new MenuItem() { Header = "折线图" };
@@ -176,15 +184,6 @@ namespace ColorVision
                 RCManager.GetInstance().OpenCVWinSMS();
             };
             menuItem.Items.Add(menuItem3);
-
-
-            MenuItem menuItem4 = new MenuItem() { Header = "河源精电" };
-            menuItem4.Click += (s, e) =>
-            {
-                ProjectHeyuan projectHeiyuan = new ProjectHeyuan();
-                projectHeiyuan.Show();
-            };
-            menuItem.Items.Add(menuItem4);
 
 #endif
             if (ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.IsAutoUpdate)
