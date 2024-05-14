@@ -11,7 +11,7 @@ namespace ColorVision.UI
         public string? Header { get; }
         public string? InputGestureText { get; }
         public object? Icon { get; }
-        public RelayCommand Command { get; }
+        public RelayCommand? Command { get; }
     }
 
 
