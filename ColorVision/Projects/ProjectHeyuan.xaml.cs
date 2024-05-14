@@ -90,7 +90,6 @@ namespace ColorVision.Projects
         private Services.Flow.FlowControl flowControl;
 
         private IPendingHandler handler;
-        bool result = true;
 
         private void FlowControl_FlowCompleted(object? sender, EventArgs e)
         {
