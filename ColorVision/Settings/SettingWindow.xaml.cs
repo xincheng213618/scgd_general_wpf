@@ -112,17 +112,18 @@ namespace ColorVision.Settings
 
             string temp = Thread.CurrentThread.CurrentUICulture.Name;
 
-
             cmlauage.SelectionChanged += (s, e) =>
             {
                 if (cmlauage.SelectedValue is string str)
                 {
                     if (!LanguageManager.Current.LanguageChange(str))
                     {
-                        SoftwareConfig.SoftwareSetting.UICulture = temp;
+                        LanguageConfig.Instance.UICulture = temp;
                     }
                 }
             };
+
+            lauagDock.DataContext = LanguageConfig.Instance;
         }
 
         private void Cmtheme_SelectionChanged(object sender, SelectionChangedEventArgs e)

@@ -22,7 +22,7 @@ namespace ColorVision
     public class HotKeyNewCreate : IHotKey, IMenuItem
     {
 
-        public string? OwnerGuid => "Tool";
+        public string? OwnerGuid => "Help";
 
         public string? GuidId => "MQTTLog";
 

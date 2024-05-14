@@ -1,10 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Languages;
-using ColorVision.UI;
-using System.Threading;
 using System.Windows.Controls;
 
-namespace ColorVision.Settings
+namespace ColorVision.UI.Languages
 {
     public class ExportLanguage : IMenuItemMeta
     {
@@ -14,7 +11,7 @@ namespace ColorVision.Settings
 
         public int Order => 1001;
 
-        public string? Header => Properties.Resource.MenuLanguage;
+        public string? Header => Properties.Resources.MenuLanguage;
 
         public string? InputGestureText => "Ctrl + Shift + L";
 
@@ -34,13 +31,11 @@ namespace ColorVision.Settings
                     LanguageItem.Click += (s, e) =>
                     {
                         string temp = Thread.CurrentThread.CurrentUICulture.Name;
-                        ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.UICulture = item;
-                        ConfigHandler.GetInstance().SaveConfig();
+                        LanguageConfig.Instance.UICulture = item;
                         bool sucess = LanguageManager.Current.LanguageChange(item);
                         if (!sucess)
                         {
-                            ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.UICulture = temp;
-                            ConfigHandler.GetInstance().SaveConfig();
+                            LanguageConfig.Instance.UICulture = temp;
                         }
                     };
                     LanguageItem.Tag = item;

@@ -5,7 +5,7 @@ namespace ColorVision.Settings
 {
     public class ViewConfig : ViewModelBase ,IConfig
     {
-        public static ViewConfig GetInstance() => ConfigHandler.GetInstance().GetRequiredService<ViewConfig>();
+        public static ViewConfig GetInstance() => ConfigHandler1.GetInstance().GetRequiredService<ViewConfig>();
 
         public bool IsAutoSelect { get => _IsAutoSelect; set { _IsAutoSelect = value; NotifyPropertyChanged(); } }
         private bool _IsAutoSelect =true;

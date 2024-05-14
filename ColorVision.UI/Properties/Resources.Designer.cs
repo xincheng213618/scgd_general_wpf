@@ -178,6 +178,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 语言(_L) 的本地化字符串。
+        /// </summary>
+        public static string MenuLanguage {
+            get {
+                return ResourceManager.GetString("MenuLanguage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 选项(_O) 的本地化字符串。
         /// </summary>
         public static string MenuOptions {
@@ -192,6 +201,15 @@ namespace ColorVision.UI.Properties {
         public static string MenuTemplate {
             get {
                 return ResourceManager.GetString("MenuTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 主题(_H) 的本地化字符串。
+        /// </summary>
+        public static string MenuTheme {
+            get {
+                return ResourceManager.GetString("MenuTheme", resourceCulture);
             }
         }
         

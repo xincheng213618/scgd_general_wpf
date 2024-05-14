@@ -11,7 +11,7 @@ namespace ColorVision.Tools
 {
     public class CalibrationConfig : IConfig
     {
-        public static CalibrationConfig Instance => ConfigHandler.GetInstance().GetRequiredService<CalibrationConfig>();
+        public static CalibrationConfig Instance => ConfigHandler1.GetInstance().GetRequiredService<CalibrationConfig>();
 
         public string CalibToolsPath { get => _CalibToolsPath; set => _CalibToolsPath = value; }
         private string _CalibToolsPath = string.Empty;

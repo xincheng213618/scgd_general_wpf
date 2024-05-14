@@ -194,7 +194,7 @@ namespace ColorVision
 
             PluginLoader.LoadPlugins("Plugins");
             PluginLoader.LoadAssembly<IPlugin>(Assembly.GetExecutingAssembly());
-            MenuManager.GetInstance().LoadMenuItemFromAssembly(Assembly.GetExecutingAssembly());
+            MenuManager.GetInstance().LoadMenuItemFromAssembly();
             this.LoadHotKeyFromAssembly<IHotKey>(Assembly.GetExecutingAssembly());
 
             Application.Current.MainWindow = this;

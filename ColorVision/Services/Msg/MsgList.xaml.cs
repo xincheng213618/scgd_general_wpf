@@ -23,11 +23,11 @@ namespace ColorVision.Services.Msg
             new MsgList() { Owner = Application.Current.GetActiveWindow() }.Show();
         }
 
-        public string? OwnerGuid => "Tool";
+        public string? OwnerGuid => "Help";
 
         public string? GuidId => "MsgList";
         public int Order => 2;
-        public string? Header => "MQTTMsg(_L)";
+        public string? Header => "MQTTMsg";
 
         public string? InputGestureText { get; } = "Ctrl + M";
 

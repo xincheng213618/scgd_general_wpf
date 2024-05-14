@@ -7,6 +7,8 @@ using ColorVision.Services;
 using ColorVision.Services.RC;
 using ColorVision.Settings;
 using ColorVision.Themes;
+using ColorVision.UI;
+using ColorVision.UI.Languages;
 using ColorVision.Utils;
 using ColorVision.Wizards;
 using log4net;
@@ -39,10 +41,10 @@ namespace ColorVision
         private void Application_Startup(object sender, StartupEventArgs e)
         {
             Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
-
+            ConfigHandler1.GetInstance();
             var SoftwareSetting = ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting;
             this.ApplyTheme(SoftwareSetting.Theme);
-            Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(SoftwareSetting.UICulture);
+            Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("ja");
 

@@ -20,7 +20,7 @@ namespace ColorVision.UI
             
         }
 
-        public void LoadMenuItemFromAssembly(Assembly assembly)
+        public void LoadMenuItemFromAssembly()
         {
             var menuItems = new Dictionary<string, MenuItem>();
             if (GetFileMenuItem() is MenuItem FilemenuItem)
@@ -70,14 +70,18 @@ namespace ColorVision.UI
                     iMenuItems.Remove(item);
                 }
             }
-
-            foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                if (Activator.CreateInstance(type) is IMenuItem iMenuItem)
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    iMenuItems.Add(iMenuItem);
+                    if (Activator.CreateInstance(type) is IMenuItem iMenuItem)
+                    {
+                        iMenuItems.Add(iMenuItem);
+                    }
                 }
             }
+
+
             foreach (var item in PluginLoader.PluginAssembly)
             {
                 foreach (Type type in item.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))

@@ -2,9 +2,9 @@
 using ColorVision.Common.Utilities;
 using ColorVision.MQTT;
 using ColorVision.MySql;
-using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.RC;
 using ColorVision.Solution;
+using ColorVision.UI;
 using ColorVision.Update;
 using ColorVision.UserSpace;
 using System.Collections.ObjectModel;
@@ -68,7 +68,7 @@ namespace ColorVision.Settings
 
         public SoftwareSetting SoftwareSetting { get; set; }
 
-        public static SystemMonitorSetting SystemMonitorSetting => ConfigHandler.GetInstance().GetRequiredService<SystemMonitorSetting>();
+        public static SystemMonitorSetting SystemMonitorSetting => ConfigHandler1.GetInstance().GetRequiredService<SystemMonitorSetting>();
 
 
         public MQTTSetting MQTTSetting { get; set; }
