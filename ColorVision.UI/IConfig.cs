@@ -84,28 +84,44 @@ namespace ColorVision.UI
             Configs = new Dictionary<Type, IConfig>();
             if (File.Exists(fileName))
             {
-                string json = File.ReadAllText(fileName);
-                var jsonDoc = JsonDocument.Parse(json);
-                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                try
                 {
-                    foreach (var type in assembly.GetTypes())
+                    string json = File.ReadAllText(fileName);
+                    var jsonDoc = JsonDocument.Parse(json);
+                    foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
                     {
-                        if (typeof(IConfig).IsAssignableFrom(type) && !type.IsInterface)
+                        foreach (var type in assembly.GetTypes())
                         {
-                            var configName = type.Name;
-                            if (jsonDoc.RootElement.TryGetProperty(configName, out var configElement))
+                            if (typeof(IConfig).IsAssignableFrom(type) && !type.IsInterface)
                             {
-                                if (JsonSerializer.Deserialize(configElement.GetRawText(), type, _options) is IConfig config)
+                                var configName = type.Name;
+                                if (jsonDoc.RootElement.TryGetProperty(configName, out var configElement))
                                 {
-                                    Configs[type] = config;
+                                    if (JsonSerializer.Deserialize(configElement.GetRawText(), type, _options) is IConfig config)
+                                    {
+                                        Configs[type] = config;
+                                    }
+                                }
+                                else
+                                {
+                                    if (Activator.CreateInstance(type) is IConfig config)
+                                    {
+                                        Configs[type] = config;
+                                    }
                                 }
                             }
-                            else
+                        }
+                    }
+                }
+                catch
+                {
+                    foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                    {
+                        foreach (var type in assembly.GetTypes().Where(t => typeof(IConfig).IsAssignableFrom(t) && !t.IsAbstract))
+                        {
+                            if (Activator.CreateInstance(type) is IConfig config)
                             {
-                                if (Activator.CreateInstance(type) is IConfig config)
-                                {
-                                    Configs[type] = config;
-                                }
+                                Configs[type] = config;
                             }
                         }
                     }

@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CA1711,CA2211
+using ColorVision.UI;
 using System.Windows;
 using System.Windows.Media;
 
@@ -6,16 +7,8 @@ namespace ColorVision.Draw
 {
     public class DefalutTextAttribute : BaseAttribute
     {
-        public static DefalutTextAttribute Defalut = new()
-        {
-            Brush = Brushes.Red,
-            FontFamily = new FontFamily("Arial"),
-            FontStyle = FontStyles.Normal,
-            FontStretch = FontStretches.Normal,
-            FlowDirection = FlowDirection.LeftToRight,
-            FontWeight = FontWeights.Normal,
-            FontSize = 10,
-        };
+        public static DefalutTextAttribute Defalut => new DefalutTextAttribute();
+
         public double ActualLength { get => _ActualLength; set { _ActualLength = value; NotifyPropertyChanged(); } }
         private double _ActualLength = 1;
         public string PhysicalUnit { get => _PhysicalUnit; set { _PhysicalUnit = value; NotifyPropertyChanged(); } }
@@ -27,29 +20,31 @@ namespace ColorVision.Draw
         public int CVCIENum { get => _CVCIENum; set { _CVCIENum = value; NotifyPropertyChanged(); } }
         private int _CVCIENum = 200;
 
+
+
         public string Text { get => _Text; set { _Text = value; NotifyPropertyChanged(); } }
         private string _Text;
         public double FontSize { get => _FontSize; set { _FontSize = value; NotifyPropertyChanged(); } }
-        private double _FontSize;
+        private double _FontSize = 10;
 
         public Brush Brush { get => _Brush; set { _Brush = value; NotifyPropertyChanged(); } }
-        private Brush _Brush;
+        private Brush _Brush = Brushes.Red;
 
         public FontFamily FontFamily { get => _FontFamily; set { _FontFamily = value; NotifyPropertyChanged(); } }
-        private FontFamily _FontFamily;
+        private FontFamily _FontFamily = new FontFamily("Arial");
 
 
         public FontStyle FontStyle { get => _FontStyle; set { _FontStyle = value; NotifyPropertyChanged(); } }
-        private FontStyle _FontStyle;
+        private FontStyle _FontStyle = FontStyles.Normal;
 
         public FontWeight FontWeight { get => _FontWeight; set { _FontWeight = value; NotifyPropertyChanged(); } }
-        private FontWeight _FontWeight;
+        private FontWeight _FontWeight = FontWeights.Normal;
 
         public FontStretch FontStretch { get => _FontStretch; set { _FontStretch = value; NotifyPropertyChanged(); } }
-        private FontStretch _FontStretch;
+        private FontStretch _FontStretch = FontStretches.Normal;
 
         public FlowDirection FlowDirection { get => _FlowDirection; set { _FlowDirection = value; NotifyPropertyChanged(); } }
-        private FlowDirection _FlowDirection;
+        private FlowDirection _FlowDirection = FlowDirection.LeftToRight;
 
     }
 
