@@ -2,14 +2,11 @@
 using ColorVision.Common.Utilities;
 using ColorVision.MQTT;
 using ColorVision.MySql;
-using ColorVision.Services;
 using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.RC;
-using ColorVision.Services.Templates;
 using ColorVision.Solution;
 using ColorVision.Update;
 using ColorVision.UserSpace;
-using System;
 using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 
@@ -30,6 +27,7 @@ namespace ColorVision.Settings
             UserConfig = new UserConfig();
 
             MQTTSetting = new MQTTSetting();
+
             MQTTConfig = new MQTTConfig();
             MQTTConfigs = new ObservableCollection<MQTTConfig>();
 
@@ -42,9 +40,6 @@ namespace ColorVision.Settings
 
         public bool IsAutoRun { get => Tool.IsAutoRun(GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); set { Tool.SetAutoRun(value, GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); NotifyPropertyChanged(); } }
 
-
-
-        public ServicesSetting ServicesSetting { get; set; } = new ServicesSetting();
 
         [JsonIgnore]
         public AutoUpdater AutoUpdater { get;} = AutoUpdater.GetInstance();
@@ -72,8 +67,6 @@ namespace ColorVision.Settings
 
 
         public SoftwareSetting SoftwareSetting { get; set; }
-
-        public static LocalVideoConfig VideoConfig  => ConfigHandler.GetInstance().GetRequiredService<LocalVideoConfig>();
 
         public static SystemMonitorSetting SystemMonitorSetting => ConfigHandler.GetInstance().GetRequiredService<SystemMonitorSetting>();
 

@@ -1,10 +1,13 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Settings;
 using ColorVision.UI;
 
 namespace ColorVision.Services.Devices.Camera.Video
 {
     public class LocalVideoConfig : ViewModelBase,IConfig
     {
+        public static LocalVideoConfig Instance => ConfigHandler.GetInstance().GetRequiredService<LocalVideoConfig>();
+
         /// <summary>
         /// 连接名称
         /// </summary>

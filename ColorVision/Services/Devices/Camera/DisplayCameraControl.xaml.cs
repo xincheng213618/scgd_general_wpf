@@ -49,7 +49,7 @@ namespace ColorVision.Services.Devices.Camera
             _timer.Interval = TimeSpan.FromMilliseconds(500);
             _timer.Tick += Timer_Tick; 
             PreviewMouseDown += UserControl_PreviewMouseDown;
-            VideoConfig = ConfigHandler.GetInstance().GetRequiredService<LocalVideoConfig>();
+            VideoConfig = LocalVideoConfig.Instance;
         }
 
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)

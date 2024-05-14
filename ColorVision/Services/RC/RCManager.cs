@@ -1,15 +1,10 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Services.RC;
-using ColorVision.Settings;
 using ColorVision.Utils;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.ServiceProcess;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace ColorVision.Services.RC

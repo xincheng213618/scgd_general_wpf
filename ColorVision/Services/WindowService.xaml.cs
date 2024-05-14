@@ -42,7 +42,7 @@ namespace ColorVision.Services
         }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            int i = ConfigHandler.GetInstance().SoftwareConfig.ServicesSetting.ShowType;
+            int i = ServicesSetting.Instance.ShowType;
             switch (i % 3)
             {
                 case 0:
@@ -90,8 +90,8 @@ namespace ColorVision.Services
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            ConfigHandler.GetInstance().SoftwareConfig.ServicesSetting.ShowType = (ConfigHandler.GetInstance().SoftwareConfig.ServicesSetting.ShowType +1) % 3;
-            switch (ConfigHandler.GetInstance().SoftwareConfig.ServicesSetting.ShowType)
+            ServicesSetting.Instance.ShowType = (ServicesSetting.Instance.ShowType +1) % 3;
+            switch (ServicesSetting.Instance.ShowType)
             {
                 case 0:
                     TreeView1.ItemsSource = ServiceManager.GetInstance().TypeServices;
