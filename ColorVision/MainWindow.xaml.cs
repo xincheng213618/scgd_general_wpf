@@ -362,7 +362,7 @@ namespace ColorVision
         {
             if (sender is StackPanel stackPanel1)
             {
-                flowDisplayControl ??= new FlowDisplayControl();
+                flowDisplayControl = FlowDisplayControl.GetInstance();
                 if (stackPanel1.Children.Contains(flowDisplayControl))
                     stackPanel1.Children.Remove(flowDisplayControl);
                 stackPanel1.Children.Insert(0, flowDisplayControl);

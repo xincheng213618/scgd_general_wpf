@@ -21,6 +21,11 @@ namespace ColorVision.Services.Flow
     /// </summary>
     public partial class FlowDisplayControl : UserControl, IDisPlayControl, IIcon
     {
+
+        private static FlowDisplayControl _instance;
+        private static readonly object _locker = new();
+        public static FlowDisplayControl GetInstance() { lock (_locker) { return _instance ??= new FlowDisplayControl(); } }
+
         public IFlowView View { get; set; }
 
         public FlowDisplayControl()
@@ -195,6 +200,9 @@ namespace ColorVision.Services.Flow
                 }
             }
         }
+
+
+
 
         private void Handler_Cancelling(object? sender, CancelEventArgs e)
         {

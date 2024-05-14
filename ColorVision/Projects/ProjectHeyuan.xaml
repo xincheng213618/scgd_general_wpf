@@ -148,12 +148,19 @@
                 <Border Grid.Column="0" Margin="15" BorderBrush="Black" BorderThickness="1">
                     <TextBlock x:Name="ResultText" Text="OK" FontSize="40" Foreground="Blue" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
+                <Grid  Grid.Column="1">
 
-                <Button  Grid.Column="1" Content="开始" Height="40" Width="100" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="15" Click="Button_Click"/>
+                    <Button  Content="开始" Height="40" Width="100" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="15" Click="Button_Click"/>
+                </Grid>
+
             </Grid>
 
             <Grid Grid.Row="3">
-                <StackPanel>
+                <StackPanel  Margin="0,2">
+                    <DockPanel Margin="0,2">
+                        <TextBlock Text="流程" Width="100"/>
+                        <ComboBox  x:Name="FlowTemplate" Style="{StaticResource ComboBox.Small}" Height="10" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                    </DockPanel>
                     <DockPanel Margin="0,2">
                         <TextBlock Text="产品编号" Width="100"/>
                         <TextBox DockPanel.Dock="Right" Style="{StaticResource TextBox.Small}" />
