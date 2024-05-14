@@ -10,6 +10,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using ColorVision.MySql;
 
 namespace ColorVision.Services.PhyCameras
 {
@@ -41,7 +42,7 @@ namespace ColorVision.Services.PhyCameras
             {
                 SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
-                if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+                if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
                 {
                     MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision");
                     return;

@@ -1,17 +1,16 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Sorts;
 using ColorVision.Common.Utilities;
+using ColorVision.MySql;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Flow;
 using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Settings;
 using ColorVision.UI;
+using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
 using NPOI.SS.Formula.Functions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Services.Templates.POI
 {
@@ -29,7 +28,7 @@ namespace ColorVision.Services.Templates.POI
 
         public RelayCommand Command => new(a => {
             SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-            if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+            if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;

@@ -1,5 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.MQTT;
+using ColorVision.MySql;
+using ColorVision.Services.RC;
 using ColorVision.UI;
 using log4net;
 using System;
@@ -36,11 +39,12 @@ namespace ColorVision.Settings
     /// <summary>
     /// 全局设置
     /// </summary>
-    public class ConfigHandler:ViewModelBase
+    public class ConfigHandler
     {
         private static ConfigHandler _instance;
         private static readonly object _locker = new();
         public static ConfigHandler GetInstance() { lock (_locker) { return _instance ??= new ConfigHandler(); } }
+
         internal static readonly ILog log = LogManager.GetLogger(typeof(ConfigHandler));
         public string SoftwareConfigFileName { get; set; }
         public string MQTTMsgRecordsFileName { get; set; }
@@ -105,6 +109,11 @@ namespace ColorVision.Settings
             };
             SystemMonitorLazy = new Lazy<SystemMonitor>(() => SystemMonitor.GetInstance());
         }
+
+        public static MySqlControl MySqlControl => MySqlControl.GetInstance();
+        public static MQTTControl MQTTControl => MQTTControl.GetInstance();
+
+        public static RCServiceControl RCService => RCServiceControl.GetInstance();
 
         private readonly JsonSerializerOptions _options;
 
@@ -183,10 +192,6 @@ namespace ColorVision.Settings
             }
 
         }
-
-
-
-        public bool IsAutoRun { get => Tool.IsAutoRun(GlobalConst.AutoRunName,GlobalConst.AutoRunRegPath); set { Tool.SetAutoRun(value, GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); NotifyPropertyChanged(); } }
 
         [JsonIgnore]
         readonly Lazy<SystemMonitor> SystemMonitorLazy;

@@ -24,6 +24,7 @@ using CVCommCore.CVAlgorithm;
 using ColorVision.UI;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Services.Devices.Algorithm.Templates;
+using ColorVision.MySql;
 
 namespace ColorVision.Services.Devices.Algorithm
 {
@@ -607,7 +608,7 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 TemplateControl= TemplateControl.GetInstance();
                 SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-                if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+                if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
                 {
                     MessageBox.Show(Application.Current.MainWindow, "数据库连接失败，请先连接数据库在操作", "ColorVision");
                     return;
