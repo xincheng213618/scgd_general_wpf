@@ -1744,6 +1744,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 RC服务日志 的本地化字符串。
+        /// </summary>
+        public static string RCServiceLog {
+            get {
+                return ResourceManager.GetString("RCServiceLog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 接收信道 的本地化字符串。
         /// </summary>
         public static string ReceiveChannel {
@@ -1974,6 +1983,15 @@ namespace ColorVision.Properties {
         public static string ServiceIdentifier {
             get {
                 return ResourceManager.GetString("ServiceIdentifier", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 服务日志 的本地化字符串。
+        /// </summary>
+        public static string ServiceLog {
+            get {
+                return ResourceManager.GetString("ServiceLog", resourceCulture);
             }
         }
         
@@ -2424,6 +2442,15 @@ namespace ColorVision.Properties {
         public static string x64ServiceLog {
             get {
                 return ResourceManager.GetString("x64ServiceLog", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 x86服务日志 的本地化字符串。
+        /// </summary>
+        public static string x86ServiceLog {
+            get {
+                return ResourceManager.GetString("x86ServiceLog", resourceCulture);
             }
         }
     }

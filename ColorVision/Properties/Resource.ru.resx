@@ -906,4 +906,13 @@
   <data name="Shape" xml:space="preserve">
     <value>форма</value>
   </data>
+  <data name="ServiceLog" xml:space="preserve">
+    <value>Журнал обслуживания</value>
+  </data>
+  <data name="x86ServiceLog" xml:space="preserve">
+    <value>журнал обслуживания x86</value>
+  </data>
+  <data name="RCServiceLog" xml:space="preserve">
+    <value>Журнал обслуживания RC</value>
+  </data>
 </root>

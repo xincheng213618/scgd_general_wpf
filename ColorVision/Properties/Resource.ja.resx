@@ -906,4 +906,13 @@
   <data name="Shape" xml:space="preserve">
     <value>形</value>
   </data>
+  <data name="ServiceLog" xml:space="preserve">
+    <value>サービスログ</value>
+  </data>
+  <data name="x86ServiceLog" xml:space="preserve">
+    <value>x86サービスログ</value>
+  </data>
+  <data name="RCServiceLog" xml:space="preserve">
+    <value>RCサービスログ</value>
+  </data>
 </root>

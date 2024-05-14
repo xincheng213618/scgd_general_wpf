@@ -1,4 +1,6 @@
-﻿using ColorVision.UI.Sorts;
+﻿using ColorVision.UI.HotKey;
+using ColorVision.UI;
+using ColorVision.UI.Sorts;
 using ColorVision.Update;
 using System;
 using System.Collections.Generic;
@@ -16,9 +18,33 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using static NPOI.HSSF.Util.HSSFColor;
+using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 
 namespace ColorVision.Projects
 {
+
+    public class ProjectHeyuanExport : IMenuItem
+    {
+        public string? OwnerGuid => "Tool";
+
+        public string? GuidId => "HeYuan";
+
+        public int Order => 100;
+
+        public string? Header => "河源精电";
+
+        public string? InputGestureText => null;
+
+        public object? Icon => null;
+
+        public RelayCommand Command => new(A => Execute());
+
+        private void Execute()
+        {
+            new ProjectHeyuan() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+        }
+    }
 
 
     /// <summary>

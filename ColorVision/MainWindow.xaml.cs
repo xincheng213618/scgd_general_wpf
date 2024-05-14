@@ -115,7 +115,9 @@ namespace ColorVision
             SolutionView solutionView = new();
             SolutionViewGridManager.AddView(0, solutionView);
             solutionView.View.ViewIndex = 0;
+
             SolutionViewGridManager.SetViewNum(-1);
+
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;
 
@@ -126,7 +128,7 @@ namespace ColorVision
             Closed += (s, e) => { Environment.Exit(-1); };
             Debug.WriteLine(Properties.Resource.LaunchSuccess);
 
-            MenuItem menulogs = new() { Header = Properties.Resource.Log };
+            MenuItem menulogs = new() { Header = ColorVision.Properties.Resource.ServiceLog };
             MenuHelp.Items.Insert(0, menulogs);
 
             MenuItem menulog = new() { Header = Properties.Resource.x64ServiceLog };
@@ -143,7 +145,7 @@ namespace ColorVision
             };
             menulogs.Items.Insert(1, menulog1);
 
-            MenuItem menulog2 = new() { Header = "x86服务相机日志" };
+            MenuItem menulog2 = new() { Header = ColorVision.Properties.Resource.x86ServiceLog };
             menulog2.Click += (s, e) =>
             {
                 PlatformHelper.OpenFolder("http://localhost:8086/system/log");
@@ -158,20 +160,13 @@ namespace ColorVision
             };
             menulogs.Items.Insert(3, menulog3);
 
-            MenuItem menulogs1 = new() { Header = "RC服务日志" };
+            MenuItem menulogs1 = new() { Header = ColorVision.Properties.Resource.RCServiceLog };
             menulogs1.Click += (s, e) =>
             {
                 PlatformHelper.OpenFolder("http://localhost:8080/system/log");
             };
             menulogs.Items.Insert(0, menulogs1);
 
-            MenuItem menuItem4 = new() { Header = "河源精电" };
-            menuItem4.Click += (s, e) =>
-            {
-                ProjectHeyuan projectHeiyuan = new();
-                projectHeiyuan.Show();
-            };
-            menulogs.Items.Add(menuItem4);
 
             if (ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.IsAutoUpdate)
             {
@@ -237,7 +232,7 @@ namespace ColorVision
             });
         }
 
-        static X509Certificate2? GetCertificateFromSignedFile(string? fileName)
+        public static X509Certificate2? GetCertificateFromSignedFile(string? fileName)
         {
             if (!File.Exists(fileName)) return null;
             X509Certificate2 certificate = null;
@@ -253,7 +248,7 @@ namespace ColorVision
             return certificate;
         }
 
-        static void InstallCertificate(X509Certificate2 cert)
+        public static void InstallCertificate(X509Certificate2 cert)
         {
             try
             {
