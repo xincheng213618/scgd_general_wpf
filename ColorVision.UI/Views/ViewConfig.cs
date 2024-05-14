@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI;
 
-namespace ColorVision.Settings
+namespace ColorVision.UI.Views
 {
     public class ViewConfig : ViewModelBase ,IConfig
     {

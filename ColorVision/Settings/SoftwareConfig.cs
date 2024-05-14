@@ -5,6 +5,7 @@ using ColorVision.MySql;
 using ColorVision.Services.RC;
 using ColorVision.Solution;
 using ColorVision.UI;
+using ColorVision.UI.Views;
 using ColorVision.Update;
 using ColorVision.UserSpace;
 using System.Collections.ObjectModel;
