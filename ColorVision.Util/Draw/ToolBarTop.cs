@@ -443,8 +443,6 @@ namespace ColorVision.Draw
             }
         }
 
-
-
         public EventHandler<EditModeChangedEventArgs> EditModeChanged { get; set; }
 
         private bool _ImageEditMode;

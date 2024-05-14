@@ -1,9 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using System.ComponentModel;
 
 namespace ColorVision.UserSpace
 {
-    public class UserConfig : ViewModelBase
+    public class UserConfig : ViewModelBase,IConfig
     {
         /// <summary>
         /// 账号

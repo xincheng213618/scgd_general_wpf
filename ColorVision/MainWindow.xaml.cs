@@ -109,7 +109,6 @@ namespace ColorVision
                     Icon = WindowConfig.Icon;
                 Title = WindowConfig.Title ?? Title;
             }
-
             ViewGridManager SolutionViewGridManager = new();
             SolutionViewGridManager.MainView = SolutionGrid;
             SolutionView solutionView = new();
@@ -125,6 +124,8 @@ namespace ColorVision
             MenuStatusBar.DataContext = ConfigHandler.GetInstance().SoftwareConfig;
 
             ViewGridManager.GetInstance().SetViewNum(1);
+            ViewGridManager.GetInstance().GetViewNums();
+
             Closed += (s, e) => { Environment.Exit(-1); };
             Debug.WriteLine(Properties.Resource.LaunchSuccess);
 

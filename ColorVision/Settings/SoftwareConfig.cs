@@ -6,9 +6,12 @@ using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.RC;
 using ColorVision.Services.Templates;
 using ColorVision.Solution;
+using ColorVision.UI;
 using ColorVision.Update;
 using ColorVision.UserSpace;
+using Microsoft.Extensions.DependencyInjection;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 
@@ -28,6 +31,7 @@ namespace ColorVision.Settings
             SoftwareSetting = new SoftwareSetting();
 
             UserConfig = new UserConfig();
+
             SystemMonitorSetting = new SystemMonitorSetting();
             SystemMonitorLazy = new Lazy<SystemMonitor>(() => SystemMonitor.GetInstance());
             TemplateControlLazy = new Lazy<TemplateControl>(() => TemplateControl.GetInstance());
@@ -48,8 +52,13 @@ namespace ColorVision.Settings
             RcServiceControlLazy = new Lazy<MQTTRCService>(() => MQTTRCService.GetInstance());
 
             VideoConfig = new LocalVideoConfig();
-            ViewConfig = new ViewConfig();
+
+            IServiceCollection services = new ServiceCollection();
         }
+
+
+
+
 
         public string CalibToolsPath { get=>_CalibToolsPath; set=> _CalibToolsPath = value; }
         private string _CalibToolsPath = string.Empty;
@@ -59,7 +68,7 @@ namespace ColorVision.Settings
         [JsonIgnore]
         public AutoUpdater AutoUpdater { get;} = AutoUpdater.GetInstance();
 
-        public ViewConfig ViewConfig { get; set; }
+        public ViewConfig ViewConfig { get; } = ViewConfig.GetInstance();
 
         public string? Version { get => _Version; set { _Version = value; NotifyPropertyChanged(); } }
         private string? _Version = string.Empty;

@@ -40,7 +40,7 @@ namespace ColorVision.Projects
 
         public RelayCommand Command => new(A => Execute());
 
-        private void Execute()
+        private static void Execute()
         {
             new ProjectHeyuan() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }

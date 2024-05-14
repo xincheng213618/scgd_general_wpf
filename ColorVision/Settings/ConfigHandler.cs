@@ -1,9 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.UI;
 using log4net;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -12,6 +14,9 @@ namespace ColorVision.Settings
     public static partial class GlobalConst
     {
         public const string ConfigFileName = "Config\\SoftwareConfig.json";
+
+        public const string ConfigDIFileName = "Config\\ColorVisionConfig.json";
+
         public const string MQTTMsgRecordsFileName = "Config\\MsgRecords.json";
 
         public const string ConfigAESKey = "ColorVision";
@@ -40,12 +45,21 @@ namespace ColorVision.Settings
         public string SoftwareConfigFileName { get; set; }
         public string MQTTMsgRecordsFileName { get; set; }
 
+        public string DIFile { get; set; }
+
         public ConfigHandler()
         {
+            _options = new JsonSerializerOptions
+            {
+                WriteIndented = true, // 美化输出
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            };
+
             if (Directory.Exists(GlobalConst.ConfigPath))
             {
                 SoftwareConfigFileName = AppDomain.CurrentDomain.BaseDirectory + GlobalConst.ConfigFileName;
                 MQTTMsgRecordsFileName = GlobalConst.MQTTMsgRecordsFileName;
+                DIFile = GlobalConst.ConfigDIFileName;
             }
             else
             {
@@ -54,7 +68,9 @@ namespace ColorVision.Settings
                     Directory.CreateDirectory(DirectoryPath);
                 SoftwareConfigFileName = DirectoryPath + GlobalConst.ConfigFileName;
                 MQTTMsgRecordsFileName = DirectoryPath + GlobalConst.MQTTMsgRecordsFileName;
+                DIFile = DirectoryPath+ GlobalConst.ConfigDIFileName;
             }
+            LoadConfigs(DIFile);
 
             SoftwareConfigLazy = new Lazy<SoftwareConfig>(() =>
             {
@@ -76,15 +92,89 @@ namespace ColorVision.Settings
                 }
             });
 
+
             System.Windows.Application.Current.SessionEnding += (s, e) => 
             {
                 SaveConfig();
+                SaveConfigs(DIFile);
             };
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
             {
                 SaveConfig();
+                SaveConfigs(DIFile);
             };
             PerformanceControlLazy = new Lazy<SystemMonitor>(() => SystemMonitor.GetInstance());
+        }
+
+        private readonly JsonSerializerOptions _options;
+
+        public T GetRequiredService<T>() where T:IConfig
+        {
+            var type = typeof(T);
+            if (Configs.TryGetValue(type, out var service))
+            {
+                return (T)service;
+            }
+            throw new InvalidOperationException($"Service of type {type.FullName} not registered.");
+        }
+        public Dictionary<Type, IConfig> Configs { get; set; }
+
+        public void SaveConfigs(string fileName)
+        {
+            using (var outputStream = File.Create(fileName))
+            {
+                using (var jsonWriter = new Utf8JsonWriter(outputStream, new JsonWriterOptions { Indented = true }))
+                {
+                    jsonWriter.WriteStartObject();
+                    foreach (var configPair in Configs)
+                    {
+                        jsonWriter.WritePropertyName(configPair.Key.Name);
+                        JsonSerializer.Serialize(jsonWriter, configPair.Value, configPair.Key, _options);
+                    }
+                    jsonWriter.WriteEndObject();
+                }
+            }
+        }
+
+        public void LoadConfigs(string fileName)
+        {
+            Configs = new Dictionary<Type, IConfig>();
+            if (File.Exists(fileName))
+            {
+                string json = File.ReadAllText(fileName);
+                var jsonDoc = JsonDocument.Parse(json);
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    foreach (var type in assembly.GetTypes())
+                    {
+                        if (typeof(IConfig).IsAssignableFrom(type) && !type.IsInterface)
+                        {
+                            var configName = type.Name;
+                            if (jsonDoc.RootElement.TryGetProperty(configName, out var configElement))
+                            {
+                                if (JsonSerializer.Deserialize(configElement.GetRawText(), type, _options) is IConfig config)
+                                {
+                                    Configs[type] = config;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    foreach (var type in assembly.GetTypes().Where(t => typeof(IConfig).IsAssignableFrom(t) && !t.IsAbstract))
+                    {
+                        if (Activator.CreateInstance(type) is IConfig config)
+                        {
+                            Configs[type] = config;
+                        }
+                    }
+                }
+            }
+
         }
 
 
@@ -100,6 +190,7 @@ namespace ColorVision.Settings
         readonly Lazy<SoftwareConfig> SoftwareConfigLazy;
 
         public SoftwareConfig SoftwareConfig { get => SoftwareConfigLazy.Value; }
+
 
         public void SaveConfig()
         {
