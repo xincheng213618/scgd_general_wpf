@@ -9,6 +9,7 @@ using ColorVision.UI;
 using ColorVision.UI.Views;
 using ColorVision.Update;
 using ColorVision.UserSpace;
+using ColorVision.Wizards;
 using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 
@@ -45,6 +46,8 @@ namespace ColorVision.Settings
         public static MainWindowConfig MainWindowConfig => MainWindowConfig.Instance;
 
         public static ThemeConfig ThemeConfig => ThemeConfig.Instance;
+
+        public static WizardConfig WizardConfig => WizardConfig.Instance;
 
         [JsonIgnore]
         public AutoUpdater AutoUpdater { get;} = AutoUpdater.GetInstance();

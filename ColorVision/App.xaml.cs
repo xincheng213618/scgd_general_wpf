@@ -84,7 +84,7 @@ namespace ColorVision
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
             //代码先进入启动窗口
-            if (!ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.WizardCompletionKey)
+            if (!WizardConfig.Instance.WizardCompletionKey)
             {
                 WizardWindow wizardWindow = new();
                 wizardWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;

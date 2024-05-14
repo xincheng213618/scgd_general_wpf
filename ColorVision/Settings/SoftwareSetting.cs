@@ -50,9 +50,6 @@ namespace ColorVision.Settings
         public bool TransparentWindow { get => _TransparentWindow; set { _TransparentWindow = value; NotifyPropertyChanged(); } }
         private bool _TransparentWindow = true;
 
-        public bool WizardCompletionKey { get => _WizardCompletionKey; set { _WizardCompletionKey = value; NotifyPropertyChanged(); } }
-        private bool _WizardCompletionKey;
-
         /// <summary>
         /// 是否自动更新
         /// </summary>
