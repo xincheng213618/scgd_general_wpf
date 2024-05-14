@@ -29,13 +29,9 @@ namespace ColorVision.Settings
         public SoftwareConfig()
         {
             SoftwareSetting = new SoftwareSetting();
-
             UserConfig = new UserConfig();
 
-            SystemMonitorSetting = new SystemMonitorSetting();
-            SystemMonitorLazy = new Lazy<SystemMonitor>(() => SystemMonitor.GetInstance());
             TemplateControlLazy = new Lazy<TemplateControl>(() => TemplateControl.GetInstance());
-
 
             MQTTSetting = new MQTTSetting();
             MQTTConfig = new MQTTConfig();
@@ -51,14 +47,8 @@ namespace ColorVision.Settings
             RcServiceConfigs = new ObservableCollection<RCServiceConfig>();
             RcServiceControlLazy = new Lazy<MQTTRCService>(() => MQTTRCService.GetInstance());
 
-            VideoConfig = new LocalVideoConfig();
-
             IServiceCollection services = new ServiceCollection();
         }
-
-
-
-
 
         public string CalibToolsPath { get=>_CalibToolsPath; set=> _CalibToolsPath = value; }
         private string _CalibToolsPath = string.Empty;
@@ -91,15 +81,10 @@ namespace ColorVision.Settings
 
 
         public SoftwareSetting SoftwareSetting { get; set; }
-        public LocalVideoConfig VideoConfig { get; set; }
 
+        public static LocalVideoConfig VideoConfig  => ConfigHandler.GetInstance().GetRequiredService<LocalVideoConfig>();
 
-        [JsonIgnore]
-        readonly Lazy<SystemMonitor> SystemMonitorLazy;
-        [JsonIgnore]
-        public SystemMonitor SystemMonitor { get => SystemMonitorLazy.Value; }
-
-        public SystemMonitorSetting SystemMonitorSetting { get; set; }
+        public static SystemMonitorSetting SystemMonitorSetting => ConfigHandler.GetInstance().GetRequiredService<SystemMonitorSetting>();
 
         [JsonIgnore]
         readonly Lazy<TemplateControl> TemplateControlLazy;

@@ -122,9 +122,12 @@ namespace ColorVision
 
             StatusBarGrid.DataContext = ConfigHandler.GetInstance();
             MenuStatusBar.DataContext = ConfigHandler.GetInstance().SoftwareConfig;
+            ViewGridManager.SetViewGrid(ViewConfig.GetInstance().LastViewCount);
 
-            ViewGridManager.GetInstance().SetViewNum(1);
-            ViewGridManager.GetInstance().GetViewNums();
+            ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
+            {
+                ViewConfig.GetInstance().LastViewCount = e;
+            };
 
             Closed += (s, e) => { Environment.Exit(-1); };
             Debug.WriteLine(Properties.Resource.LaunchSuccess);

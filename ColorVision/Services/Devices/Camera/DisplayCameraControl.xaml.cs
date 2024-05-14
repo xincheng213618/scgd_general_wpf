@@ -37,6 +37,7 @@ namespace ColorVision.Services.Devices.Camera
 
         public ViewCamera View { get; set; }
 
+        public LocalVideoConfig VideoConfig { get; set; }
 
         public DisplayCameraControl(DeviceCamera device)
         {
@@ -47,6 +48,7 @@ namespace ColorVision.Services.Devices.Camera
             _timer.Interval = TimeSpan.FromMilliseconds(500);
             _timer.Tick += Timer_Tick; 
             PreviewMouseDown += UserControl_PreviewMouseDown;
+            VideoConfig = ConfigHandler.GetInstance().GetRequiredService<LocalVideoConfig>();
         }
 
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
@@ -229,8 +231,8 @@ namespace ColorVision.Services.Devices.Camera
                 if (!DService.IsVideoOpen)
                 {
                     DService.CurrentTakeImageMode = TakeImageMode.Live;
-                    string host = ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Host;
-                    int port = ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Port;
+                    string host = VideoConfig.Host;
+                    int port = VideoConfig.Port;
                     //bool IsLocal = (host == "127.0.0.1");
                     port = CameraVideoControl.Open(host, port);
                     if (port > 0)
@@ -257,7 +259,7 @@ namespace ColorVision.Services.Devices.Camera
                     else
                     {
                         MessageBox.Show("视频模式下，本地端口打开失败");
-                        logger.ErrorFormat("Local socket open failed.{0}:{1}", host, ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Port);
+                        logger.ErrorFormat("Local socket open failed.{0}:{1}", host, VideoConfig.Port);
                     }
                 }
             }

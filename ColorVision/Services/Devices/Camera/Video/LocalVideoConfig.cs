@@ -1,8 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 
 namespace ColorVision.Services.Devices.Camera.Video
 {
-    public class LocalVideoConfig : ViewModelBase
+    public class LocalVideoConfig : ViewModelBase,IConfig
     {
         /// <summary>
         /// 连接名称

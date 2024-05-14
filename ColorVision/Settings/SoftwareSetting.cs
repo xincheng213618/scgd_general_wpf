@@ -18,6 +18,7 @@ namespace ColorVision.Settings
         public int WindowState { get; set; }
     }
 
+
     public partial class SoftwareSetting
     {
         private string _LogLevel = GlobalConst.LogLevel[0];
@@ -54,7 +55,6 @@ namespace ColorVision.Settings
             }
         }
     }
-
 
     public partial class SoftwareSetting :ViewModelBase
     {

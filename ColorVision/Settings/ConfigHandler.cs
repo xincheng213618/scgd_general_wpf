@@ -103,7 +103,7 @@ namespace ColorVision.Settings
                 SaveConfig();
                 SaveConfigs(DIFile);
             };
-            PerformanceControlLazy = new Lazy<SystemMonitor>(() => SystemMonitor.GetInstance());
+            SystemMonitorLazy = new Lazy<SystemMonitor>(() => SystemMonitor.GetInstance());
         }
 
         private readonly JsonSerializerOptions _options;
@@ -157,6 +157,13 @@ namespace ColorVision.Settings
                                     Configs[type] = config;
                                 }
                             }
+                            else
+                            {
+                                if (Activator.CreateInstance(type) is IConfig config)
+                                {
+                                    Configs[type] = config;
+                                }
+                            }
                         }
                     }
                 }
@@ -182,9 +189,9 @@ namespace ColorVision.Settings
         public bool IsAutoRun { get => Tool.IsAutoRun(GlobalConst.AutoRunName,GlobalConst.AutoRunRegPath); set { Tool.SetAutoRun(value, GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); NotifyPropertyChanged(); } }
 
         [JsonIgnore]
-        readonly Lazy<SystemMonitor> PerformanceControlLazy;
+        readonly Lazy<SystemMonitor> SystemMonitorLazy;
         [JsonIgnore]
-        public SystemMonitor SystemMonitor { get => PerformanceControlLazy.Value; }
+        public SystemMonitor SystemMonitor { get => SystemMonitorLazy.Value; }
         
 
         readonly Lazy<SoftwareConfig> SoftwareConfigLazy;
