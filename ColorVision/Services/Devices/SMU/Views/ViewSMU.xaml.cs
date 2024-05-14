@@ -11,6 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using ColorVision.UI.Sorts;
+using ColorVision.UI.Views;
 
 namespace ColorVision.Services.Devices.SMU.Views
 {

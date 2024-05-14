@@ -21,6 +21,7 @@ using System.Windows.Media;
 using ColorVision.Services.Dao;
 using ColorVision.UI.Sorts;
 using CVCommCore.CVAlgorithm;
+using ColorVision.UI.Views;
 
 namespace ColorVision.Services.Devices.Algorithm.Views
 {

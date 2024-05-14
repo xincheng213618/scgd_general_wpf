@@ -17,6 +17,7 @@ using System.ComponentModel;
 using ColorVision.Services.Devices.Spectrum.Dao;
 using ColorVision.Common.MVVM;
 using ColorVision.UI.Sorts;
+using ColorVision.UI.Views;
 
 namespace ColorVision.Services.Devices.Spectrum.Views
 {

@@ -8,6 +8,7 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.RC;
 using ColorVision.Services.Types;
 using ColorVision.UI;
+using ColorVision.UI.Views;
 using Newtonsoft.Json;
 using System;
 using System.IO;

@@ -4,6 +4,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
 using ColorVision.Net;
+using ColorVision.UI.Views;
 using ColorVision.Util.Draw.Special;
 using ColorVision.Utils;
 using cvColorVision;
@@ -938,7 +939,7 @@ namespace ColorVision.Media
                             du = (4 * dXVal) / (dXVal + dYVal * 15 + dZVal * 3);
                             dv = (9 * dYVal) / (dXVal + dYVal * 15 + dZVal * 3);
                         }
-                        cvCameraCSLib.CM_GetXYZxyuvRect(intPtr, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 200, 200);
+                        cvCameraCSLib.CM_GetXYZxyuvRect(intPtr, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
 
                         ToolBarTop.MouseMagnifier.DrawImageCVCIE(e, dXVal, dYVal, dZVal,dx,dy,du,dv);
 

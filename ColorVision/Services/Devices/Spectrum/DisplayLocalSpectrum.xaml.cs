@@ -1,5 +1,6 @@
 ﻿using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
+using ColorVision.UI.Views;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;

@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using System.Windows.Media;
 
-namespace ColorVision
+namespace ColorVision.UI.Views
 {
 
     public enum ViewType
@@ -12,11 +12,6 @@ namespace ColorVision
     }
     public delegate void ViewIndexChangedHandler(int oindex, int index);
     public delegate void ViewMaxChangedHandler(int max);
-
-    public interface IView
-    {
-        public View View { get; }
-    }
 
     public class View : ViewModelBase
     {

@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using ColorVision.UI.Views;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;

@@ -24,6 +24,9 @@ namespace ColorVision.Draw
         public bool IsUsePhysicalUnit { get => _IsUsePhysicalUnit; set { _IsUsePhysicalUnit = value; NotifyPropertyChanged(); } }
         private bool _IsUsePhysicalUnit;
 
+        public int CVCIENum { get => _CVCIENum; set { _CVCIENum = value; NotifyPropertyChanged(); } }
+        private int _CVCIENum = 200;
+
         public string Text { get => _Text; set { _Text = value; NotifyPropertyChanged(); } }
         private string _Text;
         public double FontSize { get => _FontSize; set { _FontSize = value; NotifyPropertyChanged(); } }

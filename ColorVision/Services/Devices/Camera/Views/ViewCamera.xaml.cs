@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS8604,CS8629
-using ColorVision.UI.Sorts;
 using ColorVision.Common.Utilities;
 using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
@@ -11,6 +10,8 @@ using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Solution;
+using ColorVision.UI.Sorts;
+using ColorVision.UI.Views;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
@@ -18,7 +19,6 @@ using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.IO;
 using System.Linq;
 using System.Windows;

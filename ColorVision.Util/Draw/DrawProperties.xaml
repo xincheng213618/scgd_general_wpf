@@ -24,6 +24,11 @@
     </Window.Resources>
     <Grid>
         <StackPanel>
+            <DockPanel Margin="5,2">
+                <TextBlock Text="CVICE范围"/>
+                <TextBox  Text="{Binding CVCIENum}"/>
+            </DockPanel>
+
             <GroupBox Header="比例尺" Margin="5">
                 <StackPanel>
                     <DockPanel Margin="0,2">

@@ -1,32 +1,32 @@
 ﻿#pragma warning disable CS8604,CS8629
+using ColorVision.Common.Utilities;
 using ColorVision.Draw;
 using ColorVision.Media;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
-using ColorVision.Common.Utilities;
+using ColorVision.Services.Devices.Camera.Views;
+using ColorVision.Services.Msg;
+using ColorVision.Services.Templates;
+using ColorVision.Services.Templates.POI;
+using ColorVision.Solution;
+using ColorVision.UI.Sorts;
+using ColorVision.UI.Views;
 using log4net;
+using MQTTMessageLib.Calibration;
+using MQTTMessageLib.Camera;
+using MQTTMessageLib.FileServer;
+using Newtonsoft.Json;
+using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.Services.Templates;
-using ColorVision.Services.Templates.POI;
-using ColorVision.UI.Sorts;
-using ColorVision.Services.Devices.Camera.Views;
-using MQTTMessageLib.Camera;
-using System.Linq;
-using MQTTMessageLib.FileServer;
-using ColorVision.Solution;
-using Panuon.WPF.UI;
-using Newtonsoft.Json;
-using MQTTMessageLib.Calibration;
-using ColorVision.Services.Msg;
 
 
 namespace ColorVision.Services.Devices.Calibration.Views

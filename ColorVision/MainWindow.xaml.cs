@@ -12,6 +12,7 @@ using ColorVision.Solution.Searches;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.HotKey;
+using ColorVision.UI.Views;
 using ColorVision.Update;
 using ColorVision.UserSpace;
 using ColorVision.Utils;
