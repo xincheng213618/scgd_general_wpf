@@ -10,9 +10,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Settings
+namespace ColorVision.Themes
 {
-    public class ExportThemes : IHotKey,IMenuItemMeta
+    public class ThemesExport : IHotKey,IMenuItemMeta
     {
         public string? OwnerGuid => "Tool";
 
@@ -20,7 +20,7 @@ namespace ColorVision.Settings
 
         public int Order => 1000;
 
-        public string? Header => Properties.Resource.MenuTheme;
+        public string? Header => Util.Properties.Resource.MenuTheme;
 
         public string? InputGestureText => "Ctrl + Shift + T";
 
@@ -34,11 +34,10 @@ namespace ColorVision.Settings
                 foreach (var item in Enum.GetValues(typeof(Theme)).Cast<Theme>())
                 {
                     MenuItem ThemeItem = new();
-                    ThemeItem.Header = Properties.Resource.ResourceManager.GetString(item.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
+                    ThemeItem.Header = Util.Properties.Resource.ResourceManager.GetString(item.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
                     ThemeItem.Click += (s, e) =>
                     {
-                        ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.Theme = item;
-                        ConfigHandler.GetInstance().SaveConfig();
+                        ThemeConfig.Instance.Theme = item;
                         Application.Current.ApplyTheme(item);
                     };
                     ThemeItem.Tag = item;
@@ -57,13 +56,10 @@ namespace ColorVision.Settings
                 return MenuTheme;
             } }
 
-        public HotKeys HotKeys => new(Properties.Resource.Theme, new Hotkey(Key.T, ModifierKeys.Control | ModifierKeys.Shift), Execute);
+        public HotKeys HotKeys => new(Util.Properties.Resource.Theme, new Hotkey(Key.T, ModifierKeys.Control | ModifierKeys.Shift), Execute);
 
         private void Execute()
         {
-            // 获取 ConfigHandler 实例
-            var configHandler = ConfigHandler.GetInstance();
-
             // 获取当前主题的索引
             int currentThemeIndex = (int)(ThemeManager.Current.CurrentTheme ?? Theme.UseSystem);
 
@@ -75,10 +71,7 @@ namespace ColorVision.Settings
 
             // 更新当前主题
             Theme newTheme = (Theme)nextThemeIndex;
-            configHandler.SoftwareConfig.SoftwareSetting.Theme = newTheme;
-
-            // 保存配置
-            configHandler.SaveConfig();
+            ThemeConfig.Instance.Theme = newTheme;
 
             // 应用新主题
             Application.Current.ApplyTheme(newTheme);

@@ -47,7 +47,7 @@
           <source>粉色</source>
           <target state="new">розовый</target>
         </trans-unit>
-        <trans-unit id="UseSystem" translate="yes" xml:space="preserve">
+        <trans-unit id="ThemeUseSystem" translate="yes" xml:space="preserve">
           <source>跟随系统</source>
           <target state="new">Следуйте системе</target>
         </trans-unit>

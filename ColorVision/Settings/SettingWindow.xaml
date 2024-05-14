@@ -130,7 +130,7 @@
                                         <TextBlock Text="{x:Static properties:Resource.LogLevel}"/>
                                     </DockPanel>
                                     <DockPanel  Margin="5" >
-                                        <hc:ComboBox x:Name="cmtheme" SelectedValue="{Binding SoftwareSetting.Theme}" hc:InfoElement.Placeholder="{x:Static properties:Resource.Theme}"  DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}" Width="150"  />
+                                        <hc:ComboBox x:Name="cmtheme" SelectedValue="{Binding ThemeConfig.Theme}" hc:InfoElement.Placeholder="{x:Static properties:Resource.Theme}"  DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}" Width="150"  />
                                         <TextBlock Text="{x:Static properties:Resource.Theme}"/>
                                     </DockPanel>
                                     <DockPanel Margin="5">

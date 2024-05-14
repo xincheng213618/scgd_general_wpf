@@ -128,7 +128,7 @@ namespace ColorVision.Settings
 
         private void Cmtheme_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            Application.Current.ApplyTheme(SoftwareConfig.SoftwareSetting.Theme);
+            Application.Current.ApplyTheme(ThemeConfig.Instance.Theme);
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

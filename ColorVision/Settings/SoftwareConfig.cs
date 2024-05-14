@@ -4,6 +4,7 @@ using ColorVision.MQTT;
 using ColorVision.MySql;
 using ColorVision.Services.RC;
 using ColorVision.Solution;
+using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
 using ColorVision.Update;
@@ -42,6 +43,8 @@ namespace ColorVision.Settings
         public bool IsAutoRun { get => Tool.IsAutoRun(GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); set { Tool.SetAutoRun(value, GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); NotifyPropertyChanged(); } }
 
         public static MainWindowConfig MainWindowConfig => MainWindowConfig.Instance;
+
+        public static ThemeConfig ThemeConfig => ThemeConfig.Instance;
 
         [JsonIgnore]
         public AutoUpdater AutoUpdater { get;} = AutoUpdater.GetInstance();

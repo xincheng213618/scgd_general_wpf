@@ -54,11 +54,6 @@ namespace ColorVision.Settings
         private bool _WizardCompletionKey;
 
         /// <summary>
-        /// 主题
-        /// </summary>
-        public Themes.Theme Theme { get; set; } = Themes.Theme.UseSystem;
-
-        /// <summary>
         /// 是否自动更新
         /// </summary>
         public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; NotifyPropertyChanged(); } }

@@ -42,8 +42,9 @@ namespace ColorVision
         {
             Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
             ConfigHandler1.GetInstance();
-            var SoftwareSetting = ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting;
-            this.ApplyTheme(SoftwareSetting.Theme);
+            ConfigHandler.GetInstance();
+
+            this.ApplyTheme(ThemeConfig.Instance.Theme);
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("ja");
@@ -83,7 +84,7 @@ namespace ColorVision
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
             //代码先进入启动窗口
-            if (!SoftwareSetting.WizardCompletionKey)
+            if (!ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.WizardCompletionKey)
             {
                 WizardWindow wizardWindow = new();
                 wizardWindow.WindowStartupLocation = WindowStartupLocation.CenterScreen;
