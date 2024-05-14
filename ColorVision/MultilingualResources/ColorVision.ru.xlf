@@ -1007,6 +1007,10 @@
           <source>退订</source>
           <target state="new">Отписаться</target>
         </trans-unit>
+        <trans-unit id="UpdateSpeed" translate="yes" xml:space="preserve">
+          <source>更新速度</source>
+          <target state="new">Обновить скорость</target>
+        </trans-unit>
         <trans-unit id="Upgrade" translate="yes" xml:space="preserve">
           <source>升级</source>
           <target state="new">обновление</target>

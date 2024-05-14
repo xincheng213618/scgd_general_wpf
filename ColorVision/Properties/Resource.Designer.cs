@@ -2320,6 +2320,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 更新速度 的本地化字符串。
+        /// </summary>
+        public static string UpdateSpeed {
+            get {
+                return ResourceManager.GetString("UpdateSpeed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 升级 的本地化字符串。
         /// </summary>
         public static string Upgrade {

@@ -915,4 +915,7 @@
   <data name="RCServiceLog" xml:space="preserve">
     <value>RC服務日誌</value>
   </data>
+  <data name="UpdateSpeed" xml:space="preserve">
+    <value>更新速度</value>
+  </data>
 </root>
