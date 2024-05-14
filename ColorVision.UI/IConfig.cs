@@ -24,7 +24,6 @@ namespace ColorVision.UI
             _options = new JsonSerializerOptions
             {
                 WriteIndented = true, // 美化输出
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             };
 
             if (Directory.Exists("Config"))
@@ -48,7 +47,6 @@ namespace ColorVision.UI
             {
                 SaveConfigs(DIFile);
             };
-
         }
 
 

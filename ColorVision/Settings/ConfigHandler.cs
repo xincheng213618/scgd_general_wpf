@@ -1,14 +1,11 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.MQTT;
 using ColorVision.MySql;
 using ColorVision.Services.RC;
-using ColorVision.UI;
 using log4net;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 

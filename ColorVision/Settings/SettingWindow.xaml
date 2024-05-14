@@ -118,7 +118,7 @@
                                         <TextBlock Text="{x:Static properties:Resource.TbSettingsStartBoot}"/>
                                     </DockPanel>
                                     <DockPanel  Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding SoftwareSetting.IsRestoreWindow}"/>
+                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding MainWindowConfig.IsRestoreWindow}"/>
                                         <TextBlock Text="{x:Static properties:Resource.StartRecoverUILayout}"/>
                                     </DockPanel>
                                     <DockPanel Margin="5">

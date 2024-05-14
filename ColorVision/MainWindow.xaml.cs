@@ -17,6 +17,7 @@ using ColorVision.Update;
 using ColorVision.UserSpace;
 using ColorVision.Utils;
 using log4net;
+using Microsoft.DwayneNeed.Win32.User32;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
 using System;
@@ -36,6 +37,48 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision
 {
+    public class MainWindowConfig : IConfig
+    {
+        public static MainWindowConfig Instance => ConfigHandler1.GetInstance().GetRequiredService<MainWindowConfig>();
+
+        public bool IsRestoreWindow { get; set; }
+
+        public double Width { get; set; }
+        public double Height { get; set; }
+        public double Left { get; set; }
+        public double Top { get; set; }
+        public int WindowState { get; set; }
+
+        public void SetWindow(Window window)
+        {
+            if (IsRestoreWindow && Height != 0 && Width != 0)
+            {
+                window.Top = Top;
+                window.Left = Left;
+                window.Height = Height;
+                window.Width = Width;
+                window.WindowState = (WindowState)WindowState;
+
+                if (Width > SystemParameters.WorkArea.Width)
+                {
+                    window.Width = SystemParameters.WorkArea.Width;
+                }
+                if (Height > SystemParameters.WorkArea.Height)
+                {
+                    window.Height = SystemParameters.WorkArea.Height;
+                }
+            }
+        }
+        public void SetConfig(Window window)
+        {
+            Top = window.Top;
+            Left = window.Left;
+            Height = window.Height;
+            Width = window.Width;
+            WindowState = (int)window.WindowState;
+        }
+    }
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
@@ -47,40 +90,15 @@ namespace ColorVision
         public ViewGridManager ViewGridManager { get; set; }
 
         public static ConfigHandler ConfigHandler  => ConfigHandler.GetInstance();
+
         public static SoftwareSetting SoftwareSetting => ConfigHandler.SoftwareConfig.SoftwareSetting;
+        public static MainWindowConfig MainWindowConfig => MainWindowConfig.Instance;
 
         public MainWindow()
         {
             InitializeComponent();
-
-            if (SoftwareSetting.IsRestoreWindow && SoftwareSetting.Height != 0 && SoftwareSetting.Width != 0)
-            {
-                Top = SoftwareSetting.Top;
-                Left = SoftwareSetting.Left;
-                Height = SoftwareSetting.Height;
-                Width = SoftwareSetting.Width;
-                WindowState = (WindowState)SoftwareSetting.WindowState;
-
-                if (Width > SystemParameters.WorkArea.Width)
-                {
-                    Width = SystemParameters.WorkArea.Width;
-                }
-                if (Height > SystemParameters.WorkArea.Height)
-                {
-                    Height = SystemParameters.WorkArea.Height;
-                }
-            }
-            SizeChanged += (s, e) =>
-            {
-                if (SoftwareSetting.IsRestoreWindow)
-                {
-                    SoftwareSetting.Top = Top;
-                    SoftwareSetting.Left = Left;
-                    SoftwareSetting.Height = Height;
-                    SoftwareSetting.Width = Width;
-                    SoftwareSetting.WindowState = (int)WindowState;
-                }
-            };
+            MainWindowConfig.SetWindow(this);
+            SizeChanged += (s, e) => MainWindowConfig.SetConfig(this);
             var IsAdministrator = Tool.IsAdministrator();
             Title = Title + $"- {(IsAdministrator ? Properties.Resource.RunAsAdmin : Properties.Resource.NotRunAsAdmin)}";
         }

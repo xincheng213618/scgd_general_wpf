@@ -7,18 +7,6 @@ namespace ColorVision.Settings
 {
     public partial class SoftwareSetting
     {
-        public bool IsRestoreWindow { get; set; }
-
-        public double Width { get; set; }
-        public double Height { get; set; }
-        public double Left { get; set; }
-        public double Top { get; set; }
-        public int WindowState { get; set; }
-    }
-
-
-    public partial class SoftwareSetting
-    {
         private string _LogLevel = GlobalConst.LogLevel[0];
         public string LogLevel
         {
