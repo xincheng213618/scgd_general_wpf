@@ -19,6 +19,7 @@ namespace ColorVision.Themes
         public string? GuidId => "MenuTheme";
 
         public int Order => 1000;
+        public Visibility Visibility => Visibility.Visible;
 
         public string? Header => Util.Properties.Resource.MenuTheme;
 

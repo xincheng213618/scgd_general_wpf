@@ -24,8 +24,6 @@ namespace ColorVision.Services.Templates
 
         public TemplateControl()
         {
-            AoiParams = new ObservableCollection<TemplateModel<AOIParam>>();
-
             MySqlSetting.Instance.UseMySqlChanged += (s) =>
             {
                 Thread thread = new(async () =>
@@ -137,8 +135,5 @@ namespace ColorVision.Services.Templates
             }
             return ret;
         }
-
-        public ObservableCollection<TemplateModel<AOIParam>> AoiParams { get; set; }
-
     }
 }

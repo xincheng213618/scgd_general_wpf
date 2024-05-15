@@ -27,6 +27,7 @@ namespace ColorVision.Services.PhyCameras
         {
             new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
         }
+        public Visibility Visibility => Visibility.Visible;
     }
 
 

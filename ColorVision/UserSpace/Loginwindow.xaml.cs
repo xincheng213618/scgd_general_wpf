@@ -22,6 +22,8 @@ namespace ColorVision.UserSpace
         public string? InputGestureText => null;
 
         public object? Icon => null;
+        public Visibility Visibility => Visibility.Visible;
+
         public RelayCommand Command => new(A =>
         {
             if (UserConfig.Instance.UserName != null)

@@ -37,6 +37,7 @@ namespace ColorVision.Services.Devices.SMU
             }
             new WindowTemplate(new TemplateSMUParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
+        public Visibility Visibility => Visibility.Visible;
     }
 
     public class TemplateSMUParam : ITemplate<SMUParam>, IITemplateLoad

@@ -16,6 +16,7 @@ namespace ColorVision.Update
         public string? GuidId => "MenuUpdate";
 
         public int Order => 10003;
+        public Visibility Visibility => Visibility.Visible;
 
         public string? Header => Properties.Resource.MenuUpdate;
 

@@ -15,6 +15,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
     public class ExportLedCheckParam : IMenuItem
     {
         public string? OwnerGuid => "TemplateAlgorithm";
+        public Visibility Visibility => Visibility.Visible;
 
         public string? GuidId => "LedCheckParam";
         public int Order => 2;

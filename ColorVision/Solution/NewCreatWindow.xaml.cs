@@ -44,7 +44,7 @@ namespace ColorVision.Solution
         public RelayCommand Command => new(A => Execute());
 
         public HotKeys HotKeys => new(Properties.Resource.NewSolution, new Hotkey(Key.N, ModifierKeys.Control), Execute);
-
+        public Visibility Visibility => Visibility.Visible;
         private void Execute()
         {
             NewCreateWindow newCreatWindow = new() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };

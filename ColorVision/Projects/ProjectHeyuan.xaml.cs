@@ -37,9 +37,8 @@ namespace ColorVision.Projects
         public string? GuidId => "HeYuan";
 
         public int Order => 100;
-
+        public Visibility Visibility => Visibility.Visible;
         public string? Header => "河源精电";
-
         public string? InputGestureText => null;
 
         public object? Icon => null;

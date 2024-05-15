@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.UI.Languages
@@ -17,6 +18,7 @@ namespace ColorVision.UI.Languages
 
         public object? Icon => null;
         public RelayCommand Command => new(a => { });
+        public Visibility Visibility => Visibility.Visible;
 
         public MenuItem MenuItem
         {

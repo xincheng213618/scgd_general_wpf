@@ -20,6 +20,7 @@ namespace ColorVision.MQTT
         public string? GuidId => "MQTTLog";
 
         public int Order => 1;
+        public Visibility Visibility => Visibility.Visible;
 
         public string? Header => Resource.MQTTLog;
 

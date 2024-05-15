@@ -38,6 +38,7 @@ namespace ColorVision
         {
             new WindowLog() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
+        public Visibility Visibility => Visibility.Visible;
     }
 
 

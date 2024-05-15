@@ -23,5 +23,6 @@ namespace ColorVision.Update
         {
             new ChangelogWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+        public Visibility Visibility => Visibility.Visible;
     }
 }

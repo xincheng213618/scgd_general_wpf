@@ -36,6 +36,7 @@ namespace ColorVision.Settings
         public string? OwnerGuid => "Tool";
 
         public string? GuidId => "MenuOptions";
+        public Visibility Visibility => Visibility.Visible;
 
         public int Order => 100000;
 

@@ -34,6 +34,7 @@ namespace ColorVision.Services.Templates.POI
             }
             new WindowTemplate(new TemplatePOI()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
+        public Visibility Visibility => Visibility.Visible;
 
     }
 

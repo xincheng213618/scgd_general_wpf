@@ -29,6 +29,7 @@ namespace ColorVision.Services.Devices.Sensor.Templates
         public string? InputGestureText { get; }
 
         public object? Icon { get; }
+        public Visibility Visibility => Visibility.Visible;
 
         public RelayCommand Command => new(a => {
             SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;

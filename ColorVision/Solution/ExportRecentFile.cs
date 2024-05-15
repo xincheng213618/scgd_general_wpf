@@ -2,6 +2,7 @@
 using ColorVision.RecentFile;
 using ColorVision.UI;
 using System.IO;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Solution
@@ -22,6 +23,7 @@ namespace ColorVision.Solution
         public RelayCommand Command => new(a => { });
 
         private RecentFileList SolutionHistory = new() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
+        public Visibility Visibility => Visibility.Visible;
 
         public MenuItem MenuItem
         {

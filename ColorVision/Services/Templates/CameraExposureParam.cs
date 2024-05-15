@@ -20,12 +20,11 @@ namespace ColorVision.Services.Templates
         public string? Header => ColorVision.Properties.Resource.MenuCameraExp;
 
         public string? InputGestureText { get; }
-
+        public Visibility Visibility => Visibility.Visible;
         public object? Icon { get; }
 
         public RelayCommand Command => new(a =>
         {
-            SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");

@@ -1,11 +1,52 @@
-﻿using ColorVision.Services.Dao;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.MySql;
+using ColorVision.Services.Dao;
+using ColorVision.UI;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Windows;
 
 namespace ColorVision.Services.Templates
 {
+    public class ExportAOI : IMenuItem
+    {
+        public string OwnerGuid => "Template";
+
+        public string? GuidId => "CameraExposureParam";
+        public int Order => 23;
+        public string? Header => "AOIParam";
+
+        public string? InputGestureText { get; }
+        public Visibility Visibility => Visibility.Collapsed;
+        public object? Icon { get; }
+
+        public RelayCommand Command => new(a =>
+        {
+            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow() ,ColorVision.Properties.Resource.DatabaseConnectionFailed, "ColorVision");
+                return;
+            }
+            new WindowTemplate(new TemplateAOIParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        });
+    }
+    public class TemplateAOIParam : ITemplate<AOIParam>, IITemplateLoad
+    {
+        public TemplateAOIParam()
+        {
+            Title = "AOIParam设置";
+            Code = ModMasterType.Aoi;
+            TemplateParams = AOIParam.Params;
+        }
+    }
+
+
     public class AOIParam : ParamBase
     {
+        public static ObservableCollection<TemplateModel<AOIParam>> Params { get; set; } = new ObservableCollection<TemplateModel<AOIParam>>();
+
         public AOIParam()
         {
             FilterByArea = true;

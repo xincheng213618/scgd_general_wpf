@@ -16,6 +16,8 @@ namespace ColorVision.Services.Devices.PG.Templates
 
     public class ExportPGParam : IMenuItem
     {
+        public Visibility Visibility => Visibility.Visible;
+
         public string OwnerGuid => "Template";
 
         public string? GuidId => "PGParam";

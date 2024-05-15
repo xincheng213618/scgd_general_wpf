@@ -24,7 +24,7 @@ namespace ColorVision.Services.Flow
         public string? Header => Properties.Resource.MenuFlow;
 
         public string? InputGestureText { get; }
-
+        public Visibility Visibility => Visibility.Visible;
         public object? Icon { get; }
 
         public RelayCommand Command => new(a => {

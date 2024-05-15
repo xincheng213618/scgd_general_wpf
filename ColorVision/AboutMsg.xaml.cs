@@ -22,10 +22,10 @@ namespace ColorVision
         public HotKeys HotKeys => new(Properties.Resource.MenuAbout, new Hotkey(Key.F1, ModifierKeys.Control), Execute);
 
         public string? OwnerGuid => "Help";
-
         public string? GuidId => "AboutMsg";
 
         public int Order => 100000;
+        public Visibility Visibility => Visibility.Visible;
 
         public string? Header => Resource.MenuAbout;
 

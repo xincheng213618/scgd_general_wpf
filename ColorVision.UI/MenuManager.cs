@@ -55,11 +55,12 @@ namespace ColorVision.UI
                             InputGestureText = iMenuItem.InputGestureText,
                             Command = iMenuItem.Command,
                             Tag = iMenuItem,
+                            Visibility =iMenuItem.Visibility,
                         };
                     }
 
                     CreateMenu(menuItem, GuidId);
-                    if (i > 0 && (iMenuItem.Order - iMenuItems1[i - 1].Order > 4))
+                    if (i > 0 && (iMenuItem.Order - iMenuItems1[i - 1].Order > 4) && iMenuItem.Visibility == System.Windows.Visibility.Visible)
                     {
                         parentMenuItem.Items.Add(new Separator());
                     }
@@ -110,6 +111,7 @@ namespace ColorVision.UI
                     InputGestureText = iMenuItem.InputGestureText,
                     Command = iMenuItem.Command,
                     Tag = iMenuItem,
+                    Visibility = iMenuItem.Visibility,
                 };
                 Menu.Items.Add(menuItem);
             }

@@ -14,6 +14,7 @@ namespace ColorVision.Services.Dao.Validate
 
         public string? GuidId => "Validue";
         public int Order => 2;
+        public Visibility Visibility => Visibility.Visible;
         public string? Header => ColorVision.Properties.Resource.MenuValidue;
 
         public string? InputGestureText { get; }

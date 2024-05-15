@@ -32,6 +32,7 @@ namespace ColorVision.Services.Msg
         public object? Icon { get; }
 
         public RelayCommand Command => new(a => Execute());
+        public Visibility Visibility => Visibility.Visible;
     }
 
     public class MsgConfig : ViewModelBase

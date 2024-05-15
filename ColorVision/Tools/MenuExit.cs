@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using System;
+using System.Windows;
 
 namespace ColorVision.Tools
 {
@@ -19,6 +20,7 @@ namespace ColorVision.Tools
         public object? Icon => null;
 
         public RelayCommand Command => new(A => Execute());
+        public Visibility Visibility => Visibility.Visible;
 
         private static void Execute()
         {

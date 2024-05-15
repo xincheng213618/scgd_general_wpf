@@ -18,6 +18,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
 
         public string? GuidId => "FOV";
         public int Order => 5;
+        public Visibility Visibility => Visibility.Visible;
         public string? Header => ColorVision.Properties.Resource.MenuFOV;
 
         public string? InputGestureText { get; }

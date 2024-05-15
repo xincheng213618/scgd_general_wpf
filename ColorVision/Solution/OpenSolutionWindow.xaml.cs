@@ -45,6 +45,7 @@ namespace ColorVision.Solution
             }
         }
 
+        public Visibility Visibility => Visibility.Visible;
 
         public RelayCommand Command => new(A => Execute());
 

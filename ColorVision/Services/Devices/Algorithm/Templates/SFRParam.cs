@@ -20,6 +20,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
         public string? GuidId => "SFRParam";
         public int Order => 2;
         public string? Header => ColorVision.Properties.Resource.MenuSFR;
+        public Visibility Visibility => Visibility.Visible;
 
         public string? InputGestureText { get; }
 

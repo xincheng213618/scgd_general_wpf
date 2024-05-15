@@ -25,7 +25,7 @@ namespace ColorVision.Services.OnlineLicensing
         public string? GuidId => "Lincense";
 
         public int Order => 10003;
-
+        public Visibility Visibility => Visibility.Visible;
         public string? Header => Properties.Resource.MyLicense_R;
 
         public string? InputGestureText => "Ctrl + L";

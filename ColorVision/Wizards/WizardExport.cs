@@ -23,5 +23,6 @@ namespace ColorVision.Wizards
         {
             new WizardWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+        public Visibility Visibility => Visibility.Visible;
     }
 }
