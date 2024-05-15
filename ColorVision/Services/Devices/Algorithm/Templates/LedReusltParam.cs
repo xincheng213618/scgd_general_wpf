@@ -28,10 +28,10 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
     //        SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
     //        if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
     //        {
-    //            MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
+    //            MessageBox.Show(Application.Instance.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
     //            return;
     //        }
-    //        new WindowTemplate(TemplateType.LedResult) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+    //        new WindowTemplate(TemplateType.LedResult) { Owner = Application.Instance.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
     //    });
     //}
 

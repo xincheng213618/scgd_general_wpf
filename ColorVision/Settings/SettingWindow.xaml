@@ -83,12 +83,12 @@
                             <Border Style="{StaticResource BorderModuleArea}">
                                 <StackPanel Margin="5">
                                     <DockPanel Margin="5" ToolTip="模板数据保存Mysql数据库">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding IsUseMySql}"/>
+                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding MySqlSetting.IsUseMySql}"/>
                                         <TextBlock Text="{x:Static properties:Resource.EnableDatabase}"/>
-                                        <DockPanel  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown1" Visibility="{Binding IsUseMySql,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MySql" >
-                                            <ToggleButton x:Name="StatusBarMysql" Style="{StaticResource ButtonDrawingImageMysql}"   Margin="0,-10" IsChecked="{Binding MySqlControl.IsConnect,Mode=OneWay}" Height="20" IsEnabled="False"/>
+                                        <DockPanel  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown1" Visibility="{Binding MySqlSetting.IsUseMySql,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MySql" >
+                                            <ToggleButton x:Name="StatusBarMysql" Style="{StaticResource ButtonDrawingImageMysql}"   Margin="0,-10" IsChecked="{Binding MySqlSetting.MySqlControl.IsConnect,Mode=OneWay}" Height="20" IsEnabled="False"/>
                                         </DockPanel>
-                                        <TextBlock Text="  (启用数据库后，模板等信息会从数据库中读取)" Visibility="{Binding IsUseMySql,Converter={StaticResource bool2VisibilityConverter1}}"  FontSize="8" Margin="0,3,0,0" />
+                                        <TextBlock Text="  (启用数据库后，模板等信息会从数据库中读取)" Visibility="{Binding MySqlSetting.IsUseMySql,Converter={StaticResource bool2VisibilityConverter1}}"  FontSize="8" Margin="0,3,0,0" />
                                     </DockPanel>
 
                                     <DockPanel Margin="5">
@@ -134,7 +134,7 @@
                                         <TextBlock Text="{x:Static properties:Resource.Theme}"/>
                                     </DockPanel>
                                     <DockPanel Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding SoftwareSetting.TransparentWindow}"/>
+                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding ThemeConfig.TransparentWindow}"/>
                                         <TextBlock Text="{x:Static properties:Resource.TransparentWindow}"/>
                                     </DockPanel>
 
@@ -144,17 +144,17 @@
                                         <TextBlock Text="{x:Static properties:Resource.Language}"/>
                                     </DockPanel>
                                     <DockPanel  Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.IsAutoUpdate}"/>
+                                        <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding AutoUpdateConfig.IsAutoUpdate}"/>
                                         <TextBlock Text="{x:Static properties:Resource.CheckUpdatesOnStartup}"/>
                                     </DockPanel>
                                     <DockPanel  Margin="5">
-                                        <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resource.CheckForUpdates}" Command="{Binding AutoUpdater.UpdateCommand}"/>
-                                        <TextBlock Text="{Binding AutoUpdater.LatestVersion}"/>
+                                        <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resource.CheckForUpdates}" Command="{Binding AutoUpdateConfig.AutoUpdater.UpdateCommand}"/>
+                                        <TextBlock Text="{Binding AutoUpdateConfig.AutoUpdater.LatestVersion}"/>
                                         <TextBlock Text="{x:Static properties:Resource.SoftwareVersion}"/>
                                     </DockPanel>
-                                    <ProgressBar Height="15"  Foreground="#B41515" Maximum="100" Minimum="0" Value="{Binding AutoUpdater.ProgressValue}" Background="#373B41" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
+                                    <ProgressBar Height="15"  Foreground="#B41515" Maximum="100" Minimum="0" Value="{Binding AutoUpdateConfig.AutoUpdater.ProgressValue}" Background="#373B41" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
                                     <DockPanel  Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.TransparentWindow}"/>
+                                        <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding ThemeConfig.TransparentWindow}"/>
                                         <TextBlock Text="{x:Static properties:Resource.DisableHardwareAcceleration}"/>
                                     </DockPanel>
                                 </StackPanel>

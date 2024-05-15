@@ -11,11 +11,9 @@ using ColorVision.Update;
 using ColorVision.UserSpace;
 using ColorVision.Wizards;
 using System.Collections.ObjectModel;
-using System.Text.Json.Serialization;
 
 namespace ColorVision.Settings
 {
-    public delegate void UseMySqlHandler(bool IsUseMySql);
     public delegate void UseMQTTHandler(bool IsUseMQTT);
     public delegate void UseRcServicelHandler(bool IsUseRcServicel);
 
@@ -34,12 +32,10 @@ namespace ColorVision.Settings
             MQTTConfig = new MQTTConfig();
             MQTTConfigs = new ObservableCollection<MQTTConfig>();
 
-            MySqlConfig = new MySqlConfig();
-            MySqlConfigs = new ObservableCollection<MySqlConfig>();
-
             RcServiceConfig = new RCServiceConfig();
             RcServiceConfigs = new ObservableCollection<RCServiceConfig>();
         }
+        public static MySqlSetting MySqlSetting => ConfigHandler1.GetInstance().GetRequiredService<MySqlSetting>();  
 
         public bool IsAutoRun { get => Tool.IsAutoRun(GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); set { Tool.SetAutoRun(value, GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); NotifyPropertyChanged(); } }
 
@@ -49,18 +45,13 @@ namespace ColorVision.Settings
 
         public static WizardConfig WizardConfig => WizardConfig.Instance;
 
-        [JsonIgnore]
-        public AutoUpdater AutoUpdater { get;} = AutoUpdater.GetInstance();
+        public static AutoUpdateConfig AutoUpdateConfig => AutoUpdateConfig.Instance;
 
         public ViewConfig ViewConfig { get; } = ViewConfig.GetInstance();
 
         public string? Version { get => _Version; set { _Version = value; NotifyPropertyChanged(); } }
         private string? _Version = string.Empty;
 
-        public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; NotifyPropertyChanged(); UseMySqlChanged?.Invoke(value); } }
-        private bool _IsUseMySql = true;
-
-        public event UseMySqlHandler UseMySqlChanged;
 
         /// <summary>
         /// MQTT
@@ -85,13 +76,6 @@ namespace ColorVision.Settings
         public ObservableCollection<MQTTConfig> MQTTConfigs { get; set; } 
 
 
-        /// <summary>
-        /// MySQL配置
-        /// </summary>
-        public MySqlConfig MySqlConfig { get; set; }
-        public ObservableCollection<MySqlConfig> MySqlConfigs { get; set; }
-
-
         public UserConfig UserConfig { get; set; }
 
         public SolutionSetting SolutionSetting { get; set; } = new SolutionSetting();
@@ -101,11 +85,5 @@ namespace ColorVision.Settings
         public ObservableCollection<RCServiceConfig> RcServiceConfigs { get; set; }
     }
 
-    public class UserManager
-    {
-        public static UserManager Current { get; set; } = new UserManager();
 
-
-        public UserConfig UserConfig { get; set; }
-    }
 }

@@ -82,7 +82,7 @@ namespace ColorVision.MySql.ORM
         public int BulkInsertAsync(DataTable dataTable)
         {
             int count = -1;
-            MySqlConnector.MySqlConnection connection = new(MySqlControl.GetInstance().GetConnectionString() + ";SslMode = none;AllowLoadLocalInfile=True");
+            MySqlConnector.MySqlConnection connection = new(MySqlControl.GetConnectionString() + ";SslMode = none;AllowLoadLocalInfile=True");
             dataTable.TableName = TableName;
             using (connection)
             {

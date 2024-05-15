@@ -19,7 +19,7 @@ namespace ColorVision.MySql
         public MySqlConnection MySqlConnection { get; set; }
         public SoftwareConfig SoftwareConfig { get; set; }
 
-        public MySqlConfig Config { get => SoftwareConfig.MySqlConfig; }
+        public static MySqlConfig Config => MySqlSetting.Instance.MySqlConfig; 
 
         public MySqlControl()
         {
@@ -52,7 +52,8 @@ namespace ColorVision.MySql
                 return Task.FromResult(false);
             }
         }
-        public string GetConnectionString() => GetConnectionString(Config);
+        public static string GetConnectionString() => GetConnectionString(Config);
+
         public static string GetConnectionString(MySqlConfig MySqlConfig,int timeout = 3 )
         {
             string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={timeout}";

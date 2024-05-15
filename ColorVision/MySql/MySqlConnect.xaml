@@ -31,26 +31,36 @@
                 </Grid.ColumnDefinitions>
                 <Border x:Name="ListViewMySqlBorder" Background="{DynamicResource SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Visibility="Collapsed" Width="170"  Margin="5" CornerRadius="10,10,5,5">
                     <Grid>
-                        <ListView x:Name="ListViewMySql"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
+                        <ListView x:Name="ListViewMySql" Padding="5" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
                             <ListView.Resources >
                                 <ContextMenu x:Key="ContextMenuItem">
                                     <MenuItem Header="{x:Static properties:Resource.Delete}"  Click="MenuItem_Click_Delete" Tag="{Binding .}" />
                                 </ContextMenu>
+                                <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </Style>
                             </ListView.Resources>
                             <ListView.ItemContainerStyle>
+
                                 <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
                                     <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
                                 </Style>
                             </ListView.ItemContainerStyle>
-                            <ListView.ItemTemplate>
-                                <DataTemplate DataType="{x:Type local:MySqlConfig}" >
-                                    <Border>
-                                        <TextBlock  Text="{Binding Name}" TextTrimming = "CharacterEllipsis"/>
-                                    </Border>
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
+                            <ListView.View >
+                                <GridView>
+                                    <GridViewColumn>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate DataType="{x:Type local:MySqlConfig}" >
+                                                <Border>
+                                                    <TextBlock  Text="{Binding Name}" TextTrimming = "CharacterEllipsis"/>
+                                                </Border>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
                         </ListView>
-                        <StackPanel Margin="0,0,0,-1"  VerticalAlignment="Bottom">
+                        <StackPanel Margin="0,0,0,-1" VerticalAlignment="Bottom">
                             <Button Content="{x:Static properties:Resource.CreateNewConfigurationFile}" Click="Button_Click_New"   />
                             <Button Content="{x:Static properties:Resource.CopyConfigurationFile}" Click="Button_Click_Copy" />
                         </StackPanel>
@@ -83,7 +93,7 @@
 
                             <DockPanel Margin="5,2">
                                 <TextBlock Text="{x:Static properties:Resource.Password}" VerticalAlignment="Center" Width="120"/>
-                                <PasswordBox x:Name="PasswordBox1" ToolTip="{x:Static properties:Resource.Password}"  VerticalAlignment="Center"  HorizontalAlignment="Left" Password=""  Width="180"  BorderThickness="0,0,0,1" />
+                                <hc:PasswordBox x:Name="PasswordBox1" ToolTip="{x:Static properties:Resource.Password}" ShowEyeButton="True" VerticalAlignment="Center"  HorizontalAlignment="Left" Password=""  Width="180"  BorderThickness="0,0,0,1" />
                             </DockPanel>
                             <DockPanel Margin="5,2">
                                 <TextBlock Text=""  Width="120"/>

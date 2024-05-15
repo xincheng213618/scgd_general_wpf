@@ -26,7 +26,7 @@ namespace ColorVision.Services.Templates
         {
             AoiParams = new ObservableCollection<TemplateModel<AOIParam>>();
 
-            ConfigHandler.GetInstance().SoftwareConfig.UseMySqlChanged += (s) =>
+            MySqlSetting.Instance.UseMySqlChanged += (s) =>
             {
                 Thread thread = new(async () =>
                 {
@@ -43,7 +43,7 @@ namespace ColorVision.Services.Templates
             Init();
             Application.Current.MainWindow.Closed += (s, e) =>
             {
-                if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
+                if (MySqlSetting.Instance.IsUseMySql)
                     return;
             };
         }
@@ -84,7 +84,7 @@ namespace ColorVision.Services.Templates
         public static void LoadModParam<T>(ObservableCollection<TemplateModel<T>> ParamModes, string ModeType) where T : ParamBase, new()
         {
             ParamModes.Clear();
-            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
+            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
                 ModMasterDao masterFlowDao = new(ModeType);
 

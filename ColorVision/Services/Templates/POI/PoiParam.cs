@@ -28,7 +28,7 @@ namespace ColorVision.Services.Templates.POI
 
         public RelayCommand Command => new(a => {
             SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-            if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
+            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;

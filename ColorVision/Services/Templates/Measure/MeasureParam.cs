@@ -26,7 +26,7 @@ namespace ColorVision.Services.Templates.Measure
         public RelayCommand Command => new(a =>
         {
             SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-            if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
+            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
@@ -57,7 +57,7 @@ namespace ColorVision.Services.Templates.Measure
         public static ObservableCollection<TemplateModel<MeasureParam>> LoadMeasureParams()
         {
             Params.Clear();
-            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
+            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
                 List<MeasureMasterModel> devices = MeasureMasterDao.Instance.GetAllByTenantId(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
                 foreach (var dbModel in devices)

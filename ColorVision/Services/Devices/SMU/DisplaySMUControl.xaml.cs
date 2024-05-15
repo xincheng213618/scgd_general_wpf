@@ -209,11 +209,10 @@ namespace ColorVision.Services.Devices.SMU
         {
             if (sender is Control control)
             {
-                SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
-                if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
+                if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
-                    MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision");
+                    MessageBox.Show(ColorVision.Properties.Resource.DatabaseConnectionFailed, "ColorVision");
                     return;
                 }
                 switch (control.Tag?.ToString() ?? string.Empty)

@@ -31,7 +31,7 @@ namespace ColorVision.Services.Flow
 
         public RelayCommand Command => new(a => {
             SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-            if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
+            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
@@ -87,7 +87,7 @@ namespace ColorVision.Services.Flow
         public static ObservableCollection<TemplateModel<FlowParam>> LoadFlowParam()
         {
             Params.Clear();
-            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
+            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
                 List<ModMasterModel> flows = masterFlowDao.GetAll(UserCenter.GetInstance().TenantId);
                 foreach (var dbModel in flows)

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
@@ -50,7 +51,7 @@ namespace ColorVision.Services.Devices.Spectrum
         {
             ModDetailDao detailDao = new();
             CalibrationParamModes.Clear();
-            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
+            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
                 ModMasterDao masterFlowDao = new(ModeType);
                 List<ModMasterModel> smus = masterFlowDao.GetResourceAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId, resourceId);
