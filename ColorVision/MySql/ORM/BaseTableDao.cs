@@ -1,4 +1,5 @@
 ﻿using log4net;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -33,7 +34,7 @@ namespace ColorVision.MySql.ORM
             {
                 Model2Row(item, row);
                 int ret = Save(dataTable);
-                item.Id = dataTable.Rows[0].Field<int>(PKField);
+                item.Id = dataTable.Rows[0].Field<int>(PKField);    
                 return ret;
             }
             catch (Exception ex)
@@ -42,6 +43,8 @@ namespace ColorVision.MySql.ORM
                 return -1;
             }
         }
+
+
 
         public T? GetById(int id) => GetByParam(new Dictionary<string, object> { { "id", id } });
 
@@ -154,9 +157,13 @@ namespace ColorVision.MySql.ORM
                 log.Debug(ex);
                 return list;
             }
-
         }
 
+        public int DeleteAllByPid(int pid, bool IsLogicDel = true)
+        {
+            string sql = IsLogicDel ? $"UPDATE {TableName} SET is_delete = 1 WHERE pid = @pid" : $"DELETE FROM {TableName} WHERE pid = @pid";
+            return ExecuteNonQuery(sql, new Dictionary<string, object> { { "pid", pid } });
+        }
 
         public int DeleteById(int id, bool IsLogicDel = true)
         {

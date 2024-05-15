@@ -7,7 +7,6 @@ namespace ColorVision.Services.Dao.Validate
     {
         public int? Pid { get; set; }
         public string? Code { get; set; }
-
         public float ValMax { get; set; }
         public float ValMin { get; set; }
         public string? ValEqual { get; set; }
@@ -44,12 +43,10 @@ namespace ColorVision.Services.Dao.Validate
             {
                 row["id"] = item.Id;
                 row["pid"] = item.Pid;
-                if (item.Code != null)
-                    row["code"] = item.Code;
+                row["code"] = DataTableExtension.IsDBNull(item.Code);
                 row["val_max"] = item.ValMax;
                 row["val_min"] = item.ValMin;
-                if (item.ValEqual != null)
-                    row["val_equal"] = item.ValEqual;
+                row["val_equal"] = DataTableExtension.IsDBNull(item.ValEqual);
                 row["val_radix"] = item.ValRadix;
                 row["val_type"] = item.ValType;
                 row["is_enable"] = item.IsEnable;

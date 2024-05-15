@@ -101,7 +101,7 @@ namespace ColorVision.Services.Templates
 
         public static T? AddParamMode<T>(string code, string Name, int resourceId =-1) where T : ParamBase, new()
         {
-            ModMasterModel modMaster = new(code, Name, UserConfig.Instance.TenantId);
+            ModMasterModel modMaster = new ModMasterModel(code, Name, UserConfig.Instance.TenantId);
             if (resourceId>0)
                 modMaster.ResourceId = resourceId;
             Save(modMaster);

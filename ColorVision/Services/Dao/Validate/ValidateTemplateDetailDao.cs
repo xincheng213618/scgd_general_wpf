@@ -50,7 +50,7 @@ namespace ColorVision.Services.Dao.Validate
         {
             if (item != null)
             {
-                row["id"] = item.Id;
+                if (item.Id > 0) row["id"] = item.Id;
                 row["dic_pid"] = item.DicPid;
                 row["pid"] = item.Pid;
                 if (item.Code != null)
