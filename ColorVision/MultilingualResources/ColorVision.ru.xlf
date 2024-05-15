@@ -496,7 +496,7 @@
           <target state="new">Файл(Ф)</target>
         </trans-unit>
         <trans-unit id="MenuFlow" translate="yes" xml:space="preserve">
-          <source>流程(_F)</source>
+          <source>流程(_L)</source>
           <target state="new">Процесс(Ф)</target>
         </trans-unit>
         <trans-unit id="MenuFocusPoints" translate="yes" xml:space="preserve">

@@ -652,7 +652,7 @@
     <value>プロセスエンジンのデバッグウィンドウ</value>
   </data>
   <data name="MenuFlow" xml:space="preserve">
-    <value>プロセス(F)</value>
+    <value>プロセス(_L)</value>
   </data>
   <data name="Create" xml:space="preserve">
     <value>作成する</value>

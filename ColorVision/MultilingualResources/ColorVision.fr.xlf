@@ -496,8 +496,8 @@
           <target state="new">Fichier(F)</target>
         </trans-unit>
         <trans-unit id="MenuFlow" translate="yes" xml:space="preserve">
-          <source>流程(_F)</source>
-          <target state="new">_Processus</target>
+          <source>流程(_L)</source>
+          <target state="new">F_low</target>
         </trans-unit>
         <trans-unit id="MenuFocusPoints" translate="yes" xml:space="preserve">
           <source>发光区检测模板设置(_P)</source>
