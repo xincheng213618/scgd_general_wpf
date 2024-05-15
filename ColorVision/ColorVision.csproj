@@ -73,7 +73,7 @@
     <PackageReference Include="MahApps.Microsoft.DwayneNeed" Version="1.0.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
     <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.77" />
-    <PackageReference Include="MQTTnet" Version="4.3.3.952" />
+    <PackageReference Include="MQTTnet" Version="4.3.4.1084" />
     <PackageReference Include="MySql.Data" Version="8.4.0" />
     <PackageReference Include="MySqlConnector" Version="2.3.7" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
