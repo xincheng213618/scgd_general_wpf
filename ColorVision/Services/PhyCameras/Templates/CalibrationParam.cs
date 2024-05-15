@@ -172,6 +172,13 @@ namespace ColorVision.Services.PhyCameras.Templates
         public CalibrationControl CalibrationControl { get; set; }
         public override UserControl GetUserControl() => CalibrationControl;
 
+
+        public override void SetUserControlDataContext(int index)
+        {
+            if (index < 0 || index >= TemplateParams.Count) return;
+            CalibrationControl.Initializedsss(Device, TemplateParams[index].Value);
+        }
+
         public ICalibrationService<BaseResourceObject> Device { get; set; }
 
 

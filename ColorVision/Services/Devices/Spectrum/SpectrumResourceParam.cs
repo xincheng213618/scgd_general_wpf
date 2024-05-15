@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
+using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.UserSpace;
@@ -21,6 +22,11 @@ namespace ColorVision.Services.Devices.Spectrum
 
         public SpectrumResourceControl SpectrumResourceControl { get; set; }
         public override UserControl GetUserControl() => SpectrumResourceControl;
+        public override void SetUserControlDataContext(int index)
+        {
+            if (index < 0 || index >= TemplateParams.Count) return;
+            SpectrumResourceControl.Initializedsss(Device, TemplateParams[index].Value);
+        }
 
         public DeviceSpectrum Device { get; set; }
 

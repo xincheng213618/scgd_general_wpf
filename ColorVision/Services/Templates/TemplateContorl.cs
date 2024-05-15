@@ -57,48 +57,6 @@ namespace ColorVision.Services.Templates
         }
 
 
-        public static void Save2DB<T>(ObservableCollection<TemplateModel<T>> keyValuePairs) where T : ParamBase
-        {
-            foreach (var item in keyValuePairs)
-            {
-                Save2DB(item.Value);
-            }
-        }
-
-        public static void Save2DB<T>(T value) where T : ParamBase
-        {
-            if (ModMasterDao.Instance.GetById(value.Id) is ModMasterModel modMasterModel && modMasterModel.Pcode != null)
-            {
-                modMasterModel.Name = value.Name;
-                ModMasterDao modMasterDao = new(modMasterModel.Pcode);
-                modMasterDao.Save(modMasterModel);
-            }
-            List<ModDetailModel> list = new();
-            value.GetDetail(list);
-            ModDetailDao.Instance.UpdateByPid(value.Id, list);
-        }
-
-
-        public static void LoadModParam<T>(ObservableCollection<TemplateModel<T>> ParamModes, string ModeType) where T : ParamBase, new()
-        {
-            ParamModes.Clear();
-            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
-            {
-                ModMasterDao masterFlowDao = new(ModeType);
-
-                List<ModMasterModel> smus = masterFlowDao.GetAll(UserConfig.Instance.TenantId);
-                foreach (var dbModel in smus)
-                {
-                    List<ModDetailModel> smuDetails = ModDetailDao.Instance.GetAllByPid(dbModel.Id);
-                    foreach (var dbDetail in smuDetails)
-                    {
-                        dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
-                    }
-                    ParamModes.Add(new TemplateModel<T>(dbModel.Name ?? "default", (T)Activator.CreateInstance(typeof(T), new object[] { dbModel, smuDetails })));
-                }
-            }
-        }
-
         public static T? AddParamMode<T>(string code, string Name, int resourceId =-1) where T : ParamBase, new()
         {
             ModMasterModel modMaster = new ModMasterModel(code, Name, UserConfig.Instance.TenantId);

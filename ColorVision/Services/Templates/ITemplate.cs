@@ -1,5 +1,9 @@
-﻿using ColorVision.Common.Utilities;
+﻿#pragma warning disable CA8604
+
+using ColorVision.Common.Utilities;
+using ColorVision.MySql;
 using ColorVision.Services.Dao;
+using ColorVision.UserSpace;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -59,7 +63,13 @@ namespace ColorVision.Services.Templates
 
         }
         public bool IsUserControl { get; set; }
+
         public virtual UserControl GetUserControl()
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual void SetUserControlDataContext(int index)
         {
             throw new NotImplementedException();
         }
@@ -94,10 +104,45 @@ namespace ColorVision.Services.Templates
 
         public override void Save()
         {
-            TemplateControl.Save2DB(TemplateParams);
+            foreach (var item in TemplateParams)
+            {
+                if (ModMasterDao.Instance.GetById(item.Value.Id) is ModMasterModel modMasterModel && modMasterModel.Pcode != null)
+                {
+                    modMasterModel.Name = item.Value.Name;
+                    ModMasterDao modMasterDao = new(modMasterModel.Pcode);
+                    modMasterDao.Save(modMasterModel);
+                }
+                List<ModDetailModel> list = new();
+                item.Value.GetDetail(list);
+                ModDetailDao.Instance.UpdateByPid(item.Value.Id, list);
+            }
         }
 
-        public override void Load() => TemplateControl.LoadModParam(TemplateParams,Code);
+
+        public override void Load() => LoadModParam(Code);
+
+        public void LoadModParam(string ModeType)
+        {
+            TemplateParams.Clear();
+            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
+            {
+                ModMasterDao masterFlowDao = new(ModeType);
+
+                List<ModMasterModel> smus = masterFlowDao.GetAll(UserConfig.Instance.TenantId);
+                foreach (var dbModel in smus)
+                {
+                    List<ModDetailModel> smuDetails = ModDetailDao.Instance.GetAllByPid(dbModel.Id);
+                    foreach (var dbDetail in smuDetails)
+                    {
+                        dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
+                    }
+                    if (dbModel != null && smuDetails !=null)
+                    {
+                        TemplateParams.Add(new TemplateModel<T>(dbModel.Name ?? "default", (T)Activator.CreateInstance(typeof(T), new object[] { dbModel, smuDetails })));
+                    }
+                }
+            }
+        }
 
         public override void Delete(int index)
         {

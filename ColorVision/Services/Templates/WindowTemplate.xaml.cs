@@ -78,19 +78,15 @@ namespace ColorVision.Services.Templates
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
-                if (ITemplate is TemplateCalibrationParam template)
+                if (ITemplate.IsUserControl)
                 {
-                    template.CalibrationControl.Initializedsss(template.Device, template.TemplateParams[listView.SelectedIndex].Value);
-                }
-                else if (ITemplate is TemplateSpectrumResourceParam templateSpectrumResourceParam)
-                {
-                    templateSpectrumResourceParam.SpectrumResourceControl.Initializedsss(templateSpectrumResourceParam.Device, templateSpectrumResourceParam.TemplateParams[listView.SelectedIndex].Value);
+                    ITemplate.SetUserControlDataContext(listView.SelectedIndex);
                 }
                 else
                 {
                     PropertyGrid1.SelectedObject = ITemplate.GetValue(listView.SelectedIndex);
-
                 }
+
 
                 //if (UserControl is MeasureParamControl mpc && MeasureParam.Params[listView.SelectedIndex].Value is MeasureParam mp)
                 //{

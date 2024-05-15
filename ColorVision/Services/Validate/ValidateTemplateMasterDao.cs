@@ -2,7 +2,7 @@
 using System;
 using System.Data;
 
-namespace ColorVision.Services.DAO.Validate
+namespace ColorVision.Services.Validate
 {
     public class ValidateTemplateMasterModel : PKModel
     {
@@ -30,7 +30,7 @@ namespace ColorVision.Services.DAO.Validate
                 Name = item.Field<string>("name"),
                 Code = item.Field<string>("code"),
                 TenantId = item.Field<int>("tenant_id"),
-                Remark =item.Field<string?>("remark"),
+                Remark = item.Field<string?>("remark"),
                 CreateDate = item.Field<DateTime?>("create_date"),
             };
 
