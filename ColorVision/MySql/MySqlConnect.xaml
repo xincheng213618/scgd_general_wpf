@@ -93,7 +93,7 @@
 
                             <DockPanel Margin="5,2">
                                 <TextBlock Text="{x:Static properties:Resource.Password}" VerticalAlignment="Center" Width="120"/>
-                                <PasswordBox x:Name="PasswordBox1" ToolTip="{x:Static properties:Resource.Password}"  VerticalAlignment="Center"  HorizontalAlignment="Left" Password=""  Width="180"  BorderThickness="0,0,0,1" />
+                                <hc:PasswordBox x:Name="PasswordBox1" ToolTip="{x:Static properties:Resource.Password}" ShowEyeButton="True" VerticalAlignment="Center"  HorizontalAlignment="Left" Password=""  Width="180"  BorderThickness="0,0,0,1" />
                             </DockPanel>
                             <DockPanel Margin="5,2">
                                 <TextBlock Text=""  Width="120"/>
