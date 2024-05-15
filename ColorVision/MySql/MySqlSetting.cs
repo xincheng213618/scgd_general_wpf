@@ -2,7 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Settings;
 using ColorVision.UI;
-using log4net;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.MySql

@@ -64,12 +64,12 @@ namespace ColorVision.MQTT
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            MQTTConfig= ConfigHandler.GetInstance().SoftwareConfig.MQTTConfig;
+            MQTTConfig= MQTTSetting.Instance.MQTTConfig;
             GridMQTT.DataContext = MQTTConfig;
             MQTTConfigBackUp = new MQTTConfig();
             MQTTConfig.CopyTo(MQTTConfigBackUp);
 
-            MQTTConfigs = ConfigHandler.GetInstance().SoftwareConfig.MQTTConfigs;
+            MQTTConfigs = MQTTSetting.Instance.MQTTConfigs;
             ListViewMQTT.ItemsSource = MQTTConfigs;
 
             MQTTConfigs.Insert(0, MQTTConfig);
@@ -123,7 +123,7 @@ namespace ColorVision.MQTT
             {
                 MQTTConfig = MQTTConfigs[listView.SelectedIndex];
                 GridMQTT.DataContext = MQTTConfig;
-                ConfigHandler.GetInstance().SoftwareConfig.MQTTConfig = MQTTConfig;
+                MQTTSetting.Instance.MQTTConfig = MQTTConfig;
             }
 
         }

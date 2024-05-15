@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Settings;
 using log4net;
 using MySql.Data.MySqlClient;
 using System;
@@ -17,13 +16,11 @@ namespace ColorVision.MySql
         public static MySqlControl GetInstance() { lock (_locker) { return _instance ??= new MySqlControl(); } }
 
         public MySqlConnection MySqlConnection { get; set; }
-        public SoftwareConfig SoftwareConfig { get; set; }
 
         public static MySqlConfig Config => MySqlSetting.Instance.MySqlConfig; 
 
         public MySqlControl()
         {
-            SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
         }
 
         public event EventHandler MySqlConnectChanged;

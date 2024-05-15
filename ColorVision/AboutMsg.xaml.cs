@@ -1,11 +1,11 @@
 ﻿
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI.HotKey;
 using ColorVision.Properties;
-using ColorVision.Settings;
+using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using ColorVision.UI.HotKey;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -14,7 +14,6 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using ColorVision.Themes;
 
 namespace ColorVision
 {

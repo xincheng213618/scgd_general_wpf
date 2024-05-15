@@ -1,13 +1,11 @@
-﻿using ColorVision.UI.HotKey;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.MQTT;
 using ColorVision.MySql;
 using ColorVision.Services.RC;
 using ColorVision.Settings;
+using ColorVision.UI;
 using System.Diagnostics;
 using System.Windows;
-using System.Windows.Input;
-using ColorVision.UI;
-using ColorVision.Common.MVVM;
 
 namespace ColorVision.Wizards
 {

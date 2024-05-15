@@ -1,25 +1,18 @@
 ﻿#pragma warning disable CS4014
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI.HotKey;
-using ColorVision.MQTT;
 using ColorVision.Properties;
-using ColorVision.Services.Msg;
-using ColorVision.Settings;
-using ColorVision.Solution;
 using ColorVision.UI;
-using Newtonsoft.Json;
+using ColorVision.UI.HotKey;
 using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision
+namespace ColorVision.MQTT
 {
-
-
-    public class HotKeyNewCreate : IHotKey, IMenuItem
+    public class EXportMQTTLog : IHotKey, IMenuItem
     {
 
         public string? OwnerGuid => "Help";
@@ -50,18 +43,13 @@ namespace ColorVision
     {
 
         MQTTControl MQTTControl { get; set; }
-
-        public SoftwareConfig SoftwareConfig { get; set; }
-        public MQTTSetting MQTTSetting { get => SoftwareConfig.MQTTSetting; }
-
         public MQTTLog()
         {
             InitializeComponent();
             MQTTControl = MQTTControl.GetInstance();
             MQTTControl.MQTTMsgChanged += ShowLog;
             TopicListView.ItemsSource = MQTTControl.SubscribeTopic;
-            SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-            DataContext = ConfigHandler.GetInstance();
+            DataContext = MQTTSetting.Instance;
             Title += $"  {MQTTControl.Config.Host}_{MQTTControl.Config.Port}";
         }
 
@@ -72,20 +60,11 @@ namespace ColorVision
         {
             Application.Current.Dispatcher.BeginInvoke(new Action(() =>
             {
-                if (MQTTSetting.IsShieldHeartbeat && !string.IsNullOrWhiteSpace(resultData_MQTT.Payload.ToString()))
+                if (MQTTSetting.Instance.IsShieldHeartbeat && !string.IsNullOrWhiteSpace(resultData_MQTT.Payload.ToString()))
                 {
-                    try
-                    {
-                        MsgReturn json = JsonConvert.DeserializeObject<MsgReturn>(resultData_MQTT.Payload.ToString() ?? string.Empty);
-                        if (json != null && json.EventName == "Heartbeat")
-                            return;
-                    }catch 
-                    {
-                        
-                    }
 
                 }
-                if (MQTTSetting.ShowSelect && (TopicListView.SelectedIndex<0 ||(TopicListView.SelectedIndex >-1&&resultData_MQTT.Topic.ToString()!= MQTTControl.SubscribeTopic[TopicListView.SelectedIndex])))
+                if (MQTTSetting.Instance.ShowSelect && (TopicListView.SelectedIndex<0 ||(TopicListView.SelectedIndex >-1&&resultData_MQTT.Topic.ToString()!= MQTTControl.SubscribeTopic[TopicListView.SelectedIndex])))
                 {
                     return;
                 }

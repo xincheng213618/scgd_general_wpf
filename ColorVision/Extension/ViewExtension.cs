@@ -1,12 +1,7 @@
-﻿using ColorVision.Settings;
-using ColorVision.UI.Views;
+﻿using ColorVision.UI.Views;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Controls;
-using Xceed.Wpf.Toolkit.Zoombox;
 
 namespace ColorVision.Extension
 {

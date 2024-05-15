@@ -14,7 +14,6 @@ namespace ColorVision.Services.Msg
         public event MsgRecordStateChangedHandler MsgRecordStateChanged;
         public event MsgRecordSucessChangedHandler? MsgSucessed;
         public void ClearMsgRecordSucessChangedHandler() => MsgSucessed = null;
-
         public string SubscribeTopic { get; set; }
         public string SendTopic { get; set; }
 

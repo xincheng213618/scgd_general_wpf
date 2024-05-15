@@ -20,6 +20,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.Services.Msg;
 
 namespace ColorVision.Settings
 {
@@ -220,7 +221,7 @@ namespace ColorVision.Settings
         }
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            SoftwareConfig.MQTTSetting.MsgRecords.Clear();
+            MsgConfig.Instance.MsgRecords.Clear();
             ConfigHandler.GetInstance().SaveConfig();
             MessageBox.Show("MQTT历史记录清理完毕", "ColorVision");
         }

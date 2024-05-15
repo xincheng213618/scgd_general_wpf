@@ -107,7 +107,7 @@ namespace ColorVision
                 await Task.Delay(10);
 
             }
-            if (SoftwareConfig.IsUseMQTT)
+            if (MQTTSetting.Instance.IsUseMQTT)
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {

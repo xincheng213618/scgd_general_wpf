@@ -192,7 +192,7 @@ namespace ColorVision.Services.Core
 
             Application.Current.Dispatcher.Invoke(() =>
             {
-                MQTTSetting.MsgRecords.Insert(0, msgRecord);
+                MsgConfig.Instance.MsgRecords.Insert(0, msgRecord);
                 MsgRecords.Add(msgRecord);
             });
 

@@ -27,11 +27,6 @@ namespace ColorVision.Settings
             SoftwareSetting = new SoftwareSetting();
             UserConfig = new UserConfig();
 
-            MQTTSetting = new MQTTSetting();
-
-            MQTTConfig = new MQTTConfig();
-            MQTTConfigs = new ObservableCollection<MQTTConfig>();
-
             RcServiceConfig = new RCServiceConfig();
             RcServiceConfigs = new ObservableCollection<RCServiceConfig>();
         }
@@ -52,12 +47,6 @@ namespace ColorVision.Settings
         public string? Version { get => _Version; set { _Version = value; NotifyPropertyChanged(); } }
         private string? _Version = string.Empty;
 
-
-        /// <summary>
-        /// MQTT
-        /// </summary>
-        public bool IsUseMQTT { get => _IsUseMQTT; set { _IsUseMQTT = value; NotifyPropertyChanged(); } }
-        private bool _IsUseMQTT = true;
         /// <summary>
         /// 注册中心
         /// </summary>
@@ -70,11 +59,7 @@ namespace ColorVision.Settings
         public static SystemMonitorSetting SystemMonitorSetting => ConfigHandler1.GetInstance().GetRequiredService<SystemMonitorSetting>();
 
 
-        public MQTTSetting MQTTSetting { get; set; }
-        public MQTTConfig MQTTConfig { get; set; }
-
-        public ObservableCollection<MQTTConfig> MQTTConfigs { get; set; } 
-
+        public MQTTSetting MQTTSetting { get; set; } = new MQTTSetting();
 
         public UserConfig UserConfig { get; set; }
 

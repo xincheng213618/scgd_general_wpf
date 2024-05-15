@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Settings;
 using log4net;
 using MQTTnet;
 using MQTTnet.Client;
@@ -22,16 +21,14 @@ namespace ColorVision.MQTT
 
         public event MQTTMsgHandler MQTTMsgChanged;
 
-        public SoftwareConfig SoftwareConfig { get; set; }
-        public MQTTConfig Config { get => SoftwareConfig.MQTTConfig; }
-        public MQTTSetting Setting { get => SoftwareConfig.MQTTSetting; }
+        public static MQTTConfig Config  => MQTTSetting.Instance.MQTTConfig;
+        public static MQTTSetting Setting => MQTTSetting.Instance;
 
         public IMqttClient MQTTClient { get; set; }
 
 
         private MQTTControl()
         {
-            SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
         }
 
         public bool IsConnect { get => _IsConnect; private set { _IsConnect = value; MQTTConnectChanged?.Invoke(this, new EventArgs());  NotifyPropertyChanged(); } }

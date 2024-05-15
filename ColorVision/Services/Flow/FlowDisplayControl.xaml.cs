@@ -33,13 +33,11 @@ namespace ColorVision.Services.Flow
             InitializeComponent();
         }
 
-        public ConfigHandler ConfigHandler { get; set; }
         MenuItem menuItem { get; set; }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            ConfigHandler = ConfigHandler.GetInstance();
-            MQTTConfig mQTTConfig = ConfigHandler.SoftwareConfig.MQTTConfig;
+            MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
 
             using System.Drawing.Graphics graphics = System.Drawing.Graphics.FromHwnd(IntPtr.Zero);

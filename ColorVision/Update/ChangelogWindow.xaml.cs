@@ -1,11 +1,9 @@
-﻿using ColorVision.Update;
-using System;
+﻿using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
-using ColorVision.Wizards;
 
 namespace ColorVision.Update
 {

@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Settings;
 using ColorVision.UI;
 using log4net;
 using System;
@@ -306,7 +305,6 @@ namespace ColorVision.Update
         private static void RestartApplication(string downloadPath)
         {
             // 保存数据库配置
-            ConfigHandler.GetInstance().SaveConfig();
             ConfigHandler1.GetInstance().SaveConfigs();
 
 

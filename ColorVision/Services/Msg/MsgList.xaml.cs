@@ -36,6 +36,40 @@ namespace ColorVision.Services.Msg
         public RelayCommand Command => new(a => Execute());
     }
 
+    public class MsgConfig : ViewModelBase
+    {
+        public static MsgConfig Instance => new MsgConfig();
+
+        private static readonly object _locker = new();
+
+        public MsgConfig()
+        {
+            var timer = new System.Timers.Timer
+            {
+                Interval = TimeSpan.FromSeconds(1).TotalMilliseconds,
+                AutoReset = true,
+            };
+            timer.Elapsed += (s, e) =>
+            {
+                lock (_locker)
+                {
+                    int itemsToRemoveCount = MsgRecords.Count - CacheLength;
+                    if (itemsToRemoveCount > 0)
+                        for (int i = 0; i < itemsToRemoveCount; i++)
+                            if (MsgRecords.Count > 1)
+                                Application.Current.Dispatcher.Invoke(() => MsgRecords.RemoveAt(MsgRecords.Count - 1));
+                }
+            };
+            timer.Start();
+        }
+
+        public int CacheLength { get => _CacheLength; set { _CacheLength = value; NotifyPropertyChanged(); } }
+        private int _CacheLength = 1000;
+
+        [System.Text.Json.Serialization.JsonIgnore]
+        public ObservableCollection<MsgRecord> MsgRecords { get; set; } = new ObservableCollection<MsgRecord>();
+    }
+
 
     /// <summary>
     /// MsgList.xaml 的交互逻辑
@@ -43,7 +77,6 @@ namespace ColorVision.Services.Msg
     public partial class MsgList : Window
     {
         public ObservableCollection<MsgRecord> MsgRecords { get; set; }
-        public MQTTControl MQTTControl { get; set; }
 
 
         public MsgList()
@@ -53,8 +86,7 @@ namespace ColorVision.Services.Msg
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            MQTTControl = MQTTControl.GetInstance();
-            MsgRecords = MQTTControl.Setting.MsgRecords;
+            MsgRecords = MsgConfig.Instance.MsgRecords;
             ListView1.ItemsSource = MsgRecords;
         }
 
@@ -96,7 +128,7 @@ namespace ColorVision.Services.Msg
             if (sender is MenuItem menuItem && menuItem.Tag is MsgRecord msgRecord)
             {
                 string json = JsonConvert.SerializeObject(msgRecord.MsgSend, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-                Task.Run(() => MQTTControl.PublishAsyncClient(msgRecord.SendTopic, json, false));
+                Task.Run(() => MQTTControl.GetInstance().PublishAsyncClient(msgRecord.SendTopic, json, false));
             }
         }
 
@@ -105,7 +137,7 @@ namespace ColorVision.Services.Msg
             if (sender is MenuItem menuItem && menuItem.Tag is MsgRecord msgRecord)
             {
                 string json = JsonConvert.SerializeObject(msgRecord.MsgReturn, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-                Task.Run(() => MQTTControl.PublishAsyncClient(msgRecord.SubscribeTopic, json, false));
+                Task.Run(() => MQTTControl.GetInstance().PublishAsyncClient(msgRecord.SubscribeTopic, json, false));
             }
         }
 
