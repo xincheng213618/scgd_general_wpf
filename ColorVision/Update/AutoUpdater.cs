@@ -123,7 +123,7 @@ namespace ColorVision.Update
                 {
                     string CHANGELOG = await GetChangeLog(CHANGELOGUrl);
                     string versionPattern = $"## \\[{LatestVersion}\\].*?\\n(.*?)(?=\\n## |$)";
-                    Match match = Regex.Match(LatestVersion.ToString(), versionPattern, RegexOptions.Singleline);
+                    Match match = Regex.Match(CHANGELOG??string.Empty, versionPattern, RegexOptions.Singleline);
 
                     if (match.Success)
                     {
@@ -132,7 +132,7 @@ namespace ColorVision.Update
 
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            if (MessageBox.Show($"{Properties.Resource.NewVersionFound}{LatestVersion},{changeLogForCurrentVersion},{Properties.Resource.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            if (MessageBox.Show($"{changeLogForCurrentVersion}{Environment.NewLine} {Properties.Resource.ConfirmUpdate}?",$"{ Properties.Resource.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
                                 Update(LatestVersion, Path.GetTempPath());
                             }
