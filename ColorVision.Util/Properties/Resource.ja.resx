@@ -141,9 +141,6 @@
   <data name="Theme" xml:space="preserve">
     <value>テーマ</value>
   </data>
-  <data name="UseSystem" xml:space="preserve">
-    <value>システムのテーマを使用する</value>
-  </data>
   <data name="ThemePink" xml:space="preserve">
     <value>ピンク</value>
   </data>
@@ -152,5 +149,8 @@
   </data>
   <data name="MenuLanguage" xml:space="preserve">
     <value>言語(_L)</value>
+  </data>
+  <data name="ThemeUseSystem" xml:space="preserve">
+    <value>システムのテーマを使用する</value>
   </data>
 </root>

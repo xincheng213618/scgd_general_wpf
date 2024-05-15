@@ -21,7 +21,7 @@ namespace ColorVision.Services.Devices.Motor
           
             EditCommand = new RelayCommand(a =>
             {
-                EditMotor window = new EditMotor(this);
+                EditMotor window = new(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();

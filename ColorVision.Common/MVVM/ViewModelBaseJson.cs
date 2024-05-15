@@ -10,7 +10,7 @@ namespace ColorVision.Common.MVVM.Json
 {
     public static class Extensions
     {
-        private static JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions() { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
+        private static JsonSerializerOptions jsonSerializerOptions = new() { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
 
         public static string ToJson(this ViewModelBase viewModelBase, JsonSerializerOptions? options = null)
         {

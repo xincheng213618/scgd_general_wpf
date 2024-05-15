@@ -157,4 +157,10 @@
   <data name="AutoAdjustColumnWidth" xml:space="preserve">
     <value>自动调整列宽</value>
   </data>
+  <data name="MenuTheme" xml:space="preserve">
+    <value>主题(_H)</value>
+  </data>
+  <data name="MenuLanguage" xml:space="preserve">
+    <value>语言(_L)</value>
+  </data>
 </root>

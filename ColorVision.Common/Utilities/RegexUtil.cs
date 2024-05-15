@@ -39,7 +39,7 @@ namespace ColorVision.Common.Utilities
                 }
 
                 string birth = IDcardNo.Substring(6, 8).Insert(6, "-").Insert(4, "-");
-                DateTime time = new DateTime();
+                DateTime time = new();
                 if (DateTime.TryParse(birth, out time) == false)
                 {
                     return false;//生日验证  

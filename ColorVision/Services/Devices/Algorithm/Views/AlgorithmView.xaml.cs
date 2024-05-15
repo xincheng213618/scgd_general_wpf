@@ -21,6 +21,7 @@ using System.Windows.Media;
 using ColorVision.Services.Dao;
 using ColorVision.UI.Sorts;
 using CVCommCore.CVAlgorithm;
+using ColorVision.UI.Views;
 
 namespace ColorVision.Services.Devices.Algorithm.Views
 {
@@ -42,7 +43,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            TextBox TextBox1 = new TextBox() { Width = 10, Background = Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = Brushes.Transparent };
+            TextBox TextBox1 = new() { Width = 10, Background = Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = Brushes.Transparent };
             Grid.SetColumn(TextBox1, 0);
             Grid.SetRow(TextBox1, 0);
             MainGrid.Children.Insert(0, TextBox1);
@@ -105,7 +106,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         break;
 
                 }
-                using StreamWriter file = new StreamWriter(dialog.FileName, true, Encoding.UTF8); 
+                using StreamWriter file = new(dialog.FileName, true, Encoding.UTF8); 
                 if (listView1.View is GridView gridView1)
                 {
                     string headers = "";
@@ -139,7 +140,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
         {
             if (result != null)
             {
-                AlgorithmResult algorithmResult = new AlgorithmResult(result);
+                AlgorithmResult algorithmResult = new(result);
                 AlgResults.AddUnique(algorithmResult);
                 RefreshResultListView();
             }
@@ -168,9 +169,9 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             {
                 ImageView.ImageShow.Clear();
                 ImageView.FilePath = result.FilePath;
-                List<POIPoint> DrawPoiPoint = new List<POIPoint>();
-                List<string> cieBdHeader = new List<string>();
-                List<string> cieHeader = new List<string>();
+                List<POIPoint> DrawPoiPoint = new();
+                List<string> cieBdHeader = new();
+                List<string> cieHeader = new();
                 switch (result.ResultType)
                 {
                     case AlgorithmResultType.POI:
@@ -182,7 +183,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                             List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in POIPointResultModels)
                             {
-                                PoiResultData poiResult = new PoiResultData(item);
+                                PoiResultData poiResult = new(item);
                                 result.PoiResultDatas.Add(poiResult);
                             };
                         }
@@ -214,7 +215,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                             List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in POIPointResultModels)
                             {
-                                PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(item);
+                                PoiResultCIExyuvData poiResultCIExyuvData = new(item);
                                 result.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                             };
                         }
@@ -246,14 +247,14 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                             List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in POIPointResultModels)
                             {
-                                PoiResultCIEYData poiResultCIExyuvData = new PoiResultCIEYData(item);
+                                PoiResultCIEYData poiResultCIExyuvData = new(item);
                                 result.PoiResultCIEYDatas.Add(poiResultCIExyuvData);
                             };
                         }
 
                         //亮度
-                        List<string> bdheadersY = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "Y" };
-                        List<string> headersY = new List<string> { "名称", "位置", "大小", "形状", "Y" };
+                        List<string> bdheadersY = new() { "Name", "PixelPos", "PixelSize", "Shapes", "Y" };
+                        List<string> headersY = new() { "名称", "位置", "大小", "形状", "Y" };
 
                         if (listViewSide.View is GridView gridViewY)
                         {
@@ -281,13 +282,13 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                             List<AlgResultFOVModel> AlgResultFOVModels = AlgResultFOVDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultFOVModels)
                             {
-                                FOVResultData fOVResultData = new FOVResultData(item);
+                                FOVResultData fOVResultData = new(item);
                                 result.FOVData.Add(fOVResultData);
                             };
                         }
 
-                        List<string> bdheadersFOV = new List<string> { "Pattern", "Type", "Degrees" };
-                        List<string> headersFOV = new List<string> { "Pattern", "Type", "Degrees" };
+                        List<string> bdheadersFOV = new() { "Pattern", "Type", "Degrees" };
+                        List<string> headersFOV = new() { "Pattern", "Type", "Degrees" };
 
                         if (listViewSide.View is GridView gridViewFOV)
                         {
@@ -314,14 +315,14 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                                 var PdomainSamplingDatas = JsonConvert.DeserializeObject<float[]>(item.PdomainSamplingData);
                                 for (int i = 0; i < Pdfrequencys.Length; i++)
                                 {
-                                    SFRResultData resultData = new SFRResultData(Pdfrequencys[i], PdomainSamplingDatas[i]);
+                                    SFRResultData resultData = new(Pdfrequencys[i], PdomainSamplingDatas[i]);
                                     result.SFRData.Add(resultData);
                                 }
                             };
                         }
 
-                        List<string> bdheadersSFR = new List<string> { "pdfrequency", "pdomainSamplingData" };
-                        List<string> headersSFR = new List<string> { "pdfrequency", "pdomainSamplingData" };
+                        List<string> bdheadersSFR = new() { "pdfrequency", "pdomainSamplingData" };
+                        List<string> headersSFR = new() { "pdfrequency", "pdomainSamplingData" };
 
                         if (listViewSide.View is GridView gridViewSFR)
                         {
@@ -347,13 +348,13 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                             List<AlgResultMTFModel> AlgResultMTFModels = AlgResultMTFDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultMTFModels)
                             {
-                                MTFResultData mTFResultData = new MTFResultData(item);
+                                MTFResultData mTFResultData = new(item);
                                 result.MTFData.Add(mTFResultData);
                             }
                         }
 
-                        List<string> bdheadersMTF = new List<string> { "PixelPos", "PixelSize", "Shapes", "Articulation" };
-                        List<string> headersMTF = new List<string> { "位置", "大小", "形状", "MTF" };
+                        List<string> bdheadersMTF = new() { "PixelPos", "PixelSize", "Shapes", "Articulation" };
+                        List<string> headersMTF = new() { "位置", "大小", "形状", "MTF" };
 
                         if (listViewSide.View is GridView gridViewMTF)
                         {
@@ -378,7 +379,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                             List<AlgResultGhostModel> AlgResultGhostModels = AlgResultGhostDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultGhostModels)
                             {
-                                GhostResultData ghostResultData = new GhostResultData(item);
+                                GhostResultData ghostResultData = new(item);
                                 result.GhostData.Add(ghostResultData);
                             }
                         }
@@ -388,7 +389,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                             List<List<Point1>> GhostPixel = JsonConvert.DeserializeObject<List<List<Point1>>>(GhostPixels);
                             int[] Ghost_pixel_X;
                             int[] Ghost_pixel_Y;
-                            List<Point1> Points = new List<Point1>();
+                            List<Point1> Points = new();
                             foreach (var item in GhostPixel)
                                 foreach (var item1 in item)
                                     Points.Add(item1);
@@ -446,8 +447,8 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
 
                         listViewSide.Visibility = Visibility.Visible;
-                        List<string> bdheadersGhost = new List<string> { "LedCenters", "LedBlobGray", "GhostAvrGray" };
-                        List<string> headersGhost = new List<string> { "质心坐标", "光斑灰度", "鬼影灰度" };
+                        List<string> bdheadersGhost = new() { "LedCenters", "LedBlobGray", "GhostAvrGray" };
+                        List<string> headersGhost = new() { "质心坐标", "光斑灰度", "鬼影灰度" };
 
                         if (listViewSide.View is GridView gridViewGhost)
                         {
@@ -469,12 +470,12 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                             var Distortions = AlgResultDistortionDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in Distortions)
                             {
-                                DistortionResultData distortionResultData = new DistortionResultData(item);
+                                DistortionResultData distortionResultData = new(item);
                                 result.DistortionData.Add(distortionResultData);
                             }
                         }
-                        List<string> bdheadersDis = new List<string> { "DisTypeDesc", "SlopeTypeDesc", "LayoutTypeDesc", "CornerTypeDesc", "MaxRatio" };
-                        List<string> headersDis = new List<string> { "类型", "斜率", "布点", "角点", "畸变率" };
+                        List<string> bdheadersDis = new() { "DisTypeDesc", "SlopeTypeDesc", "LayoutTypeDesc", "CornerTypeDesc", "MaxRatio" };
+                        List<string> headersDis = new() { "类型", "斜率", "布点", "角点", "畸变率" };
 
                         if (listViewSide.View is GridView gridViewDis)
                         {
@@ -486,7 +487,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         listViewSide.ItemsSource = result.DistortionData;
                         if (result.DistortionData.Count > 0)
                         {
-                            List<Point> points = new List<Point>();
+                            List<Point> points = new();
                             foreach (var item in result.DistortionData[0].FinalPoints)
                             {
                                 points.Add(new Point(item.X, item.Y));
@@ -504,7 +505,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                             List<AlgResultMTFModel> AlgResultLedcheckModels = AlgResultMTFDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultLedcheckModels)
                             {
-                                LedResultData ledResultData = new LedResultData(new Point((double)item.PoiX, (double)item.PoiY), (double)item.PoiWidth / 2);
+                                LedResultData ledResultData = new(new Point((double)item.PoiX, (double)item.PoiY), (double)item.PoiWidth / 2);
                                 result.LedResultDatas.Add(ledResultData);
                             };
                         }
@@ -521,10 +522,10 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         listViewSide.ItemsSource = result.LedResultDatas;
                         if (result.LedResultDatas.Count > 0)
                         {
-                            List<Point> points = new List<Point>();
+                            List<Point> points = new();
                             foreach (var item in result.LedResultDatas)
                             {
-                                DrawingVisualCircle Circle = new DrawingVisualCircle();
+                                DrawingVisualCircle Circle = new();
                                 Circle.Attribute.Center = item.Point;
                                 Circle.Attribute.Radius = item.Radius;
                                 Circle.Attribute.Brush = Brushes.Transparent;
@@ -543,7 +544,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                             List<AlgResultMTFModel> AlgResultMTFModels = AlgResultMTFDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultMTFModels)
                             {
-                                BuildPoiResultData mTFResultData = new BuildPoiResultData(item);
+                                BuildPoiResultData mTFResultData = new(item);
                                 result.BuildPoiResultData.Add(mTFResultData);
                             }
                         }
@@ -618,7 +619,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                 List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.GetAll();
                 foreach (var item in algResults)
                 {
-                    AlgorithmResult algorithmResult = new AlgorithmResult(item);
+                    AlgorithmResult algorithmResult = new(item);
                     AlgResults.AddUnique(algorithmResult);
                 }
                 SerchPopup.IsOpen = false;
@@ -634,7 +635,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                 List<AlgResultMasterModel> algResults = AlgResultMasterDao.Instance.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, altype.ToString(), TextBoxFile.Text ,SearchTimeSart.SelectedDateTime,SearchTimeEnd.SelectedDateTime);
                 foreach (var item in algResults)
                 {
-                    AlgorithmResult algorithmResult = new AlgorithmResult(item);
+                    AlgorithmResult algorithmResult = new(item);
                     AlgResults.AddUnique(algorithmResult);
                 }
             }
@@ -739,7 +740,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                     {
                         if (result.PoiResultCIExyuvDatas.Count != 0)
                         {
-                            WindowChart windowChart = new WindowChart(result.PoiResultCIExyuvDatas);
+                            WindowChart windowChart = new(result.PoiResultCIExyuvDatas);
                             windowChart.Show();
                         }
                         else

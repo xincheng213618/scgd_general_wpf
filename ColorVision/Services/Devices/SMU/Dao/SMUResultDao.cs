@@ -75,7 +75,7 @@ namespace ColorVision.Services.Devices.SMU.Dao
 
         public List<SMUResultModel> selectBySN(string sn)
         {
-            List<SMUResultModel> list = new List<SMUResultModel>();
+            List<SMUResultModel> list = new();
             DataTable d_info = GetTableAllBySN(sn);
             foreach (var item in d_info.AsEnumerable())
             {
@@ -97,7 +97,7 @@ namespace ColorVision.Services.Devices.SMU.Dao
 
         public override SMUResultModel GetModelFromDataRow(DataRow item)
         {
-            SMUResultModel model = new SMUResultModel
+            SMUResultModel model = new()
             {
                 Id = item.Field<int>("id"),
                 Pid = item.Field<int?>("pid"),

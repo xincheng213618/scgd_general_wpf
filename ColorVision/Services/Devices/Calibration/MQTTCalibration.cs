@@ -58,7 +58,7 @@ namespace ColorVision.Services.Devices.Calibration
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
             Params.Add("DeviceParam", new DeviceParamCalibration() { exp = new float[] { R, G, B }, gain = 1, });
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTCalibrationEventEnum.Event_GetData,
                 SerialNumber = sn,
@@ -70,7 +70,7 @@ namespace ColorVision.Services.Devices.Calibration
 
         public void Open(string fileName, FileExtType extType)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTFileServerEventEnum.Event_File_Download,
                 ServiceName = Config.Code,
@@ -80,7 +80,7 @@ namespace ColorVision.Services.Devices.Calibration
         }
         public MsgRecord CacheClear()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTCalibrationEventEnum.Event_Delete_Data,
                 Params = new Dictionary<string, object> { }
@@ -90,7 +90,7 @@ namespace ColorVision.Services.Devices.Calibration
 
         public MsgRecord GetChannel(int recId, CVImageChannelType chType)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTFileServerEventEnum.Event_File_GetChannel,
                 Params = new Dictionary<string, object> { { "RecID", recId }, { "ChannelType", chType } }
@@ -99,7 +99,7 @@ namespace ColorVision.Services.Devices.Calibration
         }
         public void GetRawFiles()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTFileServerEventEnum.Event_File_List_All,
                 Params = new Dictionary<string, object> { { "FileExtType", FileExtType.Raw } }

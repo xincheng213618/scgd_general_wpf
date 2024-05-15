@@ -54,7 +54,7 @@ namespace ColorVision.Services.Devices.SMU.Dao
 
         public List<SmuScanModel> ConditionalQuery(string id, string batchid, DateTime? dateTimeSTART, DateTime? dateTimeEnd)
         {
-            Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
+            Dictionary<string, object> keyValuePairs = new();
             keyValuePairs.Add("id", id);
             keyValuePairs.Add("batch_id", batchid);
 
@@ -84,7 +84,7 @@ namespace ColorVision.Services.Devices.SMU.Dao
 
         public List<SmuScanModel> selectBySN(string sn)
         {
-            List<SmuScanModel> list = new List<SmuScanModel>();
+            List<SmuScanModel> list = new();
             DataTable d_info = GetTableAllBySN(sn);
             foreach (var item in d_info.AsEnumerable())
             {
@@ -106,7 +106,7 @@ namespace ColorVision.Services.Devices.SMU.Dao
 
         public override SmuScanModel GetModelFromDataRow(DataRow item)
         {
-            SmuScanModel model = new SmuScanModel
+            SmuScanModel model = new()
             {
                 Id = item.Field<int>("id"),
                 DeviceCode = item.Field<string?>("device_code"),

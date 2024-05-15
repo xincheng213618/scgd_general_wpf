@@ -22,7 +22,7 @@ namespace ColorVision
     public class HotKeyNewCreate : IHotKey, IMenuItem
     {
 
-        public string? OwnerGuid => "Tool";
+        public string? OwnerGuid => "Help";
 
         public string? GuidId => "MQTTLog";
 
@@ -34,9 +34,9 @@ namespace ColorVision
 
         public object? Icon { get; }
 
-        public RelayCommand Command => new RelayCommand(A => Execute());
+        public RelayCommand Command => new(A => Execute());
 
-        public HotKeys HotKeys => new HotKeys(Resource.MQTTLog, new Hotkey(Key.Q, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(Resource.MQTTLog, new Hotkey(Key.Q, ModifierKeys.Control), Execute);
 
         private void Execute()
         {
@@ -90,25 +90,25 @@ namespace ColorVision
                     return;
                 }
 
-                TextBox textBox = new TextBox() { BorderThickness = new Thickness(0),Text = resultData_MQTT.ResultMsg,Tag = resultData_MQTT};
+                TextBox textBox = new() { BorderThickness = new Thickness(0),Text = resultData_MQTT.ResultMsg,Tag = resultData_MQTT};
 
                 if (!string.IsNullOrWhiteSpace(resultData_MQTT.Payload.ToString()))
                 {
-                    ContextMenu contextMenu = new ContextMenu();
-                    MenuItem menuItem2 = new MenuItem() { Header = "复制Payload" };
+                    ContextMenu contextMenu = new();
+                    MenuItem menuItem2 = new() { Header = "复制Payload" };
                     menuItem2.Click += (s, e) => { NativeMethods.Clipboard.SetText(resultData_MQTT.Payload.ToString() ?? string.Empty); };
                     contextMenu.Items.Add(menuItem2);
-                    MenuItem menuItem = new MenuItem() { Header = "复制" };
+                    MenuItem menuItem = new() { Header = "复制" };
                     menuItem.Click += (s, e) => { NativeMethods.Clipboard.SetText(textBox.Text); };
                     contextMenu.Items.Add(menuItem);
-                    MenuItem menuItem1 = new MenuItem() { Header = "复制Topic" };
+                    MenuItem menuItem1 = new() { Header = "复制Topic" };
                     menuItem1.Click += (s, e) => { NativeMethods.Clipboard.SetText(resultData_MQTT.Topic.ToString() ?? string.Empty); };
                     contextMenu.Items.Add(menuItem1);
-                    MenuItem menuItem3 = new MenuItem() { Header = "SaveToFile" };
+                    MenuItem menuItem3 = new() { Header = "SaveToFile" };
 
                     menuItem3.Click += (s, e) =>
                     {
-                        System.Windows.Forms.SaveFileDialog saveFileDialog = new System.Windows.Forms.SaveFileDialog();
+                        System.Windows.Forms.SaveFileDialog saveFileDialog = new();
                         saveFileDialog.Filter = "文本文件|*.txt";
                         saveFileDialog.FileName = resultData_MQTT.Topic + DateTime.Now.ToString("MM-dd HH-mm-ss");
                         if (saveFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)

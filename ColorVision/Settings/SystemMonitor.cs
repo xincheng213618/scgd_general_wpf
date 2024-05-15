@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 namespace ColorVision.Settings
 {
 
-    public class SystemMonitorSetting: ViewModelBase
+    public class SystemMonitorSetting: ViewModelBase,IConfig
     {
         public int UpdateSpeed { get => _UpdateSpeed; set { _UpdateSpeed = value; NotifyPropertyChanged(); } }
         private int _UpdateSpeed = 1000;
@@ -27,8 +28,6 @@ namespace ColorVision.Settings
         private static SystemMonitor _instance;
         private static readonly object _locker = new();
         public static SystemMonitor GetInstance() { lock (_locker) { return _instance ??= new SystemMonitor(); } }
-
-
 
         private bool PerformanceCounterIsOpen;
         private PerformanceCounter PCCPU;
@@ -58,7 +57,7 @@ namespace ColorVision.Settings
 
         public SystemMonitor()
         {
-            Setting = ConfigHandler.GetInstance().SoftwareConfig.SystemMonitorSetting;
+            Setting = ConfigHandler1.GetInstance().GetRequiredService<SystemMonitorSetting>();
             Task.Run(() => 
             {
                 try

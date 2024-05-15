@@ -41,7 +41,7 @@ namespace ColorVision.Services.PhyCameras
 
         public void Create()
         {
-            CreateWindow createWindow = new CreateWindow(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            CreateWindow createWindow = new(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             createWindow.ShowDialog();
         }
         public void Import()
@@ -156,7 +156,7 @@ namespace ColorVision.Services.PhyCameras
                 {
                     if (sysResourceModel.Type == (int)ServiceTypes.Group)
                     {
-                        GroupResource groupResource = new GroupResource(sysResourceModel);
+                        GroupResource groupResource = new(sysResourceModel);
                         phycamrea.AddChild(groupResource);
                         GroupResource.LoadgroupResource(groupResource);
                     }
@@ -167,7 +167,7 @@ namespace ColorVision.Services.PhyCameras
                     }
                     else
                     {
-                        BaseFileResource calibrationResource = new BaseFileResource(sysResourceModel);
+                        BaseFileResource calibrationResource = new(sysResourceModel);
                         phycamrea.AddChild(calibrationResource);
                     }
                 }
@@ -183,7 +183,7 @@ namespace ColorVision.Services.PhyCameras
             {
                 if (sysResourceModel.Type == (int)ServiceTypes.Group)
                 {
-                    GroupResource groupResource1 = new GroupResource(sysResourceModel);
+                    GroupResource groupResource1 = new(sysResourceModel);
                     LoadgroupResource(groupResource1);
                     groupResource.AddChild(groupResource);
                 }
@@ -194,7 +194,7 @@ namespace ColorVision.Services.PhyCameras
                 }
                 else
                 {
-                    BaseResource calibrationResource = new BaseResource(sysResourceModel);
+                    BaseResource calibrationResource = new(sysResourceModel);
                     groupResource.AddChild(calibrationResource);
                 }
             }

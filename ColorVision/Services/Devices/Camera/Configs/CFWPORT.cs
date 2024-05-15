@@ -6,7 +6,7 @@ namespace ColorVision.Services.Devices.Camera.Configs
     public class CFWPORT : ViewModelBase
     {
         public ChannelCfg[] ChannelCfgs { get; set; } = new ChannelCfg[3]{
-            new ChannelCfg() { Cfwport =0,Chtype =ImageChannelType.Gray_Y }, new ChannelCfg(){Cfwport =1,Chtype =ImageChannelType.Gray_X }, new ChannelCfg(){ Cfwport =2,Chtype =ImageChannelType.Gray_Z}
+            new() { Cfwport =0,Chtype =ImageChannelType.Gray_Y }, new(){Cfwport =1,Chtype =ImageChannelType.Gray_X }, new(){ Cfwport =2,Chtype =ImageChannelType.Gray_Z}
         };
 
         public bool IsCOM { get => _IsCOM; set { _IsCOM = value; NotifyPropertyChanged(); } }

@@ -51,7 +51,7 @@ namespace ColorVision.Solution.Searches
 
         private void SelectFolder_Click(object sender, RoutedEventArgs e)
         {
-            System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog();
+            System.Windows.Forms.FolderBrowserDialog dialog = new();
             dialog.UseDescriptionForTitle = true;
             dialog.Description = "为新项目选择位置";
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)

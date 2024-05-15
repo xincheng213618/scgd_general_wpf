@@ -68,7 +68,7 @@ namespace ColorVision
                 _ => PixelFormats.Default,
             };
 
-            WriteableBitmap writeableBitmap = new WriteableBitmap(hImage.cols, hImage.rows, 96.0, 96.0, format, null);
+            WriteableBitmap writeableBitmap = new(hImage.cols, hImage.rows, 96.0, 96.0, format, null);
             RtlMoveMemory(writeableBitmap.BackBuffer, hImage.pData, (uint)(hImage.cols * hImage.rows * hImage.channels* (hImage.depth/8)));
             writeableBitmap.Lock();
             writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
@@ -80,7 +80,7 @@ namespace ColorVision
 
         public static HImage ToHImage(this BitmapImage bitmapImage) => bitmapImage.ToWriteableBitmap().ToHImage();
 
-        public static WriteableBitmap ToWriteableBitmap(this BitmapImage bitmapImage) => new WriteableBitmap(bitmapImage);
+        public static WriteableBitmap ToWriteableBitmap(this BitmapImage bitmapImage) => new(bitmapImage);
 
         public static HImage ToHImage(this WriteableBitmap writeableBitmap)
         {
@@ -122,7 +122,7 @@ namespace ColorVision
             }
 
             // Create a new HImageCache instance
-            HImage hImage = new HImage
+            HImage hImage = new()
             {
                 rows = writeableBitmap.PixelHeight,
                 cols = writeableBitmap.PixelWidth,

@@ -118,7 +118,7 @@ namespace ColorVision.Services.Devices.Camera
             chType3.ItemsSource = ImageChannelTypeList;
 
 
-            Dictionary<ImageChannelType, ComboBox> keyValuePairs = new Dictionary<ImageChannelType, ComboBox>() { };
+            Dictionary<ImageChannelType, ComboBox> keyValuePairs = new() { };
             keyValuePairs.Add(ImageChannelType.Gray_X, chType1);
             keyValuePairs.Add(ImageChannelType.Gray_Y, chType2);
             keyValuePairs.Add(ImageChannelType.Gray_Z, chType3);
@@ -154,12 +154,12 @@ namespace ColorVision.Services.Devices.Camera
             };
 
 
-            List<int> BaudRates = new List<int> { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
+            List<int> BaudRates = new() { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
             TextBaudRate.ItemsSource = BaudRates;
             TextBaudRate1.ItemsSource = BaudRates;
 
 
-            List<string> Serials = new List<string> { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8" };
+            List<string> Serials = new() { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8" };
             TextSerial.ItemsSource = Serials;
             TextSerial1.ItemsSource = Serials;
 

@@ -24,7 +24,7 @@ namespace ColorVision.Services.Dao
 
         public override SysModMasterModel GetModelFromDataRow(DataRow item)
         {
-            SysModMasterModel model = new SysModMasterModel
+            SysModMasterModel model = new()
             {
                 Id = item.Field<int>("id"),
                 Name = item.Field<string>("name"),

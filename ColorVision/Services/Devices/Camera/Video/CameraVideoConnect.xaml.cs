@@ -101,7 +101,7 @@ namespace ColorVision.Services.Devices.Camera.Video
 
         private void Button_Click_Test2(object sender, RoutedEventArgs e)
         {
-            CameraVideoConfig cameraVideoConfig = new CameraVideoConfig() {};
+            CameraVideoConfig cameraVideoConfig = new() {};
             CameraVideoConfig.CopyTo(cameraVideoConfig);
             CameraVideoConfigs.Add(cameraVideoConfig);
 

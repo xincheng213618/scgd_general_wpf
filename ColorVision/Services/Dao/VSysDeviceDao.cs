@@ -27,7 +27,7 @@ namespace ColorVision.Services.Dao
 
         public override SysDeviceModel GetModelFromDataRow(DataRow item)
         {
-            SysDeviceModel model = new SysDeviceModel
+            SysDeviceModel model = new()
             {
                 Id = item.Field<int>("id"),
                 Name = item.Field<string>("name"),

@@ -906,4 +906,16 @@
   <data name="Shape" xml:space="preserve">
     <value>forme</value>
   </data>
+  <data name="ServiceLog" xml:space="preserve">
+    <value>Journal de service</value>
+  </data>
+  <data name="x86ServiceLog" xml:space="preserve">
+    <value>journal des services x86</value>
+  </data>
+  <data name="RCServiceLog" xml:space="preserve">
+    <value>Journal de service RC</value>
+  </data>
+  <data name="UpdateSpeed" xml:space="preserve">
+    <value>Vitesse de mise à jour</value>
+  </data>
 </root>

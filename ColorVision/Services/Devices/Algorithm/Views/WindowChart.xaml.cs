@@ -35,7 +35,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
             double[] x = new double[PoiResultCIExyuvData.Count];
             double[] y = new double[PoiResultCIExyuvData.Count];
-            Random rd = new Random();
+            Random rd = new();
             for (int i = 0; i < PoiResultCIExyuvData.Count; i++)
             {
                 x[i] = i;

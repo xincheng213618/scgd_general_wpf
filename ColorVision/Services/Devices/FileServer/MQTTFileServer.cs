@@ -75,7 +75,7 @@ namespace ColorVision.Services.Devices.FileServer
 
         public void Open(string fileName)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTFileServerEventEnum.Event_File_Download,
                 Params = new Dictionary<string,object> { { "FileName", fileName }, { "FileExtType", FileExtType.Src } }
@@ -85,7 +85,7 @@ namespace ColorVision.Services.Devices.FileServer
 
         public void GetAllFiles()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTFileServerEventEnum.Event_File_List_All,
                 Params = new Dictionary<string, object> { { "FileExtType", FileExtType.Src } }
@@ -95,7 +95,7 @@ namespace ColorVision.Services.Devices.FileServer
 
         public void UploadFile(string fileName)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTFileServerEventEnum.Event_File_Upload,
                 Params = new Dictionary<string, object> { { "FileName", fileName }, { "FileExtType", FileExtType.Src } }

@@ -55,7 +55,7 @@ namespace ColorVision.Services.Flow
             IsFlowRun = false;
             if (flowEngine == null)
             {
-                FlowEngineLib.Base.CVBaseDataFlow baseEvent = new FlowEngineLib.Base.CVBaseDataFlow(svrName, devName, "Stop", SerialNumber, string.Empty);
+                FlowEngineLib.Base.CVBaseDataFlow baseEvent = new(svrName, devName, "Stop", SerialNumber, string.Empty);
 
                 string Msg = JsonConvert.SerializeObject(baseEvent);
                 Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
@@ -76,7 +76,7 @@ namespace ColorVision.Services.Flow
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到"); return;
             }
             devName = serviceInfo.Devices.First().Key;
-            MQTTFlowStop req = new MQTTFlowStop(serviceInfo.ServiceCode, devName, SerialNumber, serviceInfo.Token);
+            MQTTFlowStop req = new(serviceInfo.ServiceCode, devName, SerialNumber, serviceInfo.Token);
             string Msg = JsonConvert.SerializeObject(req);
             Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
             Task.Run(() => MQTTControl.PublishAsyncClient(serviceInfo.PublishTopic, Msg, false));
@@ -88,7 +88,7 @@ namespace ColorVision.Services.Flow
             SerialNumber = sn;
             if (flowEngine == null)
             {
-                FlowEngineLib.Base.CVBaseDataFlow baseEvent = new FlowEngineLib.Base.CVBaseDataFlow(svrName, devName, "Start", sn, string.Empty);
+                FlowEngineLib.Base.CVBaseDataFlow baseEvent = new(svrName, devName, "Start", sn, string.Empty);
 
                 string Msg = JsonConvert.SerializeObject(baseEvent);
                 Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
@@ -108,12 +108,12 @@ namespace ColorVision.Services.Flow
             {
                 SerialNumber = sn;
                 devName = serviceInfo.Devices.First().Key;
-                DeviceFlowRunParam<MQTTServiceInfo> data = new DeviceFlowRunParam<MQTTServiceInfo>()
+                DeviceFlowRunParam<MQTTServiceInfo> data = new()
                 {
                     Services = ServiceManager.GetInstance().GetServiceJsonList(),
                     TemplateParam = new MQTTMessageLib.CVTemplateParam() { ID = flowParam.Id, Name = flowParam.Name }
                 };
-                MQTTFlowRun<MQTTServiceInfo> req = new MQTTFlowRun<MQTTServiceInfo>(serviceInfo.ServiceCode, devName, sn, serviceInfo.Token, data);
+                MQTTFlowRun<MQTTServiceInfo> req = new(serviceInfo.ServiceCode, devName, sn, serviceInfo.Token, data);
                 string Msg = JsonConvert.SerializeObject(req);
                 Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
                 Task.Run(() => MQTTControl.PublishAsyncClient(serviceInfo.PublishTopic, Msg, false));

@@ -79,8 +79,8 @@ namespace ColorVision.Update
         public void Update(string Version, string DownloadPath) => Update(new Version(Version.Trim()), DownloadPath);
         public void Update(Version Version, string DownloadPath)
         {
-            CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
-            WindowUpdate windowUpdate = new WindowUpdate() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            CancellationTokenSource _cancellationTokenSource = new();
+            WindowUpdate windowUpdate = new() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             windowUpdate.Title += $" {Version}" ;
             windowUpdate.Closed += (s, e) =>
             {
@@ -133,7 +133,7 @@ namespace ColorVision.Update
 
         public async Task<string?> GetChangeLog(string url)
         {
-            using HttpClient _httpClient = new HttpClient();
+            using HttpClient _httpClient = new();
             string versionString = null;
             try
             {
@@ -162,7 +162,7 @@ namespace ColorVision.Update
 
         private async Task<Version> GetLatestVersionNumber(string url)
         {
-            using HttpClient _httpClient = new HttpClient();
+            using HttpClient _httpClient = new();
             string versionString = null;
             try
             {
@@ -216,7 +216,7 @@ namespace ColorVision.Update
                     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);
                 }
 
-                Stopwatch stopwatch = new Stopwatch();
+                Stopwatch stopwatch = new();
 
                 var response = await client.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
@@ -294,7 +294,7 @@ namespace ColorVision.Update
 
 
             // 启动新的实例
-            ProcessStartInfo startInfo = new ProcessStartInfo();
+            ProcessStartInfo startInfo = new();
             startInfo.UseShellExecute = true; // 必须为true才能使用Verb属性
             startInfo.WorkingDirectory = Environment.CurrentDirectory;
             startInfo.FileName = downloadPath;

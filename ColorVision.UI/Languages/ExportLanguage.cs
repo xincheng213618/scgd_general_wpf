@@ -1,10 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Languages;
-using ColorVision.UI;
-using System.Threading;
 using System.Windows.Controls;
 
-namespace ColorVision.Settings
+namespace ColorVision.UI.Languages
 {
     public class ExportLanguage : IMenuItemMeta
     {
@@ -14,33 +11,31 @@ namespace ColorVision.Settings
 
         public int Order => 1001;
 
-        public string? Header => Properties.Resource.MenuLanguage;
+        public string? Header => Properties.Resources.MenuLanguage;
 
         public string? InputGestureText => "Ctrl + Shift + L";
 
         public object? Icon => null;
-        public RelayCommand Command => new RelayCommand(a => { });
+        public RelayCommand Command => new(a => { });
 
         public MenuItem MenuItem
         {
             get
             {
-                MenuItem MenuLanguage = new MenuItem { Header = Header, InputGestureText = InputGestureText };
+                MenuItem MenuLanguage = new() { Header = Header, InputGestureText = InputGestureText };
 
                 foreach (var item in LanguageManager.Current.Languages)
                 {
-                    MenuItem LanguageItem = new MenuItem();
+                    MenuItem LanguageItem = new();
                     LanguageItem.Header = LanguageManager.keyValuePairs.TryGetValue(item, out string value) ? value : item;
                     LanguageItem.Click += (s, e) =>
                     {
                         string temp = Thread.CurrentThread.CurrentUICulture.Name;
-                        ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.UICulture = item;
-                        ConfigHandler.GetInstance().SaveConfig();
+                        LanguageConfig.Instance.UICulture = item;
                         bool sucess = LanguageManager.Current.LanguageChange(item);
                         if (!sucess)
                         {
-                            ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.UICulture = temp;
-                            ConfigHandler.GetInstance().SaveConfig();
+                            LanguageConfig.Instance.UICulture = temp;
                         }
                     };
                     LanguageItem.Tag = item;

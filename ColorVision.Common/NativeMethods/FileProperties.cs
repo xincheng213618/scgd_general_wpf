@@ -38,7 +38,7 @@ namespace ColorVision.NativeMethods
 
         public static void ShowFileProperties(string Filename)
         {
-            SHELLEXECUTEINFO info = new SHELLEXECUTEINFO();
+            SHELLEXECUTEINFO info = new();
             info.cbSize = Marshal.SizeOf(info);
             info.lpVerb = "properties";
             info.lpFile = Filename;

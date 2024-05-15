@@ -1,4 +1,6 @@
-﻿using ColorVision.UI.Sorts;
+﻿using ColorVision.UI.HotKey;
+using ColorVision.UI;
+using ColorVision.UI.Sorts;
 using ColorVision.Update;
 using System;
 using System.Collections.Generic;
@@ -16,9 +18,39 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using static NPOI.HSSF.Util.HSSFColor;
+using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Services.Flow;
+using ColorVision.MQTT;
+using ColorVision.Services;
+using Panuon.WPF.UI;
+using System.Reflection.Emit;
+using FlowEngineLib;
 
 namespace ColorVision.Projects
 {
+
+    public class ProjectHeyuanExport : IMenuItem
+    {
+        public string? OwnerGuid => "Tool";
+
+        public string? GuidId => "HeYuan";
+
+        public int Order => 100;
+
+        public string? Header => "河源精电";
+
+        public string? InputGestureText => null;
+
+        public object? Icon => null;
+
+        public RelayCommand Command => new(A => Execute());
+
+        private static void Execute()
+        {
+            new ProjectHeyuan() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+        }
+    }
 
 
     /// <summary>
@@ -52,18 +84,78 @@ namespace ColorVision.Projects
             ComboBoxSer.SelectedIndex = 0;
 
             ListViewMes.ItemsSource = HYMesManager.GetInstance().SerialMsgs;
+
+            FlowTemplate.ItemsSource = FlowParam.Params;
+        }
+        private Services.Flow.FlowControl flowControl;
+
+        private IPendingHandler handler;
+
+        private void FlowControl_FlowCompleted(object? sender, EventArgs e)
+        {
+            flowControl.FlowCompleted -= FlowControl_FlowCompleted;
+            if (sender != null)
+            {
+                FlowControlData FlowControlData = (FlowControlData)sender;
+                ServiceManager.GetInstance().ProcResult(FlowControlData);
+            }
+            handler?.Close();
+            if (sender != null)
+            {
+                FlowControlData FlowControlData = (FlowControlData)sender;
+
+                if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
+                {
+                    if (FlowControlData.EventName == "Completed")
+                    {
+                        ResultText.Text = "OK";
+                        ResultText.Foreground = Brushes.Blue;
+                        HYMesManager.GetInstance().SendSn("0", "2222");
+                    }
+                    else
+                    {
+                        ResultText.Text =  "不合格";
+                        ResultText.Foreground =  Brushes.Red;
+                        HYMesManager.GetInstance().SendSn("0", "2222");
+                    }
+                }
+            }
         }
 
-
-        bool result =true;
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            result = !result;
-            ResultText.Text = result ? "OK" : "不合格";
-            ResultText.Foreground = result ? Brushes.Blue : Brushes.Red;
+            if (FlowTemplate.SelectedValue is FlowParam flowParam)
+            {
+                string startNode = FlowDisplayControl.GetInstance().View.FlowEngineControl.GetStartNodeName();
+                if (!string.IsNullOrWhiteSpace(startNode))
+                {
+                    flowControl = new Services.Flow.FlowControl(MQTTControl.GetInstance(), FlowDisplayControl.GetInstance().View.FlowEngineControl);
+
+                    handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
+
+                    flowControl.FlowData += (s, e) =>
+                    {
+                        if (s is FlowControlData msg)
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
+                            });
+                        }
+                    };
+                    flowControl.FlowCompleted += FlowControl_FlowCompleted;
+                    string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+                    flowControl.Start(sn);
+                    string name = string.Empty;
+                    ServiceManager.BeginNewBatch(sn, name);
+                }
+                else
+                {
+                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
+                }
+            }
 
 
-            HYMesManager.GetInstance().SendSn("0","2222");
 
         }
 

@@ -47,7 +47,7 @@ namespace ColorVision.Services.Devices.Camera.Configs
         /// 不参与计算的区域
         /// </summary>
         [JsonIgnore]
-        public Rect OBRect { get => new Rect(Ob, ObR, ObT, ObB); }
+        public Rect OBRect { get => new(Ob, ObR, ObT, ObB); }
 
 
         /// <summary>
@@ -92,7 +92,7 @@ namespace ColorVision.Services.Devices.Camera.Configs
         /// OB
         /// </summary>
         [JsonIgnore]
-        public Rect ROIRect { get => new Rect(PointX, PointY, Width, Height); }
+        public Rect ROIRect { get => new(PointX, PointY, Width, Height); }
 
         /// <summary>
         /// ROI X

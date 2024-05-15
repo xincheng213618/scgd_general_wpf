@@ -79,7 +79,7 @@ namespace ColorVision.Services.Templates
 
         public override string NewCreateFileName(string FileName)
         {
-            List<string> Names = new List<string>();
+            List<string> Names = new();
             foreach (var item in TemplateParams)
             {
                 Names.Add(item.Key);

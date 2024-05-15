@@ -5,6 +5,7 @@ using System.Reflection;
 
 namespace ColorVision.UI
 {
+
     public interface IPlugin
     {
         public string Name { get; }
@@ -12,12 +13,11 @@ namespace ColorVision.UI
         void Execute();
     }
 
-
     public static class PluginLoader
     {
         public static List<T> LoadAssembly<T>(Assembly assembly)where T: IPlugin
         {
-            List<T> plugins = new List<T>();
+            List<T> plugins = new();
             foreach (Type type in assembly.GetTypes().Where(t => typeof(T).IsAssignableFrom(t) && !t.IsAbstract))
             {
                 if (Activator.CreateInstance(type) is T plugin)
@@ -45,7 +45,7 @@ namespace ColorVision.UI
 
         public static List<IPlugin> LoadPlugins(string path)
         {
-            List<IPlugin> plugins = new List<IPlugin>();
+            List<IPlugin> plugins = new();
             if (!Directory.Exists(path)) return plugins;
             // 获取所有 dll 文件
             foreach (string file in Directory.GetFiles(path, "*.dll"))

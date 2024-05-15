@@ -49,7 +49,7 @@ namespace ColorVision.Services.Devices.Calibration
 
             EditCommand = new RelayCommand(a =>
             {
-                EditCalibration window = new EditCalibration(this);
+                EditCalibration window = new(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();

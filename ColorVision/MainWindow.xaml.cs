@@ -1,5 +1,6 @@
 ﻿using ColorVision.Adorners;
 using ColorVision.Common.Utilities;
+using ColorVision.MQTT;
 using ColorVision.MySql;
 using ColorVision.Projects;
 using ColorVision.Services.Flow;
@@ -11,16 +12,19 @@ using ColorVision.Solution.Searches;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.HotKey;
+using ColorVision.UI.Views;
 using ColorVision.Update;
 using ColorVision.UserSpace;
 using ColorVision.Utils;
 using log4net;
+using Microsoft.DwayneNeed.Win32.User32;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
@@ -28,10 +32,53 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision
 {
+    public class MainWindowConfig : IConfig
+    {
+        public static MainWindowConfig Instance => ConfigHandler1.GetInstance().GetRequiredService<MainWindowConfig>();
+
+        public bool IsRestoreWindow { get; set; }
+
+        public double Width { get; set; }
+        public double Height { get; set; }
+        public double Left { get; set; }
+        public double Top { get; set; }
+        public int WindowState { get; set; }
+
+        public void SetWindow(Window window)
+        {
+            if (IsRestoreWindow && Height != 0 && Width != 0)
+            {
+                window.Top = Top;
+                window.Left = Left;
+                window.Height = Height;
+                window.Width = Width;
+                window.WindowState = (WindowState)WindowState;
+
+                if (Width > SystemParameters.WorkArea.Width)
+                {
+                    window.Width = SystemParameters.WorkArea.Width;
+                }
+                if (Height > SystemParameters.WorkArea.Height)
+                {
+                    window.Height = SystemParameters.WorkArea.Height;
+                }
+            }
+        }
+        public void SetConfig(Window window)
+        {
+            Top = window.Top;
+            Left = window.Left;
+            Height = window.Height;
+            Width = window.Width;
+            WindowState = (int)window.WindowState;
+        }
+    }
+
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
@@ -43,40 +90,15 @@ namespace ColorVision
         public ViewGridManager ViewGridManager { get; set; }
 
         public static ConfigHandler ConfigHandler  => ConfigHandler.GetInstance();
+
         public static SoftwareSetting SoftwareSetting => ConfigHandler.SoftwareConfig.SoftwareSetting;
+        public static MainWindowConfig MainWindowConfig => MainWindowConfig.Instance;
 
         public MainWindow()
         {
             InitializeComponent();
-
-            if (SoftwareSetting.IsRestoreWindow && SoftwareSetting.Height != 0 && SoftwareSetting.Width != 0)
-            {
-                Top = SoftwareSetting.Top;
-                Left = SoftwareSetting.Left;
-                Height = SoftwareSetting.Height;
-                Width = SoftwareSetting.Width;
-                WindowState = (WindowState)SoftwareSetting.WindowState;
-
-                if (Width > SystemParameters.WorkArea.Width)
-                {
-                    Width = SystemParameters.WorkArea.Width;
-                }
-                if (Height > SystemParameters.WorkArea.Height)
-                {
-                    Height = SystemParameters.WorkArea.Height;
-                }
-            }
-            SizeChanged += (s, e) =>
-            {
-                if (SoftwareSetting.IsRestoreWindow)
-                {
-                    SoftwareSetting.Top = Top;
-                    SoftwareSetting.Left = Left;
-                    SoftwareSetting.Height = Height;
-                    SoftwareSetting.Width = Width;
-                    SoftwareSetting.WindowState = (int)WindowState;
-                }
-            };
+            MainWindowConfig.SetWindow(this);
+            SizeChanged += (s, e) => MainWindowConfig.SetConfig(this);
             var IsAdministrator = Tool.IsAdministrator();
             Title = Title + $"- {(IsAdministrator ? Properties.Resource.RunAsAdmin : Properties.Resource.NotRunAsAdmin)}";
         }
@@ -106,41 +128,47 @@ namespace ColorVision
                     Icon = WindowConfig.Icon;
                 Title = WindowConfig.Title ?? Title;
             }
-
-            ViewGridManager SolutionViewGridManager = new ViewGridManager();
+            ViewGridManager SolutionViewGridManager = new();
             SolutionViewGridManager.MainView = SolutionGrid;
-            SolutionView solutionView = new SolutionView();
+            SolutionView solutionView = new();
             SolutionViewGridManager.AddView(0, solutionView);
             solutionView.View.ViewIndex = 0;
+
             SolutionViewGridManager.SetViewNum(-1);
+
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;
 
             StatusBarGrid.DataContext = ConfigHandler.GetInstance();
             MenuStatusBar.DataContext = ConfigHandler.GetInstance().SoftwareConfig;
+            ViewGridManager.SetViewGrid(ViewConfig.GetInstance().LastViewCount);
 
-            ViewGridManager.GetInstance().SetViewNum(1);
+            ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
+            {
+                ViewConfig.GetInstance().LastViewCount = e;
+            };
+
             Closed += (s, e) => { Environment.Exit(-1); };
             Debug.WriteLine(Properties.Resource.LaunchSuccess);
 
-            MenuItem menulogs = new MenuItem() { Header = Properties.Resource.Log };
+            MenuItem menulogs = new() { Header = ColorVision.Properties.Resource.ServiceLog };
             MenuHelp.Items.Insert(0, menulogs);
 
-            MenuItem menulog = new MenuItem() { Header = Properties.Resource.x64ServiceLog };
+            MenuItem menulog = new() { Header = Properties.Resource.x64ServiceLog };
             menulog.Click += (s, e) =>
             {
                 PlatformHelper.OpenFolder("http://localhost:8064/system/log");
             };
             menulogs.Items.Insert(0, menulog);
 
-            MenuItem menulog1 = new MenuItem() { Header = Properties.Resource.CameraLog };
+            MenuItem menulog1 = new() { Header = Properties.Resource.CameraLog };
             menulog1.Click += (s, e) =>
             {
                 PlatformHelper.OpenFolder("http://localhost:8064/system/device/camera/log");
             };
             menulogs.Items.Insert(1, menulog1);
 
-            MenuItem menulog2 = new MenuItem() { Header = "x86服务相机日志" };
+            MenuItem menulog2 = new() { Header = ColorVision.Properties.Resource.x86ServiceLog };
             menulog2.Click += (s, e) =>
             {
                 PlatformHelper.OpenFolder("http://localhost:8086/system/log");
@@ -148,48 +176,24 @@ namespace ColorVision
             };
             menulogs.Items.Insert(2, menulog2);
 
-            MenuItem menulog3 = new MenuItem() { Header = Properties.Resource.SpectrometerLog };
+            MenuItem menulog3 = new() { Header = Properties.Resource.SpectrometerLog };
             menulog3.Click += (s, e) =>
             {
                 PlatformHelper.OpenFolder("http://localhost:8086/system/device/Spectrum/log");
             };
             menulogs.Items.Insert(3, menulog3);
 
-            MenuItem menulogs1 = new MenuItem() { Header = "RC服务日志" };
+            MenuItem menulogs1 = new() { Header = ColorVision.Properties.Resource.RCServiceLog };
             menulogs1.Click += (s, e) =>
             {
                 PlatformHelper.OpenFolder("http://localhost:8080/system/log");
             };
             menulogs.Items.Insert(0, menulogs1);
 
-#if (DEBUG == true)
-            MenuItem menuItem = new MenuItem() { Header = Properties.Resource.ExperimentalFeature };
-            MenuItem menuItem1 = new MenuItem() { Header = "折线图" };
-            menuItem1.Click += Test_Click;
-            menuItem.Items.Add(menuItem1);
-            Menu1.Items.Add(menuItem);
 
-
-            MenuItem menuItem3 = new MenuItem() { Header = Properties.Resource.RestartService };
-            menuItem3.Click += (s, e) =>
-            {
-                RCManager.GetInstance().OpenCVWinSMS();
-            };
-            menuItem.Items.Add(menuItem3);
-
-
-            MenuItem menuItem4 = new MenuItem() { Header = "河源精电" };
-            menuItem4.Click += (s, e) =>
-            {
-                ProjectHeyuan projectHeiyuan = new ProjectHeyuan();
-                projectHeiyuan.Show();
-            };
-            menuItem.Items.Add(menuItem4);
-
-#endif
             if (ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.IsAutoUpdate)
             {
-                Thread thread1 = new Thread(async () => await CheckUpdate()) { IsBackground = true };
+                Thread thread1 = new(async () => await CheckUpdate()) { IsBackground = true };
                 thread1.Start();
             }
 
@@ -200,14 +204,16 @@ namespace ColorVision
             Task.Run(CheckCertificate);
 
             Task.Run(EnsureLocalInfile);
+
+
             SolutionTab1.Content = new TreeViewControl();
 
             PluginLoader.LoadPluginsAssembly("Plugins");
 
             PluginLoader.LoadPlugins("Plugins");
             PluginLoader.LoadAssembly<IPlugin>(Assembly.GetExecutingAssembly());
-            MenuManager.GetInstance().LoadMenuItemFromAssembly(Assembly.GetExecutingAssembly());
-            this.LoadHotKeyFromAssembly<IHotKey>(Assembly.GetExecutingAssembly());
+            MenuManager.GetInstance().LoadMenuItemFromAssembly();
+            this.LoadHotKeyFromAssembly<IHotKey>();
 
             Application.Current.MainWindow = this;
         }
@@ -239,7 +245,7 @@ namespace ColorVision
                 X509Certificate2 x509Certificate2 = GetCertificateFromSignedFile(Process.GetCurrentProcess()?.MainModule?.FileName);
                 if (x509Certificate2 != null)
                 {
-                    MenuItem menuItem = new MenuItem() { Header = Properties.Resource.InstallCertificate };
+                    MenuItem menuItem = new() { Header = Properties.Resource.InstallCertificate };
                     menuItem.Click += (s, e) =>
                     {
                         InstallCertificate(x509Certificate2);
@@ -249,7 +255,7 @@ namespace ColorVision
             });
         }
 
-        static X509Certificate2? GetCertificateFromSignedFile(string? fileName)
+        public static X509Certificate2? GetCertificateFromSignedFile(string? fileName)
         {
             if (!File.Exists(fileName)) return null;
             X509Certificate2 certificate = null;
@@ -265,11 +271,11 @@ namespace ColorVision
             return certificate;
         }
 
-        static void InstallCertificate(X509Certificate2 cert)
+        public static void InstallCertificate(X509Certificate2 cert)
         {
             try
             {
-                X509Store store = new X509Store(StoreName.Root, StoreLocation.CurrentUser);
+                X509Store store = new(StoreName.Root, StoreLocation.CurrentUser);
                 store.Open(OpenFlags.ReadWrite);
                 store.Add(cert);
                 store.Close();
@@ -356,7 +362,7 @@ namespace ColorVision
         {
             if (sender is StackPanel stackPanel1)
             {
-                flowDisplayControl ??= new FlowDisplayControl();
+                flowDisplayControl = FlowDisplayControl.GetInstance();
                 if (stackPanel1.Children.Contains(flowDisplayControl))
                     stackPanel1.Children.Remove(flowDisplayControl);
                 stackPanel1.Children.Insert(0, flowDisplayControl);
@@ -400,7 +406,7 @@ namespace ColorVision
                 };
 
 
-                FluidMoveBehavior fluidMoveBehavior = new FluidMoveBehavior
+                FluidMoveBehavior fluidMoveBehavior = new()
                 {
                     AppliesTo = FluidMoveScope.Children,
                     Duration = TimeSpan.FromSeconds(0.1)
@@ -438,11 +444,44 @@ namespace ColorVision
             }
         }
 
-        private void Test_Click(object sender, RoutedEventArgs e)
+        private void TextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            Window1 window1 = new Window1();
-            window1.Show();
+            new MQTTConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+
+        private void TextBlock_MouseLeftButtonDown1(object sender, MouseButtonEventArgs e)
+        {
+            new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+        private void TextBlock_MouseLeftButtonDown_RC(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            new RCServiceConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+
+        private void LogF_Click(object sender, RoutedEventArgs e)
+        {
+            var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
+            if (fileAppender != null)
+            {
+                Process.Start("explorer.exe", $"{Path.GetDirectoryName(fileAppender.File)}");
+            }
+        }
+
+        private void SettingF_Click(object sender, RoutedEventArgs e)
+        {
+            Process.Start("explorer.exe", $"{Path.GetDirectoryName(ConfigHandler.GetInstance().SoftwareConfigFileName)}");
+        }
+
+
+
+        private void Setting_Click(object sender, RoutedEventArgs e)
+        {
+            string fileName = ConfigHandler.GetInstance().SoftwareConfigFileName;
+            bool result = Tool.HasDefaultProgram(fileName);
+            if (!result)
+                Process.Start(result ? "explorer.exe" : "notepad.exe", fileName);
+        }
+
 
         private void Login_Click(object sender, RoutedEventArgs e)
         {

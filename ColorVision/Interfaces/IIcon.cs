@@ -1,4 +1,5 @@
 ﻿using ColorVision.Themes;
+using ColorVision.UI.Views;
 using System.Windows;
 using System.Windows.Media;
 

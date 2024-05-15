@@ -19,7 +19,7 @@ namespace ColorVision.Services.OnlineLicensing
 
     public class ExportLincense : IHotKey, IMenuItem
     {
-        public HotKeys HotKeys => new HotKeys(Properties.Resource.MyLicense_R, new Hotkey(Key.L, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(Properties.Resource.MyLicense_R, new Hotkey(Key.L, ModifierKeys.Control), Execute);
 
         public string? OwnerGuid => "Help";
 
@@ -33,7 +33,7 @@ namespace ColorVision.Services.OnlineLicensing
 
         public object? Icon { get; set; }
 
-        public RelayCommand Command => new RelayCommand(A => Execute());
+        public RelayCommand Command => new(A => Execute());
 
         private void Execute()
         {

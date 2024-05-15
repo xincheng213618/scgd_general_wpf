@@ -751,6 +751,10 @@
           <source>快速预览</source>
           <target state="new">クイックプレビュー</target>
         </trans-unit>
+        <trans-unit id="RCServiceLog" translate="yes" xml:space="preserve">
+          <source>RC服务日志</source>
+          <target state="new">RCサービスログ</target>
+        </trans-unit>
         <trans-unit id="ReceiveChannel" translate="yes" xml:space="preserve">
           <source>接收信道</source>
           <target state="new">受信チャンネル</target>
@@ -854,6 +858,10 @@
         <trans-unit id="ServiceIdentifier" translate="yes" xml:space="preserve">
           <source>服务标识</source>
           <target state="new">サービス識別子</target>
+        </trans-unit>
+        <trans-unit id="ServiceLog" translate="yes" xml:space="preserve">
+          <source>服务日志</source>
+          <target state="new">サービスログ</target>
         </trans-unit>
         <trans-unit id="ServiceName" translate="yes" xml:space="preserve">
           <source>服务名称</source>
@@ -999,6 +1007,10 @@
           <source>退订</source>
           <target state="new">購読を解除する</target>
         </trans-unit>
+        <trans-unit id="UpdateSpeed" translate="yes" xml:space="preserve">
+          <source>更新速度</source>
+          <target state="new">更新速度</target>
+        </trans-unit>
         <trans-unit id="Upgrade" translate="yes" xml:space="preserve">
           <source>升级</source>
           <target state="new">アップグレード</target>
@@ -1054,6 +1066,10 @@
         <trans-unit id="x64ServiceLog" translate="yes" xml:space="preserve">
           <source>x64服务日志</source>
           <target state="new">x64サービスログ</target>
+        </trans-unit>
+        <trans-unit id="x86ServiceLog" translate="yes" xml:space="preserve">
+          <source>x86服务日志</source>
+          <target state="new">x86サービスログ</target>
         </trans-unit>
       </group>
     </body>

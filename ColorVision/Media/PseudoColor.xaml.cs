@@ -125,7 +125,7 @@ namespace ColorVision.Media
             {
                 int rows = ColorMap.srcColor.Rows;
                 int cols = ColorMap.srcColor.Cols;
-                OpenCvSharp.Mat cm = new OpenCvSharp.Mat(rows + 5, cols + 150, ColorMap.srcColor.Type(), OpenCvSharp.Scalar.All(255));
+                OpenCvSharp.Mat cm = new(rows + 5, cols + 150, ColorMap.srcColor.Type(), OpenCvSharp.Scalar.All(255));
                 OpenCvSharp.Mat cmRt = cm[new OpenCvSharp.Rect(0, 0, cols, rows)];
                 ColorMap.srcColor.Clone().CopyTo(cmRt);
                 cmRt = cm[new OpenCvSharp.Rect(cols, 0, 150, rows)];

@@ -30,7 +30,7 @@ namespace ColorVision.Solution.V
 
             if (File.Exists(FullPath) && FullPath.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
             {
-                FileInfo fileInfo = new FileInfo(FullPath);
+                FileInfo fileInfo = new(FullPath);
                 if (fileInfo !=null)
                 {
                     DirectoryInfo = fileInfo.Directory ??new DirectoryInfo(FullPath);
@@ -118,9 +118,9 @@ namespace ColorVision.Solution.V
         public void GeneralContextMenu()
         {
             ContextMenu = new ContextMenu();
-            MenuItem menuItem = new MenuItem() { Header = "打开工程文件夹", Command = OpenExplorer };
+            MenuItem menuItem = new() { Header = "打开工程文件夹", Command = OpenExplorer };
             ContextMenu.Items.Add(menuItem);
-            MenuItem menuItem2 = new MenuItem() { Header = "清除缓存", Command = ClearCacheCommand };
+            MenuItem menuItem2 = new() { Header = "清除缓存", Command = ClearCacheCommand };
             ContextMenu.Items.Add(menuItem2);
         }
 
@@ -219,7 +219,7 @@ namespace ColorVision.Solution.V
 
             foreach (var item in DirectoryInfo.GetDirectories())
             {
-                BaseFolder folder = new BaseFolder(item);
+                BaseFolder folder = new(item);
                 var vFolder = new VFolder(folder);
                 AddChild(vFolder);
                 GeneralChild(vFolder, item);
@@ -230,7 +230,7 @@ namespace ColorVision.Solution.V
         {
             foreach (var item in directoryInfo.GetDirectories())
             {
-                BaseFolder folder = new BaseFolder(item);
+                BaseFolder folder = new(item);
                 var vFolder = new VFolder(folder);
                 vObject.AddChild(vFolder);
                 GeneralChild(vFolder, item);
@@ -250,7 +250,7 @@ namespace ColorVision.Solution.V
                 {
                     file = new CommonFile(item);
                 }
-                VFile vFile = new VFile(file);
+                VFile vFile = new(file);
                 vObject.AddChild(vFile);
             }
         }

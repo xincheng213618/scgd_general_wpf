@@ -21,6 +21,11 @@ namespace ColorVision.Services.Flow
     /// </summary>
     public partial class FlowDisplayControl : UserControl, IDisPlayControl, IIcon
     {
+
+        private static FlowDisplayControl _instance;
+        private static readonly object _locker = new();
+        public static FlowDisplayControl GetInstance() { lock (_locker) { return _instance ??= new FlowDisplayControl(); } }
+
         public IFlowView View { get; set; }
 
         public FlowDisplayControl()
@@ -81,11 +86,11 @@ namespace ColorVision.Services.Flow
             PreviewMouseDown += UserControl_PreviewMouseDown;
 
             menuItem = new MenuItem() { Header = ColorVision.Properties.Resource.MenuFlow };
-            MenuItem menuItem1 = new MenuItem() { Header = ColorVision.Properties.Resource.ExecutionProcess };
+            MenuItem menuItem1 = new() { Header = ColorVision.Properties.Resource.ExecutionProcess };
             menuItem1.Click +=(s,e)=> Button_FlowRun_Click(s, e);
             menuItem.Items.Add(menuItem1);
 
-            MenuItem menuItem2 = new MenuItem() { Header = ColorVision.Properties.Resource.StopProcess };
+            MenuItem menuItem2 = new() { Header = ColorVision.Properties.Resource.StopProcess };
             menuItem2.Click += (s, e) => Button_FlowStop_Click(s, e);
             menuItem.Items.Add(menuItem2);
 
@@ -195,6 +200,9 @@ namespace ColorVision.Services.Flow
                 }
             }
         }
+
+
+
 
         private void Handler_Cancelling(object? sender, CancelEventArgs e)
         {

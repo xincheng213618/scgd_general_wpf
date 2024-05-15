@@ -148,11 +148,11 @@ namespace ColorVision.Draw
 
         public void Print()
         {
-            PrintDialog printDialog = new PrintDialog();
+            PrintDialog printDialog = new();
             if (printDialog.ShowDialog() == true)
             {
                 // 创建一个可打印的区域
-                Size pageSize = new Size(printDialog.PrintableAreaWidth, printDialog.PrintableAreaHeight);
+                Size pageSize = new(printDialog.PrintableAreaWidth, printDialog.PrintableAreaHeight);
                 Image.Measure(pageSize);
                 Image.Arrange(new Rect(5, 5, pageSize.Width, pageSize.Height));
 
@@ -165,8 +165,8 @@ namespace ColorVision.Draw
 
         public void AddContextMenu()
         {
-            ContextMenu contextMenu = new ContextMenu();
-            MenuItem menuItemZoom = new MenuItem() { Header = "缩放工具", Command = SaveImageCommand };
+            ContextMenu contextMenu = new();
+            MenuItem menuItemZoom = new() { Header = "缩放工具", Command = SaveImageCommand };
             menuItemZoom.Items.Add(new MenuItem() { Header = "放大", Command = ZoomIncrease });
             menuItemZoom.Items.Add(new MenuItem() { Header = "缩小", Command = ZoomIncrease });
             menuItemZoom.Items.Add(new MenuItem() { Header = "原始大小", Command = ZoomNone });
@@ -174,7 +174,7 @@ namespace ColorVision.Draw
 
             contextMenu.Items.Add(menuItemZoom);
 
-            MenuItem menuItemScalingMode = new MenuItem() { Header = "BitmapScalingMode" };
+            MenuItem menuItemScalingMode = new() { Header = "BitmapScalingMode" };
             contextMenu.Items.Add(menuItemScalingMode);
 
 
@@ -202,7 +202,7 @@ namespace ColorVision.Draw
             }
             else
             {
-                RotateTransform rotateTransform1 = new RotateTransform() { Angle = 90 };
+                RotateTransform rotateTransform1 = new() { Angle = 90 };
                 Image.RenderTransform = rotateTransform1;
                 Image.RenderTransformOrigin = new Point(0.5, 0.5);
             }
@@ -216,7 +216,7 @@ namespace ColorVision.Draw
             }
             else
             {
-                RotateTransform rotateTransform1 = new RotateTransform() { Angle = -90 };
+                RotateTransform rotateTransform1 = new() { Angle = -90 };
                 Image.RenderTransform = rotateTransform1;
                 Image.RenderTransformOrigin = new Point(0.5, 0.5);
             }
@@ -314,15 +314,15 @@ namespace ColorVision.Draw
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
-            RenderTargetBitmap renderTargetBitmap = new RenderTargetBitmap((int)Image.ActualWidth, (int)Image.ActualHeight, 96, 96, PixelFormats.Pbgra32);
+            RenderTargetBitmap renderTargetBitmap = new((int)Image.ActualWidth, (int)Image.ActualHeight, 96, 96, PixelFormats.Pbgra32);
             renderTargetBitmap.Render(Image);
 
             // 创建一个PngBitmapEncoder对象来保存位图为PNG文件
-            PngBitmapEncoder pngEncoder = new PngBitmapEncoder();
+            PngBitmapEncoder pngEncoder = new();
             pngEncoder.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
 
             // 将PNG内容保存到文件
-            using FileStream fileStream = new FileStream(dialog.FileName, FileMode.Create);
+            using FileStream fileStream = new(dialog.FileName, FileMode.Create);
             pngEncoder.Save(fileStream);
         }
 
@@ -331,32 +331,32 @@ namespace ColorVision.Draw
         {
             if (e.Key == Key.Left)
             {
-                TranslateTransform translateTransform = new TranslateTransform();
-                Vector vector = new Vector(-10, 0);
+                TranslateTransform translateTransform = new();
+                Vector vector = new(-10, 0);
                 translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
                 translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
                 ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
             }
             else if (e.Key == Key.Right)
             {
-                TranslateTransform translateTransform = new TranslateTransform();
-                Vector vector = new Vector(10, 0);
+                TranslateTransform translateTransform = new();
+                Vector vector = new(10, 0);
                 translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
                 translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
                 ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
             }
             else if (e.Key == Key.Up)
             {
-                TranslateTransform translateTransform = new TranslateTransform();
-                Vector vector = new Vector(0, -10);
+                TranslateTransform translateTransform = new();
+                Vector vector = new(0, -10);
                 translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
                 translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
                 ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
             }
             else if (e.Key == Key.Down)
             {
-                TranslateTransform translateTransform = new TranslateTransform();
-                Vector vector = new Vector(0, 10);
+                TranslateTransform translateTransform = new();
+                Vector vector = new(0, 10);
                 translateTransform.SetCurrentValue(TranslateTransform.XProperty, vector.X);
                 translateTransform.SetCurrentValue(TranslateTransform.YProperty, vector.Y);
                 ZoomboxSub.SetCurrentValue(Zoombox.ContentMatrixProperty, Matrix.Multiply(ZoomboxSub.ContentMatrix, translateTransform.Value));
@@ -442,8 +442,6 @@ namespace ColorVision.Draw
                 NotifyPropertyChanged();
             }
         }
-
-
 
         public EventHandler<EditModeChangedEventArgs> EditModeChanged { get; set; }
 

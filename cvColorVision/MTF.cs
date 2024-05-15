@@ -25,7 +25,7 @@ namespace cvColorVision
             try
             {
                 Mat mat = Cv2.ImRead(FileName);
-                HImage hImage = new HImage();
+                HImage hImage = new();
                 hImage.pData = mat.Data;
                 hImage.nHeight = (uint)mat.Width;
                 hImage.nHeight = (uint)mat.Height;
@@ -47,7 +47,7 @@ namespace cvColorVision
 
             double dRatio = pm.MTF_dRatio;
 
-            Dictionary<RoiData, double> MTFResults = new Dictionary<RoiData, double>();
+            Dictionary<RoiData, double> MTFResults = new();
             foreach (RoiData pd in roiDatas)
             {
                 var articulation = cvCalArticulation(EvaFunc.CalResol, tImg, 0, 1, 5, dRatio);
@@ -71,12 +71,12 @@ namespace cvColorVision
             if (File.Exists(fileName))
                 return false;
 
-            System.Data.DataTable dt = new System.Data.DataTable();
+            System.Data.DataTable dt = new();
             foreach (var item in strings)
                 dt.Columns.Add(item);
 
-            using FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write);
-            using StreamWriter sw2 = new StreamWriter(fs, Encoding.UTF8);
+            using FileStream fs = new(fileName, FileMode.Create, FileAccess.Write);
+            using StreamWriter sw2 = new(fs, Encoding.UTF8);
             for (int i = 0; i < dt.Columns.Count; i++)
             {
                 if (i != 0) sw2.Write(",");
@@ -96,8 +96,8 @@ namespace cvColorVision
             path += $"{(path.Substring(path.Length - 1, 1) != "/" ? "\\" : "")}MTFResult_{DateTime.Now:yyyyMMddhhmmss}.csv";
             if (!File.Exists(path))
                 CSVinitialized(path, new List<string>() { "X", "Y", "Width", "Height", "Value" });
-            using FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
-            using StreamWriter sw = new StreamWriter(fs, Encoding.UTF8);
+            using FileStream fs = new(path, FileMode.Append, FileAccess.Write);
+            using StreamWriter sw = new(fs, Encoding.UTF8);
             foreach (var item in MTFResults)
             {
                 string str = $"{item.Key.Img_x},{item.Key.Img_y},{item.Key.w},{item.Key.h},{item.Value}";

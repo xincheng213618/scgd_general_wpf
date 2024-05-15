@@ -22,7 +22,7 @@ namespace ColorVision.Services.Dao
 
         public override SysDictionaryModModel GetModelFromDataRow(DataRow item)
         {
-            SysDictionaryModModel model = new SysDictionaryModModel
+            SysDictionaryModModel model = new()
             {
                 Id = item.Field<int>("id"),
                 Code = item.Field<string>("code"),
@@ -38,7 +38,7 @@ namespace ColorVision.Services.Dao
             if (string.IsNullOrEmpty(code))
                 return new SysDictionaryModModel();
             string sql = $"select * from {TableName} where is_delete=0 and code=@code and tenant_id=@tenantId";
-            Dictionary<string, object> param = new Dictionary<string, object>
+            Dictionary<string, object> param = new()
             {
                 { "code", code },
                 { "tenantId", tenantId }

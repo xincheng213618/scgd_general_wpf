@@ -1,17 +1,16 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Sorts;
 using ColorVision.Common.Utilities;
+using ColorVision.MySql;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Flow;
 using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Settings;
 using ColorVision.UI;
+using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
 using NPOI.SS.Formula.Functions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Services.Templates.POI
 {
@@ -27,9 +26,9 @@ namespace ColorVision.Services.Templates.POI
 
         public object? Icon => null;
 
-        public RelayCommand Command => new RelayCommand(a => {
+        public RelayCommand Command => new(a => {
             SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-            if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+            if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
@@ -70,7 +69,7 @@ namespace ColorVision.Services.Templates.POI
         }
         public override void Delete(int index)
         {
-            PoiMasterDao poiMasterDao = new PoiMasterDao();
+            PoiMasterDao poiMasterDao = new();
             poiMasterDao.DeleteById(TemplateParams[index].Value.Id);
             TemplateParams.RemoveAt(index);
         }
@@ -98,13 +97,13 @@ namespace ColorVision.Services.Templates.POI
         public static ObservableCollection<TemplateModel<PoiParam>> Params { get; set; } = new ObservableCollection<TemplateModel<PoiParam>>();
         public static void Save2DB(PoiParam poiParam)
         {
-            PoiMasterModel poiMasterModel = new PoiMasterModel(poiParam);
+            PoiMasterModel poiMasterModel = new(poiParam);
             PoiMasterDao.Instance.Save(poiMasterModel);
 
-            List<PoiDetailModel> poiDetails = new List<PoiDetailModel>();
+            List<PoiDetailModel> poiDetails = new();
             foreach (PoiParamData pt in poiParam.PoiPoints)
             {
-                PoiDetailModel poiDetail = new PoiDetailModel(poiParam.Id, pt);
+                PoiDetailModel poiDetail = new(poiParam.Id, pt);
                 poiDetails.Add(poiDetail);
             }
             PoiDetailDao.Instance.SaveByPid(poiParam.Id, poiDetails);
@@ -134,7 +133,7 @@ namespace ColorVision.Services.Templates.POI
 
         public static PoiParam? AddPoiParam(string TemplateName)
         {
-            PoiMasterModel poiMasterModel = new PoiMasterModel(TemplateName, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            PoiMasterModel poiMasterModel = new(TemplateName, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             PoiMasterDao.Instance.Save(poiMasterModel);
 
             int pkId = poiMasterModel.Id;

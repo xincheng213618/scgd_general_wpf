@@ -6,9 +6,17 @@ using ColorVision.Settings;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
+using ColorVision.UI;
+using ColorVision.Common.MVVM;
 
 namespace ColorVision.Wizards
 {
+    public class WizardConfig : ViewModelBase ,IConfig
+    {
+        public static WizardConfig Instance =>ConfigHandler1.GetInstance().GetRequiredService<WizardConfig>();
+        public bool WizardCompletionKey { get => _WizardCompletionKey; set { _WizardCompletionKey = value; NotifyPropertyChanged(); } }
+        private bool _WizardCompletionKey;
+    }
 
     /// <summary>
     /// WizardWindow.xaml 的交互逻辑
@@ -26,7 +34,7 @@ namespace ColorVision.Wizards
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.WizardCompletionKey = true;
+            WizardConfig.Instance.WizardCompletionKey = true;
             ConfigHandler.GetInstance().SaveConfig();
             //这里使用件的启动路径，启动主程序
             Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"), "-r");

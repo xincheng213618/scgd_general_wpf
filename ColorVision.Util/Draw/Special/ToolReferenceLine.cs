@@ -139,7 +139,7 @@ namespace ColorVision.Util.Draw.Special
             double angleRad = angle * Math.PI / 180.0;
 
             // Define the second lenc for the line from the given lenc and angle
-            Point pAngle = new Point(p.X + Math.Cos(angleRad), p.Y + Math.Sin(angleRad));
+            Point pAngle = new(p.X + Math.Cos(angleRad), p.Y + Math.Sin(angleRad));
 
             // Calculate the intersection of the two lines
             double detL1 = Det(p.X, p.Y, pAngle.X, pAngle.Y);
@@ -160,7 +160,7 @@ namespace ColorVision.Util.Draw.Special
 
             double x = xnom / denom;
             double y = ynom / denom;
-            Point intersection = new Point(x, y);
+            Point intersection = new(x, y);
 
             // Check if the intersection lenc lies on the line segment p1-p2
             if (!IsBetween(p1, p2, intersection))
@@ -180,7 +180,7 @@ namespace ColorVision.Util.Draw.Special
 
         public static List<Point> CalculateIntersectionPoints(double width, double height, Point point, double angle)
         {
-            List<Point> points = new List<Point>();
+            List<Point> points = new();
             if (GetIntersection(point, angle, new Point(0, 0), new Point(0, width)) is Point point1)
                 points.Add(point1);
             if (GetIntersection(point, angle, new Point(0, width), new Point(height, width)) is Point point2)
@@ -208,7 +208,7 @@ namespace ColorVision.Util.Draw.Special
             using DrawingContext dc = DrawVisualImage.RenderOpen();
             Brush brush = Brushes.Red;
             double ratio = 1 / ZoomboxSub.ContentMatrix.M11;
-            Pen pen = new Pen(brush, ratio);
+            Pen pen = new(brush, ratio);
 
 
             Point ActL = RMouseDownP + PointLen;
@@ -230,10 +230,10 @@ namespace ColorVision.Util.Draw.Special
                     dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
                 }
 
-                TextAttribute textAttribute = new TextAttribute();
+                TextAttribute textAttribute = new();
                 textAttribute.FontSize = 15 / ZoomboxSub.ContentMatrix.M11;
 
-                FormattedText formattedText = new FormattedText(angle.ToString("F1") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+                FormattedText formattedText = new(angle.ToString("F1") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                 dc.DrawText(formattedText, RMouseDownP + new Vector(20, 20));
 
 
@@ -249,13 +249,13 @@ namespace ColorVision.Util.Draw.Special
 
 
                 //dc.PushTransform(new RotateTransform(angle, RMouseDownP.X, RMouseDownP.Y));
-                FormattedText formattedText1 = new FormattedText(lenc.ToString("F1"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+                FormattedText formattedText1 = new(lenc.ToString("F1"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                 dc.DrawText(formattedText1, RMouseDownP + PointLen);
 
-                FormattedText formattedText2 = new FormattedText((lenc + 10).ToString("F1"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+                FormattedText formattedText2 = new((lenc + 10).ToString("F1"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                 dc.DrawText(formattedText2, RMouseDownP + PointLen);
 
-                FormattedText formattedText3 = new FormattedText((lenc + 1).ToString("F1"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+                FormattedText formattedText3 = new((lenc + 1).ToString("F1"), CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                 dc.DrawText(formattedText3, RMouseDownP - PointLen);
             }
             else if (Mode == 1)
@@ -270,10 +270,10 @@ namespace ColorVision.Util.Draw.Special
                     dc.DrawLine(pen, intersectionPoints[2], intersectionPoints[3]); // 垂直线
                 }
 
-                TextAttribute textAttribute = new TextAttribute();
+                TextAttribute textAttribute = new();
                 textAttribute.FontSize = 15 / ZoomboxSub.ContentMatrix.M11;
 
-                FormattedText formattedText = new FormattedText(angle.ToString("F1") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+                FormattedText formattedText = new(angle.ToString("F1") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                 dc.DrawText(formattedText, RMouseDownP + new Vector(20, 20));
             }
             else if (Mode == 2)
@@ -297,10 +297,10 @@ namespace ColorVision.Util.Draw.Special
 
 
 
-                TextAttribute textAttribute = new TextAttribute();
+                TextAttribute textAttribute = new();
                 textAttribute.FontSize = 15 / ZoomboxSub.ContentMatrix.M11;
 
-                FormattedText formattedText = new FormattedText(angle.ToString("F1") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+                FormattedText formattedText = new(angle.ToString("F1") + "°", CultureInfo.CurrentCulture, textAttribute.FlowDirection, new Typeface(textAttribute.FontFamily, textAttribute.FontStyle, textAttribute.FontWeight, textAttribute.FontStretch), textAttribute.FontSize, textAttribute.Brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                 dc.DrawText(formattedText, RMouseDownP + new Vector(20, 20));
             }
 

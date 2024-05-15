@@ -141,9 +141,6 @@
   <data name="Theme" xml:space="preserve">
     <value>主題</value>
   </data>
-  <data name="UseSystem" xml:space="preserve">
-    <value>跟随系统</value>
-  </data>
   <data name="ThemePink" xml:space="preserve">
     <value>粉紅色</value>
   </data>
@@ -152,5 +149,8 @@
   </data>
   <data name="MenuLanguage" xml:space="preserve">
     <value>語言(_L）</value>
+  </data>
+  <data name="ThemeUseSystem" xml:space="preserve">
+    <value>跟随系统</value>
   </data>
 </root>

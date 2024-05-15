@@ -19,9 +19,9 @@ namespace ColorVision.Solution
         public string? InputGestureText => null;
 
         public object? Icon => null;
-        public RelayCommand Command => new RelayCommand(a => { });
+        public RelayCommand Command => new(a => { });
 
-        private RecentFileList SolutionHistory = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
+        private RecentFileList SolutionHistory = new() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
 
         public MenuItem MenuItem
         {
@@ -38,7 +38,7 @@ namespace ColorVision.Solution
                     {
                         if (File.Exists(item))
                         {
-                            MenuItem menuItem = new MenuItem();
+                            MenuItem menuItem = new();
                             menuItem.Header = item;
                             menuItem.Click += (sender, e) =>
                             {

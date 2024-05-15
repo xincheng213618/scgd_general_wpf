@@ -23,10 +23,10 @@ namespace ColorVision
             {
                 LineSmoothness = 0.5
             };
-            List<ObservablePoint> observablePoint = new List<ObservablePoint>();
+            List<ObservablePoint> observablePoint = new();
             _lineSeries.Values = observablePoint;
             _lineSeries.DataLabelsMaxWidth = 200;
-            Random random = new Random();
+            Random random = new();
 
             for (int i = 350; i <= 750; i++)
                 observablePoint.Add(new ObservablePoint(i * 1, 10+i));

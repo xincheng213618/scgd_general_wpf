@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Templates;
@@ -29,9 +30,9 @@ namespace ColorVision.Services.Devices.Sensor.Templates
 
         public object? Icon { get; }
 
-        public RelayCommand Command => new RelayCommand(a => {
+        public RelayCommand Command => new(a => {
             SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-            if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+            if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;

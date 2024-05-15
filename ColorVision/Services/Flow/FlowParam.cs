@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Flow.Dao;
 using ColorVision.Services.Templates;
@@ -28,9 +29,9 @@ namespace ColorVision.Services.Flow
 
         public object? Icon { get; }
 
-        public RelayCommand Command => new RelayCommand(a => {
+        public RelayCommand Command => new(a => {
             SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-            if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+            if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
@@ -81,7 +82,7 @@ namespace ColorVision.Services.Flow
     {
         public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
 
-        private static ModMasterDao masterFlowDao = new ModMasterDao(ModMasterType.Flow);
+        private static ModMasterDao masterFlowDao = new(ModMasterType.Flow);
 
         public static ObservableCollection<TemplateModel<FlowParam>> LoadFlowParam()
         {
@@ -101,7 +102,7 @@ namespace ColorVision.Services.Flow
 
         public static FlowParam? AddFlowParam(string text)
         {
-            ModMasterModel flowMaster = new ModMasterModel(ModMasterType.Flow, text, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            ModMasterModel flowMaster = new(ModMasterType.Flow, text, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
             Save(flowMaster);
 
             int pkId = flowMaster.Id;
@@ -113,7 +114,7 @@ namespace ColorVision.Services.Flow
                     SysResourceModel sysResourceModeldefault = VSysResourceDao.Instance.GetById(id);
                     if (sysResourceModeldefault != null)
                     {
-                        SysResourceModel sysResourceModel = new SysResourceModel();
+                        SysResourceModel sysResourceModel = new();
                         sysResourceModel.Name = flowMaster.Name;
                         sysResourceModel.Code = sysResourceModeldefault.Code;
                         sysResourceModel.Type = sysResourceModeldefault.Type;
@@ -137,7 +138,7 @@ namespace ColorVision.Services.Flow
             {
                 modMaster.Pid = mod.Id;
                 ret = ModMasterDao.Instance.Save(modMaster);
-                List<ModDetailModel> list = new List<ModDetailModel>();
+                List<ModDetailModel> list = new();
                 List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(modMaster.Pid);
                 foreach (var item in sysDic)
                 {
@@ -161,11 +162,11 @@ namespace ColorVision.Services.Flow
             if (ModMasterDao.Instance.GetById(flowParam.Id) is ModMasterModel modMasterModel && modMasterModel.Pcode != null)
             {
                 modMasterModel.Name = flowParam.Name;
-                ModMasterDao modMasterDao = new ModMasterDao(modMasterModel.Pcode);
+                ModMasterDao modMasterDao = new(modMasterModel.Pcode);
                 modMasterDao.Save(modMasterModel);
             }
 
-            List<ModDetailModel> list = new List<ModDetailModel>();
+            List<ModDetailModel> list = new();
             flowParam.GetDetail(list);
             if (list.Count > 0 && list[0] is ModDetailModel model)
             {
@@ -195,7 +196,7 @@ namespace ColorVision.Services.Flow
                 }
                 else
                 {
-                    SysResourceModel res = new SysResourceModel();
+                    SysResourceModel res = new();
                     res.Name = flowParam.Name;
                     res.Type = (int)PhysicalResourceType.FlowFile;
                     if (!string.IsNullOrEmpty(flowParam.DataBase64))
@@ -222,10 +223,10 @@ namespace ColorVision.Services.Flow
         {
             Id = dbModel.Id;
             Name = dbModel.Name ?? string.Empty;
-            List<ModDetailModel> modDetailModels = new List<ModDetailModel>();
+            List<ModDetailModel> modDetailModels = new();
             foreach (var model in flowDetail)
             {
-                ModDetailModel mod = new ModDetailModel() { Id = model.Id, Pid = model.Pid, IsDelete = model.IsDelete, IsEnable = model.IsEnable, Symbol = model.Symbol, SysPid = model.SysPid, ValueA = model.ValueA, ValueB = model.ValueB };
+                ModDetailModel mod = new() { Id = model.Id, Pid = model.Pid, IsDelete = model.IsDelete, IsEnable = model.IsEnable, Symbol = model.Symbol, SysPid = model.SysPid, ValueA = model.ValueA, ValueB = model.ValueB };
                 modDetailModels.Add(mod);
                 dataBase64 = model.Value ??string.Empty;
             }

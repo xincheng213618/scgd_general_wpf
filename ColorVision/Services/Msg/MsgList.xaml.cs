@@ -17,23 +17,23 @@ namespace ColorVision.Services.Msg
 {
     public class HotKeyMsgList : IHotKey, IMenuItem
     {
-        public HotKeys HotKeys => new HotKeys(Properties.Resource.MsgList, new Hotkey(Key.M, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(Properties.Resource.MsgList, new Hotkey(Key.M, ModifierKeys.Control), Execute);
         private void Execute()
         {
             new MsgList() { Owner = Application.Current.GetActiveWindow() }.Show();
         }
 
-        public string? OwnerGuid => "Tool";
+        public string? OwnerGuid => "Help";
 
         public string? GuidId => "MsgList";
         public int Order => 2;
-        public string? Header => "MQTTMsg(_L)";
+        public string? Header => "MQTTMsg";
 
         public string? InputGestureText { get; } = "Ctrl + M";
 
         public object? Icon { get; }
 
-        public RelayCommand Command => new RelayCommand(a => Execute());
+        public RelayCommand Command => new(a => Execute());
     }
 
 
@@ -69,7 +69,7 @@ namespace ColorVision.Services.Msg
             {
                 if (stackPanel.Tag is MsgReturn msgReturn)
                 {
-                    JsonSerializerSettings settings = new JsonSerializerSettings
+                    JsonSerializerSettings settings = new()
                     {
                         Formatting = Formatting.Indented
                     }; 
@@ -79,7 +79,7 @@ namespace ColorVision.Services.Msg
                 }
                 else if (stackPanel.Tag is MsgSend msgSend)
                 {
-                    JsonSerializerSettings settings = new JsonSerializerSettings
+                    JsonSerializerSettings settings = new()
                     {
                         Formatting = Formatting.Indented
                     };
@@ -113,7 +113,7 @@ namespace ColorVision.Services.Msg
         {
             if (sender is MenuItem menuItem && menuItem.Tag is MsgRecord msgRecord)
             {
-                JsonSerializerSettings settings = new JsonSerializerSettings
+                JsonSerializerSettings settings = new()
                 {
                     Formatting = Formatting.Indented
                 };
@@ -128,7 +128,7 @@ namespace ColorVision.Services.Msg
         {
             if (sender is MenuItem menuItem && menuItem.Tag is MsgRecord msgRecord)
             {
-                JsonSerializerSettings settings = new JsonSerializerSettings
+                JsonSerializerSettings settings = new()
                 {
                     Formatting = Formatting.Indented
                 };

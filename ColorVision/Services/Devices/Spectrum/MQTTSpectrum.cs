@@ -110,7 +110,7 @@ namespace ColorVision.Services.Devices.Spectrum
             {
                 if (devheartbeat.DeviceName!=null && devheartbeat.DeviceName.Equals(Config.Code, StringComparison.Ordinal))
                 {
-                    SpectrumHeartbeatParam heartbeat = new SpectrumHeartbeatParam();
+                    SpectrumHeartbeatParam heartbeat = new();
                     heartbeat.DeviceStatus = devheartbeat.DeviceStatus;
                     heartbeat.IsAutoGetData = devheartbeat.IsAutoGetData;
                     DoSpectumHeartbeat(heartbeat);
@@ -125,7 +125,7 @@ namespace ColorVision.Services.Devices.Spectrum
 
         public bool Init()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "Init"
             };
@@ -136,7 +136,7 @@ namespace ColorVision.Services.Devices.Spectrum
 
         public void GetParam()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "GetParam",
                 ServiceName = Config.Code,
@@ -146,7 +146,7 @@ namespace ColorVision.Services.Devices.Spectrum
 
         public bool SetParam(int iLimitTime, float fTimeB)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "SetParam",
                 ServiceName = Config.Code,
@@ -164,7 +164,7 @@ namespace ColorVision.Services.Devices.Spectrum
         {
             var Params = new Dictionary<string, object>() { };
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "Open",
                 ServiceName = Config.Code,
@@ -184,7 +184,7 @@ namespace ColorVision.Services.Devices.Spectrum
         public bool GetData(float IntTime, int AveNum, bool bUseAutoIntTime = false, bool bUseAutoDark = false, bool bUseAutoShutterDark = false)
         {
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "GetData",
                 SerialNumber = sn,
@@ -205,7 +205,7 @@ namespace ColorVision.Services.Devices.Spectrum
 
         public bool Close()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "Close",
                 ServiceName = Config.Code,
@@ -216,7 +216,7 @@ namespace ColorVision.Services.Devices.Spectrum
 
         internal bool InitDark(float IntTime, int AveNum)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "InitDark",
                 ServiceName = Config.Code,
@@ -232,7 +232,7 @@ namespace ColorVision.Services.Devices.Spectrum
 
         internal void GetDataAuto(float IntTime, int AveNum, bool bUseAutoIntTime = false, bool bUseAutoDark = false, bool bUseAutoShutterDark = false)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "GetDataAuto",
                 ServiceName = Config.Code,
@@ -251,7 +251,7 @@ namespace ColorVision.Services.Devices.Spectrum
 
         internal void GetDataAutoStop()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "GetDataAutoStop",
                 ServiceName = Config.Code,
@@ -263,7 +263,7 @@ namespace ColorVision.Services.Devices.Spectrum
         public override void UpdateStatus(MQTTNodeService nodeService)
         {
             base.UpdateStatus(nodeService);
-            HeartbeatParam heartbeat = new HeartbeatParam();
+            HeartbeatParam heartbeat = new();
             foreach (var item in nodeService.Devices)
             {
                 if (Config.Code.Equals(item.Key, StringComparison.Ordinal))
@@ -305,7 +305,7 @@ namespace ColorVision.Services.Devices.Spectrum
 
         public void ShutterConnect()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTSpectrumEventEnum.Event_Shutter_Connect,
                 ServiceName = Config.Code,
@@ -315,7 +315,7 @@ namespace ColorVision.Services.Devices.Spectrum
 
         public void ShutterDisconnect()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTSpectrumEventEnum.Event_Shutter_Disconnect,
                 ServiceName = Config.Code,
@@ -325,7 +325,7 @@ namespace ColorVision.Services.Devices.Spectrum
 
         public void ShutterDoopen()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTSpectrumEventEnum.Event_Shutter_Doopen,
                 ServiceName = Config.Code,
@@ -335,7 +335,7 @@ namespace ColorVision.Services.Devices.Spectrum
 
         public void ShutterDoclose()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTSpectrumEventEnum.Event_Shutter_Doclose,
                 ServiceName = Config.Code,
@@ -349,9 +349,9 @@ namespace ColorVision.Services.Devices.Spectrum
             var stopwatch = new Stopwatch();
             stopwatch.Start(); // 开始计时
 
-            TaskCompletionSource<MsgRecord> tcs = new TaskCompletionSource<MsgRecord>();
+            TaskCompletionSource<MsgRecord> tcs = new();
             string md5 = Tool.CalculateMD5(fileName);
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTFileServerEventEnum.Event_File_Upload,
                 Params = new Dictionary<string, object> { { "Name", name }, { "FileName", fileName }, { "FileExtType", FileExtType.Calibration }, { "MD5", md5 } }

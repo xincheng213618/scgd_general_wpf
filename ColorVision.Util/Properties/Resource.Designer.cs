@@ -162,9 +162,9 @@ namespace ColorVision.Util.Properties {
         /// <summary>
         ///   查找类似 跟随系统 的本地化字符串。
         /// </summary>
-        public static string UseSystem {
+        public static string ThemeUseSystem {
             get {
-                return ResourceManager.GetString("UseSystem", resourceCulture);
+                return ResourceManager.GetString("ThemeUseSystem", resourceCulture);
             }
         }
     }

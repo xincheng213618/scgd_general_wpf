@@ -61,7 +61,7 @@ namespace ColorVision.Solution
                 }
                 else if (Directory.Exists(fn))
                 {
-                    DirectoryInfo directoryInfo = new DirectoryInfo(fn);
+                    DirectoryInfo directoryInfo = new(fn);
                     foreach (var item in directoryInfo.GetFiles())
                     {
                         if (item.Extension == ".cvproj")

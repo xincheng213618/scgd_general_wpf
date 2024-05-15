@@ -1,14 +1,15 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.MQTT;
 using ColorVision.MySql;
-using ColorVision.Services;
-using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.RC;
-using ColorVision.Services.Templates;
 using ColorVision.Solution;
+using ColorVision.Themes;
+using ColorVision.UI;
+using ColorVision.UI.Views;
 using ColorVision.Update;
 using ColorVision.UserSpace;
-using System;
+using ColorVision.Wizards;
 using System.Collections.ObjectModel;
 using System.Text.Json.Serialization;
 
@@ -26,40 +27,32 @@ namespace ColorVision.Settings
         public SoftwareConfig()
         {
             SoftwareSetting = new SoftwareSetting();
-
             UserConfig = new UserConfig();
-            SystemMonitorSetting = new SystemMonitorSetting();
-            SystemMonitorLazy = new Lazy<SystemMonitor>(() => SystemMonitor.GetInstance());
-            TemplateControlLazy = new Lazy<TemplateControl>(() => TemplateControl.GetInstance());
-
 
             MQTTSetting = new MQTTSetting();
+
             MQTTConfig = new MQTTConfig();
             MQTTConfigs = new ObservableCollection<MQTTConfig>();
-            MQTTControlLazy = new Lazy<MQTTControl>(() => MQTTControl.GetInstance());
-
 
             MySqlConfig = new MySqlConfig();
             MySqlConfigs = new ObservableCollection<MySqlConfig>();
-            MySqlControlLazy = new Lazy<MySqlControl>(() => MySqlControl.GetInstance());
 
             RcServiceConfig = new RCServiceConfig();
             RcServiceConfigs = new ObservableCollection<RCServiceConfig>();
-            RcServiceControlLazy = new Lazy<MQTTRCService>(() => MQTTRCService.GetInstance());
-
-            VideoConfig = new LocalVideoConfig();
-            ViewConfig = new ViewConfig();
         }
 
-        public string CalibToolsPath { get=>_CalibToolsPath; set=> _CalibToolsPath = value; }
-        private string _CalibToolsPath = string.Empty;
+        public bool IsAutoRun { get => Tool.IsAutoRun(GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); set { Tool.SetAutoRun(value, GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); NotifyPropertyChanged(); } }
 
-        public ServicesSetting ServicesSetting { get; set; } = new ServicesSetting();
+        public static MainWindowConfig MainWindowConfig => MainWindowConfig.Instance;
+
+        public static ThemeConfig ThemeConfig => ThemeConfig.Instance;
+
+        public static WizardConfig WizardConfig => WizardConfig.Instance;
 
         [JsonIgnore]
         public AutoUpdater AutoUpdater { get;} = AutoUpdater.GetInstance();
 
-        public ViewConfig ViewConfig { get; set; }
+        public ViewConfig ViewConfig { get; } = ViewConfig.GetInstance();
 
         public string? Version { get => _Version; set { _Version = value; NotifyPropertyChanged(); } }
         private string? _Version = string.Empty;
@@ -82,29 +75,14 @@ namespace ColorVision.Settings
 
 
         public SoftwareSetting SoftwareSetting { get; set; }
-        public LocalVideoConfig VideoConfig { get; set; }
 
+        public static SystemMonitorSetting SystemMonitorSetting => ConfigHandler1.GetInstance().GetRequiredService<SystemMonitorSetting>();
 
-        [JsonIgnore]
-        readonly Lazy<SystemMonitor> SystemMonitorLazy;
-        [JsonIgnore]
-        public SystemMonitor SystemMonitor { get => SystemMonitorLazy.Value; }
-
-        public SystemMonitorSetting SystemMonitorSetting { get; set; }
-
-        [JsonIgnore]
-        readonly Lazy<TemplateControl> TemplateControlLazy;
-        [JsonIgnore]
-        public TemplateControl TemplateControl { get => TemplateControlLazy.Value; }
 
         public MQTTSetting MQTTSetting { get; set; }
         public MQTTConfig MQTTConfig { get; set; }
 
         public ObservableCollection<MQTTConfig> MQTTConfigs { get; set; } 
-        [JsonIgnore]
-        readonly Lazy<MQTTControl> MQTTControlLazy;
-        [JsonIgnore]
-        public MQTTControl MQTTControl { get => MQTTControlLazy.Value; }
 
 
         /// <summary>
@@ -113,10 +91,6 @@ namespace ColorVision.Settings
         public MySqlConfig MySqlConfig { get; set; }
         public ObservableCollection<MySqlConfig> MySqlConfigs { get; set; }
 
-        [JsonIgnore]
-        readonly Lazy<MySqlControl> MySqlControlLazy;
-        [JsonIgnore]
-        public MySqlControl MySqlControl { get => MySqlControlLazy.Value; }
 
         public UserConfig UserConfig { get; set; }
 
@@ -125,11 +99,6 @@ namespace ColorVision.Settings
 
         public RCServiceConfig RcServiceConfig { get; set; }
         public ObservableCollection<RCServiceConfig> RcServiceConfigs { get; set; }
-
-        [JsonIgnore]
-        readonly Lazy<MQTTRCService> RcServiceControlLazy;
-        [JsonIgnore]
-        public MQTTRCService RCService { get => RcServiceControlLazy.Value; }
     }
 
     public class UserManager

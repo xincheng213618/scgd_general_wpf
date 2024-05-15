@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Extension;
+using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Views;
 using ColorVision.Services.Msg;
@@ -190,7 +191,7 @@ namespace ColorVision.Services.Devices.Calibration
                 TemplateControl = TemplateControl.GetInstance();
                 SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
-                if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+                if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
                 {
                     MessageBox.Show(Application.Current.MainWindow, Properties.Resource.DatabaseConnectionFailed, "ColorVision");
                     return;

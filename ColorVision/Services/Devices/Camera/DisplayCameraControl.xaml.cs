@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Extension;
+using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.Devices.Camera.Views;
@@ -37,6 +38,7 @@ namespace ColorVision.Services.Devices.Camera
 
         public ViewCamera View { get; set; }
 
+        public LocalVideoConfig VideoConfig { get; set; }
 
         public DisplayCameraControl(DeviceCamera device)
         {
@@ -47,6 +49,7 @@ namespace ColorVision.Services.Devices.Camera
             _timer.Interval = TimeSpan.FromMilliseconds(500);
             _timer.Tick += Timer_Tick; 
             PreviewMouseDown += UserControl_PreviewMouseDown;
+            VideoConfig = LocalVideoConfig.Instance;
         }
 
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
@@ -229,8 +232,8 @@ namespace ColorVision.Services.Devices.Camera
                 if (!DService.IsVideoOpen)
                 {
                     DService.CurrentTakeImageMode = TakeImageMode.Live;
-                    string host = ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Host;
-                    int port = ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Port;
+                    string host = VideoConfig.Host;
+                    int port = VideoConfig.Port;
                     //bool IsLocal = (host == "127.0.0.1");
                     port = CameraVideoControl.Open(host, port);
                     if (port > 0)
@@ -257,7 +260,7 @@ namespace ColorVision.Services.Devices.Camera
                     else
                     {
                         MessageBox.Show("视频模式下，本地端口打开失败");
-                        logger.ErrorFormat("Local socket open failed.{0}:{1}", host, ConfigHandler.GetInstance().SoftwareConfig.VideoConfig.Port);
+                        logger.ErrorFormat("Local socket open failed.{0}:{1}", host, VideoConfig.Port);
                     }
                 }
             }
@@ -293,13 +296,13 @@ namespace ColorVision.Services.Devices.Camera
 
         private void SetChannel()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "SetParam",
                 Params = new Dictionary<string, object>() { { "Func",new List<ParamFunction> (){
-                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 0 }, { "nPort", DService.Config.CFW.ChannelCfgs[0].Cfwport },{ "eImgChlType", (int)DService.Config.CFW.ChannelCfgs[0].Chtype } } },
-                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 1 }, { "nPort", DService.Config.CFW.ChannelCfgs[1].Cfwport },{ "eImgChlType", (int)DService.Config.CFW.ChannelCfgs[1].Chtype } } },
-                    new ParamFunction() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 2 }, { "nPort", DService.Config.CFW.ChannelCfgs[2].Cfwport },{ "eImgChlType", (int)DService.Config.CFW.ChannelCfgs[2].Chtype } } },
+                    new() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 0 }, { "nPort", DService.Config.CFW.ChannelCfgs[0].Cfwport },{ "eImgChlType", (int)DService.Config.CFW.ChannelCfgs[0].Chtype } } },
+                    new() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 1 }, { "nPort", DService.Config.CFW.ChannelCfgs[1].Cfwport },{ "eImgChlType", (int)DService.Config.CFW.ChannelCfgs[1].Chtype } } },
+                    new() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 2 }, { "nPort", DService.Config.CFW.ChannelCfgs[2].Cfwport },{ "eImgChlType", (int)DService.Config.CFW.ChannelCfgs[2].Chtype } } },
                 } } }
             };
             DService.PublishAsyncClient(msg);
@@ -325,7 +328,7 @@ namespace ColorVision.Services.Devices.Camera
                 TemplateControl = TemplateControl.GetInstance();
                 SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
-                if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+                if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
                 {
                     MessageBox.Show(Application.Current.MainWindow, Properties.Resource.DatabaseConnectionFailed, "ColorVision");
                     return;

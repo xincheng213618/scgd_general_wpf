@@ -17,7 +17,7 @@ namespace ColorVision.Services.Devices.PG
 
             EditCommand = new RelayCommand(a =>
             {
-                EditPG window = new EditPG(this);
+                EditPG window = new(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();

@@ -48,11 +48,11 @@ namespace ColorVision.Services.Devices.Spectrum
     {
         public static void Load(ObservableCollection<TemplateModel<SpectrumResourceParam>> CalibrationParamModes, int resourceId, string ModeType)
         {
-            ModDetailDao detailDao = new ModDetailDao();
+            ModDetailDao detailDao = new();
             CalibrationParamModes.Clear();
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                ModMasterDao masterFlowDao = new ModMasterDao(ModeType);
+                ModMasterDao masterFlowDao = new(ModeType);
                 List<ModMasterModel> smus = masterFlowDao.GetResourceAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId, resourceId);
                 foreach (var dbModel in smus)
                 {

@@ -35,7 +35,7 @@ namespace ColorVision.Solution.V.Folders
         public void GeneralContextMenu()
         {
             ContextMenu = new ContextMenu();
-            MenuItem menuItem = new MenuItem() { Header = "打开文件夹", Command = OpenExplorer };
+            MenuItem menuItem = new() { Header = "打开文件夹", Command = OpenExplorer };
             ContextMenu.Items.Add(menuItem);
         }
 

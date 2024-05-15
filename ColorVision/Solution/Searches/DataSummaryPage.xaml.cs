@@ -64,7 +64,7 @@ namespace ColorVision.Solution.Searches
             Frame = MainFrame;
             InitializeComponent();
         }
-        BatchResultMasterDao batchResultMasterDao = new BatchResultMasterDao();
+        BatchResultMasterDao batchResultMasterDao = new();
 
         public ObservableCollection<ViewBatchResult> ViewBatchResults { get; set; } = new ObservableCollection<ViewBatchResult>();
         private void Page_Loaded(object sender, RoutedEventArgs e)

@@ -24,7 +24,7 @@ namespace ColorVision.Services.Dao
 
         public override SysDictionaryModel GetModelFromDataRow(DataRow item)
         {
-            SysDictionaryModel model = new SysDictionaryModel
+            SysDictionaryModel model = new()
             {
                 Id = item.Field<int>("id"),
                 Name = item.Field<string>("name"),
@@ -44,7 +44,7 @@ namespace ColorVision.Services.Dao
 
         public new List<SysDictionaryModel> GetAllByPcode(string pcode)
         {
-            List<SysDictionaryModel> list = new List<SysDictionaryModel>();
+            List<SysDictionaryModel> list = new();
             string sql = $"select * from {GetTableName()} where pcode='{pcode}'" + GetDelSQL(true);
             DataTable d_info = GetData(sql);
             foreach (var item in d_info.AsEnumerable())

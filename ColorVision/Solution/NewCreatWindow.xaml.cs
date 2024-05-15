@@ -33,7 +33,7 @@ namespace ColorVision.Solution
         {
             get
             {
-                TextBlock text = new TextBlock
+                TextBlock text = new()
                 {
                     Text = "\uE8F4", // 使用Unicode字符
                     FontFamily = new FontFamily("Segoe MDL2 Assets"),
@@ -43,13 +43,13 @@ namespace ColorVision.Solution
                 return text;
             }
         }
-        public RelayCommand Command => new RelayCommand(A => Execute());
+        public RelayCommand Command => new(A => Execute());
 
-        public HotKeys HotKeys => new HotKeys(Properties.Resource.NewSolution, new Hotkey(Key.N, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(Properties.Resource.NewSolution, new Hotkey(Key.N, ModifierKeys.Control), Execute);
 
         private void Execute()
         {
-            NewCreateWindow newCreatWindow = new NewCreateWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            NewCreateWindow newCreatWindow = new() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             newCreatWindow.Closed += delegate
             {
                 if (newCreatWindow.IsCreate)
@@ -71,7 +71,7 @@ namespace ColorVision.Solution
         {
             foreach (var item in RecentNewCreateCache.RecentFiles)
             {
-                DirectoryInfo directoryInfo = new DirectoryInfo(item);
+                DirectoryInfo directoryInfo = new(item);
                 if (directoryInfo.Exists)
                 {
                     RecentNewCreateCacheList.Add(directoryInfo.FullName);
@@ -139,7 +139,7 @@ namespace ColorVision.Solution
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog();
+            System.Windows.Forms.FolderBrowserDialog dialog = new();
             dialog.UseDescriptionForTitle = true;
             dialog.Description = "为新项目选择位置";
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)

@@ -1,23 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Languages;
 using log4net;
 using log4net.Core;
 using log4net.Repository.Hierarchy;
-using System.Globalization;
 
 namespace ColorVision.Settings
 {
-    public partial class SoftwareSetting
-    {
-        public bool IsRestoreWindow { get; set; }
-
-        public double Width { get; set; }
-        public double Height { get; set; }
-        public double Left { get; set; }
-        public double Top { get; set; }
-        public int WindowState { get; set; }
-    }
-
     public partial class SoftwareSetting
     {
         private string _LogLevel = GlobalConst.LogLevel[0];
@@ -55,7 +42,6 @@ namespace ColorVision.Settings
         }
     }
 
-
     public partial class SoftwareSetting :ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SoftwareSetting));
@@ -63,22 +49,6 @@ namespace ColorVision.Settings
 
         public bool TransparentWindow { get => _TransparentWindow; set { _TransparentWindow = value; NotifyPropertyChanged(); } }
         private bool _TransparentWindow = true;
-
-        public bool WizardCompletionKey { get => _WizardCompletionKey; set { _WizardCompletionKey = value; NotifyPropertyChanged(); } }
-        private bool _WizardCompletionKey;
-
-        /// <summary>
-        /// 主题
-        /// </summary>
-        public Themes.Theme Theme { get; set; } = Themes.Theme.UseSystem;
-        /// <summary>
-        /// 语言
-        /// </summary>
-        public string UICulture {
-            get => LanguageManager.GetDefaultLanguages().Contains(_UICulture) ? _UICulture:CultureInfo.InstalledUICulture.Name;
-            set { _UICulture = value; }
-        } 
-        private string _UICulture = CultureInfo.InstalledUICulture.Name;
 
         /// <summary>
         /// 是否自动更新

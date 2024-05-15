@@ -9,10 +9,10 @@ namespace ColorVision.UI.HotKey.WindowHotKey
         /// <summary>
         /// AllKeyMap
         /// </summary>
-        static Dictionary<int, HotKeyCallBackHanlder> AllKeyMap = new Dictionary<int, HotKeyCallBackHanlder>();
+        static Dictionary<int, HotKeyCallBackHanlder> AllKeyMap = new();
         
-        static List<Control> ControlHook = new List<Control>();
-        static Dictionary<Control,Dictionary<int, HotKeyCallBackHanlder>> ControlHookKeyMap = new Dictionary<Control, Dictionary<int, HotKeyCallBackHanlder>>();
+        static List<Control> ControlHook = new();
+        static Dictionary<Control,Dictionary<int, HotKeyCallBackHanlder>> ControlHookKeyMap = new();
 
 
         public static bool Register(Control control,Hotkey hotkey, HotKeyCallBackHanlder callBack)

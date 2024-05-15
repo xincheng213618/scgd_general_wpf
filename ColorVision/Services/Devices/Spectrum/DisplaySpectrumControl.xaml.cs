@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Extension;
+using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.PG;
 using ColorVision.Services.Devices.Spectrum.Configs;
@@ -356,7 +357,7 @@ namespace ColorVision.Services.Devices.Spectrum
             {
                 SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
-                if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+                if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
                 {
                     MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision");
                     return;

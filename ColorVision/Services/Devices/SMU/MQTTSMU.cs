@@ -84,7 +84,7 @@ namespace ColorVision.Services.Devices.SMU
 
         public bool SetParam()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "SetParam",
                 ServiceName = Config.Code,
@@ -95,7 +95,7 @@ namespace ColorVision.Services.Devices.SMU
 
         public MsgRecord Open(bool isNet, string devName)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTSMUEventEnum.Event_Open,
                 ServiceName = Config.Code,
@@ -106,7 +106,7 @@ namespace ColorVision.Services.Devices.SMU
 
         public bool GetData(bool isSourceV, double measureVal, double lmtVal)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTSMUEventEnum.Event_GetData,
                 ServiceName = Config.Code,
@@ -118,7 +118,7 @@ namespace ColorVision.Services.Devices.SMU
 
         public MsgRecord Close()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTSMUEventEnum.Event_Close,
                 ServiceName = Config.Code,
@@ -131,7 +131,7 @@ namespace ColorVision.Services.Devices.SMU
             string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var Params = new Dictionary<string, object>();
             Params.Add("DeviceParam", new SMUScanParam() { IsSourceV = isSourceV, BeginValue = startMeasureVal, EndValue = stopMeasureVal, LimitValue = lmtVal, Points = number });
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTSMUEventEnum.Event_Scan,
                 ServiceName = Config.Code,
@@ -144,7 +144,7 @@ namespace ColorVision.Services.Devices.SMU
 
         public bool CloseOutput()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTSMUEventEnum.Event_CloseOutput,
                 ServiceName = Config.Code,

@@ -85,7 +85,7 @@ namespace ColorVision.Solution
                 string DefaultSolution = Default + "\\" + "Default";
                 if (Directory.Exists(DefaultSolution))
                     Directory.CreateDirectory(DefaultSolution);
-                DirectoryInfo directoryInfo = new DirectoryInfo(DefaultSolution);
+                DirectoryInfo directoryInfo = new(DefaultSolution);
                 var SolutionPath = CreateSolution(directoryInfo);
                 OpenSolution(SolutionPath);
             }
@@ -112,7 +112,7 @@ namespace ColorVision.Solution
         {
             if (File.Exists(FullPath)&& FullPath.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
             {
-                FileInfo fileInfo = new FileInfo(FullPath);
+                FileInfo fileInfo = new(FullPath);
                 CurrentSolution.FullPath = FullPath;
                 SolutionDirectory = fileInfo.Directory;
                 SolutionHistory.InsertFile(FullPath);
@@ -128,7 +128,7 @@ namespace ColorVision.Solution
 
         public string CreateSolution(DirectoryInfo Info)
         {
-            SolutionConfig solutionConfig = new SolutionConfig();
+            SolutionConfig solutionConfig = new();
             Tool.CreateDirectoryMax(Info.FullName +"\\.cache");
 
             CurrentSolution.FullPath = Info.FullName;
@@ -147,7 +147,7 @@ namespace ColorVision.Solution
 
         public void OpenSolutionWindow()
         {
-            OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            OpenSolutionWindow openSolutionWindow = new() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             openSolutionWindow.Closed += delegate
             {
                 if (!string.IsNullOrWhiteSpace(openSolutionWindow.FullName))
@@ -163,7 +163,7 @@ namespace ColorVision.Solution
         }
         public void NewCreateWindow()
         {
-            NewCreateWindow newCreatWindow = new NewCreateWindow() { Owner = WindowHelpers.GetActiveWindow() , WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            NewCreateWindow newCreatWindow = new() { Owner = WindowHelpers.GetActiveWindow() , WindowStartupLocation = WindowStartupLocation.CenterOwner };
             newCreatWindow.Closed += delegate
             {
                 if (newCreatWindow.IsCreate)

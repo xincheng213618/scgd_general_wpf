@@ -1,5 +1,6 @@
 ﻿using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
+using ColorVision.UI.Views;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -24,7 +25,7 @@ namespace ColorVision.Services.Devices.Spectrum
         {
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {
-                List<KeyValuePair<string, int>> KeyValues = new List<KeyValuePair<string, int>>();
+                List<KeyValuePair<string, int>> KeyValues = new();
                 KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowSingle, -2));
                 KeyValues.Add(new KeyValuePair<string, int>(Properties.Resource.WindowHidden, -1));
                 for (int i = 0; i < e; i++)

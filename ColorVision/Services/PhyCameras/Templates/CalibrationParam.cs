@@ -71,7 +71,7 @@ namespace ColorVision.Services.PhyCameras.Templates
 
         public Dictionary<string, object> ToDictionary()
         {
-            Dictionary<string, object> keyValuePairs = new Dictionary<string, object>();
+            Dictionary<string, object> keyValuePairs = new();
             if (DarkNoise.IsSelected)
                 keyValuePairs.Add(nameof(DarkNoise), DarkNoise.FilePath);
             if (DefectPoint.IsSelected)
@@ -202,7 +202,7 @@ namespace ColorVision.Services.PhyCameras.Templates
             ResourceParams.Clear();
             if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
             {
-                ModMasterDao masterFlowDao = new ModMasterDao(ModeType);
+                ModMasterDao masterFlowDao = new(ModeType);
                 List<ModMasterModel> smus = masterFlowDao.GetResourceAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId, resourceId);
                 foreach (var dbModel in smus)
                 {

@@ -38,7 +38,7 @@ namespace ColorVision.Services.Devices.Spectrum
 
             EditCommand = new RelayCommand(a =>
             {
-                EditSpectrum window = new EditSpectrum(this);
+                EditSpectrum window = new(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
@@ -50,7 +50,7 @@ namespace ColorVision.Services.Devices.Spectrum
                 SpectrumResourceControl calibration = SpectrumResourceParams.Count == 0 ? new SpectrumResourceControl(this) : new SpectrumResourceControl(this, this.SpectrumResourceParams[0].Value);
                 var ITemplate = new TemplateSpectrumResourceParam() {  Device =this,TemplateParams = this.SpectrumResourceParams, SpectrumResourceControl = calibration, Title = "SpectrumResourceParams" };
 
-                WindowTemplate windowTemplate = new WindowTemplate(ITemplate);
+                WindowTemplate windowTemplate = new(ITemplate);
                 windowTemplate.Owner = Application.Current.GetActiveWindow();
                 windowTemplate.ShowDialog();
             });
@@ -62,12 +62,12 @@ namespace ColorVision.Services.Devices.Spectrum
 
         public void UploadResource(object sender)
         {
-            UploadWindow uploadwindow = new UploadWindow() { WindowStartupLocation = WindowStartupLocation.CenterScreen };
+            UploadWindow uploadwindow = new() { WindowStartupLocation = WindowStartupLocation.CenterScreen };
             uploadwindow.OnUpload += (s, e) =>
             {
                 if (s is Upload upload)
                 {
-                    UploadMsg uploadMsg = new UploadMsg(this);
+                    UploadMsg uploadMsg = new(this);
                     uploadMsg.Show();
                     string name = upload.UploadFileName;
                     string path = upload.UploadFilePath;
@@ -83,7 +83,7 @@ namespace ColorVision.Services.Devices.Spectrum
 
             string md5 = Tool.CalculateMD5(UploadFilePath);
             var msgRecord = await DeviceService.UploadFileAsync(UploadFileName, UploadFilePath,201);
-            SysResourceModel sysResourceModel = new SysResourceModel();
+            SysResourceModel sysResourceModel = new();
             sysResourceModel.Name = UploadFileName;
             sysResourceModel.Code = md5;
             sysResourceModel.Type = 201;
@@ -92,7 +92,7 @@ namespace ColorVision.Services.Devices.Spectrum
             SysResourceDao.Instance.Save(sysResourceModel);
             if (sysResourceModel != null)
             {
-                BaseFileResource calibrationResource = new BaseFileResource(sysResourceModel);
+                BaseFileResource calibrationResource = new(sysResourceModel);
                 AddChild(calibrationResource);
             }
 

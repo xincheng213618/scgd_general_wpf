@@ -73,10 +73,10 @@ namespace ColorVision.NativeMethods
         }
 
         // ReSharper disable InconsistentNaming
-        public static readonly IntPtr HWNDTOPMOST = new IntPtr(-1);
-        public static readonly IntPtr HWNDNOTOPMOST = new IntPtr(-2);
-        public static readonly IntPtr HWNDTOP = new IntPtr(0);
-        public static readonly IntPtr HWNDBOTTOM = new IntPtr(1);
+        public static readonly IntPtr HWNDTOPMOST = new(-1);
+        public static readonly IntPtr HWNDNOTOPMOST = new(-2);
+        public static readonly IntPtr HWNDTOP = new(0);
+        public static readonly IntPtr HWNDBOTTOM = new(1);
         public const uint SWPNOSIZE = 0x0001;
         public const uint SWPNOMOVE = 0x0002;
         public const uint SWPNOZORDER = 0x0004;

@@ -1,12 +1,9 @@
-﻿
-using System;
-using System.Collections.Generic;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 
-namespace ColorVision
+namespace ColorVision.UI.Views
 {
 
     public class ViewGridManager
@@ -290,10 +287,10 @@ namespace ColorVision
 
             if (control is IView view)
             {
-                Window window = new Window() { Owner = Application.Current.MainWindow};
-                Binding binding = new Binding("Title") { Source = view.View };
+                Window window = new() { Owner = Application.Current.MainWindow};
+                Binding binding = new("Title") { Source = view.View };
                 window.SetBinding(Window.TitleProperty, binding);
-                Binding binding1 = new Binding("Icon") { Source = view.View };
+                Binding binding1 = new("Icon") { Source = view.View };
                 window.SetBinding(Window.IconProperty, binding1);
 
                 ViewIndexChangedHandler eventHandler = null;
@@ -307,7 +304,7 @@ namespace ColorVision
                 if (control.Parent is Grid grid2)
                     grid2.Children.Remove(control);
                 Views.Remove(control);
-                Grid grid1 = new Grid();
+                Grid grid1 = new();
                 grid1.Children.Add(control);
                 window.Content = grid1;
                 window.Closed += (s, e) =>
@@ -365,7 +362,7 @@ namespace ColorVision
 
 
 
-        private List<List<GridSplitter>> gridSplitters = new List<List<GridSplitter>>();
+        private List<List<GridSplitter>> gridSplitters = new();
 
         private void GenViewGrid(int Nums,bool defaultmap =true)
         {
@@ -386,12 +383,12 @@ namespace ColorVision
                 int col = (location % 10);
                 if (MainView.ColumnDefinitions.Count <= col)
                 {
-                    ColumnDefinition columnDefinition = new ColumnDefinition() { Width = new GridLength(1, GridUnitType.Star) };
+                    ColumnDefinition columnDefinition = new() { Width = new GridLength(1, GridUnitType.Star) };
                     MainView.ColumnDefinitions.Add(columnDefinition);
                 }
                 if (MainView.RowDefinitions.Count <= row)
                 {
-                    RowDefinition rowDefinition = new RowDefinition() { Height = new GridLength(1, GridUnitType.Star) };
+                    RowDefinition rowDefinition = new() { Height = new GridLength(1, GridUnitType.Star) };
                     MainView.RowDefinitions.Add(rowDefinition);
                 }
             }
@@ -399,7 +396,7 @@ namespace ColorVision
             Grids.Clear();
             for (int i = 0; i < Nums; i++)
             {
-                Grid grid = new Grid() { Margin = new Thickness(0), };
+                Grid grid = new() { Margin = new Thickness(0), };
                 Grids.Add(grid);
 
                 var text = new TextBlock { Text = (i + 1).ToString(),Foreground =Brushes.Red,HorizontalAlignment =HorizontalAlignment.Center,FontSize=30};
@@ -417,7 +414,7 @@ namespace ColorVision
 
                 if (MainView.ColumnDefinitions.Count - 1 != col)
                 {
-                    GridSplitter gridSplitter = new GridSplitter()
+                    GridSplitter gridSplitter = new()
                     {
                         Background = Brushes.LightGray,
                         Width = 2,
@@ -431,7 +428,7 @@ namespace ColorVision
 
                 if (MainView.RowDefinitions.Count - 1 != row)
                 {
-                    GridSplitter gridSplitter1 = new GridSplitter()
+                    GridSplitter gridSplitter1 = new()
                     {
                         Background = Brushes.LightGray,
                         Height = 2,

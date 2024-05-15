@@ -137,7 +137,7 @@ namespace ColorVision.MQTT
         }
         private void Button_Click_Copy(object sender, RoutedEventArgs e)
         {
-            MQTTConfig  mQTTConfig = new MQTTConfig() { };
+            MQTTConfig  mQTTConfig = new() { };
             mQTTConfig.Name = mQTTConfig.Name + "_1";
 
             MQTTConfig.CopyTo(mQTTConfig);
@@ -146,7 +146,7 @@ namespace ColorVision.MQTT
 
         private void Button_Click_New(object sender, RoutedEventArgs e)
         {
-            MQTTConfig newCfg = new MQTTConfig();
+            MQTTConfig newCfg = new();
             newCfg.Name = "New Profile";
             MQTTConfigs.Add(newCfg);
         }

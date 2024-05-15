@@ -80,7 +80,7 @@ namespace ColorVision.Services.Devices.Algorithm
         public bool IsRun { get; set; }
         public MsgRecord Init()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "Init",
             };
@@ -89,12 +89,12 @@ namespace ColorVision.Services.Devices.Algorithm
 
         public MsgRecord UnInit()
         {
-            MsgSend msg = new MsgSend { EventName = "UnInit" };
+            MsgSend msg = new() { EventName = "UnInit" };
             return PublishAsyncClient(msg);
         }
         public void GetRawFiles(string deviceCode, string deviceType)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTFileServerEventEnum.Event_File_List_All,
                 Params = new Dictionary<string, object> { { "FileExtType", FileExtType.Raw }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } }
@@ -103,7 +103,7 @@ namespace ColorVision.Services.Devices.Algorithm
         }
         public void GetCIEFiles(string deviceCode, string deviceType)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTFileServerEventEnum.Event_File_List_All,
                 Params = new Dictionary<string, object> { { "FileExtType", FileExtType.CIE } ,{ "DeviceCode", deviceCode }, { "DeviceType", deviceType } }
@@ -119,7 +119,7 @@ namespace ColorVision.Services.Devices.Algorithm
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_POI_GetData,
                 SerialNumber = sn,
@@ -136,7 +136,7 @@ namespace ColorVision.Services.Devices.Algorithm
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_Build_POI,
                 SerialNumber = sn,
@@ -158,7 +158,7 @@ namespace ColorVision.Services.Devices.Algorithm
                 Params.Add(param.Key, param.Value);
             }
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_Build_POI,
                 SerialNumber = sn,
@@ -176,7 +176,7 @@ namespace ColorVision.Services.Devices.Algorithm
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_FOV_GetData,
                 SerialNumber = sn,
@@ -188,7 +188,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
         public MsgRecord SetLicense(string md5, string FileData)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "SaveLicense",
                 Params = new Dictionary<string, object>() { { "FileName", md5 }, { "FileData", FileData }, { "eType", 0 } }
@@ -207,7 +207,7 @@ namespace ColorVision.Services.Devices.Algorithm
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
             Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiId, Name = poiTempName });
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_MTF_GetData,
                 SerialNumber = sn,
@@ -227,7 +227,7 @@ namespace ColorVision.Services.Devices.Algorithm
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_SFR_GetData,
                 SerialNumber = sn,
@@ -247,7 +247,7 @@ namespace ColorVision.Services.Devices.Algorithm
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_Ghost_GetData,
                 SerialNumber = sn,
@@ -266,7 +266,7 @@ namespace ColorVision.Services.Devices.Algorithm
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_Distortion_GetData,
                 SerialNumber = sn,
@@ -287,7 +287,7 @@ namespace ColorVision.Services.Devices.Algorithm
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_LightArea_GetData,
                 SerialNumber = sn,
@@ -307,7 +307,7 @@ namespace ColorVision.Services.Devices.Algorithm
             Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
             Params.Add("POITemplateParam", new CVTemplateParam() { ID = poiId, Name = poiTempName });
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_LedCheck_GetData,
                 SerialNumber = sn,
@@ -320,13 +320,13 @@ namespace ColorVision.Services.Devices.Algorithm
 
         public MsgRecord Close()
         {
-            MsgSend msg = new MsgSend { EventName = "Close" };
+            MsgSend msg = new() { EventName = "Close" };
             return PublishAsyncClient(msg);
         }
 
         internal void Open(string deviceCode, string deviceType, string fileName, FileExtType extType)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTFileServerEventEnum.Event_File_Download,
                 ServiceName = Config.Code,
@@ -337,7 +337,7 @@ namespace ColorVision.Services.Devices.Algorithm
 
         public void UploadCIEFile(string fileName)
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = MQTTFileServerEventEnum.Event_File_Upload,
                 ServiceName = Config.Code,

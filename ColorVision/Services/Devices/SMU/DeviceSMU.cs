@@ -29,7 +29,7 @@ namespace ColorVision.Services.Devices.SMU
 
             EditCommand = new RelayCommand(a =>
             {
-                EditSMU window = new EditSMU(this);
+                EditSMU window = new(this);
                 window.Icon = Icon;
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;

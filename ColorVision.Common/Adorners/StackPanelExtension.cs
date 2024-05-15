@@ -20,7 +20,7 @@ namespace ColorVision.Adorners
 
             int? _draggedItemIndex = null;
             Point? _initialPosition = null;
-            Point _mouseOffsetFromItem = new Point();
+            Point _mouseOffsetFromItem = new();
 
             DragUserControlAdorner? _dragContentAdorner = null;
             InsertionAdorner? _insertionAdorner = null;

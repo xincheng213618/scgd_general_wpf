@@ -12,7 +12,7 @@ namespace ColorVision.Input
         public static Cursor CursorPan { get => EnsureCursor("cursor_pan.cur"); }
 
 
-        private static Dictionary<string, Cursor> _stockCursors = new Dictionary<string, Cursor>();
+        private static Dictionary<string, Cursor> _stockCursors = new();
 
         internal static Cursor EnsureCursor(string cursorType)
         {

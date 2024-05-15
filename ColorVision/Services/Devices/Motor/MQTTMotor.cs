@@ -66,7 +66,7 @@ namespace ColorVision.Services.Devices.Motor
         public MsgRecord Open()
         {
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "Open",
                 //Params = new Dictionary<string, object>() { { "CodeID", Config.Code }, { "eFOCUS_COMMUN",(int)Config.eFOCUSCOMMUN },{ "szComName", Config.SzComName }, { "BaudRate", Config.BaudRate } }
@@ -78,7 +78,7 @@ namespace ColorVision.Services.Devices.Motor
         public MsgRecord Close()
         {
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "Close",
                 Params = new Dictionary<string, object>() {  }
@@ -90,7 +90,7 @@ namespace ColorVision.Services.Devices.Motor
         public MsgRecord Move(int nPosition ,bool IsbAbs =true, int dwTimeOut = 5000)
         {
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "Move",
                 Params = new Dictionary<string, object>() {
@@ -102,7 +102,7 @@ namespace ColorVision.Services.Devices.Motor
         public MsgRecord MoveDiaphragm(double dPosition, int dwTimeOut = 5000)
         {
 
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "MoveDiaphragm",
                 Params = new Dictionary<string, object>() { { "dPosition", dPosition },{"dwTimeOut", Config.dwTimeOut }   }
@@ -115,7 +115,7 @@ namespace ColorVision.Services.Devices.Motor
 
         public MsgRecord GoHome()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "GoHome",
                 Params = new Dictionary<string, object>() { { "dwTimeOut", Config.dwTimeOut } }
@@ -125,7 +125,7 @@ namespace ColorVision.Services.Devices.Motor
 
         public MsgRecord GetPosition()
         {
-            MsgSend msg = new MsgSend
+            MsgSend msg = new()
             {
                 EventName = "GetPosition",
                 Params = new Dictionary<string, object>() { { "dwTimeOut", Config.dwTimeOut } }

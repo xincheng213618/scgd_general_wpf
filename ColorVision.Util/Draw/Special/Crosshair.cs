@@ -60,16 +60,16 @@ namespace ColorVision.Draw.Special
                 double length = 1 / ZoomboxSub.ContentMatrix.M11;
                 double radius = 5 / ZoomboxSub.ContentMatrix.M11; // 直径为10，半径为5
                 // 绘制空心圆
-                Pen circlePen = new Pen(Brushes.Black, length); // 黑色笔刷，线宽为1
+                Pen circlePen = new(Brushes.Black, length); // 黑色笔刷，线宽为1
                 dc.DrawEllipse(null, new Pen(Brushes.White, length * 1.5), actPoint, radius, radius);
                 dc.DrawEllipse(null, circlePen, actPoint, radius, radius);
 
                 // 绘制虚线的笔刷
-                Pen dashedPen = new Pen(Brushes.Black, length)
+                Pen dashedPen = new(Brushes.Black, length)
                 {
                     DashStyle = new DashStyle(new double[] { 2, 2 }, 0) // 虚线样式
                 };
-                Pen dashedPen1 = new Pen(Brushes.White, length * 1.5)
+                Pen dashedPen1 = new(Brushes.White, length * 1.5)
                 {
                     DashStyle = new DashStyle(new double[] { 2, 2 }, 0) // 虚线样式
                 };

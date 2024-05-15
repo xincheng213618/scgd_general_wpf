@@ -34,7 +34,7 @@ namespace ColorVision.RecentFile
                 k = Registry.CurrentUser.CreateSubKey(RegistryKey);
             }
 
-            List<string> list = new List<string>(max);
+            List<string> list = new(max);
 
             for (int i = 0; i < max; i++)
             {

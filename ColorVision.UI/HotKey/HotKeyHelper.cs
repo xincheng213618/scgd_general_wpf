@@ -19,13 +19,16 @@ namespace ColorVision.UI.HotKey
 
     public static partial class HotKeysExtension
     {
-        public static void LoadHotKeyFromAssembly<T>(this Window This, Assembly assembly) where T : IHotKey
+        public static void LoadHotKeyFromAssembly<T>(this Window This) where T : IHotKey
         {
-            foreach (Type type in assembly.GetTypes().Where(t => typeof(T).IsAssignableFrom(t) && !t.IsAbstract))
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                if (Activator.CreateInstance(type) is T iHotKey)
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(T).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    AddHotKeys(This, iHotKey.HotKeys);
+                    if (Activator.CreateInstance(type) is T iHotKey)
+                    {
+                        AddHotKeys(This, iHotKey.HotKeys);
+                    }
                 }
             }
         }
@@ -47,7 +50,7 @@ namespace ColorVision.UI.HotKey
     public class HotKeyHelper
     {
         private static HotKeyHelper instance;
-        private static readonly object locker = new object();
+        private static readonly object locker = new();
         public static HotKeyHelper GetInstance()
         {
             lock (locker) {

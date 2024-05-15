@@ -37,7 +37,7 @@ namespace ColorVision.Services.Dao.Validate
 
         public override ValidateTemplateDetailModel GetModelFromDataRow(DataRow item)
         {
-            ValidateTemplateDetailModel model = new ValidateTemplateDetailModel
+            ValidateTemplateDetailModel model = new()
             {
                 Id = item.Field<int>("id"),
                 DicPid = item.Field<int>("dic_pid"),

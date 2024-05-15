@@ -31,7 +31,7 @@ namespace ColorVision.MySql.ORM
             int count = -1;
             try
             {
-                MySqlCommand command = new MySqlCommand(sql, MySqlControl.MySqlConnection);
+                MySqlCommand command = new(sql, MySqlControl.MySqlConnection);
                 count = command.ExecuteNonQuery();
             }
             catch (Exception ex)
@@ -46,7 +46,7 @@ namespace ColorVision.MySql.ORM
             int count = -1;
             try
             {
-                MySqlCommand command = new MySqlCommand(sql, MySqlControl.MySqlConnection);
+                MySqlCommand command = new(sql, MySqlControl.MySqlConnection);
                 foreach (var item in param)
                 {
                     command.Parameters.AddWithValue(item.Key, item.Value);
@@ -64,22 +64,22 @@ namespace ColorVision.MySql.ORM
 
         public DataTable GetData(string sql, Dictionary<string, object>? param)
         {
-            DataTable dt = new DataTable();
+            DataTable dt = new();
             try
             {
                 if (param == null || param.Count == 0)
                 {
-                    using MySqlDataAdapter adapter = new MySqlDataAdapter(sql, MySqlControl.MySqlConnection);
+                    using MySqlDataAdapter adapter = new(sql, MySqlControl.MySqlConnection);
                     int count = adapter.Fill(dt);
                 }
                 else
                 {
-                    MySqlCommand command = new MySqlCommand(sql, MySqlControl.MySqlConnection);
+                    MySqlCommand command = new(sql, MySqlControl.MySqlConnection);
                     foreach (var item in param)
                     {
                         command.Parameters.AddWithValue(item.Key, item.Value);
                     }
-                    using MySqlDataAdapter adapter = new MySqlDataAdapter(command);
+                    using MySqlDataAdapter adapter = new(command);
                     int count = adapter.Fill(dt);
                 }
 
@@ -98,11 +98,11 @@ namespace ColorVision.MySql.ORM
             string sqlStr = string.Format("SELECT * FROM {0} WHERE FALSE", TableName);
             try
             {
-                using (MySqlCommand cmd = new MySqlCommand(sqlStr, MySqlControl.MySqlConnection))
+                using (MySqlCommand cmd = new(sqlStr, MySqlControl.MySqlConnection))
                 {
-                    MySqlDataAdapter dataAdapter = new MySqlDataAdapter(cmd);
+                    MySqlDataAdapter dataAdapter = new(cmd);
                     dataAdapter.RowUpdated += DataAdapter_RowUpdated;
-                    MySqlCommandBuilder builder = new MySqlCommandBuilder(dataAdapter);
+                    MySqlCommandBuilder builder = new(dataAdapter);
                     builder.ConflictOption = ConflictOption.OverwriteChanges;
                     builder.SetAllValues = true;
                     dataAdapter.UpdateCommand = builder.GetUpdateCommand(true) as MySqlCommand;

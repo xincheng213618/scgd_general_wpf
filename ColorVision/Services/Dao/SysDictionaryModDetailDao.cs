@@ -21,7 +21,7 @@ namespace ColorVision.Services.Dao
 
         public override SysDictionaryModDetaiModel GetModelFromDataRow(DataRow item)
         {
-            SysDictionaryModDetaiModel model = new SysDictionaryModDetaiModel
+            SysDictionaryModDetaiModel model = new()
             {
                 Id = item.Field<int>("id"),
                 Symbol = item.Field<string>("symbol"),

@@ -12,7 +12,7 @@ namespace ColorVision.Common.MVVM
         //复制一个新的对象
         public static T Clone<T>(this T source) where T : ViewModelBase, new()
         {
-            T target = new T();
+            T target = new();
             source.CopyTo(target);
             return target;
         }

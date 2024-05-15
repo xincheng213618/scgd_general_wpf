@@ -1,5 +1,7 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.MQTT;
+using ColorVision.MySql;
+using ColorVision.Services.RC;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -12,6 +14,9 @@ namespace ColorVision.Settings
     public static partial class GlobalConst
     {
         public const string ConfigFileName = "Config\\SoftwareConfig.json";
+
+        public const string ConfigDIFileName = "Config\\ColorVisionConfig.json";
+
         public const string MQTTMsgRecordsFileName = "Config\\MsgRecords.json";
 
         public const string ConfigAESKey = "ColorVision";
@@ -31,14 +36,17 @@ namespace ColorVision.Settings
     /// <summary>
     /// 全局设置
     /// </summary>
-    public class ConfigHandler:ViewModelBase
+    public class ConfigHandler
     {
         private static ConfigHandler _instance;
         private static readonly object _locker = new();
         public static ConfigHandler GetInstance() { lock (_locker) { return _instance ??= new ConfigHandler(); } }
+
         internal static readonly ILog log = LogManager.GetLogger(typeof(ConfigHandler));
         public string SoftwareConfigFileName { get; set; }
         public string MQTTMsgRecordsFileName { get; set; }
+
+        public string DIFile { get; set; }
 
         public ConfigHandler()
         {
@@ -46,6 +54,7 @@ namespace ColorVision.Settings
             {
                 SoftwareConfigFileName = AppDomain.CurrentDomain.BaseDirectory + GlobalConst.ConfigFileName;
                 MQTTMsgRecordsFileName = GlobalConst.MQTTMsgRecordsFileName;
+                DIFile = GlobalConst.ConfigDIFileName;
             }
             else
             {
@@ -54,6 +63,7 @@ namespace ColorVision.Settings
                     Directory.CreateDirectory(DirectoryPath);
                 SoftwareConfigFileName = DirectoryPath + GlobalConst.ConfigFileName;
                 MQTTMsgRecordsFileName = DirectoryPath + GlobalConst.MQTTMsgRecordsFileName;
+                DIFile = DirectoryPath+ GlobalConst.ConfigDIFileName;
             }
 
             SoftwareConfigLazy = new Lazy<SoftwareConfig>(() =>
@@ -76,6 +86,7 @@ namespace ColorVision.Settings
                 }
             });
 
+
             System.Windows.Application.Current.SessionEnding += (s, e) => 
             {
                 SaveConfig();
@@ -84,22 +95,25 @@ namespace ColorVision.Settings
             {
                 SaveConfig();
             };
-            PerformanceControlLazy = new Lazy<SystemMonitor>(() => SystemMonitor.GetInstance());
+            SystemMonitorLazy = new Lazy<SystemMonitor>(() => SystemMonitor.GetInstance());
         }
 
+        public static MySqlControl MySqlControl => MySqlControl.GetInstance();
+        public static MQTTControl MQTTControl => MQTTControl.GetInstance();
 
+        public static RCServiceControl RCService => RCServiceControl.GetInstance();
 
-        public bool IsAutoRun { get => Tool.IsAutoRun(GlobalConst.AutoRunName,GlobalConst.AutoRunRegPath); set { Tool.SetAutoRun(value, GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); NotifyPropertyChanged(); } }
 
         [JsonIgnore]
-        readonly Lazy<SystemMonitor> PerformanceControlLazy;
+        readonly Lazy<SystemMonitor> SystemMonitorLazy;
         [JsonIgnore]
-        public SystemMonitor SystemMonitor { get => PerformanceControlLazy.Value; }
+        public SystemMonitor SystemMonitor { get => SystemMonitorLazy.Value; }
         
 
         readonly Lazy<SoftwareConfig> SoftwareConfigLazy;
 
         public SoftwareConfig SoftwareConfig { get => SoftwareConfigLazy.Value; }
+
 
         public void SaveConfig()
         {
@@ -111,14 +125,14 @@ namespace ColorVision.Settings
             SoftwareConfig.MQTTConfig.UserPwd = Cryptography.AESEncrypt(SoftwareConfig.MQTTConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
             SoftwareConfig.UserConfig.UserPwd = Cryptography.AESEncrypt(SoftwareConfig.UserConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
 
-            List<string> MySqlConfigsPwd = new List<string>();
+            List<string> MySqlConfigsPwd = new();
             foreach (var item in SoftwareConfig.MySqlConfigs)
             {
                 MySqlConfigsPwd.Add(item.UserPwd);
                 item.UserPwd = Cryptography.AESEncrypt(item.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
             }
 
-            List<string> MQTTConfigsPwd = new List<string>();
+            List<string> MQTTConfigsPwd = new();
             foreach (var item in SoftwareConfig.MQTTConfigs)
             {
                 MQTTConfigsPwd.Add(item.UserPwd);
@@ -137,7 +151,7 @@ namespace ColorVision.Settings
                 SoftwareConfig.MQTTConfigs[i].UserPwd = MQTTConfigsPwd[i];
         }
 
-        private static JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions() { WriteIndented = true,DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
+        private static JsonSerializerOptions jsonSerializerOptions = new() { WriteIndented = true,DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
         private static T? ReadConfig<T>(string fileName)
         {
             if (File.Exists(fileName))
@@ -172,7 +186,7 @@ namespace ColorVision.Settings
 
             if (File.Exists(fileName))
             {
-                FileInfo fileInfo = new FileInfo(fileName);
+                FileInfo fileInfo = new(fileName);
                 fileInfo.IsReadOnly = false;
             }
 

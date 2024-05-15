@@ -67,9 +67,9 @@ namespace ColorVision.Draw.Special
             if (DrawCanvas.Source is BitmapSource bitmapSource)
             {
                 Brush brush = Brushes.Red;
-                FontFamily fontFamily = new FontFamily("Arial");
+                FontFamily fontFamily = new("Arial");
                 double ratio = 1 / ZoomboxSub.ContentMatrix.M11;
-                Pen pen = new Pen(brush, ratio);
+                Pen pen = new(brush, ratio);
 
                 int lenindex = (int)(40 * ratio);
                 double fontSize = 15 / ZoomboxSub.ContentMatrix.M11; 
@@ -77,7 +77,7 @@ namespace ColorVision.Draw.Special
                 for (int i = 0; i < bitmapSource.Width; i += lenindex)
                 {
                     string text = i.ToString();
-                    FormattedText formattedText = new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+                    FormattedText formattedText = new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                     dc.DrawText(formattedText, new Point(i - 10 / ZoomboxSub.ContentMatrix.M11, -20 / ZoomboxSub.ContentMatrix.M11));
                     dc.DrawLine(pen, new Point(i, 0), new Point(i, bitmapSource.Height));
                 }
@@ -85,7 +85,7 @@ namespace ColorVision.Draw.Special
                 for (int j = 0; j < bitmapSource.Height; j += lenindex)
                 {
                     string text = j.ToString();
-                    FormattedText formattedText = new FormattedText(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
+                    FormattedText formattedText = new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                     dc.DrawText(formattedText, new Point(-40 / ZoomboxSub.ContentMatrix.M11, j- 10 / ZoomboxSub.ContentMatrix.M11));
                     dc.DrawLine(pen, new Point(0, j), new Point(bitmapSource.Width, j));
                 }

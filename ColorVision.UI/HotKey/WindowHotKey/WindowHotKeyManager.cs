@@ -10,7 +10,7 @@ namespace ColorVision.UI.HotKey.WindowHotKey
     {
         public static Dictionary<Control, WindowHotKeyManager> Instances { get; set; } = new Dictionary<Control, WindowHotKeyManager>();
 
-        private static readonly object locker = new object();
+        private static readonly object locker = new();
 
         public Control control { get; set; }
 

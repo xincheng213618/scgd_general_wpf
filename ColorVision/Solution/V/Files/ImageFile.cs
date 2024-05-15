@@ -56,8 +56,8 @@ namespace ColorVision.Solution.V.Files
 
         public void Open()
         {
-            ImageView imageView = new ImageView();
-            Window window = new Window() { };
+            ImageView imageView = new();
+            Window window = new() { };
             window.Content = imageView;
             _ = RunAsync(imageView);
             window.Show();

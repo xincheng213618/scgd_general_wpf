@@ -73,7 +73,7 @@ namespace ColorVision.NativeMethods
                     {
                         string FilenName = process.MainModule?.FileName;
                         var fvi = FileVersionInfo.GetVersionInfo(FilenName ?? "");
-                        Version versionrun = new Version(fvi?.FileVersion ?? "");
+                        Version versionrun = new(fvi?.FileVersion ?? "");
                         Version version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
                         if (version != versionrun)
                         {
@@ -81,7 +81,7 @@ namespace ColorVision.NativeMethods
                         }
 
                         SetForegroundWindow(hwnd);
-                        FLASHWINFO fLASHWINFO = new FLASHWINFO
+                        FLASHWINFO fLASHWINFO = new()
                         {
                             cbSize = Convert.ToUInt32(Marshal.SizeOf(typeof(FLASHWINFO))),
                             dwFlags = FLASHW_ALL | FLASHW_TIMERNOFG,

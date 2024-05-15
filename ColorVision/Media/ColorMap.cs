@@ -97,9 +97,9 @@ namespace ColorVision.Media
                 lutData[i * 3 + 1] = colorMap[idx].G;
                 lutData[i * 3 + 2] = colorMap[idx].R;
             }
-            Mat src8uc3 = new Mat();
+            Mat src8uc3 = new();
             Cv2.CvtColor(src.Clone(), src8uc3, ColorConversionCodes.GRAY2BGR);
-            Mat lut = new Mat(1, 256, MatType.CV_8UC3, lutData);
+            Mat lut = new(1, 256, MatType.CV_8UC3, lutData);
             Cv2.LUT(src8uc3, lut, dst);
             // = null;
             //lut = null;
@@ -119,9 +119,9 @@ namespace ColorVision.Media
                 lutData[i * 3 + 2] = colorMap[idx].R;
 
             }
-            Mat src8uc3 = new Mat();
+            Mat src8uc3 = new();
             Cv2.CvtColor(src.Clone(), src8uc3, ColorConversionCodes.GRAY2BGR);
-            Mat lut = new Mat(1, 256, MatType.CV_8UC3, lutData);
+            Mat lut = new(1, 256, MatType.CV_8UC3, lutData);
             Cv2.LUT(src8uc3, lut, dst);
             // = null;
             //lut = null;
@@ -194,7 +194,7 @@ namespace ColorVision.Media
 
         public Mat DrawSrcMap()
         {
-            Mat cm = new Mat(srcColor.Rows, srcColor.Cols + 150, srcColor.Type(), Scalar.All(255));
+            Mat cm = new(srcColor.Rows, srcColor.Cols + 150, srcColor.Type(), Scalar.All(255));
             Mat cmRt = cm[new OpenCvSharp.Rect(0, 0, srcColor.Cols, srcColor.Rows)];
             srcColor.Clone().CopyTo(cmRt);
             cmRt = cm[new OpenCvSharp.Rect(srcColor.Cols, 0, 150, srcColor.Rows)];
@@ -257,8 +257,8 @@ namespace ColorVision.Media
 
         public static Mat ReMapInversion(Mat src)
         {
-            Mat map_x = new Mat(src.Size(), MatType.CV_32FC1);
-            Mat map_y = new Mat(src.Size(), MatType.CV_32FC1);
+            Mat map_x = new(src.Size(), MatType.CV_32FC1);
+            Mat map_y = new(src.Size(), MatType.CV_32FC1);
             for (int i = 0; i < src.Rows; i++)
             {
                 for (int j = 0; j < src.Cols; j++)
@@ -268,7 +268,7 @@ namespace ColorVision.Media
                 }
             }
 
-            Mat dst = new Mat();
+            Mat dst = new();
             Cv2.Remap(src, dst, map_x, map_y, InterpolationFlags.Linear);
 
             return dst;
@@ -284,7 +284,7 @@ namespace ColorVision.Media
                 stepColorPer[i] = (double)100 / (n - 1);
             }
             Mat m = linspace(0, 1535, n, stepColorPer);//这里是算每一种等级实际显示的颜色
-            Mat mClr = new Mat();
+            Mat mClr = new();
             m.ConvertTo(mClr, MatType.CV_16UC1);
             colorMapIdx = new int[n];
             colorMap = new Color[n];

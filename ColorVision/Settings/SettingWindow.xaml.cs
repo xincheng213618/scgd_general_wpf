@@ -25,7 +25,7 @@ namespace ColorVision.Settings
 {
     public class ExportSetting : IHotKey,IMenuItem
     {
-        public HotKeys HotKeys => new HotKeys(Properties.Resource.MenuOptions, new Hotkey(Key.I, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(Properties.Resource.MenuOptions, new Hotkey(Key.I, ModifierKeys.Control), Execute);
         private void Execute()
         {
             new SettingWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
@@ -44,7 +44,7 @@ namespace ColorVision.Settings
         public object? Icon { 
             get
             {
-                TextBlock text = new TextBlock
+                TextBlock text = new()
                 {
                     Text = "\uE713", // 使用Unicode字符
                     FontFamily = new FontFamily("Segoe MDL2 Assets"),
@@ -54,7 +54,7 @@ namespace ColorVision.Settings
                 return text;
             }
         }
-        public RelayCommand Command => new RelayCommand(A => Execute());
+        public RelayCommand Command => new(A => Execute());
     }
 
 
@@ -112,22 +112,23 @@ namespace ColorVision.Settings
 
             string temp = Thread.CurrentThread.CurrentUICulture.Name;
 
-
             cmlauage.SelectionChanged += (s, e) =>
             {
                 if (cmlauage.SelectedValue is string str)
                 {
                     if (!LanguageManager.Current.LanguageChange(str))
                     {
-                        SoftwareConfig.SoftwareSetting.UICulture = temp;
+                        LanguageConfig.Instance.UICulture = temp;
                     }
                 }
             };
+
+            lauagDock.DataContext = LanguageConfig.Instance;
         }
 
         private void Cmtheme_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            Application.Current.ApplyTheme(SoftwareConfig.SoftwareSetting.Theme);
+            Application.Current.ApplyTheme(ThemeConfig.Instance.Theme);
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

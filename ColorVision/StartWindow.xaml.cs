@@ -48,7 +48,7 @@ namespace ColorVision
 
             MQTTControl.GetInstance();
             MySqlControl.GetInstance();
-            Thread thread = new Thread(async () => await InitializedOver()) { IsBackground =true};
+            Thread thread = new(async () => await InitializedOver()) { IsBackground =true};
             thread.Start();
 
         }
@@ -95,7 +95,7 @@ namespace ColorVision
                     TextBoxMsg.Text += $"{Environment.NewLine}MySQL数据库连接{(MySqlControl.GetInstance().IsConnect ? Properties.Resource.Success : Properties.Resource.Failure)}";
                     if (!IsConnect)
                     {
-                        MySqlConnect mySqlConnect = new MySqlConnect() { Owner = this };
+                        MySqlConnect mySqlConnect = new() { Owner = this };
                         mySqlConnect.ShowDialog();
                     }
                 });
@@ -135,7 +135,7 @@ namespace ColorVision
                         }
 
                         RCManager.GetInstance();
-                        MQTTConnect mQTTConnect = new MQTTConnect() { Owner = this };
+                        MQTTConnect mQTTConnect = new() { Owner = this };
                         mQTTConnect.ShowDialog();
                     }
                 });
@@ -174,7 +174,7 @@ namespace ColorVision
                                 RCManager.GetInstance().OpenCVWinSMS();
                             }
 
-                            RCServiceConnect rcServiceConnect = new RCServiceConnect() { Owner = this };
+                            RCServiceConnect rcServiceConnect = new() { Owner = this };
                             rcServiceConnect.ShowDialog();
                         }
                     });
@@ -198,7 +198,7 @@ namespace ColorVision
             Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}正在打开主窗口"; });
             Application.Current.Dispatcher.Invoke(() =>
             {
-                MainWindow mainWindow = new MainWindow();
+                MainWindow mainWindow = new();
                 ServiceManager ServiceManager = ServiceManager.GetInstance();
                 if (MySqlControl.GetInstance().IsConnect)
                 {

@@ -19,7 +19,7 @@ namespace cvColorVision
 
         public static CRECT FindRoi2CRECT(FindRoi fRoi)
         {
-            CRECT rtROI = new CRECT();
+            CRECT rtROI = new();
             rtROI.x = fRoi.x;
             rtROI.y = fRoi.y;
             rtROI.cx = fRoi.width;
@@ -55,8 +55,8 @@ namespace cvColorVision
                 CSVinitialized(path, new List<string>() { "pdfrequency", "pdomainSamplingData" });
 
 
-            using FileStream fs = new FileStream(path, FileMode.Append, FileAccess.Write);
-            using StreamWriter sw = new StreamWriter(fs, Encoding.UTF8);
+            using FileStream fs = new(path, FileMode.Append, FileAccess.Write);
+            using StreamWriter sw = new(fs, Encoding.UTF8);
             for (int i = 0; i < pdfrequency.Length; i++)
                 sw.WriteLine($"{pdfrequency[i]},{pdomainSamplingData[i]}");
         }

@@ -68,7 +68,7 @@ namespace ColorVision.Services.PhyCameras
             DeleteCommand = new RelayCommand(a => Delete());
             EditCommand = new RelayCommand(a =>
             {
-                EditPhyCamera window = new EditPhyCamera(this);
+                EditPhyCamera window = new(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
@@ -77,7 +77,7 @@ namespace ColorVision.Services.PhyCameras
 
             ResourceManagerCommand = new RelayCommand(a =>
             {
-                ResourceManager resourceManager = new ResourceManager(this) { Owner = WindowHelpers.GetActiveWindow() };
+                ResourceManager resourceManager = new(this) { Owner = WindowHelpers.GetActiveWindow() };
                 resourceManager.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 resourceManager.ShowDialog();
             });
@@ -88,7 +88,7 @@ namespace ColorVision.Services.PhyCameras
 
             CalibrationEditCommand = new RelayCommand(a =>
             {
-                CalibrationEdit CalibrationEdit = new CalibrationEdit(this);
+                CalibrationEdit CalibrationEdit = new(this);
                 CalibrationEdit.Show();
             });
 
@@ -210,7 +210,7 @@ namespace ColorVision.Services.PhyCameras
 
                             foreach (var item in licFiles)
                             {
-                                CameraLicenseModel cameraLicenseModel = new CameraLicenseModel();
+                                CameraLicenseModel cameraLicenseModel = new();
                                 cameraLicenseModel.DevCameraId = SysResourceModel.Id;
                                 cameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(item.FullName);
                                 using var stream = item.Open();
@@ -308,12 +308,12 @@ namespace ColorVision.Services.PhyCameras
 
         public void UploadCalibration(object sender)
         {
-            UploadWindow uploadwindow = new UploadWindow("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
+            UploadWindow uploadwindow = new("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
             uploadwindow.OnUpload += (s, e) =>
             {
                 if (s is Upload upload)
                 {
-                    UploadMsg uploadMsg = new UploadMsg(this);
+                    UploadMsg uploadMsg = new(this);
                     uploadMsg.Show();
                     string path = upload.UploadFilePath;
                     Task.Run(() => UploadData(path));
@@ -355,7 +355,7 @@ namespace ColorVision.Services.PhyCameras
 
                 Dictionary<string, List<ZipCalibrationItem>> AllCalFiles = JsonConvert.DeserializeObject<Dictionary<string, List<ZipCalibrationItem>>>(File.ReadAllText(Calibrationcfg, Encoding.GetEncoding("gbk")));
 
-                Dictionary<string, CalibrationResource> keyValuePairs2 = new Dictionary<string, CalibrationResource>();
+                Dictionary<string, CalibrationResource> keyValuePairs2 = new();
 
                 if (AllCalFiles != null)
                 {
@@ -496,7 +496,7 @@ namespace ColorVision.Services.PhyCameras
                             {
                                 string FileName = msgRecord.MsgReturn.Data.FileName;
 
-                                SysResourceModel sysResourceModel = new SysResourceModel();
+                                SysResourceModel sysResourceModel = new();
                                 sysResourceModel.Name = item1.Title;
                                 sysResourceModel.Code = Id + md5;
                                 sysResourceModel.Type = (int)item1.CalibrationType.ToResouceType();
@@ -523,7 +523,7 @@ namespace ColorVision.Services.PhyCameras
 
 
                 string CalibrationFile = path + "\\" + "Calibration";
-                DirectoryInfo directoryInfo = new DirectoryInfo(CalibrationFile);
+                DirectoryInfo directoryInfo = new(CalibrationFile);
                 foreach (var item2 in directoryInfo.GetFiles())
                 {
                     try

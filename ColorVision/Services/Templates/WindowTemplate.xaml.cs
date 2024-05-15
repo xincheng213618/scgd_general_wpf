@@ -71,8 +71,8 @@ namespace ColorVision.Services.Templates
                 ITemplate.PreviewMouseDoubleClick(listView.SelectedIndex);
             }
         }
-        private MeasureMasterDao measureMaster = new MeasureMasterDao();
-        private MeasureDetailDao measureDetail = new MeasureDetailDao();
+        private MeasureMasterDao measureMaster = new();
+        private MeasureDetailDao measureDetail = new();
 
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -116,7 +116,7 @@ namespace ColorVision.Services.Templates
 
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
-            CreateTemplate createWindow = new CreateTemplate(ITemplate) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            CreateTemplate createWindow = new(ITemplate) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
             createWindow.ShowDialog();
         }
 

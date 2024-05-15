@@ -165,11 +165,11 @@ namespace ColorVision.Services.Core
         public virtual bool IsAlive { get => _IsAlive; set { _IsAlive = value; NotifyPropertyChanged(); } }
         private bool _IsAlive;
 
-        private  Dictionary<string, Timer> timers = new Dictionary<string, Timer>();
+        private  Dictionary<string, Timer> timers = new();
 
         private  readonly object _locker = new();
 
-        private List<MsgRecord> MsgRecords = new List<MsgRecord>();
+        private List<MsgRecord> MsgRecords = new();
 
         /// <summary>
         /// 这里修改成可以继承的
@@ -188,7 +188,7 @@ namespace ColorVision.Services.Core
 
             Task.Run(() => MQTTControl.PublishAsyncClient(SendTopic, json, false));
 
-            MsgRecord msgRecord = new MsgRecord { SendTopic = SendTopic, SubscribeTopic = SubscribeTopic, MsgID = msg.MsgID, SendTime = DateTime.Now, MsgSend = msg, MsgRecordState = MsgRecordState.Sended };
+            MsgRecord msgRecord = new() { SendTopic = SendTopic, SubscribeTopic = SubscribeTopic, MsgID = msg.MsgID, SendTime = DateTime.Now, MsgSend = msg, MsgRecordState = MsgRecordState.Sended };
 
             Application.Current.Dispatcher.Invoke(() =>
             {
@@ -196,7 +196,7 @@ namespace ColorVision.Services.Core
                 MsgRecords.Add(msgRecord);
             });
 
-            Timer timer = new Timer(Timeout);
+            Timer timer = new(Timeout);
             timer.Elapsed += (s, e) =>
             {
                 timer.Enabled = false;

@@ -68,7 +68,7 @@ namespace ColorVision.Common.Utilities
 
         public static void ExecuteCommandAsAdmin(string command)
         {
-            ProcessStartInfo startInfo = new ProcessStartInfo();
+            ProcessStartInfo startInfo = new();
             startInfo.UseShellExecute = true;
             startInfo.WorkingDirectory = @"C:\Windows\System32";
             startInfo.FileName = "cmd.exe";
@@ -91,7 +91,7 @@ namespace ColorVision.Common.Utilities
 
         public static bool CreateDirectory(string folderPath)
         {
-            ProcessStartInfo startInfo = new ProcessStartInfo();
+            ProcessStartInfo startInfo = new();
             startInfo.UseShellExecute = true;
             startInfo.WorkingDirectory = @"C:\Windows\System32";
             startInfo.FileName = "cmd.exe";
@@ -164,7 +164,7 @@ namespace ColorVision.Common.Utilities
             bool hasDefaultProgram = false;
             try
             {
-                ProcessStartInfo psi = new ProcessStartInfo(fileName);
+                ProcessStartInfo psi = new(fileName);
                 psi.UseShellExecute = true;
                 Process.Start(psi);
                 hasDefaultProgram = true;
@@ -294,7 +294,7 @@ namespace ColorVision.Common.Utilities
             try
             {
                 WindowsIdentity current = WindowsIdentity.GetCurrent();
-                WindowsPrincipal windowsPrincipal = new WindowsPrincipal(current);
+                WindowsPrincipal windowsPrincipal = new(current);
                 //WindowsBuiltInRole可以枚举出很多权限，例如系统用户、User、Guest等等
                 return windowsPrincipal.IsInRole(WindowsBuiltInRole.Administrator);
             }
@@ -350,9 +350,9 @@ namespace ColorVision.Common.Utilities
             if (obj is null)
                 return (T)new object();
             object retval;
-            MemoryStream ms = new MemoryStream();
+            MemoryStream ms = new();
 #pragma warning disable SYSLIB0011
-            BinaryFormatter bf = new BinaryFormatter();
+            BinaryFormatter bf = new();
             //序列化成流
             bf.Serialize(ms, obj);
             ms.Seek(0, SeekOrigin.Begin);
@@ -372,7 +372,7 @@ namespace ColorVision.Common.Utilities
             bool hasDefaultProgram = false;
             try
             {
-                ProcessStartInfo psi = new ProcessStartInfo(filePath);
+                ProcessStartInfo psi = new(filePath);
                 psi.UseShellExecute = true;
                 Process.Start(psi);
                 hasDefaultProgram = true;

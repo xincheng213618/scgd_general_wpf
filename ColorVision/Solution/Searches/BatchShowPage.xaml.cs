@@ -40,7 +40,7 @@ namespace ColorVision.Solution.Searches
         public ObservableCollection<ViewResultCamera> ViewResultCameras { get; set; } = new ObservableCollection<ViewResultCamera>();
         public ObservableCollection<AlgorithmResult> AlgorithmResults { get; set; } = new ObservableCollection<AlgorithmResult>();
 
-        MeasureImgResultDao MeasureImgResultDao = new MeasureImgResultDao();
+        MeasureImgResultDao MeasureImgResultDao = new();
 
         private void Page_Initialized(object sender, EventArgs e)
         {

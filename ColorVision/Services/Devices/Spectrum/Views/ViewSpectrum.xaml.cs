@@ -17,6 +17,7 @@ using System.ComponentModel;
 using ColorVision.Services.Devices.Spectrum.Dao;
 using ColorVision.Common.MVVM;
 using ColorVision.UI.Sorts;
+using ColorVision.UI.Views;
 
 namespace ColorVision.Services.Devices.Spectrum.Views
 {
@@ -38,7 +39,7 @@ namespace ColorVision.Services.Devices.Spectrum.Views
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = this;
-            TextBox TextBox1 = new TextBox() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };
+            TextBox TextBox1 = new() { Width = 10, Background = System.Windows.Media.Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = System.Windows.Media.Brushes.Transparent };
             Grid.SetColumn(TextBox1, 0);
             Grid.SetRow(TextBox1, 0);
             MainGrid.Children.Insert(0, TextBox1);
@@ -102,7 +103,7 @@ namespace ColorVision.Services.Devices.Spectrum.Views
 
             var csvBuilder = new StringBuilder();
 
-            List<string> properties = new List<string>();
+            List<string> properties = new();
             properties.Add("序号");
             properties.Add("批次号");
             properties.Add("IP");
@@ -256,7 +257,7 @@ namespace ColorVision.Services.Devices.Spectrum.Views
 
             ColorParam colorParam = data.Data;
 
-            ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(colorParam);
+            ViewResultSpectrum viewResultSpectrum = new(colorParam);
             viewResultSpectrum.Id = data.ID;
             viewResultSpectrum.V = data.V;
             viewResultSpectrum.I = data.I;
@@ -442,7 +443,7 @@ namespace ColorVision.Services.Devices.Spectrum.Views
                 var list = SpectumResultDao.Instance.GetAll();
                 foreach (var item in list)
                 {
-                    ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(item);
+                    ViewResultSpectrum viewResultSpectrum = new(item);
                     viewResultSpectrum.V = float.NaN;
                     viewResultSpectrum.I = float.NaN;
                     ViewResultSpectrums.Add(viewResultSpectrum);
@@ -455,7 +456,7 @@ namespace ColorVision.Services.Devices.Spectrum.Views
                 var list = SpectumResultDao.Instance.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, SearchTimeSart.SelectedDateTime, SearchTimeEnd.SelectedDateTime);
                 foreach (var item in list)
                 {
-                    ViewResultSpectrum viewResultSpectrum = new ViewResultSpectrum(item);
+                    ViewResultSpectrum viewResultSpectrum = new(item);
                     viewResultSpectrum.V = float.NaN;
                     viewResultSpectrum.I = float.NaN;
                     ViewResultSpectrums.Add(viewResultSpectrum);

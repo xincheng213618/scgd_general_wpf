@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Extension;
+using ColorVision.MySql;
 using ColorVision.Services.Devices.SMU.Configs;
 using ColorVision.Services.Devices.SMU.Views;
 using ColorVision.Services.Templates;
@@ -124,7 +125,7 @@ namespace ColorVision.Services.Devices.SMU
             }
         }
 
-        PassSxSource passSxSource = new PassSxSource();
+        PassSxSource passSxSource = new();
 
         private void DoOpenByDll(Button button)
         {
@@ -210,7 +211,7 @@ namespace ColorVision.Services.Devices.SMU
             {
                 SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
-                if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+                if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
                 {
                     MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision");
                     return;

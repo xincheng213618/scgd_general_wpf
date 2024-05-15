@@ -906,4 +906,16 @@
   <data name="Shape" xml:space="preserve">
     <value>形状</value>
   </data>
+  <data name="ServiceLog" xml:space="preserve">
+    <value>服务日志</value>
+  </data>
+  <data name="x86ServiceLog" xml:space="preserve">
+    <value>x86服务日志</value>
+  </data>
+  <data name="RCServiceLog" xml:space="preserve">
+    <value>RC服务日志</value>
+  </data>
+  <data name="UpdateSpeed" xml:space="preserve">
+    <value>更新速度</value>
+  </data>
 </root>

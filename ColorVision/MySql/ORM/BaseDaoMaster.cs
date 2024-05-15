@@ -82,7 +82,7 @@ namespace ColorVision.MySql.ORM
         public int BulkInsertAsync(DataTable dataTable)
         {
             int count = -1;
-            MySqlConnector.MySqlConnection connection = new MySqlConnector.MySqlConnection(MySqlControl.GetInstance().GetConnectionString() + ";SslMode = none;AllowLoadLocalInfile=True");
+            MySqlConnector.MySqlConnection connection = new(MySqlControl.GetInstance().GetConnectionString() + ";SslMode = none;AllowLoadLocalInfile=True");
             dataTable.TableName = TableName;
             using (connection)
             {
@@ -113,7 +113,7 @@ namespace ColorVision.MySql.ORM
 
         private static List<MySqlConnector.MySqlBulkCopyColumnMapping> GetMySqlColumnMapping(DataTable dataTable)
         {
-            List<MySqlConnector.MySqlBulkCopyColumnMapping> colMappings = new List<MySqlConnector.MySqlBulkCopyColumnMapping>();
+            List<MySqlConnector.MySqlBulkCopyColumnMapping> colMappings = new();
             int i = 0;
             foreach (DataColumn col in dataTable.Columns)
             {
@@ -166,7 +166,7 @@ namespace ColorVision.MySql.ORM
             string sql = $"SELECT * FROM {GetTableName()} {whereClause}";
             DataTable d_info = GetData(sql, param);
 
-            List<T> list = new List<T>();
+            List<T> list = new();
             foreach (var item in d_info.AsEnumerable())
             {
                 T? model = GetModelFromDataRow(item);
@@ -180,7 +180,7 @@ namespace ColorVision.MySql.ORM
 
         public List<T> ConditionalQuery(Dictionary<string, object> param)
         {
-            List<T> list = new List<T>();
+            List<T> list = new();
             string sql = $"select * from {GetTableName()} where 1=1";
             // 遍历字典，为每个键值对构建查询条件
             foreach (var pair in param)
@@ -223,7 +223,7 @@ namespace ColorVision.MySql.ORM
 
         public List<T> GetAll(int tenantId)
         {
-            List<T> list = new List<T>();
+            List<T> list = new();
             DataTable d_info = GetTableAllByTenantId(tenantId);
             foreach (var item in d_info.AsEnumerable())
             {
@@ -238,7 +238,7 @@ namespace ColorVision.MySql.ORM
 
         public List<T> GetPidIsNotNull(int tenantId)
         {
-            List<T> list = new List<T>();
+            List<T> list = new();
             string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and pid > 0" + GetDelSQL(true);
             DataTable d_info = GetData(sql);
             foreach (var item in d_info.AsEnumerable())
@@ -254,7 +254,7 @@ namespace ColorVision.MySql.ORM
 
         public List<T> GetPidIsNull(int tenantId)
         {
-            List<T> list = new List<T>();
+            List<T> list = new();
             string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and ( pid is null or pid=-1)" + GetDelSQL(true);
             DataTable d_info = GetData(sql);
             foreach (var item in d_info.AsEnumerable())
@@ -272,7 +272,7 @@ namespace ColorVision.MySql.ORM
 
         public List<T> GetAllByPid(int pid)
         {
-            List<T> list = new List<T>();
+            List<T> list = new();
             string sql = $"select * from {GetTableName()} where pid={pid}" + GetDelSQL(true) + $" order by {PKField}";
             DataTable d_info = GetData(sql);
             foreach (var item in d_info.AsEnumerable())
@@ -291,7 +291,7 @@ namespace ColorVision.MySql.ORM
 
         public List<T> GetAllByBatchid(int pid)
         {
-            List<T> list = new List<T>();
+            List<T> list = new();
             string sql = $"select * from {GetTableName()} where batch_id={pid}" + GetDelSQL(true) + $" order by {PKField}";
             DataTable d_info = GetData(sql);
 
@@ -308,7 +308,7 @@ namespace ColorVision.MySql.ORM
 
         public List<T> GetAllByBatchCode(string code)
         {
-            List<T> list = new List<T>();
+            List<T> list = new();
             DataTable d_info = GetTableAllByBatchCode(code);
             foreach (var item in d_info.AsEnumerable())
             {
@@ -328,7 +328,7 @@ namespace ColorVision.MySql.ORM
 
         public List<T> GetByCreateDate(int limit = 1)
         {
-            List<T> list = new List<T>();
+            List<T> list = new();
             string sql = $"select * from {GetTableName()} ORDER BY create_date DESC LIMIT @Limit";
             var parameters = new Dictionary<string, object>
             {
@@ -355,7 +355,7 @@ namespace ColorVision.MySql.ORM
 
         public List<T> GetAllByPcode(string pcode)
         {
-            List<T> list = new List<T>();
+            List<T> list = new();
             string sql = $"select * from {GetTableName()} where pcode='{pcode}'" + GetDelSQL(true);
             DataTable d_info = GetData(sql);
             foreach (var item in d_info.AsEnumerable())
@@ -383,7 +383,7 @@ namespace ColorVision.MySql.ORM
         }
         public virtual DataTable GetDataTable(string? tableName = null)
         {
-            DataTable d_info = new DataTable(tableName);
+            DataTable d_info = new(tableName);
             CreateColumns(d_info);
             return d_info;
         }

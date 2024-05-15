@@ -26,7 +26,7 @@ namespace ColorVision.Solution.Searches
 
         }
 
-        public override ArchivedDetailModel GetModelFromDataRow(DataRow item) => new ArchivedDetailModel()
+        public override ArchivedDetailModel GetModelFromDataRow(DataRow item) => new()
         {
             Guid = item.Field<string?>("guid"),
             PGuid = item.Field<string?>("p_guid"),

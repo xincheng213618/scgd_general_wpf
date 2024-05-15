@@ -24,6 +24,7 @@ using CVCommCore.CVAlgorithm;
 using ColorVision.UI;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Services.Devices.Algorithm.Templates;
+using ColorVision.MySql;
 
 namespace ColorVision.Services.Devices.Algorithm
 {
@@ -257,19 +258,19 @@ namespace ColorVision.Services.Devices.Algorithm
 
         private void GetImageDevices()
         {
-            ObservableCollection<TemplateModel<ImageDevice>> deves = new ObservableCollection<TemplateModel<ImageDevice>>();
+            ObservableCollection<TemplateModel<ImageDevice>> deves = new();
             foreach (var item in ServiceManager.GetInstance().DeviceServices)
             {
                 if (item is DeviceCamera camera)
                 {
-                    TemplateModel<ImageDevice> model = new TemplateModel<ImageDevice>()
+                    TemplateModel<ImageDevice> model = new()
                     {
                         Value = new ImageDevice() { Name = item.Name, DeviceCode = item.Code, DeviceType = "Camera" },
                     };
                     deves.Add(model);
                 }else if (item is DeviceCalibration cali)
                 {
-                    TemplateModel<ImageDevice> model = new TemplateModel<ImageDevice>()
+                    TemplateModel<ImageDevice> model = new()
                     {
                         Value = new ImageDevice() { Name = item.Name, DeviceCode = item.Code, DeviceType = "Calibration" },
                     };
@@ -607,7 +608,7 @@ namespace ColorVision.Services.Devices.Algorithm
             {
                 TemplateControl= TemplateControl.GetInstance();
                 SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-                if (SoftwareConfig.IsUseMySql && !SoftwareConfig.MySqlControl.IsConnect)
+                if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
                 {
                     MessageBox.Show(Application.Current.MainWindow, "数据库连接失败，请先连接数据库在操作", "ColorVision");
                     return;

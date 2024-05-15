@@ -92,7 +92,7 @@ namespace ColorVision.Services.PhyCameras.Dao
             return dataTable;
         }
 
-        public override CameraLicenseModel GetModelFromDataRow(DataRow item) => new CameraLicenseModel()
+        public override CameraLicenseModel GetModelFromDataRow(DataRow item) => new()
         {
             Id = item.Field<int>("id"),
             LicenseValue = item.Field<string?>("value"),

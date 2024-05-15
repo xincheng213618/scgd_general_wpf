@@ -48,7 +48,7 @@ namespace ColorVision.Services.Devices.Camera
 
             EditCommand = new RelayCommand(a =>
             {
-                EditCamera window = new EditCamera(this);
+                EditCamera window = new(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
@@ -71,7 +71,7 @@ namespace ColorVision.Services.Devices.Camera
         public void OpenPhyCameraManger()
         {
             DeviceService.GetAllCameraID();
-            PhyCameraManagerWindow phyCameraManager = new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow() };
+            PhyCameraManagerWindow phyCameraManager = new() { Owner = Application.Current.GetActiveWindow() };
             phyCameraManager.Show();
         }
 

@@ -36,7 +36,7 @@ namespace ColorVision.Services.Dao
 
         public override CameraTempModel GetModelFromDataRow(DataRow item)
         {
-            CameraTempModel model = new CameraTempModel
+            CameraTempModel model = new()
             {
                 Id = item.Field<int>("id"),
                 TempValue = item.Field<float>("temp_value"),
@@ -67,7 +67,7 @@ namespace ColorVision.Services.Dao
 
         public List<CameraTempModel> GetCameraTempsByCreateDate(int? resId = null, int limit = 1)
         {
-            List<CameraTempModel> list = new List<CameraTempModel>();
+            List<CameraTempModel> list = new();
             DataTable dInfo;
             string sql;
             if (resId.HasValue)
