@@ -326,9 +326,8 @@ namespace ColorVision.Services.Devices.Camera
             if (sender is Button button)
             {
                 TemplateControl = TemplateControl.GetInstance();
-                SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
-                if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
+                if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
                     MessageBox.Show(Application.Current.MainWindow, Properties.Resource.DatabaseConnectionFailed, "ColorVision");
                     return;

@@ -27,10 +27,9 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
         public object? Icon { get; }
 
         public RelayCommand Command => new(a => {
-            SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-            if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
+            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Properties.Resource.DatabaseConnectionFailed, "ColorVision");
                 return;
             }
             new WindowTemplate(new TemplateSFRParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;

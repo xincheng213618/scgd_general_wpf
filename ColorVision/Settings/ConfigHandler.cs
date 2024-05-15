@@ -71,11 +71,8 @@ namespace ColorVision.Settings
                 SoftwareConfig config = ReadConfig<SoftwareConfig>(SoftwareConfigFileName);
                 if (config != null)
                 {
-                    config.MySqlConfig.UserPwd = Cryptography.AESDecrypt(config.MySqlConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
                     config.MQTTConfig.UserPwd = Cryptography.AESDecrypt(config.MQTTConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
                     config.UserConfig.UserPwd = Cryptography.AESDecrypt(config.UserConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
-                    foreach (var item in config.MySqlConfigs)
-                        item.UserPwd = Cryptography.AESDecrypt(item.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
                     foreach (var item in config.MQTTConfigs)
                         item.UserPwd = Cryptography.AESDecrypt(item.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
                     return config;
@@ -117,20 +114,12 @@ namespace ColorVision.Settings
 
         public void SaveConfig()
         {
-            string Temp0 = SoftwareConfig.MySqlConfig.UserPwd;
             string Temp1 = SoftwareConfig.MQTTConfig.UserPwd;
             string Temp2 = SoftwareConfig.UserConfig.UserPwd;
 
-            SoftwareConfig.MySqlConfig.UserPwd = Cryptography.AESEncrypt(SoftwareConfig.MySqlConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
             SoftwareConfig.MQTTConfig.UserPwd = Cryptography.AESEncrypt(SoftwareConfig.MQTTConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
             SoftwareConfig.UserConfig.UserPwd = Cryptography.AESEncrypt(SoftwareConfig.UserConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
 
-            List<string> MySqlConfigsPwd = new();
-            foreach (var item in SoftwareConfig.MySqlConfigs)
-            {
-                MySqlConfigsPwd.Add(item.UserPwd);
-                item.UserPwd = Cryptography.AESEncrypt(item.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
-            }
 
             List<string> MQTTConfigsPwd = new();
             foreach (var item in SoftwareConfig.MQTTConfigs)
@@ -140,12 +129,9 @@ namespace ColorVision.Settings
             }
 
             WriteConfig(SoftwareConfigFileName, SoftwareConfig);
-            SoftwareConfig.MySqlConfig.UserPwd = Temp0;
             SoftwareConfig.MQTTConfig.UserPwd = Temp1;
             SoftwareConfig.UserConfig.UserPwd = Temp2;
 
-            for (int i = 0; i < MySqlConfigsPwd.Count; i++)
-                SoftwareConfig.MySqlConfigs[i].UserPwd = MySqlConfigsPwd[i];
 
             for (int i = 0; i < MQTTConfigsPwd.Count; i++)
                 SoftwareConfig.MQTTConfigs[i].UserPwd = MQTTConfigsPwd[i];

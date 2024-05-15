@@ -81,7 +81,7 @@ namespace ColorVision
                 TextBoxMsg.Text += $"正在启动服务";
             });
 
-            if (SoftwareConfig.IsUseMySql)
+            if (MySqlSetting.Instance.IsUseMySql)
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {

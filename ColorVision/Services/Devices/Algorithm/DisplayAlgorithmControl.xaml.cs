@@ -607,8 +607,7 @@ namespace ColorVision.Services.Devices.Algorithm
             if (sender is Control button)
             {
                 TemplateControl= TemplateControl.GetInstance();
-                SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-                if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
+                if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
                     MessageBox.Show(Application.Current.MainWindow, "数据库连接失败，请先连接数据库在操作", "ColorVision");
                     return;

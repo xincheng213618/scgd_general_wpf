@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Settings;
 using System;
@@ -42,7 +43,7 @@ namespace ColorVision.Services.Templates
         {
             storage = value;
 
-            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
+            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
                 if (parameters.TryGetValue(propertyName, out ModDetailModel modDetailModel))
                 {
@@ -101,7 +102,7 @@ namespace ColorVision.Services.Templates
 
         public T? GetValue<T>(T? storage, [CallerMemberName] string propertyName = "")
         {
-            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
+            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
                 string val = "";
                 if (parameters.TryGetValue(propertyName, out ModDetailModel modDetailModel))

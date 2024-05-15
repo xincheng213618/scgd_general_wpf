@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.Utilities;
 using ColorVision.Draw;
+using ColorVision.MySql;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
 using ColorVision.Settings;
@@ -149,7 +150,7 @@ namespace ColorVision.Services.Templates.POI
                 WaitControlProgressBar.Value = 0;
                 await Task.Delay(100);
 
-                if (SoftwareConfig.IsUseMySql)
+                if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                     PoiParam.LoadPoiDetailFromDB(PoiParam);
 
                 WaitControlProgressBar.Value = 10;
@@ -1381,7 +1382,7 @@ namespace ColorVision.Services.Templates.POI
                 {
                     var SelectPoiParam = windowFocusPointAd.SelectPoiParam;
 
-                    if (SoftwareConfig.IsUseMySql)
+                    if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                         PoiParam.LoadPoiDetailFromDB(SelectPoiParam);
 
                     foreach (var item in SelectPoiParam.PoiPoints)

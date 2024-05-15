@@ -9,6 +9,14 @@ namespace ColorVision.UI
 
     }
 
+    public interface IConfigSecure : IConfig
+    {
+        // 加密
+        void Encryption();
+
+        // 解密
+        void Decrypt();
+    }
 
     public class ConfigHandler1
     {
@@ -60,7 +68,10 @@ namespace ColorVision.UI
             }
             throw new InvalidOperationException($"Service of type {type.FullName} not registered.");
         }
+
         public Dictionary<Type, IConfig> Configs { get; set; }
+
+        public void SaveConfigs() => SaveConfigs(DIFile);
 
         public void SaveConfigs(string fileName)
         {
@@ -72,9 +83,31 @@ namespace ColorVision.UI
                     foreach (var configPair in Configs)
                     {
                         jsonWriter.WritePropertyName(configPair.Key.Name);
-                        JsonSerializer.Serialize(jsonWriter, configPair.Value, configPair.Key, _options);
+                        if (configPair.Value is IConfigSecure  configSecure)
+                        {
+                            configSecure.Encryption();
+                            JsonSerializer.Serialize(jsonWriter, configPair.Value, configPair.Key, _options);
+                            configSecure.Decrypt();
+                        }
+                        else
+                        {
+                            JsonSerializer.Serialize(jsonWriter, configPair.Value, configPair.Key, _options);
+                        }
                     }
                     jsonWriter.WriteEndObject();
+                }
+            }
+        }
+        private void LoadDefaultConfigs()
+        {
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                foreach (var type in assembly.GetTypes().Where(t => typeof(IConfig).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is IConfig config)
+                    {
+                        Configs[type] = config;
+                    }
                 }
             }
         }
@@ -97,7 +130,12 @@ namespace ColorVision.UI
                                 var configName = type.Name;
                                 if (jsonDoc.RootElement.TryGetProperty(configName, out var configElement))
                                 {
-                                    if (JsonSerializer.Deserialize(configElement.GetRawText(), type, _options) is IConfig config)
+                                    if (JsonSerializer.Deserialize(configElement.GetRawText(), type, _options) is IConfigSecure  configSecure)
+                                    {
+                                        configSecure.Decrypt();
+                                        Configs[type] = configSecure;
+                                    }
+                                    else if (JsonSerializer.Deserialize(configElement.GetRawText(), type, _options) is IConfig config)
                                     {
                                         Configs[type] = config;
                                     }
@@ -115,40 +153,16 @@ namespace ColorVision.UI
                 }
                 catch
                 {
-                    foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-                    {
-                        foreach (var type in assembly.GetTypes().Where(t => typeof(IConfig).IsAssignableFrom(t) && !t.IsAbstract))
-                        {
-                            if (Activator.CreateInstance(type) is IConfig config)
-                            {
-                                Configs[type] = config;
-                            }
-                        }
-                    }
+                    LoadDefaultConfigs();
                 }
             }
             else
             {
-                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-                {
-                    foreach (var type in assembly.GetTypes().Where(t => typeof(IConfig).IsAssignableFrom(t) && !t.IsAbstract))
-                    {
-                        if (Activator.CreateInstance(type) is IConfig config)
-                        {
-                            Configs[type] = config;
-                        }
-                    }
-                }
+                LoadDefaultConfigs();
             }
 
         }
 
-
-
-
     }
-
-
-
 
 }

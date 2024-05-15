@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8603,CS0649,CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.MySql;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera;
@@ -200,7 +201,7 @@ namespace ColorVision.Services.PhyCameras.Templates
         public static void LoadResourceParams<T>(ObservableCollection<TemplateModel<T>> ResourceParams, int resourceId, string ModeType) where T : ParamBase, new()
         {
             ResourceParams.Clear();
-            if (ConfigHandler.GetInstance().SoftwareConfig.IsUseMySql)
+            if (MySqlSetting.IsConnect)
             {
                 ModMasterDao masterFlowDao = new(ModeType);
                 List<ModMasterModel> smus = masterFlowDao.GetResourceAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId, resourceId);

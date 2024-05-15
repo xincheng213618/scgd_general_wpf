@@ -15,7 +15,6 @@ using System.Text.Json.Serialization;
 
 namespace ColorVision.Settings
 {
-    public delegate void UseMySqlHandler(bool IsUseMySql);
     public delegate void UseMQTTHandler(bool IsUseMQTT);
     public delegate void UseRcServicelHandler(bool IsUseRcServicel);
 
@@ -34,12 +33,10 @@ namespace ColorVision.Settings
             MQTTConfig = new MQTTConfig();
             MQTTConfigs = new ObservableCollection<MQTTConfig>();
 
-            MySqlConfig = new MySqlConfig();
-            MySqlConfigs = new ObservableCollection<MySqlConfig>();
-
             RcServiceConfig = new RCServiceConfig();
             RcServiceConfigs = new ObservableCollection<RCServiceConfig>();
         }
+        public static MySqlSetting MySqlSetting => ConfigHandler1.GetInstance().GetRequiredService<MySqlSetting>();  
 
         public bool IsAutoRun { get => Tool.IsAutoRun(GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); set { Tool.SetAutoRun(value, GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); NotifyPropertyChanged(); } }
 
@@ -57,10 +54,6 @@ namespace ColorVision.Settings
         public string? Version { get => _Version; set { _Version = value; NotifyPropertyChanged(); } }
         private string? _Version = string.Empty;
 
-        public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; NotifyPropertyChanged(); UseMySqlChanged?.Invoke(value); } }
-        private bool _IsUseMySql = true;
-
-        public event UseMySqlHandler UseMySqlChanged;
 
         /// <summary>
         /// MQTT
@@ -83,13 +76,6 @@ namespace ColorVision.Settings
         public MQTTConfig MQTTConfig { get; set; }
 
         public ObservableCollection<MQTTConfig> MQTTConfigs { get; set; } 
-
-
-        /// <summary>
-        /// MySQL配置
-        /// </summary>
-        public MySqlConfig MySqlConfig { get; set; }
-        public ObservableCollection<MySqlConfig> MySqlConfigs { get; set; }
 
 
         public UserConfig UserConfig { get; set; }

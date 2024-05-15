@@ -1,17 +1,51 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Settings;
+using ColorVision.UI;
 using log4net;
+using System.Collections.ObjectModel;
 
 namespace ColorVision.MySql
 {
-    public class MySqlSetting : ViewModelBase
+    public delegate void UseMySqlHandler(bool IsUseMySql);
+
+
+    public class MySqlSetting : ViewModelBase , IConfigSecure
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(MySqlSetting));
-        private static MySqlSetting _instance;
-        private static readonly object _locker = new();
-        public static MySqlSetting GetInstance() { lock (_locker) { return _instance ??= new MySqlSetting(); } }
+        public static MySqlSetting Instance  => ConfigHandler1.GetInstance().GetRequiredService<MySqlSetting>();
+
+        public static MySqlControl MySqlControl => MySqlControl.GetInstance();
+        public static bool IsConnect => MySqlControl.IsConnect;
 
 
+        public bool IsUseMySql { get => _IsUseMySql; set { _IsUseMySql = value; NotifyPropertyChanged(); UseMySqlChanged?.Invoke(value); } }
+        private bool _IsUseMySql = true;
+
+        public event UseMySqlHandler UseMySqlChanged;
 
 
+        /// <summary>
+        /// MySQL配置
+        /// </summary>
+        public MySqlConfig MySqlConfig { get; set; } = new MySqlConfig();
+        public ObservableCollection<MySqlConfig> MySqlConfigs { get; set; } = new ObservableCollection<MySqlConfig>();
+        
+        public void Encryption()
+        {
+            MySqlConfig.UserPwd = Cryptography.AESEncrypt(MySqlConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
+            foreach (var item in MySqlConfigs)
+            {
+                item.UserPwd = Cryptography.AESEncrypt(item.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
+            }
+        }
+
+        public void Decrypt()
+        {
+            MySqlConfig.UserPwd = Cryptography.AESDecrypt(MySqlConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
+            foreach (var item in MySqlConfigs)
+            {
+                item.UserPwd = Cryptography.AESDecrypt(item.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
+            }
+        }
     }
 }
