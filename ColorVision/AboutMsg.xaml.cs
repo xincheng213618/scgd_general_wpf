@@ -14,6 +14,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using ColorVision.Themes;
 
 namespace ColorVision
 {
@@ -49,7 +50,7 @@ namespace ColorVision
         public AboutMsgWindow()
         {
             InitializeComponent();
-            IsBlurEnabled = ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.TransparentWindow && IsBlurEnabled;
+            IsBlurEnabled = ThemeConfig.Instance.TransparentWindow && IsBlurEnabled;
             Background = IsBlurEnabled ? Background : Brushes.Gray;
         }
 

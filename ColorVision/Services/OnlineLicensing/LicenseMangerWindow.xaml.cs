@@ -1,10 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI.HotKey;
-using ColorVision.Services.OnlineLicensing;
-using ColorVision.Settings;
+using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using ColorVision.UI.HotKey;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -50,7 +49,7 @@ namespace ColorVision.Services.OnlineLicensing
         public LicenseMangerWindow()
         {
             InitializeComponent();
-            IsBlurEnabled = ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.TransparentWindow && IsBlurEnabled;
+            IsBlurEnabled = ThemeConfig.Instance.TransparentWindow && IsBlurEnabled;
             Background = IsBlurEnabled ? Background : Brushes.Gray;
         }
 

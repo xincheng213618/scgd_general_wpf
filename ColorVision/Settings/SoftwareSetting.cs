@@ -9,9 +9,6 @@ namespace ColorVision.Settings
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SoftwareSetting));
 
-        public bool TransparentWindow { get => _TransparentWindow; set { _TransparentWindow = value; NotifyPropertyChanged(); } }
-        private bool _TransparentWindow = true;
-
         /// <summary>
         /// 是否默认配置
         /// </summary>
@@ -31,24 +28,14 @@ namespace ColorVision.Settings
                 _LogLevel = value;
                 NotifyPropertyChanged();
                 Level level = Level.All;
-                switch (LogLevel)
+                level = LogLevel switch
                 {
-                    case "info":
-                        level = Level.Info;
-                        break;
-                    case "debug":
-                        level = Level.Debug;
-                        break;
-                    case "warn":
-                        level = Level.Warn;
-                        break;
-                    case "error":
-                        level = Level.Error;
-                        break;
-                    default:
-                        level = Level.All;
-                        break;
-                }
+                    "info" => Level.Info,
+                    "debug" => Level.Debug,
+                    "warn" => Level.Warn,
+                    "error" => Level.Error,
+                    _ => Level.All,
+                };
 
                 var hierarchy = (Hierarchy)LogManager.GetRepository();
                 hierarchy.Root.Level = level;

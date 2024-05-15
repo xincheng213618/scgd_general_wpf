@@ -79,7 +79,7 @@ namespace ColorVision.Settings
             }
             else
             {
-                IsBlurEnabled = ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.TransparentWindow && IsBlurEnabled;
+                IsBlurEnabled = ThemeConfig.Instance.TransparentWindow && IsBlurEnabled;
             }
             Background = IsBlurEnabled ? Background :ThemeManager.Current.CurrentUITheme == Theme.Light?Brushes.White:Brushes.Black;
 

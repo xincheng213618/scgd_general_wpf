@@ -134,7 +134,7 @@
                                         <TextBlock Text="{x:Static properties:Resource.Theme}"/>
                                     </DockPanel>
                                     <DockPanel Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding SoftwareSetting.TransparentWindow}"/>
+                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding ThemeConfig.TransparentWindow}"/>
                                         <TextBlock Text="{x:Static properties:Resource.TransparentWindow}"/>
                                     </DockPanel>
 
@@ -154,7 +154,7 @@
                                     </DockPanel>
                                     <ProgressBar Height="15"  Foreground="#B41515" Maximum="100" Minimum="0" Value="{Binding AutoUpdateConfig.AutoUpdater.ProgressValue}" Background="#373B41" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
                                     <DockPanel  Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SoftwareSetting.TransparentWindow}"/>
+                                        <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding ThemeConfig.TransparentWindow}"/>
                                         <TextBlock Text="{x:Static properties:Resource.DisableHardwareAcceleration}"/>
                                     </DockPanel>
                                 </StackPanel>

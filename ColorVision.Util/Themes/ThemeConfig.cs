@@ -1,8 +1,9 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 
 namespace ColorVision.Themes
 {
-    public class ThemeConfig:IConfig
+    public class ThemeConfig: ViewModelBase,IConfig
     {
         public static ThemeConfig Instance => ConfigHandler1.GetInstance().GetRequiredService<ThemeConfig>();
 
@@ -10,5 +11,8 @@ namespace ColorVision.Themes
         /// 主题
         /// </summary>
         public Theme Theme { get; set; } = Theme.UseSystem;
+
+        public bool TransparentWindow { get => _TransparentWindow; set { _TransparentWindow = value; NotifyPropertyChanged(); } }
+        private bool _TransparentWindow = true;
     }
 }
