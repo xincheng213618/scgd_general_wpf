@@ -46,8 +46,7 @@ namespace ColorVision.Settings
 
         public static WizardConfig WizardConfig => WizardConfig.Instance;
 
-        [JsonIgnore]
-        public AutoUpdater AutoUpdater { get;} = AutoUpdater.GetInstance();
+        public static AutoUpdateConfig AutoUpdateConfig => AutoUpdateConfig.Instance;
 
         public ViewConfig ViewConfig { get; } = ViewConfig.GetInstance();
 

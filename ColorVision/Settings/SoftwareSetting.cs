@@ -46,7 +46,6 @@ namespace ColorVision.Settings
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SoftwareSetting));
 
-
         public bool TransparentWindow { get => _TransparentWindow; set { _TransparentWindow = value; NotifyPropertyChanged(); } }
         private bool _TransparentWindow = true;
 

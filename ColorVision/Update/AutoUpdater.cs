@@ -23,6 +23,8 @@ namespace ColorVision.Update
         public string UpdatePath { get => _UpdatePath;set { _UpdatePath = value; NotifyPropertyChanged(); } }
         private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A";
 
+        public static AutoUpdater AutoUpdater => AutoUpdater.GetInstance();
+
         /// <summary>
         /// 是否自动更新
         /// </summary>
