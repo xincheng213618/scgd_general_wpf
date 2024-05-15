@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Settings;
+using ColorVision.UI;
 using log4net;
 using System;
 using System.Diagnostics;
@@ -15,6 +16,19 @@ using System.Windows;
 
 namespace ColorVision.Update
 {
+    public class AutoUpdateConfig:ViewModelBase, IConfig
+    {
+        public static AutoUpdateConfig Instance  => ConfigHandler1.GetInstance().GetRequiredService<AutoUpdateConfig>();    
+
+        public string UpdatePath { get => _UpdatePath;set { _UpdatePath = value; NotifyPropertyChanged(); } }
+        private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A";
+
+        /// <summary>
+        /// 是否自动更新
+        /// </summary>
+        public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; NotifyPropertyChanged(); } }
+        private bool _IsAutoUpdate = true;
+    }
 
 
     public class AutoUpdater : ViewModelBase
@@ -25,10 +39,10 @@ namespace ColorVision.Update
         public static AutoUpdater GetInstance() { lock (_locker) { return _instance ??= new AutoUpdater(); } }
 
         public string UpdateUrl { get => _UpdateUrl; set { _UpdateUrl = value; NotifyPropertyChanged(); } }
-        private string _UpdateUrl = GlobalConst.UpdatePath + "/LATEST_RELEASE";
+        private string _UpdateUrl = AutoUpdateConfig.Instance.UpdatePath + "/LATEST_RELEASE";
 
         public string CHANGELOG { get => _CHANGELOG; set { _CHANGELOG = value; NotifyPropertyChanged(); } }
-        private string _CHANGELOG = GlobalConst.UpdatePath + "/CHANGELOG.md";
+        private string _CHANGELOG = AutoUpdateConfig.Instance.UpdatePath + "/CHANGELOG.md";
 
         public Version LatestVersion { get => _LatestVersion; set { _LatestVersion = value; NotifyPropertyChanged(); } }
         private Version _LatestVersion;
@@ -203,7 +217,7 @@ namespace ColorVision.Update
         private async Task DownloadAndUpdate(Version latestVersion,string DownloadPath,CancellationToken cancellationToken)
         {
             // 构建下载URL，这里假设下载路径与版本号相关
-            string downloadUrl = $"{GlobalConst.UpdatePath}/ColorVision/ColorVision-{latestVersion}.exe";
+            string downloadUrl = $"{AutoUpdateConfig.Instance.UpdatePath}/ColorVision/ColorVision-{latestVersion}.exe";
 
             string downloadPath = Path.Combine(DownloadPath, $"ColorVision-{latestVersion}.exe");
             // 指定下载路径
@@ -291,6 +305,7 @@ namespace ColorVision.Update
         {
             // 保存数据库配置
             ConfigHandler.GetInstance().SaveConfig();
+            ConfigHandler1.GetInstance().SaveConfigs();
 
 
             // 启动新的实例

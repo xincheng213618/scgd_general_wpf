@@ -191,7 +191,7 @@ namespace ColorVision
             menulogs.Items.Insert(0, menulogs1);
 
 
-            if (ConfigHandler.GetInstance().SoftwareConfig.SoftwareSetting.IsAutoUpdate)
+            if (AutoUpdateConfig.Instance.IsAutoUpdate)
             {
                 Thread thread1 = new(async () => await CheckUpdate()) { IsBackground = true };
                 thread1.Start();

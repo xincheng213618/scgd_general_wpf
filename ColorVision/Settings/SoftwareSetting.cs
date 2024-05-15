@@ -51,12 +51,6 @@ namespace ColorVision.Settings
         private bool _TransparentWindow = true;
 
         /// <summary>
-        /// 是否自动更新
-        /// </summary>
-        public bool IsAutoUpdate { get => _IsAutoUpdate; set { _IsAutoUpdate = value; NotifyPropertyChanged(); } }
-        private bool _IsAutoUpdate = true;
-
-        /// <summary>
         /// 是否默认配置
         /// </summary>
         public bool IsDefaultOpenService { get=> _IsDefaultOpenService; set { _IsDefaultOpenService = value;NotifyPropertyChanged(); } }
