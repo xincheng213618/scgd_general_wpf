@@ -101,6 +101,7 @@
   <ItemGroup>
     <Reference Include="CVCommCore">
       <HintPath>..\DLL\CVCommCore.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="CVImageChannelLib">
       <HintPath>..\DLL\CVImageChannelLib.dll</HintPath>
