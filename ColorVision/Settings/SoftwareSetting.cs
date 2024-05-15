@@ -5,8 +5,24 @@ using log4net.Repository.Hierarchy;
 
 namespace ColorVision.Settings
 {
-    public partial class SoftwareSetting
+    public partial class SoftwareSetting :ViewModelBase
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(SoftwareSetting));
+
+        public bool TransparentWindow { get => _TransparentWindow; set { _TransparentWindow = value; NotifyPropertyChanged(); } }
+        private bool _TransparentWindow = true;
+
+        /// <summary>
+        /// 是否默认配置
+        /// </summary>
+        public bool IsDefaultOpenService { get=> _IsDefaultOpenService; set { _IsDefaultOpenService = value;NotifyPropertyChanged(); } }
+        private bool _IsDefaultOpenService;
+
+        public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; NotifyPropertyChanged(); } }
+        private bool _IsOpenStatusBar = true;
+        public bool IsOpenSidebar { get => _IsOpenSidebar; set { _IsOpenSidebar = value; NotifyPropertyChanged(); } }
+        private bool _IsOpenSidebar = true;
+
         private string _LogLevel = GlobalConst.LogLevel[0];
         public string LogLevel
         {
@@ -40,25 +56,6 @@ namespace ColorVision.Settings
                 log.Info("更新Log4Net 日志级别：" + value);
             }
         }
-    }
-
-    public partial class SoftwareSetting :ViewModelBase
-    {
-        private static readonly ILog log = LogManager.GetLogger(typeof(SoftwareSetting));
-
-        public bool TransparentWindow { get => _TransparentWindow; set { _TransparentWindow = value; NotifyPropertyChanged(); } }
-        private bool _TransparentWindow = true;
-
-        /// <summary>
-        /// 是否默认配置
-        /// </summary>
-        public bool IsDefaultOpenService { get=> _IsDefaultOpenService; set { _IsDefaultOpenService = value;NotifyPropertyChanged(); } }
-        private bool _IsDefaultOpenService;
-
-        public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; NotifyPropertyChanged(); } }
-        private bool _IsOpenStatusBar = true;
-        public bool IsOpenSidebar { get => _IsOpenSidebar; set { _IsOpenSidebar = value; NotifyPropertyChanged(); } }
-        private bool _IsOpenSidebar = true;
 
     }
 }

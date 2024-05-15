@@ -1,7 +1,7 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.MQTT;
+﻿using ColorVision.MQTT;
 using ColorVision.MySql;
 using ColorVision.Services.RC;
+using ColorVision.UI;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -69,10 +69,6 @@ namespace ColorVision.Settings
                 SoftwareConfig config = ReadConfig<SoftwareConfig>(SoftwareConfigFileName);
                 if (config != null)
                 {
-                    config.MQTTConfig.UserPwd = Cryptography.AESDecrypt(config.MQTTConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
-                    config.UserConfig.UserPwd = Cryptography.AESDecrypt(config.UserConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
-                    foreach (var item in config.MQTTConfigs)
-                        item.UserPwd = Cryptography.AESDecrypt(item.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
                     return config;
                 }
                 else
@@ -90,7 +86,6 @@ namespace ColorVision.Settings
             {
                 SaveConfig();
             };
-            SystemMonitorLazy = new Lazy<SystemMonitor>(() => SystemMonitor.GetInstance());
         }
 
         public static MySqlControl MySqlControl => MySqlControl.GetInstance();
@@ -98,12 +93,9 @@ namespace ColorVision.Settings
 
         public static RCServiceControl RCService => RCServiceControl.GetInstance();
 
+        public static SystemMonitor SystemMonitor => SystemMonitor.GetInstance();
 
-        [JsonIgnore]
-        readonly Lazy<SystemMonitor> SystemMonitorLazy;
-        [JsonIgnore]
-        public SystemMonitor SystemMonitor { get => SystemMonitorLazy.Value; }
-        
+
 
         readonly Lazy<SoftwareConfig> SoftwareConfigLazy;
 
@@ -112,27 +104,7 @@ namespace ColorVision.Settings
 
         public void SaveConfig()
         {
-            string Temp1 = SoftwareConfig.MQTTConfig.UserPwd;
-            string Temp2 = SoftwareConfig.UserConfig.UserPwd;
-
-            SoftwareConfig.MQTTConfig.UserPwd = Cryptography.AESEncrypt(SoftwareConfig.MQTTConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
-            SoftwareConfig.UserConfig.UserPwd = Cryptography.AESEncrypt(SoftwareConfig.UserConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
-
-
-            List<string> MQTTConfigsPwd = new();
-            foreach (var item in SoftwareConfig.MQTTConfigs)
-            {
-                MQTTConfigsPwd.Add(item.UserPwd);
-                item.UserPwd = Cryptography.AESEncrypt(item.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
-            }
-
             WriteConfig(SoftwareConfigFileName, SoftwareConfig);
-            SoftwareConfig.MQTTConfig.UserPwd = Temp1;
-            SoftwareConfig.UserConfig.UserPwd = Temp2;
-
-
-            for (int i = 0; i < MQTTConfigsPwd.Count; i++)
-                SoftwareConfig.MQTTConfigs[i].UserPwd = MQTTConfigsPwd[i];
         }
 
         private static JsonSerializerOptions jsonSerializerOptions = new() { WriteIndented = true,DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };

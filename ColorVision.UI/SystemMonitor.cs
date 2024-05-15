@@ -1,15 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace ColorVision.Settings
+namespace ColorVision.UI
 {
-
     public class SystemMonitorSetting: ViewModelBase,IConfig
     {
         public int UpdateSpeed { get => _UpdateSpeed; set { _UpdateSpeed = value; NotifyPropertyChanged(); } }

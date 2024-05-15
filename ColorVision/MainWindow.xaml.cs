@@ -485,9 +485,9 @@ namespace ColorVision
 
         private void Login_Click(object sender, RoutedEventArgs e)
         {
-            if (UserManager.Current.UserConfig != null)
+            if (UserManager.Instance.UserConfig != null)
             {
-                var user = UserManager.Current.UserConfig;
+                var user = UserManager.Instance.UserConfig;
                 MessageBox.Show(user.PerMissionMode.ToString() + ":" + user.UserName + " 已经登录", "ColorVision");
 
             }

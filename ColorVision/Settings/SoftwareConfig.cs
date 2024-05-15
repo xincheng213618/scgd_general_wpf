@@ -11,7 +11,6 @@ using ColorVision.Update;
 using ColorVision.UserSpace;
 using ColorVision.Wizards;
 using System.Collections.ObjectModel;
-using System.Text.Json.Serialization;
 
 namespace ColorVision.Settings
 {
@@ -86,11 +85,5 @@ namespace ColorVision.Settings
         public ObservableCollection<RCServiceConfig> RcServiceConfigs { get; set; }
     }
 
-    public class UserManager
-    {
-        public static UserManager Current { get; set; } = new UserManager();
 
-
-        public UserConfig UserConfig { get; set; }
-    }
 }
