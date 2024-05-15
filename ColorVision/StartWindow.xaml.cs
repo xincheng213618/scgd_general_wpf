@@ -148,7 +148,7 @@ namespace ColorVision
 
             if (MQTTControl.GetInstance().IsConnect)
             {
-                if (SoftwareConfig.IsUseRCService)
+                if (RCSetting.Instance.IsUseRCService)
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {

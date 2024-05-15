@@ -4,7 +4,6 @@ using ColorVision.Draw;
 using ColorVision.MySql;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
-using ColorVision.Settings;
 using ColorVision.Util.Draw.Rectangle;
 using cvColorVision;
 using cvColorVision.Util;
@@ -34,9 +33,6 @@ namespace ColorVision.Services.Templates.POI
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(WindowFocusPoint));
         private string TagName { get; set; } = "P_";
-
-
-        static SoftwareConfig SoftwareConfig { get => ConfigHandler.GetInstance().SoftwareConfig; }
 
         public PoiParam PoiParam { get; set; }
         public WindowFocusPoint(PoiParam poiParam) 

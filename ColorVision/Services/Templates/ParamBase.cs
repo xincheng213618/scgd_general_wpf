@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
-using ColorVision.Settings;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

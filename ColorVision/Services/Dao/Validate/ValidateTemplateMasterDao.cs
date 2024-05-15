@@ -1,8 +1,5 @@
-﻿using ColorVision.MySql;
-using ColorVision.MySql.ORM;
-using ColorVision.Services.Dao;
+﻿using ColorVision.MySql.ORM;
 using System;
-using System.Collections.Generic;
 using System.Data;
 
 namespace ColorVision.Services.DAO.Validate

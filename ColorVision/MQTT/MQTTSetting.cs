@@ -1,10 +1,14 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Settings;
 using ColorVision.UI;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.MQTT
 {
-    public class MQTTSetting : ViewModelBase ,IConfig
+    public delegate void UseMQTTHandler(bool IsUseMQTT);
+
+    public class MQTTSetting : ViewModelBase ,IConfigSecure
     {
         public static MQTTSetting Instance { get; set; } = ConfigHandler1.GetInstance().GetRequiredService<MQTTSetting>();
 
@@ -39,7 +43,14 @@ namespace ColorVision.MQTT
         public bool ShowSelect { get => _ShowSelect; set { _ShowSelect = value; NotifyPropertyChanged(); } }
         private bool _ShowSelect;
 
+        public void Encryption()
+        {
+            MQTTConfig.UserPwd = Cryptography.AESEncrypt(MQTTConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
+        }
 
-
+        public void Decrypt()
+        {
+            MQTTConfig.UserPwd = Cryptography.AESDecrypt(MQTTConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
+        }
     }
 }

@@ -1,12 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices;
-using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Terminal;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
-using System;
-using System.Linq;
 
 namespace ColorVision.Services.Core
 {

@@ -1,20 +1,9 @@
-﻿using ColorVision.Net;
-using ColorVision.Solution.V.Files;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Net;
 using System;
-using System.Linq;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Threading;
-using ColorVision.Services.Export;
+using System.Windows;
+
 namespace ColorVision.Services.Export
 {
 

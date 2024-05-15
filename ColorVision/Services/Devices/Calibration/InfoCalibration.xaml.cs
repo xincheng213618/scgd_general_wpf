@@ -1,8 +1,4 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Services.PhyCameras;
-using ColorVision.Services.PhyCameras.Templates;
-using ColorVision.Services.Templates;
-using ColorVision.Settings;
 using System;
 using System.Windows;
 using System.Windows.Controls;

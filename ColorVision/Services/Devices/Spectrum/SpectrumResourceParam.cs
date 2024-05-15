@@ -3,6 +3,7 @@ using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
+using ColorVision.UserSpace;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -54,7 +55,7 @@ namespace ColorVision.Services.Devices.Spectrum
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
                 ModMasterDao masterFlowDao = new(ModeType);
-                List<ModMasterModel> smus = masterFlowDao.GetResourceAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId, resourceId);
+                List<ModMasterModel> smus = masterFlowDao.GetResourceAll(UserConfig.Instance.TenantId, resourceId);
                 foreach (var dbModel in smus)
                 {
                     List<ModDetailModel> smuDetails = detailDao.GetAllByPid(dbModel.Id);

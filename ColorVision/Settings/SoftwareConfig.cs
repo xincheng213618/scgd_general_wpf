@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.MQTT;
 using ColorVision.MySql;
+using ColorVision.Services.Msg;
 using ColorVision.Services.RC;
 using ColorVision.Solution;
 using ColorVision.Themes;
@@ -10,26 +11,14 @@ using ColorVision.UI.Views;
 using ColorVision.Update;
 using ColorVision.UserSpace;
 using ColorVision.Wizards;
-using System.Collections.ObjectModel;
 
 namespace ColorVision.Settings
 {
-    public delegate void UseMQTTHandler(bool IsUseMQTT);
-    public delegate void UseRcServicelHandler(bool IsUseRcServicel);
-
     /// <summary>
     /// 软件配置
     /// </summary>
     public class SoftwareConfig : ViewModelBase
     {
-        public SoftwareConfig()
-        {
-            SoftwareSetting = new SoftwareSetting();
-            UserConfig = new UserConfig();
-
-            RcServiceConfig = new RCServiceConfig();
-            RcServiceConfigs = new ObservableCollection<RCServiceConfig>();
-        }
         public static MySqlSetting MySqlSetting => ConfigHandler1.GetInstance().GetRequiredService<MySqlSetting>();  
 
         public bool IsAutoRun { get => Tool.IsAutoRun(GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); set { Tool.SetAutoRun(value, GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); NotifyPropertyChanged(); } }
@@ -42,32 +31,23 @@ namespace ColorVision.Settings
 
         public static AutoUpdateConfig AutoUpdateConfig => AutoUpdateConfig.Instance;
 
-        public ViewConfig ViewConfig { get; } = ViewConfig.GetInstance();
+        public static ViewConfig ViewConfig => ViewConfig.Instance;
 
         public string? Version { get => _Version; set { _Version = value; NotifyPropertyChanged(); } }
         private string? _Version = string.Empty;
 
-        /// <summary>
-        /// 注册中心
-        /// </summary>
-        public bool IsUseRCService { get => _IsUseRCService; set { _IsUseRCService = value; NotifyPropertyChanged(); } }
-        private bool _IsUseRCService = true;
-
-
-        public SoftwareSetting SoftwareSetting { get; set; }
+        public SoftwareSetting SoftwareSetting { get; set; } = new SoftwareSetting();
 
         public static SystemMonitorSetting SystemMonitorSetting => ConfigHandler1.GetInstance().GetRequiredService<SystemMonitorSetting>();
 
+        public static RCSetting RCSetting => RCSetting.Instance;
 
-        public MQTTSetting MQTTSetting { get; set; } = new MQTTSetting();
+        public static MQTTSetting MQTTSetting => MQTTSetting.Instance;
+        public static MsgConfig MsgConfig => MsgConfig.Instance;
 
-        public UserConfig UserConfig { get; set; }
+        public static UserConfig UserConfig => UserConfig.Instance;
 
-        public SolutionSetting SolutionSetting { get; set; } = new SolutionSetting();
-
-
-        public RCServiceConfig RcServiceConfig { get; set; }
-        public ObservableCollection<RCServiceConfig> RcServiceConfigs { get; set; }
+        public static SolutionSetting SolutionSetting  =>ConfigHandler1.GetInstance().GetRequiredService<SolutionSetting>();
     }
 
 

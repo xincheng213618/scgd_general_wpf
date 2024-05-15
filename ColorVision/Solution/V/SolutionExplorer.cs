@@ -23,7 +23,7 @@ namespace ColorVision.Solution.V
         public RelayCommand OpenExplorer { get; set; }
         public RelayCommand ClearCacheCommand { get; set; }
 
-        public static SolutionSetting Setting { get => SolutionManager.GetInstance().Setting; }
+        public static SolutionSetting Setting => SolutionSetting.Instance;
 
         public SolutionExplorer(string FullPath)
         {

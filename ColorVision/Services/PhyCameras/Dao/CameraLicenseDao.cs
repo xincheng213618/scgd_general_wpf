@@ -1,14 +1,12 @@
 ﻿#pragma warning disable CS0618
-using ColorVision.Common.Utilities;
 using ColorVision.Common.MVVM;
-using ColorVision.MySql;
+using ColorVision.Common.Utilities;
+using ColorVision.MySql.ORM;
+using ColorVision.UI.Sorts;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using Newtonsoft.Json;
-using ColorVision.UI.Sorts;
-using ColorVision.MySql.ORM;
 
 namespace ColorVision.Services.PhyCameras.Dao
 {

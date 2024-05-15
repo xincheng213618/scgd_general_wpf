@@ -5,6 +5,7 @@ using ColorVision.Services.PhyCameras.Configs;
 using ColorVision.Services.RC;
 using ColorVision.Services.Types;
 using ColorVision.Settings;
+using ColorVision.UserSpace;
 using cvColorVision;
 using CVCommCore;
 using Newtonsoft.Json;
@@ -111,7 +112,7 @@ namespace ColorVision.Services.PhyCameras
         {
             SysResourceModel? sysResourceModel = SysResourceDao.Instance.GetByCode(CreateConfig.Code);
             if (sysResourceModel == null)
-                sysResourceModel = new SysResourceModel(CreateConfig.CameraID, CreateConfig.Code, (int)PhysicalResourceType.PhyCamera, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                sysResourceModel = new SysResourceModel(CreateConfig.CameraID, CreateConfig.Code, (int)PhysicalResourceType.PhyCamera, UserConfig.Instance.TenantId);
 
             sysResourceModel.Value = JsonConvert.SerializeObject(CreateConfig);
             int ret =  SysResourceDao.Instance.Save(sysResourceModel);

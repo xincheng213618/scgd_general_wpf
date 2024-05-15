@@ -3,9 +3,9 @@ using ColorVision.Common.Utilities;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Templates.POI.Dao;
-using ColorVision.Settings;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
+using ColorVision.UserSpace;
 using Newtonsoft.Json;
 using NPOI.SS.Formula.Functions;
 using System.Collections.Generic;
@@ -27,7 +27,6 @@ namespace ColorVision.Services.Templates.POI
         public object? Icon => null;
 
         public RelayCommand Command => new(a => {
-            SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
@@ -112,7 +111,7 @@ namespace ColorVision.Services.Templates.POI
         public static ObservableCollection<TemplateModel<PoiParam>> LoadPoiParam()
         {
             PoiParam.Params.Clear();
-            List<PoiMasterModel> poiMasters = PoiMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId },{ "is_delete", 0 } });
+            List<PoiMasterModel> poiMasters = PoiMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", UserConfig.Instance.TenantId },{ "is_delete", 0 } });
             foreach (var dbModel in poiMasters)
             {
                 PoiParam.Params.Add(new TemplateModel<PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel)));
@@ -133,7 +132,7 @@ namespace ColorVision.Services.Templates.POI
 
         public static PoiParam? AddPoiParam(string TemplateName)
         {
-            PoiMasterModel poiMasterModel = new(TemplateName, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            PoiMasterModel poiMasterModel = new(TemplateName, UserConfig.Instance.TenantId);
             PoiMasterDao.Instance.Save(poiMasterModel);
 
             int pkId = poiMasterModel.Id;

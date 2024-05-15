@@ -28,7 +28,7 @@ namespace ColorVision.Update
             ChangeLogListView.ItemsSource = ChangeLogEntrys;
             Task.Run(async () =>
             {
-                CHANGELOG = await AutoUpdater.GetInstance().GetChangeLog(AutoUpdater.GetInstance().CHANGELOG);
+                CHANGELOG = await AutoUpdater.GetInstance().GetChangeLog(AutoUpdater.GetInstance().CHANGELOGUrl);
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     CHANGELOGStackPanel.Visibility = CHANGELOG == null ? Visibility.Collapsed : Visibility.Visible;

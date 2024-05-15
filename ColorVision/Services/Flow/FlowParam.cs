@@ -4,7 +4,6 @@ using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Flow.Dao;
 using ColorVision.Services.Templates;
-using ColorVision.Services.Templates.POI;
 using ColorVision.Settings;
 using ColorVision.UI;
 using ColorVision.UserSpace;
@@ -13,7 +12,6 @@ using NPOI.SS.Formula.Functions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
-using System.Windows.Controls;
 
 namespace ColorVision.Services.Flow
 {
@@ -89,7 +87,7 @@ namespace ColorVision.Services.Flow
             Params.Clear();
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                List<ModMasterModel> flows = masterFlowDao.GetAll(UserCenter.GetInstance().TenantId);
+                List<ModMasterModel> flows = masterFlowDao.GetAll(UserConfig.Instance.TenantId);
                 foreach (var dbModel in flows)
                 {
                     List<ModFlowDetailModel> flowDetails = ModFlowDetailDao.Instance.GetAllByPid(dbModel.Id);
@@ -102,7 +100,7 @@ namespace ColorVision.Services.Flow
 
         public static FlowParam? AddFlowParam(string text)
         {
-            ModMasterModel flowMaster = new(ModMasterType.Flow, text, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            ModMasterModel flowMaster = new(ModMasterType.Flow, text, UserConfig.Instance.TenantId);
             Save(flowMaster);
 
             int pkId = flowMaster.Id;

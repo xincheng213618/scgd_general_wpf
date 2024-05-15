@@ -1,37 +1,25 @@
-﻿using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices;
 using ColorVision.Services.Devices.Algorithm;
 using ColorVision.Services.Devices.Calibration;
-using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.Devices;
-using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Devices.CfwPort;
 using ColorVision.Services.Devices.FileServer;
 using ColorVision.Services.Devices.Motor;
 using ColorVision.Services.Devices.PG;
 using ColorVision.Services.Devices.Sensor;
-using ColorVision.Services.Devices.SMU.Configs;
 using ColorVision.Services.Devices.SMU;
-using ColorVision.Services.Devices.Spectrum.Configs;
+using ColorVision.Services.Devices.SMU.Configs;
 using ColorVision.Services.Devices.Spectrum;
+using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Types;
-using ColorVision.Settings;
+using ColorVision.UserSpace;
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using ColorVision.Common.Utilities;
 
 namespace ColorVision.Services.Terminal
 {
@@ -81,7 +69,7 @@ namespace ColorVision.Services.Terminal
             DeviceService deviceService = null;
 
 
-            SysResourceModel sysResource = new(CreateName.Text, CreateCode.Text, TerminalService.SysResourceModel.Type, TerminalService.SysResourceModel.Id, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            SysResourceModel sysResource = new(CreateName.Text, CreateCode.Text, TerminalService.SysResourceModel.Type, TerminalService.SysResourceModel.Id, UserConfig.Instance.TenantId);
             SysDeviceModel sysDevModel = null;
             DeviceServiceConfig deviceConfig;
             int fromPort;

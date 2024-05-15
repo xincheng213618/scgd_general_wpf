@@ -5,10 +5,12 @@ using log4net;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Packaging;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -42,7 +44,7 @@ namespace ColorVision.Update
         public string UpdateUrl { get => _UpdateUrl; set { _UpdateUrl = value; NotifyPropertyChanged(); } }
         private string _UpdateUrl = AutoUpdateConfig.Instance.UpdatePath + "/LATEST_RELEASE";
 
-        public string CHANGELOG { get => _CHANGELOG; set { _CHANGELOG = value; NotifyPropertyChanged(); } }
+        public string CHANGELOGUrl { get => _CHANGELOG; set { _CHANGELOG = value; NotifyPropertyChanged(); } }
         private string _CHANGELOG = AutoUpdateConfig.Instance.UpdatePath + "/CHANGELOG.md";
 
         public Version LatestVersion { get => _LatestVersion; set { _LatestVersion = value; NotifyPropertyChanged(); } }
@@ -119,13 +121,33 @@ namespace ColorVision.Update
 
                 if (LatestVersion > CurrentVersion)
                 {
-                    Application.Current.Dispatcher.Invoke(() =>
+                    string CHANGELOG = await GetChangeLog(CHANGELOGUrl);
+                    string versionPattern = $"## \\[{LatestVersion}\\].*?\\n(.*?)(?=\\n## |$)";
+                    Match match = Regex.Match(LatestVersion.ToString(), versionPattern, RegexOptions.Singleline);
+
+                    if (match.Success)
                     {
-                        if (MessageBox.Show($"{Properties.Resource.NewVersionFound}{LatestVersion},{Properties.Resource.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                        // 如果找到匹配项，提取变更日志
+                        string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
+
+                        Application.Current.Dispatcher.Invoke(() =>
                         {
-                            Update(LatestVersion, Path.GetTempPath());
-                        }
-                    });              
+                            if (MessageBox.Show($"{Properties.Resource.NewVersionFound}{LatestVersion},{changeLogForCurrentVersion},{Properties.Resource.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            {
+                                Update(LatestVersion, Path.GetTempPath());
+                            }
+                        });
+                    }
+                    else
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            if (MessageBox.Show($"{Properties.Resource.NewVersionFound}{LatestVersion},{Properties.Resource.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            {
+                                Update(LatestVersion, Path.GetTempPath());
+                            }
+                        });
+                    }
                 }
                 else
                 {

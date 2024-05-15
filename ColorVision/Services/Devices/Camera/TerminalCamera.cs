@@ -1,16 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera.Configs;
-using ColorVision.Services.Terminal;
-using ColorVision.Settings;
-using ColorVision.Themes;
 using ColorVision.Common.Utilities;
-using cvColorVision;
-using Newtonsoft.Json;
-using System;
-using System.Windows;
-using System.Windows.Media;
 using ColorVision.Interfaces;
+using ColorVision.Services.Dao;
+using ColorVision.Services.Terminal;
+using System.Windows;
 
 namespace ColorVision.Services.Devices.Camera
 {

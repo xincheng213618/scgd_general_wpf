@@ -1,30 +1,29 @@
 ﻿#pragma warning disable CS8604,CS0168,CS8629,CA1822,CS8602
 using ColorVision.Common.Utilities;
+using ColorVision.Extension;
+using ColorVision.MySql;
 using ColorVision.Net;
 using ColorVision.Services.Devices.Algorithm.Dao;
+using ColorVision.Services.Devices.Algorithm.Templates;
 using ColorVision.Services.Devices.Algorithm.Views;
+using ColorVision.Services.Devices.Calibration;
+using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
-using ColorVision.Settings;
+using ColorVision.Services.Templates.POI;
 using ColorVision.Themes;
+using ColorVision.UI;
+using CVCommCore.CVAlgorithm;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using ColorVision.Extension;
-using System.Collections.ObjectModel;
-using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.Devices.Calibration;
-using CVCommCore.CVAlgorithm;
-using ColorVision.UI;
-using ColorVision.Services.Templates.POI;
-using ColorVision.Services.Devices.Algorithm.Templates;
-using ColorVision.MySql;
 
 namespace ColorVision.Services.Devices.Algorithm
 {

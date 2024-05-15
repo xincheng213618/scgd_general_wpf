@@ -2,8 +2,8 @@
 using ColorVision.Common.Utilities;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
-using ColorVision.Settings;
 using ColorVision.UI;
+using ColorVision.UserSpace;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -25,7 +25,6 @@ namespace ColorVision.Services.Templates.Measure
 
         public RelayCommand Command => new(a =>
         {
-            SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
@@ -59,7 +58,7 @@ namespace ColorVision.Services.Templates.Measure
             Params.Clear();
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
-                List<MeasureMasterModel> devices = MeasureMasterDao.Instance.GetAllByTenantId(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                List<MeasureMasterModel> devices = MeasureMasterDao.Instance.GetAllByTenantId(UserConfig.Instance.TenantId);
                 foreach (var dbModel in devices)
                 {
                     Params.Add(new TemplateModel<MeasureParam>(dbModel.Name ?? "default", new MeasureParam(dbModel)));
@@ -70,7 +69,7 @@ namespace ColorVision.Services.Templates.Measure
 
         public static MeasureParam? AddMeasureParam(string name)
         {
-            MeasureMasterModel model = new(name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            MeasureMasterModel model = new(name, UserConfig.Instance.TenantId);
             MeasureMasterDao.Instance.Save(model);
             int pkId = model.Id;
             if (pkId > 0)

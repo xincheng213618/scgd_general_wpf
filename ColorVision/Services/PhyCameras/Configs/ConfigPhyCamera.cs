@@ -1,9 +1,8 @@
-﻿using Newtonsoft.Json;
-using ColorVision.Services.Devices;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.Camera.Configs;
-using ColorVision.Common.MVVM;
-using System;
 using cvColorVision;
+using Newtonsoft.Json;
+using System;
 
 namespace ColorVision.Services.PhyCameras.Configs
 {

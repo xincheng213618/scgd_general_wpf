@@ -101,12 +101,12 @@
                                     </DockPanel>
 
                                     <DockPanel Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding IsUseRCService}"/>
+                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding  RCSetting.IsUseRCService}"/>
                                         <TextBlock Text="启用注册中心    "/>
-                                        <DockPanel MouseLeftButtonDown="TextBlock_MouseLeftButtonDown2" Visibility="{Binding IsUseMQTT,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MQTT">
-                                            <ToggleButton   Style="{StaticResource ButtonDrawingImageRCService}"   Margin="0,-10" IsChecked="{Binding RCService.IsConnect,Mode=OneWay}"  Height="20" IsEnabled="False" />
+                                        <DockPanel MouseLeftButtonDown="TextBlock_MouseLeftButtonDown2" Visibility="{Binding MQTTSetting.IsUseMQTT,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MQTT">
+                                            <ToggleButton   Style="{StaticResource ButtonDrawingImageRCService}"   Margin="0,-10" IsChecked="{Binding RCSetting.RCServiceControl.IsConnect,Mode=OneWay}"  Height="20" IsEnabled="False" />
                                         </DockPanel>
-                                        <TextBlock Text="  (这里必须要配置）" Visibility="{Binding IsUseMQTT,Converter={StaticResource bool2VisibilityConverter1}}"  FontSize="8" Margin="0,3,0,0" />
+                                        <TextBlock Text="  (这里必须要配置）" Visibility="{Binding MQTTSetting.IsUseMQTT,Converter={StaticResource bool2VisibilityConverter1}}"  FontSize="8" Margin="0,3,0,0" />
                                     </DockPanel>
 
                                     <DockPanel Margin="5">
@@ -251,7 +251,7 @@
                                             <TextBlock Text="{x:Static properties:Resource.HistoryCache}"/>
                                         </DockPanel>
                                         <DockPanel Margin="5,2">
-                                            <TextBox DockPanel.Dock="Right" Text="{Binding MQTTSetting.CacheLength}" HorizontalContentAlignment="Right" Style="{StaticResource  TextBox.Small}" Width="80"/>
+                                            <TextBox DockPanel.Dock="Right" Text="{Binding MsgConfig.CacheLength}" HorizontalContentAlignment="Right" Style="{StaticResource  TextBox.Small}" Width="80"/>
                                             <TextBlock Text="指令缓存数据长度"  />
                                         </DockPanel>
              

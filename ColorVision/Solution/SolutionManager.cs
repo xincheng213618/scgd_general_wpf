@@ -1,17 +1,13 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Extension;
-using ColorVision.UI.HotKey;
-using ColorVision.Common.MVVM;
 using ColorVision.RecentFile;
-using ColorVision.Settings;
 using ColorVision.Solution.V;
 using log4net;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
-using System.Windows.Input;
-using System.Windows.Media;
 
 namespace ColorVision.Solution
 {
@@ -24,21 +20,12 @@ namespace ColorVision.Solution
 
         private static SolutionManager _instance;
         private static readonly object _locker = new();
-        public static SolutionManager GetInstance() { 
-            lock (_locker)
-            { 
-                if (_instance == null)
-                    _instance = new SolutionManager();
-                return _instance;
-            } }
+        public static SolutionManager GetInstance() { lock (_locker) { _instance ??= new SolutionManager(); return _instance; } }
 
         //工程配置文件
         public SolutionConfig CurrentSolution { get; set; }
-        public SolutionSetting Setting { get => SoftwareConfig.SolutionSetting; }
-        public SoftwareConfig SoftwareConfig { get; private set; }
+        public static SolutionSetting Setting => SolutionSetting.Instance;
         public RecentFileList SolutionHistory { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
-
-
 
         /// <summary>
         /// 工程初始化的时候
@@ -62,7 +49,6 @@ namespace ColorVision.Solution
 
             CurrentSolution = new SolutionConfig();
 
-            SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
             SolutionLoaded += SolutionManager_SolutionLoaded;
 
             bool su = false;

@@ -21,6 +21,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Services.Msg;
+using ColorVision.Solution;
 
 namespace ColorVision.Settings
 {
@@ -178,7 +179,7 @@ namespace ColorVision.Settings
         {
             if (sender is Button button)
             {
-                SoftwareConfig.SolutionSetting.DefaultSaveName = "yyyy/dd/MM HH:mm:ss";
+                SolutionSetting.Instance.DefaultSaveName = "yyyy/dd/MM HH:mm:ss";
                 ButtonContentChange(button, Properties.Resource.Reseted);
             }
 
@@ -188,7 +189,7 @@ namespace ColorVision.Settings
         {
             if (sender is Button button)
             {
-                SoftwareConfig.SolutionSetting.DefaultCreatName = "新建工程";
+                SolutionSetting.Instance.DefaultCreatName = "新建工程";
                 ButtonContentChange(button, Properties.Resource.Reseted);
             }
         }

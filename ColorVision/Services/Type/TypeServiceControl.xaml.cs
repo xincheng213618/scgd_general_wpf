@@ -1,10 +1,5 @@
-﻿using ColorVision.Services.RC;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Terminal;
-using ColorVision.Settings;
-using Newtonsoft.Json;
+﻿using ColorVision.Services.Terminal;
 using System;
-using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Services.Types

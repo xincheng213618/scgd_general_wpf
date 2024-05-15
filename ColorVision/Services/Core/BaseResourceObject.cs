@@ -2,7 +2,6 @@
 using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
 using System.Collections.ObjectModel;
-using System.Windows.Controls;
 
 namespace ColorVision.Services.Core
 {

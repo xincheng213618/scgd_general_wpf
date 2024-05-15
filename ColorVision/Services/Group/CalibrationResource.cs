@@ -1,10 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Sorts;
 using ColorVision.Services.Dao;
-using MQTTMessageLib.FileServer;
+using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace ColorVision.Services.Core
 {

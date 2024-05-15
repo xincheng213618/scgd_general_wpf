@@ -7,7 +7,6 @@ using ColorVision.Services.Msg;
 using ColorVision.Services.PhyCameras;
 using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates;
-using ColorVision.Settings;
 using ColorVision.Themes;
 using ColorVision.UI;
 using MQTTMessageLib.FileServer;

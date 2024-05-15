@@ -189,7 +189,7 @@ namespace ColorVision.Services.RC
 
         public void LoadCfg()
         {
-            RCServiceConfig RcServiceConfig = ConfigHandler.GetInstance().SoftwareConfig.RcServiceConfig;
+            RCServiceConfig RcServiceConfig = RCSetting.Instance.RCServiceConfig ;
             AppId = RcServiceConfig.AppId;
             AppSecret = RcServiceConfig.AppSecret;
             RCNodeName = RcServiceConfig.RCName;

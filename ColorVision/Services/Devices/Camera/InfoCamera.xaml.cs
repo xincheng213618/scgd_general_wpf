@@ -1,10 +1,5 @@
-﻿using ColorVision.UI.Sorts;
-using ColorVision.Common.Utilities;
-using ColorVision.Services.PhyCameras.Dao;
-using ColorVision.Services.Templates;
-using ColorVision.Settings;
+﻿using ColorVision.Common.Utilities;
 using System;
-using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 

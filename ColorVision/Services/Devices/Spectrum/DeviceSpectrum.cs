@@ -4,7 +4,6 @@ using ColorVision.Controls;
 using ColorVision.Interfaces;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.PG;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
 using ColorVision.Services.Templates;

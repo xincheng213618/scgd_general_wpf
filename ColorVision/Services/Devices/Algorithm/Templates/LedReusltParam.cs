@@ -1,13 +1,8 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Services.Dao;
+﻿using ColorVision.Services.Dao;
 using ColorVision.Services.Templates;
-using ColorVision.Settings;
-using ColorVision.UI;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Windows;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {

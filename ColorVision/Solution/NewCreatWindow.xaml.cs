@@ -1,11 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI.HotKey;
 using ColorVision.Properties;
 using ColorVision.RecentFile;
-using ColorVision.Settings;
 using ColorVision.UI;
-using Mysqlx.Prepare;
+using ColorVision.UI.HotKey;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -87,7 +85,7 @@ namespace ColorVision.Solution
                     Directory.CreateDirectory(Default);
             }
             DirectoryPath = RecentNewCreateCacheList[0];
-            Name = NewCreateFileName(ConfigHandler.GetInstance().SoftwareConfig.SolutionSetting.DefaultCreatName);
+            Name = NewCreateFileName(SolutionSetting.Instance.DefaultCreatName);
             RecentNewCreateNameCacheList.Add(Name);
         }
 
@@ -213,7 +211,7 @@ namespace ColorVision.Solution
             if (sender is ComboBox comboBox && comboBox.SelectedIndex>-1)
             {
                 NewCreateViewMode.DirectoryPath = NewCreateViewMode.RecentNewCreateCacheList[comboBox.SelectedIndex];
-                NewCreateViewMode.Name = NewCreateViewMode.NewCreateFileName(SolutionManager.GetInstance().Setting.DefaultCreatName);
+                NewCreateViewMode.Name = NewCreateViewMode.NewCreateFileName(SolutionSetting.Instance.DefaultCreatName);
 
             }
         }

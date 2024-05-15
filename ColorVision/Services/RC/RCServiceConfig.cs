@@ -1,9 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 
 namespace ColorVision.Services.RC
 {
-    public class RCServiceConfig : ViewModelBase
+
+    public class RCServiceConfig : ViewModelBase,IConfig
     {
+
         /// <summary>
         /// 连接名称
         /// </summary>

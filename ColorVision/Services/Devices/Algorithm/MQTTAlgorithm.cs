@@ -1,13 +1,10 @@
 ﻿using ColorVision.Services.Msg;
-using cvColorVision;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib;
 using MQTTMessageLib.Algorithm;
 using MQTTMessageLib.FileServer;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Windows;
 
 namespace ColorVision.Services.Devices.Algorithm

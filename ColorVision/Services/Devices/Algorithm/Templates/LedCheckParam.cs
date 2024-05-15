@@ -1,15 +1,14 @@
-﻿using System.Collections.Generic;
-using System.ComponentModel;
-using Newtonsoft.Json;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Templates;
 using ColorVision.UI;
-using ColorVision.Common.MVVM;
-using ColorVision.Settings;
-using System.Windows;
-using ColorVision.Common.Utilities;
+using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using ColorVision.MySql;
+using System.ComponentModel;
+using System.Windows;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {

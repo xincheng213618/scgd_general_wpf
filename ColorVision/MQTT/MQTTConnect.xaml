@@ -5,6 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.MQTT"
         xmlns:properties="clr-namespace:ColorVision.Properties"
+        xmlns:hc ="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         Title="{x:Static properties:Resource.MqttConnectionConfiguration}" Background="{DynamicResource RegionBrush}" Height="500" Width="400" Initialized="Window_Initialized">
     <Window.Resources>

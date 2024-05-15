@@ -1,6 +1,5 @@
 ﻿using ColorVision.Services.Types;
 using cvColorVision;
-using System.ComponentModel;
 
 namespace ColorVision.Services.PhyCameras.Templates
 {

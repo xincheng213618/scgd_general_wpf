@@ -2,8 +2,8 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Terminal;
-using ColorVision.Settings;
 using ColorVision.UI;
+using ColorVision.UserSpace;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -48,7 +48,7 @@ namespace ColorVision.Services
         {
             MQTTDevices = ServiceManager.GetInstance().LastGenControl ?? ServiceManager.GetInstance().DeviceServices;
             TreeView1.ItemsSource = MQTTDevices;
-            Grid1.DataContext = ConfigHandler.GetInstance().SoftwareConfig.UserConfig;
+            Grid1.DataContext = UserConfig.Instance;
             ButtonOK.Focus();
             ServicesHelper.SelectAndFocusFirstNode(TreeView1);
         }

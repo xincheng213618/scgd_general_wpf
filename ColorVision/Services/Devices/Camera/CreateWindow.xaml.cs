@@ -2,7 +2,7 @@
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera.Configs;
-using ColorVision.Settings;
+using ColorVision.UserSpace;
 using cvColorVision;
 using Newtonsoft.Json;
 using System;
@@ -84,7 +84,7 @@ namespace ColorVision.Services.Devices.Camera
             }
             SysDeviceModel sysDevModel = null;
 
-            SysResourceModel sysResource = new(CreateName.Text, CreateCode.Text, TerminalService.SysResourceModel.Type, TerminalService.SysResourceModel.Id, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            SysResourceModel sysResource = new(CreateName.Text, CreateCode.Text, TerminalService.SysResourceModel.Type, TerminalService.SysResourceModel.Id, UserConfig.Instance.TenantId);
             CreateConfig.Id = CreateCode.Text;
             CreateConfig.Name = CreateName.Text;
             CreateConfig.SendTopic = TerminalService.Config.SendTopic;

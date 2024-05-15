@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Services.Msg;
+﻿using ColorVision.Services.Msg;
 using ColorVision.Services.PhyCameras.Templates;
 using MQTTMessageLib;
 using MQTTMessageLib.Calibration;
@@ -7,8 +6,6 @@ using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Services.Devices.Calibration

@@ -1,6 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Types;
+﻿using ColorVision.Services.Dao;
 
 namespace ColorVision.Services.Core
 {

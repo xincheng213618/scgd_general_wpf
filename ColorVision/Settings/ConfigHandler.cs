@@ -88,14 +88,7 @@ namespace ColorVision.Settings
             };
         }
 
-        public static MySqlControl MySqlControl => MySqlControl.GetInstance();
-        public static MQTTControl MQTTControl => MQTTControl.GetInstance();
-
-        public static RCServiceControl RCService => RCServiceControl.GetInstance();
-
         public static SystemMonitor SystemMonitor => SystemMonitor.GetInstance();
-
-
 
         readonly Lazy<SoftwareConfig> SoftwareConfigLazy;
 

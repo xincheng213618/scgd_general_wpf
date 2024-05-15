@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
-using ColorVision.Settings;
+using ColorVision.UserSpace;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -88,7 +88,7 @@ namespace ColorVision.Services.Templates
             {
                 ModMasterDao masterFlowDao = new(ModeType);
 
-                List<ModMasterModel> smus = masterFlowDao.GetAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+                List<ModMasterModel> smus = masterFlowDao.GetAll(UserConfig.Instance.TenantId);
                 foreach (var dbModel in smus)
                 {
                     List<ModDetailModel> smuDetails = ModDetailDao.Instance.GetAllByPid(dbModel.Id);
@@ -103,7 +103,7 @@ namespace ColorVision.Services.Templates
 
         public static T? AddParamMode<T>(string code, string Name, int resourceId =-1) where T : ParamBase, new()
         {
-            ModMasterModel modMaster = new(code, Name, ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId);
+            ModMasterModel modMaster = new(code, Name, UserConfig.Instance.TenantId);
             if (resourceId>0)
                 modMaster.ResourceId = resourceId;
             Save(modMaster);

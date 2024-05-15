@@ -4,8 +4,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Services.RC"
-        xmlns:setting="clr-namespace:ColorVision.Settings"
         xmlns:properties="clr-namespace:ColorVision.Properties"
+        xmlns:hc ="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         Title="注册中心连接配置" Background="{DynamicResource RegionBrush}" Height="500" Width="400" Initialized="Window_Initialized">
     <Window.Resources>
@@ -35,19 +35,29 @@
                                 <ContextMenu x:Key="ContextMenuItem">
                                     <MenuItem Header="{x:Static properties:Resource.Delete}"  Click="MenuItem_Click_Delete" Tag="{Binding .}" />
                                 </ContextMenu>
+                                <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                </Style>
                             </ListView.Resources>
                             <ListView.ItemContainerStyle>
+
                                 <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
                                     <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
                                 </Style>
                             </ListView.ItemContainerStyle>
-                            <ListView.ItemTemplate>
-                                <DataTemplate DataType="{x:Type local:RCServiceConfig}" >
-                                    <Border>
-                                        <TextBlock  Text="{Binding Name}" TextTrimming = "CharacterEllipsis"/>
-                                    </Border>
-                                </DataTemplate>
-                            </ListView.ItemTemplate>
+                            <ListView.View >
+                                <GridView>
+                                    <GridViewColumn>
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate DataType="{x:Type local:RCServiceConfig}" >
+                                                <Border>
+                                                    <TextBlock  Text="{Binding Name}" TextTrimming = "CharacterEllipsis"/>
+                                                </Border>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
                         </ListView>
                         <StackPanel Margin="0,0,0,-1"  VerticalAlignment="Bottom">
                             <Button Content="{x:Static properties:Resource.CreateNewConfigurationFile}" Click="Button_Click_New"   />
@@ -79,7 +89,7 @@
 
                             <DockPanel Margin="5,2">
                                 <TextBlock Text="AppSecret" VerticalAlignment="Center" Width="120"/>
-                                <PasswordBox x:Name="PasswordBox1" ToolTip="App密钥"  VerticalAlignment="Center" Password="" BorderThickness="0,0,0,1" />
+                                <hc:PasswordBox x:Name="PasswordBox1" ToolTip="App密钥" ShowEyeButton="True" VerticalAlignment="Center" Password="" BorderThickness="0,0,0,1" />
                             </DockPanel>
 
                         </StackPanel>

@@ -1,5 +1,4 @@
-﻿using ColorVision.Settings;
-using ColorVision.UI;
+﻿using ColorVision.UI;
 
 namespace ColorVision.Services
 {

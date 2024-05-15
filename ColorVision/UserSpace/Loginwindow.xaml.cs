@@ -24,9 +24,9 @@ namespace ColorVision.UserSpace
         public object? Icon => null;
         public RelayCommand Command => new(A =>
         {
-            if (UserManager.Instance.UserConfig != null)
+            if (UserConfig.Instance.UserName != null)
             {
-                var user = UserManager.Instance.UserConfig;
+                var user = UserConfig.Instance;
                 MessageBox.Show(user.PerMissionMode.ToString() + ":" + user.UserName + " 已经登录", "ColorVision");
 
             }

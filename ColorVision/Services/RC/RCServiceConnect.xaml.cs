@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Services.Interfaces;
 using ColorVision.Settings;
 using System;
 using System.Collections.ObjectModel;
@@ -26,13 +27,13 @@ namespace ColorVision.Services.RC
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            rcServiceConfig = ConfigHandler.GetInstance().SoftwareConfig.RcServiceConfig;
+            rcServiceConfig = RCSetting.Instance.RCServiceConfig;
             GridRCService.DataContext = rcServiceConfig;
             rcServiceConfigBackUp = new RCServiceConfig();
             rcServiceConfig.CopyTo(rcServiceConfigBackUp);
             PasswordBox1.Password = rcServiceConfig.AppSecret;
 
-            rcServiceConfigs = ConfigHandler.GetInstance().SoftwareConfig.RcServiceConfigs;
+            rcServiceConfigs = RCSetting.Instance.RCServiceConfigs;
             ListViewRC.ItemsSource = rcServiceConfigs;
 
             rcServiceConfigs.Insert(0, rcServiceConfig);
@@ -114,7 +115,7 @@ namespace ColorVision.Services.RC
                 rcServiceConfig = rcServiceConfigs[listView.SelectedIndex];
                 GridRCService.DataContext = rcServiceConfig;
                 PasswordBox1.Password = rcServiceConfig.AppSecret;
-                ConfigHandler.GetInstance().SoftwareConfig.RcServiceConfig = rcServiceConfig;
+                RCSetting.Instance.RCServiceConfig = rcServiceConfig;
             }
         }
 

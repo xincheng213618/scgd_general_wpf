@@ -2,7 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.MQTT;
 using ColorVision.MySql;
-using ColorVision.Projects;
 using ColorVision.Services.Flow;
 using ColorVision.Services.RC;
 using ColorVision.Services.Templates;
@@ -17,7 +16,6 @@ using ColorVision.Update;
 using ColorVision.UserSpace;
 using ColorVision.Utils;
 using log4net;
-using Microsoft.DwayneNeed.Win32.User32;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
 using System;
@@ -141,11 +139,11 @@ namespace ColorVision
 
             StatusBarGrid.DataContext = ConfigHandler.GetInstance();
             MenuStatusBar.DataContext = ConfigHandler.GetInstance().SoftwareConfig;
-            ViewGridManager.SetViewGrid(ViewConfig.GetInstance().LastViewCount);
+            ViewGridManager.SetViewGrid(ViewConfig.Instance.LastViewCount);
 
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {
-                ViewConfig.GetInstance().LastViewCount = e;
+                ViewConfig.Instance.LastViewCount = e;
             };
 
             Closed += (s, e) => { Environment.Exit(-1); };
@@ -485,9 +483,9 @@ namespace ColorVision
 
         private void Login_Click(object sender, RoutedEventArgs e)
         {
-            if (UserManager.Instance.UserConfig != null)
+            if (UserConfig.Instance.UserName != null)
             {
-                var user = UserManager.Instance.UserConfig;
+                var user = UserConfig.Instance;
                 MessageBox.Show(user.PerMissionMode.ToString() + ":" + user.UserName + " 已经登录", "ColorVision");
 
             }

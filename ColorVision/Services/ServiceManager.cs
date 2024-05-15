@@ -1,5 +1,4 @@
-﻿using ColorVision.Interfaces;
-using ColorVision.MySql;
+﻿using ColorVision.MySql;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.DAO;
@@ -21,7 +20,6 @@ using ColorVision.Services.Flow;
 using ColorVision.Services.PhyCameras;
 using ColorVision.Services.Terminal;
 using ColorVision.Services.Types;
-using ColorVision.Settings;
 using ColorVision.UI;
 using ColorVision.UserSpace;
 using FlowEngineLib;
@@ -39,8 +37,7 @@ namespace ColorVision.Services
         private static ServiceManager _instance;
         private static readonly object _locker = new();
         public static ServiceManager GetInstance() { lock (_locker) { return _instance ??= new ServiceManager(); } }
-        public UserConfig UserConfig { get; set; }
-
+        public static UserConfig UserConfig => UserConfig.Instance;
 
         public ObservableCollection<TypeService> TypeServices { get; set; } = new ObservableCollection<TypeService>();
         public ObservableCollection<TerminalService> TerminalServices { get; set; } = new ObservableCollection<TerminalService>();
@@ -53,8 +50,6 @@ namespace ColorVision.Services
 
         public ServiceManager()
         {
-            UserConfig = ConfigHandler.GetInstance().SoftwareConfig.UserConfig;
-
             svrDevices = new Dictionary<string, List<MQTTServiceBase>>();
             ServiceTokens = new List<MQTTServiceInfo>();
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadServices();

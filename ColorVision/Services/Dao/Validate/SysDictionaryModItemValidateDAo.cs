@@ -1,8 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using ColorVision.MySql.ORM;
 using System.Data;
-using ColorVision.MySql;
-using ColorVision.MySql.ORM;
-using NPOI.SS.Formula.Functions;
 
 namespace ColorVision.Services.Dao.Validate
 {

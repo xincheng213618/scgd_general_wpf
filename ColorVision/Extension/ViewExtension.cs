@@ -58,7 +58,7 @@ namespace ColorVision.Extension
 
             userControl.PreviewMouseLeftButtonDown += (s, e) =>
             {
-                if (ViewConfig.GetInstance().IsAutoSelect)
+                if (ViewConfig.Instance.IsAutoSelect)
                 {
                     if (ViewGridManager.GetInstance().ViewMax == 1)
                     {

@@ -1,14 +1,11 @@
-﻿using ColorVision.UI.Sorts;
-using ColorVision.Common.MVVM;
-using ColorVision.Services.DAO;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.IO;
-using ColorVision.Services.RC;
-using ColorVision.Common.Utilities;
 
 namespace ColorVision.Solution.Searches
 {

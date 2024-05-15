@@ -7,6 +7,7 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
+using ColorVision.UserSpace;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
@@ -204,7 +205,7 @@ namespace ColorVision.Services.PhyCameras.Templates
             if (MySqlSetting.IsConnect)
             {
                 ModMasterDao masterFlowDao = new(ModeType);
-                List<ModMasterModel> smus = masterFlowDao.GetResourceAll(ConfigHandler.GetInstance().SoftwareConfig.UserConfig.TenantId, resourceId);
+                List<ModMasterModel> smus = masterFlowDao.GetResourceAll(UserConfig.Instance.TenantId, resourceId);
                 foreach (var dbModel in smus)
                 {
                     List<ModDetailModel> smuDetails = ModDetailDao.Instance.GetAllByPid(dbModel.Id);

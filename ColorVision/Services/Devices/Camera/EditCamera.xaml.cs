@@ -1,13 +1,10 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.PhyCameras;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;

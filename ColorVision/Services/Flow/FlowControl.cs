@@ -1,18 +1,16 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.MQTT;
+using ColorVision.Services.Types;
+using FlowEngineLib;
 using log4net;
+using MQTTMessageLib.Flow;
 using Newtonsoft.Json;
 using System;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Collections.Generic;
-using MQTTMessageLib;
-using MQTTMessageLib.Flow;
-using ColorVision.Services.Types;
-using System.Linq;
-using FlowEngineLib;
-using ColorVision.Common.Utilities;
 
 namespace ColorVision.Services.Flow
 {

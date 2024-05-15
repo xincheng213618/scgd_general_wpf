@@ -1,5 +1,4 @@
-﻿using ColorVision.MySql;
-using ColorVision.MySql.ORM;
+﻿using ColorVision.MySql.ORM;
 using MQTTMessageLib.Algorithm;
 using System.Data;
 

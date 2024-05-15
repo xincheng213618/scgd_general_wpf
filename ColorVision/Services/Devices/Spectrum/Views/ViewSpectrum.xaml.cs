@@ -1,4 +1,8 @@
-﻿using ScottPlot;
+﻿using ColorVision.Services.Devices.Spectrum.Configs;
+using ColorVision.Services.Devices.Spectrum.Dao;
+using ColorVision.UI.Sorts;
+using ColorVision.UI.Views;
+using ScottPlot;
 using ScottPlot.Plottable;
 using System;
 using System.Collections.Generic;
@@ -11,13 +15,6 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using static cvColorVision.GCSDLL;
-using ColorVision.Services.Devices.Spectrum.Configs;
-using System.Runtime.CompilerServices;
-using System.ComponentModel;
-using ColorVision.Services.Devices.Spectrum.Dao;
-using ColorVision.Common.MVVM;
-using ColorVision.UI.Sorts;
-using ColorVision.UI.Views;
 
 namespace ColorVision.Services.Devices.Spectrum.Views
 {

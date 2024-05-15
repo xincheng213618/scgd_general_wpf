@@ -1,7 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.MQTT;
-using ColorVision.Services.RC;
+using ColorVision.Services.Interfaces;
 using ColorVision.Services.Msg;
+using ColorVision.Services.RC;
 using log4net;
 using MQTTMessageLib;
 using MQTTnet.Client;
@@ -13,7 +14,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
-using ColorVision.Services.Interfaces;
 
 namespace ColorVision.Services.Core
 {

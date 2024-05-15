@@ -1,6 +1,5 @@
-﻿using System.Data;
-using ColorVision.MySql;
-using ColorVision.MySql.ORM;
+﻿using ColorVision.MySql.ORM;
+using System.Data;
 
 namespace ColorVision.Services.Dao
 {

@@ -1,11 +1,9 @@
 ﻿#pragma warning disable CA1707 // 标识符不应包含下划线
 
+using ColorVision.MySql.ORM;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using ColorVision.MySql;
-using ColorVision.MySql.ORM;
-using NPOI.SS.Formula.Functions;
 
 namespace ColorVision.Services.Dao
 {

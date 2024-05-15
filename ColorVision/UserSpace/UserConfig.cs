@@ -4,16 +4,9 @@ using System.ComponentModel;
 
 namespace ColorVision.UserSpace
 {
-    public class UserManager:IConfig
+    public class UserConfig : ViewModelBase, IConfig
     {
-        public static UserManager Instance { get; set; } = ConfigHandler1.GetInstance().GetRequiredService<UserManager>();  
-
-        public UserConfig UserConfig { get; set; }
-    }
-
-
-    public class UserConfig : ViewModelBase,IConfig
-    {
+        public static UserConfig Instance => ConfigHandler1.GetInstance().GetRequiredService<UserConfig>();
         /// <summary>
         /// 账号
         /// </summary>
