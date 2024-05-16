@@ -32,5 +32,10 @@ namespace ColorVision.Services.Validate
             ValidateParam = param;
             this.DataContext = ValidateParam;
         }
+
+        private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
+        {
+            e.Handled = true;  
+        }
     }
 }

@@ -84,18 +84,15 @@ namespace ColorVision.Services.Validate
             {
                 modMaster.DId = mod.Id;
                 int ret = ValidateTemplateMasterDao.Instance.Save(modMaster);
-                var Details = ValidateTemplateDetailDao.Instance.GetAllByPid(modMaster.Id);
 
-                List<ValidateTemplateDetailModel> list = new();
                 var sysDic = SysDictionaryModItemValidateDao.Instance.GetAllByPid(mod.Id);
                 foreach (var item in sysDic)
                 {
                     var ss = new ValidateTemplateDetailModel() { Code = item.Code ,DicPid = mod.Id,Pid = modMaster .Id,ValMax = item.ValMax,ValEqual =item.ValEqual , ValMin =item.ValMin, ValRadix =item.ValRadix ,ValType =item.ValType};
-                    list.Add(ss);
                     ValidateTemplateDetailDao.Instance.Save(ss);
                 }
 
-
+                var Details = ValidateTemplateDetailDao.Instance.GetAllByPid(modMaster.Id);
                 modMaster = ValidateTemplateMasterDao.Instance.GetById(modMaster.Id);
                 if (modMaster != null)
                 {

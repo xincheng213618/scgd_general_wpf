@@ -583,5 +583,13 @@ namespace ColorVision.Services.Templates
             }
         }
 
+
+        private void MenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Control button && button.Tag is TemplateModelBase templateModelBase)
+            {
+                templateModelBase.IsEditMode = true;
+            }
+        }
     }
 }

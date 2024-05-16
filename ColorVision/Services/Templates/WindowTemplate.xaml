@@ -37,10 +37,14 @@
             <ListView Grid.Row="1" x:Name="ListView1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="0" Margin="2"  PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">
                 <ListView.Resources>
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
+                    <ContextMenu x:Key="ContextMenuItem">
+                        <MenuItem Header="{x:Static properties:Resource.MenuRename}"  Click="MenuItem_Click" Tag="{Binding .}" />
+                        <MenuItem Header="{x:Static properties:Resource.MenuDelete}"  Click="Button_Del_Click" Tag="{Binding .}"  />
+                    </ContextMenu>
                 </ListView.Resources>
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
-                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                        <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.View>

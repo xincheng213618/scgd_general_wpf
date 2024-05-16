@@ -8,8 +8,60 @@
              d:DataContext="{d:DesignInstance local:ValidateParam}"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid Margin="5">
-        <ListView>
-            
+        <ListView x:Name="ListView1" Grid.Row="1" ItemsSource="{Binding ValidateSingles}"  ScrollViewer.HorizontalScrollBarVisibility="Auto"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback">
+            <ListView.Resources >
+            </ListView.Resources>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.View >
+                <GridView>
+                    <GridViewColumn  Header="Code">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:ValidateSingle}">
+                                <TextBlock Text="{Binding Model.Code}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="ValMax">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:ValidateSingle}">
+                                <TextBox Text="{ Binding  ValMax}" Width="40"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="ValMin">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:ValidateSingle}">
+                                <TextBox Text="{ Binding  ValMin}" Width="40"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="ValEqual">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:ValidateSingle}">
+                                <TextBox Text="{ Binding ValEqual}" Width="40"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="ValRadix">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:ValidateSingle}">
+                                <TextBox Text="{ Binding  ValRadix}" Width="40" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="ValType" Width="300">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:ValidateSingle}">
+                                <TextBox Text="{ Binding ValType}" Width="40"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+
         </ListView>
         
     </Grid>
