@@ -16,6 +16,9 @@ namespace ColorVision.Draw
         [Category("DrawBaseAttribute"), DisplayName("是否显示")]
         public bool IsShow { get => _IsShow; set { _IsShow = value; NotifyPropertyChanged(); } }
         private bool _IsShow = true;
+
+        public int? Tag { get => _Tag; set { _Tag = value; NotifyPropertyChanged(); } }
+        private int? _Tag;
     }
 
 

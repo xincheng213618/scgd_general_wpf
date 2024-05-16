@@ -20,6 +20,7 @@ namespace ColorVision.Services.Templates.POI
             PixY = dbModel.PixY ?? 0;
             PixWidth = dbModel.PixWidth ?? 0;
             PixHeight = dbModel.PixHeight ?? 0;
+            Tag = dbModel.ValidateId;
         }
 
         public PoiParamData()
@@ -35,7 +36,7 @@ namespace ColorVision.Services.Templates.POI
         public double PixWidth { set; get; }
         public double PixHeight { set; get; }
 
-        public object Tag { set; get; }
+        public int? Tag { set; get; }
     }
 
 }

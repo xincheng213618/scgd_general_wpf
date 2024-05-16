@@ -103,7 +103,7 @@ namespace ColorVision.Services.Templates.POI
             List<PoiDetailModel> poiDetails = new();
             foreach (PoiParamData pt in poiParam.PoiPoints)
             {
-                PoiDetailModel poiDetail = new(poiParam.Id, pt);
+                PoiDetailModel poiDetail = new PoiDetailModel(poiParam.Id, pt);
                 poiDetails.Add(poiDetail);
             }
             PoiDetailDao.Instance.SaveByPid(poiParam.Id, poiDetails);

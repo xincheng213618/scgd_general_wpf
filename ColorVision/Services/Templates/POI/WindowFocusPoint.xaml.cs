@@ -55,7 +55,7 @@ namespace ColorVision.Services.Templates.POI
             ComboBoxBorderType.SelectedIndex = 0;
 
             ComboBoxValidate.ItemsSource = ValidateParam.CIEAVGParams.CreateEmpty();
-
+            ComboBoxValidateCIE.ItemsSource = ValidateParam.CIEParams.CreateEmpty();
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()  select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
 
@@ -435,6 +435,7 @@ namespace ColorVision.Services.Templates.POI
                             Circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
                             Circle.Attribute.ID =i;
                             Circle.Attribute.Text = i.ToString();
+                            Circle.Attribute.Tag = item.Tag;
                             Circle.Render();
                             ImageShow.AddVisual(Circle);
                             break;
@@ -445,6 +446,7 @@ namespace ColorVision.Services.Templates.POI
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
                             Rectangle.Attribute.ID = i;
                             Rectangle.Attribute.Name = i.ToString();
+                            Rectangle.Attribute.Tag = item.Tag;
                             Rectangle.Render();
                             ImageShow.AddVisual(Rectangle);
                             break;
@@ -1050,7 +1052,6 @@ namespace ColorVision.Services.Templates.POI
                         pts_src.Add(PoiParam.DatumArea.Polygon3);  
                         pts_src.Add(PoiParam.DatumArea.Polygon4);
 
-
                         List<Point> result = Helpers.SortPolyPoints(pts_src);
                         DrawingVisualDatumPolygon Polygon = new() { IsComple = true };
                         Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
@@ -1099,6 +1100,7 @@ namespace ColorVision.Services.Templates.POI
                         PixY = circle.Center.Y,
                         PixWidth = circle.Radius * 2,
                         PixHeight = circle.Radius * 2,
+                        Tag = circle.Tag,
                     };
                     if (circle is CircleTextAttribute circleTextAttribute)
                     {
@@ -1117,6 +1119,7 @@ namespace ColorVision.Services.Templates.POI
                         PixY = rectangle.Rect.Y,
                         PixWidth = rectangle.Rect.Width,
                         PixHeight = rectangle.Rect.Height,
+                        Tag = rectangle.Tag,
                     };
                     PoiParam.PoiPoints.Add(poiParamData);
                 }
@@ -1585,7 +1588,13 @@ namespace ColorVision.Services.Templates.POI
             }
         }
 
-
+        private void Button_Click_4(object sender, RoutedEventArgs e)
+        {
+            foreach (var item in DrawingVisualLists)
+            {
+                item.BaseAttribute.Tag = PoiParam.DatumArea.DeafultValidateCIEId;
+            }
+        }
     }
 
 }

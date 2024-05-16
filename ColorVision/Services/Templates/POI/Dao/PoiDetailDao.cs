@@ -15,6 +15,7 @@ namespace ColorVision.Services.Templates.POI.Dao
         public bool? IsEnable { get; set; }
         public bool? IsDelete { get; set; }
         public string? Remark { get; set; }
+        public int? ValidateId { get; set; }
 
         public PoiDetailModel()
         {
@@ -39,6 +40,7 @@ namespace ColorVision.Services.Templates.POI.Dao
             PixHeight = (int)data.PixHeight;
             IsEnable = true;
             IsDelete = false;
+            ValidateId = data.Tag;
         }
     }
 
@@ -63,6 +65,7 @@ namespace ColorVision.Services.Templates.POI.Dao
             dInfo.Columns.Add("pix_x", typeof(int));
             dInfo.Columns.Add("pix_y", typeof(int));
             dInfo.Columns.Add("remark", typeof(string));
+            dInfo.Columns.Add("val_validate_temp_id", typeof(int));
             return dInfo;
         }
 
@@ -80,6 +83,7 @@ namespace ColorVision.Services.Templates.POI.Dao
                 PixX = item.Field<int?>("pix_x"),
                 PixY = item.Field<int?>("pix_y"),
                 Remark = item.Field<string?>("remark"),
+                ValidateId = item.Field<int?>("val_validate_temp_id")
             };
             return model;
         }
@@ -96,7 +100,8 @@ namespace ColorVision.Services.Templates.POI.Dao
                 if (item.PixHeight > 0) row["pix_height"] = item.PixHeight;
                 if (item.PixX >= 0) row["pix_x"] = item.PixX;
                 if (item.PixY >= 0) row["pix_y"] = item.PixY;
-                if (item.Remark != null) row["remark"] = item.Remark;
+                row["remark"] = row.IsDBNull(item.Remark);
+                row["val_validate_temp_id"] = row.IsDBNull(item.ValidateId);
             }
             return row;
         }

@@ -32,6 +32,9 @@ namespace ColorVision.Services.Templates.POI
     public class DatumArea : ViewModelBase
     {
 
+        public int DeafultValidateCIEId { get => _DeafultValidateCIEId; set { _DeafultValidateCIEId = value; NotifyPropertyChanged(); } }
+        private int _DeafultValidateCIEId = -1;
+
         public bool IsShowDatum { get => _IsShowDatum; set { _IsShowDatum = value; NotifyPropertyChanged(); } }
         private bool _IsShowDatum;
 
