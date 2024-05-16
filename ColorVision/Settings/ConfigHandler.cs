@@ -64,40 +64,33 @@ namespace ColorVision.Settings
                 DIFile = DirectoryPath+ GlobalConst.ConfigDIFileName;
             }
 
-            SoftwareConfigLazy = new Lazy<SoftwareConfig>(() =>
-            {
-                SoftwareConfig config = ReadConfig<SoftwareConfig>(SoftwareConfigFileName);
-                if (config != null)
-                {
-                    return config;
-                }
-                else
-                {
-                    return new SoftwareConfig();
-                }
-            });
+            //SoftwareConfigLazy = new Lazy<SoftwareConfig>(() =>
+            //{
+            //    SoftwareConfig config = ReadConfig<SoftwareConfig>(SoftwareConfigFileName);
+            //    if (config != null)
+            //    {
+            //        return config;
+            //    }
+            //    else
+            //    {
+            //        return new SoftwareConfig();
+            //    }
+            //});
 
 
-            System.Windows.Application.Current.SessionEnding += (s, e) => 
-            {
-                SaveConfig();
-            };
-            AppDomain.CurrentDomain.ProcessExit += (s, e) =>
-            {
-                SaveConfig();
-            };
+            //System.Windows.Application.Current.SessionEnding += (s, e) => 
+            //{
+            //    SaveConfig();
+            //};
+            //AppDomain.CurrentDomain.ProcessExit += (s, e) =>
+            //{
+            //    SaveConfig();
+            //};
         }
-
-        public static SystemMonitor SystemMonitor => SystemMonitor.GetInstance();
-
-        readonly Lazy<SoftwareConfig> SoftwareConfigLazy;
-
-        public SoftwareConfig SoftwareConfig { get => SoftwareConfigLazy.Value; }
-
 
         public void SaveConfig()
         {
-            WriteConfig(SoftwareConfigFileName, SoftwareConfig);
+            //WriteConfig(SoftwareConfigFileName, SoftwareConfig);
         }
 
         private static JsonSerializerOptions jsonSerializerOptions = new() { WriteIndented = true,DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping };

@@ -4,7 +4,6 @@ using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Flow.Dao;
 using ColorVision.Services.Templates;
-using ColorVision.Settings;
 using ColorVision.UI;
 using ColorVision.UserSpace;
 using CVCommCore;
@@ -28,7 +27,6 @@ namespace ColorVision.Services.Flow
         public object? Icon { get; }
 
         public RelayCommand Command => new(a => {
-            SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");

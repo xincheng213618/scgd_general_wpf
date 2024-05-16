@@ -1,16 +1,11 @@
-﻿using ColorVision.UI.Sorts;
+﻿using ColorVision.MySql;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.PhyCameras.Dao;
 using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates;
-using ColorVision.Settings;
 using System;
-using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
-using ColorVision.MySql;
 
 namespace ColorVision.Services.PhyCameras
 {
@@ -40,7 +35,6 @@ namespace ColorVision.Services.PhyCameras
         {
             if (sender is Control control)
             {
-                SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
                 WindowTemplate windowTemplate;
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {

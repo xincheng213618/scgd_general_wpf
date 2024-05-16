@@ -17,8 +17,10 @@ namespace ColorVision.Settings
     /// <summary>
     /// 软件配置
     /// </summary>
-    public class SoftwareConfig : ViewModelBase
+    public class SoftwareConfig : ViewModelBase,IConfig
     {
+        public static SoftwareConfig Instance => ConfigHandler1.GetInstance().GetRequiredService<SoftwareConfig>();
+
         public static MySqlSetting MySqlSetting => ConfigHandler1.GetInstance().GetRequiredService<MySqlSetting>();  
 
         public bool IsAutoRun { get => Tool.IsAutoRun(GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); set { Tool.SetAutoRun(value, GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); NotifyPropertyChanged(); } }
@@ -44,6 +46,7 @@ namespace ColorVision.Settings
 
         public static MQTTSetting MQTTSetting => MQTTSetting.Instance;
         public static MsgConfig MsgConfig => MsgConfig.Instance;
+        public static SystemMonitor SystemMonitor => SystemMonitor.GetInstance();
 
         public static UserConfig UserConfig => UserConfig.Instance;
 

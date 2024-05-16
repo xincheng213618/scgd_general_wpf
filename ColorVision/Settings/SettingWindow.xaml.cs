@@ -66,8 +66,8 @@ namespace ColorVision.Settings
     /// </summary>
     public partial class SettingWindow : BaseWindow
     {
-        
-        public SoftwareConfig SoftwareConfig { get;set;}
+
+        public static SoftwareConfig SoftwareConfig => SoftwareConfig.Instance;
         public SettingWindow()
         {
             InitializeComponent();
@@ -89,9 +89,7 @@ namespace ColorVision.Settings
         }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
             DataContext = SoftwareConfig;
-            AutoRunDock.DataContext = ConfigHandler.GetInstance();
             GlobalConst.LogLevel.ForEach(it =>
             {
                 cmbloglevel.Items.Add(it);

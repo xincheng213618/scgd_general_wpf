@@ -87,9 +87,7 @@ namespace ColorVision
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
         public ViewGridManager ViewGridManager { get; set; }
 
-        public static ConfigHandler ConfigHandler  => ConfigHandler.GetInstance();
-
-        public static SoftwareSetting SoftwareSetting => ConfigHandler.SoftwareConfig.SoftwareSetting;
+        public static SoftwareSetting SoftwareSetting => SoftwareConfig.Instance.SoftwareSetting;
         public static MainWindowConfig MainWindowConfig => MainWindowConfig.Instance;
 
         public MainWindow()
@@ -137,8 +135,8 @@ namespace ColorVision
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;
 
-            StatusBarGrid.DataContext = ConfigHandler.GetInstance();
-            MenuStatusBar.DataContext = ConfigHandler.GetInstance().SoftwareConfig;
+            StatusBarGrid.DataContext = SoftwareConfig.Instance;
+            MenuStatusBar.DataContext = SoftwareConfig.Instance;
             ViewGridManager.SetViewGrid(ViewConfig.Instance.LastViewCount);
 
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
@@ -290,7 +288,7 @@ namespace ColorVision
         public static async Task CheckVersion()
         {
             await Task.Delay(500);
-            if (System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() != ConfigHandler.SoftwareConfig.Version)
+            if (System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() != SoftwareConfig.Instance.Version)
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -324,12 +322,8 @@ namespace ColorVision
                     {
                         log.Error(ex.Message);
                     }
-
-
-
                 });
-                ConfigHandler.SoftwareConfig.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString();
-                ConfigHandler.SaveConfig();
+                SoftwareConfig.Instance.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString();
             }
         }
 
