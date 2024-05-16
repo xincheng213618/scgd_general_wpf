@@ -1,5 +1,4 @@
-﻿#pragma warning disable CA8604
-
+﻿#pragma warning disable CS8604
 using ColorVision.Common.Utilities;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
@@ -30,6 +29,12 @@ namespace ColorVision.Services.Templates
         {
             throw new NotImplementedException();
         }
+
+        public virtual object CreateDefault()
+        {
+            throw new NotImplementedException();
+        }
+
         public virtual object GetValue(int index)
         {
             throw new NotImplementedException();
@@ -86,6 +91,7 @@ namespace ColorVision.Services.Templates
 
         public override IEnumerable ItemsSource { get => TemplateParams; }
 
+        public override object CreateDefault() => new T();  
 
         public override string NewCreateFileName(string FileName)
         {

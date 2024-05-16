@@ -918,4 +918,7 @@
   <data name="UpdateSpeed" xml:space="preserve">
     <value>업데이트 속도</value>
   </data>
+  <data name="DefaultCreateTemplateName" xml:space="preserve">
+    <value>기본</value>
+  </data>
 </root>

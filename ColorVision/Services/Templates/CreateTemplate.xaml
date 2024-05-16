@@ -8,7 +8,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resource.Create}" Background="{DynamicResource GlobalBackground}" Height="150" Width="400" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resource.Create}" Background="{DynamicResource GlobalBackground}" Height="500" Width="400" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -35,6 +35,13 @@
                     <TextBlock Text="{x:Static properties:Resource.Name}" MinWidth="50" />
                     <hc:ComboBox x:Name="CreateCode" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"   />
                 </DockPanel>
+                <Grid Grid.Row="1" x:Name="GridProperty" >
+                    <!--<hc:PropertyGrid x:Name="PropertyGrid1"   hc:TipElement.Visibility="Visible"  />-->
+                    <!--<xctk:PropertyGrid   x:Name="PropertyGrid1" />-->
+                    <WindowsFormsHost>
+                        <winf:PropertyGrid x:Name="PropertyGrid1" />
+                    </WindowsFormsHost>
+                </Grid>
             </Grid>
         </Border>
 

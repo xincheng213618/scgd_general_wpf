@@ -502,6 +502,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 Default 的本地化字符串。
+        /// </summary>
+        public static string DefaultCreateTemplateName {
+            get {
+                return ResourceManager.GetString("DefaultCreateTemplateName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 默认导出存储格式 的本地化字符串。
         /// </summary>
         public static string DefaultExportStorageFormat {

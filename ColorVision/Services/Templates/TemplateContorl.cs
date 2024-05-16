@@ -1,6 +1,8 @@
 ﻿#pragma warning disable CS8604
+using ColorVision.Common.MVVM;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
+using ColorVision.UI;
 using ColorVision.UserSpace;
 using System;
 using System.Collections.Generic;
@@ -12,6 +14,18 @@ using System.Windows;
 
 namespace ColorVision.Services.Templates
 {
+
+    public class TemplateConfig : ViewModelBase, IConfig
+    {
+        public static TemplateConfig Instance => ConfigHandler1.GetInstance().GetRequiredService<TemplateConfig>();
+
+        public string DefaultCreateTemplateName { get => _DefaultCreateTemplateName; set { _DefaultCreateTemplateName = value; NotifyPropertyChanged(); } }
+        private string _DefaultCreateTemplateName = ColorVision.Properties.Resource.DefaultCreateTemplateName;
+
+    }
+
+
+
     /// <summary>
     /// 模板管理
     /// </summary>
@@ -60,9 +74,21 @@ namespace ColorVision.Services.Templates
         public static T? AddParamMode<T>(string code, string Name, int resourceId =-1) where T : ParamBase, new()
         {
             ModMasterModel modMaster = new ModMasterModel(code, Name, UserConfig.Instance.TenantId);
-            if (resourceId>0)
+            if (resourceId > 0)
                 modMaster.ResourceId = resourceId;
-            Save(modMaster);
+            SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(code, UserConfig.Instance.TenantId);
+            if (mod != null)
+            {
+                modMaster.Pid = mod.Id;
+                ModMasterDao.Instance.Save(modMaster);
+                List<ModDetailModel> list = new();
+                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(modMaster.Pid);
+                foreach (var item in sysDic)
+                {
+                    list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
+                }
+                ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
+            }
             int pkId = modMaster.Id;
             if (pkId > 0)
             {
@@ -72,26 +98,6 @@ namespace ColorVision.Services.Templates
                 else return null;
             }
             return null;
-        }
-
-
-        public static int Save(ModMasterModel modMaster)
-        {
-            int ret = -1;
-            SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(modMaster.Pcode, modMaster.TenantId);
-            if (mod != null)
-            {
-                modMaster.Pid = mod.Id;
-                ret = ModMasterDao.Instance.Save(modMaster);
-                List<ModDetailModel> list = new();
-                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(modMaster.Pid);
-                foreach (var item in sysDic)
-                {
-                    list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
-                }
-                ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
-            }
-            return ret;
         }
     }
 }

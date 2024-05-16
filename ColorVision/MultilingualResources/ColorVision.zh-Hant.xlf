@@ -199,6 +199,10 @@
           <source>截至时间</source>
           <target state="new">截至時間</target>
         </trans-unit>
+        <trans-unit id="DefaultCreateTemplateName" translate="yes" xml:space="preserve">
+          <source>Default</source>
+          <target state="new">Default</target>
+        </trans-unit>
         <trans-unit id="DefaultExportStorageFormat" translate="yes" xml:space="preserve">
           <source>默认导出存储格式</source>
           <target state="new">預設導出儲存格式</target>

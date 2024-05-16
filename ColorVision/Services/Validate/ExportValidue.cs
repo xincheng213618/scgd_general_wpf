@@ -13,7 +13,7 @@ namespace ColorVision.Services.Validate
         public string? GuidId => "Validue";
         public int Order => 4;
         public Visibility Visibility => Visibility.Visible;
-        public string? Header => Properties.Resource.MenuValidue;
+        public string? Header => "CIE合规";
 
         public string? InputGestureText { get; }
 

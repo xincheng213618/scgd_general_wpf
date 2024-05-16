@@ -9,7 +9,6 @@ namespace ColorVision.Services.Templates
     /// </summary>
     public partial class CreateTemplate : Window
     {
-
         public ITemplate ITemplate { get; set; }
 
         public CreateTemplate(ITemplate template)  
@@ -20,7 +19,18 @@ namespace ColorVision.Services.Templates
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            CreateCode.Text = ITemplate.NewCreateFileName("default");
+            this.Title += ITemplate.Title;
+            CreateCode.Text = ITemplate.NewCreateFileName(TemplateConfig.Instance.DefaultCreateTemplateName);
+            if (ITemplate.IsUserControl)
+            {
+                GridProperty.Children.Clear();
+                GridProperty.Margin = new Thickness(5, 5, 5, 5);
+                //GridProperty.Children.Add(ITemplate.GetUserControl());
+            }
+            else
+            {
+                PropertyGrid1.SelectedObject = ITemplate.CreateDefault();
+            }
         }
 
 

@@ -918,4 +918,7 @@
   <data name="UpdateSpeed" xml:space="preserve">
     <value>Update Speed</value>
   </data>
+  <data name="DefaultCreateTemplateName" xml:space="preserve">
+    <value>Default</value>
+  </data>
 </root>

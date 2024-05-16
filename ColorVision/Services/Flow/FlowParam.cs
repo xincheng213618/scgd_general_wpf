@@ -50,7 +50,7 @@ namespace ColorVision.Services.Flow
 
         public override void PreviewMouseDoubleClick(int index)
         {
-            new WindowFlowEngine(TemplateParams[index].Value) { Owner = null }.Show();
+            new WindowFlowEngine(TemplateParams[index].Value) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
         }
 
         public override void Load() => FlowParam.LoadFlowParam();

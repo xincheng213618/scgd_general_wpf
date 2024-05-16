@@ -1,9 +1,7 @@
-﻿using ColorVision.UI.Sorts;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Properties;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Spectrum;
-using ColorVision.Services.PhyCameras.Templates;
+using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -87,7 +85,6 @@ namespace ColorVision.Services.Templates
                     PropertyGrid1.SelectedObject = ITemplate.GetValue(listView.SelectedIndex);
                 }
 
-
                 //if (UserControl is MeasureParamControl mpc && MeasureParam.Params[listView.SelectedIndex].Value is MeasureParam mp)
                 //{
                 //    mpc.MasterID = mp.Id;
@@ -112,7 +109,7 @@ namespace ColorVision.Services.Templates
 
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
-            CreateTemplate createWindow = new(ITemplate) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            CreateTemplate createWindow = new CreateTemplate(ITemplate) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
             createWindow.ShowDialog();
         }
 
@@ -120,14 +117,6 @@ namespace ColorVision.Services.Templates
         private void Button_Del_Click(object sender, RoutedEventArgs e)
         {
             TemplateDel();
-        }
-
-        private void CreateNewTemplate<T>(ObservableCollection<TemplateModel<T>> keyValuePairs, string Name, T t) where T : ParamBase
-        {
-            var a = new TemplateModel<T>(Name, t);
-            keyValuePairs.Add(a);
-            ListView1.SelectedIndex = keyValuePairs.Count - 1;
-            ListView1.ScrollIntoView(a);
         }
 
         public void TemplateDel()
