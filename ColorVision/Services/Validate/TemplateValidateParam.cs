@@ -10,11 +10,25 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Validate
 {
+
+    public class TemplateValidateCIEAVGParam: TemplateValidateParam
+    {
+        public TemplateValidateCIEAVGParam() 
+        {
+            Title = "Validate.CIE.AVG";
+            TemplateParams = ValidateParam.CIEAVGParams;
+            Code = "Validate.CIE.AVG";
+            IsUserControl = true;
+            ValidateControl = new ValidateControl();
+        }
+    }
+
+
     public class TemplateValidateParam : ITemplate<ValidateParam>, IITemplateLoad
     {
         public TemplateValidateParam()
         {
-            Title = "ValidateParam";
+            Title = "Validate.CIE";
             TemplateParams = ValidateParam.CIEParams;
             Code = "Validate.CIE";
             IsUserControl = true;

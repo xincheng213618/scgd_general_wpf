@@ -40,7 +40,7 @@ namespace ColorVision.Services.Validate
 
         public RelayCommand Command => new(a =>
         {
-            new WindowTemplate(new TemplateValidateParam() { Title = "Validate.CIE" }) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateValidateParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
     }
 
@@ -59,7 +59,7 @@ namespace ColorVision.Services.Validate
 
         public RelayCommand Command => new(a =>
         {
-            new WindowTemplate(new TemplateValidateParam() { Code = "Validate.CIE.AVG" ,Title = "Validate.CIE.AVG" ,TemplateParams = ValidateParam.CIEAVGParams }) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateValidateCIEAVGParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
     }
 }
