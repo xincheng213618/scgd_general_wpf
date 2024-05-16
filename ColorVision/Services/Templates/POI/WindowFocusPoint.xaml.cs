@@ -1595,6 +1595,14 @@ namespace ColorVision.Services.Templates.POI
                 item.BaseAttribute.Tag = PoiParam.DatumArea.DeafultValidateCIEId;
             }
         }
+
+        private void ComboBoxValidateCIE_Initialized(object sender, EventArgs e)
+        {
+            if (sender is ComboBox comboBox)
+            {
+                comboBox.ItemsSource = ValidateParam.CIEParams;
+            }
+        }
     }
 
 }

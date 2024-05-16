@@ -653,7 +653,7 @@
                             <GridViewColumn  Header="合规模板ID" Width="100">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type draw:IDrawingVisual}">
-                                        <TextBox Text="{Binding BaseAttribute.Tag}" Width="40" HorizontalAlignment="Center"/>
+                                        <ComboBox Initialized="ComboBoxValidateCIE_Initialized" SelectedValue="{Binding BaseAttribute.Tag}"  SelectedValuePath="Id" DisplayMemberPath="Key" Margin="2,0" Style="{StaticResource ComboBox.Small}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
