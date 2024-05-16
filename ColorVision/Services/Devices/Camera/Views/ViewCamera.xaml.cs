@@ -12,6 +12,7 @@ using ColorVision.Services.Templates.POI;
 using ColorVision.Solution;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
+using CVCommCore.CVImage;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
