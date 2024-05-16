@@ -15,7 +15,7 @@ namespace ColorVision.Services.Validate
         public TemplateValidateParam()
         {
             Title = "ValidateParam";
-            TemplateParams = ValidateParam.Params;
+            TemplateParams = ValidateParam.CIEParams;
             Code = "Validate.CIE";
             IsUserControl = true;
             ValidateControl = new ValidateControl();

@@ -10,7 +10,8 @@ namespace ColorVision.Services.Validate
 
     public class ValidateParam : ParamBase
     {
-        public static ObservableCollection<TemplateModel<ValidateParam>> Params { get; set; } = new ObservableCollection<TemplateModel<ValidateParam>>();
+        public static ObservableCollection<TemplateModel<ValidateParam>> CIEParams{ get; set; } = new ObservableCollection<TemplateModel<ValidateParam>>();
+        public static ObservableCollection<TemplateModel<ValidateParam>> CIEAVGParams  { get; set; } = new ObservableCollection<TemplateModel<ValidateParam>>();
 
         public ValidateParam()
         {

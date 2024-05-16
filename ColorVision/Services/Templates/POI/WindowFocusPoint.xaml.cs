@@ -54,7 +54,7 @@ namespace ColorVision.Services.Templates.POI
             ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>() select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType.SelectedIndex = 0;
 
-            ComboBoxValidate.ItemsSource = ValidateParam.Params.CreateEmpty();
+            ComboBoxValidate.ItemsSource = ValidateParam.CIEAVGParams.CreateEmpty();
 
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()  select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
