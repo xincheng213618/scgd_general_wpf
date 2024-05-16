@@ -200,7 +200,7 @@
           <target state="new">Date limite</target>
         </trans-unit>
         <trans-unit id="DefaultCreateTemplateName" translate="yes" xml:space="preserve">
-          <source>Default</source>
+          <source>default</source>
           <target state="new">Défaut</target>
         </trans-unit>
         <trans-unit id="DefaultExportStorageFormat" translate="yes" xml:space="preserve">

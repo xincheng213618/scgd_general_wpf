@@ -919,6 +919,6 @@
     <value>更新速度</value>
   </data>
   <data name="DefaultCreateTemplateName" xml:space="preserve">
-    <value>Default</value>
+    <value>default</value>
   </data>
 </root>

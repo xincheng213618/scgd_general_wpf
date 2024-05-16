@@ -200,7 +200,7 @@
           <target state="new">Крайний срок</target>
         </trans-unit>
         <trans-unit id="DefaultCreateTemplateName" translate="yes" xml:space="preserve">
-          <source>Default</source>
+          <source>default</source>
           <target state="new">По умолчанию</target>
         </trans-unit>
         <trans-unit id="DefaultExportStorageFormat" translate="yes" xml:space="preserve">

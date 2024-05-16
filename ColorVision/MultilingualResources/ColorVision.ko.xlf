@@ -200,7 +200,7 @@
           <target state="new">마감 시간</target>
         </trans-unit>
         <trans-unit id="DefaultCreateTemplateName" translate="yes" xml:space="preserve">
-          <source>Default</source>
+          <source>default</source>
           <target state="new">기본</target>
         </trans-unit>
         <trans-unit id="DefaultExportStorageFormat" translate="yes" xml:space="preserve">

@@ -20,7 +20,7 @@ namespace ColorVision.Services.Templates
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.Title += ITemplate.Title;
-            CreateCode.Text = ITemplate.NewCreateFileName(TemplateConfig.Instance.DefaultCreateTemplateName);
+            CreateCode.Text = ITemplate.NewCreateFileName(ITemplate.Code+"_"+TemplateConfig.Instance.DefaultCreateTemplateName);
             if (ITemplate.IsUserControl)
             {
                 GridProperty.Children.Clear();

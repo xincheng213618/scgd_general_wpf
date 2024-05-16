@@ -200,7 +200,7 @@
           <target state="new">締め切り</target>
         </trans-unit>
         <trans-unit id="DefaultCreateTemplateName" translate="yes" xml:space="preserve">
-          <source>Default</source>
+          <source>default</source>
           <target state="new">デフォルト</target>
         </trans-unit>
         <trans-unit id="DefaultExportStorageFormat" translate="yes" xml:space="preserve">
