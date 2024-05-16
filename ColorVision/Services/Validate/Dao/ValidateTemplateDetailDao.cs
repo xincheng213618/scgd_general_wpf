@@ -1,7 +1,7 @@
 ﻿using ColorVision.MySql.ORM;
 using System.Data;
 
-namespace ColorVision.Services.Validate
+namespace ColorVision.Services.Validate.Dao
 {
     public class ValidateTemplateDetailModel : PKModel
     {

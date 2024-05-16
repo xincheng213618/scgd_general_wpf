@@ -1,4 +1,5 @@
-﻿using System;
+﻿#pragma warning disable IDE0060
+using System;
 using System.Data;
 using System.Linq;
 
@@ -15,6 +16,8 @@ namespace ColorVision.MySql.ORM
             var rows = dataTable.AsEnumerable().Where(row => row.Field<int>("id") == id).ToList();
             return rows.Count == 1 ? rows[0] : null;
         }
+
+        public static object? IsDBNull<T>(this DataTable dataTable, T t) => IsDBNull(t);
 
         public static object? IsDBNull<T> (T t)
         {

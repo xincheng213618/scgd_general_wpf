@@ -2,7 +2,7 @@
 using System;
 using System.Data;
 
-namespace ColorVision.Services.Validate
+namespace ColorVision.Services.Validate.Dao
 {
     public class ValidateTemplateMasterModel : PKModel
     {

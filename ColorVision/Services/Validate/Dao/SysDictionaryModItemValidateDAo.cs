@@ -1,8 +1,7 @@
 ﻿using ColorVision.MySql.ORM;
-using ColorVision.Services.Dao;
 using System.Data;
 
-namespace ColorVision.Services.Validate
+namespace ColorVision.Services.Validate.Dao
 {
     public class SysDictionaryModItemValidateModel : PKModel
     {

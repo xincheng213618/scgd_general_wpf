@@ -8,23 +8,9 @@
              d:DataContext="{d:DesignInstance local:ValidateParam}"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid Margin="5">
-        <StackPanel>
-            <DockPanel Margin="0,2">
-                <TextBlock Text="ValEqual:"/>
-                <TextBox Text="{Binding X.ValEqual}"/>
-            </DockPanel>
-            <DockPanel Margin="0,2">
-                <TextBlock Text="ValMax:"/>
-                <TextBox Text="{Binding X.ValMax}"/>
-            </DockPanel>
-            <DockPanel Margin="0,2">
-                <TextBlock Text="ValMin:"/>
-                <TextBox Text="{Binding X.ValMin}"/>
-            </DockPanel>
-            <DockPanel Margin="0,2">
-                <TextBlock Text="ValRadix:"/>
-                <TextBox Text="{Binding X.ValRadix}"/>
-            </DockPanel>
-        </StackPanel>
+        <ListView>
+            
+        </ListView>
+        
     </Grid>
 </UserControl>
