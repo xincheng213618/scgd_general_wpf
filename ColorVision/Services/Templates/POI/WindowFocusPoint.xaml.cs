@@ -149,7 +149,7 @@ namespace ColorVision.Services.Templates.POI
                 WaitControlProgressBar.Value = 0;
                 await Task.Delay(100);
 
-                if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
+                if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
                     PoiParam.LoadPoiDetailFromDB(PoiParam);
 
                 WaitControlProgressBar.Value = 10;
