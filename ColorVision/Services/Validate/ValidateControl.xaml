@@ -52,13 +52,6 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="ValType" Width="300">
-                        <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:ValidateSingle}">
-                                <TextBox Text="{ Binding ValType}" Width="40"/>
-                            </DataTemplate>
-                        </GridViewColumn.CellTemplate>
-                    </GridViewColumn>
                 </GridView>
             </ListView.View>
 

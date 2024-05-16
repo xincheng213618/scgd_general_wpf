@@ -10,7 +10,7 @@
         xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
         xmlns:draw ="clr-namespace:ColorVision.Draw;assembly=ColorVision.Util"
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
-        xmlns:resx="clr-namespace:ColorVision.Properties"
+        xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Template:PoiParam}"
         Title="关注点编辑"  Height="1080" Width="1920" WindowState="Maximized" Initialized="Window_Initialized">
@@ -84,9 +84,13 @@
                         <Button x:Name="button4" Content="导入服务最新的图像" Click="Service_Click"  Style="{StaticResource ButtonDefault.Small}" Margin="2,0" />
                     </StackPanel>
                     <DockPanel Margin="0,2">
-                        <Button DockPanel.Dock="Right" Margin="2,0" Content="导入" Click="Button_Service_Click"/>
-                        <Button DockPanel.Dock="Right" Margin="2,0"   Content="刷新" Click="Button_RefreshImg_Click"/>
+                        <Button DockPanel.Dock="Right" Margin="2,0" Content="{x:Static properties:Resource.Import}" Click="Button_Service_Click"/>
+                        <Button DockPanel.Dock="Right" Margin="2,0"   Content="{x:Static properties:Resource.Refresh}" Click="Button_RefreshImg_Click"/>
                         <ComboBox x:Name="ComboBoxImg"  Margin="2,0"  Style="{StaticResource ComboBox.Small}"/>
+                    </DockPanel>
+                    <DockPanel Margin="0,2">
+                        <TextBlock DockPanel.Dock="Right" Margin="2,0" Text="合规校验模板配置"/>
+                        <ComboBox x:Name="ComboBoxValidate" SelectedValue="{Binding ValidateId}"  SelectedValuePath="Id" DisplayMemberPath="Key" Margin="2,0" Style="{StaticResource ComboBox.Small}"/>
                     </DockPanel>
                     <StackPanel  Margin="2" Orientation="Horizontal">
                         <Button  ToolTip="保存关注点" Click="Button_Save_Click" HorizontalAlignment="Right" Margin="0,0,5,0">
@@ -556,7 +560,7 @@
                 <ListView  x:Name="ListView1" Grid.Column="1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" PreviewKeyDown="ListView1_PreviewKeyDown" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback"  SelectionChanged="ListView1_SelectionChanged" >
                     <ListView.Resources>
                         <ContextMenu x:Key="ContextMenuItem">
-                            <MenuItem Header="{x:Static resx:Resource.Delete}"  Click="MenuItem_DrawingVisual_Delete" Tag="{Binding .}"  />
+                            <MenuItem Header="{x:Static properties:Resource.Delete}"  Click="MenuItem_DrawingVisual_Delete" Tag="{Binding .}"  />
                         </ContextMenu>
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
                         </ContextMenu>
@@ -600,7 +604,7 @@
                             <StackPanel  Orientation="Horizontal">
                                 <StackPanel.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
+                                        <MenuItem Header="{x:Static properties:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
                                     </ContextMenu>
                                 </StackPanel.ContextMenu>
                                 <TextBlock>

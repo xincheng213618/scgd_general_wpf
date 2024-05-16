@@ -54,6 +54,7 @@ namespace ColorVision.Services.Templates.POI.Dao
             IsEnable = true;
             IsDelete = false;
             TenantId = 0;
+            ValidateId = poiParam.ValidateId;
         }
 
         public string? Name { get; set; }

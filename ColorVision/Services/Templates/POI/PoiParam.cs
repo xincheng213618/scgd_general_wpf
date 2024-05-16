@@ -170,6 +170,7 @@ namespace ColorVision.Services.Templates.POI
             DatumArea.CenterX = (DatumArea.X2X - DatumArea.X1X) / 2;
             DatumArea.CenterY = (DatumArea.X4Y - DatumArea.X1Y) / 2;
             CfgJson = dbModel.CfgJson ?? string.Empty;
+            ValidateId = dbModel.ValidateId ?? -1;
         }
 
         public string CfgJson
@@ -208,7 +209,8 @@ namespace ColorVision.Services.Templates.POI
 
         public int Height { get => _Height; set { _Height = value; NotifyPropertyChanged(); } }
         private int _Height;
-
+        public int ValidateId { get => _ValidateId; set { _ValidateId = value; NotifyPropertyChanged(); } }
+        private int _ValidateId;
 
         /// <summary>
         /// 关注点列表
