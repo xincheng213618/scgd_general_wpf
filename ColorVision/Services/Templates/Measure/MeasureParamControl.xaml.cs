@@ -83,7 +83,6 @@ namespace ColorVision.Services.Templates
                 MParamConfig config = (MParamConfig)Mod_Type.SelectedItem;
                 if (config.Type != null && config.Type.Equals("POI", StringComparison.Ordinal))
                 {
-                    PoiParam.LoadPoiParam();
                     foreach (var item in PoiParam.Params)
                     {
                         ModMasterConfigs.Add(new MParamConfig(item.Value));

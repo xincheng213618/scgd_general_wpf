@@ -17,7 +17,7 @@ namespace ColorVision.MySql.ORM
             return rows.Count == 1 ? rows[0] : null;
         }
 
-        public static object? IsDBNull<T>(this DataTable dataTable, T t) => IsDBNull(t);
+        public static object? IsDBNull<T>(this DataRow dataTable, T t) => IsDBNull(t);
 
         public static object? IsDBNull<T> (T t)
         {

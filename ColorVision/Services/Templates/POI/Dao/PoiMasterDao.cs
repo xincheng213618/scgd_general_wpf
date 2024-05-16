@@ -1,4 +1,5 @@
 ﻿using ColorVision.MySql.ORM;
+using ScottPlot;
 using System;
 using System.Data;
 
@@ -73,6 +74,9 @@ namespace ColorVision.Services.Templates.POI.Dao
         public bool? IsEnable { get; set; } = true;
         public bool? IsDelete { get; set; } = false;
         public string? Remark { get; set; }
+
+        public int? ValidateId { get; set; }
+
         public int TenantId { get; set; }
     }
 
@@ -109,6 +113,7 @@ namespace ColorVision.Services.Templates.POI.Dao
                 IsDelete = item.Field<bool?>("is_delete"),
                 Remark = item.Field<string?>("remark"),
                 TenantId = item.Field<int>("tenant_id"),
+                ValidateId =item.Field<int?>("val_validate_temp_id")
             };
             return model;
         }
@@ -133,8 +138,9 @@ namespace ColorVision.Services.Templates.POI.Dao
                 if (item.CfgJson != null) row["cfg_json"] = item.CfgJson;
                 row["dynamics"] = item.IsDynamics;
                 row["create_date"] = item.CreateDate;
-                if (item.Remark != null) row["remark"] = item.Remark;
+                row["remark"] = row.IsDBNull(item.Remark);
                 row["tenant_id"] = item.TenantId;
+                row["val_validate_temp_id"] = row.IsDBNull(item.ValidateId);
             }
             return row;
         }
@@ -161,6 +167,7 @@ namespace ColorVision.Services.Templates.POI.Dao
             dataTable.Columns.Add("is_delete", typeof(bool));
             dataTable.Columns.Add("remark", typeof(string));
             dataTable.Columns.Add("tenant_id", typeof(int));
+            dataTable.Columns.Add("val_validate_temp_id", typeof(int));
             return dataTable;
         }
     }
