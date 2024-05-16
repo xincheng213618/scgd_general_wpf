@@ -11,6 +11,7 @@ using ColorVision.Services.Templates.POI;
 using ColorVision.Solution;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
+using CVCommCore.CVImage;
 using log4net;
 using MQTTMessageLib.Calibration;
 using MQTTMessageLib.Camera;

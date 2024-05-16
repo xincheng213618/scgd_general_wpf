@@ -6,6 +6,7 @@ using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Msg;
 using ColorVision.Services.PhyCameras.Templates;
 using cvColorVision;
+using CVCommCore.CVImage;
 using MQTTMessageLib;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;

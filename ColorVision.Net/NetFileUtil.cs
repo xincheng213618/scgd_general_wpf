@@ -14,6 +14,7 @@ using System.Windows.Navigation;
 using System.Windows.Markup;
 using OpenCvSharp;
 using System.Drawing.Imaging;
+using CVCommCore.CVImage;
 
 namespace ColorVision.Net
 {
