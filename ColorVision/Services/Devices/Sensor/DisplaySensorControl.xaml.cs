@@ -103,7 +103,7 @@ namespace ColorVision.Services.Devices.Sensor
         {
             if (ComboBoxType.SelectedItem is SensorCmdType CmdType)
             {
-                SensorCmd cmd = new() { CmdType = CmdType, Request = TextBoxSendCommand.Text, Response = TextBoxResCommand.Text, Timeout = 5000 };
+                SensorCmd cmd = new() { CmdType = CmdType, Request = TextBoxSendCommand.Text, Response = TextBoxResCommand.Text, Timeout = 5000, Delay = 0, RetryCount = 1 };
                 DeviceService.ExecCmd(cmd);
             }
         }
