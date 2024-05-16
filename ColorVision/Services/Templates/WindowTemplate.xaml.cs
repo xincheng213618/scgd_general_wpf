@@ -52,8 +52,11 @@ namespace ColorVision.Services.Templates
             Title = ITemplate.Title;
             ListView1.ItemsSource = ITemplate.ItemsSource;
             ListView1.SelectedIndex = 0;
-            if (ListView1.View is GridView gridView1)
-                GridViewColumnVisibility.AddGridViewColumn(gridView1.Columns, GridViewColumnVisibilitys);
+            if (ListView1.View is GridView gridView)
+            {
+                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+            }
             Closed += WindowTemplate_Closed;
         }
 
