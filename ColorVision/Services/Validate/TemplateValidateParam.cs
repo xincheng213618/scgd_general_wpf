@@ -34,10 +34,15 @@ namespace ColorVision.Services.Validate
         public override void Load()
         {
             TemplateParams.Clear();
-
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                var models = ValidateTemplateMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "is_delete", 0 }, { "tenant_id", UserConfig.Instance.TenantId } });
+                SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
+                if (mod == null)
+                {
+                    MessageBox.Show(Application.Current.GetActiveWindow(), $"找不到字典{Code}", "Template");
+                    return;
+                }
+                var models = ValidateTemplateMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { {"dic_pid",mod.Id },{ "is_delete", 0 }, { "tenant_id", UserConfig.Instance.TenantId } });
                 foreach (var dbModel in models)
                 {
                     var Details = ValidateTemplateDetailDao.Instance.GetAllByPid(dbModel.Id);
