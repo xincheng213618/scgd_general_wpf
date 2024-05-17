@@ -110,8 +110,6 @@ namespace ColorVision.Projects
                             {
                                 Results.Add(new TempResult() { Name = PoiResultCIExyuvDatas[0].ValidateSingles[i].Rule.RType.ToString(), NumSet = new NumSet() { Orange = PoiResultCIExyuvDatas[0].ValidateSingles[i].Result.ToString() } });
                             }
-
-
                         }
                     }
                     else

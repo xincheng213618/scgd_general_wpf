@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
 
@@ -20,7 +21,13 @@ namespace ColorVision.Services.Templates
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.Title += ITemplate.Title;
-            CreateCode.Text = ITemplate.NewCreateFileName(ITemplate.Code+"_"+TemplateConfig.Instance.DefaultCreateTemplateName);
+            List<string> list = new List<string>();
+            list.Add(ITemplate.NewCreateFileName(ITemplate.Code + "_" + TemplateConfig.Instance.DefaultCreateTemplateName));
+            list.Add(ITemplate.NewCreateFileName(ITemplate.Code + "." + TemplateConfig.Instance.DefaultCreateTemplateName));
+            list.Add(ITemplate.NewCreateFileName(ITemplate.Code));
+            list.Add(ITemplate.NewCreateFileName(TemplateConfig.Instance.DefaultCreateTemplateName));
+            CreateCode.ItemsSource = list;
+            CreateCode.SelectedIndex = 0;
             if (ITemplate.IsUserControl || ITemplate.IsSideHide)
             {
                 GridProperty.Children.Clear();
