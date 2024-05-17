@@ -10,7 +10,7 @@ namespace ColorVision.MQTT
 
     public class MQTTSetting : ViewModelBase ,IConfigSecure
     {
-        public static MQTTSetting Instance { get; set; } = ConfigHandler1.GetInstance().GetRequiredService<MQTTSetting>();
+        public static MQTTSetting Instance { get; set; } = ConfigHandler.GetInstance().GetRequiredService<MQTTSetting>();
 
         public static MQTTControl MQTTControl => MQTTControl.GetInstance();
         public static bool IsConnect => MQTTControl.IsConnect;

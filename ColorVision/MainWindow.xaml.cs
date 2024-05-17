@@ -37,7 +37,7 @@ namespace ColorVision
 {
     public class MainWindowConfig : IConfig
     {
-        public static MainWindowConfig Instance => ConfigHandler1.GetInstance().GetRequiredService<MainWindowConfig>();
+        public static MainWindowConfig Instance => ConfigHandler.GetInstance().GetRequiredService<MainWindowConfig>();
 
         public bool IsRestoreWindow { get; set; }
 
@@ -96,7 +96,7 @@ namespace ColorVision
             MainWindowConfig.SetWindow(this);
             SizeChanged += (s, e) => MainWindowConfig.SetConfig(this);
             var IsAdministrator = Tool.IsAdministrator();
-            Title = Title + $"- {(IsAdministrator ? Properties.Resource.RunAsAdmin : Properties.Resource.NotRunAsAdmin)}";
+            Title += $"- {(IsAdministrator ? Properties.Resource.RunAsAdmin : Properties.Resource.NotRunAsAdmin)}";
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -461,14 +461,14 @@ namespace ColorVision
 
         private void SettingF_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start("explorer.exe", $"{Path.GetDirectoryName(ConfigHandler.GetInstance().SoftwareConfigFileName)}");
+            Process.Start("explorer.exe", $"{Path.GetDirectoryName(ConfigHandler.GetInstance().DIFile)}");
         }
 
 
 
         private void Setting_Click(object sender, RoutedEventArgs e)
         {
-            string fileName = ConfigHandler.GetInstance().SoftwareConfigFileName;
+            string fileName = ConfigHandler.GetInstance().DIFile;
             bool result = Tool.HasDefaultProgram(fileName);
             if (!result)
                 Process.Start(result ? "explorer.exe" : "notepad.exe", fileName);

@@ -6,7 +6,7 @@ namespace ColorVision.UserSpace
 {
     public class UserConfig : ViewModelBase, IConfig
     {
-        public static UserConfig Instance => ConfigHandler1.GetInstance().GetRequiredService<UserConfig>();
+        public static UserConfig Instance => ConfigHandler.GetInstance().GetRequiredService<UserConfig>();
         /// <summary>
         /// 账号
         /// </summary>

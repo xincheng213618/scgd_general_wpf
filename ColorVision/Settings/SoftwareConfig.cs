@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.MQTT;
 using ColorVision.MySql;
+using ColorVision.Services;
 using ColorVision.Services.Msg;
 using ColorVision.Services.RC;
 using ColorVision.Solution;
@@ -19,9 +20,9 @@ namespace ColorVision.Settings
     /// </summary>
     public class SoftwareConfig : ViewModelBase,IConfig
     {
-        public static SoftwareConfig Instance => ConfigHandler1.GetInstance().GetRequiredService<SoftwareConfig>();
+        public static SoftwareConfig Instance => ConfigHandler.GetInstance().GetRequiredService<SoftwareConfig>();
 
-        public static MySqlSetting MySqlSetting => ConfigHandler1.GetInstance().GetRequiredService<MySqlSetting>();  
+        public static MySqlSetting MySqlSetting => ConfigHandler.GetInstance().GetRequiredService<MySqlSetting>();  
 
         public bool IsAutoRun { get => Tool.IsAutoRun(GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); set { Tool.SetAutoRun(value, GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); NotifyPropertyChanged(); } }
 
@@ -40,9 +41,11 @@ namespace ColorVision.Settings
 
         public SoftwareSetting SoftwareSetting { get; set; } = new SoftwareSetting();
 
-        public static SystemMonitorSetting SystemMonitorSetting => ConfigHandler1.GetInstance().GetRequiredService<SystemMonitorSetting>();
+        public static SystemMonitorSetting SystemMonitorSetting => ConfigHandler.GetInstance().GetRequiredService<SystemMonitorSetting>();
 
         public static RCSetting RCSetting => RCSetting.Instance;
+
+        public static ServicesSetting ServicesSetting => ServicesSetting.Instance;
 
         public static MQTTSetting MQTTSetting => MQTTSetting.Instance;
         public static MsgConfig MsgConfig => MsgConfig.Instance;
@@ -50,7 +53,7 @@ namespace ColorVision.Settings
 
         public static UserConfig UserConfig => UserConfig.Instance;
 
-        public static SolutionSetting SolutionSetting  =>ConfigHandler1.GetInstance().GetRequiredService<SolutionSetting>();
+        public static SolutionSetting SolutionSetting  =>ConfigHandler.GetInstance().GetRequiredService<SolutionSetting>();
     }
 
 

@@ -17,7 +17,7 @@ namespace ColorVision.Services.Templates
 
     public class TemplateConfig : ViewModelBase, IConfig
     {
-        public static TemplateConfig Instance => ConfigHandler1.GetInstance().GetRequiredService<TemplateConfig>();
+        public static TemplateConfig Instance => ConfigHandler.GetInstance().GetRequiredService<TemplateConfig>();
 
         public string DefaultCreateTemplateName { get => _DefaultCreateTemplateName; set { _DefaultCreateTemplateName = value; NotifyPropertyChanged(); } }
         private string _DefaultCreateTemplateName = ColorVision.Properties.Resource.DefaultCreateTemplateName;
@@ -82,20 +82,19 @@ namespace ColorVision.Services.Templates
                 modMaster.Pid = mod.Id;
                 ModMasterDao.Instance.Save(modMaster);
                 List<ModDetailModel> list = new();
-                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(modMaster.Pid);
+                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(mod.Id);
                 foreach (var item in sysDic)
                 {
                     list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
                 }
                 ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
             }
-            int pkId = modMaster.Id;
-            if (pkId > 0)
+            if (modMaster.Id > 0)
             {
-                ModMasterModel modMasterModel = ModMasterDao.Instance.GetById(pkId);
-                List<ModDetailModel> modDetailModels = ModDetailDao.Instance.GetAllByPid(pkId);
-                if (modMasterModel != null) return (T)Activator.CreateInstance(typeof(T), new object[] { modMasterModel, modDetailModels });
-                else return null;
+                ModMasterModel modMasterModel = ModMasterDao.Instance.GetById(modMaster.Id);
+                List<ModDetailModel> modDetailModels = ModDetailDao.Instance.GetAllByPid(modMaster.Id);
+                if (modMasterModel != null)
+                    return (T)Activator.CreateInstance(typeof(T), new object[] { modMasterModel, modDetailModels });
             }
             return null;
         }

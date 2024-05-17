@@ -9,12 +9,6 @@ namespace ColorVision.Settings
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(SoftwareSetting));
 
-        /// <summary>
-        /// 是否默认配置
-        /// </summary>
-        public bool IsDefaultOpenService { get=> _IsDefaultOpenService; set { _IsDefaultOpenService = value;NotifyPropertyChanged(); } }
-        private bool _IsDefaultOpenService;
-
         public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; NotifyPropertyChanged(); } }
         private bool _IsOpenStatusBar = true;
         public bool IsOpenSidebar { get => _IsOpenSidebar; set { _IsOpenSidebar = value; NotifyPropertyChanged(); } }

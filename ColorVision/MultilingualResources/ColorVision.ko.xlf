@@ -919,6 +919,10 @@
           <source>开始时间</source>
           <target state="new">시작 시간</target>
         </trans-unit>
+        <trans-unit id="StartingService" translate="yes" xml:space="preserve">
+          <source>正在启动服务</source>
+          <target state="new">서비스 시작</target>
+        </trans-unit>
         <trans-unit id="Status" translate="yes" xml:space="preserve">
           <source>状态</source>
           <target state="new">상태</target>

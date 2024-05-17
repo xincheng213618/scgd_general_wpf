@@ -2104,6 +2104,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 正在启动服务 的本地化字符串。
+        /// </summary>
+        public static string StartingService {
+            get {
+                return ResourceManager.GetString("StartingService", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 恢复上次退出时窗口的大小和位置 的本地化字符串。
         /// </summary>
         public static string StartRecoverUILayout {

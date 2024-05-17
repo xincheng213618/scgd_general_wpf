@@ -110,7 +110,7 @@
                                     </DockPanel>
 
                                     <DockPanel Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding SoftwareSetting.IsDefaultOpenService}"/>
+                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding ServicesSetting.IsDefaultOpenService}"/>
                                         <TextBlock Text="启动自动配置服务"/>
                                     </DockPanel>
                                     <DockPanel x:Name="AutoRunDock" Margin="5" >

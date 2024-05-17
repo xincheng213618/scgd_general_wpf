@@ -5,7 +5,7 @@ namespace ColorVision.Services.Devices.Camera.Video
 {
     public class LocalVideoConfig : ViewModelBase,IConfig
     {
-        public static LocalVideoConfig Instance => ConfigHandler1.GetInstance().GetRequiredService<LocalVideoConfig>();
+        public static LocalVideoConfig Instance => ConfigHandler.GetInstance().GetRequiredService<LocalVideoConfig>();
 
         /// <summary>
         /// 连接名称

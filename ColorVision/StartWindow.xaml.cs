@@ -1,9 +1,7 @@
-﻿using ColorVision.FloatingBall;
-using ColorVision.MQTT;
+﻿using ColorVision.MQTT;
 using ColorVision.MySql;
 using ColorVision.Services;
 using ColorVision.Services.RC;
-using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.Themes;
 using System;
@@ -76,7 +74,7 @@ namespace ColorVision
             //检测服务连接情况，需要在界面启动之后，否则会出现问题。因为界面启动之后才会初始化MQTTControl和MySqlControl，所以代码上问题不大
             Application.Current.Dispatcher.Invoke(() =>
             {
-                TextBoxMsg.Text += $"正在启动服务";
+                TextBoxMsg.Text += ColorVision.Properties.Resource.StartingService;
             });
 
             if (MySqlSetting.Instance.IsUseMySql)
@@ -202,7 +200,7 @@ namespace ColorVision
                 {
                     try
                     {
-                        if (!SoftwareConfig.Instance.SoftwareSetting.IsDefaultOpenService)
+                        if (!ServicesSetting.Instance.IsDefaultOpenService)
                         {
                             TextBoxMsg.Text += $"{Environment.NewLine}初始化服务";
                             ServiceManager.GenDeviceDisplayControl();

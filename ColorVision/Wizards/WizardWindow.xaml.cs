@@ -11,7 +11,7 @@ namespace ColorVision.Wizards
 {
     public class WizardConfig : ViewModelBase ,IConfig
     {
-        public static WizardConfig Instance =>ConfigHandler1.GetInstance().GetRequiredService<WizardConfig>();
+        public static WizardConfig Instance =>ConfigHandler.GetInstance().GetRequiredService<WizardConfig>();
         public bool WizardCompletionKey { get => _WizardCompletionKey; set { _WizardCompletionKey = value; NotifyPropertyChanged(); } }
         private bool _WizardCompletionKey;
     }
@@ -33,7 +33,7 @@ namespace ColorVision.Wizards
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             WizardConfig.Instance.WizardCompletionKey = true;
-            ConfigHandler.GetInstance().SaveConfig();
+            ConfigHandler.GetInstance().SaveConfigs();
             //这里使用件的启动路径，启动主程序
             Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"), "-r");
             Application.Current.Shutdown();

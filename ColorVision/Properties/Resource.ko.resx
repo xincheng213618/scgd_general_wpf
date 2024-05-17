@@ -921,4 +921,7 @@
   <data name="DefaultCreateTemplateName" xml:space="preserve">
     <value>기본</value>
   </data>
+  <data name="StartingService" xml:space="preserve">
+    <value>서비스 시작</value>
+  </data>
 </root>

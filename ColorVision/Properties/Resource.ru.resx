@@ -921,4 +921,7 @@
   <data name="DefaultCreateTemplateName" xml:space="preserve">
     <value>По умолчанию</value>
   </data>
+  <data name="StartingService" xml:space="preserve">
+    <value>Запуск службы</value>
+  </data>
 </root>

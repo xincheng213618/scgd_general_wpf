@@ -19,7 +19,7 @@ namespace ColorVision.Update
 {
     public class AutoUpdateConfig:ViewModelBase, IConfig
     {
-        public static AutoUpdateConfig Instance  => ConfigHandler1.GetInstance().GetRequiredService<AutoUpdateConfig>();    
+        public static AutoUpdateConfig Instance  => ConfigHandler.GetInstance().GetRequiredService<AutoUpdateConfig>();    
 
         public string UpdatePath { get => _UpdatePath;set { _UpdatePath = value; NotifyPropertyChanged(); } }
         private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A";
@@ -327,7 +327,7 @@ namespace ColorVision.Update
         private static void RestartApplication(string downloadPath)
         {
             // 保存数据库配置
-            ConfigHandler1.GetInstance().SaveConfigs();
+            ConfigHandler.GetInstance().SaveConfigs();
 
 
             // 启动新的实例

@@ -1,14 +1,18 @@
 ﻿#pragma warning disable CS8604
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.UserSpace;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Documents;
 
 namespace ColorVision.Services.Templates
 {
@@ -34,6 +38,7 @@ namespace ColorVision.Services.Templates
         {
             throw new NotImplementedException();
         }
+
 
         public virtual object GetValue(int index)
         {
@@ -91,7 +96,26 @@ namespace ColorVision.Services.Templates
 
         public override IEnumerable ItemsSource { get => TemplateParams; }
 
-        public override object CreateDefault() => new T();  
+        public T? CreateTemp { get; set; }
+
+        public override object CreateDefault() 
+        {
+            SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
+            if (mod != null)
+            {
+                List<ModDetailModel> list = new();
+                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(mod.Id);
+                foreach (var item in sysDic)
+                {
+                    list.Add(new ModDetailModel(item.Id, -1, item.DefaultValue) { Symbol = item.Symbol });
+                }
+
+                ModMasterModel modMaster = new ModMasterModel(Code, "", UserConfig.Instance.TenantId);
+
+                CreateTemp = (T)Activator.CreateInstance(typeof(T), new object[] { modMaster, list });
+            }
+            return CreateTemp ?? new T();
+        }
 
         public override string NewCreateFileName(string FileName)
         {
@@ -132,9 +156,9 @@ namespace ColorVision.Services.Templates
             TemplateParams.Clear();
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                ModMasterDao masterFlowDao = new(ModeType);
+                ModMasterDao masterDao = new ModMasterDao(ModeType);
 
-                List<ModMasterModel> smus = masterFlowDao.GetAll(UserConfig.Instance.TenantId);
+                List<ModMasterModel> smus = masterDao.GetAll(UserConfig.Instance.TenantId);
                 foreach (var dbModel in smus)
                 {
                     List<ModDetailModel> smuDetails = ModDetailDao.Instance.GetAllByPid(dbModel.Id);
@@ -173,9 +197,47 @@ namespace ColorVision.Services.Templates
             }
         }
 
+
+
         public override void Create(string templateName)
         {
-            T? param = TemplateControl.AddParamMode<T>(Code, templateName);
+            T? AddParamMode()
+            {
+                ModMasterModel modMaster = new ModMasterModel(Code, templateName, UserConfig.Instance.TenantId);
+                SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
+                if (mod != null)
+                {
+                    modMaster.Pid = mod.Id;
+                    ModMasterDao.Instance.Save(modMaster);
+                    List<ModDetailModel> list = new();
+                    if (CreateTemp != null)
+                    {
+                        CreateTemp.GetDetail(list);
+                        foreach (var item in list)
+                        {
+                            item.Pid = modMaster.Id;
+                        }
+                    }
+                    else
+                    {
+                        List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(mod.Id);
+                        foreach (var item in sysDic)
+                        {
+                            list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
+                        }
+                    }
+                    ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
+                }
+                if (modMaster.Id > 0)
+                {
+                    ModMasterModel modMasterModel = ModMasterDao.Instance.GetById(modMaster.Id);
+                    List<ModDetailModel> modDetailModels = ModDetailDao.Instance.GetAllByPid(modMaster.Id);
+                    if (modMasterModel != null)
+                        return (T)Activator.CreateInstance(typeof(T), new object[] { modMasterModel, modDetailModels });
+                }
+                return null;
+            }
+            T? param = AddParamMode();
             if (param != null)
             {
                 var a = new TemplateModel<T>(templateName, param);

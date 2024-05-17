@@ -1,34 +1,39 @@
-﻿using ColorVision.Services.Dao;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Services.Dao;
 using ColorVision.Services.Templates;
+using ColorVision.UI;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Windows;
 
 namespace ColorVision.Services.Devices.Algorithm.Templates
 {
 
-    //public class LedReusltParamMenuItem : IMenuItem
-    //{
-    //    public string? OwnerGuid => "TemplateAlgorithm";
+    public class LedReusltParamMenuItem : IMenuItem
+    {
+        public string? OwnerGuid => "TemplateAlgorithm";
 
-    //    public string? GuidId => "LedReusltParam";
-    //    public int Order => 2;
-    //    public string? Header => "数据判断模板设置(_J)";
+        public string? GuidId => "LedReusltParam";
+        public int Order => 2;
+        public string? Header => "数据判断模板设置(_J)";
 
-    //    public string? InputGestureText { get; }
+        public string? InputGestureText { get; }
 
-    //    public object? Icon { get; }
+        public object? Icon { get; }
+        public Visibility Visibility => Visibility.Collapsed;
 
-    //    public RelayCommand Command => new RelayCommand(a => {
-    //        SoftwareConfig SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-    //        if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
-    //        {
-    //            MessageBox.Show(Application.Instance.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
-    //            return;
-    //        }
-    //        new WindowTemplate(TemplateType.LedResult) { Owner = Application.Instance.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-    //    });
-    //}
+        public RelayCommand Command => new RelayCommand(a =>
+        {
+            //if (SoftwareConfig.IsUseMySql && !MySqlControl.GetInstance().IsConnect)
+            //{
+            //    MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
+            //    return;
+            //}
+            //new WindowTemplate() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        });
+    }
 
 
 

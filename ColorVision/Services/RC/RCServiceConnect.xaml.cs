@@ -63,7 +63,6 @@ namespace ColorVision.Services.RC
             rcServiceConfig.AppSecret = PasswordBox1.Password;
             rcServiceConfigs.Remove(rcServiceConfig);
 
-            ConfigHandler.GetInstance().SaveConfig();
             Task.Run(() => {
                 MQTTRCService.GetInstance().QueryServices();
                 MQTTRCService.GetInstance().ReRegist(); });

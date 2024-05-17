@@ -11,7 +11,7 @@ namespace ColorVision.Services.RC
 
     public class RCSetting : ViewModelBase, IConfigSecure
     {
-        public static RCSetting Instance => ConfigHandler1.GetInstance().GetRequiredService<RCSetting>();
+        public static RCSetting Instance => ConfigHandler.GetInstance().GetRequiredService<RCSetting>();
 
         public static RCServiceControl RCServiceControl => RCServiceControl.GetInstance();
 

@@ -5,7 +5,7 @@ namespace ColorVision.Themes
 {
     public class ThemeConfig: ViewModelBase,IConfig
     {
-        public static ThemeConfig Instance => ConfigHandler1.GetInstance().GetRequiredService<ThemeConfig>();
+        public static ThemeConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ThemeConfig>();
 
         /// <summary>
         /// 主题

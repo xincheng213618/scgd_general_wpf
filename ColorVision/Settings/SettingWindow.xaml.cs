@@ -1,15 +1,11 @@
 ﻿using ColorVision.Common.Extension;
-using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Languages;
 using ColorVision.MQTT;
 using ColorVision.MySql;
-using ColorVision.Properties;
 using ColorVision.Services.RC;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
-using ColorVision.UI;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -25,49 +21,11 @@ using ColorVision.Solution;
 
 namespace ColorVision.Settings
 {
-    public class ExportSetting : IHotKey,IMenuItem
-    {
-        public HotKeys HotKeys => new(Properties.Resource.MenuOptions, new Hotkey(Key.I, ModifierKeys.Control), Execute);
-        private void Execute()
-        {
-            new SettingWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-        public string? OwnerGuid => "Tool";
-
-        public string? GuidId => "MenuOptions";
-        public Visibility Visibility => Visibility.Visible;
-
-        public int Order => 100000;
-
-        public string? Header => Resource.MenuOptions;
-
-        public string? InputGestureText => "Ctrl + I";
-
-        public object? Icon { 
-            get
-            {
-                TextBlock text = new()
-                {
-                    Text = "\uE713", // 使用Unicode字符
-                    FontFamily = new FontFamily("Segoe MDL2 Assets"),
-                    FontSize = 15,
-                };
-                text.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
-                return text;
-            }
-        }
-        public RelayCommand Command => new(A => Execute());
-    }
-
-
     /// <summary>
     /// SettingWindow.xaml 的交互逻辑
     /// </summary>
     public partial class SettingWindow : BaseWindow
     {
-
-        public static SoftwareConfig SoftwareConfig => SoftwareConfig.Instance;
         public SettingWindow()
         {
             InitializeComponent();
@@ -89,7 +47,7 @@ namespace ColorVision.Settings
         }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            DataContext = SoftwareConfig;
+            DataContext = SoftwareConfig.Instance;
             GlobalConst.LogLevel.ForEach(it =>
             {
                 cmbloglevel.Items.Add(it);
@@ -222,7 +180,6 @@ namespace ColorVision.Settings
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             MsgConfig.Instance.MsgRecords.Clear();
-            ConfigHandler.GetInstance().SaveConfig();
             MessageBox.Show("MQTT历史记录清理完毕", "ColorVision");
         }
 

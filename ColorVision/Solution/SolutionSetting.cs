@@ -5,7 +5,7 @@ namespace ColorVision.Solution
 {
     public class SolutionSetting: ViewModelBase,IConfig
     {
-        public static SolutionSetting Instance => ConfigHandler1.GetInstance().GetRequiredService<SolutionSetting>();
+        public static SolutionSetting Instance => ConfigHandler.GetInstance().GetRequiredService<SolutionSetting>();
 
         public string DefaultCreatName { get => _DefaultCreatName; set { _DefaultCreatName = value; NotifyPropertyChanged(); } }
         private string _DefaultCreatName = "新建工程";

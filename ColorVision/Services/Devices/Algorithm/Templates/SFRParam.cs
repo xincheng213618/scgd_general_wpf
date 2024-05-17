@@ -49,7 +49,9 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
     {
         public static ObservableCollection<TemplateModel<SFRParam>> SFRParams { get; set; } = new ObservableCollection<TemplateModel<SFRParam>>();
 
-        public SFRParam() { }
+        public SFRParam() 
+        {
+        }
         public SFRParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
         {
         }

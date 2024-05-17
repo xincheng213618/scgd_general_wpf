@@ -21,7 +21,7 @@ namespace ColorVision.Services.Templates
         {
             this.Title += ITemplate.Title;
             CreateCode.Text = ITemplate.NewCreateFileName(ITemplate.Code+"_"+TemplateConfig.Instance.DefaultCreateTemplateName);
-            if (ITemplate.IsUserControl)
+            if (ITemplate.IsUserControl || ITemplate.IsSideHide)
             {
                 GridProperty.Children.Clear();
                 GridProperty.Margin = new Thickness(5, 5, 5, 5);

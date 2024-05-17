@@ -921,4 +921,7 @@
   <data name="DefaultCreateTemplateName" xml:space="preserve">
     <value>default</value>
   </data>
+  <data name="StartingService" xml:space="preserve">
+    <value>正在启动服务</value>
+  </data>
 </root>
