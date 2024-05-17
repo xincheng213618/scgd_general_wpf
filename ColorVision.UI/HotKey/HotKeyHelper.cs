@@ -1,10 +1,5 @@
 ﻿using ColorVision.UI.HotKey.GlobalHotKey;
 using ColorVision.UI.HotKey.WindowHotKey;
-using ColorVision.UI;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -19,13 +14,13 @@ namespace ColorVision.UI.HotKey
 
     public static partial class HotKeysExtension
     {
-        public static void LoadHotKeyFromAssembly<T>(this Window This) where T : IHotKey
+        public static void LoadHotKeyFromAssembly(this Window This)
         {
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(T).IsAssignableFrom(t) && !t.IsAbstract))
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IHotKey).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    if (Activator.CreateInstance(type) is T iHotKey)
+                    if (Activator.CreateInstance(type) is IHotKey iHotKey)
                     {
                         AddHotKeys(This, iHotKey.HotKeys);
                     }
