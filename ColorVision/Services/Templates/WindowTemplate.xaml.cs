@@ -20,9 +20,12 @@ namespace ColorVision.Services.Templates
     {
         public ITemplate ITemplate { get; set; }
 
-        public WindowTemplate(ITemplate template, bool IsReLoad = true)
+        private bool IsReLoad { get; set; }
+
+        public WindowTemplate(ITemplate template, bool isReLoad = true)
         {
             ITemplate = template;
+            IsReLoad = isReLoad;
             if (IsReLoad) template.Load();
             InitializeComponent();
         }
@@ -63,6 +66,7 @@ namespace ColorVision.Services.Templates
 
         private void WindowTemplate_Closed(object? sender, EventArgs e)
         {
+            if (IsReLoad) ITemplate.Load();
             ITemplate.Save();
         }
 
@@ -108,6 +112,7 @@ namespace ColorVision.Services.Templates
 
         private void Button_Save_Click(object sender, RoutedEventArgs e)
         {
+            ITemplate.Save();
             Close();
         }
 
