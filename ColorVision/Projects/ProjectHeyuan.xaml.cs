@@ -118,7 +118,7 @@ namespace ColorVision.Projects
                     {
                         ResultText.Text =  "不合格";
                         ResultText.Foreground =  Brushes.Red;
-                        HYMesManager.GetInstance().SendSn("0", "2222");
+                        HYMesManager.GetInstance().SendSn("1", "2222");
                     }
                 }
             }
