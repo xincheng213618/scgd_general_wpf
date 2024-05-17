@@ -45,7 +45,8 @@ namespace ColorVision.Services.Validate
         {
             if (sender is MenuItem menuItem && menuItem.Tag is ValidateSingle validateSingle)
             {
-                ValidateTemplateDetailDao.Instance.DeleteById(validateSingle.Model.Id);
+                ValidateTemplateDetailDao.Instance.DeleteById(validateSingle.Model.Id ,false);
+                ValidateParam.DetailModels.Remove(validateSingle.Model);
                 ValidateParam.ValidateSingles.Remove(validateSingle);
             };
         }
