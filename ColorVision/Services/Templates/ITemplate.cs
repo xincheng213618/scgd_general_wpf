@@ -10,6 +10,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
@@ -78,6 +79,11 @@ namespace ColorVision.Services.Templates
         {
 
         }
+        public virtual bool ExitsTemplateName(string templateName)
+        {
+            throw new NotImplementedException();
+        }
+
         public bool IsUserControl { get; set; }
 
         public virtual UserControl GetUserControl()
@@ -100,6 +106,8 @@ namespace ColorVision.Services.Templates
         public override int Count => TemplateParams.Count;
 
         public override object GetValue() => TemplateParams;
+
+        public override bool ExitsTemplateName(string templateName) => TemplateParams.Any(a => a.Key.Contains(templateName, StringComparison.OrdinalIgnoreCase));
         public override object GetValue(int index) => TemplateParams[index].Value;
 
         public override IEnumerable ItemsSource { get => TemplateParams; }

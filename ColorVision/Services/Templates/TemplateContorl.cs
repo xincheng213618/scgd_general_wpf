@@ -22,6 +22,10 @@ namespace ColorVision.Services.Templates
         public string DefaultCreateTemplateName { get => _DefaultCreateTemplateName; set { _DefaultCreateTemplateName = value; NotifyPropertyChanged(); } }
         private string _DefaultCreateTemplateName = ColorVision.Properties.Resource.DefaultCreateTemplateName;
 
+        public bool BatchOperate { get => _BatchOperate; set { _BatchOperate = value; NotifyPropertyChanged(); } }
+        private bool _BatchOperate;
+
+
     }
 
 

@@ -14,7 +14,8 @@ namespace ColorVision.Services.Templates
         public RelayCommand ReNameCommand { get; set; }
 
         public virtual int Id { get; set; }
-
+        public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
+        private bool _IsSelected;
         public virtual string Key { get; set; }
 
         public string Tag { get => _Tag; set { _Tag = value; NotifyPropertyChanged(); } }
@@ -52,6 +53,8 @@ namespace ColorVision.Services.Templates
             Key = keyValuePair.Key;
             Value = keyValuePair.Value;
         }
+
+
 
         [JsonIgnore]
         public override int Id { get => Value.Id; }

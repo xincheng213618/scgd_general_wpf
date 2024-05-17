@@ -11,6 +11,7 @@
         xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         ShowInTaskbar="False"
+        d:DataContext="{d:DesignInstance local:TemplateConfig}"
         Height="600" Width="700"  MinWidth="600" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>
@@ -30,10 +31,17 @@
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
             <Border Grid.Row="0" Grid.RowSpan="2" Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="0"/>
-            <DockPanel Margin="5">
-                <TextBlock Text="{x:Static properties:Resource.Filter}"  VerticalAlignment="Center" />
-                <TextBox x:Name="Searchbox"  BorderBrush="#CCCEDB" MaxLength="15" VerticalContentAlignment="Center"  TextChanged="Searchbox_TextChanged"   Margin="10,0"   VerticalAlignment="Center"/>
-            </DockPanel>
+            <Grid Margin="5">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <DockPanel Margin="0,0,5,0">
+                    <TextBlock Text="{x:Static properties:Resource.Filter}"  VerticalAlignment="Center" />
+                    <TextBox x:Name="Searchbox"  BorderBrush="#CCCEDB" MaxLength="15" VerticalContentAlignment="Center"  TextChanged="Searchbox_TextChanged"   Margin="10,0"   VerticalAlignment="Center"/>
+                </DockPanel>
+            </Grid>
+
             <ListView Grid.Row="1" x:Name="ListView1" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="0" Margin="2"  PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">
                 <ListView.Resources>
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
@@ -58,6 +66,13 @@
                                 <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                             </Style>
                         </GridView.ColumnHeaderContainerStyle>
+                        <GridViewColumn  Header="操作"  Width="40"  >
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate DataType="{x:Type local:TemplateModelBase}">
+                                    <CheckBox IsChecked="{Binding IsSelected}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
                         <GridViewColumn  Header="{x:Static properties:Resource.SerialNumber1}" >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type local:TemplateModelBase}">
