@@ -132,7 +132,7 @@ namespace ColorVision.Update
 
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            if (MessageBox.Show($"{changeLogForCurrentVersion}{Environment.NewLine} {Properties.Resource.ConfirmUpdate}?",$"{ Properties.Resource.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            if (MessageBox.Show($"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resource.ConfirmUpdate}?",$"{ Properties.Resource.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
                                 Update(LatestVersion, Path.GetTempPath());
                             }
