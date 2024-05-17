@@ -177,7 +177,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <GroupBox Header="MES" VerticalAlignment="Top" Margin="5,0">
+            <GroupBox Header="MES" d:DataContext="{d:DesignInstance local:HYMesManager}" VerticalAlignment="Top" Margin="5,0">
                 <StackPanel Margin="5">
                     <DockPanel Margin="0,2">
                         <TextBlock Text="设备序号" Width="50"/>
@@ -187,6 +187,8 @@
                         <TextBlock Text="串口号" Width="50"/>
                         <ComboBox x:Name="ComboBoxSer" />
                     </DockPanel>
+                    <Button Content="连接MES"  Click="Button_Click_1"/>
+                    <TextBlock Text="{Binding  IsConnect}"/>
                 </StackPanel>
             </GroupBox>
 

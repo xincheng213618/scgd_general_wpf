@@ -74,6 +74,7 @@ namespace ColorVision.Projects
             ListViewMes.ItemsSource = HYMesManager.GetInstance().SerialMsgs;
 
             FlowTemplate.ItemsSource = FlowParam.Params;
+            HYMesManager.GetInstance().Initialized();
         }
         private Services.Flow.FlowControl flowControl;
 
@@ -159,6 +160,9 @@ namespace ColorVision.Projects
 
         }
 
-
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            HYMesManager.GetInstance().OpenPort(ComboBoxSer.Text);
+        }
     }
 }

@@ -1,10 +1,11 @@
-﻿using System.Collections.ObjectModel;
+﻿using ColorVision.Common.MVVM;
+using System.Collections.ObjectModel;
 using System.IO.Ports;
 using System.Threading;
 
 namespace ColorVision.Projects
 {
-    public class HYMesManager
+    public class HYMesManager:ViewModelBase
     {
         private static HYMesManager _instance;
         private static readonly object _locker = new();
@@ -26,6 +27,9 @@ namespace ColorVision.Projects
         {
             serialPort = new SerialPort { };
         }
+
+        public bool IsConnect { get=> _IsConnect set { _IsConnect = value; NotifyPropertyChanged(); } }
+        private bool _IsConnect;
 
         public int OpenPort(string portName)
         {
@@ -50,6 +54,7 @@ namespace ColorVision.Projects
                             serialPort.Read(buff, 0, bytesread);
                             if (buff.Length == 8 && buff[3] == 64)
                             {
+                                IsConnect = true;
                                 serialPort.DataReceived += SerialPort_DataReceived;
                                 return 0;
                             }
