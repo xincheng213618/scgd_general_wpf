@@ -353,8 +353,8 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                             }
                         }
 
-                        List<string> bdheadersMTF = new() { "PixelPos", "PixelSize", "Shapes", "Articulation" };
-                        List<string> headersMTF = new() { "位置", "大小", "形状", "MTF" };
+                        List<string> bdheadersMTF = new() { "PixelPos", "PixelSize", "Shapes", "Articulation" , "AlgResultMTFModel.ValidateResult" };
+                        List<string> headersMTF = new() { "位置", "大小", "形状", "MTF","Value" };
 
                         if (listViewSide.View is GridView gridViewMTF)
                         {

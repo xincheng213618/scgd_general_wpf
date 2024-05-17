@@ -2,6 +2,7 @@
 using ColorVision.Services.Devices.Algorithm.Dao;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
+using System.Collections.ObjectModel;
 
 namespace ColorVision.Services.Devices.Algorithm.Views
 {
@@ -16,12 +17,17 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             Point = point;
             Articulation = articulation;
         }
+        public ObservableCollection<ValidateSingle>? ValidateSingles { get; set; }
+        public AlgResultMTFModel AlgResultMTFModel { get; set; }
 
         public MTFResultData(AlgResultMTFModel detail)
         {
+            AlgResultMTFModel = detail;
             Point = new POIPoint(detail.PoiId??-1, -1, detail.PoiName, (POIPointTypes)detail.PoiType, (int)detail.PoiX, (int)detail.PoiY, (int)detail.PoiWidth, (int)detail.PoiHeight);
             var temp = JsonConvert.DeserializeObject<MQTTMessageLib.Algorithm.MTFResultData>(detail.Value);
             Articulation = temp.Articulation;
+
+            ValidateSingles = JsonConvert.DeserializeObject<ObservableCollection<ValidateSingle>>(detail.ValidateResult);
         }
     }
 }

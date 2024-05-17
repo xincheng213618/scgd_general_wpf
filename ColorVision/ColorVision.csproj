@@ -237,7 +237,6 @@
 
   <ItemGroup>
     <Folder Include="Services\RC\Dao\" />
-    <Folder Include="Services\Templates\Validate\" />
   </ItemGroup>
 
 </Project>
