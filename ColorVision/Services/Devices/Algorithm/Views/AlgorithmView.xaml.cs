@@ -18,7 +18,6 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.Services.Dao;
 using ColorVision.UI.Sorts;
 using CVCommCore.CVAlgorithm;
 using ColorVision.UI.Views;
@@ -188,8 +187,8 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                             };
                         }
 
-                        cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes" };
-                        cieHeader = new List<string> { "名称", "位置", "大小", "形状" };
+                        cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes" , "POIPointResultModel.ValidateResult" };
+                        cieHeader = new List<string> { "名称", "位置", "大小", "形状" ,"Validate" };
 
                         if (listViewSide.View is GridView gridViewPOI)
                         {

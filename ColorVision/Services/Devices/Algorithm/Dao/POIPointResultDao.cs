@@ -1,7 +1,7 @@
 ﻿using ColorVision.MySql.ORM;
 using System.Data;
 
-namespace ColorVision.Services.Dao
+namespace ColorVision.Services.Devices.Algorithm.Dao
 {
     public class POIPointResultModel : PKModel
     {
@@ -16,6 +16,7 @@ namespace ColorVision.Services.Dao
         public int? PoiY { get; set; }
         public int? PoiWidth { get; set; }
         public int? PoiHeight { get; set; }
+        public string? ValidateResult { get; set; }
     }
 
     public class POIPointResultDao : BaseTableDao<POIPointResultModel>
@@ -26,23 +27,19 @@ namespace ColorVision.Services.Dao
         {
         }
 
-        public override POIPointResultModel GetModelFromDataRow(DataRow item)
+        public override POIPointResultModel GetModelFromDataRow(DataRow item) => new()
         {
-            POIPointResultModel model = new()
-            {
-                Id = item.Field<int>("id"),
-                Pid = item.Field<int?>("pid"),
-                PoiId = item.Field<int?>("poi_id"),
-                Value = item.Field<string>("value"),
-                PoiName = item.Field<string>("poi_name"),
-                PoiType = item.Field<sbyte>("poi_type"),
-                PoiWidth = item.Field<int?>("poi_width"),
-                PoiHeight = item.Field<int?>("poi_height"),
-                PoiX = item.Field<int?>("poi_x"),
-                PoiY = item.Field<int?>("poi_y"),
-            };
-
-            return model;
-        }
+            Id = item.Field<int>("id"),
+            Pid = item.Field<int?>("pid"),
+            PoiId = item.Field<int?>("poi_id"),
+            Value = item.Field<string>("value"),
+            PoiName = item.Field<string>("poi_name"),
+            PoiType = item.Field<sbyte>("poi_type"),
+            PoiWidth = item.Field<int>("poi_width"),
+            PoiHeight = item.Field<int>("poi_height"),
+            PoiX = item.Field<int>("poi_x"),
+            PoiY = item.Field<int>("poi_y"),
+            ValidateResult = item.Field<string?>("validate_result")
+        };
     }
 }

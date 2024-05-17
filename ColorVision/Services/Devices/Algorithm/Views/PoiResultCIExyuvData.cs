@@ -1,5 +1,5 @@
 ﻿#pragma warning disable CA1708
-using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Algorithm.Dao;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System;

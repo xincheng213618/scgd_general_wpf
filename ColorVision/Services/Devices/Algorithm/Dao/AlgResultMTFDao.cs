@@ -46,24 +46,4 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
             ValidateResult = item.Field<string?>("validate_result")
         };
     }
-
-    public class ValidateSingle
-    {
-        public ValidateRule Rule { get; set; } = new ValidateRule();
-
-        public float Value { get; set; }
-
-        public string Reslt { get; set; }
-    }
-
-
-    public class ValidateRule
-    {
-        public float Max { get; set; }
-        public float Min { get; set; }
-        public float Equal { get; set; }
-        public string RType { get; set; }
-        public int Radix { get; set; }
-    }
-
 }
