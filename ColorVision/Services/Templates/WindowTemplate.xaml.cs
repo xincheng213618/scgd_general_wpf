@@ -8,12 +8,9 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using YamlDotNet.Serialization.BufferedDeserialization;
 
 namespace ColorVision.Services.Templates
 {
-
-
     /// <summary>
     /// CalibrationTemplate.xaml 的交互逻辑
     /// </summary>
@@ -67,8 +64,7 @@ namespace ColorVision.Services.Templates
 
         private void WindowTemplate_Closed(object? sender, EventArgs e)
         {
-            if (IsReLoad) ITemplate.Load();
-            ITemplate.Save();
+            ITemplate.Load();
         }
 
         private void ListView1_PreviewMouseDoubleClick(object sender, MouseButtonEventArgs e)
