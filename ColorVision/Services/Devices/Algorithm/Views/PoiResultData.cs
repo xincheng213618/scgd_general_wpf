@@ -37,7 +37,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
     {
         public float Max { get; set; }
         public float Min { get; set; }
-        public float Equal { get; set; }
+        public string? Equal { get; set; }
         public string RType { get; set; }
         public int Radix { get; set; }
     }
