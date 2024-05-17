@@ -4,6 +4,7 @@ using ColorVision.Services.Dao;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -526,9 +527,6 @@ namespace ColorVision.Services.Templates
             //}
         }
 
-        public ObservableCollection<TemplateModelBase> TemplateModelBaseResults { get; set; } = new ObservableCollection<TemplateModelBase>();
-
-
         private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (sender is TextBox textBox)
@@ -538,24 +536,25 @@ namespace ColorVision.Services.Templates
                 if (string.IsNullOrEmpty(textBox.Text))
                 {
                     ListView1.ItemsSource = ITemplate.ItemsSource;
-
                 }
                 else
                 {
-                    TemplateModelBaseResults = new ObservableCollection<TemplateModelBase>();
-                    foreach (var item in ITemplate.ItemsSource)
-                    {
-                        if (item is TemplateModelBase template)
-                        {
-                            if (template.Key.Contains(textBox.Text))
-                                TemplateModelBaseResults.Add(template);
-                        }
-                    }
-                    ListView1.ItemsSource = TemplateModelBaseResults;
-                    if (TemplateModelBaseResults.Count == 0)
+                    var keywords = textBox.Text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                    var filteredResults = ITemplate.ItemsSource
+                        .OfType<TemplateModelBase>()
+                        .Where(template => keywords.All(keyword =>
+                            template.Key.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
+                        .ToList();
+
+                    // 更新 ListView 的数据源
+                    ListView1.ItemsSource = new ObservableCollection<TemplateModelBase>(filteredResults);
+
+                    // 显示或隐藏无结果文本
+                    if (filteredResults.Count == 0)
                     {
                         SearchNoneText.Visibility = Visibility.Visible;
-                        SearchNoneText.Text = "未找到" + textBox.Text + "相关模板";
+                        SearchNoneText.Text = $"未找到{textBox.Text}相关模板";
                     }
                 }
             }
