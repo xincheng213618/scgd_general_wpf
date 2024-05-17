@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using YamlDotNet.Serialization.BufferedDeserialization;
 
 namespace ColorVision.Services.Templates
 {
@@ -112,23 +113,30 @@ namespace ColorVision.Services.Templates
 
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
+            int oldnum = ITemplate.Count;
             CreateTemplate createWindow = new CreateTemplate(ITemplate) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
             createWindow.ShowDialog();
+            if (oldnum!= ITemplate.Count)
+            {
+                ListView1.SelectedIndex= ITemplate.Count-1;
+                if (ListView1.View is GridView gridView)
+                    GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+
+            }
         }
 
 
         private void Button_Del_Click(object sender, RoutedEventArgs e)
         {
-            TemplateDel();
-        }
-
-        public void TemplateDel()
-        {
             if (ListView1.SelectedIndex > -1)
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow() ,$"是否删除模板{ListView1.SelectedIndex + 1},删除后无法恢复!", Application.Current.MainWindow.Title, MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否删除{ITemplate.Code}模板{ITemplate.GetTemplateName(ListView1.SelectedIndex)},删除后无法恢复!", Application.Current.MainWindow.Title, MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
                 {
+                    int index = ListView1.SelectedIndex;
                     ITemplate.Delete(ListView1.SelectedIndex);
+                    if (index > ITemplate.Count)
+                        index = ITemplate.Count - 1;
+                    ListView1.SelectedIndex = index;
                 }
             }
             else
@@ -136,8 +144,6 @@ namespace ColorVision.Services.Templates
                 MessageBox.Show(Application.Current.GetActiveWindow(), "请先选择", "ColorVision");
             }
         }
-
-
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
         {

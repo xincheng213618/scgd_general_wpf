@@ -35,7 +35,7 @@
                     <TextBlock Text="{x:Static properties:Resource.Name}" MinWidth="50" />
                     <hc:ComboBox x:Name="CreateCode" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"   />
                 </DockPanel>
-                <Grid Grid.Row="1" x:Name="GridProperty" >
+                <Grid Grid.Row="1" x:Name="GridProperty" Margin="3,5">
                     <!--<hc:PropertyGrid x:Name="PropertyGrid1"   hc:TipElement.Visibility="Visible"  />-->
                     <!--<xctk:PropertyGrid   x:Name="PropertyGrid1" />-->
                     <WindowsFormsHost>

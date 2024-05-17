@@ -4,19 +4,34 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Services.Validate"
+             xmlns:properties ="clr-namespace:ColorVision.Properties"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:ValidateParam}"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid Margin="5">
         <ListView x:Name="ListView1" Grid.Row="1" ItemsSource="{Binding ValidateSingles}"  ScrollViewer.HorizontalScrollBarVisibility="Auto"  ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback">
-            <ListView.Resources >
+            <ListView.Resources>
+                <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
+                <ContextMenu x:Key="ContextMenuItem">
+                    <MenuItem Header="{x:Static properties:Resource.MenuDelete}"  Click="Button_Del_Click" Tag="{Binding .}"  />
+                </ContextMenu>
             </ListView.Resources>
             <ListView.ItemContainerStyle>
-                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
+                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
+                    <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
                 </Style>
             </ListView.ItemContainerStyle>
-            <ListView.View >
-                <GridView>
+            <ListView.View>
+                <GridView >
+                    <GridView.ColumnHeaderContainerStyle>
+                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
+                            <EventSetter Event="Click" Handler="GridViewColumnSort"/>
+                        </Style>
+                    </GridView.ColumnHeaderContainerStyle>
                     <GridViewColumn  Header="Code">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:ValidateSingle}">

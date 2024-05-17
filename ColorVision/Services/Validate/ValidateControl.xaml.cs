@@ -1,5 +1,8 @@
-﻿using System;
+﻿using ColorVision.Services.Validate.Dao;
+using ColorVision.UI.Sorts;
+using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -37,5 +40,26 @@ namespace ColorVision.Services.Validate
         {
             e.Handled = true;  
         }
+
+        private void Button_Del_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is ValidateSingle validateSingle)
+            {
+                ValidateTemplateDetailDao.Instance.DeleteById(validateSingle.Model.Id);
+                ValidateParam.ValidateSingles.Remove(validateSingle);
+            };
+        }
+
+        private void GridViewColumnSort(object sender, RoutedEventArgs e)
+        {
+
+        }
+
+        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && ListView1.View is GridView gridView)
+                GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
+        }
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
     }
 }

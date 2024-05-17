@@ -28,6 +28,12 @@ namespace ColorVision.Services.Templates
         public string Title { get; set; }
 
         public string Code { get; set; }
+        public virtual int Count { get; }
+
+        public virtual string GetTemplateName(int index)
+        {
+            throw new NotImplementedException();
+        }
 
         public virtual object GetValue()
         {
@@ -91,10 +97,14 @@ namespace ColorVision.Services.Templates
     {
         public ObservableCollection<TemplateModel<T>> TemplateParams { get; set; } = new ObservableCollection<TemplateModel<T>>();
 
+        public override int Count => TemplateParams.Count;
+
         public override object GetValue() => TemplateParams;
         public override object GetValue(int index) => TemplateParams[index].Value;
 
         public override IEnumerable ItemsSource { get => TemplateParams; }
+
+        public override string GetTemplateName(int index) => TemplateParams[index].Key;
 
         public T? CreateTemp { get; set; }
 
