@@ -219,8 +219,8 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                             };
                         }
 
-                        cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
-                        cieHeader = new List<string> { ColorVision.Properties.Resource.Name, ColorVision.Properties.Resource.Position, ColorVision.Properties.Resource.Size, ColorVision.Properties.Resource.Shape, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
+                        cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "POIPointResultModel.ValidateResult" };
+                        cieHeader = new List<string> { ColorVision.Properties.Resource.Name, ColorVision.Properties.Resource.Position, ColorVision.Properties.Resource.Size, ColorVision.Properties.Resource.Shape, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "Validate" };
 
                         if (listViewSide.View is GridView gridViewPOI_XY_UV)
                         {
@@ -252,8 +252,8 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         }
 
                         //亮度
-                        List<string> bdheadersY = new() { "Name", "PixelPos", "PixelSize", "Shapes", "Y" };
-                        List<string> headersY = new() { "名称", "位置", "大小", "形状", "Y" };
+                        List<string> bdheadersY = new() { "Name", "PixelPos", "PixelSize", "Shapes", "Y" , "POIPointResultModel.ValidateResult" };
+                        List<string> headersY = new() { "名称", "位置", "大小", "形状", "Y", "Validate" };
 
                         if (listViewSide.View is GridView gridViewY)
                         {
