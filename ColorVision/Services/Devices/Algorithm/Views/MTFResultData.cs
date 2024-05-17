@@ -1,5 +1,6 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Services.Devices.Algorithm.Dao;
+using CVCommCore;
 using CVCommCore.CVAlgorithm;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
@@ -17,7 +18,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             Point = point;
             Articulation = articulation;
         }
-        public ObservableCollection<ValidateSingle>? ValidateSingles { get; set; }
         public AlgResultMTFModel AlgResultMTFModel { get; set; }
 
         public MTFResultData(AlgResultMTFModel detail)
@@ -27,7 +27,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             var temp = JsonConvert.DeserializeObject<MQTTMessageLib.Algorithm.MTFResultData>(detail.Value);
             Articulation = temp.Articulation;
 
-            ValidateSingles = JsonConvert.DeserializeObject<ObservableCollection<ValidateSingle>>(detail.ValidateResult);
         }
     }
 }

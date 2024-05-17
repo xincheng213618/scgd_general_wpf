@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8629
 using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.Algorithm.Dao;
+using CVCommCore;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
@@ -23,25 +24,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
         }
 
     }
-    public class ValidateSingle
-    {
-        public ValidateRule Rule { get; set; } = new ValidateRule();
-
-        public float Value { get; set; }
-
-        public string Reslt { get; set; }
-    }
-
-
-    public class ValidateRule
-    {
-        public float Max { get; set; }
-        public float Min { get; set; }
-        public string? Equal { get; set; }
-        public string RType { get; set; }
-        public int Radix { get; set; }
-    }
-
 
     public class PoiResultData : ViewModelBase
     {
@@ -49,14 +31,14 @@ namespace ColorVision.Services.Devices.Algorithm.Views
         {
 
         }
-        public ObservableCollection<ValidateSingle>? ValidateSingles { get; set; }
+        public ObservableCollection<ValidateRuleResult>? ValidateSingles { get; set; }
 
         public POIPointResultModel POIPointResultModel { get; set; }
 
         public PoiResultData(POIPointResultModel pOIPointResultModel)
         {
             POIPointResultModel = pOIPointResultModel;
-            ValidateSingles = JsonConvert.DeserializeObject<ObservableCollection<ValidateSingle>>(pOIPointResultModel.ValidateResult);
+            ValidateSingles = JsonConvert.DeserializeObject<ObservableCollection<ValidateRuleResult>>(pOIPointResultModel.ValidateResult);
             Point = new POIPoint(pOIPointResultModel.PoiId??-1, -1, pOIPointResultModel.PoiName, (POIPointTypes)pOIPointResultModel.PoiType, (int)pOIPointResultModel.PoiX, (int)pOIPointResultModel.PoiY, (int)pOIPointResultModel.PoiWidth, (int)pOIPointResultModel.PoiHeight);
         }
 
