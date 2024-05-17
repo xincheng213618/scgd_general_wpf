@@ -169,7 +169,8 @@ namespace ColorVision.Services.Templates
         public override void Load() => LoadModParam(Code);
         public void LoadModParam(string ModeType)
         {
-            TemplateParams.Clear();
+            var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
+
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
                 ModMasterDao masterDao = new ModMasterDao(ModeType);
@@ -186,9 +187,16 @@ namespace ColorVision.Services.Templates
                     {
                         if (Activator.CreateInstance(typeof(T), new object[] { dbModel, smuDetails }) is T t)
                         {
-                            var TemplateModel = new TemplateModel<T>(dbModel.Name ?? "default", t);
-                            TemplateParams.Add(TemplateModel);
-
+                            if (backup.TryGetValue(t.Id ,out var model))
+                            {
+                                model.Value = t;
+                                model.Key = t.Name;
+                            }
+                            else
+                            {
+                                var templateModel = new TemplateModel<T>(dbModel.Name ?? "default", t);
+                                TemplateParams.Add(templateModel);
+                            }
                         }
                     }
                 }

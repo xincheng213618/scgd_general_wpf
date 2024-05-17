@@ -10,6 +10,7 @@ using CVCommCore;
 using NPOI.SS.Formula.Functions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 
 namespace ColorVision.Services.Flow
@@ -80,20 +81,32 @@ namespace ColorVision.Services.Flow
 
         private static ModMasterDao masterFlowDao = new(ModMasterType.Flow);
 
-        public static ObservableCollection<TemplateModel<FlowParam>> LoadFlowParam()
+        public static void LoadFlowParam()
         {
-            Params.Clear();
+            var backup = Params.ToDictionary(tp => tp.Id, tp => tp);
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
                 List<ModMasterModel> flows = masterFlowDao.GetAll(UserConfig.Instance.TenantId);
                 foreach (var dbModel in flows)
                 {
                     List<ModFlowDetailModel> flowDetails = ModFlowDetailDao.Instance.GetAllByPid(dbModel.Id);
-                    var item = new TemplateModel<FlowParam>(dbModel.Name ?? "default", new FlowParam(dbModel, flowDetails));
-                    Params.Add(item);
+                    var param = new FlowParam(dbModel, flowDetails);
+
+                    if (backup.TryGetValue(param.Id,out var model))
+                    {
+                        model.Value = param;
+                        model.Key = param.Name;
+
+                    }
+                    else
+                    {
+                        var item = new TemplateModel<FlowParam>(dbModel.Name ?? "default", param);
+                        Params.Add(item);
+                    }
+
+
                 }
             }
-            return Params;
         }
 
         public static FlowParam? AddFlowParam(string text)
