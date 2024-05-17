@@ -109,28 +109,28 @@
                             <GridViewColumn  Header="White" Width="100" >
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBox  Text="{ Binding  NumSet.White}" Width="80"/>
+                                        <TextBlock  Text="{ Binding  NumSet.White}" Width="80"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="Blue" Width="100">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBox Text="{ Binding    NumSet.Blue}" Width="80"/>
+                                        <TextBlock Text="{ Binding    NumSet.Blue}" Width="80"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="Red" Width="100">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBox Text="{ Binding   NumSet.Red}" Width="80"/>
+                                        <TextBlock Text="{ Binding   NumSet.Red}" Width="80"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="Orange" Width="100">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBox Text="{ Binding  NumSet.Orange}" Width="80"/>
+                                        <TextBlock Text="{ Binding  NumSet.Orange}" Width="80"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

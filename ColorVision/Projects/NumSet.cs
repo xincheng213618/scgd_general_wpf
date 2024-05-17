@@ -4,15 +4,15 @@ namespace ColorVision.Projects
 {
     public class NumSet :ViewModelBase
     {
-        public double White { get => _White; set { _White = value; NotifyPropertyChanged(); } }
-        private double _White;
+        public string White { get => _White; set { _White = value; NotifyPropertyChanged(); } }
+        private string _White;
 
-        public double Blue { get => _Blue; set { _Blue = value; NotifyPropertyChanged(); } }
-        private double _Blue;
+        public string Blue { get => _Blue; set { _Blue = value; NotifyPropertyChanged(); } }
+        private string _Blue;
 
-        public double Red { get => _Red; set { _Red = value; NotifyPropertyChanged(); } }
-        private double _Red;
-        public double Orange { get => _Orange; set { _Orange = value; NotifyPropertyChanged(); } }
-        private double _Orange;
+        public string Red { get => _Red; set { _Red = value; NotifyPropertyChanged(); } }
+        private string _Red;
+        public string Orange { get => _Orange; set { _Orange = value; NotifyPropertyChanged(); } }
+        private string _Orange;
     }
 }

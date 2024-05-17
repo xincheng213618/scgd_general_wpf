@@ -100,11 +100,17 @@ namespace ColorVision.Projects
                         if (Batch != null)
                         {
                             List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(Batch.Id);
+                            List<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
                             foreach (var item in POIPointResultModels)
                             {
                                 PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(item);
+                                PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                             }
+                            for (int i = 0; i < PoiResultCIExyuvDatas[0].ValidateSingles.Count; i++)
+                            {
 
+                                Results.Add(new TempResult() { Name = PoiResultCIExyuvDatas[0].ValidateSingles[i].Rule.RType.ToString(), NumSet = new NumSet() { Orange = PoiResultCIExyuvDatas[0].ValidateSingles[i].Result.ToString() } });
+                            }
 
 
                         }
