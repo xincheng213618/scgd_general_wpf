@@ -99,7 +99,7 @@
                             <GridViewColumn  Header="{x:Static properties:Resource.SerialNumber1}" Width="50">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type  local:AlgorithmResult}">
-                                        <TextBlock Text="{Binding IdShow}"/>
+                                        <TextBlock Text="{Binding Id}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
