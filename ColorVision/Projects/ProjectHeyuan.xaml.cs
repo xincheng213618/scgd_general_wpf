@@ -95,7 +95,7 @@ namespace ColorVision.Projects
                         ResultText.Text = "OK";
                         ResultText.Foreground = Brushes.Blue;
                         HYMesManager.GetInstance().SendSn("0", FlowControlData.SerialNumber);
-
+                        Results.Clear();
                         var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
                         if (Batch != null)
                         {
@@ -108,7 +108,6 @@ namespace ColorVision.Projects
                             }
                             for (int i = 0; i < PoiResultCIExyuvDatas[0].ValidateSingles.Count; i++)
                             {
-
                                 Results.Add(new TempResult() { Name = PoiResultCIExyuvDatas[0].ValidateSingles[i].Rule.RType.ToString(), NumSet = new NumSet() { Orange = PoiResultCIExyuvDatas[0].ValidateSingles[i].Result.ToString() } });
                             }
 
