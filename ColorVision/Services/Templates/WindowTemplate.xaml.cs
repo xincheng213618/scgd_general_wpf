@@ -540,7 +540,8 @@ namespace ColorVision.Services.Templates
                     var filteredResults = ITemplate.ItemsSource
                         .OfType<TemplateModelBase>()
                         .Where(template => keywords.All(keyword =>
-                            template.Key.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
+                            template.Key.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
+                            template.Id.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase)))
                         .ToList();
 
                     // 更新 ListView 的数据源
