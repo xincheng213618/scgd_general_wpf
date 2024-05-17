@@ -236,7 +236,7 @@ namespace ColorVision.Services.Flow
 
         private void Button_Click_Refresh(object sender, RoutedEventArgs e)
         {
-            FlowParam.LoadFlowParam();
+            FlowTemplate.SelectedIndex = -1;
             FlowTemplate.ItemsSource = FlowParam.Params;
             FlowTemplate.SelectedIndex = 0;
         }
