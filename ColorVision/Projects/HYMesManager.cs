@@ -28,7 +28,7 @@ namespace ColorVision.Projects
             serialPort = new SerialPort { };
         }
 
-        public bool IsConnect { get=> _IsConnect set { _IsConnect = value; NotifyPropertyChanged(); } }
+        public bool IsConnect { get => _IsConnect; set { _IsConnect = value; NotifyPropertyChanged(); } }
         private bool _IsConnect;
 
         public int OpenPort(string portName)
