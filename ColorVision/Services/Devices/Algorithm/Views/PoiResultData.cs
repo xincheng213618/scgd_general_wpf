@@ -24,25 +24,6 @@ namespace ColorVision.Services.Devices.Algorithm.Views
         }
 
     }
-    //public class ValidateSingle
-    //{
-    //    public ValidateRule Rule { get; set; }
-
-    //    public float Value { get; set; }
-
-    //    public string Reslt { get; set; }
-    //}
-
-
-    //public class ValidateRule
-    //{
-    //    public float Max { get; set; }
-    //    public float Min { get; set; }
-    //    public float Equal { get; set; }
-    //    public string RType { get; set; }
-    //    public int Radix { get; set; }
-    //}
-
 
     public class PoiResultData : ViewModelBase
     {
