@@ -57,7 +57,7 @@ namespace ColorVision.Services.Templates
             throw new NotImplementedException();
         }
 
-        public virtual void  Save()
+        public virtual void Save()
         {
 
         }
@@ -165,7 +165,6 @@ namespace ColorVision.Services.Templates
                 ModDetailDao.Instance.UpdateByPid(item.Value.Id, list);
             }
         }
-
 
         public override void Load() => LoadModParam(Code);
 
