@@ -167,7 +167,6 @@ namespace ColorVision.Services.Templates
         }
 
         public override void Load() => LoadModParam(Code);
-
         public void LoadModParam(string ModeType)
         {
             TemplateParams.Clear();
@@ -185,7 +184,12 @@ namespace ColorVision.Services.Templates
                     }
                     if (dbModel != null && smuDetails !=null)
                     {
-                        TemplateParams.Add(new TemplateModel<T>(dbModel.Name ?? "default", (T)Activator.CreateInstance(typeof(T), new object[] { dbModel, smuDetails })));
+                        if (Activator.CreateInstance(typeof(T), new object[] { dbModel, smuDetails }) is T t)
+                        {
+                            var TemplateModel = new TemplateModel<T>(dbModel.Name ?? "default", t);
+                            TemplateParams.Add(TemplateModel);
+
+                        }
                     }
                 }
             }

@@ -61,7 +61,9 @@ namespace ColorVision.Services.Templates
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
             Closed += WindowTemplate_Closed;
+
         }
+
 
         private void WindowTemplate_Closed(object? sender, EventArgs e)
         {
