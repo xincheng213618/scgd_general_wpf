@@ -1,31 +1,20 @@
-﻿using ColorVision.UI.HotKey;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.MQTT;
+using ColorVision.Services;
+using ColorVision.Services.Dao;
+using ColorVision.Services.DAO;
+using ColorVision.Services.Devices.Algorithm.Dao;
+using ColorVision.Services.Devices.Algorithm.Views;
+using ColorVision.Services.Flow;
 using ColorVision.UI;
-using ColorVision.UI.Sorts;
-using ColorVision.Update;
+using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO.Ports;
-using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Markup;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using static NPOI.HSSF.Util.HSSFColor;
-using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Services.Flow;
-using ColorVision.MQTT;
-using ColorVision.Services;
-using Panuon.WPF.UI;
-using System.Reflection.Emit;
-using FlowEngineLib;
 
 namespace ColorVision.Projects
 {
@@ -76,7 +65,7 @@ namespace ColorVision.Projects
             ListViewSetting.ItemsSource = Settings;
             Results.Add(new TempResult() { Name = "x" });
             Results.Add(new TempResult() { Name = "y" });
-            Results.Add(new TempResult() { Name = "z" });
+            Results.Add(new TempResult() { Name = "lv" });
             ListViewResult.ItemsSource = Results;
 
             ComboBoxSer.ItemsSource = SerialPort.GetPortNames();
@@ -93,23 +82,32 @@ namespace ColorVision.Projects
         private void FlowControl_FlowCompleted(object? sender, EventArgs e)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
-            if (sender != null)
-            {
-                FlowControlData FlowControlData = (FlowControlData)sender;
-                ServiceManager.GetInstance().ProcResult(FlowControlData);
-            }
             handler?.Close();
             if (sender != null)
             {
                 FlowControlData FlowControlData = (FlowControlData)sender;
 
+                
                 if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                 {
                     if (FlowControlData.EventName == "Completed")
                     {
                         ResultText.Text = "OK";
                         ResultText.Foreground = Brushes.Blue;
-                        HYMesManager.GetInstance().SendSn("0", "2222");
+                        HYMesManager.GetInstance().SendSn("0", FlowControlData.SerialNumber);
+
+                        var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
+                        if (Batch != null)
+                        {
+                            List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(Batch.Id);
+                            foreach (var item in POIPointResultModels)
+                            {
+                                PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(item);
+                            }
+
+
+
+                        }
                     }
                     else
                     {

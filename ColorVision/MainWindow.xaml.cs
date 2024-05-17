@@ -232,9 +232,7 @@ namespace ColorVision
                 log.Info($"{DateTime.Now}:EnsureLocalInfile {ex.Message} ");
 
             }
-
         }
-
 
         public async Task CheckCertificate()
         {
