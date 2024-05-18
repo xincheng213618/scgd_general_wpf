@@ -72,7 +72,7 @@
                                     <CheckBox IsChecked="{Binding IsSelected}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
+                        </GridViewColumn>  
                         <GridViewColumn  Header="{x:Static properties:Resource.SerialNumber1}" >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type local:TemplateModelBase}">
@@ -80,7 +80,7 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="{x:Static properties:Resource.Name}" Width="130">
+                        <GridViewColumn Header="{x:Static properties:Resource.Name}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type local:TemplateModelBase}">
                                     <DockPanel Height="20">

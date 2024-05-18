@@ -209,12 +209,8 @@ namespace ColorVision.Services.Templates
                 return;
             }
 
+            ITemplate.Export(ListView1.SelectedIndex);
 
-            //switch (TemplateType)
-            //{
-            //    case TemplateType.FlowParam:
-            //        if (true)
-            //        {
             //            System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
             //            ofd.DefaultExt = "stn";
             //            ofd.Filter = "*.stn|*.stn";
@@ -224,32 +220,14 @@ namespace ColorVision.Services.Templates
             //            ofd.FileName = FlowParam.Params[ListView1.SelectedIndex].Key;
             //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
             //            Tool.Base64ToFile(FlowParam.Params[ListView1.SelectedIndex].Value.DataBase64, ofd.FileName);
-            //        }
 
-            //        break;
-            //    default:
-            //        if (true)
-            //        {
-            //            //System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
-            //            //ofd.DefaultExt = "cfg";
-            //            //ofd.Filter = "*.cfg|*.cfg";
-            //            //ofd.AddExtension = false;
-            //            //ofd.RestoreDirectory = true;
-            //            //ofd.Title = "导出流程";
-            //            //ofd.FileName = TemplateParams[ListView1.SelectedIndex].Key;
-            //            //if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            //            //if (TemplateParams[ListView1.SelectedIndex].GetValue() is ViewModelBase viewModelBase)
-            //            //{
-            //            //    viewModelBase.ToJsonNFile(ofd.FileName);
-            //            //}
-            //        }
-            //        break;
-            //}
-       
+
         }
 
         private void Button_Import_Click(object sender, RoutedEventArgs e)
         {
+            ITemplate.Import();
+
             //switch (TemplateType)
             //{
             //    case TemplateType.FlowParam:

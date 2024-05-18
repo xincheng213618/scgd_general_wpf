@@ -1,15 +1,19 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
+using ColorVision.Common.MVVM.Json;
 using ColorVision.Common.Utilities;
+using ColorVision.Extension;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.UserSpace;
+using Newtonsoft.Json;
 using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -58,6 +62,15 @@ namespace ColorVision.Services.Templates
         }
 
         public virtual void Save()
+        {
+
+        }
+
+        public virtual void Export(int index)
+        {
+
+        }
+        public virtual void Import()
         {
 
         }
@@ -226,6 +239,24 @@ namespace ColorVision.Services.Templates
             }
         }
 
+
+        public override void Export(int index)
+        {
+            System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
+            ofd.DefaultExt = "cfg";
+            ofd.Filter = "*.cfg|*.cfg";
+            ofd.AddExtension = false;
+            ofd.RestoreDirectory = true;
+            ofd.Title = "导出模板";
+            ofd.FileName = TemplateParams[index].Key;
+            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            TemplateParams[index].ToJsonFile(ofd.FileName);
+        }
+
+        public override void Import()
+        {
+            MessageBox.Show(Application.Current.GetActiveWindow(),"暂时不支持导入模板","ColorVision");
+        }
 
 
         public override void Create(string templateName)
