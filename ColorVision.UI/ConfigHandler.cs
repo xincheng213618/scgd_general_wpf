@@ -1,9 +1,114 @@
 ﻿using System.IO;
 using System.Text.Json;
+using static System.Windows.Forms.Design.AxImporter;
 
 namespace ColorVision.UI
 {
-    public class ConfigHandler
+    public class ConfigBase<T> where T : IConfig
+    {
+        internal readonly JsonSerializerOptions _options = new JsonSerializerOptions { WriteIndented = true };
+
+        public Dictionary<Type, IConfig> Configs { get; set; }
+
+        public T1 GetRequiredService<T1>() where T1:T
+        { 
+            var type = typeof(T1);
+            if (Configs.TryGetValue(type, out var service))
+            {
+                return (T1)service;
+            }
+            throw new InvalidOperationException($"Service of type {type.FullName} not registered.");
+        }
+
+        public void LoadDefaultConfigs()
+        {
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                foreach (var type in assembly.GetTypes().Where(t => typeof(T).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is T config)
+                    {
+                        Configs[type] = config;
+                    }
+                }
+            }
+        }
+
+        public virtual void SaveConfigs(string fileName)
+        {
+            using (var outputStream = File.Create(fileName))
+            {
+                using (var jsonWriter = new Utf8JsonWriter(outputStream, new JsonWriterOptions { Indented = true }))
+                {
+                    jsonWriter.WriteStartObject();
+                    foreach (var configPair in Configs)
+                    {
+                        jsonWriter.WritePropertyName(configPair.Key.Name);
+                        if (configPair.Value is IConfigSecure configSecure)
+                        {
+                            configSecure.Encryption();
+                            JsonSerializer.Serialize(jsonWriter, configPair.Value, configPair.Key, _options);
+                            configSecure.Decrypt();
+                        }
+                        else
+                        {
+                            JsonSerializer.Serialize(jsonWriter, configPair.Value, configPair.Key, _options);
+                        }
+                    }
+                    jsonWriter.WriteEndObject();
+                }
+            }
+        }
+
+
+        public virtual void LoadConfigs(string fileName)
+        {
+            Configs = new Dictionary<Type, IConfig>();
+            if (File.Exists(fileName))
+            {
+                try
+                {
+                    string json = File.ReadAllText(fileName);
+                    var jsonDoc = JsonDocument.Parse(json);
+                    foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+                    {
+                        foreach (var type in assembly.GetTypes())
+                        {
+                            if (typeof(IConfig).IsAssignableFrom(type) && !type.IsInterface)
+                            {
+                                var configName = type.Name;
+                                if (jsonDoc.RootElement.TryGetProperty(configName, out var configElement))
+                                {
+                                    if (JsonSerializer.Deserialize(configElement.GetRawText(), type, _options) is IConfig config)
+                                    {
+                                        Configs[type] = config;
+                                    }
+                                }
+                                else
+                                {
+                                    if (Activator.CreateInstance(type) is IConfig config)
+                                    {
+                                        Configs[type] = config;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    LoadDefaultConfigs();
+                }
+            }
+            else
+            {
+                LoadDefaultConfigs();
+            }
+        }
+    }
+
+
+    public class ConfigHandler:ConfigBase<IConfig>
     {
         private static ConfigHandler _instance;
         private static readonly object _locker = new();
@@ -14,10 +119,7 @@ namespace ColorVision.UI
 
         public ConfigHandler()
         {
-            _options = new JsonSerializerOptions
-            {
-                WriteIndented = true, // 美化输出
-            };
+
 
             if (Directory.Exists("Config"))
             {
@@ -42,62 +144,31 @@ namespace ColorVision.UI
             };
         }
 
-
-        private readonly JsonSerializerOptions _options;
-        public T GetRequiredService<T>() where T : IConfig
-        {
-            var type = typeof(T);
-            if (Configs.TryGetValue(type, out var service))
-            {
-                return (T)service;
-            }
-            throw new InvalidOperationException($"Service of type {type.FullName} not registered.");
-        }
-
-        public Dictionary<Type, IConfig> Configs { get; set; }
-
         public void SaveConfigs() => SaveConfigs(DIFile);
 
-        public void SaveConfigs(string fileName)
+        public override void SaveConfigs(string fileName)
         {
-            using (var outputStream = File.Create(fileName))
+            using var outputStream = File.Create(fileName);
+            using var jsonWriter = new Utf8JsonWriter(outputStream, new JsonWriterOptions { Indented = true });
+            jsonWriter.WriteStartObject();
+            foreach (var configPair in Configs)
             {
-                using (var jsonWriter = new Utf8JsonWriter(outputStream, new JsonWriterOptions { Indented = true }))
+                jsonWriter.WritePropertyName(configPair.Key.Name);
+                if (configPair.Value is IConfigSecure configSecure)
                 {
-                    jsonWriter.WriteStartObject();
-                    foreach (var configPair in Configs)
-                    {
-                        jsonWriter.WritePropertyName(configPair.Key.Name);
-                        if (configPair.Value is IConfigSecure  configSecure)
-                        {
-                            configSecure.Encryption();
-                            JsonSerializer.Serialize(jsonWriter, configPair.Value, configPair.Key, _options);
-                            configSecure.Decrypt();
-                        }
-                        else
-                        {
-                            JsonSerializer.Serialize(jsonWriter, configPair.Value, configPair.Key, _options);
-                        }
-                    }
-                    jsonWriter.WriteEndObject();
+                    configSecure.Encryption();
+                    JsonSerializer.Serialize(jsonWriter, configPair.Value, configPair.Key, _options);
+                    configSecure.Decrypt();
+                }
+                else
+                {
+                    JsonSerializer.Serialize(jsonWriter, configPair.Value, configPair.Key, _options);
                 }
             }
-        }
-        private void LoadDefaultConfigs()
-        {
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(IConfig).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is IConfig config)
-                    {
-                        Configs[type] = config;
-                    }
-                }
-            }
+            jsonWriter.WriteEndObject();
         }
 
-        public void LoadConfigs(string fileName)
+        public override void LoadConfigs(string fileName)
         {
             Configs = new Dictionary<Type, IConfig>();
             if (File.Exists(fileName))
@@ -145,7 +216,6 @@ namespace ColorVision.UI
             {
                 LoadDefaultConfigs();
             }
-
         }
 
     }

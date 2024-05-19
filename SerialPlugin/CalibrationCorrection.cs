@@ -20,6 +20,8 @@ namespace ColorVision.Tools
 
         public RelayCommand Command => new(A => Execute());
 
+        public Visibility Visibility => Visibility.Visible;
+
         private static void Execute()
         {
             MessageBox.Show("1");
