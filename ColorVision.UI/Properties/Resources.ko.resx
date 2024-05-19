@@ -183,4 +183,13 @@
   <data name="MenuLanguage" xml:space="preserve">
     <value>언어(_L)</value>
   </data>
+  <data name="Theme" xml:space="preserve">
+    <value>테마</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>UI 언어</value>
+  </data>
+  <data name="AutoSwitchSelectedView" xml:space="preserve">
+    <value>선택한 보기를 자동으로 전환</value>
+  </data>
 </root>

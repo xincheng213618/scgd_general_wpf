@@ -183,4 +183,13 @@
   <data name="MenuLanguage" xml:space="preserve">
     <value>Язык(Л)</value>
   </data>
+  <data name="Theme" xml:space="preserve">
+    <value>тема</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>язык пользовательского интерфейса</value>
+  </data>
+  <data name="AutoSwitchSelectedView" xml:space="preserve">
+    <value>Автоматически переключать выбранные представления</value>
+  </data>
 </root>

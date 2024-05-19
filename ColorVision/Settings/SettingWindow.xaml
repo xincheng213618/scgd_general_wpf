@@ -58,22 +58,33 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
         </Style>
+        <Style TargetType="{x:Type ComboBox}" BasedOn="{StaticResource ComboBox.Small}">
+            <Setter Property="Width" Value="150"/>
+        </Style>
+        <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Opacity" Value="0.8" />
+                    <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
+                </Trigger>
+            </Style.Triggers>
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
     </Window.Resources>
     <Grid>
         <TabControl TabStripPlacement="Left" Background="Transparent" BorderThickness="1,0,0,0"  Style="{StaticResource  TabControlBaseStyle}">
             <TabControl.Resources>
+                <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
+                    <Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Opacity" Value="0.8" />
+                            <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
+                        </Trigger>
+                    </Style.Triggers>
+                    <Setter Property="Background" Value="Transparent"/>
+                </Style>
             </TabControl.Resources>
-            <TabItem  x:Name="UniversalTabItem" MinWidth="100" Header="{x:Static properties:Resource.GeneralSettings}" >
-                <TabItem.Style>
-                    <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
-                        <Style.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
-                            </Trigger>
-                        </Style.Triggers>
-                        <Setter Property="Background" Value="Transparent"/>
-                    </Style>
-                </TabItem.Style>
+            <TabItem  x:Name="UniversalTabItem" Background="Transparent" MinWidth="100" Header="{x:Static properties:Resource.GeneralSettings}" >
                 <Grid Background="{DynamicResource GlobalBorderBrush}">
                     <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
                         <GroupBox.Header>
@@ -81,7 +92,7 @@
                         </GroupBox.Header>
                         <ScrollViewer  HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                             <Border Style="{StaticResource BorderModuleArea}">
-                                <StackPanel Margin="5">
+                                <StackPanel x:Name="UniversalStackPanel" Margin="5">
                                     <DockPanel Margin="5" ToolTip="模板数据保存Mysql数据库">
                                         <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding MySqlSetting.IsUseMySql}"/>
                                         <TextBlock Text="{x:Static properties:Resource.EnableDatabase}"/>
@@ -118,30 +129,8 @@
                                         <TextBlock Text="{x:Static properties:Resource.TbSettingsStartBoot}"/>
                                     </DockPanel>
                                     <DockPanel  Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding MainWindowConfig.IsRestoreWindow}"/>
-                                        <TextBlock Text="{x:Static properties:Resource.StartRecoverUILayout}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding ViewConfig.IsAutoSelect}"/>
-                                        <TextBlock Text="{x:Static properties:Resource.AutoSwitchSelectedView}"/>
-                                    </DockPanel>
-                                    <DockPanel  Margin="5">
-                                        <hc:ComboBox x:Name="cmbloglevel" Text="{Binding SoftwareSetting.LogLevel}" hc:InfoElement.Placeholder="Level"  DockPanel.Dock="Right"  Style="{StaticResource ComboBox.Small}" Width="150"  />
+                                        <hc:ComboBox x:Name="cmbloglevel" Text="{Binding SoftwareSetting.LogLevel}" Style="{StaticResource ComboBox.Small}" DockPanel.Dock="Right"  Width="150"/>
                                         <TextBlock Text="{x:Static properties:Resource.LogLevel}"/>
-                                    </DockPanel>
-                                    <DockPanel  Margin="5" >
-                                        <hc:ComboBox x:Name="cmtheme" SelectedValue="{Binding ThemeConfig.Theme}" hc:InfoElement.Placeholder="{x:Static properties:Resource.Theme}"  DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}" Width="150"  />
-                                        <TextBlock Text="{x:Static properties:Resource.Theme}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding ThemeConfig.TransparentWindow}"/>
-                                        <TextBlock Text="{x:Static properties:Resource.TransparentWindow}"/>
-                                    </DockPanel>
-
-
-                                    <DockPanel  Margin="5" x:Name="lauagDock" >
-                                        <hc:ComboBox x:Name="cmlauage" SelectedValue="{Binding UICulture}" hc:InfoElement.Placeholder="{x:Static properties:Resource.Language}"  DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}" Width="150" />
-                                        <TextBlock Text="{x:Static properties:Resource.Language}"/>
                                     </DockPanel>
                                     <DockPanel  Margin="5">
                                         <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding AutoUpdateConfig.IsAutoUpdate}"/>
@@ -163,18 +152,7 @@
                     </GroupBox>
                 </Grid>
             </TabItem>
-            <TabItem  Header="{x:Static properties:Resource.ProjectSettings}" >
-                <TabItem.Style>
-                    <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
-                        <Style.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Opacity" Value="0.8" />
-                                <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
-                            </Trigger>
-                        </Style.Triggers>
-                        <Setter Property="Background" Value="Transparent"/>
-                    </Style>
-                </TabItem.Style>
+            <TabItem  Header="{x:Static properties:Resource.ProjectSettings}"   Background="Transparent" >
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="{DynamicResource GlobalBorderBrush}" VerticalScrollBarVisibility="Auto" >
                     <StackPanel>
                         <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
@@ -225,18 +203,7 @@
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem  Header="MQTT">
-                <TabItem.Style>
-                    <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
-                        <Style.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Opacity" Value="0.8" />
-                                <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
-                            </Trigger>
-                        </Style.Triggers>
-                        <Setter Property="Background" Value="Transparent"/>
-                    </Style>
-                </TabItem.Style>
+            <TabItem  Header="MQTT"  Background="Transparent" >
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="{DynamicResource GlobalBorderBrush}" VerticalScrollBarVisibility="Auto" >
                     <StackPanel>
                         <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
@@ -264,18 +231,7 @@
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem  Header="{x:Static properties:Resource.PerformanceTest}" >
-                <TabItem.Style>
-                    <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
-                        <Style.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Opacity" Value="0.8" />
-                                <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
-                            </Trigger>
-                        </Style.Triggers>
-                        <Setter Property="Background" Value="Transparent"/>
-                    </Style>
-                </TabItem.Style>
+            <TabItem  Header="{x:Static properties:Resource.PerformanceTest}"   Background="Transparent" >
                 <Grid Background="{DynamicResource GlobalBorderBrush}">
                     <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
                         <GroupBox.Header>
@@ -353,24 +309,12 @@
                 </Grid>
             </TabItem>
 
-            <TabItem  Header="{x:Static properties:Resource.HotKeys}">
-                <TabItem.Style>
-                    <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
-                        <Style.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Opacity" Value="0.8" />
-                                <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
-                            </Trigger>
-                        </Style.Triggers>
-                        <Setter Property="Background" Value="Transparent"/>
-                    </Style>
-                </TabItem.Style>
+            <TabItem  Header="{x:Static properties:Resource.HotKeys}"  Background="Transparent" >
                 <Grid Background="{DynamicResource GlobalBorderBrush}">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <TextBox  Width="1" Height="0" Margin="0,-200,0,0"/>
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled"  VerticalScrollBarVisibility="Auto" >
                         <StackPanel>
                             <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >

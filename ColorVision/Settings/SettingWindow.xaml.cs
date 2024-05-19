@@ -1,23 +1,20 @@
-﻿using ColorVision.Common.Extension;
-using ColorVision.UI.HotKey;
-using ColorVision.UI.Languages;
-using ColorVision.MQTT;
+﻿using ColorVision.MQTT;
 using ColorVision.MySql;
+using ColorVision.Services.Msg;
 using ColorVision.Services.RC;
+using ColorVision.Solution;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
+using ColorVision.UI.Configs;
+using ColorVision.UI.HotKey;
 using System;
-using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.Services.Msg;
-using ColorVision.Solution;
 
 namespace ColorVision.Settings
 {
@@ -53,42 +50,45 @@ namespace ColorVision.Settings
                 cmbloglevel.Items.Add(it);
             });
 
-            cmtheme.ItemsSource = from e1 in Enum.GetValues(typeof(Theme)).Cast<Theme>()
-                                  select new KeyValuePair<Theme, string>(e1, Properties.Resource.ResourceManager.GetString(e1.ToDescription(), CultureInfo.CurrentUICulture)??"");
 
-            cmtheme.SelectedValuePath = "Key";
-            cmtheme.DisplayMemberPath = "Value";
-            cmtheme.SelectionChanged += Cmtheme_SelectionChanged;
+            LoadIConfigSetting();
+        }
 
-            
-            if (LanguageManager.Current.Languages.Count <= 1)
-                lauagDock.Visibility = Visibility.Collapsed;
 
-            cmlauage.ItemsSource = from e1 in LanguageManager.Current.Languages
-                                   select new KeyValuePair<string, string>(e1, LanguageManager.keyValuePairs.TryGetValue(e1, out string value) ? value : e1);
-            cmlauage.SelectedValuePath = "Key";
-            cmlauage.DisplayMemberPath = "Value";
-
-            string temp = Thread.CurrentThread.CurrentUICulture.Name;
-
-            cmlauage.SelectionChanged += (s, e) =>
+        public void LoadIConfigSetting()
+        {
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                if (cmlauage.SelectedValue is string str)
+                foreach (var type in assembly.GetTypes().Where(t => typeof(IConfigSetting).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    if (!LanguageManager.Current.LanguageChange(str))
+                    if (Activator.CreateInstance(type) is IConfigSetting configSetting)
                     {
-                        LanguageConfig.Instance.UICulture = temp;
+                        if (configSetting.Type == ConfigSettingType.Bool)
+                        {
+                            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(5) };
+                            Wpf.Ui.Controls.ToggleSwitch toggleSwitch = new ();
+                            toggleSwitch.SetBinding(Wpf.Ui.Controls.ToggleSwitch.IsCheckedProperty, new Binding(configSetting.BindingName));
+                            toggleSwitch.DataContext = configSetting.Source;
+                            DockPanel.SetDock(toggleSwitch, Dock.Right);
+                            dockPanel.Children.Add(toggleSwitch);
+                            dockPanel.Children.Add(new TextBlock() { Text = configSetting.Name });
+                            UniversalStackPanel.Children.Add(dockPanel);
+                        }
+                        if (configSetting.Type == ConfigSettingType.ComboBox)
+                        {
+                            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(5) };
+                            ComboBox comboBox = configSetting.ComboBox;
+                            DockPanel.SetDock(comboBox, Dock.Right);
+                            dockPanel.Children.Add(comboBox);
+                            dockPanel.Children.Add(new TextBlock() { Text = configSetting.Name });
+                            UniversalStackPanel.Children.Add(dockPanel);
+                        }
                     }
                 }
-            };
-
-            lauagDock.DataContext = LanguageConfig.Instance;
+            }
         }
 
-        private void Cmtheme_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            Application.Current.ApplyTheme(ThemeConfig.Instance.Theme);
-        }
+
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {

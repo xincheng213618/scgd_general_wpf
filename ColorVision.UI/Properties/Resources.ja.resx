@@ -183,4 +183,13 @@
   <data name="MenuLanguage" xml:space="preserve">
     <value>言語(_L)</value>
   </data>
+  <data name="Theme" xml:space="preserve">
+    <value>テーマ</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>言語</value>
+  </data>
+  <data name="AutoSwitchSelectedView" xml:space="preserve">
+    <value>選択したビューを自動的に切り替える</value>
+  </data>
 </root>

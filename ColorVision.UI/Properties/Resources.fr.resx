@@ -183,4 +183,13 @@
   <data name="MenuLanguage" xml:space="preserve">
     <value>Langue(L)</value>
   </data>
+  <data name="Theme" xml:space="preserve">
+    <value>thème</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>langue de l'interface utilisateur</value>
+  </data>
+  <data name="AutoSwitchSelectedView" xml:space="preserve">
+    <value>Changer automatiquement les vues sélectionnées</value>
+  </data>
 </root>

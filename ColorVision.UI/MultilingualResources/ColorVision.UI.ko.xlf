@@ -7,6 +7,10 @@
           <source>自动调整列宽</source>
           <target state="new">열 너비 자동 조정</target>
         </trans-unit>
+        <trans-unit id="AutoSwitchSelectedView" translate="yes" xml:space="preserve">
+          <source>自动切换选中视图</source>
+          <target state="new">선택한 보기를 자동으로 전환</target>
+        </trans-unit>
         <trans-unit id="GlobalMode" translate="yes" xml:space="preserve">
           <source>全局</source>
           <target state="new">글로벌</target>
@@ -26,6 +30,10 @@
         <trans-unit id="HotkeyNormal" translate="yes" xml:space="preserve">
           <source>正常</source>
           <target state="new">정상</target>
+        </trans-unit>
+        <trans-unit id="Language" translate="yes" xml:space="preserve">
+          <source>用户界面语言</source>
+          <target state="new">UI 언어</target>
         </trans-unit>
         <trans-unit id="LanguageResartSign" translate="yes" xml:space="preserve">
           <source>您必须重新启动才能使用新的语言设置</source>
@@ -58,6 +66,10 @@
         <trans-unit id="MenuTool" translate="yes" xml:space="preserve">
           <source>工具(_T)</source>
           <target state="new">도구 (_T)</target>
+        </trans-unit>
+        <trans-unit id="Theme" translate="yes" xml:space="preserve">
+          <source>主题</source>
+          <target state="new">테마</target>
         </trans-unit>
         <trans-unit id="UseSystem" translate="yes" xml:space="preserve">
           <source>跟随系统</source>

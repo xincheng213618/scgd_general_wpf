@@ -153,4 +153,10 @@
   <data name="ThemeUseSystem" xml:space="preserve">
     <value>システムのテーマを使用する</value>
   </data>
+  <data name="Language" xml:space="preserve">
+    <value>言語</value>
+  </data>
+  <data name="TransparentWindow" xml:space="preserve">
+    <value>透明な窓</value>
+  </data>
 </root>

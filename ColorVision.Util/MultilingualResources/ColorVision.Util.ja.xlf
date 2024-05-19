@@ -7,6 +7,10 @@
           <source>关闭</source>
           <target state="new">キャンセル</target>
         </trans-unit>
+        <trans-unit id="Language" translate="yes" xml:space="preserve">
+          <source>用户界面语言</source>
+          <target state="new">言語</target>
+        </trans-unit>
         <trans-unit id="Maximize" translate="yes" xml:space="preserve">
           <source>最大化</source>
           <target state="new">最大化</target>
@@ -50,6 +54,10 @@
         <trans-unit id="ThemeUseSystem" translate="yes" xml:space="preserve">
           <source>跟随系统</source>
           <target state="new">システムのテーマを使用する</target>
+        </trans-unit>
+        <trans-unit id="TransparentWindow" translate="yes" xml:space="preserve">
+          <source>透明窗口</source>
+          <target state="new">透明な窓</target>
         </trans-unit>
       </group>
     </body>

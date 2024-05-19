@@ -70,6 +70,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 自动切换选中视图 的本地化字符串。
+        /// </summary>
+        public static string AutoSwitchSelectedView {
+            get {
+                return ResourceManager.GetString("AutoSwitchSelectedView", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 英语 的本地化字符串。
         /// </summary>
         public static string en {
@@ -151,6 +160,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 用户界面语言 的本地化字符串。
+        /// </summary>
+        public static string Language {
+            get {
+                return ResourceManager.GetString("Language", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 您必须重新启动才能使用新的语言设置 的本地化字符串。
         /// </summary>
         public static string LanguageResartSign {
@@ -228,6 +246,15 @@ namespace ColorVision.UI.Properties {
         public static string ru {
             get {
                 return ResourceManager.GetString("ru", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 主题 的本地化字符串。
+        /// </summary>
+        public static string Theme {
+            get {
+                return ResourceManager.GetString("Theme", resourceCulture);
             }
         }
         

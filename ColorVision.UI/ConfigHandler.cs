@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 namespace ColorVision.UI
 {
+
     public class ConfigBase<T> where T : IConfig
     {
         internal readonly JsonSerializerSettings JsonSerializerSettings  = new JsonSerializerSettings { Formatting = Formatting.Indented };

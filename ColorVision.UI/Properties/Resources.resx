@@ -163,4 +163,13 @@
   <data name="MenuLanguage" xml:space="preserve">
     <value>语言(_L)</value>
   </data>
+  <data name="Theme" xml:space="preserve">
+    <value>主题</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>用户界面语言</value>
+  </data>
+  <data name="AutoSwitchSelectedView" xml:space="preserve">
+    <value>自动切换选中视图</value>
+  </data>
 </root>

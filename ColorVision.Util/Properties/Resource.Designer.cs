@@ -70,6 +70,15 @@ namespace ColorVision.Util.Properties {
         }
         
         /// <summary>
+        ///   查找类似 用户界面语言 的本地化字符串。
+        /// </summary>
+        public static string Language {
+            get {
+                return ResourceManager.GetString("Language", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 最大化 的本地化字符串。
         /// </summary>
         public static string Maximize {
@@ -165,6 +174,15 @@ namespace ColorVision.Util.Properties {
         public static string ThemeUseSystem {
             get {
                 return ResourceManager.GetString("ThemeUseSystem", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 透明窗口 的本地化字符串。
+        /// </summary>
+        public static string TransparentWindow {
+            get {
+                return ResourceManager.GetString("TransparentWindow", resourceCulture);
             }
         }
     }

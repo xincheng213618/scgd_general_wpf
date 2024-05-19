@@ -153,4 +153,10 @@
   <data name="ThemeUseSystem" xml:space="preserve">
     <value>시스템 테마 사용</value>
   </data>
+  <data name="Language" xml:space="preserve">
+    <value>UI 언어</value>
+  </data>
+  <data name="TransparentWindow" xml:space="preserve">
+    <value>투명한 창</value>
+  </data>
 </root>

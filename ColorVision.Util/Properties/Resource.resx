@@ -153,4 +153,10 @@
   <data name="ThemeUseSystem" xml:space="preserve">
     <value>跟随系统</value>
   </data>
+  <data name="Language" xml:space="preserve">
+    <value>用户界面语言</value>
+  </data>
+  <data name="TransparentWindow" xml:space="preserve">
+    <value>透明窗口</value>
+  </data>
 </root>

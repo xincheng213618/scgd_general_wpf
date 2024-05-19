@@ -1,13 +1,4 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MySql;
-using ColorVision.Services.RC;
-using ColorVision.UI;
-using log4net;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+﻿using System.Collections.Generic;
 
 namespace ColorVision.Settings
 {

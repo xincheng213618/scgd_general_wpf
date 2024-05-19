@@ -7,6 +7,10 @@
           <source>自动调整列宽</source>
           <target state="new">Автоматически регулировать ширину столбцов</target>
         </trans-unit>
+        <trans-unit id="AutoSwitchSelectedView" translate="yes" xml:space="preserve">
+          <source>自动切换选中视图</source>
+          <target state="new">Автоматически переключать выбранные представления</target>
+        </trans-unit>
         <trans-unit id="GlobalMode" translate="yes" xml:space="preserve">
           <source>全局</source>
           <target state="new">общая ситуация</target>
@@ -26,6 +30,10 @@
         <trans-unit id="HotkeyNormal" translate="yes" xml:space="preserve">
           <source>正常</source>
           <target state="new">нормальный</target>
+        </trans-unit>
+        <trans-unit id="Language" translate="yes" xml:space="preserve">
+          <source>用户界面语言</source>
+          <target state="new">язык пользовательского интерфейса</target>
         </trans-unit>
         <trans-unit id="LanguageResartSign" translate="yes" xml:space="preserve">
           <source>您必须重新启动才能使用新的语言设置</source>
@@ -58,6 +66,10 @@
         <trans-unit id="MenuTool" translate="yes" xml:space="preserve">
           <source>工具(_T)</source>
           <target state="new">Инструмент(Т)</target>
+        </trans-unit>
+        <trans-unit id="Theme" translate="yes" xml:space="preserve">
+          <source>主题</source>
+          <target state="new">тема</target>
         </trans-unit>
         <trans-unit id="UseSystem" translate="yes" xml:space="preserve">
           <source>跟随系统</source>

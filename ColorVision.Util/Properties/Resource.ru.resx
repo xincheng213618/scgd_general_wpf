@@ -153,4 +153,10 @@
   <data name="ThemeUseSystem" xml:space="preserve">
     <value>Следуйте системе</value>
   </data>
+  <data name="Language" xml:space="preserve">
+    <value>язык пользовательского интерфейса</value>
+  </data>
+  <data name="TransparentWindow" xml:space="preserve">
+    <value>прозрачное окно</value>
+  </data>
 </root>

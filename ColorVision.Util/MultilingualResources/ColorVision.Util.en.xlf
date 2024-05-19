@@ -7,6 +7,10 @@
           <source>关闭</source>
           <target state="new">Close</target>
         </trans-unit>
+        <trans-unit id="Language" translate="yes" xml:space="preserve">
+          <source>用户界面语言</source>
+          <target state="new">Language</target>
+        </trans-unit>
         <trans-unit id="Maximize" translate="yes" xml:space="preserve">
           <source>最大化</source>
           <target state="new">Maximize</target>
@@ -50,6 +54,10 @@
         <trans-unit id="ThemeUseSystem" translate="yes" xml:space="preserve">
           <source>跟随系统</source>
           <target state="new">UseSystem</target>
+        </trans-unit>
+        <trans-unit id="TransparentWindow" translate="yes" xml:space="preserve">
+          <source>透明窗口</source>
+          <target state="new">Transparent window</target>
         </trans-unit>
       </group>
     </body>
