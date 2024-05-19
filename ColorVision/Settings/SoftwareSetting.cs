@@ -1,12 +1,15 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
 using log4net;
 using log4net.Core;
 using log4net.Repository.Hierarchy;
 
 namespace ColorVision.Settings
 {
-    public partial class SoftwareSetting :ViewModelBase
+    public partial class SoftwareSetting :ViewModelBase,IConfig
     {
+        public static SoftwareSetting Instance => ConfigHandler.GetInstance().GetRequiredService<SoftwareSetting>();
+
         private static readonly ILog log = LogManager.GetLogger(typeof(SoftwareSetting));
 
         public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; NotifyPropertyChanged(); } }
@@ -37,6 +40,7 @@ namespace ColorVision.Settings
                 log.Info("更新Log4Net 日志级别：" + value);
             }
         }
-
+        public string? Version { get => _Version; set { _Version = value; NotifyPropertyChanged(); } }
+        private string? _Version = string.Empty;
     }
 }

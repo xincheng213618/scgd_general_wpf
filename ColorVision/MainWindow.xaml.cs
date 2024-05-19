@@ -2,9 +2,8 @@
 using ColorVision.Common.Utilities;
 using ColorVision.MQTT;
 using ColorVision.MySql;
-using ColorVision.Services.Flow;
+using ColorVision.Services;
 using ColorVision.Services.RC;
-using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.Solution.Searches;
@@ -15,8 +14,8 @@ using ColorVision.UI.Views;
 using ColorVision.Update;
 using ColorVision.UserSpace;
 using ColorVision.Utils;
-using HandyControl.Tools.Extension;
 using HandyControl.Tools;
+using HandyControl.Tools.Extension;
 using log4net;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
@@ -33,10 +32,9 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media.Animation;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
-using ColorVision.Services;
 
 namespace ColorVision
 {
@@ -51,7 +49,6 @@ namespace ColorVision
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
         public ViewGridManager ViewGridManager { get; set; }
 
-        public static SoftwareSetting SoftwareSetting => SoftwareConfig.Instance.SoftwareSetting;
         public static MainWindowConfig MainWindowConfig => MainWindowConfig.Instance;
 
         public MainWindow()
@@ -65,12 +62,7 @@ namespace ColorVision
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            TemplateControl.GetInstance();
             MenuManager.GetInstance().Menu = Menu1;
-            if (MySqlControl.GetInstance().IsConnect)
-            {
-            }
-
 
             if (!WindowConfig.IsExist || (WindowConfig.IsExist && WindowConfig.Icon == null))
             {
@@ -99,8 +91,8 @@ namespace ColorVision
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;
 
-            StatusBarGrid.DataContext = SoftwareConfig.Instance;
-            MenuStatusBar.DataContext = SoftwareConfig.Instance;
+            StatusBarGrid.DataContext = new  SoftwareConfig();
+            MenuStatusBar.DataContext = new SoftwareConfig();
             ViewGridManager.SetViewGrid(ViewConfig.Instance.LastViewCount);
 
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
@@ -249,7 +241,7 @@ namespace ColorVision
         public static async Task CheckVersion()
         {
             await Task.Delay(500);
-            if (System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() != SoftwareConfig.Instance.Version)
+            if (System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() != SoftwareSetting.Instance.Version)
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -284,7 +276,7 @@ namespace ColorVision
                         log.Error(ex.Message);
                     }
                 });
-                SoftwareConfig.Instance.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString();
+                SoftwareSetting.Instance.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString();
             }
         }
 

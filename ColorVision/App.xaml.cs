@@ -24,6 +24,7 @@ using System.Windows;
 [assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
 namespace ColorVision
 {
+
     /// <summary>
     /// Interaction logic for App.xaml
     /// </summary>

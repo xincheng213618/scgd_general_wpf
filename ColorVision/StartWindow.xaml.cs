@@ -2,6 +2,7 @@
 using ColorVision.MySql;
 using ColorVision.Services;
 using ColorVision.Services.RC;
+using ColorVision.Services.Templates;
 using ColorVision.Solution;
 using ColorVision.Themes;
 using System;
@@ -103,6 +104,7 @@ namespace ColorVision
                 await Task.Delay(10);
 
             }
+
             if (MQTTSetting.Instance.IsUseMQTT)
             {
                 Application.Current.Dispatcher.Invoke(() =>
@@ -143,6 +145,8 @@ namespace ColorVision
                 Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}已经跳过MQTT服务器连接"; });
                 await Task.Delay(10);
             }
+
+            Application.Current.Dispatcher.Invoke(() => TemplateControl.GetInstance());
 
             if (MQTTControl.GetInstance().IsConnect)
             {

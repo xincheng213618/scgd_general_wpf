@@ -6,8 +6,6 @@ using ColorVision.Solution;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Configs;
-using ColorVision.UI.HotKey;
-using NPOI.Util.Collections;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -45,7 +43,7 @@ namespace ColorVision.Settings
         }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            DataContext = SoftwareConfig.Instance;
+            DataContext = new SoftwareConfig();
             GlobalConst.LogLevel.ForEach(it =>
             {
                 cmbloglevel.Items.Add(it);

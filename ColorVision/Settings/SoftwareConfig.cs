@@ -7,7 +7,6 @@ using ColorVision.Services.Msg;
 using ColorVision.Services.RC;
 using ColorVision.Solution;
 using ColorVision.UI;
-using ColorVision.UI.Views;
 using ColorVision.Update;
 using ColorVision.UserSpace;
 using ColorVision.Wizards;
@@ -17,10 +16,8 @@ namespace ColorVision.Settings
     /// <summary>
     /// 软件配置
     /// </summary>
-    public class SoftwareConfig : ViewModelBase,IConfig
+    public class SoftwareConfig : ViewModelBase
     {
-        public static SoftwareConfig Instance => ConfigHandler.GetInstance().GetRequiredService<SoftwareConfig>();
-
         public static MySqlSetting MySqlSetting => ConfigHandler.GetInstance().GetRequiredService<MySqlSetting>();  
 
         public bool IsAutoRun { get => Tool.IsAutoRun(GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); set { Tool.SetAutoRun(value, GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); NotifyPropertyChanged(); } }
@@ -29,10 +26,9 @@ namespace ColorVision.Settings
 
         public static AutoUpdateConfig AutoUpdateConfig => AutoUpdateConfig.Instance;
 
-        public string? Version { get => _Version; set { _Version = value; NotifyPropertyChanged(); } }
-        private string? _Version = string.Empty;
 
-        public SoftwareSetting SoftwareSetting { get; set; } = new SoftwareSetting();
+
+        public static SoftwareSetting SoftwareSetting => SoftwareSetting.Instance;
 
         public static SystemMonitorSetting SystemMonitorSetting => ConfigHandler.GetInstance().GetRequiredService<SystemMonitorSetting>();
 
@@ -42,6 +38,7 @@ namespace ColorVision.Settings
 
         public static MQTTSetting MQTTSetting => MQTTSetting.Instance;
         public static MsgConfig MsgConfig => MsgConfig.Instance;
+
         public static SystemMonitor SystemMonitor => SystemMonitor.GetInstance();
 
         public static UserConfig UserConfig => UserConfig.Instance;
