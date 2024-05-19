@@ -1,19 +1,18 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Extension;
 using ColorVision.MySql;
 using ColorVision.Services.Devices.SMU.Configs;
 using ColorVision.Services.Devices.SMU.Views;
-using ColorVision.Services.Devices.Spectrum;
 using ColorVision.Services.Templates;
-using ColorVision.Settings;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Views;
 using MQTTMessageLib;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+
 
 namespace ColorVision.Services.Devices.SMU
 {

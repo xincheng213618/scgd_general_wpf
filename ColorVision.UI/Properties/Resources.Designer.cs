@@ -277,6 +277,24 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 隐藏 的本地化字符串。
+        /// </summary>
+        public static string WindowHidden {
+            get {
+                return ResourceManager.GetString("WindowHidden", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 独立窗口 的本地化字符串。
+        /// </summary>
+        public static string WindowSingle {
+            get {
+                return ResourceManager.GetString("WindowSingle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 简体中文 的本地化字符串。
         /// </summary>
         public static string zh_Hans {

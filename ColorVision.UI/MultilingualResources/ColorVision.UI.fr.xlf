@@ -79,6 +79,14 @@
           <source>跟随系统</source>
           <target state="new">Suivez le système</target>
         </trans-unit>
+        <trans-unit id="WindowHidden" translate="yes" xml:space="preserve">
+          <source>隐藏</source>
+          <target state="new">cacher</target>
+        </trans-unit>
+        <trans-unit id="WindowSingle" translate="yes" xml:space="preserve">
+          <source>独立窗口</source>
+          <target state="new">fenêtre indépendante</target>
+        </trans-unit>
         <trans-unit id="en" translate="yes" xml:space="preserve">
           <source>英语</source>
           <target state="new">Anglais</target>

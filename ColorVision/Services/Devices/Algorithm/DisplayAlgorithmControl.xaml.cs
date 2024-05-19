@@ -13,6 +13,7 @@ using ColorVision.Services.Templates;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Views;
 using CVCommCore.CVAlgorithm;
 using log4net;
 using MQTTMessageLib.FileServer;

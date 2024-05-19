@@ -1,16 +1,15 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Extension;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.Devices.Camera.Views;
-using ColorVision.Services.Devices.FileServer;
 using ColorVision.Services.Msg;
 using ColorVision.Services.PhyCameras;
 using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Views;
 using cvColorVision;
 using log4net;
 using MQTTMessageLib;

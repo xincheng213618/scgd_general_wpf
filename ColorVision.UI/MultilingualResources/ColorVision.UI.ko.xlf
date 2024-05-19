@@ -79,6 +79,14 @@
           <source>跟随系统</source>
           <target state="new">시스템 테마 사용</target>
         </trans-unit>
+        <trans-unit id="WindowHidden" translate="yes" xml:space="preserve">
+          <source>隐藏</source>
+          <target state="new">숨기기</target>
+        </trans-unit>
+        <trans-unit id="WindowSingle" translate="yes" xml:space="preserve">
+          <source>独立窗口</source>
+          <target state="new">독립 창</target>
+        </trans-unit>
         <trans-unit id="en" translate="yes" xml:space="preserve">
           <source>英语</source>
           <target state="new">영어</target>

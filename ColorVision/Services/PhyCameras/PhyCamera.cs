@@ -3,7 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Controls;
 using ColorVision.Extension;
 using ColorVision.Handler;
-using ColorVision.Interfaces;
+using ColorVision.UI.Interfaces;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices;
@@ -31,6 +31,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ColorVision.UI;
 
 namespace ColorVision.Services.PhyCameras
 {

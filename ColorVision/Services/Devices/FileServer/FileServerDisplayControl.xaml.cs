@@ -1,10 +1,9 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Extension;
 using ColorVision.Media;
 using ColorVision.Net;
-using ColorVision.Services.Devices.PG;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Views;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
@@ -15,6 +14,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+
 
 
 namespace ColorVision.Services.Devices.FileServer

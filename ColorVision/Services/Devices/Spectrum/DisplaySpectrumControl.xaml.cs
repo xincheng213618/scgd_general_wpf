@@ -1,14 +1,11 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Extension;
 using ColorVision.MySql;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.PG;
 using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Views;
 using ColorVision.Services.Templates;
-using ColorVision.Settings;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Views;
 using MQTTMessageLib;
 using System;
 using System.Collections.ObjectModel;
@@ -18,6 +15,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using static cvColorVision.GCSDLL;
+
 
 namespace ColorVision.Services.Devices.Spectrum
 {

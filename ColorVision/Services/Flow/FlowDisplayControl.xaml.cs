@@ -1,10 +1,10 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Extension;
-using ColorVision.Interfaces;
+using ColorVision.UI.Interfaces;
 using ColorVision.MQTT;
 using ColorVision.Services.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Views;
 using Panuon.WPF.UI;
 using System;
 using System.ComponentModel;
@@ -12,6 +12,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+
 
 namespace ColorVision.Services.Flow
 {

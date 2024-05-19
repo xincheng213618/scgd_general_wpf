@@ -195,4 +195,10 @@
   <data name="HotKeys" xml:space="preserve">
     <value>HotKeys</value>
   </data>
+  <data name="WindowHidden" xml:space="preserve">
+    <value>Hide</value>
+  </data>
+  <data name="WindowSingle" xml:space="preserve">
+    <value>Independent</value>
+  </data>
 </root>

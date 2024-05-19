@@ -1,9 +1,6 @@
-﻿using ColorVision.UI.Views;
-using System;
-using System.Collections.Generic;
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 
-namespace ColorVision.Extension
+namespace ColorVision.UI.Views
 {
     class MyException : Exception
     {
@@ -25,8 +22,8 @@ namespace ColorVision.Extension
             {
                 List<KeyValuePair<string, int>> KeyValues = new()
                 {
-                    new KeyValuePair<string, int>(Properties.Resource.WindowSingle, -2),
-                    new KeyValuePair<string, int>(Properties.Resource.WindowHidden, -1)
+                    new KeyValuePair<string, int>(UI.Properties.Resources.WindowSingle, -2),
+                    new KeyValuePair<string, int>(UI.Properties.Resources.WindowHidden, -1)
                 };
                 for (int i = 0; i < max; i++)
                 {

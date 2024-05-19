@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Extension;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Views;
@@ -9,6 +8,7 @@ using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Views;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using System;
