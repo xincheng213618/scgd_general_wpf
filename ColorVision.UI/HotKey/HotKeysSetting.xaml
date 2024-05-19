@@ -1,0 +1,35 @@
+﻿<UserControl x:Class="ColorVision.UI.HotKey.HotKeysSetting"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.UI.HotKey"
+        mc:Ignorable="d"
+        d:Height  ="200" d:Width="500" Initialized="UserControl_Initialized">
+    <UserControl.Resources>
+        <Style x:Key="BorderModuleArea" TargetType="{x:Type Border}">
+            <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Margin" Value="10,10,15,5"/>
+            <Setter Property="CornerRadius" Value="8"/>
+        </Style>
+    </UserControl.Resources>
+    <Grid >
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Border  Style="{StaticResource BorderModuleArea}" >
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled"  VerticalScrollBarVisibility="Auto" >
+                <StackPanel x:Name="HotKeyStackPanel"  Margin="10,5" />
+            </ScrollViewer>
+        </Border>
+
+        <UniformGrid Grid.Row="1" Columns="3"  Width="300" HorizontalAlignment="Right" Margin="10">
+            <Button Content="恢复默认" Width="80" Click="SetDefault_Click" />
+            <Button Content="保存热键" Width="80" Click="ButtonSave_Click" />
+            <Button Content="加载热键" Width="80" Click="ButtonLoad_Click" />
+        </UniformGrid>
+    </Grid>
+</UserControl>

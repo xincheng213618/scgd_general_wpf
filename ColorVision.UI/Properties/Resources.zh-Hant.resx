@@ -192,4 +192,7 @@
   <data name="AutoSwitchSelectedView" xml:space="preserve">
     <value>自動切換選取視圖</value>
   </data>
+  <data name="HotKeys" xml:space="preserve">
+    <value>快捷鍵</value>
+  </data>
 </root>

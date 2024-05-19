@@ -7,6 +7,7 @@ using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Configs;
 using ColorVision.UI.HotKey;
+using NPOI.Util.Collections;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -50,86 +51,65 @@ namespace ColorVision.Settings
                 cmbloglevel.Items.Add(it);
             });
 
-
-            LoadIConfigSetting();
+           LoadIConfigSetting();
         }
 
 
         public void LoadIConfigSetting()
         {
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+
+            void Add(ConfigSettingMetadata configSetting)
             {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(IConfigSetting).IsAssignableFrom(t) && !t.IsAbstract))
+                if (configSetting.Type == ConfigSettingType.Bool)
                 {
-                    if (Activator.CreateInstance(type) is IConfigSetting configSetting)
+                    DockPanel dockPanel = new DockPanel() { Margin = new Thickness(5) };
+                    Wpf.Ui.Controls.ToggleSwitch toggleSwitch = new();
+                    toggleSwitch.SetBinding(Wpf.Ui.Controls.ToggleSwitch.IsCheckedProperty, new Binding(configSetting.BindingName));
+                    toggleSwitch.DataContext = configSetting.Source;
+                    DockPanel.SetDock(toggleSwitch, Dock.Right);
+                    dockPanel.Children.Add(toggleSwitch);
+                    dockPanel.Children.Add(new TextBlock() { Text = configSetting.Name });
+                    UniversalStackPanel.Children.Add(dockPanel);
+                }
+                if (configSetting.Type == ConfigSettingType.ComboBox)
+                {
+                    DockPanel dockPanel = new DockPanel() { Margin = new Thickness(5) };
+                    ComboBox comboBox = configSetting.ComboBox;
+                    DockPanel.SetDock(comboBox, Dock.Right);
+                    dockPanel.Children.Add(comboBox);
+                    dockPanel.Children.Add(new TextBlock() { Text = configSetting.Name });
+                    UniversalStackPanel.Children.Add(dockPanel);
+                }
+                if (configSetting.Type == ConfigSettingType.TabItem)
+                {
+                    TabItem tabItem = new TabItem() { Header = configSetting.Name , Background = Brushes.Transparent};
+                    Grid grid = new Grid { Background = (Brush)Application.Current.Resources["GlobalBorderBrush"] };
+                    GroupBox groupBox = new GroupBox
                     {
-                        if (configSetting.Type == ConfigSettingType.Bool)
-                        {
-                            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(5) };
-                            Wpf.Ui.Controls.ToggleSwitch toggleSwitch = new ();
-                            toggleSwitch.SetBinding(Wpf.Ui.Controls.ToggleSwitch.IsCheckedProperty, new Binding(configSetting.BindingName));
-                            toggleSwitch.DataContext = configSetting.Source;
-                            DockPanel.SetDock(toggleSwitch, Dock.Right);
-                            dockPanel.Children.Add(toggleSwitch);
-                            dockPanel.Children.Add(new TextBlock() { Text = configSetting.Name });
-                            UniversalStackPanel.Children.Add(dockPanel);
-                        }
-                        if (configSetting.Type == ConfigSettingType.ComboBox)
-                        {
-                            DockPanel dockPanel = new DockPanel() { Margin = new Thickness(5) };
-                            ComboBox comboBox = configSetting.ComboBox;
-                            DockPanel.SetDock(comboBox, Dock.Right);
-                            dockPanel.Children.Add(comboBox);
-                            dockPanel.Children.Add(new TextBlock() { Text = configSetting.Name });
-                            UniversalStackPanel.Children.Add(dockPanel);
-                        }
-                    }
+                        Header = new TextBlock { Text = configSetting.Name, FontSize = 20 },
+                        Background = Brushes.Transparent,
+                        Template = (ControlTemplate)Resources["GroupBoxHeader1"]
+                    };
+                    groupBox.Content = configSetting.UserControl;
+                    grid.Children.Add(groupBox);
+                    tabItem.Content = grid;
+                    TabControlSetting.Items.Add(tabItem);
                 }
             }
-        }
-
-
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void HotKeyStackPanel_Initialized(object sender, EventArgs e)
-        {
-            foreach (HotKeys hotKeys in HotKeys.HotKeysList)
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                HotKeyStackPanel.Children.Add(new HoyKeyControl(hotKeys));
-            }
-        }
+                foreach (var type in assembly.GetTypes().Where(t => typeof(IConfigSettingProvider).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is IConfigSettingProvider configSetting)
+                    {
+                        foreach (var item in configSetting.GetConfigSettings())
+                        {
+                            Add(item);
+                        }
+                    }
 
-        private void SetDefault_Click(object sender, RoutedEventArgs e)
-        {
-            HotKeys.SetDefault();
-        }
-
-        private void ButtonLoad_Click(object sender, RoutedEventArgs e)
-        {
-            //string json = File.ReadAllText("Hotkey");
-            //List<HotKeys> HotKeysList = JsonSerializer.Deserialize<List<HotKeys>>(json) ?? new List<HotKeys>();
-            //foreach (HotKeys hotKeys in HotKeysList)
-            //{
-            //    foreach (var item in HotKeys.HotKeysList)
-            //    {
-            //        if (hotKeys.DisPlayName == item.DisPlayName)
-            //        {
-            //            item.Hotkey = hotKeys.Hotkey;
-            //            item.Kinds = hotKeys.Kinds;
-            //        }
-            //    }
-            //}
-        }
-
-        private void ButtonSave_Click(object sender, RoutedEventArgs e)
-        {
-            //JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions() { Encoder = JavaScriptEncoder.CreateSolution(UnicodeRanges.All) };
-            //string Json = JsonSerializer.Serialize(HotKeys.HotKeysList, jsonSerializerOptions);
-            //File.WriteAllText("Hotkey", Json);
+                }
+            }   
         }
 
         private void SetProjectDefault__Click(object sender, RoutedEventArgs e)

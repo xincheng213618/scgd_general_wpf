@@ -1,5 +1,6 @@
 ﻿using ColorVision.UI.Configs;
 using ColorVision.UI.Properties;
+using ColorVision.UI.Views;
 using System.Globalization;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -7,42 +8,39 @@ using System.Windows.Data;
 namespace ColorVision.UI.Languages
 {
 
-    public class LaunagesConfigSeting : IConfigSetting
+    public class LaunagesConfigSetingProvider : IConfigSettingProvider
     {
-        public string Name => Resources.Language;
-
-        public string Description => Resources.Language;
-
-        public string BindingName => "Theme";
-
-        public object Source => LanguageConfig.Instance;
-
-        public ConfigSettingType Type => ConfigSettingType.ComboBox;
-        public UserControl UserControl => throw new System.NotImplementedException();
-
-        public ComboBox ComboBox
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
-            get
+            ComboBox cmlauage = new ComboBox() { SelectedValuePath = "Key", DisplayMemberPath = "Value" };
+            cmlauage.SetBinding(ComboBox.SelectedValueProperty, new Binding(nameof(LanguageConfig.UICulture)));
+            cmlauage.ItemsSource = from e1 in LanguageManager.Current.Languages
+                                   select new KeyValuePair<string, string>(e1, LanguageManager.keyValuePairs.TryGetValue(e1, out string value) ? value : e1);
+            string temp = Thread.CurrentThread.CurrentUICulture.Name;
+            cmlauage.SelectionChanged += (s, e) =>
             {
-                ComboBox cmlauage = new ComboBox() { SelectedValuePath = "Key", DisplayMemberPath = "Value" };
-                Binding themeBinding = new Binding("UICulture");
-                cmlauage.SetBinding(ComboBox.SelectedValueProperty, themeBinding);
-                cmlauage.ItemsSource = from e1 in LanguageManager.Current.Languages
-                                       select new KeyValuePair<string, string>(e1, LanguageManager.keyValuePairs.TryGetValue(e1, out string value) ? value : e1);
-                string temp = Thread.CurrentThread.CurrentUICulture.Name;
-                cmlauage.SelectionChanged += (s, e) =>
+                if (cmlauage.SelectedValue is string str)
                 {
-                    if (cmlauage.SelectedValue is string str)
+                    if (!LanguageManager.Current.LanguageChange(str))
                     {
-                        if (!LanguageManager.Current.LanguageChange(str))
-                        {
-                            LanguageConfig.Instance.UICulture = temp;
-                        }
+                        LanguageConfig.Instance.UICulture = temp;
                     }
-                };
-                cmlauage.DataContext = LanguageConfig.Instance;
-                return cmlauage;
-            }
+                }
+            };
+            cmlauage.DataContext = LanguageConfig.Instance;
+
+            return new List<ConfigSettingMetadata>
+            {
+                new ConfigSettingMetadata
+                {
+                    Name = Resources.Language,
+                    Description = Resources.Language,
+                    Type = ConfigSettingType.ComboBox,
+                    BindingName = nameof(LanguageConfig.UICulture),
+                    Source = LanguageConfig.Instance,
+                    ComboBox = cmlauage
+                }
+            };
         }
     }
 

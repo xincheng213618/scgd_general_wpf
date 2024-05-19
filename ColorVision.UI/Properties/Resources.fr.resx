@@ -192,4 +192,7 @@
   <data name="AutoSwitchSelectedView" xml:space="preserve">
     <value>Changer automatiquement les vues sélectionnées</value>
   </data>
+  <data name="HotKeys" xml:space="preserve">
+    <value>touche de raccourci</value>
+  </data>
 </root>

@@ -29,8 +29,6 @@ namespace ColorVision.Settings
 
         public static AutoUpdateConfig AutoUpdateConfig => AutoUpdateConfig.Instance;
 
-        public static ViewConfig ViewConfig => ViewConfig.Instance;
-
         public string? Version { get => _Version; set { _Version = value; NotifyPropertyChanged(); } }
         private string? _Version = string.Empty;
 

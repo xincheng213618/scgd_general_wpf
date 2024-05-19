@@ -1,4 +1,6 @@
 ﻿using System.IO;
+using System.Windows;
+using ColorVision.UI.HotKey;
 using Newtonsoft;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -188,6 +190,7 @@ namespace ColorVision.UI
                         {
                             if (typeof(IConfig).IsAssignableFrom(type) && !type.IsInterface)
                             {
+
                                 var configName = type.Name;
                                 if (jsonObject.TryGetValue(configName, out JToken configToken))
                                 {

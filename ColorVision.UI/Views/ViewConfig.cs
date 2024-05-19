@@ -5,27 +5,27 @@ using System.Windows.Controls;
 
 namespace ColorVision.UI.Views
 {
-
-    public class ViewConfigSetting : IConfigSetting
+    public class ViewConfigSettingProvider : IConfigSettingProvider
     {
-        public string Name => Resources.AutoSwitchSelectedView;
-
-        public string Description => Resources.AutoSwitchSelectedView;
-
-        public string BindingName => "IsAutoSelect";
-
-        public object Source => ViewConfig.Instance;
-
-        public ConfigSettingType Type => ConfigSettingType.Bool;
-
-        public UserControl UserControl => throw new NotImplementedException();
-
-        public ComboBox ComboBox => throw new NotImplementedException();
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+        {
+            return new List<ConfigSettingMetadata> {
+                            new ConfigSettingMetadata
+                            {
+                                Name = Resources.AutoSwitchSelectedView,
+                                Description = Resources.AutoSwitchSelectedView,
+                                Type = ConfigSettingType.Bool,
+                                BindingName = nameof(ViewConfig.IsAutoSelect),
+                                Source = ViewConfig.Instance
+                            }
+            };
+        }
     }
 
-    public class ViewConfig : ViewModelBase ,IConfig
+    public class ViewConfig : ViewModelBase, IConfig
     {
         public static ViewConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ViewConfig>();
+
 
         public bool IsAutoSelect { get => _IsAutoSelect; set { _IsAutoSelect = value; NotifyPropertyChanged(); } }
         private bool _IsAutoSelect =true;

@@ -18,7 +18,7 @@ namespace ColorVision
 {
     public class WindowLogExport : IHotKey, IMenuItem
     {
-        public HotKeys HotKeys => new(Properties.Resource.MenuAbout, new Hotkey(Key.F2, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(Properties.Resource.Log, new Hotkey(Key.F2, ModifierKeys.Control), Execute);
 
         public string? OwnerGuid => "Help";
 

@@ -124,6 +124,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 快捷键 的本地化字符串。
+        /// </summary>
+        public static string HotKeys {
+            get {
+                return ResourceManager.GetString("HotKeys", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 按键盘设置快捷键 的本地化字符串。
         /// </summary>
         public static string HotKeySet1 {

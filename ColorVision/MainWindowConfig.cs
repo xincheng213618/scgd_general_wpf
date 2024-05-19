@@ -2,26 +2,28 @@
 using ColorVision.UI;
 using ColorVision.UI.Configs;
 using ColorVision.UI.Properties;
+using ColorVision.UI.Views;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision
 {
-    public class StartRecoverUILayout : IConfigSetting
+    public class MainWindowConfigProvider : IConfigSettingProvider
     {
-        public string Name => Resource.StartRecoverUILayout;
-
-        public string Description => Resource.StartRecoverUILayout;
-
-        public string BindingName => "IsRestoreWindow";
-
-        public object Source => MainWindowConfig.Instance;
-
-        public ConfigSettingType Type => ConfigSettingType.Bool;
-
-        public UserControl UserControl => throw new System.NotImplementedException();
-
-        public ComboBox ComboBox => throw new System.NotImplementedException();
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+        {
+            return new List<ConfigSettingMetadata> {
+                            new ConfigSettingMetadata
+                            {
+                                Name = Resource.StartRecoverUILayout,
+                                Description = Resource.StartRecoverUILayout,
+                                Type = ConfigSettingType.Bool,
+                                BindingName = nameof(MainWindowConfig.IsRestoreWindow),
+                                Source = MainWindowConfig.Instance
+                            }
+            };
+        }
     }
 
 

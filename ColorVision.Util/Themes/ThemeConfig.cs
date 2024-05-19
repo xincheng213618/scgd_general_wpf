@@ -2,7 +2,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
-using ColorVision.UI.Views;
 using ColorVision.Util.Properties;
 using System;
 using System.Collections.Generic;
@@ -14,41 +13,41 @@ using System.Windows.Data;
 
 namespace ColorVision.Themes
 {
-    public class ThemeConfigSeting : IConfigSetting
+
+    public class ThemeConfigSetingProvider : IConfigSettingProvider
     {
-        public string Name => Resource.Theme;
-        public string Description => Resource.Theme;
-        public string BindingName => "Theme";
-        public object Source => ThemeConfig.Instance;
-        public ConfigSettingType Type => ConfigSettingType.ComboBox;
-        public UserControl UserControl => throw new System.NotImplementedException();
-        public ComboBox ComboBox
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
-            get
+            ComboBox cmtheme = new ComboBox() { SelectedValuePath = "Key", DisplayMemberPath = "Value" };
+            cmtheme.SetBinding(ComboBox.SelectedValueProperty, new Binding(nameof(ThemeConfig.Theme)));
+
+            cmtheme.ItemsSource = from e1 in Enum.GetValues(typeof(Theme)).Cast<Theme>()
+                                  select new KeyValuePair<Theme, string>(e1, Resource.ResourceManager.GetString(e1.ToDescription(), CultureInfo.CurrentUICulture) ?? "");
+
+            cmtheme.SelectionChanged += (s, e) => Application.Current.ApplyTheme(ThemeConfig.Instance.Theme);
+            cmtheme.DataContext = ThemeConfig.Instance;
+
+            return new List<ConfigSettingMetadata>
             {
-                ComboBox cmtheme = new ComboBox() { SelectedValuePath = "Key", DisplayMemberPath = "Value" };
-                Binding themeBinding = new Binding("Theme");
-                cmtheme.SetBinding(ComboBox.SelectedValueProperty, themeBinding);
-
-                cmtheme.ItemsSource = from e1 in Enum.GetValues(typeof(Theme)).Cast<Theme>()
-                                      select new KeyValuePair<Theme, string>(e1, Resource.ResourceManager.GetString(e1.ToDescription(), CultureInfo.CurrentUICulture) ?? "");
-
-                cmtheme.SelectionChanged += (s, e) => Application.Current.ApplyTheme(ThemeConfig.Instance.Theme);
-                cmtheme.DataContext = ThemeConfig.Instance;
-                return cmtheme;
-            }
+                new ConfigSettingMetadata
+                {
+                    Name = Resource.Theme,
+                    Description = Resource.Theme,
+                    Type = ConfigSettingType.ComboBox,
+                    BindingName = nameof(ThemeConfig.Theme),
+                    Source = ThemeConfig.Instance,
+                    ComboBox = cmtheme
+                },
+                new ConfigSettingMetadata
+                {
+                    Name = Resource.TransparentWindow,
+                    Description = Resource.TransparentWindow,
+                    Type = ConfigSettingType.Bool,
+                    BindingName = nameof(ThemeConfig.TransparentWindow),
+                    Source = ThemeConfig.Instance,
+                }
+            };
         }
-    }
-
-    public class ThemeConfigTransparentWindow : IConfigSetting
-    {
-        public string Name => Resource.TransparentWindow;
-        public string Description => Resource.TransparentWindow;
-        public string BindingName => "TransparentWindow";
-        public object Source => ThemeConfig.Instance;
-        public ConfigSettingType Type => ConfigSettingType.Bool;
-        public UserControl UserControl => throw new NotImplementedException();
-        public ComboBox ComboBox => throw new NotImplementedException();
     }
 
 

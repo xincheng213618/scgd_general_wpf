@@ -192,4 +192,7 @@
   <data name="AutoSwitchSelectedView" xml:space="preserve">
     <value>Automatically switch selected views</value>
   </data>
+  <data name="HotKeys" xml:space="preserve">
+    <value>HotKeys</value>
+  </data>
 </root>

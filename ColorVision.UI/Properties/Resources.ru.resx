@@ -192,4 +192,7 @@
   <data name="AutoSwitchSelectedView" xml:space="preserve">
     <value>Автоматически переключать выбранные представления</value>
   </data>
+  <data name="HotKeys" xml:space="preserve">
+    <value>быстрая клавиша</value>
+  </data>
 </root>

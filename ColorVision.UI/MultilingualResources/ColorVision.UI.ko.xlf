@@ -23,6 +23,10 @@
           <source>点击设置快捷键</source>
           <target state="new">클릭하여 핫키 설정하기</target>
         </trans-unit>
+        <trans-unit id="HotKeys" translate="yes" xml:space="preserve">
+          <source>快捷键</source>
+          <target state="new">키보드 단축키</target>
+        </trans-unit>
         <trans-unit id="HotkeyConflict" translate="yes" xml:space="preserve">
           <source>冲突</source>
           <target state="new">충돌</target>

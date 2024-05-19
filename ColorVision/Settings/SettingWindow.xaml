@@ -72,7 +72,7 @@
         </Style>
     </Window.Resources>
     <Grid>
-        <TabControl TabStripPlacement="Left" Background="Transparent" BorderThickness="1,0,0,0"  Style="{StaticResource  TabControlBaseStyle}">
+        <TabControl x:Name="TabControlSetting" TabStripPlacement="Left" Background="Transparent" BorderThickness="1,0,0,0"  Style="{StaticResource  TabControlBaseStyle}">
             <TabControl.Resources>
                 <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
                     <Style.Triggers>
@@ -142,10 +142,6 @@
                                         <TextBlock Text="{x:Static properties:Resource.SoftwareVersion}"/>
                                     </DockPanel>
                                     <ProgressBar Height="15"  Foreground="#B41515" Maximum="100" Minimum="0" Value="{Binding AutoUpdateConfig.AutoUpdater.ProgressValue}" Background="#373B41" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
-                                    <DockPanel  Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding ThemeConfig.TransparentWindow}"/>
-                                        <TextBlock Text="{x:Static properties:Resource.DisableHardwareAcceleration}"/>
-                                    </DockPanel>
                                 </StackPanel>
                             </Border>
                         </ScrollViewer>
@@ -306,33 +302,6 @@
 
 
                     </GroupBox>
-                </Grid>
-            </TabItem>
-
-            <TabItem  Header="{x:Static properties:Resource.HotKeys}"  Background="Transparent" >
-                <Grid Background="{DynamicResource GlobalBorderBrush}">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <ScrollViewer HorizontalScrollBarVisibility="Disabled"  VerticalScrollBarVisibility="Auto" >
-                        <StackPanel>
-                            <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
-                                <GroupBox.Header>
-                                    <TextBlock Text="{x:Static properties:Resource.HotKeys}" FontSize="20"/>
-                                </GroupBox.Header>
-                                <Border  Style="{StaticResource BorderModuleArea}" >
-                                    <StackPanel x:Name="HotKeyStackPanel"  Margin="10,5" Initialized="HotKeyStackPanel_Initialized"/>
-                                </Border>
-                            </GroupBox>
-                        </StackPanel>
-                    </ScrollViewer>
-
-                    <UniformGrid Grid.Row="1" Columns="3"  Width="300" HorizontalAlignment="Right" Margin="10">
-                        <Button Content="恢复默认" Width="80" Click="SetDefault_Click" />
-                        <Button Content="保存热键" Width="80" Click="ButtonSave_Click" />
-                        <Button Content="加载热键" Width="80" Click="ButtonLoad_Click" />
-                    </UniformGrid>
                 </Grid>
             </TabItem>
 

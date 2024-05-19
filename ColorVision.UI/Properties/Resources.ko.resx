@@ -192,4 +192,7 @@
   <data name="AutoSwitchSelectedView" xml:space="preserve">
     <value>선택한 보기를 자동으로 전환</value>
   </data>
+  <data name="HotKeys" xml:space="preserve">
+    <value>키보드 단축키</value>
+  </data>
 </root>

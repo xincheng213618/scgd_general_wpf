@@ -5,10 +5,6 @@ using System.Windows.Controls;
 
 namespace ColorVision.UI.HotKey
 {
-    public interface IHotKey
-    {
-        public HotKeys HotKeys { get; }
-    }
 
 
 
@@ -26,6 +22,21 @@ namespace ColorVision.UI.HotKey
                     }
                 }
             }
+
+            //设置控件为保存的值
+            var hotKeysDictionary = HotKeys.HotKeysList.GroupBy(hk => hk.Name).ToDictionary(g => g.Key, g => g.Last());
+
+            foreach (var hotKeys in HotKeyConfig.Instance.Hotkeys)
+            {
+                if (hotKeysDictionary.TryGetValue(hotKeys.Name, out var item))
+                {
+                    item.Hotkey = hotKeys.Hotkey;
+                    item.Kinds = hotKeys.Kinds;
+                }
+            }
+
+            HotKeyConfig.Instance.Hotkeys = HotKeys.HotKeysList;
+
         }
 
         public static bool AddHotKeys(this Window This, HotKeys hotKeys)
