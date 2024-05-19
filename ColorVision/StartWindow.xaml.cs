@@ -127,9 +127,11 @@ namespace ColorVision
                             {
                                 TextBoxMsg.Text += $"{Environment.NewLine}打开本地服务管理";
                             });
-                            RCManager.GetInstance().OpenCVWinSMS();
+                            if (RCManagerConfig.Instance.IsOpenCVWinSMS)
+                            {
+                                RCManager.GetInstance().OpenCVWinSMS();
+                            }
                         }
-
                         RCManager.GetInstance();
                         MQTTConnect mQTTConnect = new() { Owner = this };
                         mQTTConnect.ShowDialog();

@@ -1,4 +1,6 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.UI;
 using ColorVision.Utils;
 using System;
 using System.Diagnostics;
@@ -9,6 +11,15 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Services.RC
 {
+    public class RCManagerConfig : ViewModelBase, IConfig
+    {
+        public static RCManagerConfig Instance => ConfigHandler.GetInstance().GetRequiredService<RCManagerConfig>();
+
+        public bool IsOpenCVWinSMS { get => _IsOpenCVWinSMS; set{ _IsOpenCVWinSMS = value;  NotifyPropertyChanged(); } }
+        private bool _IsOpenCVWinSMS = true;
+
+    }
+
     public class RCManager
     {
         public  log4net.ILog Log { get; set; } = log4net.LogManager.GetLogger(typeof(RCManager));
@@ -19,7 +30,6 @@ namespace ColorVision.Services.RC
         private RCManager()
         {
             ServiceController = new ServiceController("RegistrationCenterService");
-
         }
         private ServiceController ServiceController { get; set; }
 
