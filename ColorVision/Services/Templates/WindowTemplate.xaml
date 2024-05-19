@@ -66,7 +66,7 @@
                                 <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                             </Style>
                         </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn  Header="操作"  Width="40" >
+                        <GridViewColumn  Header="选择"  Width="40" >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type local:TemplateModelBase}">
                                     <CheckBox IsChecked="{Binding IsSelected}"/>
@@ -92,7 +92,7 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn  Width="100"  Header="操作">
+                        <GridViewColumn  Width="100"  Header="重命名">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:TemplateModelBase}">
                                     <Grid>

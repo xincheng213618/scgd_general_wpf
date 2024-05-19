@@ -1,5 +1,7 @@
 ﻿using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Dao;
+using ColorVision.Services.Templates;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using ScottPlot;
@@ -18,6 +20,13 @@ using static cvColorVision.GCSDLL;
 
 namespace ColorVision.Services.Devices.Spectrum.Views
 {
+    public class ViewSpectrumConfig :IConfig
+    {
+        public static ViewSpectrumConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ViewSpectrumConfig>();
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+        public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+    }
+
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
@@ -61,10 +70,20 @@ namespace ColorVision.Services.Devices.Spectrum.Views
             wpfplot1.Plot.YAxis.SetBoundary(0, 1);
 
             if (listView1.View is GridView gridView)
+            {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-
+                ViewSpectrumConfig.Instance.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
+                ViewSpectrumConfig.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
+                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+            }
             if (listView2.View is GridView gridView1)
+            {
                 GridViewColumnVisibility.AddGridViewColumn(gridView1.Columns, LeftGridViewColumnVisibilitys);
+
+                ViewSpectrumConfig.Instance.LeftGridViewColumnVisibilitys.CopyToGridView(LeftGridViewColumnVisibilitys);
+                ViewSpectrumConfig.Instance.LeftGridViewColumnVisibilitys = LeftGridViewColumnVisibilitys;
+                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView1.Columns, LeftGridViewColumnVisibilitys);
+            }
         }
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();

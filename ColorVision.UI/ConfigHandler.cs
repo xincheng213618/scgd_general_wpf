@@ -1,14 +1,14 @@
 ﻿using System.IO;
-using System.Text.Json;
-using static System.Windows.Forms.Design.AxImporter;
-
+using Newtonsoft;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 namespace ColorVision.UI
 {
     public class ConfigBase<T> where T : IConfig
     {
-        internal readonly JsonSerializerOptions _options = new JsonSerializerOptions { WriteIndented = true };
+        internal readonly JsonSerializerSettings JsonSerializerSettings  = new JsonSerializerSettings { Formatting = Formatting.Indented };
 
-        public Dictionary<Type, IConfig> Configs { get; set; }
+        public Dictionary<Type, T> Configs { get; set; }
 
         public T1 GetRequiredService<T1>() where T1:T
         { 
@@ -36,40 +36,32 @@ namespace ColorVision.UI
 
         public virtual void SaveConfigs(string fileName)
         {
-            using (var outputStream = File.Create(fileName))
+            var jObject = new JObject();
+
+            foreach (var configPair in Configs)
             {
-                using (var jsonWriter = new Utf8JsonWriter(outputStream, new JsonWriterOptions { Indented = true }))
-                {
-                    jsonWriter.WriteStartObject();
-                    foreach (var configPair in Configs)
-                    {
-                        jsonWriter.WritePropertyName(configPair.Key.Name);
-                        if (configPair.Value is IConfigSecure configSecure)
-                        {
-                            configSecure.Encryption();
-                            JsonSerializer.Serialize(jsonWriter, configPair.Value, configPair.Key, _options);
-                            configSecure.Decrypt();
-                        }
-                        else
-                        {
-                            JsonSerializer.Serialize(jsonWriter, configPair.Value, configPair.Key, _options);
-                        }
-                    }
-                    jsonWriter.WriteEndObject();
-                }
+                JToken valueToken;
+                valueToken = JToken.FromObject(configPair.Value, new JsonSerializer { Formatting = Formatting.Indented });
+                jObject[configPair.Key.Name] = valueToken;
+            }
+
+            using (var writer = new StreamWriter(fileName))
+            using (var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented })
+            {
+                jObject.WriteTo(jsonWriter);
             }
         }
 
 
         public virtual void LoadConfigs(string fileName)
         {
-            Configs = new Dictionary<Type, IConfig>();
+            Configs = new Dictionary<Type, T>();
             if (File.Exists(fileName))
             {
                 try
                 {
                     string json = File.ReadAllText(fileName);
-                    var jsonDoc = JsonDocument.Parse(json);
+                    var jsonObject = JObject.Parse(json);
                     foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
                     {
                         foreach (var type in assembly.GetTypes())
@@ -77,18 +69,19 @@ namespace ColorVision.UI
                             if (typeof(IConfig).IsAssignableFrom(type) && !type.IsInterface)
                             {
                                 var configName = type.Name;
-                                if (jsonDoc.RootElement.TryGetProperty(configName, out var configElement))
+                                if (jsonObject.TryGetValue(configName, out JToken configToken))
                                 {
-                                    if (JsonSerializer.Deserialize(configElement.GetRawText(), type, _options) is IConfig config)
+                                    var config = configToken.ToObject(type, new JsonSerializer { Formatting = Formatting.Indented });
+                                    if (config is T typedConfig)
                                     {
-                                        Configs[type] = config;
+                                        Configs[type] = typedConfig;
                                     }
                                 }
                                 else
                                 {
-                                    if (Activator.CreateInstance(type) is IConfig config)
+                                    if (Activator.CreateInstance(type) is T defaultConfig)
                                     {
-                                        Configs[type] = config;
+                                        Configs[type] = defaultConfig;
                                     }
                                 }
                             }
@@ -146,27 +139,37 @@ namespace ColorVision.UI
 
         public void SaveConfigs() => SaveConfigs(DIFile);
 
+
         public override void SaveConfigs(string fileName)
         {
-            using var outputStream = File.Create(fileName);
-            using var jsonWriter = new Utf8JsonWriter(outputStream, new JsonWriterOptions { Indented = true });
-            jsonWriter.WriteStartObject();
+            var jObject = new JObject();
+
             foreach (var configPair in Configs)
             {
-                jsonWriter.WritePropertyName(configPair.Key.Name);
+                JToken valueToken;
+
                 if (configPair.Value is IConfigSecure configSecure)
                 {
                     configSecure.Encryption();
-                    JsonSerializer.Serialize(jsonWriter, configPair.Value, configPair.Key, _options);
+                    valueToken = JToken.FromObject(configPair.Value, new JsonSerializer { Formatting = Formatting.Indented });
                     configSecure.Decrypt();
                 }
                 else
                 {
-                    JsonSerializer.Serialize(jsonWriter, configPair.Value, configPair.Key, _options);
+                    valueToken = JToken.FromObject(configPair.Value, new JsonSerializer { Formatting = Formatting.Indented });
                 }
+
+                jObject[configPair.Key.Name] = valueToken;
             }
-            jsonWriter.WriteEndObject();
+
+            using (var writer = new StreamWriter(fileName))
+            using (var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented })
+            {
+                jObject.WriteTo(jsonWriter);
+            }
         }
+
+
 
         public override void LoadConfigs(string fileName)
         {
@@ -176,7 +179,8 @@ namespace ColorVision.UI
                 try
                 {
                     string json = File.ReadAllText(fileName);
-                    var jsonDoc = JsonDocument.Parse(json);
+                    var jsonObject = JObject.Parse(json);
+
                     foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
                     {
                         foreach (var type in assembly.GetTypes())
@@ -184,23 +188,24 @@ namespace ColorVision.UI
                             if (typeof(IConfig).IsAssignableFrom(type) && !type.IsInterface)
                             {
                                 var configName = type.Name;
-                                if (jsonDoc.RootElement.TryGetProperty(configName, out var configElement))
+                                if (jsonObject.TryGetValue(configName, out JToken configToken))
                                 {
-                                    if (JsonSerializer.Deserialize(configElement.GetRawText(), type, _options) is IConfigSecure  configSecure)
+                                    var config = configToken.ToObject(type, new JsonSerializer { Formatting = Formatting.Indented });
+                                    if (config is IConfigSecure configSecure)
                                     {
                                         configSecure.Decrypt();
                                         Configs[type] = configSecure;
                                     }
-                                    else if (JsonSerializer.Deserialize(configElement.GetRawText(), type, _options) is IConfig config)
+                                    else if (config is IConfig configInstance)
                                     {
-                                        Configs[type] = config;
+                                        Configs[type] = configInstance;
                                     }
                                 }
                                 else
                                 {
-                                    if (Activator.CreateInstance(type) is IConfig config)
+                                    if (Activator.CreateInstance(type) is IConfig defaultConfig)
                                     {
-                                        Configs[type] = config;
+                                        Configs[type] = defaultConfig;
                                     }
                                 }
                             }

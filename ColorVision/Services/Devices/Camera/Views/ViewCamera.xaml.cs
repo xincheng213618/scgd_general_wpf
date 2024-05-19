@@ -10,6 +10,7 @@ using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
 using ColorVision.Services.Templates.POI;
 using ColorVision.Solution;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using CVCommCore.CVImage;
@@ -30,6 +31,18 @@ using System.Windows.Media;
 
 namespace ColorVision.Services.Devices.Camera.Views
 {
+    public class ViewCameraConfig : IConfig
+    {
+        public static ViewCameraConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ViewCameraConfig>();
+
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+
+
+    }
+
+
+
+
     /// <summary>
     /// ViewCamera.xaml 的交互逻辑
     /// </summary>
@@ -75,7 +88,12 @@ namespace ColorVision.Services.Devices.Camera.Views
             ComboxPOITemplate.SelectedIndex = 0;
 
             if (listView1.View is GridView gridView)
+            {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+                ViewCameraConfig.Instance.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
+                ViewCameraConfig.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
+                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+            }
 
 
             ComboBoxLayers.ItemsSource  =from e1 in Enum.GetValues(typeof(ImageLayer)).Cast<ImageLayer>()

@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.UI;
+using ColorVision.UI.Sorts;
 using ColorVision.UserSpace;
 using System;
 using System.Collections.Generic;
@@ -22,10 +23,7 @@ namespace ColorVision.Services.Templates
         public string DefaultCreateTemplateName { get => _DefaultCreateTemplateName; set { _DefaultCreateTemplateName = value; NotifyPropertyChanged(); } }
         private string _DefaultCreateTemplateName = ColorVision.Properties.Resource.DefaultCreateTemplateName;
 
-        public bool BatchOperate { get => _BatchOperate; set { _BatchOperate = value; NotifyPropertyChanged(); } }
-        private bool _BatchOperate;
-
-
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
     }
 
 
