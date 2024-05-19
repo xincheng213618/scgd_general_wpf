@@ -17,6 +17,8 @@ namespace ColorVision.Services.Devices.CfwPort
         public DeviceCfwPort Device { get; set; }
         private MQTTCfwPort DeviceService { get => Device.DeviceService;  }
 
+        public string DisPlayName => Device.Config.Code;
+
         public DisplayCfwPortControl(DeviceCfwPort device)
         {
             Device = device;

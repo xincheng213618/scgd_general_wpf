@@ -13,6 +13,8 @@ namespace ColorVision.UI
         public event EventHandler SelectChanged;
 
         public bool IsSelected { get; set; }
+
+        public string DisPlayName { get; }
     }
 
     public class DisPlayManager

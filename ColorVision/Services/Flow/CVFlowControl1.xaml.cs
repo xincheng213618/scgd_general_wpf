@@ -1,4 +1,5 @@
-﻿using ColorVision.UI.Views;
+﻿using ColorVision.Services.Devices.PG;
+using ColorVision.UI.Views;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Windows;

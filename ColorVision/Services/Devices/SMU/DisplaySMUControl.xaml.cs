@@ -3,6 +3,7 @@ using ColorVision.Extension;
 using ColorVision.MySql;
 using ColorVision.Services.Devices.SMU.Configs;
 using ColorVision.Services.Devices.SMU.Views;
+using ColorVision.Services.Devices.Spectrum;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
 using ColorVision.Themes;
@@ -28,6 +29,7 @@ namespace ColorVision.Services.Devices.SMU
 
         public ViewSMU View { get => Device.View; }
 
+        public string DisPlayName => Device.Config.Name;
 
         public DisplaySMUControl(DeviceSMU deviceSMU)
         {

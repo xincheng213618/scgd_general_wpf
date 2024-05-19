@@ -16,6 +16,7 @@ namespace ColorVision.Services.Devices.PG
     {
         private MQTTPG PGService { get => DevicePG.DeviceService; }
         private DevicePG DevicePG { get; set; }
+        public string DisPlayName => DevicePG.Config.Name;
 
 
         public DisplayPGControl(DevicePG devicePG)

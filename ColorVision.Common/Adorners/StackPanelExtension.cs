@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -6,6 +7,16 @@ using System.Windows.Media;
 
 namespace ColorVision.Adorners
 {
+    public class StackPanelAdorners
+    {
+        public event EventHandler Changed;
+
+        public void Invoke()
+        {
+            Changed?.Invoke(this, new EventArgs());
+        }
+    }
+
     ///++++++++++++++++++++++++++++++++++++++++++++++++++++
     /// <summary>
     /// StackPanel拡張メソッドクラス
@@ -14,8 +25,10 @@ namespace ColorVision.Adorners
     public static class StackPanelExtension
     {
 
-        public static void AddAdorners(this Panel panel, FrameworkElement window)
+        public static StackPanelAdorners AddAdorners(this Panel panel, FrameworkElement window)
         {
+
+            StackPanelAdorners stackPanelAdorners = new StackPanelAdorners();
             FrameworkElement? _draggedItem = null;
 
             int? _draggedItemIndex = null;
@@ -104,6 +117,7 @@ namespace ColorVision.Adorners
                         FrameworkElement draggedItem = panel.Children[_draggedItemIndex.Value] as FrameworkElement;
                         panel.Children.RemoveAt(_draggedItemIndex.Value);
                         panel.Children.Insert(dropTargetItemIndex, draggedItem);
+                        stackPanelAdorners.Invoke();
                     }
                 }
                 panel.ReleaseMouseCapture();
@@ -130,6 +144,7 @@ namespace ColorVision.Adorners
             panel.MouseLeftButtonUp += OnMainPanelMouseLeftButtonUp;
             panel.LostMouseCapture += OnMainPanelLostMouseCapture;
 
+            return stackPanelAdorners;
         }
 
 

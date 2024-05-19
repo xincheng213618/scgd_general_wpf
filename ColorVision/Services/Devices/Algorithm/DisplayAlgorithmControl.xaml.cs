@@ -39,6 +39,7 @@ namespace ColorVision.Services.Devices.Algorithm
         public MQTTAlgorithm Service { get => Device.MQTTService; }
 
         public AlgorithmView View { get => Device.View; }
+        public string DisPlayName => Device.Config.Name;
 
         private IPendingHandler? handler { get; set; }
 

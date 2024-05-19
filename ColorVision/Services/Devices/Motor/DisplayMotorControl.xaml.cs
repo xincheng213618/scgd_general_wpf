@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Services.Devices.PG;
 using ColorVision.Themes;
 using ColorVision.UI;
 using MQTTMessageLib;
@@ -17,6 +18,7 @@ namespace ColorVision.Services.Devices.Motor
 
         public DeviceMotor Device { get; set; }
         private MQTTMotor DeviceService { get => Device.DeviceService;  }
+        public string DisPlayName => Device.Config.Name;
 
         public DisplayMotorControl(DeviceMotor device)
         {

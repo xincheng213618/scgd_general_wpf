@@ -202,7 +202,7 @@ namespace ColorVision
                 {
                     try
                     {
-                        if (!ServicesSetting.Instance.IsDefaultOpenService)
+                        if (!ServicesConfig.Instance.IsDefaultOpenService)
                         {
                             TextBoxMsg.Text += $"{Environment.NewLine}初始化服务";
                             ServiceManager.GenDeviceDisplayControl();

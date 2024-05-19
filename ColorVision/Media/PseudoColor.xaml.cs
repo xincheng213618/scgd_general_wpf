@@ -112,7 +112,7 @@ namespace ColorVision.Media
             double minLua = RangeSlider1.ValueStart;
             double maxLua = RangeSlider1.ValueEnd;
             ColorMap.buildCustomMap(Int32.Parse(textBox.Value.ToString()), minLua / MinMax, maxLua / MinMax);
-            //colormapNum = Int32.Parse(this.textBox_level.Name);
+            //colormapNum = Int32.Parse(this.textBox_level.DisPlayName);
             init();
             ColorMap.reMap();
         }

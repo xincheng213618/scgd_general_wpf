@@ -2,6 +2,7 @@
 using ColorVision.Extension;
 using ColorVision.Media;
 using ColorVision.Net;
+using ColorVision.Services.Devices.PG;
 using ColorVision.Themes;
 using ColorVision.UI;
 using log4net;
@@ -27,6 +28,7 @@ namespace ColorVision.Services.Devices.FileServer
         public DeviceFileServer DeviceFileServer { get; set; }
 
         public MQTTFileServer MQTTFileServer { get => DeviceFileServer.MQTTFileServer; }
+        public string DisPlayName => DeviceFileServer.Config.Name;
 
         public ImageView View { get => DeviceFileServer.View; }
 

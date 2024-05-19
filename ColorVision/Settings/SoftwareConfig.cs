@@ -45,7 +45,7 @@ namespace ColorVision.Settings
 
         public static RCSetting RCSetting => RCSetting.Instance;
 
-        public static ServicesSetting ServicesSetting => ServicesSetting.Instance;
+        public static ServicesConfig ServicesSetting => ServicesConfig.Instance;
 
         public static MQTTSetting MQTTSetting => MQTTSetting.Instance;
         public static MsgConfig MsgConfig => MsgConfig.Instance;

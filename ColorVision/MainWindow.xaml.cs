@@ -36,6 +36,7 @@ using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using ColorVision.Services;
 
 namespace ColorVision
 {
@@ -308,22 +309,17 @@ namespace ColorVision
             }
         }
 
-        private FlowDisplayControl flowDisplayControl;
-
         private void StackPanelSPD_Initialized(object sender, EventArgs e)
         {
             if (sender is StackPanel stackPanel1)
             {
-                flowDisplayControl = FlowDisplayControl.GetInstance();
-                if (stackPanel1.Children.Contains(flowDisplayControl))
-                    stackPanel1.Children.Remove(flowDisplayControl);
-                stackPanel1.Children.Insert(0, flowDisplayControl);
-
                 foreach (var item in DisPlayManager.GetInstance().IDisPlayControls)
                 {
                     if (item is UserControl userControl)
                         stackPanel1.Children.Add(userControl);
                 }
+
+                
 
                 DisPlayManager.GetInstance().IDisPlayControls.CollectionChanged += (s, e) =>
                 {
@@ -344,12 +340,37 @@ namespace ColorVision
                                             stackPanel1.Children.Remove(userControl);
                                 break;
                             case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
+                                if (e.OldItems != null && e.NewItems != null && e.OldItems.Count == e.NewItems.Count)
+                                {
+                                    for (int i = 0; i < e.OldItems.Count; i++)
+                                    {
+                                        IDisPlayControl oldItem = (IDisPlayControl)e.OldItems[i];
+                                        IDisPlayControl newItem = (IDisPlayControl)e.NewItems[i];
+                                        if (oldItem is UserControl oldUserControl && newItem is UserControl newUserControl)
+                                        {
+                                            int index = stackPanel1.Children.IndexOf(oldUserControl);
+                                            if (index >= 0)
+                                            {
+                                                stackPanel1.Children[index] = newUserControl;
+                                            }
+                                        }
+                                    }
+                                }
                                 break;
                             case System.Collections.Specialized.NotifyCollectionChangedAction.Move:
+                                if (e.OldItems != null && e.NewItems != null)
+                                {
+                                    // Assuming only one item is moved at a time
+                                    IDisPlayControl movedItem = (IDisPlayControl)e.NewItems[0];
+                                    if (movedItem is UserControl movedUserControl)
+                                    {
+                                        stackPanel1.Children.Remove(movedUserControl);
+                                        stackPanel1.Children.Insert(e.NewStartingIndex, movedUserControl);
+                                    }
+                                }
                                 break;
                             case System.Collections.Specialized.NotifyCollectionChangedAction.Reset:
                                 stackPanel1.Children.Clear();
-                                stackPanel1.Children.Insert(0, flowDisplayControl);
                                 break;
                             default:
                                 break;
@@ -365,7 +386,16 @@ namespace ColorVision
                 };
 
                 Interaction.GetBehaviors(stackPanel1).Add(fluidMoveBehavior);
-                stackPanel1.AddAdorners(this);
+                var opoo = stackPanel1.AddAdorners(this);
+
+                opoo.Changed += (s, e) =>
+                {
+                    for (int i = 0; i < stackPanel1.Children.Count; i++)
+                    {
+                        if (stackPanel1.Children[i] is IDisPlayControl disPlayControl)
+                            ServicesConfig.Instance.PlayControls[disPlayControl.DisPlayName] = i;
+                    }
+                };
             }
 
         }

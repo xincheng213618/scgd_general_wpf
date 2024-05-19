@@ -20,6 +20,7 @@ namespace ColorVision.Services.Devices.Sensor
 
         public DeviceSensor Device { get; set; }
         private MQTTSensor DeviceService { get => Device.DeviceService;  }
+        public string DisPlayName => Device.Config.Name;
 
         public DisplaySensorControl(DeviceSensor device)
         {

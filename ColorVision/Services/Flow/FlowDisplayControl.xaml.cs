@@ -26,6 +26,7 @@ namespace ColorVision.Services.Flow
         public static FlowDisplayControl GetInstance() { lock (_locker) { return _instance ??= new FlowDisplayControl(); } }
 
         public IFlowView View { get; set; }
+        public string DisPlayName => "Flow";
 
         public FlowDisplayControl()
         {

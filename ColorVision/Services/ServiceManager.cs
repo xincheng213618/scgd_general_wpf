@@ -1,4 +1,5 @@
-﻿using ColorVision.MySql;
+﻿using ColorVision.Common.Extension;
+using ColorVision.MySql;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.DAO;
@@ -60,7 +61,10 @@ namespace ColorVision.Services
         public void GenControl(ObservableCollection<DeviceService> MQTTDevices)
         {
             LastGenControl = MQTTDevices;
+            var nameToIndexMap = ServicesConfig.Instance.PlayControls;
+
             DisPlayManager.GetInstance().IDisPlayControls.Clear();
+            DisPlayManager.GetInstance().IDisPlayControls.Insert(0, FlowDisplayControl.GetInstance());
             foreach (var item in MQTTDevices)
             {
                 if (item is DeviceService device)
@@ -71,7 +75,30 @@ namespace ColorVision.Services
                     }
                 }
             }
+
+            if (ServicesConfig.Instance.IsRetorePlayControls)
+            {
+                DisPlayManager.GetInstance().IDisPlayControls.Sort((a, b) =>
+                {
+                    if (nameToIndexMap.TryGetValue(a.DisPlayName, out int indexA) && nameToIndexMap.TryGetValue(b.DisPlayName, out int indexB))
+                    {
+                        return indexA.CompareTo(indexB);
+                    }
+                    else if (nameToIndexMap.ContainsKey(a.DisPlayName))
+                    {
+                        return -1; // a should come before b
+                    }
+                    else if (nameToIndexMap.ContainsKey(b.DisPlayName))
+                    {
+                        return 1; // b should come before a
+                    }
+                    return 0; // keep original order if neither a nor b are in playControls
+                });
+            }
+
         }
+
+
         public MQTTServiceInfo? GetServiceInfo(ServiceTypes serviceType,string serviceCode)
         {
             foreach (var item in ServiceTokens)
@@ -104,8 +131,11 @@ namespace ColorVision.Services
         /// </summary>
         public void GenDeviceDisplayControl()
         {
+            var nameToIndexMap = ServicesConfig.Instance.PlayControls;
+
             LastGenControl = new ObservableCollection<DeviceService>();
             DisPlayManager.GetInstance().IDisPlayControls.Clear();
+            DisPlayManager.GetInstance().IDisPlayControls.Insert(0, FlowDisplayControl.GetInstance());
             foreach (var serviceKind in TypeServices)
             {
                 foreach (var service in serviceKind.VisualChildren)
@@ -124,6 +154,30 @@ namespace ColorVision.Services
                 }
             }
             LastGenControl = DeviceServices;
+
+            if (ServicesConfig.Instance.IsRetorePlayControls)
+            {
+                DisPlayManager.GetInstance().IDisPlayControls.Sort((a, b) =>
+                {
+                    if (nameToIndexMap.TryGetValue(a.DisPlayName, out int indexA) && nameToIndexMap.TryGetValue(b.DisPlayName, out int indexB))
+                    {
+                        return indexA.CompareTo(indexB);
+                    }
+                    else if (nameToIndexMap.ContainsKey(a.DisPlayName))
+                    {
+                        return -1; // a should come before b
+                    }
+                    else if (nameToIndexMap.ContainsKey(b.DisPlayName))
+                    {
+                        return 1; // b should come before a
+                    }
+                    return 0; // keep original order if neither a nor b are in playControls
+                });
+            }
+
+
+            for (int i = 0; i < DisPlayManager.GetInstance().IDisPlayControls.Count; i++)
+                ServicesConfig.Instance.PlayControls[DisPlayManager.GetInstance().IDisPlayControls[i].DisPlayName] = i;
         }
         private Dictionary<string, List<MQTTServiceBase>> svrDevices = new();
 

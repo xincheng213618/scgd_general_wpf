@@ -28,6 +28,7 @@ namespace ColorVision.Services.Devices.Calibration
 
         public DeviceCalibration Device { get; set; }
         private MQTTCalibration DeviceService { get => Device.DeviceService;  }
+        public string DisPlayName => Device.Config.Name;
 
         public DisplayCalibrationControl(DeviceCalibration device)
         {

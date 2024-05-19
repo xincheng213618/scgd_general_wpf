@@ -116,7 +116,7 @@ namespace ColorVision.Settings
             //{
             //    foreach (var item in HotKeys.HotKeysList)
             //    {
-            //        if (hotKeys.Name == item.Name)
+            //        if (hotKeys.DisPlayName == item.DisPlayName)
             //        {
             //            item.Hotkey = hotKeys.Hotkey;
             //            item.Kinds = hotKeys.Kinds;

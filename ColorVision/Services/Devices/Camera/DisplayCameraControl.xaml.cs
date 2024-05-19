@@ -4,6 +4,7 @@ using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.Devices.Camera.Views;
+using ColorVision.Services.Devices.FileServer;
 using ColorVision.Services.Msg;
 using ColorVision.Services.PhyCameras;
 using ColorVision.Services.PhyCameras.Templates;
@@ -36,6 +37,7 @@ namespace ColorVision.Services.Devices.Camera
         public MQTTCamera DService { get => Device.DeviceService; }
 
         public ViewCamera View { get; set; }
+        public string DisPlayName => Device.Config.Name;
 
         public LocalVideoConfig VideoConfig { get; set; }
 

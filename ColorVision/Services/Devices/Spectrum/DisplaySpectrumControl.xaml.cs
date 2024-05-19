@@ -30,6 +30,9 @@ namespace ColorVision.Services.Devices.Spectrum
         public MQTTSpectrum SpectrumService { get => DeviceSpectrum.DeviceService; }
 
         public ViewSpectrum View { get => DeviceSpectrum.View;}
+
+        public string DisPlayName => DeviceSpectrum.Config.Name;
+
         public DisplaySpectrumControl(DeviceSpectrum DeviceSpectrum)
         {
             this.DeviceSpectrum = DeviceSpectrum;
