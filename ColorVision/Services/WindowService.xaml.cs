@@ -1,14 +1,11 @@
-﻿using ColorVision.Services.RC;
-using ColorVision.Services.Devices;
-using ColorVision.Services.Terminal;
-using ColorVision.Settings;
-using System;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using ColorVision.UI;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Common.MVVM;
+using ColorVision.Services.Devices;
+using ColorVision.Services.RC;
+using ColorVision.Services.Terminal;
+using ColorVision.UI;
+using System;
+using System.Windows;
 
 namespace ColorVision.Services
 {

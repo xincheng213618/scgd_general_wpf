@@ -94,12 +94,9 @@ namespace ColorVision.Services.Devices.Camera
             sysDevModel = saveDevConfigInfo(CreateConfig, sysResource);
             if (sysDevModel != null)
             {
-                if (TerminalService.MQTTServiceTerminalBase is MQTTTerminalCamera cameraService)
-                {
-                    var deviceService = new DeviceCamera(sysDevModel, cameraService);
-                    TerminalService.AddChild(deviceService);
-                    ServiceManager.GetInstance().DeviceServices.Add(deviceService);
-                }
+                var deviceService = new DeviceCamera(sysDevModel);
+                TerminalService.AddChild(deviceService);
+                ServiceManager.GetInstance().DeviceServices.Add(deviceService);
                 if (sysDevModel != null && sysDevModel.TypeCode != null && sysDevModel.PCode != null && sysDevModel.Code != null)
                     RC.MQTTRCService.GetInstance().RestartServices(sysDevModel.TypeCode, sysDevModel.PCode, sysDevModel.Code);
                 Close();

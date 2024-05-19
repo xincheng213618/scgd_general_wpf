@@ -1,19 +1,12 @@
-﻿using ColorVision.Media;
+﻿using ColorVision.Common.Extension;
+using ColorVision.Media;
 using ColorVision.Net;
 using ColorVision.Solution;
-using ColorVision.Common.Extension;
-
-using HandyControl.Tools;
-using HandyControl.Tools.Extension;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Interop;
-using System.Windows.Media;
-using System.Windows.Media.Animation;
-using ColorVision.Draw;
 
 namespace ColorVision
 {

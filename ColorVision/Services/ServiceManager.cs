@@ -246,13 +246,10 @@ namespace ColorVision.Services
                     {
                         case ServiceTypes.Camera:
 
-                            if (terminalService.MQTTServiceTerminalBase is MQTTTerminalCamera cameraService)
-                            {
-                                DeviceCamera deviceCamera = new(sysResourceModel, cameraService);
-                                svrObj = deviceCamera.DeviceService;
-                                terminalService.AddChild(deviceCamera);
-                                DeviceServices.Add(deviceCamera);
-                            }
+                            DeviceCamera deviceCamera = new DeviceCamera(sysResourceModel);
+                            svrObj = deviceCamera.DeviceService;
+                            terminalService.AddChild(deviceCamera);
+                            DeviceServices.Add(deviceCamera);
                             break;
                         case ServiceTypes.PG:
                             DevicePG devicePG = new(sysResourceModel);

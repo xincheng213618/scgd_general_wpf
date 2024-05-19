@@ -29,9 +29,8 @@ namespace ColorVision.Services.Devices.Camera
         public RelayCommand FetchLatestTemperatureCommand { get; set; }
         public RelayCommand DisPlaySaveCommand { get; set; }
 
-        public DeviceCamera(SysDeviceModel sysResourceModel, MQTTTerminalCamera cameraService) : base(sysResourceModel)
+        public DeviceCamera(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
-            Service = cameraService;
             DeviceService = new MQTTCamera(Config);
 
             View = new ViewCamera(this);
