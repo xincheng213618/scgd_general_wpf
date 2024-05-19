@@ -1,8 +1,8 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA8602
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.MQTT;
 using ColorVision.Services;
-using ColorVision.Services.Dao;
 using ColorVision.Services.DAO;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;

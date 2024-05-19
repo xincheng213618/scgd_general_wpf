@@ -1,4 +1,4 @@
-﻿#pragma warning disable CS8629
+﻿#pragma warning disable CS8629, CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using CVCommCore;
