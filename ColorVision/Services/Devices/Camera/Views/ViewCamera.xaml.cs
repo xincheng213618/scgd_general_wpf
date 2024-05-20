@@ -5,6 +5,7 @@ using ColorVision.Draw.Ruler;
 using ColorVision.Media;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Algorithm.Views;
 using ColorVision.Services.Export;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
@@ -550,8 +551,27 @@ namespace ColorVision.Services.Devices.Camera.Views
 
         private void CalculPOI_Click(object sender, RoutedEventArgs e)
         {
-            Window window = new();
-            window.Show();
+            if (ComboxPOITemplate.SelectedValue is PoiParam poiParams)
+            {
+                if (poiParams.Id == -1)
+                {
+                    ImageView.ImageShow.Clear();
+                    return;
+                }
+                PoiParam.LoadPoiDetailFromDB(poiParams);
+
+                ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
+
+                foreach (var item in poiParams.PoiPoints)
+                {
+                    var sss = ImageView.GetCVCIE((int)item.PixX, (int)item.PixY, (int)item.PixWidth, (int)item.PixWidth);
+                    PoiResultCIExyuvDatas.Add(sss);
+                }
+                WindowCVCIE windowCIE = new WindowCVCIE(PoiResultCIExyuvDatas) { Owner = Application.Current.GetActiveWindow() };
+                windowCIE.Show();
+            }
+
+
         }
     }
 }

@@ -67,6 +67,8 @@ namespace ColorVision.Util.Draw.Special
         }
         private bool _IsShow;
 
+
+
         public void DrawImageCVCIE(ImageInfo imageInfo,double XVal,double YVal, double ZVal,double x,double y,double u,double v)
         {
             Point actPoint = imageInfo.ActPoint;

@@ -4,13 +4,16 @@ using ColorVision.Common.Utilities;
 using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
 using ColorVision.Net;
+using ColorVision.Services.Devices.Algorithm.Views;
 using ColorVision.UI.Views;
 using ColorVision.Util.Draw.Special;
 using ColorVision.Utils;
 using cvColorVision;
 using CVCommCore.CVAlgorithm;
+using K4os.Hash.xxHash;
 using log4net;
 using MQTTMessageLib.FileServer;
+using NPOI.SS.Formula.Eval;
 using OpenCvSharp.WpfExtensions;
 using SkiaSharp.Views.WPF;
 using System;
@@ -573,8 +576,8 @@ namespace ColorVision.Media
                     FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
                     try
                     {
-                        OpenImage(new NetFileUtil().OpenLocalCVFile(filePath, fileExtType));
                         FilePath = filePath;
+                        OpenImage(new NetFileUtil().OpenLocalCVFile(filePath, fileExtType));
                     }
                     catch (Exception ex)
                     {
@@ -688,6 +691,21 @@ namespace ColorVision.Media
             ToolBar1.Visibility = Visibility.Visible;
             ImageShow.ImageInitialize();
             ToolBarTop.ToolBarScaleRuler.IsShow = true;
+
+            ToolBarTop.MouseMagnifier.MouseMoveColorHandler -= ShowCVCIE;
+
+            IsCVCIE = false;
+            CVCIEFile cVCIEFile = new();
+            if (FilePath != null && CVFileUtil.IsCIEFile(FilePath) && FilePath.Contains("cvcie"))
+            {
+                IsCVCIE = true;
+                int index = CVFileUtil.ReadCIEFileHeader(FilePath, out cVCIEFile);
+                CVFileUtil.ReadCIEFileData(FilePath, ref cVCIEFile, index);
+
+                bool i = cvCameraCSLib.CM_InitXYZ(intPtr);
+                cvCameraCSLib.CM_SetBufferXYZ(intPtr, (uint)cVCIEFile.cols, (uint)cVCIEFile.rows, (uint)cVCIEFile.bpp, (uint)cVCIEFile.channels, cVCIEFile.data);
+                ToolBarTop.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
+            }
         }
 
         public ImageSource PseudoImage { get; set; }
@@ -880,73 +898,64 @@ namespace ColorVision.Media
             RowDefinitionEnd.Height = new GridLength((170.0 / 255.0) * PseudoSlider.ValueStart);
             DebounceTimer.AddOrResetTimer("RenderPseudo",100, RenderPseudo);
         }
-        List<float[]> bytes = new();
+        public bool IsCVCIE { get; set; }
+        public IntPtr intPtr;
+
+        public void ShowCVCIE(object sender, ImageInfo imageInfo)
+        {
+            int xx = imageInfo.Y;
+            int yy = imageInfo.X;
+            float dXVal = 0;
+            float dYVal = 0;
+            float dZVal = 0;
+            float dx = 0, dy = 0, du = 0, dv = 0;
+            cvCameraCSLib.CM_GetXYZxyuvRect(intPtr, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
+            ToolBarTop.MouseMagnifier.DrawImageCVCIE(imageInfo, dXVal, dYVal, dZVal, dx, dy, du, dv);
+        }
+
+        public PoiResultCIExyuvData GetCVCIE(int x ,int y ,int rect,int rect2)
+        {
+            PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData();
+            float dXVal = 0;
+            float dYVal = 0;
+            float dZVal = 0;
+            float dx = 0;
+            float dy = 0;
+            float du = 0;
+            float dv = 0;
+            cvCameraCSLib.CM_GetXYZxyuvRect(intPtr, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2);
+
+            poiResultCIExyuvData.Point = new POIPoint() { PixelX = x, PixelY = y, Height = rect, Width = rect2 };
+
+            poiResultCIExyuvData.u = du;
+            poiResultCIExyuvData.v = dv;
+            poiResultCIExyuvData.x = dx;
+            poiResultCIExyuvData.y = dy;
+            poiResultCIExyuvData.X = dXVal;
+            poiResultCIExyuvData.Y = dYVal;
+            poiResultCIExyuvData.Z = dZVal;
+            return poiResultCIExyuvData;
+        }
         private void ButtonCIE1931_Click(object sender, RoutedEventArgs e)
         {
             bool old = ToolBarTop.ShowImageInfo;
             ToolBarTop.ShowImageInfo = true; 
             WindowCIE windowCIE = new();
             windowCIE.Owner = Window.GetWindow(this);
-            CVCIEFile cVCIEFile = new();
-            IntPtr intPtr = new WindowInteropHelper(Window.GetWindow(this)).Handle;
-
-            if (FilePath!=null &&CVFileUtil.IsCIEFile(FilePath) && FilePath.Contains("cvcie"))
-            {
-                int index = CVFileUtil.ReadCIEFileHeader(FilePath, out cVCIEFile);
-
-                    CVFileUtil.ReadCIEFileData(FilePath, ref cVCIEFile, index);
-                bytes = CVFileUtil.ReadCVCIE(FilePath);
-
-                bool i = cvCameraCSLib.CM_InitXYZ(intPtr);
-                cvCameraCSLib.CM_SetBufferXYZ(intPtr, (uint)cVCIEFile.cols, (uint)cVCIEFile.rows, (uint)cVCIEFile.bpp, (uint)cVCIEFile.channels, cVCIEFile.data);
-            }
-            else
-            {
-                bytes.Clear();
-            }
-
             MouseMoveColorHandler mouseMoveColorHandler = (s, e) =>
             {
-                if (bytes != null && bytes.Count ==3) 
+                if (IsCVCIE) 
                 {
                     try
                     {
                         int xx = e.Y;
                         int yy = e.X;
-                        int index = xx * cVCIEFile.rows + yy;
+                        float dXVal = 0;
+                        float dYVal = 0;
+                        float dZVal = 0;
+                        float dx =0, dy =0,du = 0,dv = 0;
 
-
-
-                        float dXVal  = bytes[0][index];
-                        float dYVal = bytes[1][index];
-                        float dZVal = bytes[2][index];
-
-                        float dx, dy,du,dv;
-
-                        if ((dXVal + dYVal + dZVal) == 0)
-                        {
-                            dx = 0;
-                            dy = 0;
-                        }
-                        else
-                        {
-                            dx = dXVal / (dXVal + dYVal + dZVal);
-                            dy = dYVal / (dXVal + dYVal + dZVal);
-                        }
-                        if ((dXVal + dYVal * 15 + dZVal * 3) == 0)
-                        {
-                            du = 0;
-                            dv = 0;
-                        }
-                        else
-                        {
-                            du = (4 * dXVal) / (dXVal + dYVal * 15 + dZVal * 3);    
-                            dv = (9 * dYVal) / (dXVal + dYVal * 15 + dZVal * 3);
-                        }
                         cvCameraCSLib.CM_GetXYZxyuvRect(intPtr, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
-
-                        ToolBarTop.MouseMagnifier.DrawImageCVCIE(e, dXVal, dYVal, dZVal,dx,dy,du,dv);
-
                         windowCIE.ChangeSelect(dx, dy);
                     }
                     catch 
@@ -964,7 +973,6 @@ namespace ColorVision.Media
             {
                 ToolBarTop.MouseMagnifier.MouseMoveColorHandler -= mouseMoveColorHandler;
                 ToolBarTop.ShowImageInfo = old;
-                bytes.Clear();
             };
             windowCIE.Show();
         }
