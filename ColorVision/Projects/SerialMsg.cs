@@ -4,8 +4,15 @@ using System.Text;
 
 namespace ColorVision.Projects
 {
+    public enum SerialStatus
+    {
+        Send,
+        Receive
+    }
+
     public class SerialMsg : ViewModelBase
     {
+        public SerialStatus SerialStatus { get; set; }
         public byte[] Bytes { get; set; }
         public string Hex => BitConverter.ToString(Bytes).Replace("-", " ");
         public DateTime SendTime { get; set; } = DateTime.Now;

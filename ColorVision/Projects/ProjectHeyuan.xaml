@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Projects"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:HYMesManager}"
         Title="ProjectHeiyuan" Height="700" Width="1280" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.ColumnDefinitions>
@@ -98,7 +99,7 @@
                             </GridView.ColumnHeaderContainerStyle>
                             <GridViewColumn  Width="80">
                                 <GridViewColumn.Header>
-                                    <TextBlock Text="设定" Foreground="Blue"/>
+                                    <TextBlock Text="测试结果" Foreground="Blue"/>
                                 </GridViewColumn.Header>
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
@@ -160,9 +161,14 @@
                         <TextBlock Text="流程" Width="100"/>
                         <ComboBox  x:Name="FlowTemplate" Style="{StaticResource ComboBox.Small}" Height="10" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                     </DockPanel>
+                    
                     <DockPanel Margin="0,2">
                         <TextBlock Text="产品编号" Width="100"/>
-                        <TextBox DockPanel.Dock="Right" Style="{StaticResource TextBox.Small}" />
+                        <TextBox DockPanel.Dock="Right" Style="{StaticResource TextBox.Small}"  Text="{Binding SN}" />
+                    </DockPanel>
+                    <DockPanel Margin="0,2">
+                        <TextBlock Text="产品测试名称" Width="100"/>
+                        <TextBox DockPanel.Dock="Right" Style="{StaticResource TextBox.Small}"  Text="{Binding TestName}" />
                     </DockPanel>
                     <DockPanel Margin="0,2">
                         <TextBlock Text="数据存储路径" Width="100"/>
@@ -177,11 +183,11 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-            <GroupBox Header="MES" d:DataContext="{d:DesignInstance local:HYMesManager}" VerticalAlignment="Top" Margin="5,0">
+            <GroupBox Header="MES"  VerticalAlignment="Top" Margin="5,0">
                 <StackPanel Margin="5">
                     <DockPanel Margin="0,2">
                         <TextBlock Text="设备序号" Width="50"/>
-                        <TextBox DockPanel.Dock="Right" Style="{StaticResource TextBox.Small}"  Text="0"/>
+                        <TextBox DockPanel.Dock="Right" Style="{StaticResource TextBox.Small}"  Text="{Binding DeviceId}"/>
                     </DockPanel>
                     <DockPanel Margin="0,2">
                         <TextBlock Text="串口号" Width="50"/>
@@ -199,6 +205,13 @@
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type local:SerialMsg}">
                                     <TextBlock Text="{Binding  SendTime, StringFormat='yyyy-MM-dd HH:mm:ss'}"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                        <GridViewColumn  Header="SerialStatus" Width="100">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate  DataType="{x:Type local:SerialMsg}">
+                                    <TextBlock Text="{Binding  SerialStatus}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>

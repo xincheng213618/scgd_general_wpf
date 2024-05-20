@@ -74,7 +74,7 @@ namespace ColorVision.Projects
             ListViewMes.ItemsSource = HYMesManager.GetInstance().SerialMsgs;
 
             FlowTemplate.ItemsSource = FlowParam.Params;
-            HYMesManager.GetInstance().Initialized();
+            this.DataContext = HYMesManager.GetInstance();
         }
         private Services.Flow.FlowControl flowControl;
 
@@ -87,15 +87,13 @@ namespace ColorVision.Projects
             if (sender != null)
             {
                 FlowControlData FlowControlData = (FlowControlData)sender;
-
-                
+ 
                 if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                 {
                     if (FlowControlData.EventName == "Completed")
                     {
                         ResultText.Text = "OK";
                         ResultText.Foreground = Brushes.Blue;
-                        HYMesManager.GetInstance().SendSn("0", FlowControlData.SerialNumber);
                         Results.Clear();
                         var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
                         if (Batch != null)
@@ -112,12 +110,13 @@ namespace ColorVision.Projects
                                 Results.Add(new TempResult() { Name = PoiResultCIExyuvDatas[0].ValidateSingles[i].Rule.RType.ToString(), NumSet = new NumSet() { Orange = PoiResultCIExyuvDatas[0].ValidateSingles[i].Result.ToString() } });
                             }
                         }
+                        HYMesManager.GetInstance().UploadMes();
                     }
                     else
                     {
                         ResultText.Text =  "不合格";
                         ResultText.Foreground =  Brushes.Red;
-                        HYMesManager.GetInstance().SendSn("1", "2222");
+                        HYMesManager.GetInstance().UploadMes();
                     }
                 }
             }
@@ -163,6 +162,11 @@ namespace ColorVision.Projects
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             HYMesManager.GetInstance().OpenPort(ComboBoxSer.Text);
+        }
+
+        private void Button_Click_2(object sender, RoutedEventArgs e)
+        {
+            HYMesManager.GetInstance().SendSn();
         }
     }
 }

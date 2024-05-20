@@ -1,6 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using log4net.Plugin;
-using System.IO;
+﻿using System.IO;
 using System.Reflection;
 
 namespace ColorVision.UI
