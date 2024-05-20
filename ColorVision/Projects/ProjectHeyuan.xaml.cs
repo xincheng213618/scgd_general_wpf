@@ -1,4 +1,4 @@
-﻿#pragma warning disable CA8602
+﻿#pragma warning disable CS8602
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.MQTT;

@@ -19,11 +19,14 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -885,15 +888,16 @@ namespace ColorVision.Media
             WindowCIE windowCIE = new();
             windowCIE.Owner = Window.GetWindow(this);
             CVCIEFile cVCIEFile = new();
-            IntPtr intPtr = new();
+            IntPtr intPtr = new WindowInteropHelper(Window.GetWindow(this)).Handle;
 
             if (FilePath!=null &&CVFileUtil.IsCIEFile(FilePath) && FilePath.Contains("cvcie"))
             {
                 int index = CVFileUtil.ReadCIEFileHeader(FilePath, out cVCIEFile);
 
-                CVFileUtil.ReadCIEFileData(FilePath, ref cVCIEFile, index);
+                    CVFileUtil.ReadCIEFileData(FilePath, ref cVCIEFile, index);
                 bytes = CVFileUtil.ReadCVCIE(FilePath);
-                cvCameraCSLib.CM_InitXYZ(intPtr);
+
+                bool i = cvCameraCSLib.CM_InitXYZ(intPtr);
                 cvCameraCSLib.CM_SetBufferXYZ(intPtr, (uint)cVCIEFile.cols, (uint)cVCIEFile.rows, (uint)cVCIEFile.bpp, (uint)cVCIEFile.channels, cVCIEFile.data);
             }
             else
@@ -903,7 +907,7 @@ namespace ColorVision.Media
 
             MouseMoveColorHandler mouseMoveColorHandler = (s, e) =>
             {
-                if (bytes != null && bytes.Count ==3)
+                if (bytes != null && bytes.Count ==3) 
                 {
                     try
                     {
@@ -936,7 +940,7 @@ namespace ColorVision.Media
                         }
                         else
                         {
-                            du = (4 * dXVal) / (dXVal + dYVal * 15 + dZVal * 3);
+                            du = (4 * dXVal) / (dXVal + dYVal * 15 + dZVal * 3);    
                             dv = (9 * dYVal) / (dXVal + dYVal * 15 + dZVal * 3);
                         }
                         cvCameraCSLib.CM_GetXYZxyuvRect(intPtr, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
