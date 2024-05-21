@@ -172,7 +172,7 @@ namespace ColorVision.Solution.V
         {
             if (obj == null) return -1;
             else if (obj == this) return 0;
-            else if (obj is VObject vObject) return NativeMethods.Shlwapi.CompareLogical(Name, vObject.Name);
+            else if (obj is VObject vObject) return Common.NativeMethods.Shlwapi.CompareLogical(Name, vObject.Name);
             else return -1;
         }
     }

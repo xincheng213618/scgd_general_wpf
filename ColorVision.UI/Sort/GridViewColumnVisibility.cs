@@ -89,20 +89,6 @@ namespace ColorVision.UI.Sorts
             {
                 var desiredColumn = lists[i].GridViewColumn;
                 desiredColumn.Width = double.NaN;
-                if (gridViewColumns.Contains(desiredColumn))
-                {
-
-                    var actualIndex = gridViewColumns.IndexOf(desiredColumn);
-                    // 如果当前列的位置不正确，则将其移动到正确的位置
-                    if (actualIndex != i)
-                    {
-                        gridViewColumns.Move(actualIndex, i);
-                    }
-                }
-                else
-                {
-                    gridViewColumns.Insert(i, desiredColumn);
-                }
             }
         }
 

@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Extension;
 using ColorVision.Media;
-using ColorVision.NativeMethods;
+using ColorVision.Common.NativeMethods;
 using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;

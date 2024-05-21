@@ -35,29 +35,44 @@
                         <ListView.ItemContainerStyle>
                             <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle}">
                                 <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
                             </Style>
                         </ListView.ItemContainerStyle>
-                        <ListView.ItemTemplate>
-                            <DataTemplate DataType="{x:Type local:SolutionInfo}" >
-                                <Border x:Name="border1"   Height="45" Margin="0,2,0,2" BorderThickness="0" Width="{Binding ElementName=ListView1,Path=ActualWidth}">
-                                    <Border.ContextMenu>
-                                        <ContextMenu>
-                                            <MenuItem Header="{x:Static properties:Resource.Delete}"  Click="Delete" />
-                                        </ContextMenu>
-                                    </Border.ContextMenu>
-                                    <Grid Margin="0,2,50,2">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                        </Grid.ColumnDefinitions>
-                                        <Grid Grid.Column="1" Margin="0,2">
-                                            <TextBlock Text="{Binding Name}" TextTrimming = "CharacterEllipsis" FontWeight="Bold" VerticalAlignment="Top"/>
-                                            <TextBlock Text="{Binding FullName }" TextTrimming = "CharacterEllipsis" VerticalAlignment="Bottom"/>
-                                            <TextBlock Text="{Binding CreationTime}" TextTrimming = "CharacterEllipsis" VerticalAlignment="Top" HorizontalAlignment="Right"/>
-                                        </Grid>
-                                    </Grid>
-                                </Border>
-                            </DataTemplate>
-                        </ListView.ItemTemplate>
+                        <ListView.View>
+                            <GridView>
+                                <GridView.ColumnHeaderContainerStyle>
+                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                    </Style>
+                                </GridView.ColumnHeaderContainerStyle>
+                                <GridViewColumn >
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:SolutionInfo}" >
+                                            <Border x:Name="border1"  Height="45" Background="Transparent" Margin="0,2,0,2" BorderThickness="0" Width="450">
+                                                <Border.ContextMenu>
+                                                    <ContextMenu>
+                                                        <MenuItem Header="{x:Static properties:Resource.Delete}"  Click="Delete" />
+                                                    </ContextMenu>
+                                                </Border.ContextMenu>
+                                                <Grid Margin="0,2,50,2">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Grid Grid.Column="1" Margin="0,2">
+                                                        <TextBlock Text="{Binding Name}" TextTrimming = "CharacterEllipsis" FontWeight="Bold" VerticalAlignment="Top"/>
+                                                        <TextBlock Text="{Binding FullName }" TextTrimming = "CharacterEllipsis" VerticalAlignment="Bottom"/>
+                                                        <TextBlock Text="{Binding CreationTime}" TextTrimming = "CharacterEllipsis" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+                                                    </Grid>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
                     </ListView>
                     <TextBlock x:Name="SearchNoneText" Visibility="Collapsed" VerticalAlignment="Top" FontSize="16" Margin="20,20,0,0" Text="{x:Static properties:Resource.NoRelatedItemsFound}" />
                 </Grid>

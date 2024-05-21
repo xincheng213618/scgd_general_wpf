@@ -2,7 +2,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-
 namespace ColorVision.UI
 {
     public class SystemMonitorSetting: ViewModelBase,IConfig
@@ -28,7 +27,7 @@ namespace ColorVision.UI
         private PerformanceCounter PCCPU;
         private PerformanceCounter PCCPUThis;
 
-        private double RAMAL = (double)NativeMethods.PerformanceInfo.GetTotalMemoryInMiB() / 1024;
+        private double RAMAL = (double)Common.NativeMethods.PerformanceInfo.GetTotalMemoryInMiB() / 1024;
         private PerformanceCounter PCRAM;
         private PerformanceCounter PCRAMThis;
 

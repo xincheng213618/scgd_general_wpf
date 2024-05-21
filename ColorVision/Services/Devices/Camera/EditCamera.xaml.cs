@@ -34,7 +34,7 @@ namespace ColorVision.Services.Devices.Camera
         {
             if (e.Key == Key.Enter)
             {
-                NativeMethods.Keyboard.PressKey(0x09);
+                Common.NativeMethods.Keyboard.PressKey(0x09);
                 e.Handled = true;
             }
         }

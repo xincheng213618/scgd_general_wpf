@@ -76,13 +76,13 @@ namespace ColorVision.MQTT
                 {
                     ContextMenu contextMenu = new();
                     MenuItem menuItem2 = new() { Header = "复制Payload" };
-                    menuItem2.Click += (s, e) => { NativeMethods.Clipboard.SetText(resultData_MQTT.Payload.ToString() ?? string.Empty); };
+                    menuItem2.Click += (s, e) => { Common.NativeMethods.Clipboard.SetText(resultData_MQTT.Payload.ToString() ?? string.Empty); };
                     contextMenu.Items.Add(menuItem2);
                     MenuItem menuItem = new() { Header = "复制" };
-                    menuItem.Click += (s, e) => { NativeMethods.Clipboard.SetText(textBox.Text); };
+                    menuItem.Click += (s, e) => { Common.NativeMethods.Clipboard.SetText(textBox.Text); };
                     contextMenu.Items.Add(menuItem);
                     MenuItem menuItem1 = new() { Header = "复制Topic" };
-                    menuItem1.Click += (s, e) => { NativeMethods.Clipboard.SetText(resultData_MQTT.Topic.ToString() ?? string.Empty); };
+                    menuItem1.Click += (s, e) => { Common.NativeMethods.Clipboard.SetText(resultData_MQTT.Topic.ToString() ?? string.Empty); };
                     contextMenu.Items.Add(menuItem1);
                     MenuItem menuItem3 = new() { Header = "SaveToFile" };
 

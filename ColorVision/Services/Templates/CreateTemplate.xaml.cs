@@ -22,10 +22,12 @@ namespace ColorVision.Services.Templates
         {
             this.Title += ITemplate.Title;
             List<string> list = new List<string>();
+
             list.Add(ITemplate.NewCreateFileName(ITemplate.Code + "_" + TemplateConfig.Instance.DefaultCreateTemplateName));
             list.Add(ITemplate.NewCreateFileName(ITemplate.Code + "." + TemplateConfig.Instance.DefaultCreateTemplateName));
             list.Add(ITemplate.NewCreateFileName(ITemplate.Code));
             list.Add(ITemplate.NewCreateFileName(TemplateConfig.Instance.DefaultCreateTemplateName));
+
             CreateCode.ItemsSource = list;
             CreateCode.SelectedIndex = 0;
             if (ITemplate.IsUserControl || ITemplate.IsSideHide)
@@ -65,7 +67,7 @@ namespace ColorVision.Services.Templates
         {
             if (e.Key == Key.Enter)
             {
-                NativeMethods.Keyboard.PressKey(0x09);
+                Common.NativeMethods.Keyboard.PressKey(0x09);
                 e.Handled = true;
             }
         }

@@ -131,22 +131,12 @@ namespace ColorVision.Solution
                 Common.NativeMethods.ShortcutCreator.CreateShortcut(Path.GetFileName(FileName),SolutionDirectory.FullName +"\\Image", FileName);
         }
 
-        public void OpenSolutionWindow()
+        public static void OpenSolutionWindow()
         {
             OpenSolutionWindow openSolutionWindow = new() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            openSolutionWindow.Closed += delegate
-            {
-                if (!string.IsNullOrWhiteSpace(openSolutionWindow.FullName))
-                {
-                    if (Directory.Exists(openSolutionWindow.FullName))
-                        OpenSolution(openSolutionWindow.FullName);
-                    else
-                        MessageBox.Show("找不到工程");
-                }
-
-            };
             openSolutionWindow.Show();
         }
+
         public void NewCreateWindow()
         {
             NewCreateWindow newCreatWindow = new() { Owner = WindowHelpers.GetActiveWindow() , WindowStartupLocation = WindowStartupLocation.CenterOwner };

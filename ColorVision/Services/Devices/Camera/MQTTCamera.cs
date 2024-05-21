@@ -128,7 +128,7 @@ namespace ColorVision.Services.Devices.Camera
                     case "Open":
                         DeviceStatus = DeviceStatusType.Closed;
                         string SN = msg.Data.SN;
-                        NativeMethods.Clipboard.SetText(SN);
+                        Common.NativeMethods.Clipboard.SetText(SN);
                         Application.Current.Dispatcher.BeginInvoke(() => 
                         {
                             MessageBox.Show(WindowHelpers.GetActiveWindow(), $"相机打开失败，找不到激活文件,设备码{msg.DeviceCode} {Environment.NewLine} 请粘贴到SN到指定位置:{SN} ","ColorVision");

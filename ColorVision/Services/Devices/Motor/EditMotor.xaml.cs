@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Devices.PG;
 using System;
 using System.Windows;
 using System.Windows.Input;
@@ -26,7 +25,7 @@ namespace ColorVision.Services.Devices.Motor
         {
             if (e.Key == Key.Enter)
             {
-                NativeMethods.Keyboard.PressKey(0x09);
+                Common.NativeMethods.Keyboard.PressKey(0x09);
                 e.Handled = true;
             }
         }

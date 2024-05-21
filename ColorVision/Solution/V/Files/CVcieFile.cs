@@ -1,4 +1,4 @@
-﻿using ColorVision.NativeMethods;
+﻿using ColorVision.Common.NativeMethods;
 using ColorVision.Extension;
 
 using System.IO;

@@ -105,7 +105,7 @@ namespace ColorVision.Services.Msg
                         Formatting = Formatting.Indented
                     }; 
                     string text = JsonConvert.SerializeObject(msgReturn, settings);
-                    NativeMethods.Clipboard.SetText(text);
+                    Common.NativeMethods.Clipboard.SetText(text);
                     MessageBox.Show(Application.Current.MainWindow, text, "ColorVision");
                 }
                 else if (stackPanel.Tag is MsgSend msgSend)
@@ -115,7 +115,7 @@ namespace ColorVision.Services.Msg
                         Formatting = Formatting.Indented
                     };
                     string text = JsonConvert.SerializeObject(msgSend, settings);
-                    NativeMethods.Clipboard.SetText(text);
+                    Common.NativeMethods.Clipboard.SetText(text);
                     MessageBox.Show(Application.Current.MainWindow, text, "ColorVision");
 
                 }
@@ -149,7 +149,7 @@ namespace ColorVision.Services.Msg
                     Formatting = Formatting.Indented
                 };
                 string text = JsonConvert.SerializeObject(msgRecord.MsgSend, settings);
-                NativeMethods.Clipboard.SetText(text);
+                Common.NativeMethods.Clipboard.SetText(text);
                 MessageBox.Show(Application.Current.MainWindow, text, "ColorVision");
             }
 
@@ -164,7 +164,7 @@ namespace ColorVision.Services.Msg
                     Formatting = Formatting.Indented
                 };
                 string text = JsonConvert.SerializeObject(msgRecord.MsgReturn, settings);
-                NativeMethods.Clipboard.SetText(text);
+                Common.NativeMethods.Clipboard.SetText(text);
                 MessageBox.Show(Application.Current.MainWindow, text, "ColorVision");
             }
         }

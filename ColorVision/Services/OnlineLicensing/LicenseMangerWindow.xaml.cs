@@ -102,7 +102,7 @@ namespace ColorVision.Services.OnlineLicensing
         {
             if (button.Content.ToString() != Content)
             {
-                NativeMethods.Clipboard.SetText(TextBoxSn.Text);
+                Common.NativeMethods.Clipboard.SetText(TextBoxSn.Text);
                 var temp = button.Content;
                 button.Content = Content;
                 await Task.Delay(1000);
