@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
-using ColorVision.Utils;
 using System;
 using System.Diagnostics;
 using System.IO;

@@ -13,7 +13,6 @@ using ColorVision.UI.HotKey;
 using ColorVision.UI.Views;
 using ColorVision.Update;
 using ColorVision.UserSpace;
-using ColorVision.Utils;
 using HandyControl.Tools;
 using HandyControl.Tools.Extension;
 using log4net;

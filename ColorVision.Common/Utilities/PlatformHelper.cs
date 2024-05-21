@@ -2,7 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Windows;
 
-namespace ColorVision.Utils;
+namespace ColorVision.Common.Utilities;
 
 public static class PlatformHelper
 {

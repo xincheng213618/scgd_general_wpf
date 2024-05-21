@@ -38,6 +38,7 @@ namespace ColorVision
         private void Execute()
         {
             new AboutMsgWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            throw new InvalidOperationException("This is a test exception.");
         }
     }
 
