@@ -39,7 +39,7 @@ namespace ColorVision.Services.Devices.Spectrum
 
         public override void Create(string templateName)
         {
-            SpectrumResourceParam? param = TemplateControl.AddParamMode<SpectrumResourceParam>(Code, templateName, Device.SysResourceModel.Id);
+            SpectrumResourceParam? param = AddParamMode(Code, templateName, Device.SysResourceModel.Id);
             if (param != null)
             {
                 var a = new TemplateModel<SpectrumResourceParam>(templateName, param);

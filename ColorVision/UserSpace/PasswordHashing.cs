@@ -1,6 +1,9 @@
 ﻿using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Security;
 using Org.BouncyCastle.Crypto.Digests;
+using System.Text;
+using System;
+using System.Security.Cryptography;
 
 namespace ColorVision.UserSpace
 {
@@ -19,19 +22,20 @@ namespace ColorVision.UserSpace
         public static byte[] HashPassword(string password, byte[] salt)
         {
             // 将密码字符串转换为字节
-            byte[] passwordBytes = System.Text.Encoding.UTF8.GetBytes(password);
+            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
 
-            // 创建散列计算器
-            IDigest digest = new Sha256Digest();
-            digest.BlockUpdate(salt, 0, salt.Length);
-            digest.BlockUpdate(passwordBytes, 0, passwordBytes.Length);
+            // 创建一个新的字节数组来存储盐和密码字节
+            byte[] saltedPassword = new byte[salt.Length + passwordBytes.Length];
 
-            // 输出散列值
-            byte[] result = new byte[digest.GetDigestSize()];
-            digest.DoFinal(result, 0);
+            // 将盐和密码字节复制到新的字节数组中
+            Buffer.BlockCopy(salt, 0, saltedPassword, 0, salt.Length);
+            Buffer.BlockCopy(passwordBytes, 0, saltedPassword, salt.Length, passwordBytes.Length);
 
-            return result;
+            // 使用 SHA-256 计算散列值
+            return SHA256.HashData(passwordBytes);
         }
+
+
 
         // 验证密码是否正确
         public static bool VerifyPassword(string password, byte[] salt, byte[] hash)

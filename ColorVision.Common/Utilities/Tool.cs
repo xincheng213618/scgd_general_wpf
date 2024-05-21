@@ -1,6 +1,7 @@
 ﻿
 using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
@@ -13,6 +14,7 @@ using System.Windows.Forms;
 
 namespace ColorVision.Common.Utilities
 {
+
     public static partial class Tool
     {
 

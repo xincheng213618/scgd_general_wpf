@@ -154,7 +154,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
         /// <summary>
         /// 专门位鬼影设计的类
         /// </summary>
-        class Point1
+        sealed class Point1
         {
             public int X { get; set; }
             public int Y { get; set; }

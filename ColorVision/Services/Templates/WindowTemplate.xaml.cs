@@ -505,6 +505,9 @@ namespace ColorVision.Services.Templates
             //        break;
             //}
         }
+       
+
+
 
         private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
         {
@@ -518,17 +521,10 @@ namespace ColorVision.Services.Templates
                 }
                 else
                 {
-                    var keywords = textBox.Text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
-                    var filteredResults = ITemplate.ItemsSource
-                        .OfType<TemplateModelBase>()
-                        .Where(template => keywords.All(keyword =>
-                            template.Key.Contains(keyword, StringComparison.OrdinalIgnoreCase) ||
-                            template.Id.ToString().Contains(keyword, StringComparison.OrdinalIgnoreCase)))
-                        .ToList();
-
+                    var filteredResults = FilterHelper.FilterByKeywords<TemplateModelBase>(ITemplate.ItemsSource, textBox.Text);
                     // 更新 ListView 的数据源
-                    ListView1.ItemsSource = new ObservableCollection<TemplateModelBase>(filteredResults);
+                    ListView1.ItemsSource = filteredResults;
 
                     // 显示或隐藏无结果文本
                     if (filteredResults.Count == 0)

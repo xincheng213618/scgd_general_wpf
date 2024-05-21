@@ -1471,7 +1471,7 @@ namespace ColorVision.Services.Templates.POI
             imgs.Reverse();
             foreach (var item in imgs)
             {
-                if (!string.IsNullOrWhiteSpace(item.RawFile) &&!item.RawFile.ToLower(CultureInfo.CurrentCulture).Contains(".cvcie"))
+                if (!string.IsNullOrWhiteSpace(item.RawFile) &&!item.RawFile.Contains(".cvcie",StringComparison.OrdinalIgnoreCase))
                     MeasureImgResultModels.Add(item);
             }
             ComboBoxImg.ItemsSource = MeasureImgResultModels;

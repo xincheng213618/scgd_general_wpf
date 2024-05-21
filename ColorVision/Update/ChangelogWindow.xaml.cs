@@ -35,12 +35,12 @@ namespace ColorVision.Update
                 });
             });
         }
-
+        private static char[] chars = new char[] { '\n' };
         public static ObservableCollection<ChangeLogEntry> Parse(string? changelogText)
         {
             var entries = new ObservableCollection<ChangeLogEntry>();
             if (string.IsNullOrWhiteSpace(changelogText)) return entries;
-            var lines = changelogText.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            var lines = changelogText.Split(chars, StringSplitOptions.RemoveEmptyEntries);
 
             ChangeLogEntry currentEntry = null;
 

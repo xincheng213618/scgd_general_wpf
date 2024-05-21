@@ -189,7 +189,7 @@ namespace ColorVision.Services.PhyCameras.Templates
         }
         public override void Create(string templateName)
         {
-            CalibrationParam? param = TemplateControl.AddParamMode<CalibrationParam>(Code, templateName, Device.SysResourceModel.Id);
+            CalibrationParam? param = AddParamMode(Code, templateName, Device.SysResourceModel.Id);
             if (param != null)
             {
                 var a = new TemplateModel<CalibrationParam>(templateName, param);

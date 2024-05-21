@@ -127,11 +127,9 @@ namespace ColorVision.Projects
                                 SendPost();
                             }
                         });
-
-
                     }
                 }
-                catch (Exception ex)
+                catch 
                 {
 
                 }

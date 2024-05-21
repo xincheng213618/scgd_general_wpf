@@ -7,7 +7,7 @@ using static ColorVision.Handler.ProxySetting.InternetConnectionOption;
 
 namespace ColorVision.Handler
 {
-    internal class ProxySetting
+    sealed class ProxySetting
     {
         /// <summary>
         // set to use no proxy
@@ -169,7 +169,7 @@ namespace ColorVision.Handler
         /// </summary>
         /// <returns>A list of RAS connection names. May be empty list if no dial up connection.</returns>
         /// <exception cref="ApplicationException">Error message with win32 error code</exception>
-        private static IEnumerable<string> EnumerateRasEntries()
+        private static List<string> EnumerateRasEntries()
         {
             int entries = 0;
             // attempt to query with 1 entry buffer

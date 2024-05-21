@@ -282,11 +282,11 @@ namespace ColorVision.Services.RC
                 {
                     if (baseObject is TerminalService serviceTerminal)
                     {
-                        foreach (var svr in services)
+                        foreach (var svr in services) 
                         {
                             bool updateTime = false;
                             DateTime lastLive = DateTime.Now;
-                            if (svr.ServiceType.ToLower(CultureInfo.CurrentCulture) == serviceKind.ServiceTypes.ToString().ToLower(CultureInfo.CurrentCulture) && svr.ServiceCode == serviceTerminal.Code)
+                            if (string.Equals(svr.ServiceType, serviceKind.ServiceTypes.ToString(),StringComparison.OrdinalIgnoreCase) && svr.ServiceCode == serviceTerminal.Code)
                             {
                                 if (!string.IsNullOrEmpty(svr.LiveTime))
                                 {

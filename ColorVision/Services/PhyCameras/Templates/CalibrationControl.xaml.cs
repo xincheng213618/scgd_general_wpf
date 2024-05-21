@@ -6,7 +6,7 @@ using System.Windows.Input;
 
 namespace ColorVision.Services.PhyCameras.Templates
 {
-    class TempCache
+    sealed class TempCache
     {
         public string Cache { get; set; }
         public bool DarkNoiseIsSelected { get; set; }

@@ -1,23 +1,16 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
-using ColorVision.Common.MVVM.Json;
 using ColorVision.Common.Utilities;
-using ColorVision.Extension;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.UserSpace;
-using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Documents;
 
 namespace ColorVision.Services.Templates
 {
@@ -258,6 +251,34 @@ namespace ColorVision.Services.Templates
             MessageBox.Show(Application.Current.GetActiveWindow(),"暂时不支持导入模板","ColorVision");
         }
 
+
+        public T? AddParamMode(string code, string Name, int resourceId = -1) 
+        {
+            ModMasterModel modMaster = new ModMasterModel(code, Name, UserConfig.Instance.TenantId);
+            if (resourceId > 0)
+                modMaster.ResourceId = resourceId;
+            SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(code, UserConfig.Instance.TenantId);
+            if (mod != null)
+            {
+                modMaster.Pid = mod.Id;
+                ModMasterDao.Instance.Save(modMaster);
+                List<ModDetailModel> list = new();
+                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(mod.Id);
+                foreach (var item in sysDic)
+                {
+                    list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
+                }
+                ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
+            }
+            if (modMaster.Id > 0)
+            {
+                ModMasterModel modMasterModel = ModMasterDao.Instance.GetById(modMaster.Id);
+                List<ModDetailModel> modDetailModels = ModDetailDao.Instance.GetAllByPid(modMaster.Id);
+                if (modMasterModel != null)
+                    return (T)Activator.CreateInstance(typeof(T), new object[] { modMasterModel, modDetailModels });
+            }
+            return null;
+        }
 
         public override void Create(string templateName)
         {

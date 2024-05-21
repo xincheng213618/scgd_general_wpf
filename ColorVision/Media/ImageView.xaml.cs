@@ -899,7 +899,7 @@ namespace ColorVision.Media
             DebounceTimer.AddOrResetTimer("RenderPseudo",100, RenderPseudo);
         }
         public bool IsCVCIE { get; set; }
-        public IntPtr intPtr;
+        private IntPtr intPtr = IntPtr.Zero;
 
         public void ShowCVCIE(object sender, ImageInfo imageInfo)
         {

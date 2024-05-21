@@ -11,6 +11,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Services.Templates
@@ -40,26 +41,20 @@ namespace ColorVision.Services.Templates
 
         public TemplateControl()
         {
-            MySqlSetting.Instance.UseMySqlChanged += (s) =>
+            MySqlSetting.Instance.UseMySqlChanged += async (s) =>
             {
-                Thread thread = new(async () =>
+                await Task.Run(async () =>
                 {
                     if (!MySqlControl.GetInstance().IsConnect)
                         await MySqlControl.GetInstance().Connect();
 
-                    Application.Current.Dispatcher.Invoke(() =>
+                    await Application.Current.Dispatcher.InvokeAsync(() =>
                     {
                         Init();
                     });
                 });
-                thread.Start();
             };
             Init();
-            Application.Current.MainWindow.Closed += (s, e) =>
-            {
-                if (MySqlSetting.Instance.IsUseMySql)
-                    return;
-            };
         }
         private static void Init()
         {
@@ -70,35 +65,6 @@ namespace ColorVision.Services.Templates
                     iITemplateLoad.Load();
                 }
             }
-        }
-
-
-        public static T? AddParamMode<T>(string code, string Name, int resourceId =-1) where T : ParamBase, new()
-        {
-            ModMasterModel modMaster = new ModMasterModel(code, Name, UserConfig.Instance.TenantId);
-            if (resourceId > 0)
-                modMaster.ResourceId = resourceId;
-            SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(code, UserConfig.Instance.TenantId);
-            if (mod != null)
-            {
-                modMaster.Pid = mod.Id;
-                ModMasterDao.Instance.Save(modMaster);
-                List<ModDetailModel> list = new();
-                List<SysDictionaryModDetaiModel> sysDic = SysDictionaryModDetailDao.Instance.GetAllByPid(mod.Id);
-                foreach (var item in sysDic)
-                {
-                    list.Add(new ModDetailModel(item.Id, modMaster.Id, item.DefaultValue));
-                }
-                ModDetailDao.Instance.SaveByPid(modMaster.Id, list);
-            }
-            if (modMaster.Id > 0)
-            {
-                ModMasterModel modMasterModel = ModMasterDao.Instance.GetById(modMaster.Id);
-                List<ModDetailModel> modDetailModels = ModDetailDao.Instance.GetAllByPid(modMaster.Id);
-                if (modMasterModel != null)
-                    return (T)Activator.CreateInstance(typeof(T), new object[] { modMasterModel, modDetailModels });
-            }
-            return null;
         }
     }
 }

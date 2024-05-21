@@ -30,11 +30,8 @@ namespace ColorVision.Services.Validate
             {
                 if (DetailModel.Code != null)
                 {
-                    if (!parameters.ContainsKey(DetailModel.Code))
-                    {
-                        parameters.Add(DetailModel.Code, DetailModel);
+                    if (parameters.TryAdd(DetailModel.Code, DetailModel))
                         ValidateSingles.Add(new ValidateSingle(DetailModel));
-                    }
                 }
             }
         }

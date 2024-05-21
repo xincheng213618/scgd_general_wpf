@@ -149,6 +149,7 @@ namespace ColorVision.Solution
 
         }
 
+        private readonly char[] Chars = new[] { ' ' };
         private void Searchbox_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (sender is TextBox textBox)
@@ -162,7 +163,7 @@ namespace ColorVision.Solution
                 }
                 else
                 {
-                    var keywords = textBox.Text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    var keywords = textBox.Text.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
 
                     var filteredResults = SolutionInfos
                         .OfType<SolutionInfo>()
