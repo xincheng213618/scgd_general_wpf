@@ -1,0 +1,55 @@
+﻿<Window x:Class="ColorVision.Scheduler.TaskViewerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Scheduler"
+        mc:Ignorable="d"
+        Title="TaskViewerWindow" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal">
+            <TextBox Name="JobNameTextBox" Width="100" Margin="5" />
+            <TextBox Name="GroupNameTextBox" Width="100" Margin="5" />
+            <TextBox Name="CronExpressionTextBox" Width="200" Margin="5" />
+            <Button Name="CreateTaskButton" Content="Create Task" Click="CreateTaskButton_Click" Margin="5"/>
+        </StackPanel>
+        <ListView x:Name="ListViewTask" Grid.Row="1" >
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="GroupName">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:TaskInfo}">
+                                <TextBlock Text="{Binding GroupName}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="JobName">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:TaskInfo}">
+                                <TextBlock Text="{Binding JobName}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="NextFireTime">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:TaskInfo}">
+                                <TextBlock Text="{Binding NextFireTime}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="PreviousFireTime">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:TaskInfo}">
+                                <TextBlock Text="{Binding PreviousFireTime}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+    </Grid>
+</Window>

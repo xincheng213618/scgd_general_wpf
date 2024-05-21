@@ -1,0 +1,187 @@
+﻿using Quartz.Impl.Matchers;
+using Quartz.Impl;
+using Quartz;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
+using ColorVision.Common.Utilities;
+using ColorVision.UI.HotKey;
+using ColorVision.UI;
+using ColorVision.Common.MVVM;
+using System.Collections.ObjectModel;
+using OpenCvSharp.XPhoto;
+
+namespace ColorVision.Scheduler
+{
+
+    public class AboutMsgExport :  IMenuItem
+    {
+        public string? OwnerGuid => "Help";
+        public string? GuidId => "TaskViewerWindow";
+
+        public int Order => 1000;
+        public Visibility Visibility => Visibility.Visible;
+
+        public string? Header => "TaskViewerWindow";
+
+        public string? InputGestureText => "Ctrl + F1";
+
+        public object? Icon => null;
+
+        public RelayCommand Command => new(A => new TaskViewerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+
+    }
+
+
+    /// <summary>
+    /// TaskViewerWindow.xaml 的交互逻辑
+    /// </summary>
+    public partial class TaskViewerWindow : Window
+    {
+        private ObservableCollection<TaskInfo> _taskInfos;
+
+        public TaskViewerWindow()
+        {
+            InitializeComponent();
+            _taskInfos = new ObservableCollection<TaskInfo>();
+            ListViewTask.ItemsSource = _taskInfos;
+            LoadTasks();
+
+            // 订阅监听器事件
+            var listener = Scheduler.QuartzScheduler.Listener;
+            if (listener != null)
+            {
+                listener.JobExecutedEvent += OnJobExecuted;
+            }
+        }
+
+        private async void LoadTasks()
+        {
+            await GetScheduledTasks();
+        }
+
+        private async void OnJobExecuted(IJobExecutionContext context)
+        {
+            // 在主线程上更新 UI
+            await Dispatcher.InvokeAsync(async () =>
+            {
+                await UpdateChangedTask(context);
+            });
+        }
+        private async Task GetScheduledTasks()
+        {
+            var scheduler = await StdSchedulerFactory.GetDefaultScheduler();
+            var jobKeys = await scheduler.GetJobKeys(GroupMatcher<JobKey>.AnyGroup());
+
+            foreach (var jobKey in jobKeys)
+            {
+                var triggers = await scheduler.GetTriggersOfJob(jobKey);
+
+                foreach (var trigger in triggers)
+                {
+                    var taskInfo = new TaskInfo
+                    {
+                        JobName = jobKey.Name,
+                        GroupName = jobKey.Group,
+                        NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString() ?? "N/A",
+                        PreviousFireTime = trigger.GetPreviousFireTimeUtc()?.ToLocalTime().ToString() ?? "N/A"
+                    };
+                    _taskInfos.Add(taskInfo);
+                }
+            }
+        }
+        private async Task UpdateChangedTask(IJobExecutionContext context)
+        {
+            var scheduler = await StdSchedulerFactory.GetDefaultScheduler();
+            var jobKey = context.JobDetail.Key;
+            var triggers = await scheduler.GetTriggersOfJob(jobKey);
+
+            foreach (var trigger in triggers)
+            {
+                var updatedTaskInfo = new TaskInfo
+                {
+                    JobName = jobKey.Name,
+                    GroupName = jobKey.Group,
+                    NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString() ?? "N/A",
+                    PreviousFireTime = trigger.GetPreviousFireTimeUtc()?.ToLocalTime().ToString() ?? "N/A"
+                };
+
+                var existingTaskInfo = _taskInfos.FirstOrDefault(t => t.JobName == updatedTaskInfo.JobName && t.GroupName == updatedTaskInfo.GroupName);
+
+                if (existingTaskInfo != null)
+                {
+                    // 更新现有任务信息
+                    existingTaskInfo.NextFireTime = updatedTaskInfo.NextFireTime;
+                    existingTaskInfo.PreviousFireTime = updatedTaskInfo.PreviousFireTime;
+                }
+                else
+                {
+                    // 添加新任务信息
+                    _taskInfos.Add(updatedTaskInfo);
+                }
+            }
+        }
+
+
+        private async void CreateTaskButton_Click(object sender, RoutedEventArgs e)
+        {
+            var jobName = JobNameTextBox.Text;
+            var groupName = GroupNameTextBox.Text;
+            var cronExpression = CronExpressionTextBox.Text;
+
+            if (string.IsNullOrWhiteSpace(jobName) || string.IsNullOrWhiteSpace(groupName) || string.IsNullOrWhiteSpace(cronExpression))
+            {
+                MessageBox.Show("Please fill in all fields.");
+                return;
+            }
+            await CreateScheduledTask(jobName, groupName, cronExpression);
+        }
+        private async Task CreateScheduledTask(string jobName, string groupName, string cronExpression)
+        {
+            try
+            {
+                var scheduler = await StdSchedulerFactory.GetDefaultScheduler();
+
+                // Define the job and tie it to our Job class
+                var job = JobBuilder.Create<UpdateJob>()
+                    .WithIdentity(jobName, groupName)
+                    .Build();
+
+                // Create a trigger that fires according to the given cron expression
+                var trigger = TriggerBuilder.Create()
+                    .WithIdentity($"{jobName}-trigger", groupName)
+                    .WithCronSchedule(cronExpression)
+                    .Build();
+
+                // Schedule the job using the trigger
+                await scheduler.ScheduleJob(job, trigger);
+
+                // Add the new task to the list
+                var taskInfo = new TaskInfo
+                {
+                    JobName = jobName,
+                    GroupName = groupName,
+                    NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString() ?? "N/A",
+                    PreviousFireTime = trigger.GetPreviousFireTimeUtc()?.ToLocalTime().ToString() ?? "N/A"
+                };
+                _taskInfos.Add(taskInfo);
+
+                MessageBox.Show("Task created successfully.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error creating task: {ex.Message}");
+            }
+        }
+    }
+}

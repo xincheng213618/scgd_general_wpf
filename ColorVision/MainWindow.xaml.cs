@@ -18,6 +18,7 @@ using HandyControl.Tools.Extension;
 using log4net;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
+using Quartz;
 using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -163,6 +164,8 @@ namespace ColorVision
             {
                 Task.Run(CheckUpdate);
             }
+            Task.Run( ()=>  Scheduler.QuartzScheduler.Start());
+
 
             Application.Current.MainWindow = this;
         }

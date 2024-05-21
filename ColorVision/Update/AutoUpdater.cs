@@ -169,7 +169,7 @@ namespace ColorVision.Update
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         if (detection)
-                            MessageBox.Show(Properties.Resource.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
+                            MessageBox.Show(Application.Current.GetActiveWindow(),Properties.Resource.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
                     });
 
                 }
