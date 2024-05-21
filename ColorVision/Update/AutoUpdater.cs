@@ -5,7 +5,6 @@ using log4net;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Packaging;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -108,6 +107,22 @@ namespace ColorVision.Update
             ProgressValue = 0;
             Task.Run(() => DownloadAndUpdate(Version, DownloadPath, _cancellationTokenSource.Token));
             windowUpdate.Show();
+        }
+
+        public async Task<bool> GetUpdateStatue()
+        {
+            try
+            {
+                LatestVersion = await GetLatestVersionNumber(UpdateUrl);
+                if (LatestVersion > CurrentVersion)
+                {
+                    return true;
+                }
+            }
+            catch 
+            {
+            }
+            return false;
         }
 
         // 调用函数以删除所有更新文件

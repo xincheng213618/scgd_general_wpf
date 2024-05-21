@@ -142,12 +142,6 @@ namespace ColorVision
             menulogs.Items.Insert(0, menulogs1);
 
 
-            if (AutoUpdateConfig.Instance.IsAutoUpdate)
-            {
-                Thread thread1 = new(async () => await CheckUpdate()) { IsBackground = true };
-                thread1.Start();
-            }
-
 
 
             Task.Run(CheckVersion);
@@ -164,6 +158,11 @@ namespace ColorVision
             PluginLoader.LoadAssembly<IPlugin>(Assembly.GetExecutingAssembly());
             MenuManager.GetInstance().LoadMenuItemFromAssembly();
             this.LoadHotKeyFromAssembly();
+
+            if (AutoUpdateConfig.Instance.IsAutoUpdate)
+            {
+                Task.Run(CheckUpdate);
+            }
 
             Application.Current.MainWindow = this;
         }
@@ -261,12 +260,12 @@ namespace ColorVision
                             // 如果找到匹配项，提取变更日志
                             string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
                             // 显示变更日志
-                            MessageBox.Show(Application.Current.MainWindow, $"{changeLogForCurrentVersion.ReplaceLineEndings()}", $"{currentVersion} {Properties.Resource.ChangeLog}：");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), $"{changeLogForCurrentVersion.ReplaceLineEndings()}", $"{currentVersion} {Properties.Resource.ChangeLog}：");
                         }
                         else
                         {
                             // 如果未找到匹配项，说明没有为当前版本列出变更日志
-                            MessageBox.Show(Application.Current.MainWindow, "1.修复了一些已知的BUG", $"{currentVersion} {Properties.Resource.ChangeLog}：");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), "1.修复了一些已知的BUG", $"{currentVersion} {Properties.Resource.ChangeLog}：");
                         }
 
                     }
@@ -284,7 +283,7 @@ namespace ColorVision
         public static async Task CheckUpdate()
         {
             await Task.Delay(1000);
-            Application.Current.Dispatcher.Invoke(() =>
+            await Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 AutoUpdater.DeleteAllCachedUpdateFiles();
                 AutoUpdater autoUpdater = AutoUpdater.GetInstance();
