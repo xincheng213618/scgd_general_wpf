@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Solution.Searches;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
@@ -7,7 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Solution.Searches
+namespace ColorVision.Services.ShowPage.Dao
 {
     public class ViewArchiveResult : ViewModelBase, ISortID,ISortCreateTime
     {
@@ -27,10 +28,13 @@ namespace ColorVision.Solution.Searches
     /// <summary>
     /// ArchivePage.xaml 的交互逻辑
     /// </summary>
-    public partial class ArchivePage : Page
+    public partial class ArchivePage : Page, ISolutionPage
     {
+        public string PageTitle => nameof(ArchivePage);
+
         public Frame Frame { get; set; }
 
+        public ArchivePage() { }
         public ArchivePage(Frame MainFrame)
         {
             Frame = MainFrame;
@@ -80,6 +84,8 @@ namespace ColorVision.Solution.Searches
 
         }
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilities { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+
+
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
         {
             if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && listView1.View is GridView gridView)

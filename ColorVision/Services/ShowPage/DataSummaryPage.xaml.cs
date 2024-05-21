@@ -1,15 +1,15 @@
-﻿using ColorVision.UI.Sorts;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Services.DAO;
+using ColorVision.Services.RC;
+using ColorVision.Solution.Searches;
+using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.IO;
-using ColorVision.Services.RC;
 
-namespace ColorVision.Solution.Searches
+namespace ColorVision.Services.ShowPage.Dao
 {
     public enum ArchiveStatus
     {
@@ -55,10 +55,13 @@ namespace ColorVision.Solution.Searches
     /// <summary>
     /// DataSummaryPage.xaml 的交互逻辑
     /// </summary>
-    public partial class DataSummaryPage : Page
+    public partial class DataSummaryPage : Page,ISolutionPage
     {
+        public string PageTitle => nameof(DataSummaryPage);
+
         public Frame Frame { get; set; }
 
+        public DataSummaryPage() { }
         public DataSummaryPage(Frame MainFrame)
         {
             Frame = MainFrame;

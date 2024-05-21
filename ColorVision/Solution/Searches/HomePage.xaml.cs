@@ -1,25 +1,57 @@
-﻿using LiveChartsCore.VisualElements;
-using Microsoft.Xaml.Behaviors;
+﻿using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using ColorVision.Adorners;
 
 
 namespace ColorVision.Solution.Searches
 {
+    public interface ISolutionPage
+    {
+        public string PageTitle { get; }
+    }
+
+    public class SolutionPageManager
+    {
+        public static SolutionPageManager Instance { get; set; } = new SolutionPageManager();
+        public SolutionPageManager()
+        {
+            Pages = new Dictionary<string, Type>(); 
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                foreach (var type in assembly.GetTypes())
+                {
+                    if (typeof(ISolutionPage).IsAssignableFrom(type) && !type.IsInterface)
+                    {
+                        if (Activator.CreateInstance(type) is ISolutionPage page)
+                        {
+                            Pages.Add(page.PageTitle, type);
+                        }
+                    }
+                }
+            }
+        }
+        public Page GetPage(string pageTitle, Frame frame)
+        {
+            if (Pages.TryGetValue(pageTitle, out Type type))
+            {
+                if (Activator.CreateInstance(type, frame) is Page page)
+                {
+                    return page;
+                }
+            }
+            return new HomePage(frame);
+        }
+
+        public Dictionary<string,Type> Pages { get; set; }
+
+
+    }
+
+
     /// <summary>
     /// HomePage.xaml 的交互逻辑
     /// </summary>
@@ -58,17 +90,7 @@ namespace ColorVision.Solution.Searches
         {
             if (sender is UserControl userControl)
             {
-                switch (userControl.Tag)
-                {
-                    case "ArchivePage":
-                        Frame.Navigate(new ArchivePage(Frame));
-                        break;
-                    case "DataSummaryPage":
-                        Frame.Navigate(new DataSummaryPage(Frame));
-                        break;
-                    default:
-                        break;
-                }
+                Frame.Navigate(SolutionPageManager.Instance.GetPage(userControl.Tag.ToString(), Frame));
             }
         }
     }
