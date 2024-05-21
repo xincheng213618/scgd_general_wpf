@@ -33,10 +33,8 @@ namespace ColorVision.Services.Devices.Algorithm.Views
         public View View { get; set; }
 
         public event CurSelectionChanged OnCurSelectionChanged;
-        public DeviceAlgorithm Device { get; set; }
-        public AlgorithmView(DeviceAlgorithm deviceAlgorithm)
+        public AlgorithmView()
         {
-            Device = deviceAlgorithm;
             InitializeComponent();
         }
 
@@ -145,7 +143,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             }
         }
 
-        private void RefreshResultListView()
+        public void RefreshResultListView()
         {
             if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
             listView1.ScrollIntoView(listView1.SelectedItem);

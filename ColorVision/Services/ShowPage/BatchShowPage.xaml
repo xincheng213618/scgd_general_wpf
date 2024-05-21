@@ -107,7 +107,7 @@
                     </StackPanel>
                     <StackPanel x:Name="StactPanelAlg">
                         <TextBlock Text="算法" FontSize="20" HorizontalAlignment="Center" Margin="0,10,0,0"/>
-                        <ListView Grid.Row="1" x:Name="listView2"  Background="Transparent" BorderThickness="0"  Margin="-3" ScrollViewer.VerticalScrollBarVisibility="Visible" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                        <ListView Grid.Row="1" x:Name="listView2"  Background="Transparent" BorderThickness="0"  Margin="-3" ScrollViewer.VerticalScrollBarVisibility="Visible" SelectionChanged="listView1_SelectionChanged"  PreviewMouseDoubleClick="listView2_PreviewMouseDoubleClick" PreviewKeyDown="listView1_PreviewKeyDown" >
                             <ListView.Resources >
                                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                             </ListView.Resources>

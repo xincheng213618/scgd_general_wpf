@@ -19,7 +19,7 @@ namespace ColorVision.Services.Devices.Algorithm
         {
             MQTTService = new MQTTAlgorithm(this, Config);
 
-            View = new AlgorithmView(this);
+            View = new AlgorithmView();
             View.View.Title = $"算法视图 - {Config.Code}";
             this.SetIconResource("DrawingImageAlgorithm", View.View);
 

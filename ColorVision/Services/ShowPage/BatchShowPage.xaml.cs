@@ -91,7 +91,20 @@ namespace ColorVision.Services.ShowPage.Dao
         {
 
         }
-
-
+        AlgorithmView AlgorithmView;
+        private void listView2_PreviewMouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is ListView listView && listView.SelectedIndex > -1)
+            {
+                if (AlgorithmView == null)
+                {
+                    AlgorithmView = new AlgorithmView();
+                    Window window = new Window() { Content = AlgorithmView };
+                    window.Show();
+                }
+                AlgorithmView.AlgResults.Add(AlgorithmResults[listView.SelectedIndex]);
+                AlgorithmView.RefreshResultListView();
+            }
+        }
     }
 }
