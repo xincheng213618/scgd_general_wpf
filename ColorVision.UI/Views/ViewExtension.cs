@@ -2,18 +2,13 @@
 
 namespace ColorVision.UI.Views
 {
-    class MyException : Exception
-    {
-        public MyException(string msg) { }
-    }
+
 
     public static class ViewExtension
     {
         public static void AddViewConfig(this UserControl userControl, IView view, ComboBox comboBox)
         {
-#pragma warning disable CA2201 // 不要引发保留的异常类型
-            if (view is not Control control) throw new Exception("View is not Control");
-#pragma warning restore CA2201 // 不要引发保留的异常类型
+            if (view is not Control control) throw new NotImplementedException();
 
             ViewGridManager.GetInstance().AddView(control);
 
