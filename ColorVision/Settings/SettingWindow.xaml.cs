@@ -155,6 +155,7 @@ namespace ColorVision.Settings
         {
             new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
+
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
             MsgConfig.Instance.MsgRecords.Clear();

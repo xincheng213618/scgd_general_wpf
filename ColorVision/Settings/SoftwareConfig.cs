@@ -9,7 +9,6 @@ using ColorVision.Solution;
 using ColorVision.UI;
 using ColorVision.Update;
 using ColorVision.UserSpace;
-using ColorVision.Wizards;
 
 namespace ColorVision.Settings
 {
@@ -22,11 +21,7 @@ namespace ColorVision.Settings
 
         public bool IsAutoRun { get => Tool.IsAutoRun(GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); set { Tool.SetAutoRun(value, GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); NotifyPropertyChanged(); } }
 
-        public static WizardConfig WizardConfig => WizardConfig.Instance;
-
         public static AutoUpdateConfig AutoUpdateConfig => AutoUpdateConfig.Instance;
-
-
 
         public static SoftwareSetting SoftwareSetting => SoftwareSetting.Instance;
 
@@ -37,8 +32,8 @@ namespace ColorVision.Settings
         public static ServicesConfig ServicesSetting => ServicesConfig.Instance;
 
         public static MQTTSetting MQTTSetting => MQTTSetting.Instance;
-        public static MsgConfig MsgConfig => MsgConfig.Instance;
 
+        public static MsgConfig MsgConfig => MsgConfig.Instance;
         public static SystemMonitor SystemMonitor => SystemMonitor.GetInstance();
 
         public static UserConfig UserConfig => UserConfig.Instance;
