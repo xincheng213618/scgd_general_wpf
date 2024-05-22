@@ -43,6 +43,11 @@ namespace ColorVision.UI.Dump
                 MenuItem Clear = new MenuItem() { Header = "设置为默认", Command = relayCommand };
                 MenuDump.Items.Add(Clear);
 
+
+
+                MenuItem Save = new MenuItem() { Header = "保存为", Command = new RelayCommand(A => DumpConfig.SaveDump()) };
+                MenuDump.Items.Add(Save);
+
                 MenuDump.Loaded += (s, e) =>
                 {
                     foreach (var item in MenuDump.Items.OfType<MenuItem>())

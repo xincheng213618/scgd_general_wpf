@@ -7,6 +7,7 @@ namespace ColorVision.Common.NativeMethods
 {
     public class DumpHelper
     {
+
         [DllImport("Dbghelp.dll")]
         private static extern bool MiniDumpWriteDump(
             IntPtr hProcess,

@@ -58,7 +58,7 @@ namespace ColorVision.Scheduler
             LoadTasks();
 
             // 订阅监听器事件
-            var listener = Scheduler.QuartzScheduler.Listener;
+            var listener = QuartzSchedulerManager.GetInstance().Listener;
             if (listener != null)
             {
                 listener.JobExecutedEvent += OnJobExecuted;

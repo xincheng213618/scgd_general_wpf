@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8603
+using ColorVision.Common.NativeMethods;
 using ColorVision.Common.Utilities;
 using Microsoft.Win32;
 using System.IO;
@@ -29,8 +30,12 @@ namespace ColorVision.UI.Dump
                 DumpFolder = key.GetValue("DumpFolder")?.ToString() ?? DumpFolder;
                 DumpCount = key.GetValue("DumpCount") is int count ? count : DumpCount;
                 DumpType = key.GetValue("DumpType") is int type ? (DumpType)type : DumpType;
+                CustomDumpFlags = key.GetValue("CustomDumpFlags") is int minidumpType ? (MinidumpType)minidumpType : CustomDumpFlags;
             }
         }
+
+        public MinidumpType CustomDumpFlags { get; set; } = MinidumpType.MiniDumpNormal;
+
         public string DumpFolder { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "AppData", "Local", "CrashDumps");
         public DumpType DumpType { get; set; } = DumpType.Mini;
         public int DumpCount { get; set; } = 10;
@@ -49,9 +54,16 @@ namespace ColorVision.UI.Dump
                 key.SetValue("DumpFolder", DumpFolder, RegistryValueKind.ExpandString);
                 key.SetValue("DumpCount", DumpCount, RegistryValueKind.DWord);
                 key.SetValue("DumpType", (int)DumpType, RegistryValueKind.DWord);
+
+                if (DumpType == DumpType.Custom)
+                    key.SetValue("CustomDumpFlags", (int)CustomDumpFlags, RegistryValueKind.DWord);
             }
         }
 
+        public void SaveDump()
+        {
+            DumpHelper.WriteMiniDump( $"{DumpFolder}\\{Name}.exe.dmp");
+        }
 
         public  void ClearDump()
         {

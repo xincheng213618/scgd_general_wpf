@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.MQTT;
 using ColorVision.MySql;
+using ColorVision.Scheduler;
 using ColorVision.Services;
 using ColorVision.Services.RC;
 using ColorVision.Settings;
@@ -164,8 +165,7 @@ namespace ColorVision
             {
                 Task.Run(CheckUpdate);
             }
-            Task.Run( ()=>  Scheduler.QuartzScheduler.Start());
-
+            QuartzSchedulerManager.GetInstance();
 
             Application.Current.MainWindow = this;
         }
