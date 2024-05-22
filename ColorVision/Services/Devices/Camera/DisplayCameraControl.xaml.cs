@@ -15,9 +15,12 @@ using log4net;
 using MQTTMessageLib;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
+using Quartz;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -26,6 +29,21 @@ using System.Windows.Threading;
 
 namespace ColorVision.Services.Devices.Camera
 {
+    public class CameraCaptureJob : IJob
+    {
+        public Task Execute(IJobExecutionContext context)
+        {
+            // 定时任务逻辑
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                var lsit = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
+                DeviceCamera deviceCamera = lsit.FirstOrDefault();
+                deviceCamera?.DisplayCameraControlLazy.Value.GetData();
+            });
+            return Task.CompletedTask;
+        }
+    }
+
     /// <summary>
     /// 根据服务的MQTT相机
     /// </summary>
@@ -214,6 +232,18 @@ namespace ColorVision.Services.Devices.Camera
                     ServicesHelper.SendCommand(button, msgRecord);
                 }  
 
+            }
+        }
+
+
+        public void GetData()
+        {
+            if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
+            {
+                double[] expTime = null;
+                if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
+                else expTime = new double[] { Device.Config.ExpTime };
+                MsgRecord msgRecord = DService.GetData(expTime, param);
             }
         }
 
