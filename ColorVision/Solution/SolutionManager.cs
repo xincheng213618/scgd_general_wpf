@@ -4,6 +4,7 @@ using ColorVision.Extension;
 using ColorVision.RecentFile;
 using ColorVision.Solution.V;
 using log4net;
+using MQTTMessageLib.FileServer;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -71,9 +72,7 @@ namespace ColorVision.Solution
                 string DefaultSolution = Default + "\\" + "Default";
                 if (Directory.Exists(DefaultSolution))
                     Directory.CreateDirectory(DefaultSolution);
-                DirectoryInfo directoryInfo = new(DefaultSolution);
-                var SolutionPath = CreateSolution(directoryInfo);
-                OpenSolution(SolutionPath);
+                var SolutionPath = CreateSolution(DefaultSolution);
             }
 
 
@@ -112,18 +111,21 @@ namespace ColorVision.Solution
             }
         }
 
-        public string CreateSolution(DirectoryInfo Info)
+        public bool CreateSolution(string SolutionDirectoryPath)
         {
-            SolutionConfig solutionConfig = new();
-            Tool.CreateDirectoryMax(Info.FullName +"\\.cache");
+            if (!Directory.Exists(SolutionDirectoryPath))
+                Directory.CreateDirectory(SolutionDirectoryPath);
 
-            CurrentSolution.FullPath = Info.FullName;
-            string slnName = Info.FullName + "\\" + Info.Name + ".cvsln";
+            DirectoryInfo directoryInfo = new DirectoryInfo(SolutionDirectoryPath);
+            string slnName = directoryInfo.FullName + "\\" + directoryInfo.Name + ".cvsln";
             CurrentSolution.ToJsonNFile(slnName);
+
             SolutionCreated?.Invoke(slnName, new EventArgs());
-            
-            return slnName;
+            OpenSolution(slnName);
+            return true;
         }
+
+
 
         public void CreateShortcut(string FileName)
         {
@@ -133,7 +135,7 @@ namespace ColorVision.Solution
 
         public static void OpenSolutionWindow()
         {
-            OpenSolutionWindow openSolutionWindow = new() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             openSolutionWindow.Show();
         }
 
@@ -145,8 +147,7 @@ namespace ColorVision.Solution
                 if (newCreatWindow.IsCreate)
                 {
                     string SolutionDirectoryPath = newCreatWindow.NewCreateViewMode.DirectoryPath + "\\" + newCreatWindow.NewCreateViewMode.Name;
-                    string name = CreateSolution(new DirectoryInfo(SolutionDirectoryPath));
-                    OpenSolution(name);
+                    CreateSolution(SolutionDirectoryPath);
                 }
             };
             newCreatWindow.ShowDialog();
@@ -155,7 +156,7 @@ namespace ColorVision.Solution
         public void ClearCache()
         {
             Directory.Delete(CurrentSolution.FullPath+ "\\Flow",true);
-            Directory.Delete(CurrentSolution.FullPath+ "\\Cache", true);
+            Directory.Delete(CurrentSolution.FullPath+ "\\.Cache", true);
             Tool.CreateDirectoryMax(CurrentSolution.FullPath+ "\\Cache");
             Tool.CreateDirectoryMax(CurrentSolution.FullPath+ "\\Flow");
         }

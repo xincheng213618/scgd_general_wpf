@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.NativeMethods;
 using ColorVision.Extension;
-
 using System.IO;
 using System.Windows.Media;
 using ColorVision.Common.MVVM;

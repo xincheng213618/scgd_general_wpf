@@ -47,14 +47,13 @@ namespace ColorVision.Solution
         public Visibility Visibility => Visibility.Visible;
         private void Execute()
         {
-            NewCreateWindow newCreatWindow = new() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            NewCreateWindow newCreatWindow = new NewCreateWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
             newCreatWindow.Closed += delegate
             {
                 if (newCreatWindow.IsCreate)
                 {
                     string SolutionDirectoryPath = newCreatWindow.NewCreateViewMode.DirectoryPath + "\\" + newCreatWindow.NewCreateViewMode.Name;
-                    string name = SolutionManager.GetInstance().CreateSolution(new DirectoryInfo(SolutionDirectoryPath));
-                    SolutionManager.GetInstance().OpenSolution(name);
+                    SolutionManager.GetInstance().CreateSolution(SolutionDirectoryPath);
                 }
             };
             newCreatWindow.ShowDialog();
@@ -199,8 +198,10 @@ namespace ColorVision.Solution
                     }
                 }
             }
+
             Directory.CreateDirectory(SolutionDirectoryPath);
             NewCreateViewMode.RecentNewCreateCache.InsertFile(NewCreateViewMode.DirectoryPath);
+
 
             IsCreate = true;
             Close();
