@@ -4,7 +4,7 @@ using ColorVision.Extension;
 using ColorVision.RecentFile;
 using ColorVision.Solution.V;
 using log4net;
-using MQTTMessageLib.FileServer;
+
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -79,6 +79,9 @@ namespace ColorVision.Solution
             SolutionOpenCommand = new RelayCommand((a) => OpenSolutionWindow());
             SolutionCreateCommand = new RelayCommand((a) => NewCreateWindow());
         }
+
+
+
 
         private void SolutionManager_SolutionLoaded(object? sender, EventArgs e)
         {

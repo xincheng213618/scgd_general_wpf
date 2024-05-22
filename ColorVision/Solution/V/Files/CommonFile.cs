@@ -1,26 +1,21 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Extension;
-using ColorVision.Media;
 using ColorVision.Common.NativeMethods;
-using System.Diagnostics;
 using System.IO;
-using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using QRCoder;
 using System;
+using System.Windows;
 
 namespace ColorVision.Solution.V.Files
 {
-    public class ImageFile : ViewModelBase,IFile
+    public class CommonFile : ViewModelBase, IFile
     {
-        public ImageFile() { }
+        public CommonFile() { }
         public FileInfo FileInfo { get; set; }
         public ContextMenu ContextMenu { get; set; }
-        public RelayCommand AttributesCommand { get; set; }
-        public string Extension { get => ".jpg|.png|.jpeg|.tif|.bmp"; }
-        public ImageFile(FileInfo fileInfo) 
+        public string Extension { get => ".*"; }
+        public CommonFile(FileInfo fileInfo)
         {
             FileInfo = fileInfo;
             Name = FileInfo.Name;
@@ -50,7 +45,7 @@ namespace ColorVision.Solution.V.Files
             {
                 File.Delete(FullName);
             }
-            catch (Exception ex)
+            catch(Exception ex)
             {
                 MessageBox.Show(ex.Message);
             }
@@ -58,19 +53,8 @@ namespace ColorVision.Solution.V.Files
 
         public void Open()
         {
-            ImageView imageView = new();
-            Window window = new() { };
-            window.Content = imageView;
-            _ = RunAsync(imageView);
-            window.Show();
+            Common.Utilities.PlatformHelper.Open(FullName);
         }
-        public async Task<Task> RunAsync(ImageView imageView)
-        {
-            await Task.Delay(100);
-            imageView.OpenImage(FileInfo.FullName); 
-            return Task.CompletedTask;
-        }
-
 
         public void ReName()
         {

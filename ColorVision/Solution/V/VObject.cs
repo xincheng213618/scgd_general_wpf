@@ -53,6 +53,8 @@ namespace ColorVision.Solution.V
         public event EventHandler RemoveChildEventHandler;
         public virtual void RemoveChild(VObject vObject)
         {
+            this.VisualChildren.Remove(vObject);
+            this.VisualChildrenHidden.Remove(vObject);
             RemoveChildEventHandler?.Invoke(this, new EventArgs());
         }
 
