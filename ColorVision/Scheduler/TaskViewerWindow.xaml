@@ -22,29 +22,46 @@
                 <GridView>
                     <GridViewColumn Header="GroupName">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:TaskInfo}">
+                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <TextBlock Text="{Binding GroupName}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Header="JobName">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:TaskInfo}">
+                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <TextBlock Text="{Binding JobName}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="Status">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
+                                <TextBlock Text="{Binding Status}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Header="NextFireTime">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:TaskInfo}">
+                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <TextBlock Text="{Binding NextFireTime}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                     <GridViewColumn Header="PreviousFireTime">
                         <GridViewColumn.CellTemplate>
-                            <DataTemplate  DataType="{x:Type local:TaskInfo}">
+                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <TextBlock Text="{Binding PreviousFireTime}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="PreviousFireTime">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="Stop" Command="{Binding StopCommand}"/>
+                                    <Button Content="Remove" Command="{Binding RemoveCommand}"/>
+                                </StackPanel>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

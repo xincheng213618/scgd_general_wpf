@@ -30,6 +30,7 @@ namespace ColorVision.Scheduler
         public string? GuidId => "TaskViewerWindow";
 
         public int Order => 1000;
+
         public Visibility Visibility => Visibility.Visible;
 
         public string? Header => "TaskViewerWindow";
@@ -48,12 +49,12 @@ namespace ColorVision.Scheduler
     /// </summary>
     public partial class TaskViewerWindow : Window
     {
-        private ObservableCollection<TaskInfo> _taskInfos;
+        private ObservableCollection<SchedulerInfo> _taskInfos;
 
         public TaskViewerWindow()
         {
             InitializeComponent();
-            _taskInfos = new ObservableCollection<TaskInfo>();
+            _taskInfos = new ObservableCollection<SchedulerInfo>();
             ListViewTask.ItemsSource = _taskInfos;
             LoadTasks();
 
@@ -89,7 +90,7 @@ namespace ColorVision.Scheduler
 
                 foreach (var trigger in triggers)
                 {
-                    var taskInfo = new TaskInfo
+                    var taskInfo = new SchedulerInfo
                     {
                         JobName = jobKey.Name,
                         GroupName = jobKey.Group,
@@ -108,7 +109,7 @@ namespace ColorVision.Scheduler
 
             foreach (var trigger in triggers)
             {
-                var updatedTaskInfo = new TaskInfo
+                var updatedTaskInfo = new SchedulerInfo
                 {
                     JobName = jobKey.Name,
                     GroupName = jobKey.Group,
@@ -167,7 +168,7 @@ namespace ColorVision.Scheduler
                 await scheduler.ScheduleJob(job, trigger);
 
                 // Add the new task to the list
-                var taskInfo = new TaskInfo
+                var taskInfo = new SchedulerInfo
                 {
                     JobName = jobName,
                     GroupName = groupName,
@@ -175,7 +176,6 @@ namespace ColorVision.Scheduler
                     PreviousFireTime = trigger.GetPreviousFireTimeUtc()?.ToLocalTime().ToString() ?? "N/A"
                 };
                 _taskInfos.Add(taskInfo);
-
                 MessageBox.Show("Task created successfully.");
             }
             catch (Exception ex)

@@ -44,6 +44,23 @@ namespace ColorVision.Scheduler
             //// 调度任务
             //await _scheduler.ScheduleJob(job, trigger);
         }
+        public async Task StopJob(string jobName, string groupName)
+        {
+            JobKey jobKey = new JobKey(jobName, groupName);
+            if (await _scheduler.CheckExists(jobKey))
+            {
+                await _scheduler.PauseJob(jobKey);
+            }
+        }
+
+        public async Task RemoveJob(string jobName, string groupName)
+        {
+            JobKey jobKey = new JobKey(jobName, groupName);
+            if (await _scheduler.CheckExists(jobKey))
+            {
+                await _scheduler.DeleteJob(jobKey);
+            }
+        }
 
         public async Task Stop()
         {
