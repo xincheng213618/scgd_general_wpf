@@ -20,6 +20,8 @@ using ColorVision.UI;
 using ColorVision.Common.MVVM;
 using System.Collections.ObjectModel;
 using OpenCvSharp.XPhoto;
+using System.Diagnostics;
+using System.Security.Cryptography.X509Certificates;
 
 namespace ColorVision.Scheduler
 {

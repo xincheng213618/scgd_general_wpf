@@ -90,7 +90,7 @@ namespace ColorVision.Scheduler
             // 调度Job
             await scheduler.ScheduleJob(job, trigger);
 
-            // 添加任务信息到列表
+            // 添加任务信息到列表  
             var taskInfo = new SchedulerInfo
             {
                 JobName = jobName,
