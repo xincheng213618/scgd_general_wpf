@@ -24,6 +24,7 @@ namespace ColorVision.Scheduler
             StopCommand = new RelayCommand(ExecuteStopCommand,a => Status == SchedulerStatus.Running);
             RemoveCommand = new RelayCommand(ExecuteRemoveCommand ,a => Status != SchedulerStatus.Stopped);
         }
+
         private async void ExecuteStopCommand(object parameter)
         {
             var schedulerManager = QuartzSchedulerManager.GetInstance();

@@ -15,6 +15,7 @@
             <TextBox Name="JobNameTextBox" Width="100" Margin="5" />
             <TextBox Name="GroupNameTextBox" Width="100" Margin="5" />
             <TextBox Name="CronExpressionTextBox" Width="200" Margin="5" />
+            <ComboBox x:Name="TaskComboBox"  DisplayMemberPath="Key" SelectedValuePath="Value" />
             <Button Name="CreateTaskButton" Content="Create Task" Click="CreateTaskButton_Click" Margin="5"/>
         </StackPanel>
         <ListView x:Name="ListViewTask" Grid.Row="1" >

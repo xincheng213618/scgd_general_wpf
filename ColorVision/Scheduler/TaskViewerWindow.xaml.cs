@@ -57,7 +57,7 @@ namespace ColorVision.Scheduler
             _taskInfos = new ObservableCollection<SchedulerInfo>();
             ListViewTask.ItemsSource = _taskInfos;
             LoadTasks();
-
+            TaskComboBox.ItemsSource = QuartzSchedulerManager.GetInstance().Jobs;
             // 订阅监听器事件
             var listener = QuartzSchedulerManager.GetInstance().Listener;
             if (listener != null)
@@ -134,7 +134,7 @@ namespace ColorVision.Scheduler
         }
 
 
-        private async void CreateTaskButton_Click(object sender, RoutedEventArgs e)
+        private void CreateTaskButton_Click(object sender, RoutedEventArgs e)
         {
             var jobName = JobNameTextBox.Text;
             var groupName = GroupNameTextBox.Text;
@@ -145,43 +145,8 @@ namespace ColorVision.Scheduler
                 MessageBox.Show("Please fill in all fields.");
                 return;
             }
-            await CreateScheduledTask(jobName, groupName, cronExpression);
-        }
-        private async Task CreateScheduledTask(string jobName, string groupName, string cronExpression)
-        {
-            try
-            {
-                var scheduler = await StdSchedulerFactory.GetDefaultScheduler();
-
-                // Define the job and tie it to our Job class
-                var job = JobBuilder.Create<UpdateJob>()
-                    .WithIdentity(jobName, groupName)
-                    .Build();
-
-                // Create a trigger that fires according to the given cron expression
-                var trigger = TriggerBuilder.Create()
-                    .WithIdentity($"{jobName}-trigger", groupName)
-                    .WithCronSchedule(cronExpression)
-                    .Build();
-
-                // Schedule the job using the trigger
-                await scheduler.ScheduleJob(job, trigger);
-
-                // Add the new task to the list
-                var taskInfo = new SchedulerInfo
-                {
-                    JobName = jobName,
-                    GroupName = groupName,
-                    NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString() ?? "N/A",
-                    PreviousFireTime = trigger.GetPreviousFireTimeUtc()?.ToLocalTime().ToString() ?? "N/A"
-                };
-                _taskInfos.Add(taskInfo);
-                MessageBox.Show("Task created successfully.");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error creating task: {ex.Message}");
-            }
+            var taskInfo = QuartzSchedulerManager.GetInstance().CreateJob(jobName, groupName, cronExpression, TaskComboBox.Text);
+            _taskInfos.Add(taskInfo.Result);
         }
     }
 }
