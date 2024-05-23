@@ -4,6 +4,7 @@ using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Configs;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
@@ -90,20 +91,28 @@ namespace ColorVision.Settings
                     TabControlSetting.Items.Add(tabItem);
                 }
             }
+            var allSettings = new List<ConfigSettingMetadata>();
+
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
                 foreach (var type in assembly.GetTypes().Where(t => typeof(IConfigSettingProvider).IsAssignableFrom(t) && !t.IsAbstract))
                 {
                     if (Activator.CreateInstance(type) is IConfigSettingProvider configSetting)
                     {
-                        foreach (var item in configSetting.GetConfigSettings())
-                        {
-                            Add(item);
-                        }
+                        allSettings.AddRange(configSetting.GetConfigSettings());
                     }
-
                 }
-            }   
+            }
+            // 先按 ConfigSettingType 分组，再在每个组内按 Order 排序
+            var sortedSettings = allSettings
+                .GroupBy(setting => setting.Type)
+                .SelectMany(group => group.OrderBy(setting => setting.Order));
+
+            // 将排序后的配置设置添加到集合中
+            foreach (var item in sortedSettings)
+            {
+                Add(item);
+            }
         }
 
         private void SetProjectDefault__Click(object sender, RoutedEventArgs e)

@@ -20,6 +20,7 @@ namespace ColorVision.Services.RC
                                 Name = "启用RC",
                                 Description = "启用RC",
                                 Type = ConfigSettingType.Bool,
+                                Order =10,
                                 BindingName = nameof(RCSetting.IsUseRCService),
                                 Source = RCSetting.Instance
                             },
@@ -29,6 +30,7 @@ namespace ColorVision.Services.RC
                                 Description = "在软件启动时，如果未打开RC,则打开RC",
                                 Type = ConfigSettingType.Bool,
                                 BindingName = nameof(RCManagerConfig.IsOpenCVWinSMS),
+                                Order =11,
                                 Source = RCManagerConfig.Instance
                             }
             };

@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Settings;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
+using Mysqlx.Crud;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
@@ -19,6 +20,7 @@ namespace ColorVision.MySql
                             {
                                 Name = Properties.Resource.EnableDatabase,
                                 Description = Properties.Resource.EnableDatabase,
+                                Order =1,
                                 Type = ConfigSettingType.Bool,
                                 BindingName = nameof(MySqlSetting.IsUseMySql),
                                 Source = MySqlSetting.Instance

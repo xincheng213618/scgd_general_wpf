@@ -20,6 +20,7 @@ namespace ColorVision.MQTT
                             {
                                 Name = "启用MQTT",
                                 Description = "启用MQTT",
+                                Order =1,
                                 Type = ConfigSettingType.Bool,
                                 BindingName = nameof(MQTTSetting.IsUseMQTT),
                                 Source = MQTTSetting.Instance
