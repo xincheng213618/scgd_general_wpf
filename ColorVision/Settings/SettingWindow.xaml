@@ -9,7 +9,6 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"     
-        d:DataContext="{d:DesignInstance local:SoftwareConfig}"
         Height="450" IsBlurEnabled="True" WindowStartupLocation="CenterScreen"  Background="Transparent" ResizeMode="NoResize" Width="600" Initialized="Window_Initialized">
     <Window.Resources>
       
@@ -102,56 +101,6 @@
                         </ScrollViewer>
                     </GroupBox>
                 </Grid>
-            </TabItem>
-            <TabItem  Header="{x:Static properties:Resource.ProjectSettings}"   Background="Transparent" >
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="{DynamicResource GlobalBorderBrush}" VerticalScrollBarVisibility="Auto" >
-                    <StackPanel>
-                        <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
-                            <GroupBox.Header>
-                                <TextBlock Text="{x:Static properties:Resource.Project}" FontSize="20"/>
-                            </GroupBox.Header>
-                            <StackPanel>
-                                <Border Style="{StaticResource BorderModuleArea}" >
-                                    <StackPanel Margin="5">
-
-                                        <DockPanel Margin="5" >
-                                            <Button  DockPanel.Dock="Right"  Content="{x:Static properties:Resource.Clear}"    />
-                                            <TextBlock Text="{x:Static properties:Resource.ClearCache}" />
-                                        </DockPanel>
-                                    </StackPanel>
-                                </Border>
-                                <Border Style="{StaticResource BorderModuleArea}" CornerRadius="8">
-                                    <StackPanel Margin="5">
-                                        <DockPanel Margin="5" >
-                                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.Reset}" Click="SetProjectDefaultCreatName_Click"  />
-                                            <TextBlock Text="{x:Static properties:Resource.NewProjectFormat}" MinWidth="150" />
-                                            <TextBox Text="{Binding SolutionSetting.DefaultCreatName}"  HorizontalAlignment="Left" Width="200"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="5" >
-                                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.Reset}" Click="SetProjectDefault__Click"  />
-                                            <TextBlock Text="默认文件存储格式:"  MinWidth="150"  />
-                                            <TextBox Text="{Binding SolutionSetting.DefaultSaveName}" HorizontalAlignment="Left" Width="200" />
-                                        </DockPanel>
-                                        <DockPanel Margin="5" >
-                                            <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SolutionSetting.IsLackWarning}"/>
-                                            <TextBlock Text="工程硬盘剩余空间不足提示" />
-                                        </DockPanel>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Style="{StaticResource BorderModuleArea}" CornerRadius="8">
-                                    <StackPanel Margin="5">
-                                        <DockPanel Margin="5" >
-                                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.Reset}" Click="SetProjectDefault__Click"  />
-                                            <TextBlock Text="{x:Static properties:Resource.DefaultExportStorageFormat}"  MinWidth="150"  />
-                                            <TextBox Text="{Binding SolutionSetting.DefaultImageSaveName}" HorizontalAlignment="Left" Width="200" />
-                                        </DockPanel>
-                                    </StackPanel>
-                                </Border>
-                            </StackPanel>
-                        </GroupBox>
-                    </StackPanel>
-                </ScrollViewer>
             </TabItem>
         </TabControl>
 

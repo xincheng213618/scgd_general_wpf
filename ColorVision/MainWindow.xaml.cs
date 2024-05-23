@@ -91,8 +91,6 @@ namespace ColorVision
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;
 
-            StatusBarGrid.DataContext = new  SoftwareConfig();
-            MenuStatusBar.DataContext = new SoftwareConfig();
             ViewGridManager.SetViewGrid(ViewConfig.Instance.LastViewCount);
 
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>

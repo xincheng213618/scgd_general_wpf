@@ -27,7 +27,7 @@ namespace ColorVision.Wizards
         }
         private void Window_Initialized(object sender, System.EventArgs e)
         {
-            DataContext = new SoftwareConfig();
+
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

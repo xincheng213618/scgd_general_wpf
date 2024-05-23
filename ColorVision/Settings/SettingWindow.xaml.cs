@@ -1,11 +1,9 @@
-﻿using ColorVision.Solution;
-using ColorVision.Themes;
+﻿using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Configs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -39,12 +37,10 @@ namespace ColorVision.Settings
         }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            DataContext = new SoftwareConfig();
             GlobalConst.LogLevel.ForEach(it =>
             {
                 cmbloglevel.Items.Add(it);
             });
-
            LoadIConfigSetting();
         }
 
@@ -114,35 +110,5 @@ namespace ColorVision.Settings
                 Add(item);
             }
         }
-
-        private void SetProjectDefault__Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button)
-            {
-                SolutionSetting.Instance.DefaultSaveName = "yyyy/dd/MM HH:mm:ss";
-                ButtonContentChange(button, Properties.Resource.Reseted);
-            }
-
-        }
-
-        private void SetProjectDefaultCreatName_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button)
-            {
-                SolutionSetting.Instance.DefaultCreatName = "新建工程";
-                ButtonContentChange(button, Properties.Resource.Reseted);
-            }
-        }
-
-        private static async void ButtonContentChange(Button button, string Content)
-        {
-            if (button.Content.ToString() != Content)
-            {
-                var temp = button.Content;
-                button.Content = Content;
-                await Task.Delay(1000);
-                button.Content = temp;
-            }
-        } 
     }
 }
