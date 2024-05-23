@@ -17,7 +17,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
         public static void SaveCsv(ObservableCollection<PoiResultCIExyuvData> poiResultCIExyuvDatas, string FileName)
         {
             var csvBuilder = new StringBuilder();
-            List<string> properties = new() { "名称", "位置", "大小", "形状", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
+            List<string> properties = new() { "Id","名称", "位置", "大小", "形状", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y" };
 
             // 写入列头
             csvBuilder.AppendLine(string.Join(",", properties));
@@ -27,6 +27,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             {
                 List<string> values = new()
                 {
+                    item.POIPoint.Id?.ToString(CultureInfo.InvariantCulture),
                     item.Name,
                     $"{item.Point.PixelX}|{item.Point.PixelY}" ,
                     $"{item.Point.Width}|{item.Point.Height}",
