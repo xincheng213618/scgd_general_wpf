@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Properties;
-using ColorVision.Settings;
 using ColorVision.UI;
 using ColorVision.UserSpace.Dao;
 using System;

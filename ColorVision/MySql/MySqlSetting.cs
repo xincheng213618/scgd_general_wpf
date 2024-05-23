@@ -1,10 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.MQTT;
 using ColorVision.Settings;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
-using Mysqlx.Crud;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

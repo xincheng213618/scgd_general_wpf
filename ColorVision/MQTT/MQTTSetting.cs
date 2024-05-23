@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.MySql;
 using ColorVision.Settings;
 using ColorVision.UI;
 using ColorVision.UI.Configs;

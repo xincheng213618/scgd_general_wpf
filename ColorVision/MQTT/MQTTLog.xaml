@@ -25,12 +25,18 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Text="订阅列表" TextWrapping="WrapWithOverflow"  Width="15"/>
-                <ListView Grid.Column="1"  x:Name="TopicListView" Margin="0" BorderThickness="0"  SelectionChanged="TopicListView_SelectionChanged">
-                    <ListView.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding}" />
-                        </DataTemplate>
-                    </ListView.ItemTemplate>
+                <ListView Grid.Column="1" x:Name="TopicListView" Margin="0" BorderThickness="0"  SelectionChanged="TopicListView_SelectionChanged">
+                    <ListView.View>
+                        <GridView>
+                            <GridViewColumn>
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding .}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                        </GridView>
+                    </ListView.View>
                 </ListView>
             </Grid>
             <Grid >

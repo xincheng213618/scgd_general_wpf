@@ -83,7 +83,7 @@ namespace ColorVision.MQTT
         {
             Task.Run( async () =>
             {
-                bool IsConnect = await MQTTControl.TestConnect(MQTTConfig);
+                bool IsConnect = await MQTTControl.GetInstance().TestConnect(MQTTConfig);
                 await Dispatcher.BeginInvoke(() =>
                 {
                     Task.Run(() =>
