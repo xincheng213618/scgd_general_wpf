@@ -32,7 +32,7 @@ namespace ColorVision.Solution
                     Order =4,
                     BindingName = nameof(SolutionSetting.IsLackWarning),
                     VisibilityBindingName = nameof(SolutionSetting.IsShowLackWarning),
-                    ButtonStyleName ="ButtonDrawingImageRCService",
+                    ButtonStyleName ="ButtonDrawingImageHardDisk",
                     Source = SolutionSetting.Instance,
                     Action =action
                 }

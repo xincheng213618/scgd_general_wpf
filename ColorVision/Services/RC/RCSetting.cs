@@ -56,7 +56,7 @@ namespace ColorVision.Services.RC
                     Order =3,
                     BindingName = "RCServiceControl.IsConnect",
                     VisibilityBindingName =nameof(RCSetting.IsUseRCService),
-                    ButtonStyleName ="ButtonDrawingImageHardDisk",
+                    ButtonStyleName ="ButtonDrawingImageRCService",
                     Source = RCSetting.Instance,
                     Action =action
                 }
