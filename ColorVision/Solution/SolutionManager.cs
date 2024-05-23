@@ -4,7 +4,6 @@ using ColorVision.Extension;
 using ColorVision.RecentFile;
 using ColorVision.Solution.V;
 using log4net;
-
 using System;
 using System.Collections.ObjectModel;
 using System.IO;

@@ -114,18 +114,27 @@ namespace ColorVision.Services.Devices.Camera
             }
             DService.DeviceStatusChanged += (e) =>
             {
-                ButtonOffline.Visibility = Visibility.Collapsed;
-                ButtonInit.Visibility = Visibility.Collapsed;
-                StackPanelOpen.Visibility = Visibility.Collapsed;
                 switch (e)
                 {
                     case DeviceStatusType.OffLine:
+                        ButtonOffline.Visibility = Visibility.Collapsed;
+                        ButtonInit.Visibility = Visibility.Collapsed;
+                        StackPanelOpen.Visibility = Visibility.Collapsed;
+
                         ButtonOffline.Visibility = Visibility.Visible;
                         break;
                     case DeviceStatusType.UnInit:
+                        ButtonOffline.Visibility = Visibility.Collapsed;
+                        ButtonInit.Visibility = Visibility.Collapsed;
+                        StackPanelOpen.Visibility = Visibility.Collapsed;
+
                         ButtonInit.Visibility = Visibility.Visible;
                         break;
                     case DeviceStatusType.Closed:
+                        ButtonOffline.Visibility = Visibility.Collapsed;
+                        ButtonInit.Visibility = Visibility.Collapsed;
+                        StackPanelOpen.Visibility = Visibility.Collapsed;
+
                         StackPanelOpen.Visibility = Visibility.Visible;
                         ButtonOpen.Visibility = Visibility.Visible;
                         ButtonClose.Visibility = Visibility.Collapsed;
@@ -135,6 +144,10 @@ namespace ColorVision.Services.Devices.Camera
                         break;
                     case DeviceStatusType.LiveOpened:
                     case DeviceStatusType.Opened:
+                        ButtonOffline.Visibility = Visibility.Collapsed;
+                        ButtonInit.Visibility = Visibility.Collapsed;
+                        StackPanelOpen.Visibility = Visibility.Collapsed;
+
                         StackPanelOpen.Visibility = Visibility.Visible;
                         if (!DService.IsVideoOpen)
                             StackPanelImage.Visibility = Visibility.Visible;
@@ -142,6 +155,7 @@ namespace ColorVision.Services.Devices.Camera
                         ButtonClose.Visibility = Visibility.Visible;
                         break;
                     case DeviceStatusType.Opening:
+
                         break;
                     default:
                         break;
@@ -186,11 +200,14 @@ namespace ColorVision.Services.Devices.Camera
 
 
 
-
+        private void CameraOffline_Click(object sender, RoutedEventArgs e)
+        {
+            ServicesHelper.SendCommandEx(sender, DService.GetAllCameraID);
+        }
 
         private void CameraInit_Click(object sender, RoutedEventArgs e)
         {
-            ServicesHelper.SendCommandEx(sender, DService.GetAllCameraID);
+            Device.EditCommand.RaiseExecute(sender);
         }
 
         private void Open_Click(object sender, RoutedEventArgs e)

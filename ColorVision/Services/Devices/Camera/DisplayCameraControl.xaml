@@ -66,7 +66,7 @@
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="3">
                 <Button x:Name="ButtonInit" Margin="0,0,0,3" Content="请先配置相机ID" Click="CameraInit_Click"/>
-                <Button x:Name="ButtonOffline" Margin="0,0,0,3" Visibility="Collapsed" Content="设备离线" Foreground="White" Background="Red" Click="CameraInit_Click"/>
+                <Button x:Name="ButtonOffline" Margin="0,0,0,3" Visibility="Collapsed" Content="设备离线" Foreground="White" Background="Red" Click="CameraOffline_Click"/>
                 <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,3">
                     <DockPanel x:Name="ButtonOpen">
                         <Button  DockPanel.Dock="Right" Grid.Column="1" Margin="5,0,0,0" Content="{x:Static properties:Resource.Video}"  Click="Video_Click"/>
