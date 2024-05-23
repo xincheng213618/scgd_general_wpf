@@ -1,6 +1,6 @@
 ﻿using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Interfaces;
-using MQTTMessageLib;
+using CVCommCore;
 using Newtonsoft.Json;
 
 namespace ColorVision.Services.Devices.Spectrum.Configs

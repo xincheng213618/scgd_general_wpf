@@ -1,4 +1,4 @@
-﻿using MQTTMessageLib;
+﻿using CVCommCore;
 
 namespace ColorVision.Services.Devices
 {

@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Services.Interfaces;
-using MQTTMessageLib;
+using CVCommCore;
 using Newtonsoft.Json;
 using System;
 

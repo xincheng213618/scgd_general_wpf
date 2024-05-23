@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using ColorVision.Services.Msg;
-using MQTTMessageLib;
+using CVCommCore;
 
 namespace ColorVision.Services.Devices.Motor
 {

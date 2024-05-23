@@ -1,4 +1,4 @@
-﻿using MQTTMessageLib;
+﻿using CVCommCore;
 using Newtonsoft.Json;
 
 namespace ColorVision.Services.Devices

@@ -3,6 +3,7 @@ using ColorVision.Services.Devices.Sensor.Templates;
 using ColorVision.Services.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
+using CVCommCore;
 using MQTTMessageLib;
 using MQTTMessageLib.Sensor;
 using System;
