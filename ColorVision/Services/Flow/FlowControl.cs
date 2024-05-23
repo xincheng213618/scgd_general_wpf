@@ -95,7 +95,8 @@ namespace ColorVision.Services.Flow
             }
             else
             {
-                flowEngine.StartNode(sn, ServiceManager.GetInstance().ServiceTokens);
+                var tol = ServiceManager.GetInstance().ServiceTokens;
+                flowEngine.StartNode(sn, tol);
             }
         }
 

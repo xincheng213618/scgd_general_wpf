@@ -113,7 +113,7 @@ namespace ColorVision.Services.Templates
 
         public override object GetValue() => TemplateParams;
 
-        public override bool ExitsTemplateName(string templateName) => TemplateParams.Any(a => a.Key.Contains(templateName, StringComparison.OrdinalIgnoreCase));
+        public override bool ExitsTemplateName(string templateName) => TemplateParams.Any(a => a.Key.Equals(templateName, StringComparison.OrdinalIgnoreCase));
         public override object GetValue(int index) => TemplateParams[index].Value;
 
         public override IEnumerable ItemsSource { get => TemplateParams; }
