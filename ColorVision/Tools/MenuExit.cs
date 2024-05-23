@@ -5,6 +5,7 @@ using System.Windows;
 
 namespace ColorVision.Tools
 {
+
     public class MenuExit : IMenuItem
     {
         public string? OwnerGuid => "File";

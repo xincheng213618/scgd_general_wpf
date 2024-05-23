@@ -1,22 +1,31 @@
 ﻿using ColorVision.Common.NativeMethods;
 using ColorVision.Extension;
-using ColorVision.Services.Flow;
 using System.IO;
 using System.Windows.Media;
 using ColorVision.Common.MVVM;
 using System.Windows.Controls;
+using ColorVision.Media;
+using ColorVision.Net;
 using System.Windows;
+using ColorVision.Common.Utilities;
+using ColorVision.Common.Extension;
+using ColorVision.Solution.V.Files;
 
-namespace ColorVision.Solution.V.Files
+namespace ColorVision.Services
 {
-    public class FlowFile : ViewModelBase, IFile
+    public class CVcieFile : ViewModelBase, IFile
     {
         public FileInfo FileInfo { get; set; }
         public ContextMenu ContextMenu { get; set; }
 
-        public string Extension { get => FileInfo.Extension; }
+        public string Extension { get => ".cvraw|.cvcie"; }
 
-        public FlowFile(FileInfo fileInfo)
+        public CVcieFile()
+        {
+
+        }
+
+        public CVcieFile(FileInfo fileInfo)
         {
             FileInfo = fileInfo;
             Name = FileInfo.Name;
@@ -24,9 +33,6 @@ namespace ColorVision.Solution.V.Files
             var icon = FileIcon.GetFileIcon(fileInfo.FullName);
             if (icon != null)
                 Icon = icon.ToImageSource();
-
-            ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Open, Command = new RelayCommand((e)=> Open()) });
         }
 
         public string Name { get; set; }
@@ -38,19 +44,26 @@ namespace ColorVision.Solution.V.Files
 
         public void Open()
         {
-            bool IsOpen = false;
-            foreach (var item in Application.Current.Windows)
+            if (File.Exists(FileInfo.FullName))
             {
-                if (item is WindowFlowEngine WindowFlowEngine)
+                ImageView imageView = new();
+
+                CVFileUtil.ReadCVRaw(FileInfo.FullName, out CVCIEFile fileInfo);
+                Window window = new() { Title = Properties.Resource.QuickPreview, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                window.Content = imageView;
+                imageView.OpenImage(new NetFileUtil().OpenLocalCVFile(FileInfo.FullName));
+
+                window.Show();
+                window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
                 {
-                    WindowFlowEngine.OpenFlow(FullName);
-                    WindowFlowEngine.Activate();
-                    IsOpen = true;
-                    break;
-                }
+                    imageView.ToolBarTop.ClearImage();
+                }));
             }
-            if (!IsOpen)
-                new WindowFlowEngine() { Owner = null }.Show();
+            else
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到文件", "ColorVision");
+            }
+
         }
 
 
@@ -70,6 +83,7 @@ namespace ColorVision.Solution.V.Files
         {
             throw new System.NotImplementedException();
         }
+
     }
 
 

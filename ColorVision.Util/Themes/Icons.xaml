@@ -278,6 +278,8 @@
     </DrawingImage>
 
     <Style x:Key="ButtonDrawingImageHardDisk"  TargetType="{x:Type ToggleButton}">
+        <Setter Property="Height"  Value="20"/>
+        <Setter Property="Margin"  Value="0,-10"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ToggleButton}">
@@ -294,6 +296,8 @@
 
 
     <Style x:Key="ButtonDrawingImageMysql"  TargetType="{x:Type ToggleButton}">
+        <Setter Property="Height"  Value="20"/>
+        <Setter Property="Margin"  Value="0,-10"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ToggleButton}">
@@ -309,6 +313,8 @@
     </Style>
 
     <Style x:Key="ButtonDrawingImageMQTT"  TargetType="{x:Type ToggleButton}">
+        <Setter Property="Height"  Value="20"/>
+        <Setter Property="Margin"  Value="0,-10"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ToggleButton}">
@@ -324,6 +330,8 @@
     </Style>
 
     <Style x:Key="ButtonDrawingImageRCService"  TargetType="{x:Type ToggleButton}">
+        <Setter Property="Height"  Value="15"/>
+        <Setter Property="Margin"  Value="0,-10"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ToggleButton}">
@@ -339,6 +347,8 @@
     </Style>
 
     <Style x:Key="ButtonMQTTConnect"  TargetType="{x:Type ToggleButton}">
+        <Setter Property="Height"  Value="20"/>
+        <Setter Property="Margin"  Value="0,-10"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="{x:Type ToggleButton}">

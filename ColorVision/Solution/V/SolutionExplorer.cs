@@ -1,9 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Solution.V.Files;
 using ColorVision.Solution.V.Folders;
+using ScottPlot.Drawing.Colormaps;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,7 +21,6 @@ namespace ColorVision.Solution.V
     public class SolutionExplorer: VObject
     {
         public DirectoryInfo DirectoryInfo { get; set; }
-
         public RelayCommand OpenExplorer { get; set; }
         public RelayCommand ClearCacheCommand { get; set; }
 
@@ -27,7 +28,6 @@ namespace ColorVision.Solution.V
 
         public SolutionExplorer(string FullPath)
         {
-
             if (File.Exists(FullPath) && FullPath.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
             {
                 FileInfo fileInfo = new(FullPath);
@@ -41,8 +41,6 @@ namespace ColorVision.Solution.V
                         DriveInfo = new DriveInfo(rootDirectory.FullName);
                     }
                 }
-
-
             }
             else if(Directory.Exists(FullPath))
             {
@@ -51,13 +49,31 @@ namespace ColorVision.Solution.V
                 DirectoryInfo rootDirectory = DirectoryInfo.Root;
                 DriveInfo = new DriveInfo(rootDirectory.FullName);
             }
-
             GeneralRelayCommand();
             GeneralContextMenu();
             GeneralCVSln();
             IsExpanded = true;
             DriveMonitor();
 
+        }
+        public string SolutionCachePath
+        {
+            get
+            {
+                // Define the name of the cache folder
+                string cacheFolderName = ".SolutionCache";
+                // Create the full path for the cache folder
+                string cacheFolderPath = Path.Combine(DirectoryInfo.FullName, cacheFolderName);
+
+                // Create the cache folder if it doesn't exist
+                if (!Directory.Exists(cacheFolderPath))
+                {
+                    Directory.CreateDirectory(cacheFolderPath);
+                    // Set the folder attributes to hidden
+                    File.SetAttributes(cacheFolderPath, FileAttributes.Hidden);
+                }
+                return cacheFolderPath;
+            }
         }
 
         public void DriveMonitor()
@@ -125,108 +141,29 @@ namespace ColorVision.Solution.V
         }
 
 
+        public Dictionary<string, Type> FileTypes { get; set; }
+
 
         public void GeneralCVSln()
         {
-            //HistoryFolder historyFolder = new HistoryFolder("历史记录");
-            //var vhistoryFolder = new VFolder(historyFolder);
-            //this.AddChild(vhistoryFolder);
-
-            //List<string> strings = new List<string>() { "MTF", "SFR", "畸变", "灯光检测", "鬼影", "关注点" };
-
-            //if (true)
-            //{
-            //    HistoryFolder mtfFolder = new HistoryFolder("MTF");
-            //    var VFolder = new VFolder(mtfFolder);
-            //    vhistoryFolder.AddChild(VFolder);
-
-            //    AlgorithmMTFResult MysqlResult = new AlgorithmMTFResult();
-            //    var results = MysqlResult.GetAll();
-            //    foreach (var result in results)
-            //    {
-            //        HistoryFolder historyresult = new HistoryFolder(new MTFResult(result).Batch?.DisPlayName ?? new MTFResult(result).Model.Id.ToString());
-            //        var vhistoryFolder2 = new VFolder(historyresult);
-            //        VFolder.AddChild(vhistoryFolder2);
-            //    }
-            //    results.Clear();
-            //}
-
-            //if (true)
-            //{
-            //    HistoryFolder mtfFolder = new HistoryFolder("SFR");
-            //    var VFolder = new VFolder(mtfFolder);
-            //    vhistoryFolder.AddChild(VFolder);
-
-            //    AlgorithmSFRResult MysqlResult = new AlgorithmSFRResult();
-            //    var results = MysqlResult.GetAll();
-            //    foreach (var result in results)
-            //    {
-            //        HistoryFolder historyresult = new HistoryFolder(new SFRResult(result).Batch?.DisPlayName ?? new SFRResult(result).Model.Id.ToString());
-            //        var vhistoryFolder2 = new VFolder(historyresult);
-            //        VFolder.AddChild(vhistoryFolder2);
-            //    }
-            //    results.Clear();
-            //}
-
-            //if (true)
-            //{
-            //    HistoryFolder mtfFolder = new HistoryFolder("FOV");
-            //    var VFolder = new VFolder(mtfFolder);
-            //    vhistoryFolder.AddChild(VFolder);
-            //    AlgorithmFOVResult MysqlResult = new AlgorithmFOVResult();
-            //    var results = MysqlResult.GetAll();
-            //    foreach (var result in results)
-            //    {
-            //        HistoryFolder historyresult = new HistoryFolder(new FOVResult(result).Batch?.DisPlayName ?? new FOVResult(result).Model.Id.ToString());
-            //        var vhistoryFolder2 = new VFolder(historyresult);
-            //        VFolder.AddChild(vhistoryFolder2);
-            //    }
-            //    results.Clear();
-            //}
-
-            //if (true)
-            //{
-            //    HistoryFolder mtfFolder = new HistoryFolder("Ghost");
-            //    var VFolder = new VFolder(mtfFolder);
-            //    vhistoryFolder.AddChild(VFolder);
-            //    AlgorithmGhostResult MysqlResult = new AlgorithmGhostResult();
-            //    var results = MysqlResult.GetAll();
-            //    foreach (var result in results)
-            //    {
-            //        HistoryFolder historyresult = new HistoryFolder(new GhostResult(result).Batch?.DisPlayName ?? new GhostResult(result).Model.Id.ToString());
-            //        var vhistoryFolder2 = new VFolder(historyresult);
-            //        VFolder.AddChild(vhistoryFolder2);
-            //    }
-            //    results.Clear();
-            //}
-
-            //if (true)
-            //{
-            //    HistoryFolder mtfFolder = new HistoryFolder("Distortion");
-            //    var VFolder = new VFolder(mtfFolder);
-            //    vhistoryFolder.AddChild(VFolder);
-            //    AlgorithmDistortionResult MysqlResult = new AlgorithmDistortionResult();
-            //    var results = MysqlResult.GetAll();
-            //    foreach (var result in results)
-            //    {
-            //        HistoryFolder historyresult = new HistoryFolder(new DistortionResult(result).Batch?.DisPlayName ?? new DistortionResult(result).Model.Id.ToString());
-            //        var vhistoryFolder2 = new VFolder(historyresult);
-            //        VFolder.AddChild(vhistoryFolder2);
-            //    }
-            //    results.Clear();
-            //}
-
-
             foreach (var item in DirectoryInfo.GetDirectories())
-            {
+            { 
+                if ((item.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
+                {
+                    continue;
+                }
+
                 BaseFolder folder = new(item);
                 var vFolder = new VFolder(folder);
                 AddChild(vFolder);
                 GeneralChild(vFolder, item);
             }
         }
-
-        public static void GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
+        private static Regex WildcardToRegex(string pattern)
+        {
+            return new Regex("^" + Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$", RegexOptions.IgnoreCase);
+        }
+        public void GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
         {
             foreach (var item in directoryInfo.GetDirectories())
             {
@@ -235,23 +172,54 @@ namespace ColorVision.Solution.V
                 vObject.AddChild(vFolder);
                 GeneralChild(vFolder, item);
             }
+            FileTypes = new Dictionary<string, Type>();
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                foreach (var type in assembly.GetTypes())
+                {
+                    if (typeof(IFile).IsAssignableFrom(type) && !type.IsInterface)
+                    {
+                        if (Activator.CreateInstance(type) is IFile page)
+                        {
+                            FileTypes.Add(page.Extension, type);
+                        }
+                    }
+                }
+            }
             foreach (var item in directoryInfo.GetFiles())
             {
-                IFile file;
-                if (item.Extension ==".stn")
+                string extension = Path.GetExtension(item.FullName);
+                List<Type> matchingTypes = new List<Type>();
+                if (FileTypes.TryGetValue(extension, out Type specificTypes))
                 {
-                    file = new FlowFile(item);
+                    matchingTypes.Add(specificTypes);
                 }
-                else if (item.Extension == ".cvcie")
+                foreach (var key in FileTypes.Keys)
                 {
-                    file = new CVcieFile(item);
+                    if (key == extension)
+                        matchingTypes.Add(FileTypes[key]);
                 }
-                else
+                foreach (var key in FileTypes.Keys)
                 {
-                    file = new CommonFile(item);
+                    var subKeys = key.Split('|');
+                    foreach (var subKey in subKeys)
+                    {
+                        if (WildcardToRegex(subKey).IsMatch(extension))
+                        {
+                            matchingTypes.Add(FileTypes[key]);
+                            break;
+                        }
+                    }
                 }
-                VFile vFile = new(file);
-                vObject.AddChild(vFile);
+                if (matchingTypes.Count > 0)
+                {
+                    if (Activator.CreateInstance(matchingTypes[0], item) is IFile file)
+                    {
+                        VFile vFile = new VFile(file);
+                        vObject.AddChild(vFile);
+                    }
+                }
+
             }
         }
 

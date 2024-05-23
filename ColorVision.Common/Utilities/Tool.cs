@@ -18,6 +18,37 @@ namespace ColorVision.Common.Utilities
     public static partial class Tool
     {
 
+        public static bool ValidateModbusCRC16(byte[] data)
+        {
+            ushort computedCrc = CalculateCRC16(data, data.Length - 2);
+            ushort receivedCrc = BitConverter.ToUInt16(data, data.Length - 2);
+            return computedCrc == receivedCrc;
+        }
+
+        private static ushort CalculateCRC16(byte[] data, int length)
+        {
+            ushort crc = 0xFFFF;
+
+            for (int i = 0; i < length; i++)
+            {
+                crc ^= data[i];
+
+                for (int j = 0; j < 8; j++)
+                {
+                    if ((crc & 0x0001) != 0)
+                    {
+                        crc >>= 1;
+                        crc ^= 0xA001;
+                    }
+                    else
+                    {
+                        crc >>= 1;
+                    }
+                }
+            }
+
+            return crc;
+        }
         public static bool IsImageFile(string filePath)
         {
             string[] imageExtensions = { ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff" };
@@ -40,13 +71,27 @@ namespace ColorVision.Common.Utilities
 
         public static string CalculateMD5(string filename)
         {
-            if (!File.Exists(filename)) return string.Empty; 
-            #pragma warning disable CA5351  
-            using var md5 = MD5.Create();
-            #pragma warning restore CA5351
-            using var stream = File.OpenRead(filename);
-            var hash = md5.ComputeHash(stream);
-            return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(filename) || !File.Exists(filename)) return string.Empty;
+            try
+            {
+#pragma warning disable CA5351
+                using var md5 = MD5.Create();
+#pragma warning restore CA5351
+                using var stream = File.OpenRead(filename);
+                var hash = md5.ComputeHash(stream);
+                var sb = new StringBuilder();
+                foreach (var b in hash)
+                {
+                    sb.Append(b.ToString("x2"));
+                }
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                // Log the exception or handle it as needed
+                Console.WriteLine($"An error occurred while calculating MD5: {ex.Message}");
+                return string.Empty;
+            }
         }
 
         public static void ExtractToDirectory(string zipPath, string extractPath)

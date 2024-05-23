@@ -7,7 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Solution.Searches
+namespace ColorVision.Services.ShowPage.Dao
 {
     public class ViewArchiveDetailResult : ViewModelBase
     {

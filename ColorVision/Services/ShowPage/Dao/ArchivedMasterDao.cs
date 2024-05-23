@@ -3,17 +3,17 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 
-namespace ColorVision.Solution.Searches
+namespace ColorVision.Services.ShowPage.Dao
 {
 
 
 
     public class ArchivedMasterModel : PKModel
     {
-        public string? Code { get; set; }
-        public string? Name { get; set; }
-        public string? Data { get; set; }
-        public string? Remark { get; set; }
+        public string Code { get; set; }
+        public string Name { get; set; }
+        public string Data { get; set; }
+        public string Remark { get; set; }
         public int? TenantId { get; set; }
 
         public DateTime? CreateDate { get; set; } = DateTime.Now;
@@ -31,11 +31,11 @@ namespace ColorVision.Solution.Searches
 
         public override ArchivedMasterModel GetModelFromDataRow(DataRow item) => new()
         {
-            Name = item.Field<string?>("name"),
-            TenantId =item.Field<int?>("tenant_id"),
-            Code = item.Field<string?>("code"),
-            Data = item.Field<string?>("data"),
-            Remark = item.Field<string?>("data"),
+            Name = item.Field<string>("name"),
+            TenantId = item.Field<int?>("tenant_id"),
+            Code = item.Field<string>("code"),
+            Data = item.Field<string>("data"),
+            Remark = item.Field<string>("data"),
             ArchDate = item.Field<DateTime?>("arch_date"),
             CreateDate = item.Field<DateTime?>("create_date"),
         };

@@ -38,7 +38,8 @@ namespace ColorVision.Services.Devices.Algorithm.Views
         public PoiResultData(POIPointResultModel pOIPointResultModel)
         {
             POIPointResultModel = pOIPointResultModel;
-            ValidateSingles = JsonConvert.DeserializeObject<ObservableCollection<ValidateRuleResult>>(pOIPointResultModel.ValidateResult);
+            if (pOIPointResultModel.ValidateResult !=null)
+                ValidateSingles = JsonConvert.DeserializeObject<ObservableCollection<ValidateRuleResult>>(pOIPointResultModel.ValidateResult);
             Point = new POIPoint(pOIPointResultModel.PoiId??-1, -1, pOIPointResultModel.PoiName, (POIPointTypes)pOIPointResultModel.PoiType, (int)pOIPointResultModel.PoiX, (int)pOIPointResultModel.PoiY, (int)pOIPointResultModel.PoiWidth, (int)pOIPointResultModel.PoiHeight);
         }
 

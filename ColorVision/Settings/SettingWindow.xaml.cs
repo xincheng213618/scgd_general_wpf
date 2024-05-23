@@ -1,18 +1,14 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MySql;
-using ColorVision.Services.Msg;
-using ColorVision.Services.RC;
-using ColorVision.Solution;
+﻿using ColorVision.Solution;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Configs;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.Settings
@@ -61,7 +57,7 @@ namespace ColorVision.Settings
                 if (configSetting.Type == ConfigSettingType.Bool)
                 {
                     DockPanel dockPanel = new DockPanel() { Margin = new Thickness(5) };
-                    Wpf.Ui.Controls.ToggleSwitch toggleSwitch = new();
+                    Wpf.Ui.Controls.ToggleSwitch toggleSwitch = new() { ToolTip = configSetting.Description };
                     toggleSwitch.SetBinding(Wpf.Ui.Controls.ToggleSwitch.IsCheckedProperty, new Binding(configSetting.BindingName));
                     toggleSwitch.DataContext = configSetting.Source;
                     DockPanel.SetDock(toggleSwitch, Dock.Right);
@@ -81,7 +77,8 @@ namespace ColorVision.Settings
                 if (configSetting.Type == ConfigSettingType.TabItem)
                 {
                     TabItem tabItem = new TabItem() { Header = configSetting.Name , Background = Brushes.Transparent};
-                    Grid grid = new Grid { Background = (Brush)Application.Current.Resources["GlobalBorderBrush"] };
+                    Grid grid = new Grid();
+                    grid.SetResourceReference(Grid.BackgroundProperty, "GlobalBorderBrush");
                     GroupBox groupBox = new GroupBox
                     {
                         Header = new TextBlock { Text = configSetting.Name, FontSize = 20 },
@@ -94,20 +91,28 @@ namespace ColorVision.Settings
                     TabControlSetting.Items.Add(tabItem);
                 }
             }
+            var allSettings = new List<ConfigSettingMetadata>();
+
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
                 foreach (var type in assembly.GetTypes().Where(t => typeof(IConfigSettingProvider).IsAssignableFrom(t) && !t.IsAbstract))
                 {
                     if (Activator.CreateInstance(type) is IConfigSettingProvider configSetting)
                     {
-                        foreach (var item in configSetting.GetConfigSettings())
-                        {
-                            Add(item);
-                        }
+                        allSettings.AddRange(configSetting.GetConfigSettings());
                     }
-
                 }
-            }   
+            }
+            // 先按 ConfigSettingType 分组，再在每个组内按 Order 排序
+            var sortedSettings = allSettings
+                .GroupBy(setting => setting.Type)
+                .SelectMany(group => group.OrderBy(setting => setting.Order));
+
+            // 将排序后的配置设置添加到集合中
+            foreach (var item in sortedSettings)
+            {
+                Add(item);
+            }
         }
 
         private void SetProjectDefault__Click(object sender, RoutedEventArgs e)
@@ -138,29 +143,6 @@ namespace ColorVision.Settings
                 await Task.Delay(1000);
                 button.Content = temp;
             }
-        }
-
-
-        private void TextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            new MQTTConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-        private void TextBlock_MouseLeftButtonDown2(object sender, MouseButtonEventArgs e)
-        {
-            new RCServiceConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-        private void TextBlock_MouseLeftButtonDown1(object sender, MouseButtonEventArgs e)
-        {
-            new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            MsgConfig.Instance.MsgRecords.Clear();
-            MessageBox.Show("MQTT历史记录清理完毕", "ColorVision");
-        }
-
-
+        } 
     }
 }

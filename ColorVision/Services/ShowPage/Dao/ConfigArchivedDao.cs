@@ -2,15 +2,15 @@
 using ColorVision.MySql.ORM;
 using System.Data;
 
-namespace ColorVision.Solution.Searches
+namespace ColorVision.Services.ShowPage.Dao
 {
-    public class ConfigArchivedModel : ViewModelBase,IPKModel
+    public class ConfigArchivedModel : ViewModelBase, IPKModel
     {
         public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
 
-        public string? Path { get => _Path; set { _Path = value; NotifyPropertyChanged(); } }
-        private string? _Path;
+        public string Path { get => _Path; set { _Path = value; NotifyPropertyChanged(); } }
+        private string _Path;
 
         public string CronExpression { get => _CronExpression; set { _CronExpression = value; NotifyPropertyChanged(); } }
         private string _CronExpression;
@@ -37,8 +37,8 @@ namespace ColorVision.Solution.Searches
 
         public override ConfigArchivedModel GetModelFromDataRow(DataRow item) => new()
         {
-            Id  =item.Field<int>("id"), 
-            Path = item.Field<string?>("path"),
+            Id = item.Field<int>("id"),
+            Path = item.Field<string>("path"),
             CronExpression = item.Field<string>("cron_expression") ?? string.Empty,
             DataSaveDays = item.Field<int>("data_save_days")
         };

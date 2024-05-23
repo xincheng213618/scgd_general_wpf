@@ -1,9 +1,9 @@
-﻿<Page x:Class="ColorVision.Solution.Searches.BatchShowPage"
+﻿<Page x:Class="ColorVision.Services.ShowPage.Dao.BatchShowPage"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
       xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-      xmlns:local="clr-namespace:ColorVision.Solution.Searches"
+      xmlns:local="clr-namespace:ColorVision.Services.ShowPage.Dao"
       xmlns:properties ="clr-namespace:ColorVision.Properties"
       xmlns:camera ="clr-namespace:ColorVision.Services.Devices.Camera.Views"
       xmlns:algorithm ="clr-namespace:ColorVision.Services.Devices.Algorithm.Views"
@@ -107,7 +107,7 @@
                     </StackPanel>
                     <StackPanel x:Name="StactPanelAlg">
                         <TextBlock Text="算法" FontSize="20" HorizontalAlignment="Center" Margin="0,10,0,0"/>
-                        <ListView Grid.Row="1" x:Name="listView2"  Background="Transparent" BorderThickness="0"  Margin="-3" ScrollViewer.VerticalScrollBarVisibility="Visible" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
+                        <ListView Grid.Row="1" x:Name="listView2"  Background="Transparent" BorderThickness="0"  Margin="-3" ScrollViewer.VerticalScrollBarVisibility="Visible" SelectionChanged="listView1_SelectionChanged"  PreviewMouseDoubleClick="listView2_PreviewMouseDoubleClick" PreviewKeyDown="listView1_PreviewKeyDown" >
                             <ListView.Resources >
                                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                             </ListView.Resources>

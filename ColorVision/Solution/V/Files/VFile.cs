@@ -1,4 +1,8 @@
-﻿namespace ColorVision.Solution.V.Files
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.NativeMethods;
+using System.Windows.Controls;
+
+namespace ColorVision.Solution.V.Files
 {
     public class VFile : VObject
     {
@@ -10,7 +14,20 @@
             Name = file.Name;
             ToolTip = file.ToolTip;
             Icon = file.Icon;
-            ContextMenu = file.ContextMenu;
+
+            AttributesCommand = new RelayCommand(a => FileProperties.ShowFileProperties(File.FullName), a => true);
+
+            ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Open, Command = OpenCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Delete, Command = DeleteCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Property, Command = AttributesCommand });
+            if (file.ContextMenu != null)
+            {
+                foreach (MenuItem item in file.ContextMenu.Items)
+                {
+                    ContextMenu.Items.Add(item);
+                }
+            }
         }
 
         public override void Open()
@@ -55,6 +72,7 @@
                     file.Delete();
                 }
             }
+            Parent.RemoveChild(this);
         }
 
         public override bool CanReName { get => _CanReName; set { _CanReName = value; NotifyPropertyChanged(); } }

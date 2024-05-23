@@ -1,21 +1,23 @@
-﻿using ColorVision.Common.NativeMethods;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.NativeMethods;
 using ColorVision.Extension;
-
+using ColorVision.Solution.V.Files;
 using System.IO;
-using System.Windows.Media;
-using ColorVision.Common.MVVM;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 
-namespace ColorVision.Solution.V.Files
+namespace ColorVision.Services.Flow
 {
-    public class CVcieFile:ViewModelBase, IFile
+    public class FlowFile : ViewModelBase, IFile
     {
         public FileInfo FileInfo { get; set; }
         public ContextMenu ContextMenu { get; set; }
 
-        public string Extension { get => FileInfo.Extension; }
+        public string Extension { get => ".stn"; }
+        public FlowFile() { }
 
-        public CVcieFile(FileInfo fileInfo)
+        public FlowFile(FileInfo fileInfo)
         {
             FileInfo = fileInfo;
             Name = FileInfo.Name;
@@ -23,9 +25,6 @@ namespace ColorVision.Solution.V.Files
             var icon = FileIcon.GetFileIcon(fileInfo.FullName);
             if (icon != null)
                 Icon = icon.ToImageSource();
-
-            ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Open, Command = new RelayCommand((e) => Open()) });
         }
 
         public string Name { get; set; }
@@ -37,15 +36,19 @@ namespace ColorVision.Solution.V.Files
 
         public void Open()
         {
-            //ImageView imageView = new ImageView();
-            //Window window = new Window() { };
-            //window.Content = imageView;
-            ////Task.Run(async () => {
-            ////    await Task.Delay(10);
-            ////    Application.Instance.Dispatcher.Invoke(() => { imageView.OpenCVCIE(FileInfo.FullPath); });
-            ////});
-            //window.IsShow();
-
+            bool IsOpen = false;
+            foreach (var item in Application.Current.Windows)
+            {
+                if (item is WindowFlowEngine WindowFlowEngine)
+                {
+                    WindowFlowEngine.OpenFlow(FullName);
+                    WindowFlowEngine.Activate();
+                    IsOpen = true;
+                    break;
+                }
+            }
+            if (!IsOpen)
+                new WindowFlowEngine() { Owner = null }.Show();
         }
 
 
@@ -65,7 +68,6 @@ namespace ColorVision.Solution.V.Files
         {
             throw new System.NotImplementedException();
         }
-
     }
 
 

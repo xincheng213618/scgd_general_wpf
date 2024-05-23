@@ -5,7 +5,6 @@ using log4net;
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Packaging;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -110,6 +109,22 @@ namespace ColorVision.Update
             windowUpdate.Show();
         }
 
+        public async Task<bool> GetUpdateStatue()
+        {
+            try
+            {
+                LatestVersion = await GetLatestVersionNumber(UpdateUrl);
+                if (LatestVersion > CurrentVersion)
+                {
+                    return true;
+                }
+            }
+            catch 
+            {
+            }
+            return false;
+        }
+
         // 调用函数以删除所有更新文件
         public async void CheckAndUpdate(bool detection = true)
         {
@@ -154,7 +169,7 @@ namespace ColorVision.Update
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         if (detection)
-                            MessageBox.Show(Properties.Resource.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
+                            MessageBox.Show(Application.Current.GetActiveWindow(),Properties.Resource.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
                     });
 
                 }

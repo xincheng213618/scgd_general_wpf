@@ -15,6 +15,7 @@ namespace ColorVision.Solution.V.Files
         string FileSize { get; set; }
         ContextMenu ContextMenu { get; set; }
 
+        string Extension { get; }
 
         void Open();
         void Copy();

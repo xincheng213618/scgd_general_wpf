@@ -1,20 +1,67 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.MySql;
 using ColorVision.Settings;
 using ColorVision.UI;
+using ColorVision.UI.Configs;
+using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Windows;
 
 namespace ColorVision.MQTT
 {
     public delegate void UseMQTTHandler(bool IsUseMQTT);
+
+    public class MQTTSettingProvider : IConfigSettingProvider, IStatusBarProvider
+    {
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+        {
+            return new List<ConfigSettingMetadata>
+            {
+                new ConfigSettingMetadata
+                {
+                    Name = "启用MQTT",
+                    Description = "启用MQTT",
+                    Order =1,
+                    Type = ConfigSettingType.Bool,
+                    BindingName = nameof(MQTTSetting.IsUseMQTT),
+                    Source = MQTTSetting.Instance
+                }
+            };
+        }
+        public IEnumerable<StatusBarIconMetadata> GetStatusBarIconMetadata()
+        {
+            Action action = new Action(() =>
+            {
+                new MQTTConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            });
+
+            return new List<StatusBarIconMetadata>
+            {
+                new StatusBarIconMetadata()
+                {
+                    Name = "启用MQTT",
+                    Description = "启用MQTT",
+                    Order =2,
+                    BindingName ="MQTTControl.IsConnect",
+                    VisibilityBindingName = nameof(MQTTSetting.IsUseMQTT),
+                    ButtonStyleName ="ButtonDrawingImageMQTT",
+                    Source = MQTTSetting.Instance,
+                    Action =action
+                }
+            };
+        }
+
+    }
+
+
 
     public class MQTTSetting : ViewModelBase ,IConfigSecure
     {
         public static MQTTSetting Instance { get; set; } = ConfigHandler.GetInstance().GetRequiredService<MQTTSetting>();
 
         public static MQTTControl MQTTControl => MQTTControl.GetInstance();
-        public static bool IsConnect => MQTTControl.IsConnect;
-
         public MQTTSetting()
         {
 
