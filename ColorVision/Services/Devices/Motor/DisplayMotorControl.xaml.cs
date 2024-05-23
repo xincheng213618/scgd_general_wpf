@@ -1,8 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Services.Devices.PG;
 using ColorVision.Themes;
 using ColorVision.UI;
-using MQTTMessageLib;
+using CVCommCore;
 using System;
 using System.Windows;
 using System.Windows.Controls;

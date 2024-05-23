@@ -6,7 +6,7 @@ using ColorVision.Services.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
-using MQTTMessageLib;
+using CVCommCore;
 using System;
 using System.Threading.Tasks;
 using System.Windows;

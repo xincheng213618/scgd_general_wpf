@@ -6,6 +6,7 @@ using ColorVision.Services.Devices;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Terminal;
 using ColorVision.Services.Types;
+using CVCommCore;
 using log4net;
 using MQTTMessageLib;
 using MQTTMessageLib.FileServer;

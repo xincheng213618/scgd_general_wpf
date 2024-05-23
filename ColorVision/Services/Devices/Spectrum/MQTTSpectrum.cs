@@ -14,6 +14,7 @@ using System.Windows;
 using ColorVision.Common.Utilities;
 using MQTTMessageLib.FileServer;
 using System.Diagnostics;
+using CVCommCore;
 
 namespace ColorVision.Services.Devices.Spectrum
 {
