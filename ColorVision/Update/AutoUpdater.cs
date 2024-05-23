@@ -1,8 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
+using ColorVision.UI.Configs;
 using log4net;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
@@ -16,6 +18,26 @@ using System.Windows;
 
 namespace ColorVision.Update
 {
+    public class AutoUpdateConfigProvider : IConfigSettingProvider
+    {
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+        {
+            return new List<ConfigSettingMetadata> 
+            {
+                new ConfigSettingMetadata
+                {
+                    Name = Properties.Resource.CheckUpdatesOnStartup,
+                    Description =  Properties.Resource.CheckUpdatesOnStartup,
+                    Order = 999,
+                    Type = ConfigSettingType.Bool,
+                    BindingName =nameof(AutoUpdateConfig.IsAutoUpdate),
+                    Source = AutoUpdateConfig.Instance,
+                }
+            };
+        }
+    }
+
+
     public class AutoUpdateConfig:ViewModelBase, IConfig
     {
         public static AutoUpdateConfig Instance  => ConfigHandler.GetInstance().GetRequiredService<AutoUpdateConfig>();    

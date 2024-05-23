@@ -12,7 +12,6 @@ namespace ColorVision.Settings
     /// </summary>
     public class SoftwareConfig : ViewModelBase
     {
-        public bool IsAutoRun { get => Tool.IsAutoRun(GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); set { Tool.SetAutoRun(value, GlobalConst.AutoRunName, GlobalConst.AutoRunRegPath); NotifyPropertyChanged(); } }
         public static AutoUpdateConfig AutoUpdateConfig => AutoUpdateConfig.Instance;
         public static SoftwareSetting SoftwareSetting => SoftwareSetting.Instance;
         public static ServicesConfig ServicesSetting => ServicesConfig.Instance;
