@@ -182,7 +182,7 @@ namespace ColorVision.Services.PhyCameras
         {
             if (SysResourceModel.Code == null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "MAC为空", "ColorVision");
+                //MessageBox.Show(Application.Current.GetActiveWindow(), "MAC为空", "ColorVision");
                 return;
             }
             CameraLicenseModel = CameraLicenseDao.Instance.GetByMAC(SysResourceModel.Code);
