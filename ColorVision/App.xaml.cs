@@ -59,6 +59,16 @@ namespace ColorVision
                         window.Show();
                         return;
                     }
+                    else if (Sysargs[i].EndsWith("cvcie", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ImageView imageView = new();
+                        CVFileUtil.ReadCVRaw(Sysargs[i], out CVCIEFile fileInfo);
+                        Window window = new() { Title = "快速预览" };
+                        window.Content = imageView;
+                        imageView.OpenImage(fileInfo);
+                        window.Show();
+                        return;
+                    }
                     else if (Tool.IsImageFile(Sysargs[i]))
                     {
                         ImageView imageView = new();
