@@ -13,7 +13,7 @@ namespace ColorVision.MQTT
 {
     public delegate void UseMQTTHandler(bool IsUseMQTT);
 
-    public class MQTTSettingProvider : IConfigSettingProvider, IStatusBarProvider
+    public class MQTTSettingProvider : IConfigSettingProvider, IStatusBarIconProvider
     {
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {

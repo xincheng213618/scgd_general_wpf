@@ -9,7 +9,7 @@ using System.Windows;
 namespace ColorVision.Solution
 {
 
-    public class SolutionProvider : IConfigSettingProvider, IStatusBarProvider
+    public class SolutionProvider : IConfigSettingProvider, IStatusBarIconProvider
     {
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {

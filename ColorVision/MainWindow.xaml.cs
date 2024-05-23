@@ -516,51 +516,78 @@ namespace ColorVision
         {
              void AddStatusBarIconMetadata(StatusBarIconMetadata statusBarIconMetadata)
             {
-                // 创建 StatusBarItem
-                StatusBarItem statusBarItem = new StatusBarItem  {  ToolTip = statusBarIconMetadata.Description };
-                statusBarItem.DataContext = statusBarIconMetadata.Source;
-                if (statusBarIconMetadata.VisibilityBindingName != null)
+                if (statusBarIconMetadata.Type == StatusBarType.Icon)
                 {
-                    var visibilityBinding = new Binding(statusBarIconMetadata.VisibilityBindingName)
+                    // 创建 StatusBarItem
+                    StatusBarItem statusBarItem = new StatusBarItem { ToolTip = statusBarIconMetadata.Description };
+                    statusBarItem.DataContext = statusBarIconMetadata.Source;
+
+                    if (statusBarIconMetadata.VisibilityBindingName != null)
                     {
-                        Converter = (IValueConverter)Application.Current.FindResource("bool2VisibilityConverter")
-                    };
-                    statusBarItem.SetBinding(StatusBarItem.VisibilityProperty, visibilityBinding);
+                        var visibilityBinding = new Binding(statusBarIconMetadata.VisibilityBindingName)
+                        {
+                            Converter = (IValueConverter)Application.Current.FindResource("bool2VisibilityConverter")
+                        };
+                        statusBarItem.SetBinding(StatusBarItem.VisibilityProperty, visibilityBinding);
+                    }
+                    // 设置 MouseLeftButtonDown 事件处理程序
+                    if (statusBarIconMetadata.Action != null)
+                    {
+                        statusBarItem.MouseLeftButtonDown += (s, e) => statusBarIconMetadata.Action.Invoke();
+                    }
+                    // 创建 ToggleButton
+                    ToggleButton toggleButton = new ToggleButton { IsEnabled = false };
+                    // 设置 Style 资源
+                    if (Application.Current.TryFindResource(statusBarIconMetadata.ButtonStyleName) is Style styleResource)
+                        toggleButton.Style = styleResource;
+
+                    // 设置 IsChecked 绑定
+                    var isCheckedBinding = new Binding(statusBarIconMetadata.BindingName) { Mode = BindingMode.OneWay };
+                    toggleButton.SetBinding(ToggleButton.IsCheckedProperty, isCheckedBinding);
+                    statusBarItem.Content = toggleButton;
+                    toggleButton.DataContext = statusBarIconMetadata.Source;
+
+                    StatusBarIconDocker.Children.Add(statusBarItem);
                 }
-                // 设置 MouseLeftButtonDown 事件处理程序
-                if (statusBarIconMetadata.Action != null)
+                else if (statusBarIconMetadata.Type == StatusBarType.Text)
                 {
-                    statusBarItem.MouseLeftButtonDown += (s, e) => statusBarIconMetadata.Action.Invoke();
+                    StatusBarItem statusBarItem = new StatusBarItem();
+                    statusBarItem.DataContext = statusBarIconMetadata.Source;
+
+                    var Binding = new Binding(statusBarIconMetadata.BindingName) { Mode = BindingMode.OneWay };
+                    statusBarItem.SetBinding(ToggleButton.ContentProperty, Binding);
+
+
+                    if (statusBarIconMetadata.VisibilityBindingName != null)
+                    {
+                        var visibilityBinding = new Binding(statusBarIconMetadata.VisibilityBindingName)
+                        {
+                            Converter = (IValueConverter)Application.Current.FindResource("bool2VisibilityConverter")
+                        };
+                        statusBarItem.SetBinding(StatusBarItem.VisibilityProperty, visibilityBinding);
+                    }
+
+                    StatusBarTextDocker.Children.Add(statusBarItem);
                 }
-                // 创建 ToggleButton
-                ToggleButton toggleButton = new ToggleButton  { IsEnabled = false };
-                // 设置 Style 资源
-                if (Application.Current.TryFindResource(statusBarIconMetadata.ButtonStyleName) is Style styleResource)
-                    toggleButton.Style = styleResource;
 
-                // 设置 IsChecked 绑定
-                var isCheckedBinding = new Binding(statusBarIconMetadata.BindingName) {  Mode = BindingMode.OneWay };
-                toggleButton.SetBinding(ToggleButton.IsCheckedProperty, isCheckedBinding);
-                statusBarItem.Content = toggleButton;
-                toggleButton.DataContext = statusBarIconMetadata.Source;
-
-                StatusBarIconDocker.Children.Add(statusBarItem);
             }
 
             var allSettings = new List<StatusBarIconMetadata>();
 
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(IStatusBarProvider).IsAssignableFrom(t) && !t.IsAbstract))
+                foreach (var type in assembly.GetTypes().Where(t => typeof(IStatusBarIconProvider).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    if (Activator.CreateInstance(type) is IStatusBarProvider configSetting)
+                    if (Activator.CreateInstance(type) is IStatusBarIconProvider configSetting)
                     {
                         allSettings.AddRange(configSetting.GetStatusBarIconMetadata());
                     }
                 }
             }
             // 先按 ConfigSettingType 分组，再在每个组内按 Order 排序
-            var sortedSettings = allSettings.OrderBy(setting => setting.Order);
+            var sortedSettings = allSettings
+                .GroupBy(setting => setting.Type)
+                .SelectMany(group => group.OrderBy(setting => setting.Order));
 
             // 将排序后的配置设置添加到集合中
             foreach (var item in sortedSettings)

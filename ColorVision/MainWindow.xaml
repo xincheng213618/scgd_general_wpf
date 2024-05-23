@@ -91,7 +91,7 @@
 
             </StatusBarItem>
             <StatusBarItem Grid.Column="1">
-                <StackPanel Orientation="Horizontal">
+                <StackPanel x:Name="StatusBarTextDocker" Orientation="Horizontal">
                     <UserControl  Height="15"  Visibility="{Binding ElementName=SolutionTab1,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter1}}">
                         <StackPanel Orientation="Horizontal" >
                             <Button  BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="1">
@@ -117,8 +117,6 @@
 
                     <DockPanel x:Name="StatusBarIconDocker"/>
 
-                    <StatusBarItem  x:Name="StatusBarItem1" Visibility="Visible"  Content="{Binding SystemMonitor.MemoryThis}"/>
-                    <StatusBarItem  x:Name="StatusBarItem2"   Content="{Binding SystemMonitor.Time}" Visibility="{Binding SystemMonitor.Setting.IsShowTime,Converter={StaticResource bool2VisibilityConverter}}"/>
                 </StackPanel>
             </StatusBarItem>
         </StatusBar>

@@ -14,7 +14,7 @@ namespace ColorVision.MySql
 {
     public delegate void UseMySqlHandler(bool IsUseMySql);
 
-    public class MySqlSettingProvider : IConfigSettingProvider,IStatusBarProvider
+    public class MySqlSettingProvider : IConfigSettingProvider,IStatusBarIconProvider
     {
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {

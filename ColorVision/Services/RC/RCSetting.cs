@@ -13,7 +13,7 @@ namespace ColorVision.Services.RC
 {
     public delegate void UseRcServicelHandler(bool IsUseRcServicel);
 
-    public class RCSettingProvider : IConfigSettingProvider,IStatusBarProvider
+    public class RCSettingProvider : IConfigSettingProvider,IStatusBarIconProvider
     {
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
