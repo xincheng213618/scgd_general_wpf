@@ -924,4 +924,7 @@
   <data name="StartingService" xml:space="preserve">
     <value>Запуск службы</value>
   </data>
+  <data name="Update" xml:space="preserve">
+    <value>возобновлять</value>
+  </data>
 </root>

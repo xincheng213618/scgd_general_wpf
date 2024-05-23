@@ -9,7 +9,7 @@ namespace ColorVision.Update
 {
     public class ExportUpdate: IHotKey, IMenuItem
     {
-        public HotKeys HotKeys => new(Properties.Resource.MenuUpdate, new Hotkey(Key.U, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(ColorVision.Properties.Resource.Update, new Hotkey(Key.U, ModifierKeys.Control), Execute);
 
         public string? OwnerGuid => "Help";
 

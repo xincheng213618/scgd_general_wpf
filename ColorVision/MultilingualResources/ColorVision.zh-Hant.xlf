@@ -1015,6 +1015,10 @@
           <source>退订</source>
           <target state="new">退訂</target>
         </trans-unit>
+        <trans-unit id="Update" translate="yes" xml:space="preserve">
+          <source>更新</source>
+          <target state="new">更新</target>
+        </trans-unit>
         <trans-unit id="UpdateSpeed" translate="yes" xml:space="preserve">
           <source>更新速度</source>
           <target state="new">更新速度</target>

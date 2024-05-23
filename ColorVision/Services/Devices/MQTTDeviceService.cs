@@ -3,7 +3,9 @@ using ColorVision.Services.Core;
 using CVCommCore;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Windows;
+using System.Windows.Data;
 
 namespace ColorVision.Services.Devices
 {

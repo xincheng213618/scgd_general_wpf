@@ -1015,6 +1015,10 @@
           <source>退订</source>
           <target state="new">Se désabonner</target>
         </trans-unit>
+        <trans-unit id="Update" translate="yes" xml:space="preserve">
+          <source>更新</source>
+          <target state="new">renouveler</target>
+        </trans-unit>
         <trans-unit id="UpdateSpeed" translate="yes" xml:space="preserve">
           <source>更新速度</source>
           <target state="new">Vitesse de mise à jour</target>

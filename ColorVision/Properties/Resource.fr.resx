@@ -924,4 +924,7 @@
   <data name="StartingService" xml:space="preserve">
     <value>Service de démarrage</value>
   </data>
+  <data name="Update" xml:space="preserve">
+    <value>renouveler</value>
+  </data>
 </root>

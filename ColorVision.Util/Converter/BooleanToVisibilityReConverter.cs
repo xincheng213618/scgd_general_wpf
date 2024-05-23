@@ -15,6 +15,5 @@ namespace ColorVision.Converter
         {
             return (Visibility) value  == Visibility.Visible;
         }
-
-}
+    }
 }

@@ -2,7 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
-using ColorVision.Update;
 using log4net;
 using log4net.Core;
 using log4net.Repository.Hierarchy;

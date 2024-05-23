@@ -1,9 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Services;
 using ColorVision.Solution;
 using ColorVision.UI;
-using ColorVision.Update;
 
 namespace ColorVision.Settings
 {
@@ -12,9 +9,7 @@ namespace ColorVision.Settings
     /// </summary>
     public class SoftwareConfig : ViewModelBase
     {
-        public static AutoUpdateConfig AutoUpdateConfig => AutoUpdateConfig.Instance;
         public static SoftwareSetting SoftwareSetting => SoftwareSetting.Instance;
-        public static ServicesConfig ServicesSetting => ServicesConfig.Instance;
         public static SolutionSetting SolutionSetting  =>ConfigHandler.GetInstance().GetRequiredService<SolutionSetting>();
     }
 

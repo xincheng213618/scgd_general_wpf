@@ -1015,6 +1015,10 @@
           <source>退订</source>
           <target state="new">구독 취소</target>
         </trans-unit>
+        <trans-unit id="Update" translate="yes" xml:space="preserve">
+          <source>更新</source>
+          <target state="new">고쳐 쓰다</target>
+        </trans-unit>
         <trans-unit id="UpdateSpeed" translate="yes" xml:space="preserve">
           <source>更新速度</source>
           <target state="new">업데이트 속도</target>

@@ -924,4 +924,7 @@
   <data name="StartingService" xml:space="preserve">
     <value>正在启动服务</value>
   </data>
+  <data name="Update" xml:space="preserve">
+    <value>更新</value>
+  </data>
 </root>
