@@ -1,7 +1,4 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MySql;
-using ColorVision.Services.Msg;
-using ColorVision.Services.RC;
+﻿using ColorVision.Services.Msg;
 using ColorVision.Solution;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
@@ -12,7 +9,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Input;
 using System.Windows.Media;
 
 namespace ColorVision.Settings
@@ -61,7 +57,7 @@ namespace ColorVision.Settings
                 if (configSetting.Type == ConfigSettingType.Bool)
                 {
                     DockPanel dockPanel = new DockPanel() { Margin = new Thickness(5) };
-                    Wpf.Ui.Controls.ToggleSwitch toggleSwitch = new();
+                    Wpf.Ui.Controls.ToggleSwitch toggleSwitch = new() { ToolTip = configSetting.Description };
                     toggleSwitch.SetBinding(Wpf.Ui.Controls.ToggleSwitch.IsCheckedProperty, new Binding(configSetting.BindingName));
                     toggleSwitch.DataContext = configSetting.Source;
                     DockPanel.SetDock(toggleSwitch, Dock.Right);
@@ -140,21 +136,6 @@ namespace ColorVision.Settings
             }
         }
 
-
-        private void TextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            new MQTTConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-        private void TextBlock_MouseLeftButtonDown2(object sender, MouseButtonEventArgs e)
-        {
-            new RCServiceConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-        private void TextBlock_MouseLeftButtonDown1(object sender, MouseButtonEventArgs e)
-        {
-            new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {

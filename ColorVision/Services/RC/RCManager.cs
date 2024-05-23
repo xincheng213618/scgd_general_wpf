@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Services.RC
 {
+
     public class RCManagerConfig : ViewModelBase, IConfig
     {
         public static RCManagerConfig Instance => ConfigHandler.GetInstance().GetRequiredService<RCManagerConfig>();
@@ -18,6 +19,8 @@ namespace ColorVision.Services.RC
         private bool _IsOpenCVWinSMS = true;
 
     }
+
+
 
     public class RCManager
     {

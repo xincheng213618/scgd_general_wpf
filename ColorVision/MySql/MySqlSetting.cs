@@ -2,11 +2,31 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Settings;
 using ColorVision.UI;
+using ColorVision.UI.Configs;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.MySql
 {
     public delegate void UseMySqlHandler(bool IsUseMySql);
+
+    public class MySqlSettingProvider : IConfigSettingProvider
+    {
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+        {
+            return new List<ConfigSettingMetadata> {
+                            new ConfigSettingMetadata
+                            {
+                                Name = Properties.Resource.EnableDatabase,
+                                Description = Properties.Resource.EnableDatabase,
+                                Type = ConfigSettingType.Bool,
+                                BindingName = nameof(MySqlSetting.IsUseMySql),
+                                Source = MySqlSetting.Instance
+                            }
+            };
+        }
+    }
+
 
 
     public class MySqlSetting : ViewModelBase , IConfigSecure

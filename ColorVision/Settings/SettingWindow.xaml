@@ -93,21 +93,6 @@
                         <ScrollViewer  HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                             <Border Style="{StaticResource BorderModuleArea}">
                                 <StackPanel x:Name="UniversalStackPanel" Margin="5">
-                                    <DockPanel Margin="5" ToolTip="模板数据保存Mysql数据库">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding MySqlSetting.IsUseMySql}"/>
-                                        <TextBlock Text="{x:Static properties:Resource.EnableDatabase}"/>
-                                    </DockPanel>
-
-                                    <DockPanel Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding MQTTSetting.IsUseMQTT}"/>
-                                        <TextBlock Text="启用MQTT    "/>
-                                    </DockPanel>
-
-                                    <DockPanel Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding  RCSetting.IsUseRCService}"/>
-                                        <TextBlock Text="启用注册中心    "/>
-                                    </DockPanel>
-
                                     <DockPanel Margin="5">
                                         <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding ServicesSetting.IsDefaultOpenService}"/>
                                         <TextBlock Text="启动自动配置服务"/>

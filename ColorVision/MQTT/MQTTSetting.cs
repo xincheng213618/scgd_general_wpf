@@ -1,12 +1,32 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.MySql;
 using ColorVision.Settings;
 using ColorVision.UI;
+using ColorVision.UI.Configs;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.MQTT
 {
     public delegate void UseMQTTHandler(bool IsUseMQTT);
+
+    public class MQTTSettingProvider : IConfigSettingProvider
+    {
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+        {
+            return new List<ConfigSettingMetadata> {
+                            new ConfigSettingMetadata
+                            {
+                                Name = "启用MQTT",
+                                Description = "启用MQTT",
+                                Type = ConfigSettingType.Bool,
+                                BindingName = nameof(MQTTSetting.IsUseMQTT),
+                                Source = MQTTSetting.Instance
+                            }
+            };
+        }
+    }
 
     public class MQTTSetting : ViewModelBase ,IConfigSecure
     {

@@ -45,22 +45,6 @@ namespace ColorVision.Scheduler
                 }
             }
 
-            //// 定义任务
-            //IJobDetail job = JobBuilder.Create<UpdateJob>()
-            //    .WithIdentity("updateJob", "group1")
-            //    .Build();
-
-            //// 定义触发器
-            //ITrigger trigger = TriggerBuilder.Create()
-            //    .WithIdentity("updateTrigger", "group1")
-            //    .StartNow()
-            //    .WithSimpleSchedule(x => x
-            //        .WithIntervalInSeconds(10)
-            //        .RepeatForever())
-            //    .Build();
-
-            //// 调度任务
-            //await _scheduler.ScheduleJob(job, trigger);
         }
         public async Task StopJob(string jobName, string groupName)
         {
@@ -79,6 +63,7 @@ namespace ColorVision.Scheduler
             // 动态创建Job实例
             var job = JobBuilder.Create(selectedJobType)
                 .WithIdentity(jobName, groupName)
+                .UsingJobData("scriptPath", "path\\to\\your\\script.cmd")
                 .Build();
 
             // 创建触发器
