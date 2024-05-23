@@ -1,38 +1,65 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.MQTT;
 using ColorVision.Settings;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Windows;
 
 namespace ColorVision.Services.RC
 {
     public delegate void UseRcServicelHandler(bool IsUseRcServicel);
 
-    public class RCSettingProvider : IConfigSettingProvider
+    public class RCSettingProvider : IConfigSettingProvider,IStatusBarProvider
     {
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
-            return new List<ConfigSettingMetadata> {
-                            new ConfigSettingMetadata
-                            {
-                                Name = "启用RC",
-                                Description = "启用RC",
-                                Type = ConfigSettingType.Bool,
-                                Order =10,
-                                BindingName = nameof(RCSetting.IsUseRCService),
-                                Source = RCSetting.Instance
-                            },
-                            new ConfigSettingMetadata
-                            {
-                                Name = "打开CVWinSMS",
-                                Description = "在软件启动时，如果未打开RC,则打开RC",
-                                Type = ConfigSettingType.Bool,
-                                BindingName = nameof(RCManagerConfig.IsOpenCVWinSMS),
-                                Order =11,
-                                Source = RCManagerConfig.Instance
-                            }
+            return new List<ConfigSettingMetadata>
+            {
+                new ConfigSettingMetadata
+                {
+                    Name = "启用RC",
+                    Description = "启用RC",
+                    Type = ConfigSettingType.Bool,
+                    Order =10,
+                    BindingName = nameof(RCSetting.IsUseRCService),
+                    Source = RCSetting.Instance
+                },
+                new ConfigSettingMetadata
+                {
+                    Name = "打开CVWinSMS",
+                    Description = "在软件启动时，如果未打开RC,则打开RC",
+                    Type = ConfigSettingType.Bool,
+                    BindingName = nameof(RCManagerConfig.IsOpenCVWinSMS),
+                    Order =11,
+                    Source = RCManagerConfig.Instance
+                }
+            };
+        }
+
+        public IEnumerable<StatusBarIconMetadata> GetStatusBarIconMetadata()
+        {
+            Action action = new Action(() =>
+            {
+                new RCServiceConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            });
+
+            return new List<StatusBarIconMetadata>
+            {
+                new StatusBarIconMetadata()
+                {
+                    Name = "RC",
+                    Description = "RC",
+                    Order =3,
+                    BindingName = "RCServiceControl.IsConnect",
+                    VisibilityBindingName =nameof(RCSetting.IsUseRCService),
+                    ButtonStyleName ="ButtonDrawingImageHardDisk",
+                    Source = RCSetting.Instance,
+                    Action =action
+                }
             };
         }
     }
