@@ -1,5 +1,4 @@
-﻿using ColorVision.Services.Msg;
-using ColorVision.Solution;
+﻿using ColorVision.Solution;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Configs;
@@ -78,7 +77,8 @@ namespace ColorVision.Settings
                 if (configSetting.Type == ConfigSettingType.TabItem)
                 {
                     TabItem tabItem = new TabItem() { Header = configSetting.Name , Background = Brushes.Transparent};
-                    Grid grid = new Grid { Background = (Brush)Application.Current.Resources["GlobalBorderBrush"] };
+                    Grid grid = new Grid();
+                    grid.SetResourceReference(Grid.BackgroundProperty, "GlobalBorderBrush");
                     GroupBox groupBox = new GroupBox
                     {
                         Header = new TextBlock { Text = configSetting.Name, FontSize = 20 },
@@ -143,15 +143,6 @@ namespace ColorVision.Settings
                 await Task.Delay(1000);
                 button.Content = temp;
             }
-        }
-
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            MsgConfig.Instance.MsgRecords.Clear();
-            MessageBox.Show("MQTT历史记录清理完毕", "ColorVision");
-        }
-
-
+        } 
     }
 }

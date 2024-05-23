@@ -117,12 +117,10 @@
 
                     <DockPanel x:Name="StatusBarIconDocker"/>
 
-                    <TextBlock  x:Name="StatusBarItem1" Visibility="Visible"  Text="{Binding SystemMonitor.MemoryThis}"/>
-                    <TextBlock  x:Name="StatusBarItem2"   Text="{Binding SystemMonitor.Time}" Visibility="{Binding SystemMonitor.Setting.IsShowTime,Converter={StaticResource bool2VisibilityConverter}}"/>
+                    <StatusBarItem  x:Name="StatusBarItem1" Visibility="Visible"  Content="{Binding SystemMonitor.MemoryThis}"/>
+                    <StatusBarItem  x:Name="StatusBarItem2"   Content="{Binding SystemMonitor.Time}" Visibility="{Binding SystemMonitor.Setting.IsShowTime,Converter={StaticResource bool2VisibilityConverter}}"/>
                 </StackPanel>
             </StatusBarItem>
-
         </StatusBar>
-
     </Grid>
 </Window>

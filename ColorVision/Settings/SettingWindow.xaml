@@ -172,34 +172,6 @@
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem  Header="MQTT"  Background="Transparent" >
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="{DynamicResource GlobalBorderBrush}" VerticalScrollBarVisibility="Auto" >
-                    <StackPanel>
-                        <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
-                            <GroupBox.Header>
-                                <TextBlock Text="MQTT设置" FontSize="20"/>
-                            </GroupBox.Header>
-                            <StackPanel>
-                                <Border Style="{StaticResource BorderModuleArea}" >
-                                    <StackPanel Margin="5">
-                                        <DockPanel Margin="5">
-                                            <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resource.Clear}" Click="Button_Click_1" Width="80"/>
-                                            <TextBlock Text="{x:Static properties:Resource.HistoryCache}"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="5,2">
-                                            <TextBox DockPanel.Dock="Right" Text="{Binding MsgConfig.CacheLength}" HorizontalContentAlignment="Right" Style="{StaticResource  TextBox.Small}" Width="80"/>
-                                            <TextBlock Text="指令缓存数据长度"  />
-                                        </DockPanel>
-             
-                                    </StackPanel>
-                                </Border>
-                            </StackPanel>
-
-                        </GroupBox>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-
             <TabItem  Header="{x:Static properties:Resource.PerformanceTest}"   Background="Transparent" >
                 <Grid Background="{DynamicResource GlobalBorderBrush}">
                     <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >

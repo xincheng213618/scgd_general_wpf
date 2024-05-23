@@ -23,7 +23,6 @@ namespace ColorVision.Settings
 
         public static ServicesConfig ServicesSetting => ServicesConfig.Instance;
 
-        public static MsgConfig MsgConfig => MsgConfig.Instance;
         public static SystemMonitor SystemMonitor => SystemMonitor.GetInstance();
         public static SolutionSetting SolutionSetting  =>ConfigHandler.GetInstance().GetRequiredService<SolutionSetting>();
     }
