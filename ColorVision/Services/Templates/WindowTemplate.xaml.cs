@@ -18,13 +18,11 @@ namespace ColorVision.Services.Templates
     {
         public ITemplate ITemplate { get; set; }
 
-        private bool IsReLoad { get; set; }
 
-        public WindowTemplate(ITemplate template, bool isReLoad = true)
+        public WindowTemplate(ITemplate template)
         {
             ITemplate = template;
-            IsReLoad = isReLoad;
-            if (IsReLoad) template.Load();
+            template.Load();
             InitializeComponent();
         }
 

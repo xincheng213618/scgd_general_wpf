@@ -210,7 +210,7 @@ namespace ColorVision.Services.Devices.Calibration
 
                         var ITemplate = new TemplateCalibrationParam() {Device = Device.PhyCamera, TemplateParams = Device.PhyCamera.CalibrationParams, CalibrationControl = calibration, Code = ModMasterType.Calibration, Title = "校正参数设置" };
 
-                        windowTemplate = new WindowTemplate(ITemplate, false);
+                        windowTemplate = new WindowTemplate(ITemplate);
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;

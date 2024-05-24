@@ -369,7 +369,7 @@ namespace ColorVision.Services.Devices.Spectrum
                         var  ITemplate = new TemplateSpectrumResourceParam() { Device = DeviceSpectrum, TemplateParams = DeviceSpectrum.SpectrumResourceParams, SpectrumResourceControl = calibration, Title = "SpectrumResourceParams" };
 
 
-                        windowTemplate = new WindowTemplate(ITemplate, false);
+                        windowTemplate = new WindowTemplate(ITemplate);
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;

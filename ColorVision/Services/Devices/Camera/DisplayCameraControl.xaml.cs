@@ -14,6 +14,7 @@ using cvColorVision;
 using CVCommCore;
 using log4net;
 using MQTTMessageLib.Camera;
+using Mysqlx.Crud;
 using Newtonsoft.Json;
 using Quartz;
 using System;
@@ -86,81 +87,65 @@ namespace ColorVision.Services.Devices.Camera
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
-
             this.AddViewConfig(View, ComboxView);
 
-            ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
-            ComboxCalibrationTemplate.SelectedIndex = 0;
-            Device.ConfigChanged += (s, e) =>
+            void UpdateTemplate()
             {
                 ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
                 ComboxCalibrationTemplate.SelectedIndex = 0;
-            };
-            PhyCameraManager.GetInstance().Loaded += (s, e) =>
-            {
-                ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
-                ComboxCalibrationTemplate.SelectedIndex = 0;
-            };
-
-            StackPanelOpen.Visibility = Visibility.Visible;
-            StackPanelImage.Visibility = Visibility.Collapsed;
-            ButtonOpen.Visibility = Visibility.Collapsed;
-
-            if (DService.DeviceStatus == DeviceStatusType.Unknown)
-            {
-                StackPanelOpen.Visibility = Visibility.Visible;
-                ButtonOpen.Visibility = Visibility.Visible;
-                ButtonInit.Visibility = Visibility.Collapsed;
             }
-            DService.DeviceStatusChanged += (e) =>
+            UpdateTemplate();
+            Device.ConfigChanged += (s, e) => UpdateTemplate();
+            PhyCameraManager.GetInstance().Loaded += (s, e) => UpdateTemplate();
+
+            void UpdateUI(DeviceStatusType status)
             {
-                switch (e)
+                void SetVisibility(UIElement element, Visibility visibility) => element.Visibility = visibility;
+                void HideAllButtons()
                 {
-                    case DeviceStatusType.OffLine:
-                        ButtonOffline.Visibility = Visibility.Collapsed;
-                        ButtonInit.Visibility = Visibility.Collapsed;
-                        StackPanelOpen.Visibility = Visibility.Collapsed;
+                    SetVisibility(ButtonOpen, Visibility.Collapsed);
+                    SetVisibility(ButtonInit, Visibility.Collapsed);
+                    SetVisibility(ButtonOffline, Visibility.Collapsed);
+                    SetVisibility(ButtonClose, Visibility.Collapsed);
+                    SetVisibility(StackPanelImage, Visibility.Collapsed);
+                }
 
-                        ButtonOffline.Visibility = Visibility.Visible;
+                // Default state
+                SetVisibility(StackPanelOpen, Visibility.Visible);
+                HideAllButtons();
+
+                switch (status)
+                {
+                    case DeviceStatusType.Unknown:
+                        SetVisibility(ButtonOpen, Visibility.Visible);
                         break;
+                    case DeviceStatusType.OffLine:
+                        SetVisibility(StackPanelOpen, Visibility.Collapsed);
+                        SetVisibility(ButtonOffline, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Unauthorized:
                     case DeviceStatusType.UnInit:
-                        ButtonOffline.Visibility = Visibility.Collapsed;
-                        ButtonInit.Visibility = Visibility.Collapsed;
-                        StackPanelOpen.Visibility = Visibility.Collapsed;
-
-                        ButtonInit.Visibility = Visibility.Visible;
+                        SetVisibility(StackPanelOpen, Visibility.Collapsed);
+                        SetVisibility(ButtonInit, Visibility.Visible);
                         break;
                     case DeviceStatusType.Closed:
-                        ButtonOffline.Visibility = Visibility.Collapsed;
-                        ButtonInit.Visibility = Visibility.Collapsed;
-                        StackPanelOpen.Visibility = Visibility.Collapsed;
-
-                        StackPanelOpen.Visibility = Visibility.Visible;
-                        ButtonOpen.Visibility = Visibility.Visible;
-                        ButtonClose.Visibility = Visibility.Collapsed;
-                        StackPanelImage.Visibility = Visibility.Collapsed;
-                        break;
-                    case DeviceStatusType.Closing:
+                        SetVisibility(ButtonOpen, Visibility.Visible);
                         break;
                     case DeviceStatusType.LiveOpened:
                     case DeviceStatusType.Opened:
-                        ButtonOffline.Visibility = Visibility.Collapsed;
-                        ButtonInit.Visibility = Visibility.Collapsed;
-                        StackPanelOpen.Visibility = Visibility.Collapsed;
-
-                        StackPanelOpen.Visibility = Visibility.Visible;
                         if (!DService.IsVideoOpen)
-                            StackPanelImage.Visibility = Visibility.Visible;
-                        ButtonOpen.Visibility = Visibility.Collapsed;
-                        ButtonClose.Visibility = Visibility.Visible;
+                            SetVisibility(StackPanelImage, Visibility.Visible);
+                        SetVisibility(ButtonClose, Visibility.Visible);
                         break;
+                    case DeviceStatusType.Closing:
                     case DeviceStatusType.Opening:
-
-                        break;
                     default:
+                        // No specific action needed
                         break;
                 }
-            };
+            }
+            UpdateUI(DService.DeviceStatus);
+            DService.DeviceStatusChanged += UpdateUI;
 
             DService.MsgReturnReceived += (msg) =>
             {
@@ -181,14 +166,13 @@ namespace ColorVision.Services.Devices.Camera
                 }
 
             };
-            SelectChanged += (s, e) =>
+            void UpdateDisPlayBorder()
             {
                 DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
-            };
-            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-            {
-                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
-            };
+            }
+            UpdateDisPlayBorder();
+            SelectChanged += (s, e) => UpdateDisPlayBorder();
+            ThemeManager.Current.CurrentUIThemeChanged += (s) => UpdateDisPlayBorder();
         }
 
         public event RoutedEventHandler Selected;
@@ -196,8 +180,6 @@ namespace ColorVision.Services.Devices.Camera
         public event EventHandler SelectChanged;
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
-
-
 
 
         private void CameraOffline_Click(object sender, RoutedEventArgs e)
@@ -384,7 +366,6 @@ namespace ColorVision.Services.Devices.Camera
                 {
                     case "Calibration":
                         CalibrationControl calibration;
-
                         if (Device.PhyCamera.CalibrationParams.Count > 0)
                         {
                             calibration = new CalibrationControl(Device.PhyCamera, Device.PhyCamera.CalibrationParams[0].Value);
@@ -395,8 +376,7 @@ namespace ColorVision.Services.Devices.Camera
                         }
                         var ITemplate = new TemplateCalibrationParam() { Device = Device.PhyCamera, TemplateParams = Device.PhyCamera.CalibrationParams, CalibrationControl = calibration, Code = ModMasterType.Calibration, Title = "校正参数设置" };
 
-                        windowTemplate = new WindowTemplate(ITemplate, false);
-                        windowTemplate.Owner = Window.GetWindow(this);
+                        windowTemplate = new WindowTemplate(ITemplate) { Owner =Application.Current.GetActiveWindow() };
                         windowTemplate.ShowDialog();
                         break;
                     default:

@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8604,CS0168,CS8629,CA1822,CS8602
 using ColorVision.Common.Utilities;
-using ColorVision.Extension;
 using ColorVision.MySql;
 using ColorVision.Net;
 using ColorVision.Services.Devices.Algorithm.Dao;
@@ -234,14 +233,15 @@ namespace ColorVision.Services.Devices.Algorithm
 
             this.AddViewConfig(View, ComboxView);
 
-            SelectChanged += (s, e) =>
+
+            void UpdateDisPlayBorder()
             {
                 DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
-            };
-            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-            {
-                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
-            };
+            }
+            UpdateDisPlayBorder();
+            SelectChanged += (s, e) => UpdateDisPlayBorder();
+            ThemeManager.Current.CurrentUIThemeChanged += (s) => UpdateDisPlayBorder();
+
             ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) => GetImageDevices(); 
             GetImageDevices();
         }
@@ -616,31 +616,31 @@ namespace ColorVision.Services.Devices.Algorithm
                 switch (button.Tag?.ToString() ?? string.Empty)
                 {
                     case "MTFParam":
-                        new WindowTemplate(new TemplateMTFParam(), false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplateMTFParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "SFRParam":
-                        new WindowTemplate(new TemplateSFRParam(), false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplateSFRParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "FOVParam":
-                        new WindowTemplate(new TemplateFOVParam(), false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplateFOVParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "GhostParam":
-                        new WindowTemplate(new TemplateGhostParam(), false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplateGhostParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "DistortionParam":
-                        new WindowTemplate(new TemplateDistortionParam(), false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplateDistortionParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "LedCheckParam":
-                        new WindowTemplate(new TemplateLedCheckParam(), false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplateLedCheckParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "FocusPointsParam":
-                        new WindowTemplate(new TemplateFocusPointsParam(), false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplateFocusPointsParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "FocusParm":
-                        new WindowTemplate(new TemplatePOI(),false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+                        new WindowTemplate(new TemplatePOI()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
                         break;
                     case "BuildPOIParmam":
-                        new WindowTemplate(new TemplateBuildPOIParam(), false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplateBuildPOIParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");

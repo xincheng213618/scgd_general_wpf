@@ -126,7 +126,7 @@ namespace ColorVision.Services.Devices.Sensor
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
-            new WindowTemplate(new TemplateSensorHeYuan(),false) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateSensorHeYuan()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         }
     }
 }

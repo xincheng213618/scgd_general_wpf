@@ -220,7 +220,7 @@ namespace ColorVision.Services.Devices.SMU
                 {
 
                     case "SMUParam":
-                        windowTemplate = new WindowTemplate(new TemplateSMUParam(), false);
+                        windowTemplate = new WindowTemplate(new TemplateSMUParam());
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
                         break;
