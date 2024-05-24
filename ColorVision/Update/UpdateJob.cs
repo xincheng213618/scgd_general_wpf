@@ -6,7 +6,7 @@ using System;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.Scheduler
+namespace ColorVision.Update
 {
     public class UpdateJob : IJob
     {

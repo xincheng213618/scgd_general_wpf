@@ -1,4 +1,5 @@
-﻿using Quartz;
+﻿
+using Quartz;
 using Quartz.Listener;
 using System;
 using System.Threading;
@@ -12,7 +13,7 @@ namespace ColorVision.Scheduler
 
         public event Action<IJobExecutionContext> JobExecutedEvent;
 
-        public override Task JobWasExecuted(IJobExecutionContext context, JobExecutionException jobException, CancellationToken cancellationToken = default)
+        public override Task JobWasExecuted(IJobExecutionContext context, JobExecutionException? jobException, CancellationToken cancellationToken = default)
         {
             base.JobWasExecuted(context, jobException, cancellationToken);
             JobExecutedEvent?.Invoke(context);

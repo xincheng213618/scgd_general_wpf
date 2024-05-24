@@ -1,5 +1,4 @@
-﻿using ColorVision.Solution.Searches;
-using Quartz;
+﻿using Quartz;
 using Quartz.Impl;
 using System;
 using System.Collections.Generic;
