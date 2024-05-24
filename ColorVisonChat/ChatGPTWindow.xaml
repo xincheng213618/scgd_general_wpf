@@ -49,7 +49,7 @@
                 <Button  DockPanel.Dock="Right" Content="设置" Click="Button_Click_1"/>
                 <DockPanel  Margin="5">
                     <Button  DockPanel.Dock="Right" Content="发送" Click="Button_Click"/>
-                    <TextBox x:Name="TextInput"  VerticalContentAlignment ="Top"   AcceptsReturn="True" Height="60"  Margin="0,0,5,0"/>
+                    <TextBox x:Name="TextInput1"  VerticalContentAlignment ="Top"   AcceptsReturn="True" Height="60"  Margin="0,0,5,0"/>
                 </DockPanel>
             </StackPanel>
 

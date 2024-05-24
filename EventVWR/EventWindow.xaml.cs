@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.UI.EventVWR
+namespace EventVWR
 {
 
     /// <summary>

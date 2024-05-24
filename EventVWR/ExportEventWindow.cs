@@ -3,7 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.UI.Menus;
 using System.Windows;
 
-namespace ColorVision.UI.EventVWR
+namespace EventVWR
 {
     public class ExportEventWindow : IMenuItem
     {

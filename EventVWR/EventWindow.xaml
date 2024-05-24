@@ -1,15 +1,15 @@
-﻿<Window x:Class="ColorVision.UI.EventVWR.EventWindow"
+﻿<Window x:Class="EventVWR.EventWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.UI.EventVWR"
+        xmlns:local="clr-namespace:EventVWR"
         mc:Ignorable="d"
         xmlns:event="clr-namespace:System.Diagnostics;assembly=System.Diagnostics.EventLog"
         Title="EventWindow" Height="450" Width="800" Initialized="Window_Initialized">
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="300"/>
+            <ColumnDefinition Width="350"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <ListView x:Name="ListViewEvent" Grid.Row="1" SelectionChanged="ListViewEvent_SelectionChanged">

@@ -50,7 +50,7 @@ namespace ColorVision.UI.Views
         }
         public string? InputGestureText => null;
         public object? Icon => null;
-        public RelayCommand Command => null;
+        public RelayCommand Command => new RelayCommand(a => { });
         public Visibility Visibility => Visibility.Visible;
     }
 

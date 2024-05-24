@@ -97,12 +97,12 @@ namespace ColorVisonChat
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            string content = TextInput.Text;
+            string content = TextInput1.Text;
             ChatMsgs.Add(new ChatMsgSend() { Content =content});
             ChatMsgReturn = new ChatMsgReturn();
             ChatMsgs.Add(ChatMsgReturn);
             Task.Run(() => { ASK(content); });
-            TextInput.Text = string.Empty;
+            TextInput1.Text = string.Empty;
         }
 
         public async void ASK(string content)
