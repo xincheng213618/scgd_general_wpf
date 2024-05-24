@@ -63,7 +63,7 @@ namespace ColorVision
         private void Window_Initialized(object sender, EventArgs e)
         {
             MenuManager.GetInstance().Menu = Menu1;
-
+            StatusBarGrid.DataContext = MainWindowConfig;
             if (!WindowConfig.IsExist || (WindowConfig.IsExist && WindowConfig.Icon == null))
             {
                 ThemeManager.Current.SystemThemeChanged += (e) =>
@@ -289,14 +289,6 @@ namespace ColorVision
                 AutoUpdater autoUpdater = AutoUpdater.GetInstance();
                 autoUpdater.CheckAndUpdate(false);
             });
-        }
-
-        private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem)
-            {
-                menuItem.IsChecked = !menuItem.IsChecked;
-            }
         }
 
         private void StackPanelSPD_Initialized(object sender, EventArgs e)

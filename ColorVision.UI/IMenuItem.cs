@@ -22,4 +22,5 @@ namespace ColorVision.UI
     {
         public MenuItem MenuItem { get; }
     }
+
 }

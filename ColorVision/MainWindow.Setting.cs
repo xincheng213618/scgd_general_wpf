@@ -57,9 +57,6 @@ namespace ColorVision
                                     window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() => {
                                         imageView.ToolBarTop.ClearImage();
                                     }));
-
-
-
                                 }
                             }
                             else

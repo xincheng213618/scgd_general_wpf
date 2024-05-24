@@ -22,15 +22,10 @@
         <Border Grid.Row="0"  Height ="27 " BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
             <Grid>
                 <Menu x:Name="Menu1">
-                    <MenuItem x:Name="FileMenuItem" Header="{x:Static properties:Resource.MenuFile}"/>
-                    <MenuItem Header="{x:Static properties:Resource.MenuTemplate}"/>
-                    <MenuItem Header="{x:Static properties:Resource.MenuTool}"/>
-                    <MenuItem  x:Name="MenuStatusBar"  Header="{ x:Static properties:Resource.MenuView}">
-                        <MenuItem Header="{x:Static properties:Resource.MenuViewStatusBar}" IsChecked="{Binding IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
-                        <Separator/>
-                        <MenuItem Header="{x:Static properties:Resource.SaveWindowLayout}"  Click="MenuStatusBar_Click" />
-                        <MenuItem Header="{x:Static properties:Resource.ApplyWindowLayout}"  Click="MenuStatusBar_Click" />
-                    </MenuItem>
+                    <MenuItem x:Name="MenuFile" Header="{x:Static properties:Resource.MenuFile}"/>
+                    <MenuItem x:Name="MenuTemplate" Header="{x:Static properties:Resource.MenuTemplate}"/>
+                    <MenuItem x:Name="MenuTool" Header="{x:Static properties:Resource.MenuTool}"/>
+                    <MenuItem x:Name="MenuView"  Header="{ x:Static properties:Resource.MenuView}"/> 
                     <MenuItem x:Name="MenuHelp" Header="{x:Static properties:Resource.MenuHelp}">
                         <MenuItem Header="打开日志文件夹(_F)"  Click="LogF_Click"/>
                         <MenuItem Header="打开配置文件(_S)"  Click="Setting_Click"/>
@@ -76,7 +71,7 @@
             <GridSplitter Panel.ZIndex="102" x:Name="GridSplitter" Margin="0,26,0,26" Grid.Column="0" HorizontalAlignment="Right" Width="4" Background="Transparent"/>
             <Button Grid.Column="0" x:Name="ButtonShiftIn" Panel.ZIndex="102"  Visibility="Collapsed" Click="OnLeftMainContentShiftIn" hc:IconElement.Geometry="{StaticResource RightGeometry}" Padding="8 8 0 8" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-16 0 -16 0" Style="{StaticResource ButtonIconCircular}" />
         </Grid>
-        <StatusBar Grid.Row="2" Height="35" x:Name="StatusBarGrid" Visibility="{Binding SoftwareSetting.IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}"  Initialized="StatusBarGrid_Initialized" >
+        <StatusBar Grid.Row="2" Height="35" x:Name="StatusBarGrid" Visibility="{Binding IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}"  Initialized="StatusBarGrid_Initialized" >
             <StatusBar.ItemsPanel>
                 <ItemsPanelTemplate>
                     <Grid>

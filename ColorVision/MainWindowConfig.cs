@@ -1,11 +1,18 @@
-﻿using ColorVision.Properties;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Properties;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
+using ColorVision.UI.Dump;
 using ColorVision.UI.Properties;
 using ColorVision.UI.Views;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 
 namespace ColorVision
 {
@@ -26,8 +33,31 @@ namespace ColorVision
         }
     }
 
+    public class ExportMainWindowConfig : IMenuItemMeta
+    {
+        public string? OwnerGuid => "View";
+        public string? GuidId => "MenuViewStatusBar";
+        public int Order => 10000;
+        public string? Header => Resource.MenuViewStatusBar;
+        public MenuItem MenuItem
+        {
+            get
+            {
+                MenuItem MenuDump = new() { Header = Header };
+                MenuDump.SetBinding(MenuItem.IsCheckedProperty, new Binding(nameof(MainWindowConfig.IsOpenStatusBar)));
+                MenuDump.Click += (s,e) => MainWindowConfig.Instance.IsOpenStatusBar = !MainWindowConfig.Instance.IsOpenStatusBar;
+                MenuDump.DataContext = MainWindowConfig.Instance;
+                return MenuDump;
+            }
+        }
+        public string? InputGestureText => null;
+        public object? Icon => null;
+        public RelayCommand Command => null;
+        public Visibility Visibility => Visibility.Visible;
+    }
 
-    public class MainWindowConfig : IConfig
+
+    public class MainWindowConfig : ViewModelBase, IConfig
     {
         public static MainWindowConfig Instance => ConfigHandler.GetInstance().GetRequiredService<MainWindowConfig>();
 
@@ -38,6 +68,11 @@ namespace ColorVision
         public double Left { get; set; }
         public double Top { get; set; }
         public int WindowState { get; set; }
+
+        public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; NotifyPropertyChanged(); } }
+        private bool _IsOpenStatusBar = true;
+        public bool IsOpenSidebar { get => _IsOpenSidebar; set { _IsOpenSidebar = value; NotifyPropertyChanged(); } }
+        private bool _IsOpenSidebar = true;
 
         public void SetWindow(Window window)
         {

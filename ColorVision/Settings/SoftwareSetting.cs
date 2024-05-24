@@ -80,13 +80,6 @@ namespace ColorVision.Settings
     {
         public static SoftwareSetting Instance => ConfigHandler.GetInstance().GetRequiredService<SoftwareSetting>();
 
-
-        public bool IsOpenStatusBar { get => _IsOpenStatusBar; set { _IsOpenStatusBar = value; NotifyPropertyChanged(); } }
-        private bool _IsOpenStatusBar = true;
-        public bool IsOpenSidebar { get => _IsOpenSidebar; set { _IsOpenSidebar = value; NotifyPropertyChanged(); } }
-        private bool _IsOpenSidebar = true;
-
-
         private Level _LogLevel = Level.All;
         public Level LogLevel
         {

@@ -23,17 +23,21 @@ namespace ColorVision.UI
         public void LoadMenuItemFromAssembly()
         {
             var menuItems = new Dictionary<string, MenuItem>();
-            if (GetFileMenuItem() is MenuItem FilemenuItem)
-                menuItems.Add("File", FilemenuItem);
-            if (GetTemplateMenuItem() is MenuItem TemplateMenu)
-                menuItems.Add("Template", TemplateMenu);
-            if (GetMenuToolItem() is MenuItem MenuTool)
-                menuItems.Add("Tool", MenuTool);
-            if (GetMenuHelp() is MenuItem MenuHelp)
-                menuItems.Add("Help", MenuHelp);
+            foreach (var item in Menu.Items.OfType<MenuItem>())
+            {
+                if (item.Name == "MenuFile")
+                    menuItems.Add("File", item);
+                if (item.Name == "MenuTool")
+                    menuItems.Add("Tool", item);
+                if (item.Name == "MenuTemplate")
+                    menuItems.Add("Template", item);
+                if (item.Name == "MenuHelp")
+                    menuItems.Add("Help", item);
+                if (item.Name == "MenuView")
+                    menuItems.Add("View", item);
+            }
 
             List<IMenuItem> iMenuItems = new();
-
             void CreateMenu(MenuItem parentMenuItem, string OwnerGuid)
             {
                 var iMenuItems1 = iMenuItems.FindAll(a => a.OwnerGuid == OwnerGuid).OrderBy(a => a.Order).ToList();
@@ -116,55 +120,6 @@ namespace ColorVision.UI
                 Menu.Items.Add(menuItem);
             }
         }
-
-        public MenuItem? GetFileMenuItem()
-        {
-            foreach (var item in Menu.Items)
-            {
-                if (item is MenuItem menuItem && menuItem.Header.ToString() == Properties.Resources.MenuFile)
-                {
-                    return menuItem;
-                }
-            }
-            return null;
-        }
-
-        public MenuItem? GetTemplateMenuItem()
-        {
-            foreach (var item in Menu.Items)
-            {
-                if (item is MenuItem menuItem && menuItem.Header.ToString() == Properties.Resources.MenuTemplate)
-                {
-                    return menuItem;
-                }
-            }
-            return null;
-        }
-
-        public MenuItem? GetMenuHelp()
-        {
-            foreach (var item in Menu.Items)
-            {
-                if (item is MenuItem menuItem && menuItem.Header.ToString() == Properties.Resources.MenuHelp)
-                {
-                    return menuItem;
-                }
-            }
-            return null;
-        }
-
-        public MenuItem? GetMenuToolItem()
-        {
-            foreach (var item in Menu.Items)
-            {
-                if (item is MenuItem menuItem && menuItem.Header.ToString() == Properties.Resources.MenuTool)
-                {
-                    return menuItem;
-                }
-            }
-            return null;
-        }
-
 
         public void AddMenuItem(MenuItem menuItem, int index = -1)
         {
