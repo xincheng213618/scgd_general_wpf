@@ -12,6 +12,7 @@ using cvColorVision;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -163,10 +164,23 @@ namespace ColorVision.Services.PhyCameras.Templates
 
     public class TemplateCalibrationParam : ITemplate<CalibrationParam>
     {
-        public TemplateCalibrationParam()
+        public TemplateCalibrationParam(ICalibrationService<BaseResourceObject> device)
         {
+            if (device.CalibrationParams.Count > 0)
+            {
+                CalibrationControl = new CalibrationControl(device, device.CalibrationParams[0].Value);
+            }
+            else
+            {
+                CalibrationControl = new CalibrationControl(device);
+            }
+
+            Code = ModMasterType.Calibration;
+            Title = "校正参数设置";
+            Device = device;
             IsUserControl = true;
             Code = ModMasterType.Calibration;
+            TemplateParams = Device.CalibrationParams;
         }
 
         public CalibrationControl CalibrationControl { get; set; }
@@ -208,19 +222,34 @@ namespace ColorVision.Services.PhyCameras.Templates
     {
         public static void LoadResourceParams<T>(ObservableCollection<TemplateModel<T>> ResourceParams, int resourceId, string ModeType) where T : ParamBase, new()
         {
-            ResourceParams.Clear();
-            if (MySqlSetting.IsConnect)
+            if (!MySqlSetting.IsConnect)
+                return;
+
+            // Create a dictionary for efficient lookup of existing items
+            var existingParams = ResourceParams.ToDictionary(rp => rp.Id, rp => rp);
+            ModMasterDao masterFlowDao = new(ModeType);
+            List<ModMasterModel> smus = masterFlowDao.GetResourceAll(UserConfig.Instance.TenantId, resourceId);
+
+            foreach (var dbModel in smus)
             {
-                ModMasterDao masterFlowDao = new(ModeType);
-                List<ModMasterModel> smus = masterFlowDao.GetResourceAll(UserConfig.Instance.TenantId, resourceId);
-                foreach (var dbModel in smus)
+                List<ModDetailModel> smuDetails = ModDetailDao.Instance.GetAllByPid(dbModel.Id);
+                foreach (var dbDetail in smuDetails)
                 {
-                    List<ModDetailModel> smuDetails = ModDetailDao.Instance.GetAllByPid(dbModel.Id);
-                    foreach (var dbDetail in smuDetails)
-                    {
-                        dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
-                    }
-                    ResourceParams.Add(new TemplateModel<T>(dbModel.Name ?? "default", (T)Activator.CreateInstance(typeof(T), new object[] { dbModel, smuDetails })));
+                    dbDetail.ValueA = dbDetail?.ValueA?.Replace("\\r", "\r");
+                }
+
+                var newParam = (T)Activator.CreateInstance(typeof(T), new object[] { dbModel, smuDetails });
+
+                if (existingParams.TryGetValue(dbModel.Id, out var existingModel))
+                {
+                    // Update the existing model
+                    existingModel.Value = newParam;
+                    existingModel.Key = dbModel.Name ?? "default";
+                }
+                else
+                {
+                    // Add new model
+                    ResourceParams.Add(new TemplateModel<T>(dbModel.Name ?? "default", newParam));
                 }
             }
         }

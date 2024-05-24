@@ -59,6 +59,7 @@ namespace ColorVision.Services.PhyCameras
 
         public bool IsExpanded { get; set; }
         public bool IsSelected { get; set; }
+
         public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
 
         public PhyCamera(SysResourceModel sysResourceModel):base(sysResourceModel)

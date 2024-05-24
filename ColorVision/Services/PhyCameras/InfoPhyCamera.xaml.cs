@@ -1,4 +1,5 @@
-﻿using ColorVision.MySql;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.Templates;
@@ -33,26 +34,13 @@ namespace ColorVision.Services.PhyCameras
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
-            if (sender is Control control)
+            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
-                WindowTemplate windowTemplate;
-                if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-                {
-                    MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision");
-                    return;
-                }
-                switch (control.Tag?.ToString() ?? string.Empty)
-                {
-                    case "Calibration":
-                        CalibrationControl calibration = Device.CalibrationParams.Count == 0 ? new CalibrationControl(Device) : new CalibrationControl(Device, Device.CalibrationParams[0].Value);
-
-                        var ITemplate = new TemplateCalibrationParam() { Device = Device, TemplateParams = Device.CalibrationParams, CalibrationControl = calibration, Code = ModMasterType.Calibration, Title = "校正参数设置" };
-                        windowTemplate = new WindowTemplate(ITemplate);
-                        windowTemplate.Owner = Window.GetWindow(this);
-                        windowTemplate.ShowDialog();
-                        break;
-                }
-            }
+                MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision");
+                return;
+            }            
+            var ITemplate = new TemplateCalibrationParam(Device) ;
+            new WindowTemplate(ITemplate) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
         }
 
         private void TextBlock_PreviewMouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)

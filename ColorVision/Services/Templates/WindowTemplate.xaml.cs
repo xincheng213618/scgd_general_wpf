@@ -18,10 +18,12 @@ namespace ColorVision.Services.Templates
     {
         public ITemplate ITemplate { get; set; }
 
+        public int DefaultIndex { get; set; }
 
-        public WindowTemplate(ITemplate template)
+        public WindowTemplate(ITemplate template,int defaultIndex = 0)
         {
             ITemplate = template;
+            DefaultIndex = defaultIndex;
             template.Load();
             InitializeComponent();
         }
@@ -52,7 +54,7 @@ namespace ColorVision.Services.Templates
 
             Title = ITemplate.Title;
             ListView1.ItemsSource = ITemplate.ItemsSource;
-            ListView1.SelectedIndex = 0;
+            ListView1.SelectedIndex = DefaultIndex;
             if (ListView1.View is GridView gridView)
             {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);

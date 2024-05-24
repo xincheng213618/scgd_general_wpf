@@ -353,37 +353,15 @@ namespace ColorVision.Services.Devices.Camera
                 return;
             }
 
-            if (sender is Button button)
-            {
-                TemplateControl = TemplateControl.GetInstance();
                 WindowTemplate windowTemplate;
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
                     MessageBox.Show(Application.Current.MainWindow, Properties.Resource.DatabaseConnectionFailed, "ColorVision");
                     return;
                 }
-                switch (button.Tag?.ToString() ?? string.Empty)
-                {
-                    case "Calibration":
-                        CalibrationControl calibration;
-                        if (Device.PhyCamera.CalibrationParams.Count > 0)
-                        {
-                            calibration = new CalibrationControl(Device.PhyCamera, Device.PhyCamera.CalibrationParams[0].Value);
-                        }
-                        else
-                        {
-                            calibration = new CalibrationControl(Device.PhyCamera);
-                        }
-                        var ITemplate = new TemplateCalibrationParam() { Device = Device.PhyCamera, TemplateParams = Device.PhyCamera.CalibrationParams, CalibrationControl = calibration, Code = ModMasterType.Calibration, Title = "校正参数设置" };
-
-                        windowTemplate = new WindowTemplate(ITemplate) { Owner =Application.Current.GetActiveWindow() };
-                        windowTemplate.ShowDialog();
-                        break;
-                    default:
-                        HandyControl.Controls.Growl.Info(Properties.Resource.UnderDevelopment);
-                        break;
-                }
-            }
+                var ITemplate = new TemplateCalibrationParam(Device.PhyCamera) ;
+                windowTemplate = new WindowTemplate(ITemplate, ComboxCalibrationTemplate.SelectedIndex-1) { Owner = Application.Current.GetActiveWindow() };
+                windowTemplate.ShowDialog();
         }
 
         private void Move_Click(object sender, RoutedEventArgs e)

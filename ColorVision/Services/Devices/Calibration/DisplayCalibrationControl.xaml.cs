@@ -199,16 +199,7 @@ namespace ColorVision.Services.Devices.Calibration
                 {
                     case "Calibration":
                         CalibrationControl calibration;
-                        if (Device.PhyCamera.CalibrationParams.Count > 0)
-                        {
-                            calibration = new CalibrationControl(Device.PhyCamera, Device.PhyCamera.CalibrationParams[0].Value);
-                        }
-                        else
-                        {
-                            calibration = new CalibrationControl(Device.PhyCamera);
-                        }
-
-                        var ITemplate = new TemplateCalibrationParam() {Device = Device.PhyCamera, TemplateParams = Device.PhyCamera.CalibrationParams, CalibrationControl = calibration, Code = ModMasterType.Calibration, Title = "校正参数设置" };
+                        var ITemplate = new TemplateCalibrationParam(Device.PhyCamera);
 
                         windowTemplate = new WindowTemplate(ITemplate);
                         windowTemplate.Owner = Window.GetWindow(this);
