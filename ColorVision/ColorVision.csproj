@@ -152,18 +152,6 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Update="Services\Group\ResourceManager.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Services\Templates\CreateTemplate.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Services\Terminal\CreateTerminal.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Update="Services\Type\CreateType.xaml.cs">
-      <SubType>Code</SubType>
-    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -248,10 +236,6 @@
     <Page Update="Window1.xaml">
       <CopyToOutputDirectory></CopyToOutputDirectory>
     </Page>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Services\RC\Dao\" />
   </ItemGroup>
 
 </Project>

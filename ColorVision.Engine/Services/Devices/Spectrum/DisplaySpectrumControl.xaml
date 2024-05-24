@@ -1,0 +1,103 @@
+﻿<UserControl x:Class="ColorVision.Services.Devices.Spectrum.DisplaySpectrumControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ColorVision.Services.Devices.Spectrum" 
+             xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance local:DeviceSpectrum}"
+             d:DesignHeight="450" d:DesignWidth="300" Initialized="UserControl_Initialized"   >
+    <UserControl.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+        <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>
+    </UserControl.Resources>
+
+    <StackPanel Margin="0,3">
+        <DockPanel Margin="0,0,5,0">
+            <Grid DockPanel.Dock="Right" >
+                <ToggleButton  Style="{StaticResource ButtonMQTTConnect}"  Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
+                <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
+                <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
+            </Grid>
+            <ToggleButton x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding IsDisplayOpen}" />
+        </DockPanel>
+        <Border x:Name="DisPlayBorder"  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
+            <StackPanel Margin="5">
+                <DockPanel Margin="0,0,0,5">
+                    <TextBlock  Text="平均次数" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                    <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=SpectrumSliderAveNum,Path=Value}"  Width="50"/>
+                    <hc:PreviewSlider x:Name="SpectrumSliderAveNum"  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="1"  Value="1" Maximum="100">
+                        <hc:PreviewSlider.PreviewContent>
+                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0"/>
+                        </hc:PreviewSlider.PreviewContent>
+                    </hc:PreviewSlider>
+                </DockPanel>
+                <DockPanel Margin="0,0,0,5">
+                    <TextBlock  Text="积分时间" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                    <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=SpectrumSliderIntTime,Path=Value}"  Width="50"/>
+                    <hc:PreviewSlider x:Name="SpectrumSliderIntTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000">
+                        <hc:PreviewSlider.PreviewContent>
+                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0"/>
+                        </hc:PreviewSlider.PreviewContent>
+                    </hc:PreviewSlider>
+                </DockPanel>
+                <StackPanel Margin="0,0,0,5" Visibility="Visible">
+                    <UniformGrid Columns="3">
+                        <CheckBox Content="自动积分" x:Name="AutoIntTime"/>
+                        <CheckBox Content="自动校零"  IsChecked="{Binding Config.IsShutterEnable}" x:Name="AutoShutterDark"/>
+                        <CheckBox Content="自适应校零" x:Name="AutoDark"/>
+                    </UniformGrid>
+                </StackPanel>
+
+                <StackPanel Margin="0,0,0,5" Visibility="Visible">
+                    <DockPanel Margin="0,2">
+                        <TextBlock Text="光谱仪模板文件：" />
+                        <ComboBox x:Name="ComboxResourceTemplate" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="SpectrumResourceParam"  Click="MenuItem_Template"/>
+                        </Grid>
+                    </DockPanel>
+                    <UniformGrid Columns="2">
+                        <Button x:Name="btn_connect" Content="{Binding Config.BtnDeviceStatus}" Click="Button_Click_Open"/>
+                        <!--<Button x:Name="btn_getPatam" Content="获取参数"  Click="Button_Click_GetParam"/>-->
+                        <Button x:Name="btn_oneTest" Content="单次测试"  Click="Button_Click_OneTest"/>
+                        <Button x:Name="btn_autoTest" Content="自动测试"  Click="Button_Click_AutoTest"/>
+                        <Button x:Name="btn_oneInitDark" Content="单次校零"  Click="Button_Click_Init_Dark"/>
+                    </UniformGrid>
+                </StackPanel>
+                <GroupBox Header="Shutter" Margin="0,0,0,5" Visibility="{Binding Config.IsShutterEnable,Converter={StaticResource bool2VisibilityConverter}}">
+                    <StackPanel Margin="5">
+                        <DockPanel  Margin="0,2">
+                            <TextBlock Text="{Binding Config.ShutterCfg.Addr}" MinWidth="40"/>
+                            <TextBlock Text=":"/>
+                            <TextBlock Text="{Binding Config.ShutterCfg.BaudRate}" MinWidth="40"/>
+                            <Button Content="连接" Click="Button_Click_Shutter_Connect" Visibility="Collapsed"/>
+                        </DockPanel>
+                        <DockPanel  Margin="0,2">
+                            <TextBlock Text="{Binding Config.ShutterCfg.OpenCmd}" MinWidth="40"/>
+                            <Button Content="打开" Click="Button_Click_Shutter_Doopen"/>
+                        </DockPanel>
+                        <DockPanel  Margin="0,2">
+                            <TextBlock Text="{Binding Config.ShutterCfg.CloseCmd}" MinWidth="40"/>
+                            <Button Content="关闭" Click="Button_Click_Shutter_Doclose"/>
+                        </DockPanel>
+                    </StackPanel>
+                </GroupBox>
+
+                <DockPanel>
+                    <TextBlock Text="{x:Static properties:Resources.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0"/>
+                    <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"   />
+                </DockPanel>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+
+</UserControl>
