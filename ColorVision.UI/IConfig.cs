@@ -8,7 +8,7 @@
 
     public interface IConfigSecure : IConfig
     {
-        // 加密
+        // 加密  
         void Encryption();
 
         // 解密

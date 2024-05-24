@@ -1,18 +1,13 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.MySql;
-using ColorVision.Services.Dao;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
-using ColorVision.UserSpace;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
-using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 
 namespace ColorVision.Services.Templates
 {
@@ -41,23 +36,16 @@ namespace ColorVision.Services.Templates
 
         public TemplateControl()
         {
-            MySqlSetting.Instance.UseMySqlChanged += async (s) =>
+            MySqlControl.GetInstance().MySqlConnectChanged += (s, e) =>
             {
-                await Task.Run(async () =>
-                {
-                    if (!MySqlControl.GetInstance().IsConnect)
-                        await MySqlControl.GetInstance().Connect();
-
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
-                    {
-                        Init();
-                    });
-                });
+                Init();
             };
             Init();
         }
-        private static void Init()
+
+        private static async void Init()
         {
+            await Task.Delay(100);
             foreach (var type in Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(IITemplateLoad).IsAssignableFrom(t) && !t.IsAbstract))
             {
                 if (Activator.CreateInstance(type) is IITemplateLoad iITemplateLoad)
