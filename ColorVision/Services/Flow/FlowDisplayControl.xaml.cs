@@ -272,5 +272,10 @@ namespace ColorVision.Services.Flow
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "没有选择流程", "ColorVision");
             }
         }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            new WindowTemplate(new TemplateFlow(), FlowTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        }
     }
 }

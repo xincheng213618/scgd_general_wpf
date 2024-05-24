@@ -25,8 +25,8 @@
                     <MenuItem x:Name="FileMenuItem" Header="{x:Static properties:Resource.MenuFile}"/>
                     <MenuItem Header="{x:Static properties:Resource.MenuTemplate}"/>
                     <MenuItem Header="{x:Static properties:Resource.MenuTool}"/>
-                    <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Header="{ x:Static properties:Resource.MenuView}">
-                        <MenuItem Header="{x:Static properties:Resource.MenuViewStatusBar}" IsChecked="{Binding SoftwareSetting.IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
+                    <MenuItem  x:Name="MenuStatusBar"  Header="{ x:Static properties:Resource.MenuView}">
+                        <MenuItem Header="{x:Static properties:Resource.MenuViewStatusBar}" IsChecked="{Binding IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
                         <Separator/>
                         <MenuItem Header="{x:Static properties:Resource.SaveWindowLayout}"  Click="MenuStatusBar_Click" />
                         <MenuItem Header="{x:Static properties:Resource.ApplyWindowLayout}"  Click="MenuStatusBar_Click" />

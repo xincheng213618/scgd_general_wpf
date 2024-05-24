@@ -41,6 +41,10 @@
                             </TextBlock.RenderTransform>
                         </TextBlock>
                     </Button>
+                    <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
+                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
+                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0"  Click="Button_Click"/>
+                    </Grid>
                     <ComboBox  x:Name="FlowTemplate" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                 </DockPanel>
                 <Grid>
