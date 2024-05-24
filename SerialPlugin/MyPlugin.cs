@@ -5,10 +5,6 @@ using System.Windows.Controls;
 
 namespace SerialPlugin
 {
-
-
-
-
     public class MyPlugin : IPlugin
     {
         public string Name => "SerialPlugin";

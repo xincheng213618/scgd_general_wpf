@@ -31,7 +31,9 @@ namespace ColorVision.UI
 
         public static List<Assembly> LoadPluginsAssembly(string path)
         {
-            if (!Directory.Exists(path)) return PluginAssembly;
+
+            if (!Directory.Exists(path)) 
+                return PluginAssembly;
             // 获取所有 dll 文件
             foreach (string file in Directory.GetFiles(path, "*.dll"))
             {

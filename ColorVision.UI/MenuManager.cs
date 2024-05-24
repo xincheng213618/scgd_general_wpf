@@ -86,19 +86,6 @@ namespace ColorVision.UI
                 }
             }
 
-
-            foreach (var item in PluginLoader.PluginAssembly)
-            {
-                foreach (Type type in item.GetTypes().Where(t => typeof(IMenuItem).IsAssignableFrom(t) && !t.IsAbstract))
-                {
-                    if (Activator.CreateInstance(type) is IMenuItem iMenuItem)
-                    {
-                        iMenuItems.Add(iMenuItem);
-                    }
-                }
-            }
-
-
             foreach (var keyValuePair in menuItems)
             {
                 CreateMenu(keyValuePair.Value, keyValuePair.Key);

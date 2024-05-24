@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Windows;
 
-namespace ColorVision.Tools
+namespace SerialPlugin
 {
     public class CalibrationConfig : IConfig
     {
@@ -16,7 +16,6 @@ namespace ColorVision.Tools
         private string _CalibToolsPath = string.Empty;
     }
 
-
     public class CalibrationCorrection : IMenuItem
     {
         public string? OwnerGuid => "Tool";
@@ -25,7 +24,7 @@ namespace ColorVision.Tools
 
         public int Order => 6;
 
-        public string? Header => ColorVision.Properties.Resource.MenuCalibrationTool;
+        public string? Header => "CalibrationCorrection";
 
         public string? InputGestureText => null;
 
