@@ -763,7 +763,7 @@
     <value>Paramètres du modèle de détection de zone lumineuse (F)</value>
   </data>
   <data name="MenuFOV" xml:space="preserve">
-    <value>Paramètres du modèle FOV (B)" ;</value>
+    <value>Paramètres du modèle FOV (B)</value>
   </data>
   <data name="MenuGhost" xml:space="preserve">
     <value>Paramètres du modèle fantôme (G)</value>

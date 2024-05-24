@@ -48,9 +48,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CalibrationCorrection", "Pl
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SerialPlugin", "Plugins\SerialPlugin\SerialPlugin.csproj", "{A06D8C2C-2387-4116-811C-4933CC3FBE47}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVisonChat", "ColorVisonChat\ColorVisonChat.csproj", "{E27330F2-E308-4F9D-9761-BEC7ADB7676A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVisonChat", "Plugins\ColorVisonChat\ColorVisonChat.csproj", "{E27330F2-E308-4F9D-9761-BEC7ADB7676A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventVWR", "EventVWR\EventVWR.csproj", "{BE96962C-AB64-4FCB-9A2B-41FAD26BCF61}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EventVWR", "Plugins\EventVWR\EventVWR.csproj", "{BE96962C-AB64-4FCB-9A2B-41FAD26BCF61}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

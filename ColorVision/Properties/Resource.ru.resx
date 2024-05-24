@@ -763,7 +763,7 @@
     <value>Настройки шаблона определения светящейся области (F)</value>
   </data>
   <data name="MenuFOV" xml:space="preserve">
-    <value>Настройки шаблона поля зрения (B)";</value>
+    <value>Настройки шаблона поля зрения (B)</value>
   </data>
   <data name="MenuGhost" xml:space="preserve">
     <value>Настройки шаблона призрака (G)</value>
@@ -883,7 +883,7 @@
     <value>видео режим</value>
   </data>
   <data name="DeviceCameraSign1" xml:space="preserve">
-    <value>Устройство не в сети. Сначала настройте идентификатор камеры.</value>
+    <value>Устройство не в сети. Сначала настройте идентификатор камеры</value>
   </data>
   <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
     <value>Область данных изображения CIE</value>

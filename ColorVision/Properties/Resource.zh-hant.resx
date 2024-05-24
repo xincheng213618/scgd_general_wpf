@@ -763,7 +763,7 @@
     <value>發光區偵測模板設定(F)</value>
   </data>
   <data name="MenuFOV" xml:space="preserve">
-    <value>FOV模板設定(B)";</value>
+    <value>FOV模板設定(B)</value>
   </data>
   <data name="MenuGhost" xml:space="preserve">
     <value>鬼影模板設定(G)</value>
