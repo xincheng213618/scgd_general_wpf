@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using NPOI.SS.Formula.Functions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 
 namespace ColorVision.Services.Templates.POI
@@ -53,18 +54,33 @@ namespace ColorVision.Services.Templates.POI
             WindowFocusPoint.ShowDialog();
         }
 
-        public override void Load() => PoiParam.LoadPoiParam();
+        public override void Load()
+        {
+            var backup = PoiParam.Params.ToDictionary(tp => tp.Id, tp => tp);
+            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
+            {
+                List<PoiMasterModel> poiMasters = PoiMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", UserConfig.Instance.TenantId }, { "is_delete", 0 } });
+                foreach (var dbModel in poiMasters)
+                {
+                    var poiparam = new PoiParam(dbModel);
+                    if (backup.TryGetValue(poiparam.Id, out var model))
+                    {
+                        model.Value = poiparam;
+                        model.Key = poiparam.Name;
+                    }
+                    else
+                    {
+                        PoiParam.Params.Add(new TemplateModel<PoiParam>(dbModel.Name ?? "default", poiparam));
+                    }
+                }
+            }
+        }
 
         public override void Save()
         {
             foreach (var item in TemplateParams)
             {
-                var modMasterModel = PoiMasterDao.Instance.GetById(item.Id);
-                if (modMasterModel != null)
-                {
-                    modMasterModel.Name = item.Key;
-                    PoiMasterDao.Instance.Save(modMasterModel);
-                }
+                PoiMasterDao.Instance.Save(new PoiMasterModel(item.Value));
             }
         }
         public override void Delete(int index)
@@ -95,6 +111,7 @@ namespace ColorVision.Services.Templates.POI
     public class PoiParam : ParamBase
     {
         public static ObservableCollection<TemplateModel<PoiParam>> Params { get; set; } = new ObservableCollection<TemplateModel<PoiParam>>();
+       
         public static void Save2DB(PoiParam poiParam)
         {
             PoiMasterModel poiMasterModel = new(poiParam);
@@ -109,16 +126,6 @@ namespace ColorVision.Services.Templates.POI
             PoiDetailDao.Instance.SaveByPid(poiParam.Id, poiDetails);
         }
 
-        public static ObservableCollection<TemplateModel<PoiParam>> LoadPoiParam()
-        {
-            PoiParam.Params.Clear();
-            List<PoiMasterModel> poiMasters = PoiMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", UserConfig.Instance.TenantId },{ "is_delete", 0 } });
-            foreach (var dbModel in poiMasters)
-            {
-                PoiParam.Params.Add(new TemplateModel<PoiParam>(dbModel.Name ?? "default", new PoiParam(dbModel)));
-            }
-            return PoiParam.Params;
-        }
 
         public static void LoadPoiDetailFromDB(PoiParam poiParam)
         {
@@ -133,7 +140,7 @@ namespace ColorVision.Services.Templates.POI
 
         public static PoiParam? AddPoiParam(string TemplateName)
         {
-            PoiMasterModel poiMasterModel = new(TemplateName, UserConfig.Instance.TenantId);
+            PoiMasterModel poiMasterModel = new PoiMasterModel(TemplateName, UserConfig.Instance.TenantId);
             PoiMasterDao.Instance.Save(poiMasterModel);
 
             int pkId = poiMasterModel.Id;
@@ -155,7 +162,7 @@ namespace ColorVision.Services.Templates.POI
         {
             Id = dbModel.Id;
 
-            PoiName = dbModel.Name ?? string.Empty;
+            Name = dbModel.Name ?? string.Empty;
             Width = dbModel.Width ?? 0;
             Height = dbModel.Height ?? 0;
             Type = dbModel.Type ?? 0;
@@ -196,10 +203,6 @@ namespace ColorVision.Services.Templates.POI
             }
         }
 
-
-        public string PoiName { get { return _PoiName; } set { _PoiName = value; NotifyPropertyChanged(); } }
-        private string _PoiName;
-
         public int Type { get => _Type; set { _Type = value; NotifyPropertyChanged(); } }
         private int _Type;
 
@@ -218,9 +221,6 @@ namespace ColorVision.Services.Templates.POI
         public ObservableCollection<PoiParamData> PoiPoints { get; set; } = new ObservableCollection<PoiParamData>();
 
         public DatumArea DatumArea { get; set; } = new DatumArea();
-
-
-
 
         [JsonIgnore]
         public bool IsPointCircle { get => DefaultPointType == RiPointTypes.Circle; set { if (value) DefaultPointType = RiPointTypes.Circle; NotifyPropertyChanged(); } }

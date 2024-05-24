@@ -1,15 +1,15 @@
 ﻿using ColorVision.MySql.ORM;
 using System.Data;
 
-namespace ColorVision.Services.Validate.Dao
+namespace ColorVision.Services.Templates.POI.Validate.Dao
 {
     public class SysDictionaryModItemValidateModel : PKModel
     {
         public int? Pid { get; set; }
-        public string? Code { get; set; }
+        public string Code { get; set; }
         public float ValMax { get; set; }
         public float ValMin { get; set; }
-        public string? ValEqual { get; set; }
+        public string ValEqual { get; set; }
         public short ValRadix { get; set; }
         public short ValType { get; set; }
         public bool IsEnable { get; set; }
@@ -27,10 +27,10 @@ namespace ColorVision.Services.Validate.Dao
         {
             Id = item.Field<int>("id"),
             Pid = item.Field<int>("pid"),
-            Code = item.Field<string?>("code"),
+            Code = item.Field<string>("code"),
             ValMax = item.Field<float>("val_max"),
             ValMin = item.Field<float>("val_min"),
-            ValEqual = item.Field<string?>("val_equal"),
+            ValEqual = item.Field<string>("val_equal"),
             ValRadix = item.Field<short>("val_radix"),
             ValType = item.Field<short>("val_type"),
             IsEnable = item.Field<bool>("is_enable"),

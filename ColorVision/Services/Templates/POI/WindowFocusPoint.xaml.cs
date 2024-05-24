@@ -4,7 +4,7 @@ using ColorVision.Draw;
 using ColorVision.MySql;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Validate;
+using ColorVision.Services.Templates.POI.Validate;
 using ColorVision.Util.Draw.Rectangle;
 using cvColorVision;
 using cvColorVision.Util;
@@ -1602,6 +1602,11 @@ namespace ColorVision.Services.Templates.POI
             {
                 comboBox.ItemsSource = ValidateParam.CIEParams;
             }
+        }
+
+        private void MenuItem_Template(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 

@@ -1,17 +1,15 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Templates;
-using ColorVision.Services.Validate.Dao;
+using ColorVision.Services.Templates.POI.Validate.Dao;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.ListView;
 
-namespace ColorVision.Services.Validate
+namespace ColorVision.Services.Templates.POI.Validate
 {
 
     public class ValidateParam : ParamBase
     {
-        public static ObservableCollection<TemplateModel<ValidateParam>> CIEParams{ get; set; } = new ObservableCollection<TemplateModel<ValidateParam>>();
-        public static ObservableCollection<TemplateModel<ValidateParam>> CIEAVGParams  { get; set; } = new ObservableCollection<TemplateModel<ValidateParam>>();
+        public static ObservableCollection<TemplateModel<ValidateParam>> CIEParams { get; set; } = new ObservableCollection<TemplateModel<ValidateParam>>();
+        public static ObservableCollection<TemplateModel<ValidateParam>> CIEAVGParams { get; set; } = new ObservableCollection<TemplateModel<ValidateParam>>();
 
         public ValidateParam()
         {
@@ -51,7 +49,7 @@ namespace ColorVision.Services.Validate
 
         public float ValMax { get => Model.ValMax; set { Model.ValMax = value; NotifyPropertyChanged(); } }
         public float ValMin { get => Model.ValMin; set { Model.ValMin = value; NotifyPropertyChanged(); } }
-        public string? ValEqual { get => Model.ValEqual; set { Model.ValEqual = value; NotifyPropertyChanged(); } }
+        public string ValEqual { get => Model.ValEqual; set { Model.ValEqual = value; NotifyPropertyChanged(); } }
         public short ValRadix { get => Model.ValRadix; set { Model.ValRadix = value; NotifyPropertyChanged(); } }
         public short ValType { get => Model.ValType; set { Model.ValType = value; NotifyPropertyChanged(); } }
     }

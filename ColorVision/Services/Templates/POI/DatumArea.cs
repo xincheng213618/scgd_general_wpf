@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Services.Templates.POI.Validate;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -31,6 +32,8 @@ namespace ColorVision.Services.Templates.POI
 
     public class DatumArea : ViewModelBase
     {
+        public static RelayCommand ValidateCIECommand => new ExportValidueCIE().Command;
+        public static RelayCommand ValidateCIEAVGCommand => new ExportValidueCIEAVG().Command;
 
         public int DeafultValidateCIEId { get => _DeafultValidateCIEId; set { _DeafultValidateCIEId = value; NotifyPropertyChanged(); } }
         private int _DeafultValidateCIEId = -1;

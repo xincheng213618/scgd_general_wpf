@@ -36,7 +36,7 @@ namespace ColorVision.Services.Templates.POI.Dao
         public PoiMasterModel(PoiParam poiParam)
         {
             Id = poiParam.Id;
-            Name = poiParam.PoiName;
+            Name = poiParam.Name;
             Type = poiParam.Type;
             Width = poiParam.Width;
             Height = poiParam.Height;

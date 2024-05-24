@@ -1,19 +1,19 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Templates;
-using ColorVision.Services.Validate.Dao;
+using ColorVision.Services.Templates.POI.Validate.Dao;
 using ColorVision.UserSpace;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Validate
+namespace ColorVision.Services.Templates.POI.Validate
 {
 
-    public class TemplateValidateCIEAVGParam: TemplateValidateParam
+    public class TemplateValidateCIEAVGParam : TemplateValidateParam
     {
-        public TemplateValidateCIEAVGParam() 
+        public TemplateValidateCIEAVGParam()
         {
             Title = "Validate.CIE.AVG";
             TemplateParams = ValidateParam.CIEAVGParams;
@@ -47,20 +47,31 @@ namespace ColorVision.Services.Validate
 
         public override void Load()
         {
-            TemplateParams.Clear();
-            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
+            if (!(MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect))
+                return;
+
+            var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
+
+            SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
+            if (mod == null)
             {
-                SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(Code, UserConfig.Instance.TenantId);
-                if (mod == null)
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"找不到字典{Code}", "Template");
+                return;
+            }
+            var models = ValidateTemplateMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "dic_pid", mod.Id }, { "is_delete", 0 }, { "tenant_id", UserConfig.Instance.TenantId } });
+            foreach (var dbModel in models)
+            {
+                var details = ValidateTemplateDetailDao.Instance.GetAllByPid(dbModel.Id);
+                var validateParam = new ValidateParam(dbModel, details);
+
+                if (backup.TryGetValue(validateParam.Id, out var model))
                 {
-                    MessageBox.Show(Application.Current.GetActiveWindow(), $"找不到字典{Code}", "Template");
-                    return;
+                    model.Value = validateParam;
+                    model.Key = validateParam.Name;
                 }
-                var models = ValidateTemplateMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { {"dic_pid",mod.Id },{ "is_delete", 0 }, { "tenant_id", UserConfig.Instance.TenantId } });
-                foreach (var dbModel in models)
+                else
                 {
-                    var Details = ValidateTemplateDetailDao.Instance.GetAllByPid(dbModel.Id);
-                    TemplateParams.Add(new TemplateModel<ValidateParam>(dbModel.Name ?? "default", new ValidateParam(dbModel, Details)));
+                    TemplateParams.Add(new TemplateModel<ValidateParam>(dbModel.Name ?? "default", validateParam));
                 }
             }
         }
@@ -107,7 +118,7 @@ namespace ColorVision.Services.Validate
                 var sysDic = SysDictionaryModItemValidateDao.Instance.GetAllByPid(mod.Id);
                 foreach (var item in sysDic)
                 {
-                    var ss = new ValidateTemplateDetailModel() { Code = item.Code ,DicPid = mod.Id,Pid = modMaster .Id,ValMax = item.ValMax,ValEqual =item.ValEqual , ValMin =item.ValMin, ValRadix =item.ValRadix ,ValType =item.ValType};
+                    var ss = new ValidateTemplateDetailModel() { Code = item.Code, DicPid = mod.Id, Pid = modMaster.Id, ValMax = item.ValMax, ValEqual = item.ValEqual, ValMin = item.ValMin, ValRadix = item.ValRadix, ValType = item.ValType };
                     ValidateTemplateDetailDao.Instance.Save(ss);
                 }
 

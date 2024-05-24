@@ -2,15 +2,15 @@
 using System;
 using System.Data;
 
-namespace ColorVision.Services.Validate.Dao
+namespace ColorVision.Services.Templates.POI.Validate.Dao
 {
     public class ValidateTemplateMasterModel : PKModel
     {
         public int? DId { get; set; }
-        public string? Name { get; set; }
-        public string? Code { get; set; }
+        public string Name { get; set; }
+        public string Code { get; set; }
         public DateTime? CreateDate { get; set; } = DateTime.Now;
-        public string? Remark { get; set; }
+        public string Remark { get; set; }
         public int TenantId { get; set; }
     }
 
@@ -30,7 +30,7 @@ namespace ColorVision.Services.Validate.Dao
                 Name = item.Field<string>("name"),
                 Code = item.Field<string>("code"),
                 TenantId = item.Field<int>("tenant_id"),
-                Remark = item.Field<string?>("remark"),
+                Remark = item.Field<string>("remark"),
                 CreateDate = item.Field<DateTime?>("create_date"),
             };
 
