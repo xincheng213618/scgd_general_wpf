@@ -40,16 +40,11 @@ namespace ColorVision.UI
 
             foreach (var configPair in Configs)
             {
-                JToken valueToken;
-                valueToken = JToken.FromObject(configPair.Value, new JsonSerializer { Formatting = Formatting.Indented });
+                var valueToken = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
                 jObject[configPair.Key.Name] = valueToken;
             }
 
-            using (var writer = new StreamWriter(fileName))
-            using (var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented })
-            {
-                jObject.WriteTo(jsonWriter);
-            }
+            File.WriteAllText(fileName, jObject.ToString(JsonSerializerSettings.Formatting));
         }
 
 
@@ -157,27 +152,19 @@ namespace ColorVision.UI
 
             foreach (var configPair in Configs)
             {
-                JToken valueToken;
-
                 if (configPair.Value is IConfigSecure configSecure)
                 {
                     configSecure.Encryption();
-                    valueToken = JToken.FromObject(configPair.Value, new JsonSerializer { Formatting = Formatting.Indented });
+                    jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
                     configSecure.Decrypt();
                 }
                 else
                 {
-                    valueToken = JToken.FromObject(configPair.Value, new JsonSerializer { Formatting = Formatting.Indented });
+                    jObject[configPair.Key.Name] = JToken.FromObject(configPair.Value, JsonSerializer.Create(JsonSerializerSettings));
                 }
-
-                jObject[configPair.Key.Name] = valueToken;
             }
 
-            using (var writer = new StreamWriter(fileName))
-            using (var jsonWriter = new JsonTextWriter(writer) { Formatting = Formatting.Indented })
-            {
-                jObject.WriteTo(jsonWriter);
-            }
+            File.WriteAllText(fileName, jObject.ToString(JsonSerializerSettings.Formatting));
         }
 
 
