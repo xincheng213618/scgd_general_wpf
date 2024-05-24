@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace ColorVision.Services.Interfaces
+namespace ColorVision.Services.Core
 {
     /// <summary>
     /// 心跳接口

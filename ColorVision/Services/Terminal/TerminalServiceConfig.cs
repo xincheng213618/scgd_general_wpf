@@ -1,5 +1,5 @@
 ﻿using ColorVision.Services.Devices;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Core;
 using ColorVision.Services.Types;
 
 namespace ColorVision.Services.Terminal

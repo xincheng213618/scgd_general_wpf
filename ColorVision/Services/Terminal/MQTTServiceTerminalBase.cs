@@ -1,6 +1,6 @@
 ﻿using ColorVision.MQTT;
 using ColorVision.Services.Core;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Core;
 using System;
 using System.Threading.Tasks;
 

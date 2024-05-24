@@ -22,6 +22,7 @@ namespace ColorVision.Services.Templates.POI.Validate
         public ValidateParam(ValidateTemplateMasterModel modMaster, List<ValidateTemplateDetailModel> modDetails)
         {
             Id = modMaster.Id;
+            Name = modMaster.Name;
             DetailModels = modDetails;
             ValidateSingles = new ObservableCollection<ValidateSingle>();
             foreach (var DetailModel in modDetails)

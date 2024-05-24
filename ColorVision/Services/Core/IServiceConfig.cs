@@ -1,4 +1,4 @@
-﻿namespace ColorVision.Services.Interfaces
+﻿namespace ColorVision.Services.Core
 {
     /// <summary>
     /// 服务接口

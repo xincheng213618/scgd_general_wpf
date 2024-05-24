@@ -54,16 +54,15 @@
                             <Border Margin="5" Style="{StaticResource BorderModuleArea}">
                                 <StackPanel Margin="0,5">
                                     <DockPanel x:Name="SettingGroup" Height="25" Margin="2">
-                                        <Button Content="重渲染" Margin="5,0,0,0" ToolTip="一次"  Click="Button_UpdateVisualLayout_Click"  DockPanel.Dock="Right" />
-                                        <ToggleButton  HorizontalAlignment="Left"  Height="16" Width="40"  Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding DatumArea.IsLayoutUpdated}"/>
+                                        <ToggleButton  HorizontalAlignment="Left"  Margin="0,0,2,0" Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding DatumArea.IsLayoutUpdated}"/>
                                         <TextBlock HorizontalAlignment="Left" Text="缩放自动重渲染"/>
                                     </DockPanel>
                                     <DockPanel Margin="2">
-                                        <ToggleButton  HorizontalAlignment="Left"  Height="16"  Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding DatumArea.IsShowDatum}"/>
+                                        <ToggleButton  HorizontalAlignment="Left"  Height="16" Margin="0,0,2,0"  Style="{StaticResource ToggleButtonSwitch}"  Click="SetDefault_Click" IsChecked="{Binding DatumArea.IsShowDatum}"/>
                                         <TextBlock   HorizontalAlignment="Left" Text="基准点显示"/>
                                     </DockPanel>
                                     <DockPanel  Margin="2" >
-                                        <ToggleButton HorizontalAlignment="Left" Height="16" Style="{StaticResource ToggleButtonSwitch}"  Click="ShowDatumArea_Click" IsChecked="{Binding DatumArea.IsShowDatumArea}"/>
+                                        <ToggleButton HorizontalAlignment="Left" Height="16" Margin="0,0,2,0"  Style="{StaticResource ToggleButtonSwitch}"  Click="ShowDatumArea_Click" IsChecked="{Binding DatumArea.IsShowDatumArea}"/>
                                         <TextBlock   HorizontalAlignment="Left" Text="布点区域显示"/>
                                     </DockPanel>
                                 </StackPanel>
@@ -96,6 +95,7 @@
                         <Button x:Name="button3" ToolTip="清空关注点" Click="Button3_Click" HorizontalAlignment="Right">
                             <Image Source="{StaticResource DrawingImageClear}" Height="20"/>
                         </Button>
+                        <Button Content="重渲染" Margin="5,0,0,0" ToolTip="一次"  Click="Button_UpdateVisualLayout_Click"  DockPanel.Dock="Right" Visibility="{Binding DatumArea.IsLayoutUpdated ,Converter={StaticResource bool2VisibilityConverter1}}" />
                     </StackPanel>
                 </StackPanel>
             </Border>
@@ -115,7 +115,7 @@
                         <ComboBox x:Name="ComboBoxValidateCIE" Width="90"  SelectedValue="{Binding DatumArea.DeafultValidateCIEId}"  SelectedValuePath="Id" DisplayMemberPath="Key" Margin="2,0" Style="{StaticResource ComboBox.Small}"/>
                         <Grid Width="20" Margin="5,0">
                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusParm" Command="{Binding DatumArea.ValidateCIEAVGCommand}"/>
+                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusParm" Command="{Binding DatumArea.ValidateCIECommand}"/>
                         </Grid>
                         <Button DockPanel.Dock="Right" Margin="2,0" Content="应用全部" Click="Button_Click_4"/>
                     </DockPanel>
@@ -151,10 +151,10 @@
 
 
 
-            <ScrollViewer x:Name="ScrollViewer1" Grid.Row="3" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <ScrollViewer x:Name="ScrollViewer1" Grid.Row="3" Margin="5,5,5,0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="0" Grid.Row="0" >
                     <ToggleButton x:Name="DatumAreaToggleButton" Margin="0,5" Content="基准点设置" Style="{StaticResource ButtonPageControl1}" IsChecked="False" HorizontalAlignment="Left"/>
-                    <Border  Style="{StaticResource BorderModuleArea}" Margin="0,0,0,5" CornerRadius="0">
+                    <Border  Style="{StaticResource BorderModuleArea}" Margin="0,0,0,5" CornerRadius="5">
                         <StackPanel x:Name="StackPanelDatumAreaPoints" Margin="5"  Visibility="{Binding ElementName=DatumAreaToggleButton,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
                             <DockPanel  Margin="2" HorizontalAlignment="Left">
                                 <TextBlock Text="X1"   MinWidth="40"/>
@@ -178,7 +178,7 @@
                                 <TextBox   Text="{Binding DatumArea.X4Y}" Width="80" Margin="5,0"  />
                             </DockPanel>
                             <DockPanel  Margin="2"  HorizontalAlignment="Left">
-                                <TextBlock Text="中心点:"  MinWidth="40"/>
+                                <TextBlock Text="中心点"  MinWidth="40"/>
                                 <TextBox  Text="{Binding DatumArea.CenterX}" Width="80" Margin="5,0"  />
                                 <TextBox  Text="{Binding DatumArea.CenterY}" Width="80" Margin="5,0"  />
                             </DockPanel>
@@ -212,7 +212,7 @@
                             </StackPanel>
                             <StackPanel Margin="5"  Visibility="{Binding ElementName=RadioButtonBuildMode3, Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" >
                                 <DockPanel Margin="2" >
-                                    <TextBlock Text="阈值:" Width="30"/>
+                                    <TextBlock Text="阈值" Width="30"/>
                                     <TextBox   Text="3" />
                                 </DockPanel>
                                 <Button Content="设置基准点" Margin="3" Height="25" FontWeight="Bold" HorizontalAlignment="Left" Click="SetDefault_Click"/>

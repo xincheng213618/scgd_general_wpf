@@ -1,4 +1,4 @@
-﻿using ColorVision.Services.Interfaces;
+﻿using ColorVision.Services.Core;
 
 namespace ColorVision.Services.Devices.PG
 {

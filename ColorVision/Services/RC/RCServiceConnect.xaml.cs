@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Interfaces;
+using ColorVision.Services.Core;
 using ColorVision.Settings;
 using System;
 using System.Collections.ObjectModel;
