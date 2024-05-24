@@ -149,7 +149,11 @@ namespace ColorVision.UI
         public override void SaveConfigs(string fileName)
         {
             var jObject = new JObject();
-
+            if (File.Exists(fileName))
+            {
+                string json = File.ReadAllText(fileName);
+                jObject = JObject.Parse(json);
+            }
             foreach (var configPair in Configs)
             {
                 if (configPair.Value is IConfigSecure configSecure)
