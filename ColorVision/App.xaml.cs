@@ -5,6 +5,7 @@ using ColorVision.MySql;
 using ColorVision.Net;
 using ColorVision.Services;
 using ColorVision.Services.RC;
+using ColorVision.Services.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Languages;
@@ -114,6 +115,7 @@ namespace ColorVision
                 Task.Run(() => MQTTControl.GetInstance().Connect());
                 MainWindow MainWindow = new();
                 ServiceManager.GetInstance().GenDeviceDisplayControl();
+                TemplateControl.GetInstance();
                 MainWindow.Show();
             }
         }

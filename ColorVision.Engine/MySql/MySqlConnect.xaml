@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.MySql"
         xmlns:hc ="https://handyorg.github.io/handycontrol"
-        xmlns:properties="clr-namespace:ColorVision.Properties"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         Title="{x:Static properties:Resources.MysqlConnectionConfiguration}" Background="{DynamicResource RegionBrush}"  Height="500" Width="400" Initialized="Window_Initialized">
     <Window.Resources>

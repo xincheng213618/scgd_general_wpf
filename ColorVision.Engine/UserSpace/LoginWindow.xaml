@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.UserSpace"
         xmlns:hc="https://handyorg.github.io/handycontrol"
-        xmlns:resx="clr-namespace:ColorVision.Properties"
+        xmlns:resx="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         Title="ColorVision" Height="500" Background="#ECEFFF" Width="400" Initialized="Window_Initialized">
     <Grid x:Name="MainGrid">

@@ -7,7 +7,7 @@
         xmlns:base ="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        xmlns:resx="clr-namespace:ColorVision.Properties"
+        xmlns:resx="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:UserConfig}"
         Title="UserEdit" Height="400" Width="500"  WindowStartupLocation="CenterScreen"  Background="{DynamicResource GlobalBorderBrush}" ResizeMode="NoResize" Initialized="Window_Initialized">

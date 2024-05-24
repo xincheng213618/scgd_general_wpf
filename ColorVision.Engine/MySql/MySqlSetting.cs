@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Settings;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
 using System;
@@ -19,8 +18,8 @@ namespace ColorVision.MySql
             return new List<ConfigSettingMetadata> {
                             new ConfigSettingMetadata
                             {
-                                Name = Properties.Resources.EnableDatabase,
-                                Description = Properties.Resources.EnableDatabase,
+                                Name = ColorVision.Engine.Properties.Resources.EnableDatabase,
+                                Description = ColorVision.Engine.Properties.Resources.EnableDatabase,
                                 Order =1,
                                 Type = ConfigSettingType.Bool,
                                 BindingName = nameof(MySqlSetting.IsUseMySql),
@@ -39,8 +38,8 @@ namespace ColorVision.MySql
             {
                 new StatusBarIconMetadata()
                 {
-                    Name = Properties.Resources.EnableDatabase,
-                    Description = Properties.Resources.EnableDatabase,
+                    Name = ColorVision.Engine.Properties.Resources.EnableDatabase,
+                    Description = ColorVision.Engine.Properties.Resources.EnableDatabase,
                     Order =0,
                     BindingName = "MySqlControl.IsConnect",
                     VisibilityBindingName = nameof(MySqlSetting.IsUseMySql),
