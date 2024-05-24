@@ -109,6 +109,8 @@ namespace ColorVision.Services.Templates
     {
         public ObservableCollection<TemplateModel<T>> TemplateParams { get; set; } = new ObservableCollection<TemplateModel<T>>();
 
+        public int FindIndex(int id) => TemplateParams.ToList().FindIndex(a => a.Id == id);
+
         public override int Count => TemplateParams.Count;
 
         public override object GetValue() => TemplateParams;

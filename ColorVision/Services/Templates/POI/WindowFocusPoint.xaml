@@ -107,7 +107,7 @@
                         <ComboBox x:Name="ComboBoxValidate" SelectedValue="{Binding ValidateId}" Width="90" SelectedValuePath="Id" DisplayMemberPath="Key" Margin="2,0" Style="{StaticResource ComboBox.Small}"/>
                         <Grid Width="20" Margin="5,0"  DockPanel.Dock="Right">
                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
-                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusParm" Command="{Binding DatumArea.ValidateCIEAVGCommand}"/>
+                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="FocusParm" Command="{Binding ValidateCIEAVGCommand}"/>
                         </Grid>
                     </StackPanel>
                     <DockPanel Margin="0,2" >

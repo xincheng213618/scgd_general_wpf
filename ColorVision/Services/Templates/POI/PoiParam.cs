@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Templates.POI.Dao;
+using ColorVision.Services.Templates.POI.Validate;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UserSpace;
@@ -214,6 +215,12 @@ namespace ColorVision.Services.Templates.POI
         private int _Height;
         public int ValidateId { get => _ValidateId; set { _ValidateId = value; NotifyPropertyChanged(); } }
         private int _ValidateId;
+
+        public RelayCommand ValidateCIEAVGCommand => new RelayCommand(a =>
+        {
+            var Template = new TemplateValidateCIEAVGParam();
+            new WindowTemplate(Template, Template.FindIndex(ValidateId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        });
 
         /// <summary>
         /// 关注点列表

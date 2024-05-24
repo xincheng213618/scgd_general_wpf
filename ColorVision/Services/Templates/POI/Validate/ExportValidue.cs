@@ -56,7 +56,7 @@ namespace ColorVision.Services.Templates.POI.Validate
 
         public object Icon { get; }
 
-        public RelayCommand Command => new(a =>
+        public RelayCommand Command => new RelayCommand(a =>
         {
             new WindowTemplate(new TemplateValidateCIEAVGParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
