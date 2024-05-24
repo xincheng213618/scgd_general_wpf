@@ -763,7 +763,7 @@
     <value>発光領域検出テンプレート設定(F)</value>
   </data>
   <data name="MenuFOV" xml:space="preserve">
-    <value>FOVテンプレート設定(B)</value>
+    <value>FOVテンプレート設定(B)」;</value>
   </data>
   <data name="MenuGhost" xml:space="preserve">
     <value>ゴーストテンプレート設定(G)</value>

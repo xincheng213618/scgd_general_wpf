@@ -763,7 +763,7 @@
     <value>발광 영역 감지 템플릿 설정(F)</value>
   </data>
   <data name="MenuFOV" xml:space="preserve">
-    <value>FOV 템플릿 설정(B)</value>
+    <value>FOV 템플릿 설정(B)";</value>
   </data>
   <data name="MenuGhost" xml:space="preserve">
     <value>고스트 템플릿 설정(G)</value>
@@ -883,7 +883,7 @@
     <value>비디오 모드</value>
   </data>
   <data name="DeviceCameraSign1" xml:space="preserve">
-    <value>기기가 오프라인 상태입니다. 먼저 카메라 ID를 구성하세요</value>
+    <value>기기가 오프라인 상태입니다. 먼저 카메라 ID를 구성하세요.</value>
   </data>
   <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
     <value>CIE 이미지 데이터 영역</value>
