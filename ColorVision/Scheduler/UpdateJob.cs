@@ -1,4 +1,5 @@
-﻿using ColorVision.Update;
+﻿#pragma warning disable CS8602
+using ColorVision.Update;
 using Quartz;
 using System.Diagnostics;
 using System;
@@ -35,7 +36,7 @@ namespace ColorVision.Scheduler
             return Task.CompletedTask;
         }
 
-        private void ExecuteCmdScript(string scriptPath)
+        private static void ExecuteCmdScript(string scriptPath)
         {
             try
             {

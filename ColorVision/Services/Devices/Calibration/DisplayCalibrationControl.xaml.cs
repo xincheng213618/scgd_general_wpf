@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.MySql;
-using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Calibration.Views;
 using ColorVision.Services.Msg;
 using ColorVision.Services.PhyCameras;
@@ -198,9 +197,7 @@ namespace ColorVision.Services.Devices.Calibration
                 switch (button.Tag?.ToString() ?? string.Empty)
                 {
                     case "Calibration":
-                        CalibrationControl calibration;
                         var ITemplate = new TemplateCalibrationParam(Device.PhyCamera);
-
                         windowTemplate = new WindowTemplate(ITemplate);
                         windowTemplate.Owner = Window.GetWindow(this);
                         windowTemplate.ShowDialog();
