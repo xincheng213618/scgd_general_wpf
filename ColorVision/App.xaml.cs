@@ -38,6 +38,8 @@ namespace ColorVision
         private void Application_Startup(object sender, StartupEventArgs e)
         {
             Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
+
+            PluginLoader.LoadPluginsAssembly("Plugins");
             ConfigHandler.GetInstance();
 
             this.ApplyTheme(ThemeConfig.Instance.Theme);

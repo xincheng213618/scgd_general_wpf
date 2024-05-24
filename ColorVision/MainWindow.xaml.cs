@@ -152,7 +152,6 @@ namespace ColorVision
 
             SolutionTab1.Content = new TreeViewControl();
 
-            PluginLoader.LoadPluginsAssembly("Plugins");
             PluginLoader.LoadPlugins("Plugins");
             PluginLoader.LoadAssembly<IPlugin>(Assembly.GetExecutingAssembly());
             MenuManager.GetInstance().LoadMenuItemFromAssembly();
@@ -290,6 +289,7 @@ namespace ColorVision
                 autoUpdater.CheckAndUpdate(false);
             });
         }
+
 
         private void StackPanelSPD_Initialized(object sender, EventArgs e)
         {
