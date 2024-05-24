@@ -73,7 +73,7 @@ namespace ColorVision.Services.Devices.Camera
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (!Services.ServicesHelper.IsInvalidPath(CreateCode.Text, ColorVision.Properties.Resource.Code) || !Services.ServicesHelper.IsInvalidPath(CreateName.Text, ColorVision.Properties.Resource.Name))
+            if (!Services.ServicesHelper.IsInvalidPath(CreateCode.Text, ColorVision.Properties.Resources.Code) || !Services.ServicesHelper.IsInvalidPath(CreateName.Text, ColorVision.Properties.Resources.Name))
                 return;
 
             var deviceS= ServiceManager.GetInstance().DeviceServices.FirstOrDefault(x => x.Code == CreateCode.Text);

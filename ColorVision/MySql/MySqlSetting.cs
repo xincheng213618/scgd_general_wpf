@@ -19,8 +19,8 @@ namespace ColorVision.MySql
             return new List<ConfigSettingMetadata> {
                             new ConfigSettingMetadata
                             {
-                                Name = Properties.Resource.EnableDatabase,
-                                Description = Properties.Resource.EnableDatabase,
+                                Name = Properties.Resources.EnableDatabase,
+                                Description = Properties.Resources.EnableDatabase,
                                 Order =1,
                                 Type = ConfigSettingType.Bool,
                                 BindingName = nameof(MySqlSetting.IsUseMySql),
@@ -39,8 +39,8 @@ namespace ColorVision.MySql
             {
                 new StatusBarIconMetadata()
                 {
-                    Name = Properties.Resource.EnableDatabase,
-                    Description = Properties.Resource.EnableDatabase,
+                    Name = Properties.Resources.EnableDatabase,
+                    Description = Properties.Resources.EnableDatabase,
                     Order =0,
                     BindingName = "MySqlControl.IsConnect",
                     VisibilityBindingName = nameof(MySqlSetting.IsUseMySql),

@@ -1,0 +1,178 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="DotNetCore.NPOI" Version="1.2.3" />
+		<PackageReference Include="Extended.Wpf.Toolkit" Version="4.6.0" />
+		<PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc2" />
+		<PackageReference Include="log4net" Version="2.0.17" />
+		<PackageReference Include="MahApps.Microsoft.DwayneNeed" Version="1.0.1" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
+		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.77" />
+		<PackageReference Include="MQTTnet" Version="4.3.4.1084" />
+		<PackageReference Include="MySql.Data" Version="8.4.0" />
+		<PackageReference Include="MySqlConnector" Version="2.3.7" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+		<PackageReference Include="OpenCvSharp4.Extensions" Version="4.9.0.20240103" />
+		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.9.0.20240103" />
+		<PackageReference Include="QRCoder.Xaml" Version="1.5.1" />
+		<PackageReference Include="Quartz" Version="3.9.0" />
+		<PackageReference Include="ScottPlot.WPF" Version="4.1.67" />
+		<PackageReference Include="System.IO.Ports" Version="8.0.0" />
+		<PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Include="CVCommCore">
+			<HintPath>..\DLL\CVCommCore.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
+		<Reference Include="CVImageChannelLib">
+			<HintPath>..\DLL\CVImageChannelLib.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
+		<Reference Include="FlowEngineLib">
+			<HintPath>..\DLL\FlowEngineLib.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
+		<Reference Include="MQTTMessageLib">
+			<HintPath>..\DLL\MQTTMessageLib.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
+		<Reference Include="OpenH264Lib">
+			<HintPath>..\DLL\OpenH264Lib.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
+		<Reference Include="ST.Library.UI">
+			<HintPath>..\DLL\ST.Library.UI.dll</HintPath>
+			<Private>True</Private>
+		</Reference>
+	</ItemGroup>
+	
+
+  <ItemGroup>
+    <None Remove="Assets\Colormaps\colorscale_autumn.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_bone.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_cividis.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_cool.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_deepgreen.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_hot.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_hsv.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_inferno.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_jet.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_magma.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_mkpj1.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_mkpj2.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_ocean.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_parula.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_pink.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_plasma.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_rainbow.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_spring.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_summer.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_turbo.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_twilight.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_twilight_shifted.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_viridis.jpg" />
+    <None Remove="Assets\Colormaps\colorscale_winter.jpg" />
+    <None Remove="Assets\Image\CIE1931xy.ico" />
+    <None Remove="Assets\Image\CIE1931xy.png" />
+    <None Remove="Assets\Image\CIE1931xy1.png" />
+    <None Remove="Assets\Image\ColorVision.ico" />
+    <None Remove="Assets\Image\ColorVision.png" />
+    <None Remove="Assets\Image\ColorVision1.ico" />
+    <None Remove="Assets\Image\connect.png" />
+    <None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
+    <None Remove="Assets\Image\pictureBox1.Image.png" />
+    <None Remove="Assets\Image\uploadbg.avif" />
+    <None Remove="Assets\png\background0.png" />
+    <None Remove="Assets\png\PowerToy.png" />
+    <None Remove="Assets\png\归档查询.png" />
+    <None Remove="Assets\png\综合查询.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ColorVision.Common\ColorVision.Common.csproj" />
+    <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
+    <ProjectReference Include="..\ColorVision.Util\ColorVision.Util.csproj" />
+    <ProjectReference Include="..\cvColorVision\cvColorVision.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\Colormaps\colorscale_autumn.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_bone.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_cividis.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_cool.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_deepgreen.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_hot.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_hsv.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_inferno.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_jet.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_magma.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_mkpj1.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_mkpj2.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_ocean.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_parula.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_pink.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_plasma.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_rainbow.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_spring.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_summer.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_turbo.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_twilight.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_twilight_shifted.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_viridis.jpg" />
+    <Resource Include="Assets\Colormaps\colorscale_winter.jpg" />
+    <Resource Include="Assets\Image\CIE1931xy.ico" />
+    <Resource Include="Assets\Image\CIE1931xy.png" />
+    <Resource Include="Assets\Image\CIE1931xy1.png" />
+    <Resource Include="Assets\Image\ColorVision.ico" />
+    <Resource Include="Assets\Image\ColorVision.png" />
+    <Resource Include="Assets\Image\ColorVision1.ico" />
+    <Resource Include="Assets\Image\connect.png" />
+    <Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
+    <Resource Include="Assets\Image\pictureBox1.Image.png" />
+    <Resource Include="Assets\Image\uploadbg.avif" />
+    <Resource Include="Assets\png\background0.png">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Assets\png\PowerToy.png" />
+    <Resource Include="Assets\png\归档查询.png" />
+    <Resource Include="Assets\png\综合查询.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Properties\Settings.Designer.cs">
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Properties\Settings.settings">
+      <Generator>PublicSettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+
+</Project>

@@ -36,8 +36,8 @@
             </DockPanel>
         </StackPanel>
         <StackPanel  Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10">
-            <Button Content="{x:Static resx:Resource.Save}"/>
-            <Button Content="{x:Static resx:Resource.Cancel}"/>
+            <Button Content="{x:Static resx:Resources.Save}"/>
+            <Button Content="{x:Static resx:Resources.Cancel}"/>
         </StackPanel>
     </Grid>
 </base:BaseWindow>

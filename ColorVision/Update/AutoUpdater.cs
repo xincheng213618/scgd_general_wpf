@@ -26,8 +26,8 @@ namespace ColorVision.Update
             {
                 new ConfigSettingMetadata
                 {
-                    Name = Properties.Resource.CheckUpdatesOnStartup,
-                    Description =  Properties.Resource.CheckUpdatesOnStartup,
+                    Name = Properties.Resources.CheckUpdatesOnStartup,
+                    Description =  Properties.Resources.CheckUpdatesOnStartup,
                     Order = 999,
                     Type = ConfigSettingType.Bool,
                     BindingName =nameof(AutoUpdateConfig.IsAutoUpdate),
@@ -169,7 +169,7 @@ namespace ColorVision.Update
 
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            if (MessageBox.Show($"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resource.ConfirmUpdate}?",$"{ Properties.Resource.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            if (MessageBox.Show($"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?",$"{ Properties.Resources.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
                                 Update(LatestVersion, Path.GetTempPath());
                             }
@@ -179,7 +179,7 @@ namespace ColorVision.Update
                     {
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            if (MessageBox.Show($"{Properties.Resource.NewVersionFound}{LatestVersion},{Properties.Resource.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            if (MessageBox.Show($"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
                                 Update(LatestVersion, Path.GetTempPath());
                             }
@@ -191,7 +191,7 @@ namespace ColorVision.Update
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         if (detection)
-                            MessageBox.Show(Application.Current.GetActiveWindow(),Properties.Resource.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
+                            MessageBox.Show(Application.Current.GetActiveWindow(),Properties.Resources.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
                     });
 
                 }
@@ -296,7 +296,7 @@ namespace ColorVision.Update
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    MessageBox.Show($"{Properties.Resource.ErrorOccurred}: {response.ReasonPhrase}");
+                    MessageBox.Show($"{Properties.Resources.ErrorOccurred}: {response.ReasonPhrase}");
                     return;
                 }
 
@@ -337,13 +337,13 @@ namespace ColorVision.Update
                             if (stopwatch.ElapsedMilliseconds > 200) // Update speed at least once per second
                             {
                                 double speed = totalReadBytes / stopwatch.Elapsed.TotalSeconds;
-                                SpeedValue = $"{ColorVision.Properties.Resource.CurrentSpeed} {speed / 1024 / 1024:F2} MB/s";
+                                SpeedValue = $"{ColorVision.Properties.Resources.CurrentSpeed} {speed / 1024 / 1024:F2} MB/s";
 
                                 if (totalBytes != -1L)
                                 {
                                     double remainingBytes = totalBytes - totalReadBytes;
                                     double remainingTime = remainingBytes / speed; // in seconds
-                                    RemainingTimeValue = $"{ColorVision.Properties.Resource.TimeLeft} {TimeSpan.FromSeconds(remainingTime):hh\\:mm\\:ss}";
+                                    RemainingTimeValue = $"{ColorVision.Properties.Resources.TimeLeft} {TimeSpan.FromSeconds(remainingTime):hh\\:mm\\:ss}";
                                 }
                             }
                         }

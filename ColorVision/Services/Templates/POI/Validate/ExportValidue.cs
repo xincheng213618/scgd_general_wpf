@@ -13,7 +13,7 @@ namespace ColorVision.Services.Templates.POI.Validate
         public string GuidId => "Validue";
         public int Order => 4;
         public Visibility Visibility => Visibility.Visible;
-        public string Header => Properties.Resource.MenuValidue;
+        public string Header => Properties.Resources.MenuValidue;
 
         public string InputGestureText { get; }
 

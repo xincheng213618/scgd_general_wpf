@@ -20,7 +20,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
         public int Order => 3;
         public Visibility Visibility => Visibility.Visible;
 
-        public string? Header => ColorVision.Properties.Resource.MenuGhost;
+        public string? Header => ColorVision.Properties.Resources.MenuGhost;
 
         public string? InputGestureText { get; }
 

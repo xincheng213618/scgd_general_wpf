@@ -14,8 +14,8 @@ namespace ColorVision.Solution
             return new List<ConfigSettingMetadata> {
                             new ConfigSettingMetadata
                             {
-                                Name = Properties.Resource.ProjectSettings,
-                                Description = Properties.Resource.ProjectSettings,
+                                Name = Properties.Resources.ProjectSettings,
+                                Description = Properties.Resources.ProjectSettings,
                                 Order = 2,
                                 Type = ConfigSettingType.TabItem,
                                 Source = SolutionSetting.Instance,
@@ -46,7 +46,7 @@ namespace ColorVision.Solution
             if (sender is Button button)
             {
                 SolutionSetting.Instance.DefaultSaveName = "yyyy/dd/MM HH:mm:ss";
-                ButtonContentChange(button, Properties.Resource.Reseted);
+                ButtonContentChange(button, Properties.Resources.Reseted);
             }
 
         }
@@ -56,7 +56,7 @@ namespace ColorVision.Solution
             if (sender is Button button)
             {
                 SolutionSetting.Instance.DefaultCreatName = "新建工程";
-                ButtonContentChange(button, Properties.Resource.Reseted);
+                ButtonContentChange(button, Properties.Resources.Reseted);
             }
         }
 

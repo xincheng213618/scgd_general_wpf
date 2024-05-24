@@ -13,8 +13,8 @@ namespace ColorVision.Settings
             return new List<ConfigSettingMetadata> {
                             new ConfigSettingMetadata
                             {
-                                Name = Properties.Resource.PerformanceTest,
-                                Description = Properties.Resource.PerformanceTest,
+                                Name = Properties.Resources.PerformanceTest,
+                                Description = Properties.Resources.PerformanceTest,
                                 Order =10,
                                 Type = ConfigSettingType.TabItem,
                                 Source = SystemMonitor.GetInstance(),
@@ -29,8 +29,8 @@ namespace ColorVision.Settings
             {
                 new StatusBarIconMetadata()
                 {
-                    Name = Properties.Resource.PerformanceTest,
-                    Description = Properties.Resource.PerformanceTest,
+                    Name = Properties.Resources.PerformanceTest,
+                    Description = Properties.Resources.PerformanceTest,
                     Order =12,
                     Type =StatusBarType.Text,
                     BindingName  = nameof(SystemMonitor.Time),
@@ -39,8 +39,8 @@ namespace ColorVision.Settings
                 },
                 new StatusBarIconMetadata()
                 {
-                    Name = Properties.Resource.PerformanceTest,
-                    Description = Properties.Resource.PerformanceTest,
+                    Name = Properties.Resources.PerformanceTest,
+                    Description = Properties.Resources.PerformanceTest,
                     Order =10,
                     Type =StatusBarType.Text,
                     BindingName  = nameof(SystemMonitor.MemoryThis),

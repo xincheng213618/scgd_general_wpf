@@ -86,7 +86,7 @@
                             <StackPanel  Orientation="Horizontal">
                                 <StackPanel.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
+                                        <MenuItem Header="{x:Static resx:Resources.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
                                     </ContextMenu>
                                 </StackPanel.ContextMenu>
                                 <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="圆形" HorizontalAlignment="Center"/>
@@ -104,7 +104,7 @@
                             <StackPanel  Orientation="Horizontal">
                                 <StackPanel.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="{x:Static resx:Resource.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
+                                        <MenuItem Header="{x:Static resx:Resources.Delete}" Click="MenuItem_DrawingVisual_Delete"  Tag="{Binding .}"/>
                                     </ContextMenu>
                                 </StackPanel.ContextMenu>
                                 <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="矩形" HorizontalAlignment="Center"/>

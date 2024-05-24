@@ -33,7 +33,7 @@
                         <ListView x:Name="ListViewRC" FocusVisualStyle="{x:Null}"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
                             <ListView.Resources >
                                 <ContextMenu x:Key="ContextMenuItem">
-                                    <MenuItem Header="{x:Static properties:Resource.Delete}"  Click="MenuItem_Click_Delete" Tag="{Binding .}" />
+                                    <MenuItem Header="{x:Static properties:Resources.Delete}"  Click="MenuItem_Click_Delete" Tag="{Binding .}" />
                                 </ContextMenu>
                                 <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
                                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -60,8 +60,8 @@
                             </ListView.View>
                         </ListView>
                         <StackPanel Margin="0,0,0,-1"  VerticalAlignment="Bottom">
-                            <Button Content="{x:Static properties:Resource.CreateNewConfigurationFile}" Click="Button_Click_New"   />
-                            <Button Content="{x:Static properties:Resource.CopyConfigurationFile}" Click="Button_Click_Copy" />
+                            <Button Content="{x:Static properties:Resources.CreateNewConfigurationFile}" Click="Button_Click_New"   />
+                            <Button Content="{x:Static properties:Resources.CopyConfigurationFile}" Click="Button_Click_Copy" />
                         </StackPanel>
                     </Grid>
                 </Border>
@@ -103,12 +103,12 @@
                 <Button  Width="30" Height="22" Click="Button_Click_ListShow" Margin="0,0,5,0">
                     <Image Source="/Assets/Image/connect.png" Stretch="Uniform" Margin="-5"/>
                 </Button>
-                <Button Content="{x:Static properties:Resource.TesConnection}" MinWidth="80" Click="Button_Click_Test"/>
+                <Button Content="{x:Static properties:Resources.TesConnection}" MinWidth="80" Click="Button_Click_Test"/>
             </StackPanel>
             <StackPanel Grid.Row="1" Margin="0,5"   HorizontalAlignment="Right" VerticalAlignment="Bottom">
                 <UniformGrid x:Name="FunctionGrid" Columns="2" Width="180"   HorizontalAlignment="Center">
-                    <Button Content="{x:Static properties:Resource.OK}" Width="80"  Click="Button_Click_Ok"/>
-                    <Button Content="{x:Static properties:Resource.Cancel}" Width="80" Click="Button_Click_Cancel"/>
+                    <Button Content="{x:Static properties:Resources.OK}" Width="80"  Click="Button_Click_Ok"/>
+                    <Button Content="{x:Static properties:Resources.Cancel}" Width="80" Click="Button_Click_Cancel"/>
                 </UniformGrid>
             </StackPanel>
 

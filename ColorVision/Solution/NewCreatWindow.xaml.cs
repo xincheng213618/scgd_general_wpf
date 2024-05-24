@@ -23,7 +23,7 @@ namespace ColorVision.Solution
 
         public int Order => 0;
 
-        public string? Header => Resource.MenuNew;
+        public string? Header => Resources.MenuNew;
 
         public string? InputGestureText => "Ctrl + N";
 
@@ -43,7 +43,7 @@ namespace ColorVision.Solution
         }
         public RelayCommand Command => new(A => Execute());
 
-        public HotKeys HotKeys => new(Properties.Resource.NewSolution, new Hotkey(Key.N, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(Properties.Resources.NewSolution, new Hotkey(Key.N, ModifierKeys.Control), Execute);
         public Visibility Visibility => Visibility.Visible;
         private void Execute()
         {

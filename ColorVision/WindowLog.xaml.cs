@@ -18,7 +18,7 @@ namespace ColorVision
 {
     public class WindowLogExport : IHotKey, IMenuItem
     {
-        public HotKeys HotKeys => new(Properties.Resource.Log, new Hotkey(Key.F2, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(Properties.Resources.Log, new Hotkey(Key.F2, ModifierKeys.Control), Execute);
 
         public string? OwnerGuid => "Help";
 
@@ -26,7 +26,7 @@ namespace ColorVision
 
         public int Order => 10005;
 
-        public string? Header => ColorVision.Properties.Resource.Log;
+        public string? Header => ColorVision.Properties.Resources.Log;
 
         public string? InputGestureText => "Ctrl + F2";
 

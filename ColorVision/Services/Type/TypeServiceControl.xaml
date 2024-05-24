@@ -33,21 +33,21 @@
             </ListView.ItemContainerStyle>
             <ListView.View >
                 <GridView>
-                    <GridViewColumn  Header="{x:Static properties:Resource.ServiceIdentifier}" >
+                    <GridViewColumn  Header="{x:Static properties:Resources.ServiceIdentifier}" >
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type terminal:TerminalService}">
                                 <TextBlock Text="{ Binding Code}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="{x:Static properties:Resource.ServiceName}" >
+                    <GridViewColumn  Header="{x:Static properties:Resources.ServiceName}" >
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type terminal:TerminalService}">
                                 <TextBlock Text="{ Binding Name}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="{x:Static properties:Resource.Status}">
+                    <GridViewColumn  Header="{x:Static properties:Resources.Status}">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type terminal:TerminalService}">
                                 <TextBlock Text="{ Binding  Config.IsAlive}"/>

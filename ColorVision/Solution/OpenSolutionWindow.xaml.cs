@@ -26,7 +26,7 @@ namespace ColorVision.Solution
 
         public int Order => 1;
 
-        public string? Header => Resource.MenuOpen;
+        public string? Header => Resources.MenuOpen;
 
         public string? InputGestureText => "Ctrl + O";
 
@@ -50,7 +50,7 @@ namespace ColorVision.Solution
         public RelayCommand Command => new(A => Execute());
 
 
-        public HotKeys HotKeys => new(Properties.Resource.OpenSolution, new Hotkey(Key.O, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(Properties.Resources.OpenSolution, new Hotkey(Key.O, ModifierKeys.Control), Execute);
 
 
         private void Execute()

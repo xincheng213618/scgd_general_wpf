@@ -166,7 +166,7 @@ namespace ColorVision.Services.Devices
 
             PropertyCommand = new RelayCommand((e) =>
             {
-                Window window = new() { Width = 700, Height = 400, Icon = Icon,Title = Properties.Resource.Property };
+                Window window = new() { Width = 700, Height = 400, Icon = Icon,Title = Properties.Resources.Property };
                 window.Content = GetDeviceInfo();
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -174,10 +174,10 @@ namespace ColorVision.Services.Devices
             });
             RefreshCommand = new RelayCommand(a => RestartRCService());
 
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Delete, Command = DeleteCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Export, Command = ExportCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Import, Command = ImportCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Property, Command = PropertyCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = DeleteCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Export, Command = ExportCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Import, Command = ImportCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = PropertyCommand });
 
 
             Config = BaseResourceObjectExtensions.TryDeserializeConfig<T>(SysResourceModel.Value);

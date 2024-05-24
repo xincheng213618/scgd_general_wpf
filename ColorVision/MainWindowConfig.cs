@@ -24,8 +24,8 @@ namespace ColorVision
             return new List<ConfigSettingMetadata> {
                             new ConfigSettingMetadata
                             {
-                                Name = Resource.StartRecoverUILayout,
-                                Description = Resource.StartRecoverUILayout,
+                                Name = Properties.Resources.StartRecoverUILayout,
+                                Description = Properties.Resources.StartRecoverUILayout,
                                 Type = ConfigSettingType.Bool,
                                 BindingName = nameof(MainWindowConfig.IsRestoreWindow),
                                 Source = MainWindowConfig.Instance
@@ -39,7 +39,7 @@ namespace ColorVision
         public string? OwnerGuid => "View";
         public string? GuidId => "MenuViewStatusBar";
         public int Order => 10000;
-        public string? Header => Resource.MenuViewStatusBar;
+        public string? Header => Properties.Resources.MenuViewStatusBar;
         public MenuItem MenuItem
         {
             get

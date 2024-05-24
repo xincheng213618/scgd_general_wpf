@@ -49,7 +49,7 @@ namespace ColorVision.Services
                 ImageView imageView = new();
 
                 CVFileUtil.ReadCVRaw(FileInfo.FullName, out CVCIEFile fileInfo);
-                Window window = new() { Title = Properties.Resource.QuickPreview, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                Window window = new() { Title = Properties.Resources.QuickPreview, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 window.Content = imageView;
                 imageView.OpenImage(new NetFileUtil().OpenLocalCVFile(FileInfo.FullName));
 

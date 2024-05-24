@@ -27,7 +27,7 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <DockPanel  >
-                    <TextBlock Text="{x:Static properties:Resource.RecentUsedContent}"  VerticalAlignment="Center" FontSize="18"/>
+                    <TextBlock Text="{x:Static properties:Resources.RecentUsedContent}"  VerticalAlignment="Center" FontSize="18"/>
                     <TextBox x:Name="Searchbox"   BorderBrush="#CCCEDB" MaxLength="15" VerticalContentAlignment="Center"  TextChanged="Searchbox_TextChanged"   Margin="10,0" Width="200"  HorizontalAlignment="Left" VerticalAlignment="Center"/>
                 </DockPanel>
                 <Grid  Grid.Row="1" Margin="-10,0,0,0">
@@ -53,7 +53,7 @@
                                             <Border x:Name="border1"  Height="45" Background="Transparent" Margin="0,2,0,2" BorderThickness="0" Width="450">
                                                 <Border.ContextMenu>
                                                     <ContextMenu>
-                                                        <MenuItem Header="{x:Static properties:Resource.Delete}"  Click="Delete" />
+                                                        <MenuItem Header="{x:Static properties:Resources.Delete}"  Click="Delete" />
                                                     </ContextMenu>
                                                 </Border.ContextMenu>
                                                 <Grid Margin="0,2,50,2">
@@ -74,7 +74,7 @@
                             </GridView>
                         </ListView.View>
                     </ListView>
-                    <TextBlock x:Name="SearchNoneText" Visibility="Collapsed" VerticalAlignment="Top" FontSize="16" Margin="20,20,0,0" Text="{x:Static properties:Resource.NoRelatedItemsFound}" />
+                    <TextBlock x:Name="SearchNoneText" Visibility="Collapsed" VerticalAlignment="Top" FontSize="16" Margin="20,20,0,0" Text="{x:Static properties:Resources.NoRelatedItemsFound}" />
                 </Grid>
             </Grid>
 
@@ -102,8 +102,8 @@
                         <Viewbox Grid.Row="0" Grid.RowSpan="2"  Margin="5,10,10,10">
                             <Path Fill="#FFE39E"  Data="M970.666667 213.333333H546.586667a10.573333 10.573333 0 0 1-7.54-3.126666L429.793333 100.953333A52.986667 52.986667 0 0 0 392.08 85.333333H96a53.393333 53.393333 0 0 0-53.333333 53.333334v704a53.393333 53.393333 0 0 0 53.333333 53.333333h874.666667a53.393333 53.393333 0 0 0 53.333333-53.333333V266.666667a53.393333 53.393333 0 0 0-53.333333-53.333334z" />
                         </Viewbox>
-                        <TextBlock  Grid.Row="0" Grid.Column="1" FontSize="17"  Foreground="Black" Text="{x:Static properties:Resource.OpenItem}" />
-                        <TextBlock  Grid.Row="1" Grid.Column="1" FontSize="10" Foreground="Black" Text="{x:Static properties:Resource.OpenLocalProjectOrFile}" VerticalAlignment="Center"/>
+                        <TextBlock  Grid.Row="0" Grid.Column="1" FontSize="17"  Foreground="Black" Text="{x:Static properties:Resources.OpenItem}" />
+                        <TextBlock  Grid.Row="1" Grid.Column="1" FontSize="10" Foreground="Black" Text="{x:Static properties:Resources.OpenLocalProjectOrFile}" VerticalAlignment="Center"/>
                     </Grid>
                     <Button  Background="Transparent"  BorderThickness="0" Click="Button_Click" Padding="0"/>
                 </Grid>
@@ -129,8 +129,8 @@
                         <Viewbox Grid.Row="0" Grid.RowSpan="2"  Margin="5,10,10,10">
                             <Path Fill="#FFE39E"  Data="M970.666667 213.333333H546.586667a10.573333 10.573333 0 0 1-7.54-3.126666L429.793333 100.953333A52.986667 52.986667 0 0 0 392.08 85.333333H96a53.393333 53.393333 0 0 0-53.333333 53.333334v704a53.393333 53.393333 0 0 0 53.333333 53.333333h874.666667a53.393333 53.393333 0 0 0 53.333333-53.333333V266.666667a53.393333 53.393333 0 0 0-53.333333-53.333334z" />
                         </Viewbox>
-                        <TextBlock  Grid.Row="0" Grid.Column="1" FontSize="17"  Foreground="Black" Text="{x:Static properties:Resource.CreateProject}" />
-                        <TextBlock  Grid.Row="1" Grid.Column="1" FontSize="10" Foreground="Black" Text="{x:Static properties:Resource.CreateNewProjectOrFile}" VerticalAlignment="Center"/>
+                        <TextBlock  Grid.Row="0" Grid.Column="1" FontSize="17"  Foreground="Black" Text="{x:Static properties:Resources.CreateProject}" />
+                        <TextBlock  Grid.Row="1" Grid.Column="1" FontSize="10" Foreground="Black" Text="{x:Static properties:Resources.CreateNewProjectOrFile}" VerticalAlignment="Center"/>
                     </Grid>
                     <Button  Background="Transparent"  BorderThickness="0" Click="Button_Click" Padding="0"/>
                 </Grid>

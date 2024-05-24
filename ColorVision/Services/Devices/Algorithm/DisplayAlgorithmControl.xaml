@@ -35,7 +35,7 @@
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel Margin="5" >
                 <DockPanel Margin="0,2">
-                    <TextBlock Text="{x:Static properties:Resource.ImageSource}" Margin="0,0,10,0"/>
+                    <TextBlock Text="{x:Static properties:Resources.ImageSource}" Margin="0,0,10,0"/>
                     <ComboBox x:Name="CB_SourceImageFiles"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value"  DisplayMemberPath="Key" />
                 </DockPanel>
                 <StackPanel>
@@ -43,7 +43,7 @@
                         <TabItem x:Name="POITabItem" Header="POI" IsSelected="True">
                             <StackPanel Margin="0,5" >
                                 <DockPanel Margin="0,2">
-                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="PoiClick" />
+                                    <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="PoiClick" />
                                     <ComboBox  x:Name="ComboxPoiTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                     <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                         <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -55,7 +55,7 @@
                         <TabItem Header="FOV">
                             <GroupBox  Header="FOV" ToolTip="Field of view">
                                 <DockPanel Margin="0,2">
-                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FOV_Click" />
+                                    <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FOV_Click" />
                                     <ComboBox  x:Name="ComboxFOVTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                     <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="视场角的大小决定了光学仪器的视野范围"/>
                                     <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
@@ -76,7 +76,7 @@
                                     </Grid>
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
-                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="MTF_Click" />
+                                    <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="MTF_Click" />
                                     <TextBlock Text="MTF" Width="30"/>
                                     <ComboBox  x:Name="ComboxMTFTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                     <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
@@ -90,7 +90,7 @@
                         <TabItem Header="SFR">
                             <GroupBox  Header="SFR" ToolTip="计算空间频率响应">
                                 <DockPanel Margin="0,2">
-                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="SFR_Clik" />
+                                    <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="SFR_Clik" />
                                     <ComboBox  x:Name="ComboxSFRTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                     <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="成像系统对输入图像中的空间频率成分的响应强度"/>
                                     <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
@@ -103,7 +103,7 @@
                         <TabItem Header="Distortion">
                             <GroupBox  Header="Distortion">
                                 <DockPanel Margin="0,2">
-                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Distortion_Click" />
+                                    <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Distortion_Click" />
                                     <ComboBox  x:Name="ComboxDistortionTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                     <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="在成像过程中对物体形状的不准确再现"/>
                                     <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
@@ -114,10 +114,10 @@
                             </GroupBox>
 
                         </TabItem>
-                        <TabItem Header="{x:Static properties:Resource.GhostShadow}">
-                            <GroupBox  Header="{x:Static properties:Resource.GhostShadow}">
+                        <TabItem Header="{x:Static properties:Resources.GhostShadow}">
+                            <GroupBox  Header="{x:Static properties:Resources.GhostShadow}">
                                 <DockPanel Margin="0,2">
-                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Ghost_Click" />
+                                    <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Ghost_Click" />
                                     <ComboBox  x:Name="ComboxGhostTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                     <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                         <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -137,7 +137,7 @@
                                     </Grid>
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
-                                    <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="LedCheck_Click" />
+                                    <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="LedCheck_Click" />
                                     <TextBlock Text="LedCheck" Width="60"/>
                                     <ComboBox  x:Name="ComboxLedCheckTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                     <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
@@ -150,7 +150,7 @@
                         </TabItem>
                         <TabItem Header="FocusPoints">
                             <DockPanel Margin="0,2">
-                                <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FocusPoints_Click" />
+                                <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="FocusPoints_Click" />
                                 <ComboBox  x:Name="ComboxFocusPointsTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                 <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                     <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -162,7 +162,7 @@
                             <GroupBox  Header="BuildPoi">
                                 <StackPanel>
                                     <DockPanel Margin="0,2">
-                                        <Button  Content="{x:Static properties:Resource.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="BuildPoi_Click" />
+                                        <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="BuildPoi_Click" />
                                         <ComboBox  x:Name="ComboxBuildPoiTemplate"  Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                         <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15"  Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -232,7 +232,7 @@
                     <GroupBox Visibility="{Binding ElementName=POITabItem,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter}}">
                         <GroupBox.Header>
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="{x:Static properties:Resource.DisplayAlgorithmControl_CIE图像数据区}"/>
+                                <TextBlock Text="{x:Static properties:Resources.DisplayAlgorithmControl_CIE图像数据区}"/>
                                 <Image Grid.Column="1" Source="{DynamicResource DrawingImageProperty}" HorizontalAlignment="Left" Height="18" Margin="0,0,0,0" ToolTip="需要矫正后的数据才可以计算"/>
                             </StackPanel>
                         </GroupBox.Header>
@@ -259,20 +259,20 @@
 
                                 </StackPanel>
  
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.Upload}" Click="Button_Click_Upload" Visibility="Collapsed" Width="0" />
-                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.Open}" Click="Button_Click_Open" />
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Upload}" Click="Button_Click_Upload" Visibility="Collapsed" Width="0" />
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_Click_Open" />
 
                                 <ComboBox x:Name="CB_CIEImageFiles" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}"  Width="130"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
-                                <RadioButton x:Name="BatchSelect" Content="{x:Static properties:Resource.BatchNumber}" GroupName="CIESrc" Width="70"/>
+                                <RadioButton x:Name="BatchSelect" Content="{x:Static properties:Resources.BatchNumber}" GroupName="CIESrc" Width="70"/>
                                 <TextBox x:Name="BatchCode" HorizontalAlignment="Left" Style="{StaticResource TextBox.Small}" BorderThickness="1"  Width="130"/>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
                     <StackPanel  Visibility="{Binding ElementName=POITabItem,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter1}}" >
                         <DockPanel Margin="0,2">
-                            <RadioButton Content="{x:Static properties:Resource.Local}" IsChecked="True" GroupName="alg_src" Width="80"/>
+                            <RadioButton Content="{x:Static properties:Resources.Local}" IsChecked="True" GroupName="alg_src" Width="80"/>
                             <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
                             <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="150" HorizontalAlignment="Left" />
                         </DockPanel>
@@ -297,11 +297,11 @@
                                 </Button>
 
                             </StackPanel>
-                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.Open}" Click="Button_Click_RawOpen" />
+                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_Click_RawOpen" />
                             <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}"  Width="150" HorizontalAlignment="Left" />
                         </DockPanel>
                         <DockPanel Margin="0,2">
-                            <RadioButton x:Name="AlgBatchSelect" Content="{x:Static properties:Resource.BatchNumber}" GroupName="alg_src" Width="80"/>
+                            <RadioButton x:Name="AlgBatchSelect" Content="{x:Static properties:Resources.BatchNumber}" GroupName="alg_src" Width="80"/>
                             <TextBox x:Name="AlgBatchCode" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="150" HorizontalAlignment="Left" />
                         </DockPanel>
                     </StackPanel>
@@ -309,7 +309,7 @@
                 </StackPanel>
 
                 <DockPanel Margin="0,2" >
-                    <TextBlock Text="{x:Static properties:Resource.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0"/>
+                    <TextBlock Text="{x:Static properties:Resources.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0"/>
                     <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"   />
                 </DockPanel>
             </StackPanel>

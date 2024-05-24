@@ -109,7 +109,7 @@ namespace ColorVision.Services.Terminal
             }
 
             ContextMenu = new ContextMenu();
-            MenuItem menuItem = new() { Header = ColorVision.Properties.Resource.Delete };
+            MenuItem menuItem = new() { Header = ColorVision.Properties.Resources.Delete };
             menuItem.Click += (s, e) => Delete();
             ContextMenu.Items.Add(menuItem);
         }

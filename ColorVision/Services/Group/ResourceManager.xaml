@@ -7,7 +7,7 @@
         xmlns:properties ="clr-namespace:ColorVision.Properties"
         xmlns:core ="clr-namespace:ColorVision.Services.Core"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resource.Manager}" Height="450" Width="900" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.Manager}" Height="450" Width="900" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -83,7 +83,7 @@
 
 
         <Border Grid.Row="2" Height="30">
-            <Button  Content="{x:Static properties:Resource.Close}" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click" />
+            <Button  Content="{x:Static properties:Resources.Close}" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click" />
         </Border>
     </Grid>
 </Window>

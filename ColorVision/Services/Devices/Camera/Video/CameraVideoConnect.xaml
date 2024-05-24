@@ -27,7 +27,7 @@
                         <ListView x:Name="ListViewMySql"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
                             <ListView.Resources >
                                 <ContextMenu x:Key="ContextMenuItem">
-                                    <MenuItem Header="{x:Static resx:Resource.Delete}"  Click="MenuItem_Click_Delete" Tag="{Binding .}" />
+                                    <MenuItem Header="{x:Static resx:Resources.Delete}"  Click="MenuItem_Click_Delete" Tag="{Binding .}" />
                                 </ContextMenu>
                             </ListView.Resources>
                             <ListView.ItemContainerStyle>
@@ -73,8 +73,8 @@
             </StackPanel>
             <StackPanel Grid.Row="1" Margin="0,5"   HorizontalAlignment="Right" VerticalAlignment="Bottom">
                 <UniformGrid x:Name="FunctionGrid" Columns="2" Width="180"   HorizontalAlignment="Center">
-                    <Button Content="{x:Static resx:Resource.OK}" Width="80"  Click="Button_Click"/>
-                    <Button Content="{x:Static resx:Resource.Cancel}" Width="80" Click="Button_Click_2"/>
+                    <Button Content="{x:Static resx:Resources.OK}" Width="80"  Click="Button_Click"/>
+                    <Button Content="{x:Static resx:Resources.Cancel}" Width="80" Click="Button_Click_2"/>
                 </UniformGrid>
             </StackPanel>
 

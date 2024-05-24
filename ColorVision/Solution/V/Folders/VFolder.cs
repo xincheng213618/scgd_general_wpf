@@ -14,7 +14,7 @@ namespace ColorVision.Solution.V.Folders
             ToolTip = folder.ToolTip;
 
             ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Open, Command = OpenCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Open, Command = OpenCommand });
         }
 
         public override ImageSource Icon {get => Folder.Icon; set { Folder.Icon = value; NotifyPropertyChanged(); } }

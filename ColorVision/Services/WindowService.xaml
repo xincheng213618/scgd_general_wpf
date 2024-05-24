@@ -69,7 +69,7 @@
         </Grid>
 
         <Border   Margin="5" Grid.Row="1">
-            <Button x:Name="ButtonOK"  Height="40"   Content="{x:Static properties:Resource.EnterAcquisitionWindow}" Background="{StaticResource PrimaryBrush}" Foreground="White"  FontSize="22"   Click="Button_Click"/>
+            <Button x:Name="ButtonOK"  Height="40"   Content="{x:Static properties:Resources.EnterAcquisitionWindow}" Background="{StaticResource PrimaryBrush}" Foreground="White"  FontSize="22"   Click="Button_Click"/>
         </Border>
     </Grid>
 

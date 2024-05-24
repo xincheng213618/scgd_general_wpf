@@ -126,7 +126,7 @@
 
         </ScrollViewer>
         <Grid Grid.Row="2">
-            <Button  Content="{x:Static resx:Resource.Submit}" Height="30" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click"  />
+            <Button  Content="{x:Static resx:Resources.Submit}" Height="30" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click"  />
         </Grid>
 
     </Grid>

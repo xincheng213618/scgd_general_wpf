@@ -93,7 +93,7 @@
                 </GroupBox>
 
                 <DockPanel>
-                    <TextBlock Text="{x:Static properties:Resource.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0"/>
+                    <TextBlock Text="{x:Static properties:Resources.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0"/>
                     <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"   />
                 </DockPanel>
             </StackPanel>

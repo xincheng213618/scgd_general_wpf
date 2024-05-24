@@ -15,7 +15,7 @@ namespace ColorVision.Solution
 
         public int Order => 2;
 
-        public string? Header => Properties.Resource.RecentFiles;
+        public string? Header => Properties.Resources.RecentFiles;
 
         public string? InputGestureText => null;
 
@@ -32,7 +32,7 @@ namespace ColorVision.Solution
                 MenuItem RecentListMenuItem = null;
 
                 RecentListMenuItem ??= new MenuItem();
-                RecentListMenuItem.Header = Properties.Resource.RecentFiles;
+                RecentListMenuItem.Header = Properties.Resources.RecentFiles;
                 RecentListMenuItem.SubmenuOpened += (s, e) =>
                 {
                     var firstMenuItem = RecentListMenuItem.Items[0];

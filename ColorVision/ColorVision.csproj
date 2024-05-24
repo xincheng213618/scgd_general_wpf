@@ -109,6 +109,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ColorVision.Engine\ColorVision.Engine.csproj" />
     <ProjectReference Include="..\ColorVision.Net\ColorVision.Net.csproj" />
     <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
     <ProjectReference Include="..\ColorVision.Util\ColorVision.Util.csproj" />
@@ -146,10 +147,10 @@
     <Compile Update="App.xaml.cs">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Compile>
-    <Compile Update="Properties\Resource.Designer.cs">
+    <Compile Update="Properties\Resources.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>Resource.resx</DependentUpon>
+      <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
     <Compile Update="Services\Group\ResourceManager.xaml.cs">
       <SubType>Code</SubType>
@@ -179,11 +180,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Update="Properties\Resource.resx">
+    <EmbeddedResource Update="Properties\Resources.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resource.Designer.cs</LastGenOutput>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <EmbeddedResource Update="Properties\Resource.en.resx">
+    <EmbeddedResource Update="Properties\Resources.en.resx">
       <Generator></Generator>
     </EmbeddedResource>
   </ItemGroup>

@@ -37,7 +37,7 @@ namespace ColorVision.Services.Templates
         {
             ReNameCommand = new RelayCommand(a => IsEditMode = true);
             ContentMenu = new ContextMenu();
-            ContentMenu.Items.Add(new MenuItem() { Header = Properties.Resource.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
+            ContentMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
         }
 
         public TemplateModel(string Key, T Value)
@@ -46,7 +46,7 @@ namespace ColorVision.Services.Templates
             this.Key = Key;
             ReNameCommand = new RelayCommand(a => IsEditMode = true);
             ContentMenu = new ContextMenu();
-            ContentMenu.Items.Add(new MenuItem() { Header = Properties.Resource.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
+            ContentMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
         }
         public TemplateModel(KeyValuePair<string, T> keyValuePair)
         {

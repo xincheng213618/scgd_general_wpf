@@ -17,7 +17,7 @@ namespace ColorVision.Services.Templates
 
         public string? GuidId => "CameraExposureParam";
         public int Order => 22;
-        public string? Header => ColorVision.Properties.Resource.MenuCameraExp;
+        public string? Header => ColorVision.Properties.Resources.MenuCameraExp;
 
         public string? InputGestureText { get; }
         public Visibility Visibility => Visibility.Visible;

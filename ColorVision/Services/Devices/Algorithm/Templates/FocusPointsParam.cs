@@ -19,7 +19,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
 
         public string? GuidId => "FocusPoints";
         public int Order => 2;
-        public string? Header => ColorVision.Properties.Resource.MenuFocusPoints;
+        public string? Header => ColorVision.Properties.Resources.MenuFocusPoints;
         public Visibility Visibility => Visibility.Visible;
 
         public string? InputGestureText { get; }

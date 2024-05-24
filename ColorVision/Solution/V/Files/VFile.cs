@@ -18,9 +18,9 @@ namespace ColorVision.Solution.V.Files
             AttributesCommand = new RelayCommand(a => FileProperties.ShowFileProperties(File.FullName), a => true);
 
             ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Open, Command = OpenCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Delete, Command = DeleteCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Property, Command = AttributesCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Open, Command = OpenCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = DeleteCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = AttributesCommand });
             if (file.ContextMenu != null)
             {
                 foreach (MenuItem item in file.ContextMenu.Items)

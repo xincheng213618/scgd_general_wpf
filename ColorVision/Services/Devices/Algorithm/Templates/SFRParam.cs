@@ -19,7 +19,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
 
         public string? GuidId => "SFRParam";
         public int Order => 2;
-        public string? Header => ColorVision.Properties.Resource.MenuSFR;
+        public string? Header => ColorVision.Properties.Resources.MenuSFR;
         public Visibility Visibility => Visibility.Visible;
 
         public string? InputGestureText { get; }
@@ -29,7 +29,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
         public RelayCommand Command => new(a => {
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Properties.Resource.DatabaseConnectionFailed, "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Properties.Resources.DatabaseConnectionFailed, "ColorVision");
                 return;
             }
             new WindowTemplate(new TemplateSFRParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;

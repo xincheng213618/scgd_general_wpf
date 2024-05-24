@@ -83,11 +83,11 @@
                     <Setter Property="Background" Value="Transparent"/>
                 </Style>
             </TabControl.Resources>
-            <TabItem  x:Name="UniversalTabItem" Background="Transparent" MinWidth="100" Header="{x:Static properties:Resource.GeneralSettings}" >
+            <TabItem  x:Name="UniversalTabItem" Background="Transparent" MinWidth="100" Header="{x:Static properties:Resources.GeneralSettings}" >
                 <Grid Background="{DynamicResource GlobalBorderBrush}">
                     <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
                         <GroupBox.Header>
-                            <TextBlock Text="{x:Static properties:Resource.General}" FontSize="20"/>
+                            <TextBlock Text="{x:Static properties:Resources.General}" FontSize="20"/>
                         </GroupBox.Header>
                         <ScrollViewer  HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                             <Border Style="{StaticResource BorderModuleArea}">

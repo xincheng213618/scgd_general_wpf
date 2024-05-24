@@ -75,7 +75,7 @@ namespace ColorVision.Services
         {
             if (sender is Button button)
             {
-                if (button.Content.ToString() == (Properties.Resource.ResourceManager.GetString(MsgRecordState.Sended.ToDescription(), CultureInfo.CurrentUICulture) ?? ""))
+                if (button.Content.ToString() == (Properties.Resources.ResourceManager.GetString(MsgRecordState.Sended.ToDescription(), CultureInfo.CurrentUICulture) ?? ""))
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), "已经发送,请耐心等待","ColorVison");
                     return null;
@@ -92,12 +92,12 @@ namespace ColorVision.Services
         public static void SendCommand(Button button, MsgRecord msgRecord, bool Reserve = true)
         {
             var temp = button.Content;
-            button.Content = Properties.Resource.ResourceManager.GetString(msgRecord.MsgRecordState.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
+            button.Content = Properties.Resources.ResourceManager.GetString(msgRecord.MsgRecordState.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
 
             MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
             msgRecordStateChangedHandler = async (e) =>
             {
-                button.Content = Properties.Resource.ResourceManager.GetString(e.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
+                button.Content = Properties.Resources.ResourceManager.GetString(e.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
                 await Task.Delay(100);
                 if (e != MsgRecordState.Sended)
                 {

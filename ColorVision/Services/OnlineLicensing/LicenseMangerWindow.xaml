@@ -20,7 +20,7 @@
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
-            <TextBlock Text="{x:Static properties:Resource.LicenseManagement}" FontSize="20"  HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,-20,0,0"/>
+            <TextBlock Text="{x:Static properties:Resources.LicenseManagement}" FontSize="20"  HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,-20,0,0"/>
 
             <ListView x:Name="ListViewLicense"  Width="200" Margin="3,10,0,0"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
                 <ListView.ItemTemplate>
@@ -35,8 +35,8 @@
                 <Border   BorderThickness="1,0,0,0" Background="{DynamicResource GlobalBorderBrush}">
                     <StackPanel Margin="5,10,5,5">
                         <DockPanel Margin="5">
-                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.CopySerialNumber}" Click="Copy_Click"  Width="80"/>
-                            <TextBlock  Text="{x:Static properties:Resource.SerialNumber}" VerticalAlignment="Center" />
+                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.CopySerialNumber}" Click="Copy_Click"  Width="80"/>
+                            <TextBlock  Text="{x:Static properties:Resources.SerialNumber}" VerticalAlignment="Center" />
                             <TextBox x:Name="TextBoxSn" VerticalAlignment="Center" IsReadOnly="True"  Background="Transparent" BorderThickness="0" FontSize="13"  FontWeight="Bold" FontFamily="Consolas" Text="{Binding Sn}" />
                         </DockPanel>
                         <TextBlock AllowDrop="True" Text="{Binding Tag}"  Background="Transparent" Margin="5" />
@@ -44,7 +44,7 @@
 
                 </Border>
                 <UniformGrid  Columns="1" Width="100" Visibility="{Binding IsCanImport,Converter={StaticResource bool2VisibilityConverter}}" HorizontalAlignment="Right"  VerticalAlignment="Bottom" Margin="10">
-                    <Button Content="{x:Static properties:Resource.ImportLicense}"  Click="Import_Click" Width="80" Grid.Row="1"/>
+                    <Button Content="{x:Static properties:Resources.ImportLicense}"  Click="Import_Click" Width="80" Grid.Row="1"/>
                 </UniformGrid>
             </Grid>
 

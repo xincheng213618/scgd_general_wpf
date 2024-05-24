@@ -416,22 +416,22 @@ namespace ColorVision.Services.Devices.Camera.Views
                     if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
                     {
                         string Name = item.ColumnName.ToString();
-                        if (Name == ColorVision.Properties.Resource.SerialNumber1)
+                        if (Name == ColorVision.Properties.Resources.SerialNumber1)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCameras.SortByID(item.IsSortD);
                         }
-                        else if (Name == ColorVision.Properties.Resource.CreateTime)
+                        else if (Name == ColorVision.Properties.Resources.CreateTime)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCameras.SortByCreateTime(item.IsSortD);
                         }
-                        else if (Name == ColorVision.Properties.Resource.BatchNumber)
+                        else if (Name == ColorVision.Properties.Resources.BatchNumber)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCameras.SortByBatch(item.IsSortD);
                         }
-                        else if (Name == ColorVision.Properties.Resource.File)
+                        else if (Name == ColorVision.Properties.Resources.File)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCameras.SortByFilePath(item.IsSortD);

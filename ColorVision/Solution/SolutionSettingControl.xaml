@@ -23,20 +23,20 @@
             <StackPanel Margin="5">
 
                 <DockPanel Margin="5" >
-                    <Button  DockPanel.Dock="Right"  Content="{x:Static properties:Resource.Clear}"    />
-                    <TextBlock Text="{x:Static properties:Resource.ClearCache}" />
+                    <Button  DockPanel.Dock="Right"  Content="{x:Static properties:Resources.Clear}"    />
+                    <TextBlock Text="{x:Static properties:Resources.ClearCache}" />
                 </DockPanel>
             </StackPanel>
         </Border>
         <Border Style="{StaticResource BorderModuleArea}" CornerRadius="8">
             <StackPanel Margin="5">
                 <DockPanel Margin="5" >
-                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.Reset}" Click="SetProjectDefaultCreatName_Click"  />
-                    <TextBlock Text="{x:Static properties:Resource.NewProjectFormat}" MinWidth="150" />
+                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Reset}" Click="SetProjectDefaultCreatName_Click"  />
+                    <TextBlock Text="{x:Static properties:Resources.NewProjectFormat}" MinWidth="150" />
                     <TextBox Text="{Binding DefaultCreatName}"  HorizontalAlignment="Left" Width="200"/>
                 </DockPanel>
                 <DockPanel Margin="5" >
-                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.Reset}" Click="SetProjectDefault__Click"  />
+                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Reset}" Click="SetProjectDefault__Click"  />
                     <TextBlock Text="默认文件存储格式:"  MinWidth="150"  />
                     <TextBox Text="{Binding DefaultSaveName}" HorizontalAlignment="Left" Width="200" />
                 </DockPanel>
@@ -50,8 +50,8 @@
         <Border Style="{StaticResource BorderModuleArea}" CornerRadius="8">
             <StackPanel Margin="5">
                 <DockPanel Margin="5" >
-                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.Reset}" Click="SetProjectDefault__Click"  />
-                    <TextBlock Text="{x:Static properties:Resource.DefaultExportStorageFormat}"  MinWidth="150"  />
+                    <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Reset}" Click="SetProjectDefault__Click"  />
+                    <TextBlock Text="{x:Static properties:Resources.DefaultExportStorageFormat}"  MinWidth="150"  />
                     <TextBox Text="{Binding DefaultImageSaveName}" HorizontalAlignment="Left" Width="200" />
                 </DockPanel>
             </StackPanel>

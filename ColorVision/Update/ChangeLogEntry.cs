@@ -20,7 +20,7 @@ namespace ColorVision.Update
 
         public bool IsCurrentVision  =>  Version.Trim() == AutoUpdater.CurrentVersion?.ToString();
 
-        public string UpdateString => new Version(Version) > AutoUpdater.CurrentVersion ? Properties.Resource.Upgrade : ColorVision.Properties.Resource.Rollback;
+        public string UpdateString => new Version(Version) > AutoUpdater.CurrentVersion ? Properties.Resources.Upgrade : ColorVision.Properties.Resources.Rollback;
 
         public ChangeLogEntry()
         {

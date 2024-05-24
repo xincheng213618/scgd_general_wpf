@@ -24,7 +24,7 @@ namespace ColorVision.Services.Devices.Sensor.Templates
 
         public string? GuidId => "SensorHeYuan";
         public int Order => 21;
-        public string? Header => ColorVision.Properties.Resource.MenuSenSorHeYuan;
+        public string? Header => ColorVision.Properties.Resources.MenuSenSorHeYuan;
 
         public string? InputGestureText { get; }
 

@@ -26,7 +26,7 @@ namespace ColorVision.Services.Templates
         {
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow() ,ColorVision.Properties.Resource.DatabaseConnectionFailed, "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow() ,ColorVision.Properties.Resources.DatabaseConnectionFailed, "ColorVision");
                 return;
             }
             new WindowTemplate(new TemplateAOIParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;

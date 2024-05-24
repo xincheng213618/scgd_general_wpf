@@ -9,7 +9,7 @@
         xmlns:properties ="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         PreviewKeyDown="UserControl_PreviewKeyDown"
-        Title="{x:Static properties:Resource.WorkflowEngineDebugWindow}" Height="600" Width="1000" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.WorkflowEngineDebugWindow}" Height="600" Width="1000" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -30,10 +30,10 @@
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <UniformGrid Columns="6">
-                <Button x:Name="ButtonOpen"  Content="{x:Static properties:Resource.Loading}" Click="Button_Click_Open" Width="70" />
-                <Button x:Name="ButtonNew"  Content="{x:Static properties:Resource.New}" Click="Button_Click_New"  Width="70" />
-                <Button x:Name="ButtonClear"  Content="{x:Static properties:Resource.Clear}" Click="Button_Click_Clear"  Width="70"/>
-                <Button x:Name="ButtonSave"  Content="{x:Static properties:Resource.Save}" Click="Button_Click_Save" Width="70"  Margin="0,0,10,0"/>
+                <Button x:Name="ButtonOpen"  Content="{x:Static properties:Resources.Loading}" Click="Button_Click_Open" Width="70" />
+                <Button x:Name="ButtonNew"  Content="{x:Static properties:Resources.New}" Click="Button_Click_New"  Width="70" />
+                <Button x:Name="ButtonClear"  Content="{x:Static properties:Resources.Clear}" Click="Button_Click_Clear"  Width="70"/>
+                <Button x:Name="ButtonSave"  Content="{x:Static properties:Resources.Save}" Click="Button_Click_Save" Width="70"  Margin="0,0,10,0"/>
                 <Button x:Name="ButtonAlignTop"  Content="上对齐" Click="Button_Click_AlignTop" Width="70"/>
                 <Button x:Name="ButtonAlignDis"  Content="水平等距" Click="Button_Click_AlignDis" Width="70"/>
             </UniformGrid>

@@ -7,7 +7,7 @@
         xmlns:properties ="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:AutoUpdater}"
-        Title="{x:Static properties:Resource.ColorVisionUpdater}" Background="{DynamicResource GlobalBackground}" Height="90" Width="350" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.ColorVisionUpdater}" Background="{DynamicResource GlobalBackground}" Height="90" Width="350" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>

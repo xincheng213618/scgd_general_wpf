@@ -26,7 +26,7 @@
             <StackPanel Margin="5">
                 <DockPanel Margin="5,2">
                     <TextBox DockPanel.Dock="Right"   Text="{Binding UpdateSpeed}" HorizontalContentAlignment="Right" HorizontalAlignment="Left" Width="200"/>
-                    <TextBlock Text="{x:Static properties:Resource.UpdateSpeed}" />
+                    <TextBlock Text="{x:Static properties:Resources.UpdateSpeed}" />
                 </DockPanel>
                 <DockPanel Margin="5,2">
                     <TextBox  DockPanel.Dock="Right"  Text="{Binding Config.DefaultTimeFormat}"  HorizontalContentAlignment="Right" Width="200"/>

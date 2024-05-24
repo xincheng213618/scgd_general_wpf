@@ -19,7 +19,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
 
         public string? GuidId => "LedCheckParam";
         public int Order => 2;
-        public string? Header => ColorVision.Properties.Resource.MenuLedCheck;
+        public string? Header => ColorVision.Properties.Resources.MenuLedCheck;
 
         public string? InputGestureText { get; }
 

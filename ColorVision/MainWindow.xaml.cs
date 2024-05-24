@@ -58,7 +58,7 @@ namespace ColorVision
             MainWindowConfig.SetWindow(this);
             SizeChanged += (s, e) => MainWindowConfig.SetConfig(this);
             var IsAdministrator = Tool.IsAdministrator();
-            Title += $"- {(IsAdministrator ? Properties.Resource.RunAsAdmin : Properties.Resource.NotRunAsAdmin)}";
+            Title += $"- {(IsAdministrator ? Properties.Resources.RunAsAdmin : Properties.Resources.NotRunAsAdmin)}";
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -100,26 +100,26 @@ namespace ColorVision
             };
 
             Closed += (s, e) => { Environment.Exit(-1); };
-            Debug.WriteLine(Properties.Resource.LaunchSuccess);
+            Debug.WriteLine(Properties.Resources.LaunchSuccess);
 
-            MenuItem menulogs = new() { Header = ColorVision.Properties.Resource.ServiceLog };
+            MenuItem menulogs = new() { Header = ColorVision.Properties.Resources.ServiceLog };
             MenuHelp.Items.Insert(0, menulogs);
 
-            MenuItem menulog = new() { Header = Properties.Resource.x64ServiceLog };
+            MenuItem menulog = new() { Header = Properties.Resources.x64ServiceLog };
             menulog.Click += (s, e) =>
             {
                 PlatformHelper.OpenFolder("http://localhost:8064/system/log");
             };
             menulogs.Items.Insert(0, menulog);
 
-            MenuItem menulog1 = new() { Header = Properties.Resource.CameraLog };
+            MenuItem menulog1 = new() { Header = Properties.Resources.CameraLog };
             menulog1.Click += (s, e) =>
             {
                 PlatformHelper.OpenFolder("http://localhost:8064/system/device/camera/log");
             };
             menulogs.Items.Insert(1, menulog1);
 
-            MenuItem menulog2 = new() { Header = ColorVision.Properties.Resource.x86ServiceLog };
+            MenuItem menulog2 = new() { Header = ColorVision.Properties.Resources.x86ServiceLog };
             menulog2.Click += (s, e) =>
             {
                 PlatformHelper.OpenFolder("http://localhost:8086/system/log");
@@ -127,14 +127,14 @@ namespace ColorVision
             };
             menulogs.Items.Insert(2, menulog2);
 
-            MenuItem menulog3 = new() { Header = Properties.Resource.SpectrometerLog };
+            MenuItem menulog3 = new() { Header = Properties.Resources.SpectrometerLog };
             menulog3.Click += (s, e) =>
             {
                 PlatformHelper.OpenFolder("http://localhost:8086/system/device/Spectrum/log");
             };
             menulogs.Items.Insert(3, menulog3);
 
-            MenuItem menulogs1 = new() { Header = ColorVision.Properties.Resource.RCServiceLog };
+            MenuItem menulogs1 = new() { Header = ColorVision.Properties.Resources.RCServiceLog };
             menulogs1.Click += (s, e) =>
             {
                 PlatformHelper.OpenFolder("http://localhost:8080/system/log");
@@ -192,7 +192,7 @@ namespace ColorVision
                 X509Certificate2 x509Certificate2 = GetCertificateFromSignedFile(Process.GetCurrentProcess()?.MainModule?.FileName);
                 if (x509Certificate2 != null)
                 {
-                    MenuItem menuItem = new() { Header = Properties.Resource.InstallCertificate };
+                    MenuItem menuItem = new() { Header = Properties.Resources.InstallCertificate };
                     menuItem.Click += (s, e) =>
                     {
                         InstallCertificate(x509Certificate2);
@@ -260,12 +260,12 @@ namespace ColorVision
                             // 如果找到匹配项，提取变更日志
                             string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
                             // 显示变更日志
-                            MessageBox.Show(Application.Current.GetActiveWindow(), $"{changeLogForCurrentVersion.ReplaceLineEndings()}", $"{currentVersion} {Properties.Resource.ChangeLog}：");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), $"{changeLogForCurrentVersion.ReplaceLineEndings()}", $"{currentVersion} {Properties.Resources.ChangeLog}：");
                         }
                         else
                         {
                             // 如果未找到匹配项，说明没有为当前版本列出变更日志
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "1.修复了一些已知的BUG", $"{currentVersion} {Properties.Resource.ChangeLog}：");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), "1.修复了一些已知的BUG", $"{currentVersion} {Properties.Resources.ChangeLog}：");
                         }
 
                     }

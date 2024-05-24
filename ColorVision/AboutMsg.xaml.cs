@@ -19,7 +19,7 @@ namespace ColorVision
 {
     public class AboutMsgExport : IHotKey,IMenuItem
     {
-        public HotKeys HotKeys => new HotKeys(Properties.Resource.About, new Hotkey(Key.F1, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new HotKeys(Properties.Resources.About, new Hotkey(Key.F1, ModifierKeys.Control), Execute);
 
         public string? OwnerGuid => "Help";
         public string? GuidId => "AboutMsg";
@@ -27,7 +27,7 @@ namespace ColorVision
         public int Order => 100000;
         public Visibility Visibility => Visibility.Visible;
 
-        public string? Header => Resource.MenuAbout;
+        public string? Header => Resources.MenuAbout;
 
         public string? InputGestureText => "Ctrl + F1";
 

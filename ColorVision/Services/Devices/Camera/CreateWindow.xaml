@@ -9,7 +9,7 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:CreateWindow}"
-        Title="{x:Static properties:Resource.CreateDevice}" Height="250" Width="400" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.CreateDevice}" Height="250" Width="400" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -19,17 +19,17 @@
         <Border Grid.Row="0">
             <StackPanel>
                 <DockPanel Margin="2" >
-                    <TextBlock Text="{x:Static properties:Resource.Code}" MinWidth="50" />
+                    <TextBlock Text="{x:Static properties:Resources.Code}" MinWidth="50" />
                     <hc:ComboBox x:Name="CreateCode" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"   />
                 </DockPanel>
                 <DockPanel Margin="2" >
-                    <TextBlock Text="{x:Static properties:Resource.Name}" Width="50" />
+                    <TextBlock Text="{x:Static properties:Resources.Name}" Width="50" />
                     <hc:ComboBox  x:Name="CreateName" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"  />
                 </DockPanel>
             </StackPanel>
         </Border>
         <Grid Grid.Row="2">
-            <Button  Content="{x:Static properties:Resource.Submit}" Height="30" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click"  />
+            <Button  Content="{x:Static properties:Resources.Submit}" Height="30" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click"  />
         </Grid>
 
     </Grid>

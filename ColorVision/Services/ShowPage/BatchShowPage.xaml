@@ -29,9 +29,9 @@
                         <ListView  Grid.Row="1" x:Name="listView1" Background="Transparent" BorderThickness="0"  Margin="-5" SelectionChanged="listView1_SelectionChanged"  MouseDoubleClick="listView1_MouseDoubleClick" PreviewKeyDown="listView1_PreviewKeyDown" >
                             <ListView.Resources >
                                 <ContextMenu x:Key="ContextMenuItem">
-                                    <MenuItem Header="{x:Static properties:Resource.Open}" Command="{Binding OpenCVCIECommand}" Tag="{Binding .}"  />
-                                    <MenuItem Header="{x:Static properties:Resource.Export}"  Command="{Binding ExportCVCIECommand}" Tag="{Binding .}"  />
-                                    <MenuItem Header="{x:Static properties:Resource.Delete}"  Click="MenuItem_Delete_Click" Tag="{Binding .}"  />
+                                    <MenuItem Header="{x:Static properties:Resources.Open}" Command="{Binding OpenCVCIECommand}" Tag="{Binding .}"  />
+                                    <MenuItem Header="{x:Static properties:Resources.Export}"  Command="{Binding ExportCVCIECommand}" Tag="{Binding .}"  />
+                                    <MenuItem Header="{x:Static properties:Resources.Delete}"  Click="MenuItem_Delete_Click" Tag="{Binding .}"  />
                                 </ContextMenu>
                                 <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                             </ListView.Resources>

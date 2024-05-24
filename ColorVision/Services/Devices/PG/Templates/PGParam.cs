@@ -22,7 +22,7 @@ namespace ColorVision.Services.Devices.PG.Templates
 
         public string? GuidId => "PGParam";
         public int Order => 11;
-        public string? Header => ColorVision.Properties.Resource.MenuPG;
+        public string? Header => ColorVision.Properties.Resources.MenuPG;
 
         public string? InputGestureText => null;
 

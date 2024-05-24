@@ -22,7 +22,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
 
         public string? GuidId => "MTFParam";
         public int Order => 2;
-        public string? Header => ColorVision.Properties.Resource.MenuMTF;
+        public string? Header => ColorVision.Properties.Resources.MenuMTF;
 
         public string? InputGestureText { get; }
 

@@ -85,12 +85,12 @@ namespace ColorVision.Services.Flow
             DataContext = flowControl;
             PreviewMouseDown += UserControl_PreviewMouseDown;
 
-            menuItem = new MenuItem() { Header = ColorVision.Properties.Resource.MenuFlow };
-            MenuItem menuItem1 = new() { Header = ColorVision.Properties.Resource.ExecutionProcess };
+            menuItem = new MenuItem() { Header = ColorVision.Properties.Resources.MenuFlow };
+            MenuItem menuItem1 = new() { Header = ColorVision.Properties.Resources.ExecutionProcess };
             menuItem1.Click +=(s,e)=> Button_FlowRun_Click(s, e);
             menuItem.Items.Add(menuItem1);
 
-            MenuItem menuItem2 = new() { Header = ColorVision.Properties.Resource.StopProcess };
+            MenuItem menuItem2 = new() { Header = ColorVision.Properties.Resources.StopProcess };
             menuItem2.Click += (s, e) => Button_FlowStop_Click(s, e);
             menuItem.Items.Add(menuItem2);
 

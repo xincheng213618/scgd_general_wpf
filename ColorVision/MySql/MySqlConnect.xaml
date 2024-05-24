@@ -7,7 +7,7 @@
         xmlns:hc ="https://handyorg.github.io/handycontrol"
         xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resource.MysqlConnectionConfiguration}" Background="{DynamicResource RegionBrush}"  Height="500" Width="400" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.MysqlConnectionConfiguration}" Background="{DynamicResource RegionBrush}"  Height="500" Width="400" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -33,7 +33,7 @@
                         <ListView x:Name="ListViewMySql" Padding="5" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
                             <ListView.Resources >
                                 <ContextMenu x:Key="ContextMenuItem">
-                                    <MenuItem Header="{x:Static properties:Resource.Delete}"  Click="MenuItem_Click_Delete" Tag="{Binding .}" />
+                                    <MenuItem Header="{x:Static properties:Resources.Delete}"  Click="MenuItem_Click_Delete" Tag="{Binding .}" />
                                 </ContextMenu>
                                 <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
                                     <Setter Property="Visibility" Value="Collapsed"/>
@@ -60,46 +60,46 @@
                             </ListView.View>
                         </ListView>
                         <StackPanel Margin="0,0,0,-1" VerticalAlignment="Bottom">
-                            <Button Content="{x:Static properties:Resource.CreateNewConfigurationFile}" Click="Button_Click_New"   />
-                            <Button Content="{x:Static properties:Resource.CopyConfigurationFile}" Click="Button_Click_Copy" />
+                            <Button Content="{x:Static properties:Resources.CreateNewConfigurationFile}" Click="Button_Click_New"   />
+                            <Button Content="{x:Static properties:Resources.CopyConfigurationFile}" Click="Button_Click_Copy" />
                         </StackPanel>
                     </Grid>
                 </Border>
                 <Border Grid.Column="1" Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"  Margin="5" CornerRadius="10,10,3,3">
                     <Grid x:Name="GridMQTT" Margin="5,5,10,5"  d:DataContext="{d:DesignInstance local:MySqlConfig}">
                         <StackPanel>
-                            <TextBlock Text="{x:Static properties:Resource.MysqlConnection}" HorizontalAlignment="Center" Margin="15" FontSize="17"/>
+                            <TextBlock Text="{x:Static properties:Resources.MysqlConnection}" HorizontalAlignment="Center" Margin="15" FontSize="17"/>
                             <DockPanel Margin="5">
-                                <TextBlock Text="{x:Static properties:Resource.ConnectionName}" VerticalAlignment="Center" Width="120"/>
-                                <TextBox  ToolTip="{x:Static properties:Resource.ConnectionName}"  VerticalAlignment="Center" TextWrapping="Wrap" Text="{Binding Name}"  BorderThickness="0,0,0,1" />
+                                <TextBlock Text="{x:Static properties:Resources.ConnectionName}" VerticalAlignment="Center" Width="120"/>
+                                <TextBox  ToolTip="{x:Static properties:Resources.ConnectionName}"  VerticalAlignment="Center" TextWrapping="Wrap" Text="{Binding Name}"  BorderThickness="0,0,0,1" />
                             </DockPanel>
                             <DockPanel Margin="5,2">
                                 <TextBlock Text=""  Width="120"/>
                             </DockPanel>
                             <DockPanel Margin="5,2">
-                                <TextBlock Text="{x:Static properties:Resource.Host}" VerticalAlignment="Center" Width="120"/>
-                                <TextBox  ToolTip="{x:Static properties:Resource.Host}"  VerticalAlignment="Center" Text="{Binding Host}"  BorderThickness="0,0,0,1" />
+                                <TextBlock Text="{x:Static properties:Resources.Host}" VerticalAlignment="Center" Width="120"/>
+                                <TextBox  ToolTip="{x:Static properties:Resources.Host}"  VerticalAlignment="Center" Text="{Binding Host}"  BorderThickness="0,0,0,1" />
                             </DockPanel>
                             <DockPanel Margin="5,2">
-                                <TextBlock Text="{x:Static properties:Resource.Port}" VerticalAlignment="Center" Width="120"/>
-                                <TextBox ToolTip="{x:Static properties:Resource.Port}"  VerticalAlignment="Center"  Text="{Binding Port,UpdateSourceTrigger=PropertyChanged}" PreviewKeyDown="NumberValidationTextBox" Width="50"  HorizontalAlignment="Left" BorderThickness="0,0,0,1" />
-                            </DockPanel>
-
-                            <DockPanel Margin="5,2">
-                                <TextBlock Text="{x:Static properties:Resource.UserName}" VerticalAlignment="Center" Width="120"/>
-                                <TextBox ToolTip="{x:Static properties:Resource.UserName}"  VerticalAlignment="Center"  HorizontalAlignment="Left" Text="{Binding UserName}" Width="180" BorderThickness="0,0,0,1" />
+                                <TextBlock Text="{x:Static properties:Resources.Port}" VerticalAlignment="Center" Width="120"/>
+                                <TextBox ToolTip="{x:Static properties:Resources.Port}"  VerticalAlignment="Center"  Text="{Binding Port,UpdateSourceTrigger=PropertyChanged}" PreviewKeyDown="NumberValidationTextBox" Width="50"  HorizontalAlignment="Left" BorderThickness="0,0,0,1" />
                             </DockPanel>
 
                             <DockPanel Margin="5,2">
-                                <TextBlock Text="{x:Static properties:Resource.Password}" VerticalAlignment="Center" Width="120"/>
-                                <hc:PasswordBox x:Name="PasswordBox1" ToolTip="{x:Static properties:Resource.Password}" ShowEyeButton="True" VerticalAlignment="Center"  HorizontalAlignment="Left" Password=""  Width="180"  BorderThickness="0,0,0,1" />
+                                <TextBlock Text="{x:Static properties:Resources.UserName}" VerticalAlignment="Center" Width="120"/>
+                                <TextBox ToolTip="{x:Static properties:Resources.UserName}"  VerticalAlignment="Center"  HorizontalAlignment="Left" Text="{Binding UserName}" Width="180" BorderThickness="0,0,0,1" />
+                            </DockPanel>
+
+                            <DockPanel Margin="5,2">
+                                <TextBlock Text="{x:Static properties:Resources.Password}" VerticalAlignment="Center" Width="120"/>
+                                <hc:PasswordBox x:Name="PasswordBox1" ToolTip="{x:Static properties:Resources.Password}" ShowEyeButton="True" VerticalAlignment="Center"  HorizontalAlignment="Left" Password=""  Width="180"  BorderThickness="0,0,0,1" />
                             </DockPanel>
                             <DockPanel Margin="5,2">
                                 <TextBlock Text=""  Width="120"/>
                             </DockPanel>
                             <DockPanel Margin="5,2">
-                                <TextBlock Text="{x:Static properties:Resource.Database}" VerticalAlignment="Center" Width="120"/>
-                                <TextBox ToolTip="{x:Static properties:Resource.Database}"  VerticalAlignment="Center" HorizontalAlignment="Left" Text="{Binding Database}" Width="180"  BorderThickness="0,0,0,1" />
+                                <TextBlock Text="{x:Static properties:Resources.Database}" VerticalAlignment="Center" Width="120"/>
+                                <TextBox ToolTip="{x:Static properties:Resources.Database}"  VerticalAlignment="Center" HorizontalAlignment="Left" Text="{Binding Database}" Width="180"  BorderThickness="0,0,0,1" />
                             </DockPanel>
 
                         </StackPanel>
@@ -113,12 +113,12 @@
                 <Button  Width="30" Height="22" Click="Button_Click_Test1" Margin="0,0,5,0">
                     <Image Source="/Assets/Image/connect.png" Stretch="Uniform" Margin="-5"/>
                 </Button>
-                <Button Content="{x:Static properties:Resource.TesConnection}" MinWidth="80" Click="Button_Click_Test"/>
+                <Button Content="{x:Static properties:Resources.TesConnection}" MinWidth="80" Click="Button_Click_Test"/>
             </StackPanel>
             <StackPanel Grid.Row="1" Margin="0,5"   HorizontalAlignment="Right" VerticalAlignment="Bottom">
                 <UniformGrid x:Name="FunctionGrid" Columns="2" Width="180"   HorizontalAlignment="Center">
-                    <Button Content="{x:Static properties:Resource.OK}" Width="80"  Click="Button_Click"/>
-                    <Button Content="{x:Static properties:Resource.Cancel}" Width="80" Click="Button_Click_2"/>
+                    <Button Content="{x:Static properties:Resources.OK}" Width="80"  Click="Button_Click"/>
+                    <Button Content="{x:Static properties:Resources.Cancel}" Width="80" Click="Button_Click_2"/>
                 </UniformGrid>
             </StackPanel>
 

@@ -390,22 +390,22 @@ namespace ColorVision.Services.Devices.Calibration.Views
                     if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
                     {
                         string Name = item.ColumnName.ToString();
-                        if (Name == ColorVision.Properties.Resource.SerialNumber1)
+                        if (Name == ColorVision.Properties.Resources.SerialNumber1)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCalibrations.SortByID(item.IsSortD);
                         }
-                        else if (Name == Properties.Resource.Duration)
+                        else if (Name == Properties.Resources.Duration)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCalibrations.SortByCreateTime(item.IsSortD);
                         }
-                        else if (Name == ColorVision.Properties.Resource.BatchNumber)
+                        else if (Name == ColorVision.Properties.Resources.BatchNumber)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCalibrations.SortByBatch(item.IsSortD);
                         }
-                        else if (Name == ColorVision.Properties.Resource.File)
+                        else if (Name == ColorVision.Properties.Resources.File)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCalibrations.SortByFilePath(item.IsSortD);

@@ -10,7 +10,7 @@
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              d:DataContext="{d:DesignInstance local:DeviceSMU}"
              mc:Ignorable="d" 
-             Title="{x:Static properties:Resource.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="400" Initialized="UserControl_Initialized">
+             Title="{x:Static properties:Resources.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="400" Initialized="UserControl_Initialized">
     <Window.Resources>
         <Style TargetType="TextBox" BasedOn="{StaticResource TextBoxBaseBaseStyle}">
             <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
@@ -58,7 +58,7 @@
             </Border>
         </ScrollViewer>
         <Border Grid.Row="1" Height="30">
-            <Button  Content="{x:Static properties:Resource.Submit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding SaveCommand}" Click="Button_Click" />
+            <Button  Content="{x:Static properties:Resources.Submit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding SaveCommand}" Click="Button_Click" />
         </Border>
     </Grid>
 </Window>

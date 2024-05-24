@@ -356,7 +356,7 @@ namespace ColorVision.Services.Devices.Camera
                 WindowTemplate windowTemplate;
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
-                    MessageBox.Show(Application.Current.MainWindow, Properties.Resource.DatabaseConnectionFailed, "ColorVision");
+                    MessageBox.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
                     return;
                 }
                 var ITemplate = new TemplateCalibrationParam(Device.PhyCamera) ;

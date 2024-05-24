@@ -17,7 +17,7 @@ namespace ColorVision.Services.Templates
         public static TemplateConfig Instance => ConfigHandler.GetInstance().GetRequiredService<TemplateConfig>();
 
         public string DefaultCreateTemplateName { get => _DefaultCreateTemplateName; set { _DefaultCreateTemplateName = value; NotifyPropertyChanged(); } }
-        private string _DefaultCreateTemplateName = ColorVision.Properties.Resource.DefaultCreateTemplateName;
+        private string _DefaultCreateTemplateName = ColorVision.Properties.Resources.DefaultCreateTemplateName;
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
     }

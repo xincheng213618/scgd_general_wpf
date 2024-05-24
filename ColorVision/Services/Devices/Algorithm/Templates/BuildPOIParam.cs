@@ -19,7 +19,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
         public string? GuidId => "TemplateAlgorithm";
         public int Order => 2;
         public Visibility Visibility => Visibility.Visible;
-        public string? Header => ColorVision.Properties.Resource.MenuAlgorithm;
+        public string? Header => ColorVision.Properties.Resources.MenuAlgorithm;
 
         public string? InputGestureText { get; }
 
@@ -36,7 +36,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
         public string? GuidId => "BuildPOI";
         public int Order => 0;
         public Visibility Visibility => Visibility.Visible;
-        public string? Header => ColorVision.Properties.Resource.MenuBuildPOI;
+        public string? Header => ColorVision.Properties.Resources.MenuBuildPOI;
 
         public string? InputGestureText { get; }
 

@@ -8,7 +8,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:TerminalService}"
-        Title="{x:Static properties:Resource.Create}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="250" Width="400" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.Create}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="250" Width="400" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -28,18 +28,18 @@
         <Border Grid.Row="0" Background ="{DynamicResource RegionBrush}" CornerRadius="4">
             <StackPanel>
                 <DockPanel Margin="2" >
-                    <TextBlock Text="{x:Static properties:Resource.Code}" MinWidth="50" />
+                    <TextBlock Text="{x:Static properties:Resources.Code}" MinWidth="50" />
                     <hc:ComboBox x:Name="CreateCode" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"   />
                 </DockPanel>
                 <DockPanel Margin="2" >
-                    <TextBlock Text="{x:Static properties:Resource.Name}" Width="50" />
+                    <TextBlock Text="{x:Static properties:Resources.Name}" Width="50" />
                     <hc:ComboBox  x:Name="CreateName" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"  />
                 </DockPanel>
             </StackPanel>
         </Border>
 
         <Border Grid.Row="1" Height="30">
-            <Button Content="{x:Static properties:Resource.Submit}" Foreground="White" Background="{StaticResource PrimaryBrush}"  Click="Button_Click" />
+            <Button Content="{x:Static properties:Resources.Submit}" Foreground="White" Background="{StaticResource PrimaryBrush}"  Click="Button_Click" />
         </Border>
     </Grid>
 </Window>

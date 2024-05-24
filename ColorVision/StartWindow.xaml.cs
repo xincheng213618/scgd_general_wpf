@@ -75,7 +75,7 @@ namespace ColorVision
             //检测服务连接情况，需要在界面启动之后，否则会出现问题。因为界面启动之后才会初始化MQTTControl和MySqlControl，所以代码上问题不大
             Application.Current.Dispatcher.Invoke(() =>
             {
-                TextBoxMsg.Text += ColorVision.Properties.Resource.StartingService;
+                TextBoxMsg.Text += ColorVision.Properties.Resources.StartingService;
             });
 
             if (MySqlSetting.Instance.IsUseMySql)
@@ -89,7 +89,7 @@ namespace ColorVision
 
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    TextBoxMsg.Text += $"{Environment.NewLine}MySQL数据库连接{(MySqlControl.GetInstance().IsConnect ? Properties.Resource.Success : Properties.Resource.Failure)}";
+                    TextBoxMsg.Text += $"{Environment.NewLine}MySQL数据库连接{(MySqlControl.GetInstance().IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}";
                     if (!IsConnect)
                     {
                         MySqlConnect mySqlConnect = new() { Owner = this };
@@ -115,7 +115,7 @@ namespace ColorVision
                 bool IsConnect = await MQTTControl.GetInstance().Connect();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    TextBoxMsg.Text += $"{Environment.NewLine}MQTT服务器连接{(MQTTControl.GetInstance().IsConnect ? Properties.Resource.Success : Properties.Resource.Failure)}";
+                    TextBoxMsg.Text += $"{Environment.NewLine}MQTT服务器连接{(MQTTControl.GetInstance().IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}";
                     if (!IsConnect)
                     {
                         Application.Current.Dispatcher.Invoke(() =>
@@ -159,7 +159,7 @@ namespace ColorVision
                     bool IsConnect = await MQTTRCService.GetInstance().Connect();
                     Application.Current.Dispatcher.Invoke(() => 
                     {
-                        TextBoxMsg.Text += $"{Environment.NewLine}注册中心: {(IsConnect ? Properties.Resource.Success : Properties.Resource.Failure)}";
+                        TextBoxMsg.Text += $"{Environment.NewLine}注册中心: {(IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}";
                         if (!IsConnect)
                         {
                             Application.Current.Dispatcher.Invoke(() =>

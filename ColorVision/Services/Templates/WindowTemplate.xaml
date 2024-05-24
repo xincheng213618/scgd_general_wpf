@@ -45,8 +45,8 @@
                 <ListView.Resources>
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
                     <ContextMenu x:Key="ContextMenuItem">
-                        <MenuItem Header="{x:Static properties:Resource.MenuRename}"  Click="MenuItem_Click" Tag="{Binding .}" />
-                        <MenuItem Header="{x:Static properties:Resource.MenuDelete}"  Click="Button_Del_Click" Tag="{Binding .}"  />
+                        <MenuItem Header="{x:Static properties:Resources.MenuRename}"  Click="MenuItem_Click" Tag="{Binding .}" />
+                        <MenuItem Header="{x:Static properties:Resources.MenuDelete}"  Click="Button_Del_Click" Tag="{Binding .}"  />
                     </ContextMenu>
                 </ListView.Resources>
                 <ListView.ItemContainerStyle>
@@ -72,14 +72,14 @@
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>  
-                        <GridViewColumn  Header="{x:Static properties:Resource.SerialNumber1}" >
+                        <GridViewColumn  Header="{x:Static properties:Resources.SerialNumber1}" >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type local:TemplateModelBase}">
                                     <TextBlock Text="{Binding Id}" />
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn Header="{x:Static properties:Resource.Name}">
+                        <GridViewColumn Header="{x:Static properties:Resources.Name}">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type local:TemplateModelBase}">
                                     <DockPanel Height="20">
@@ -104,7 +104,7 @@
                     </GridView>
                 </ListView.View>
             </ListView>
-            <TextBlock Grid.Row="1"  x:Name="SearchNoneText" Visibility="Collapsed" VerticalAlignment="Top" FontSize="16" Margin="20,80,0,0" Text="{x:Static properties:Resource.NoRelatedItemsFound}" />
+            <TextBlock Grid.Row="1"  x:Name="SearchNoneText" Visibility="Collapsed" VerticalAlignment="Top" FontSize="16" Margin="20,80,0,0" Text="{x:Static properties:Resources.NoRelatedItemsFound}" />
 
         </Grid>
 
@@ -119,19 +119,19 @@
         <StackPanel x:Name="CreateGrid"  Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" Margin="5">
             <UniformGrid x:Name="FunctionGrid"  Margin="0,2"   Columns="5">
                 <Button  Click="Button_New_Click" Margin="2" >
-                    <TextBlock Text="{x:Static properties:Resource.New}"/>
+                    <TextBlock Text="{x:Static properties:Resources.New}"/>
                 </Button>
                 <Button   Click="Button_Del_Click"  Margin="2" >
-                    <TextBlock Text="{x:Static properties:Resource.Delete}"/>
+                    <TextBlock Text="{x:Static properties:Resources.Delete}"/>
                 </Button>
                 <Button   Click="Button_Save_Click" Margin="2" >
-                    <TextBlock Text="{x:Static properties:Resource.Save}"/>
+                    <TextBlock Text="{x:Static properties:Resources.Save}"/>
                 </Button>
                 <Button    Click="Button_Export_Click" Margin="2" >
-                    <TextBlock Text="{x:Static properties:Resource.Export}"/>
+                    <TextBlock Text="{x:Static properties:Resources.Export}"/>
                 </Button>
                 <Button Click="Button_Import_Click" Margin="2" >
-                    <TextBlock Text="{x:Static properties:Resource.Import}"/>
+                    <TextBlock Text="{x:Static properties:Resources.Import}"/>
                 </Button>
 
             </UniformGrid>

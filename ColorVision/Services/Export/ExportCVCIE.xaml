@@ -8,7 +8,7 @@
         xmlns:properties ="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:VExportCIE}"
-        Title="{x:Static properties:Resource.Export}" Background="{StaticResource BackgroundBrush}" Height="300" Width="400" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.Export}" Background="{StaticResource BackgroundBrush}" Height="300" Width="400" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -17,13 +17,13 @@
         </Grid.RowDefinitions>
         <StackPanel>
             <DockPanel  Margin="0,3">
-                <hc:ComboBox  Margin="0,0,0,0"    IsEditable="True" SelectedIndex="0" Text="{Binding Name}"  hc:InfoElement.Title="{x:Static properties:Resource.Name}"
+                <hc:ComboBox  Margin="0,0,0,0"    IsEditable="True" SelectedIndex="0" Text="{Binding Name}"  hc:InfoElement.Title="{x:Static properties:Resources.Name}"
                               hc:InfoElement.Necessary="True"  hc:InfoElement.Symbol="*" 
                               />
             </DockPanel>
             <DockPanel  Margin="0,3">
                 <Button Content="..." Height="30" DockPanel.Dock="Right" VerticalAlignment="Bottom" Margin="2,0,0,0" Click="Save_Click"/>
-                <hc:ComboBox  Margin="0,0,0,0"    IsEditable="True" SelectedIndex="0" Text="{Binding SavePath}"  hc:InfoElement.Title="{x:Static properties:Resource.SelectProjectSaveLocation}"
+                <hc:ComboBox  Margin="0,0,0,0"    IsEditable="True" SelectedIndex="0" Text="{Binding SavePath}"  hc:InfoElement.Title="{x:Static properties:Resources.SelectProjectSaveLocation}"
                               hc:InfoElement.Necessary="True"  hc:InfoElement.Symbol="*" 
                               ItemsSource="{Binding RecentImageSaveList}"/>
             </DockPanel>
@@ -54,7 +54,7 @@
 
         </StackPanel>
         <Border Grid.Row="2" Height="30">
-            <Button  Content="{x:Static properties:Resource.Export}" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click" />
+            <Button  Content="{x:Static properties:Resources.Export}" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click" />
         </Border>
     </Grid>
 </Window>

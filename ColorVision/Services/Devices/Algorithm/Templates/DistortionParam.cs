@@ -18,7 +18,7 @@ namespace ColorVision.Services.Devices.Algorithm.Templates
 
         public string? GuidId => "DistortionParam";
         public int Order => 3;
-        public string? Header => ColorVision.Properties.Resource.MenuDistortion;
+        public string? Header => ColorVision.Properties.Resources.MenuDistortion;
         public Visibility Visibility => Visibility.Visible;
         public string? InputGestureText { get; }
 

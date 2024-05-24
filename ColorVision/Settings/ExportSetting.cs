@@ -12,7 +12,7 @@ namespace ColorVision.Settings
 {
     public class ExportSetting : IHotKey,IMenuItem
     {
-        public HotKeys HotKeys => new(Properties.Resource.MenuOptions, new Hotkey(Key.I, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(Properties.Resources.MenuOptions, new Hotkey(Key.I, ModifierKeys.Control), Execute);
         private void Execute()
         {
             new SettingWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
@@ -25,7 +25,7 @@ namespace ColorVision.Settings
 
         public int Order => 100000;
 
-        public string? Header => Resource.MenuOptions;
+        public string? Header => Resources.MenuOptions;
 
         public string? InputGestureText => "Ctrl + I";
 

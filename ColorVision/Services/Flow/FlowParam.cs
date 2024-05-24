@@ -21,7 +21,7 @@ namespace ColorVision.Services.Flow
 
         public string? GuidId => "FlowParam";
         public int Order => 0;
-        public string? Header => Properties.Resource.MenuFlow;
+        public string? Header => Properties.Resources.MenuFlow;
 
         public string? InputGestureText { get; }
         public Visibility Visibility => Visibility.Visible;

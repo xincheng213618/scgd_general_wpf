@@ -15,7 +15,7 @@ namespace ColorVision.Services.PhyCameras
 
         public int Order => 9;
 
-        public string? Header => ColorVision.Properties.Resource.MenuPhyCameraManager;
+        public string? Header => ColorVision.Properties.Resources.MenuPhyCameraManager;
 
         public string? InputGestureText => null;
 

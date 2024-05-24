@@ -11,7 +11,7 @@ namespace ColorVision.Update
         public string? OwnerGuid => "Help";
         public string? GuidId => "ChangeLog";
         public int Order => 10001;
-        public string? Header => Resource.ChangeLog;
+        public string? Header => Resources.ChangeLog;
 
         public string? InputGestureText => null;
 

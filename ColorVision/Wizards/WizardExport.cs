@@ -11,7 +11,7 @@ namespace ColorVision.Wizards
         public string? OwnerGuid => "Help";
         public string? GuidId => "Wizard";
         public int Order => 10000;
-        public string? Header => Resource.Wizard;
+        public string? Header => Resources.Wizard;
 
         public string? InputGestureText => null;
 

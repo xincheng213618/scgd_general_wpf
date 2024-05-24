@@ -551,7 +551,7 @@ namespace ColorVision.Services.Templates
                 {
                     if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
                     {
-                        if (item.ColumnName.ToString() == Resource.SerialNumber1)
+                        if (item.ColumnName.ToString() == Properties.Resources.SerialNumber1)
                         {
                             item.IsSortD = !item.IsSortD;
                             results.SortByID(item.IsSortD);

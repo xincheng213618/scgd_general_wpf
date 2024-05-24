@@ -56,8 +56,8 @@ namespace ColorVision.Settings
             {
                 new ConfigSettingMetadata
                 {
-                    Name = Properties.Resource.TbSettingsStartBoot,
-                    Description =  Properties.Resource.TbSettingsStartBoot,
+                    Name = Properties.Resources.TbSettingsStartBoot,
+                    Description =  Properties.Resources.TbSettingsStartBoot,
                     Order = 15,
                     Type = ConfigSettingType.Bool,
                     BindingName =nameof(IsAutoRun),
@@ -65,8 +65,8 @@ namespace ColorVision.Settings
                 },
                 new ConfigSettingMetadata
                 {
-                    Name = Properties.Resource.LogLevel,
-                    Description =  Properties.Resource.LogLevel,
+                    Name = Properties.Resources.LogLevel,
+                    Description =  Properties.Resources.LogLevel,
                     Order = 15,
                     Type = ConfigSettingType.ComboBox,
                     ComboBox = cmlog,

@@ -21,8 +21,8 @@
         <Border Style="{StaticResource BorderModuleArea}" >
             <StackPanel Margin="5">
                 <DockPanel Margin="5">
-                    <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resource.Clear}" Click="Button_Click_1" Width="80"/>
-                    <TextBlock Text="{x:Static properties:Resource.HistoryCache}"/>
+                    <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resources.Clear}" Click="Button_Click_1" Width="80"/>
+                    <TextBlock Text="{x:Static properties:Resources.HistoryCache}"/>
                 </DockPanel>
                 <DockPanel Margin="5,2">
                     <TextBox DockPanel.Dock="Right" Text="{Binding CacheLength}" HorizontalContentAlignment="Right" Style="{StaticResource  TextBox.Small}" Width="80"/>

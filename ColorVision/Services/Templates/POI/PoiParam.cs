@@ -22,7 +22,7 @@ namespace ColorVision.Services.Templates.POI
 
         public string? GuidId => "PoiParam";
         public int Order => 1;
-        public string? Header => ColorVision.Properties.Resource.MenuPoi;
+        public string? Header => ColorVision.Properties.Resources.MenuPoi;
 
         public string? InputGestureText => null;
 

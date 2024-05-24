@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\ColorVision.UI\ColorVision.UI.csproj" />
+    <ProjectReference Include="..\..\ColorVision.Util\ColorVision.Util.csproj" />
   </ItemGroup>
 
   <ItemGroup>

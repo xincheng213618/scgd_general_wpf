@@ -22,11 +22,11 @@
         <Border Grid.Row="0"  Height ="27 " BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
             <Grid>
                 <Menu x:Name="Menu1">
-                    <MenuItem x:Name="MenuFile" Header="{x:Static properties:Resource.MenuFile}"/>
-                    <MenuItem x:Name="MenuTemplate" Header="{x:Static properties:Resource.MenuTemplate}"/>
-                    <MenuItem x:Name="MenuTool" Header="{x:Static properties:Resource.MenuTool}"/>
-                    <MenuItem x:Name="MenuView"  Header="{ x:Static properties:Resource.MenuView}"/> 
-                    <MenuItem x:Name="MenuHelp" Header="{x:Static properties:Resource.MenuHelp}">
+                    <MenuItem x:Name="MenuFile" Header="{x:Static properties:Resources.MenuFile}"/>
+                    <MenuItem x:Name="MenuTemplate" Header="{x:Static properties:Resources.MenuTemplate}"/>
+                    <MenuItem x:Name="MenuTool" Header="{x:Static properties:Resources.MenuTool}"/>
+                    <MenuItem x:Name="MenuView"  Header="{ x:Static properties:Resources.MenuView}"/> 
+                    <MenuItem x:Name="MenuHelp" Header="{x:Static properties:Resources.MenuHelp}">
                         <MenuItem Header="打开日志文件夹(_F)"  Click="LogF_Click"/>
                         <MenuItem Header="打开配置文件(_S)"  Click="Setting_Click"/>
                         <MenuItem Header="打开配置文件夹(_F)" Click="SettingF_Click"/>
@@ -50,7 +50,7 @@
                         <TranslateTransform />
                     </UIElement.RenderTransform>
                     <TabControl Style="{StaticResource TabControlBaseStyle}" TabStripPlacement="Bottom" >
-                        <TabItem x:Name="ViewTab" Header="{x:Static properties:Resource.Acquire}" Width="150" >
+                        <TabItem x:Name="ViewTab" Header="{x:Static properties:Resources.Acquire}" Width="150" >
                             <ScrollViewer x:Name="ScrollViewerDisplay" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
                                 <StackPanel x:Name="StackPanelSPD" Initialized="StackPanelSPD_Initialized" >
                                     <behaviors:Interaction.Behaviors>
@@ -60,7 +60,7 @@
                             </ScrollViewer>
 
                         </TabItem>
-                        <TabItem x:Name="SolutionTab1" Header="{x:Static properties:Resource.Project}" Width="150" />
+                        <TabItem x:Name="SolutionTab1" Header="{x:Static properties:Resources.Project}" Width="150" />
                     </TabControl>
                 </Grid>
             </Border>

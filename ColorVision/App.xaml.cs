@@ -123,7 +123,7 @@ namespace ColorVision
         /// </summary>
         private void Application_Exit(object sender, ExitEventArgs e)
         {
-            log.Info(ColorVision.Properties.Resource.ApplicationExit);
+            log.Info(ColorVision.Properties.Resources.ApplicationExit);
 
             Environment.Exit(0);
         }

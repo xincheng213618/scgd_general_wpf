@@ -17,7 +17,7 @@ namespace ColorVision.Services.Templates.Measure
 
         public string? GuidId => "MeasureParam";
         public int Order => 31;
-        public string? Header => ColorVision.Properties.Resource.MenuMeasure;
+        public string? Header => ColorVision.Properties.Resources.MenuMeasure;
         public Visibility Visibility => Visibility.Collapsed;
         public string? InputGestureText => null;
 

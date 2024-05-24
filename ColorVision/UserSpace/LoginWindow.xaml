@@ -22,16 +22,16 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
                     <Border Grid.Row="0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Margin="15,0">
-                        <TextBlock  Text="{x:Static resx:Resource.AccountLogin}" HorizontalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush }" VerticalAlignment="Center" FontSize="20" Margin="0,15,0,10"/>
+                        <TextBlock  Text="{x:Static resx:Resources.AccountLogin}" HorizontalAlignment="Center" Foreground="{DynamicResource GlobalTextBrush }" VerticalAlignment="Center" FontSize="20" Margin="0,15,0,10"/>
                     </Border>
                     <StackPanel Margin="30,20" Grid.Row="1">
                         <DockPanel Margin="5">
-                            <hc:TextBox x:Name="Account1"  Background="{DynamicResource GlobalBorderBrush}"  ToolTip="{x:Static resx:Resource.Account}"  VerticalAlignment="Center" Text="{Binding Name}" hc:InfoElement.Placeholder="{x:Static resx:Resource.FillAccount}"  BorderThickness="0,0,0,1"   />
+                            <hc:TextBox x:Name="Account1"  Background="{DynamicResource GlobalBorderBrush}"  ToolTip="{x:Static resx:Resources.Account}"  VerticalAlignment="Center" Text="{Binding Name}" hc:InfoElement.Placeholder="{x:Static resx:Resources.FillAccount}"  BorderThickness="0,0,0,1"   />
                         </DockPanel>
                         <DockPanel Margin="5">
-                            <hc:PasswordBox x:Name="PasswordBox1" Background="{DynamicResource GlobalBorderBrush}"  ToolTip="{x:Static resx:Resource.Password}"  VerticalAlignment="Center"  hc:InfoElement.Placeholder="{x:Static resx:Resource.FillPassword}"  BorderThickness="0,0,0,1"  hc:ShowEyeButton="True" />
+                            <hc:PasswordBox x:Name="PasswordBox1" Background="{DynamicResource GlobalBorderBrush}"  ToolTip="{x:Static resx:Resources.Password}"  VerticalAlignment="Center"  hc:InfoElement.Placeholder="{x:Static resx:Resources.FillPassword}"  BorderThickness="0,0,0,1"  hc:ShowEyeButton="True" />
                         </DockPanel>
-                        <Button Content="{x:Static resx:Resource.Sign_in}" Foreground="White" FontSize="15" BorderThickness="0"  Padding="6" Margin="0,15"  Click="Button_Click">
+                        <Button Content="{x:Static resx:Resources.Sign_in}" Foreground="White" FontSize="15" BorderThickness="0"  Padding="6" Margin="0,15"  Click="Button_Click">
                             <Button.Background>
                                 <LinearGradientBrush EndPoint="1,1" StartPoint="0,0">
                                     <GradientStop Color="#476FFE"/>
@@ -41,7 +41,7 @@
                                 </LinearGradientBrush>
                             </Button.Background>
                         </Button>
-                        <TextBlock Text="{x:Static resx:Resource.Create_an_account}" HorizontalAlignment="Center"  Foreground="{DynamicResource GlobalTextBrush}"/>
+                        <TextBlock Text="{x:Static resx:Resources.Create_an_account}" HorizontalAlignment="Center"  Foreground="{DynamicResource GlobalTextBrush}"/>
                     </StackPanel>
 
                     

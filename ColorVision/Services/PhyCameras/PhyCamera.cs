@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Controls;
+using ColorVision.Engine.Controls;
 using ColorVision.Extension;
 using ColorVision.Handler;
 using ColorVision.UI.Interfaces;
@@ -604,8 +604,8 @@ namespace ColorVision.Services.PhyCameras
         public void ContentInit()
         {
             ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Edit, Command = EditCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resource.Delete, Command = DeleteCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Edit, Command = EditCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = DeleteCommand });
 
         }
 

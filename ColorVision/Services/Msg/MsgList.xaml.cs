@@ -15,7 +15,7 @@ namespace ColorVision.Services.Msg
 {
     public class HotKeyMsgList : IHotKey, IMenuItem
     {
-        public HotKeys HotKeys => new(Properties.Resource.MsgList, new Hotkey(Key.M, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(Properties.Resources.MsgList, new Hotkey(Key.M, ModifierKeys.Control), Execute);
         private void Execute()
         {
             new MsgList() { Owner = Application.Current.GetActiveWindow() }.Show();

@@ -47,7 +47,7 @@
                         </Border>
 
                         <Border  Background ="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
-                            <GroupBox Header="{x:Static properties:Resource.BasicInformation}" Margin="5">
+                            <GroupBox Header="{x:Static properties:Resources.BasicInformation}" Margin="5">
                                 <StackPanel Margin="5">
                                     <DockPanel >
                                         <TextBlock Text="服务代码:" Width="120"/>
@@ -71,7 +71,7 @@
                     </StackPanel>
 
                     <StackPanel  Grid.Column="1" Margin="5,0,0,0" >
-                        <Button  Margin="0,0,0,5" Height="40" Command="{Binding EditCommand}" ToolTip="{x:Static properties:Resource.Edit}">
+                        <Button  Margin="0,0,0,5" Height="40" Command="{Binding EditCommand}" ToolTip="{x:Static properties:Resources.Edit}">
                             <Image Source="{StaticResource DrawingImageEdit}" Height="25"/>
                         </Button>
                         <Button Margin="0,0,0,5" Height="40" Grid.Column="2"  Command="{Binding RefreshCommand}"  VerticalAlignment="Stretch"   ToolTip="刷新">
@@ -108,21 +108,21 @@
                 </ListView.ItemContainerStyle>
                 <ListView.View>
                     <GridView>
-                        <GridViewColumn  Header="{x:Static properties:Resource.DeviceIdentification}" Width="200">
+                        <GridViewColumn  Header="{x:Static properties:Resources.DeviceIdentification}" Width="200">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type device:DeviceService}">
                                     <TextBlock Text="{ Binding Code}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn  Header="{x:Static properties:Resource.DeviceName}" Width="200">
+                        <GridViewColumn  Header="{x:Static properties:Resources.DeviceName}" Width="200">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type device:DeviceService}">
                                     <TextBlock Text="{ Binding Name}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
-                        <GridViewColumn  Header="{x:Static properties:Resource.Status}" Width="150">
+                        <GridViewColumn  Header="{x:Static properties:Resources.Status}" Width="150">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate  DataType="{x:Type device:DeviceService}">
                                     <TextBlock Text="{ Binding  IsAlive}"/>

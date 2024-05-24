@@ -9,7 +9,7 @@
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DeviceAlgorithm}"
-             Title="{x:Static properties:Resource.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="400" Initialized="Window_Initialized">
+             Title="{x:Static properties:Resources.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="400" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
@@ -57,7 +57,7 @@
             </StackPanel>
         </ScrollViewer>
         <Border Grid.Row="1" Height="30">
-            <Button  Content="{x:Static properties:Resource.Submit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding SaveCommand}" Click="Button_Click" />
+            <Button  Content="{x:Static properties:Resources.Submit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding SaveCommand}" Click="Button_Click" />
         </Border>
     </Grid>
 </Window>

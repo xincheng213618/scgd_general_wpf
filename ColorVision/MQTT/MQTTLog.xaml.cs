@@ -22,7 +22,7 @@ namespace ColorVision.MQTT
         public int Order => 1;
         public Visibility Visibility => Visibility.Visible;
 
-        public string? Header => Resource.MQTTLog;
+        public string? Header => Resources.MQTTLog;
 
         public string? InputGestureText { get; }
 
@@ -30,7 +30,7 @@ namespace ColorVision.MQTT
 
         public RelayCommand Command => new(A => Execute());
 
-        public HotKeys HotKeys => new(Resource.MQTTLog, new Hotkey(Key.Q, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(Resources.MQTTLog, new Hotkey(Key.Q, ModifierKeys.Control), Execute);
 
         private void Execute()
         {

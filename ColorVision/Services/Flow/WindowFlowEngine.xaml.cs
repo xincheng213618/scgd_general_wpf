@@ -25,7 +25,7 @@ namespace ColorVision.Services.Flow
 
         public int Order => 3;
 
-        public string? Header => Resource.WorkflowEngine_F;
+        public string? Header => Resources.WorkflowEngine_F;
         public Visibility Visibility => Visibility.Visible;
         public string? InputGestureText => null;
 

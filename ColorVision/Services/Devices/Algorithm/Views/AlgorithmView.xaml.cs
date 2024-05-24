@@ -218,7 +218,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         }
 
                         cieBdHeader = new List<string> { "POIPoint.Id", "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "POIPointResultModel.ValidateResult" };
-                        cieHeader = new List<string> { "Id", ColorVision.Properties.Resource.Name, ColorVision.Properties.Resource.Position, ColorVision.Properties.Resource.Size, ColorVision.Properties.Resource.Shape, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "Validate" };
+                        cieHeader = new List<string> { "Id", ColorVision.Properties.Resources.Name, ColorVision.Properties.Resources.Position, ColorVision.Properties.Resources.Size, ColorVision.Properties.Resources.Shape, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "Validate" };
 
                         if (listViewSide.View is GridView gridViewPOI_XY_UV)
                         {
