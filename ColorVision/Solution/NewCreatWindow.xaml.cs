@@ -2,8 +2,8 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Properties;
 using ColorVision.RecentFile;
-using ColorVision.UI;
 using ColorVision.UI.HotKey;
+using ColorVision.UI.Menus;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;

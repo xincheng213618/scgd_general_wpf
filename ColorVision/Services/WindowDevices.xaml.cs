@@ -2,7 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Devices;
 using ColorVision.Services.Terminal;
-using ColorVision.UI;
+using ColorVision.UI.Menus;
 using ColorVision.UserSpace;
 using System;
 using System.Collections.ObjectModel;

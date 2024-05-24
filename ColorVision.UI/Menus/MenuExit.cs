@@ -1,11 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using System;
+using ColorVision.UI.Properties;
 using System.Windows;
 
-namespace ColorVision.Tools
+namespace ColorVision.UI.Menus
 {
-
     public class MenuExit : IMenuItem
     {
         public string? OwnerGuid => "File";
@@ -14,7 +12,7 @@ namespace ColorVision.Tools
 
         public int Order => 1000000;
 
-        public string? Header => ColorVision.Properties.Resource.MenuExit;
+        public string? Header => Resources.MenuExit;
 
         public string? InputGestureText => "Alt + F4";
 

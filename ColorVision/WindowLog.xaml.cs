@@ -8,11 +8,11 @@ using log4net.Appender;
 using log4net.Core;
 using ColorVision.MQTT;
 using ColorVision.UI.HotKey;
-using ColorVision.UI;
 using System.Windows.Input;
 using ColorVision.Properties;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.UI.Menus;
 
 namespace ColorVision
 {

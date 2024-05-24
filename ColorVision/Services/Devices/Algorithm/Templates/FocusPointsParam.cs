@@ -5,7 +5,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Templates;
-using ColorVision.UI;
+using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;

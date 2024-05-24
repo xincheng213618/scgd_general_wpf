@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI;
+using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace ColorVision.Services.Templates.POI.Validate

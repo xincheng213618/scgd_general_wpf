@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using log4net;
+using System.IO;
 using System.Reflection;
 
 namespace ColorVision.UI
@@ -13,6 +14,8 @@ namespace ColorVision.UI
 
     public static class PluginLoader
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(PluginLoader));
+
         public static List<T> LoadAssembly<T>(Assembly assembly)where T: IPlugin
         {
             List<T> plugins = new();
@@ -27,20 +30,24 @@ namespace ColorVision.UI
             return plugins;
         }
 
-        public static List<Assembly> PluginAssembly { get; } = new List<Assembly>();
 
-        public static List<Assembly> LoadPluginsAssembly(string path)
+        public static void LoadPluginsAssembly(string path)
         {
-
             if (!Directory.Exists(path)) 
-                return PluginAssembly;
+                return ;
             // 获取所有 dll 文件
             foreach (string file in Directory.GetFiles(path, "*.dll"))
             {
-                Assembly assembly = Assembly.LoadFrom(file);
-                PluginAssembly.Add(assembly);
+                try
+                {
+                    Assembly assembly = Assembly.LoadFrom(file);
+                }
+                catch(Exception ex)
+                {
+                    log.Error(ex);
+                }
+
             }
-            return PluginAssembly;
         }
 
         public static List<IPlugin> LoadPlugins(string path)
@@ -50,18 +57,25 @@ namespace ColorVision.UI
             // 获取所有 dll 文件
             foreach (string file in Directory.GetFiles(path, "*.dll"))
             {
-                Assembly assembly = Assembly.LoadFrom(file);
-                foreach (Type type in assembly.GetTypes())
+                try
                 {
-                    if (type.GetInterfaces().Contains(typeof(IPlugin)))
+                    Assembly assembly = Assembly.LoadFrom(file);
+                    foreach (Type type in assembly.GetTypes())
                     {
-                        if (Activator.CreateInstance(type) is IPlugin plugin)
+                        if (type.GetInterfaces().Contains(typeof(IPlugin)))
                         {
-                            plugin.Execute();
-                            plugins.Add(plugin);
+                            if (Activator.CreateInstance(type) is IPlugin plugin)
+                            {
+                                plugin.Execute();
+                                plugins.Add(plugin);
+                            }
                         }
                     }
+                }catch(Exception ex)
+                {
+                    log.Error(ex);
                 }
+
             }
             return plugins;
         }

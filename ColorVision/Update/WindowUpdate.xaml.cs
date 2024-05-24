@@ -1,9 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.HotKey;
-using ColorVision.UI;
 using System;
 using System.Windows;
 using System.Windows.Input;
+using ColorVision.UI.Menus;
 
 namespace ColorVision.Update
 {

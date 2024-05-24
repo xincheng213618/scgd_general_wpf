@@ -201,4 +201,7 @@
   <data name="WindowSingle" xml:space="preserve">
     <value>Independent</value>
   </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>E_xit</value>
+  </data>
 </root>

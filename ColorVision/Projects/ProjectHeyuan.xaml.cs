@@ -7,7 +7,7 @@ using ColorVision.Services.DAO;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;
 using ColorVision.Services.Flow;
-using ColorVision.UI;
+using ColorVision.UI.Menus;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;

@@ -4,7 +4,7 @@ using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Services.Templates.POI.Validate;
-using ColorVision.UI;
+using ColorVision.UI.Menus;
 using ColorVision.UI.Sorts;
 using ColorVision.UserSpace;
 using Newtonsoft.Json;

@@ -1,8 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.MQTT;
-using ColorVision.UI;
 using ColorVision.UI.HotKey;
+using ColorVision.UI.Menus;
 using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;

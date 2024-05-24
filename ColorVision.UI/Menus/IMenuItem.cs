@@ -2,12 +2,12 @@
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.UI
+namespace ColorVision.UI.Menus
 {
     public interface IMenuItem
     {
         public string? OwnerGuid { get; }
-        public string? GuidId { get;}
+        public string? GuidId { get; }
         public int Order { get; }
         public string? Header { get; }
         public string? InputGestureText { get; }

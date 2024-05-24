@@ -4,6 +4,7 @@ using ColorVision.Properties;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
 using ColorVision.UI.Dump;
+using ColorVision.UI.Menus;
 using ColorVision.UI.Properties;
 using ColorVision.UI.Views;
 using System.Collections.Generic;

@@ -10,6 +10,7 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
 using ColorVision.UI.HotKey;
+using ColorVision.UI.Menus;
 using ColorVision.UI.Views;
 using ColorVision.Update;
 using ColorVision.UserSpace;

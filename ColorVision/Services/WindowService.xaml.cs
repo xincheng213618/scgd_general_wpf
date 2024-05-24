@@ -3,7 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Services.Devices;
 using ColorVision.Services.RC;
 using ColorVision.Services.Terminal;
-using ColorVision.UI;
+using ColorVision.UI.Menus;
 using System;
 using System.Windows;
 

@@ -1,8 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using System.Windows;
-using ColorVision.UI;
 using ColorVision.Properties;
+using ColorVision.UI.Menus;
 
 namespace ColorVision.Update
 {

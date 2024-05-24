@@ -2,7 +2,7 @@
 using ChatGPT.Net.DTO.ChatGPTUnofficial;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI;
+using ColorVision.UI.Menus;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows;

@@ -43,6 +43,10 @@
           <source>您必须重新启动才能使用新的语言设置</source>
           <target state="new">您必須重新啟動才能使用新的語言設定</target>
         </trans-unit>
+        <trans-unit id="MenuExit" translate="yes" xml:space="preserve">
+          <source>退出(_X)</source>
+          <target state="new">退出(_X)</target>
+        </trans-unit>
         <trans-unit id="MenuFile" translate="yes" xml:space="preserve">
           <source>文件(_F)</source>
           <target state="new">文件(_F)</target>

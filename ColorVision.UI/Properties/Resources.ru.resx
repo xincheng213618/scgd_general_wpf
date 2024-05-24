@@ -201,4 +201,7 @@
   <data name="WindowSingle" xml:space="preserve">
     <value>независимое окно</value>
   </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>Выход(Х)</value>
+  </data>
 </root>

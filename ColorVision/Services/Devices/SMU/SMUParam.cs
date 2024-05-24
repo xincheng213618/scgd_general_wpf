@@ -5,7 +5,7 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.PG.Templates;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
-using ColorVision.UI;
+using ColorVision.UI.Menus;
 using cvColorVision;
 using Org.BouncyCastle.Crypto.Operators;
 using System.Collections.Generic;

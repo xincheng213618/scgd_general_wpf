@@ -181,4 +181,7 @@
   <data name="WindowSingle" xml:space="preserve">
     <value>独立窗口</value>
   </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>退出(_X)</value>
+  </data>
 </root>

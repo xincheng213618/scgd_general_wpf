@@ -2,11 +2,11 @@
 using ColorVision.Common.Utilities;
 using ColorVision.UI.HotKey;
 using ColorVision.Properties;
-using ColorVision.UI;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.UI.Menus;
 
 namespace ColorVision.Settings
 {

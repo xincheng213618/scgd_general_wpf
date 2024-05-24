@@ -201,4 +201,7 @@
   <data name="WindowSingle" xml:space="preserve">
     <value>독립 창</value>
   </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>종료 (_X)</value>
+  </data>
 </root>

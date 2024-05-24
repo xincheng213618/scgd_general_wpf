@@ -4,7 +4,7 @@ using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Windows.Controls;
 
-namespace ColorVision.UI
+namespace ColorVision.UI.Menus
 {
     public class MenuManager
     {
@@ -17,7 +17,7 @@ namespace ColorVision.UI
 
         public MenuManager()
         {
-            
+
         }
 
         public void LoadMenuItemFromAssembly()
@@ -59,12 +59,12 @@ namespace ColorVision.UI
                             InputGestureText = iMenuItem.InputGestureText,
                             Command = iMenuItem.Command,
                             Tag = iMenuItem,
-                            Visibility =iMenuItem.Visibility,
+                            Visibility = iMenuItem.Visibility,
                         };
                     }
 
                     CreateMenu(menuItem, GuidId);
-                    if (i > 0 && (iMenuItem.Order - iMenuItems1[i - 1].Order > 4) && iMenuItem.Visibility == System.Windows.Visibility.Visible)
+                    if (i > 0 && iMenuItem.Order - iMenuItems1[i - 1].Order > 4 && iMenuItem.Visibility == System.Windows.Visibility.Visible)
                     {
                         parentMenuItem.Items.Add(new Separator());
                     }

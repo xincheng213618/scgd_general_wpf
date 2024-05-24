@@ -5,7 +5,7 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.SMU;
 using ColorVision.Services.Templates;
 using ColorVision.Settings;
-using ColorVision.UI;
+using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

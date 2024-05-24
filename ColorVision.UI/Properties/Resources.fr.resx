@@ -201,4 +201,7 @@
   <data name="WindowSingle" xml:space="preserve">
     <value>fenêtre indépendante</value>
   </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>Quitter (X)</value>
+  </data>
 </root>

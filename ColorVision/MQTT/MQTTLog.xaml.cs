@@ -2,8 +2,8 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Properties;
-using ColorVision.UI;
 using ColorVision.UI.HotKey;
+using ColorVision.UI.Menus;
 using System;
 using System.IO;
 using System.Windows;

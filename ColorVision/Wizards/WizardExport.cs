@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Properties;
-using ColorVision.UI;
+using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace ColorVision.Wizards

@@ -187,6 +187,15 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
+        ///   查找类似 退出(_X) 的本地化字符串。
+        /// </summary>
+        public static string MenuExit {
+            get {
+                return ResourceManager.GetString("MenuExit", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 文件(_F) 的本地化字符串。
         /// </summary>
         public static string MenuFile {
