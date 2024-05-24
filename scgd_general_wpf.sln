@@ -54,6 +54,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventVWR", "Plugins\EventVW
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.Engine", "ColorVision.Engine\ColorVision.Engine.csproj", "{3F4FEDF0-1585-4E4C-AB01-F75449DA70CD}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Projects", "Projects", "{7D74447C-5191-4C1D-BEB2-B537366B980D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectHeyuan", "Projects\ProjectHeyuan\ProjectHeyuan.csproj", "{CC562826-7B20-4FFB-B2D9-3E568389480E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -338,6 +342,22 @@ Global
 		{3F4FEDF0-1585-4E4C-AB01-F75449DA70CD}.Release|x64.Build.0 = Release|x64
 		{3F4FEDF0-1585-4E4C-AB01-F75449DA70CD}.Release|x86.ActiveCfg = Release|x64
 		{3F4FEDF0-1585-4E4C-AB01-F75449DA70CD}.Release|x86.Build.0 = Release|x64
+		{CC562826-7B20-4FFB-B2D9-3E568389480E}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{CC562826-7B20-4FFB-B2D9-3E568389480E}.Debug|Any CPU.Build.0 = Debug|x64
+		{CC562826-7B20-4FFB-B2D9-3E568389480E}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{CC562826-7B20-4FFB-B2D9-3E568389480E}.Debug|ARM64.Build.0 = Debug|ARM64
+		{CC562826-7B20-4FFB-B2D9-3E568389480E}.Debug|x64.ActiveCfg = Debug|x64
+		{CC562826-7B20-4FFB-B2D9-3E568389480E}.Debug|x64.Build.0 = Debug|x64
+		{CC562826-7B20-4FFB-B2D9-3E568389480E}.Debug|x86.ActiveCfg = Debug|x64
+		{CC562826-7B20-4FFB-B2D9-3E568389480E}.Debug|x86.Build.0 = Debug|x64
+		{CC562826-7B20-4FFB-B2D9-3E568389480E}.Release|Any CPU.ActiveCfg = Release|x64
+		{CC562826-7B20-4FFB-B2D9-3E568389480E}.Release|Any CPU.Build.0 = Release|x64
+		{CC562826-7B20-4FFB-B2D9-3E568389480E}.Release|ARM64.ActiveCfg = Release|ARM64
+		{CC562826-7B20-4FFB-B2D9-3E568389480E}.Release|ARM64.Build.0 = Release|ARM64
+		{CC562826-7B20-4FFB-B2D9-3E568389480E}.Release|x64.ActiveCfg = Release|x64
+		{CC562826-7B20-4FFB-B2D9-3E568389480E}.Release|x64.Build.0 = Release|x64
+		{CC562826-7B20-4FFB-B2D9-3E568389480E}.Release|x86.ActiveCfg = Release|x64
+		{CC562826-7B20-4FFB-B2D9-3E568389480E}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -353,6 +373,7 @@ Global
 		{A06D8C2C-2387-4116-811C-4933CC3FBE47} = {3978403E-55E4-4AAC-8978-1D39651BEA7C}
 		{E27330F2-E308-4F9D-9761-BEC7ADB7676A} = {3978403E-55E4-4AAC-8978-1D39651BEA7C}
 		{BE96962C-AB64-4FCB-9A2B-41FAD26BCF61} = {3978403E-55E4-4AAC-8978-1D39651BEA7C}
+		{CC562826-7B20-4FFB-B2D9-3E568389480E} = {7D74447C-5191-4C1D-BEB2-B537366B980D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}

@@ -1,13 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
-using FlowEngineLib;
-using Org.BouncyCastle.Utilities;
-using System;
 using System.Collections.ObjectModel;
 using System.IO.Ports;
 using System.Text;
-using System.Text.Unicode;
-using System.Threading;
 using System.Windows;
 
 namespace ColorVision.Projects

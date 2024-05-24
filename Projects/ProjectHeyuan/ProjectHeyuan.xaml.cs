@@ -36,17 +36,17 @@ namespace ColorVision.Projects
 
         private static void Execute()
         {
-            new ProjectHeyuan() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new ProjectHeyuanWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
     }
 
 
     /// <summary>
-    /// ProjectHeyuan.xaml 的交互逻辑
+    /// ProjectHeyuanWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class ProjectHeyuan : Window
+    public partial class ProjectHeyuanWindow : Window
     {
-        public ProjectHeyuan()
+        public ProjectHeyuanWindow()
         {
             InitializeComponent();
         }
