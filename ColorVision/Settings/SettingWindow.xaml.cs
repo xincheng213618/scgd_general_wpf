@@ -37,10 +37,6 @@ namespace ColorVision.Settings
         }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            GlobalConst.LogLevel.ForEach(it =>
-            {
-                cmbloglevel.Items.Add(it);
-            });
            LoadIConfigSetting();
         }
 

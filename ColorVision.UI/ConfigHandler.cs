@@ -69,21 +69,32 @@ namespace ColorVision.UI
                             if (typeof(IConfig).IsAssignableFrom(type) && !type.IsInterface)
                             {
                                 var configName = type.Name;
-                                if (jsonObject.TryGetValue(configName, out JToken configToken))
+                                try
                                 {
-                                    var config = configToken.ToObject(type, new JsonSerializer { Formatting = Formatting.Indented });
-                                    if (config is T typedConfig)
+                                    if (jsonObject.TryGetValue(configName, out JToken configToken))
                                     {
-                                        Configs[type] = typedConfig;
+                                        var config = configToken.ToObject(type, new JsonSerializer { Formatting = Formatting.Indented });
+                                        if (config is T typedConfig)
+                                        {
+                                            Configs[type] = typedConfig;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (Activator.CreateInstance(type) is T defaultConfig)
+                                        {
+                                            Configs[type] = defaultConfig;
+                                        }
                                     }
                                 }
-                                else
+                                catch
                                 {
-                                    if (Activator.CreateInstance(type) is T defaultConfig)
+                                    if (Activator.CreateInstance(type) is T config)
                                     {
-                                        Configs[type] = defaultConfig;
+                                        Configs[type] = config;
                                     }
                                 }
+
                             }
                         }
                     }
@@ -187,22 +198,31 @@ namespace ColorVision.UI
                         {
                             if (typeof(IConfig).IsAssignableFrom(type) && !type.IsInterface)
                             {
-
                                 var configName = type.Name;
-                                if (jsonObject.TryGetValue(configName, out JToken configToken))
+                                try
                                 {
-                                    var config = configToken.ToObject(type, new JsonSerializer { Formatting = Formatting.Indented });
-                                    if (config is IConfigSecure configSecure)
+                                    if (jsonObject.TryGetValue(configName, out JToken configToken))
                                     {
-                                        configSecure.Decrypt();
-                                        Configs[type] = configSecure;
+                                        var config = configToken.ToObject(type, new JsonSerializer { Formatting = Formatting.Indented });
+                                        if (config is IConfigSecure configSecure)
+                                        {
+                                            configSecure.Decrypt();
+                                            Configs[type] = configSecure;
+                                        }
+                                        else if (config is IConfig configInstance)
+                                        {
+                                            Configs[type] = configInstance;
+                                        }
                                     }
-                                    else if (config is IConfig configInstance)
+                                    else
                                     {
-                                        Configs[type] = configInstance;
+                                        if (Activator.CreateInstance(type) is IConfig defaultConfig)
+                                        {
+                                            Configs[type] = defaultConfig;
+                                        }
                                     }
                                 }
-                                else
+                                catch 
                                 {
                                     if (Activator.CreateInstance(type) is IConfig defaultConfig)
                                     {

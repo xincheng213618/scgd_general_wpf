@@ -76,15 +76,17 @@ namespace ColorVision.Services.RC
         private bool _IsUseRCService = true;
 
         public ObservableCollection<RCServiceConfig> RCServiceConfigs { get; set; } = new ObservableCollection<RCServiceConfig>();
+        public const string ConfigAESKey = "ColorVision";
+        public const string ConfigAESVector = "ColorVision";
 
         public void Decrypt()
         {
-            RCServiceConfig.AppSecret = Cryptography.AESDecrypt(RCServiceConfig.AppSecret, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
+            RCServiceConfig.AppSecret = Cryptography.AESDecrypt(RCServiceConfig.AppSecret, ConfigAESKey, ConfigAESVector);
         }
 
         public void Encryption()
         {
-            RCServiceConfig.AppSecret = Cryptography.AESEncrypt(RCServiceConfig.AppSecret, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
+            RCServiceConfig.AppSecret = Cryptography.AESEncrypt(RCServiceConfig.AppSecret, ConfigAESKey, ConfigAESVector);
         }
     }
 }

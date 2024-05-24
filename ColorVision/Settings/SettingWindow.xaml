@@ -92,10 +92,6 @@
                         <ScrollViewer  HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                             <Border Style="{StaticResource BorderModuleArea}">
                                 <StackPanel x:Name="UniversalStackPanel" Margin="5">
-                                    <DockPanel  Margin="5">
-                                        <hc:ComboBox x:Name="cmbloglevel" Text="{Binding SoftwareSetting.LogLevel}" Style="{StaticResource ComboBox.Small}" DockPanel.Dock="Right"  Width="150"/>
-                                        <TextBlock Text="{x:Static properties:Resource.LogLevel}"/>
-                                    </DockPanel>
                                 </StackPanel>
                             </Border>
                         </ScrollViewer>

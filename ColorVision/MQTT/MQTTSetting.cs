@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Settings;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
 using System;
@@ -88,15 +87,17 @@ namespace ColorVision.MQTT
         /// </summary>
         public bool ShowSelect { get => _ShowSelect; set { _ShowSelect = value; NotifyPropertyChanged(); } }
         private bool _ShowSelect;
+        public const string ConfigAESKey = "ColorVision";
+        public const string ConfigAESVector = "ColorVision";
 
         public void Encryption()
         {
-            MQTTConfig.UserPwd = Cryptography.AESEncrypt(MQTTConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
+            MQTTConfig.UserPwd = Cryptography.AESEncrypt(MQTTConfig.UserPwd, ConfigAESKey,ConfigAESVector);
         }
 
         public void Decrypt()
         {
-            MQTTConfig.UserPwd = Cryptography.AESDecrypt(MQTTConfig.UserPwd, GlobalConst.ConfigAESKey, GlobalConst.ConfigAESVector);
+            MQTTConfig.UserPwd = Cryptography.AESDecrypt(MQTTConfig.UserPwd, ConfigAESKey, ConfigAESVector);
         }
     }
 }

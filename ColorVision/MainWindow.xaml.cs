@@ -233,7 +233,7 @@ namespace ColorVision
             catch (Exception ex)
             {
                 Console.WriteLine($"An error occurred while installing the certificate: {ex.Message}");
-            }
+            } 
         }
 
         public static async Task CheckVersion()
