@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
         xmlns:SettingUp ="clr-namespace:ColorVision.Settings"
-        xmlns:Solution="clr-namespace:ColorVision.Solution"  
+        xmlns:Solution="clr-namespace:ColorVision.Solution;assembly=ColorVision.Engine"  
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:properties="clr-namespace:ColorVision.Properties"
         xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util" 
