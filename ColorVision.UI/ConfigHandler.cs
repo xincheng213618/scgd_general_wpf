@@ -129,6 +129,8 @@ namespace ColorVision.UI
                 string DirectoryPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\ColorVision\\";
                 if (!Directory.Exists(DirectoryPath))
                     Directory.CreateDirectory(DirectoryPath);
+                if (!Directory.Exists(DirectoryPath + "\\Config"))
+                    Directory.CreateDirectory(DirectoryPath + "\\Config");
                 DIFile = DirectoryPath + ConfigDIFileName;
             }
 
