@@ -118,20 +118,20 @@ namespace ColorVision.UI
 
         public ConfigHandler()
         {
+            string configDirectory = "Config";
+            string appDataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ColorVision", "Config");
 
-
-            if (Directory.Exists("Config"))
+            if (Directory.Exists(configDirectory))
             {
                 DIFile = ConfigDIFileName;
             }
             else
             {
-                string DirectoryPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\ColorVision\\";
-                if (!Directory.Exists(DirectoryPath))
-                    Directory.CreateDirectory(DirectoryPath);
-                if (!Directory.Exists(DirectoryPath + "\\Config"))
-                    Directory.CreateDirectory(DirectoryPath + "\\Config");
-                DIFile = DirectoryPath + ConfigDIFileName;
+                if (!Directory.Exists(appDataDirectory))
+                {
+                    Directory.CreateDirectory(appDataDirectory);
+                }
+                DIFile = Path.Combine(appDataDirectory, ConfigDIFileName);
             }
 
             LoadConfigs(DIFile);
