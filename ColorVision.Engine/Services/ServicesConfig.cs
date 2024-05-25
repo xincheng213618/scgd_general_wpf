@@ -46,6 +46,5 @@ namespace ColorVision.Services
         public bool IsRetorePlayControls { get => _IsRetorePlayControls; set { _IsRetorePlayControls = value; NotifyPropertyChanged(); } }
         private bool _IsRetorePlayControls = true;
 
-        public Dictionary<string, int> PlayControls { get; set; } = new Dictionary<string, int>();
     }
 }

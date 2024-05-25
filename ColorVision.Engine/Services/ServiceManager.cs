@@ -61,7 +61,7 @@ namespace ColorVision.Services
         public void GenControl(ObservableCollection<DeviceService> MQTTDevices)
         {
             LastGenControl = MQTTDevices;
-            var nameToIndexMap = ServicesConfig.Instance.PlayControls;
+            var nameToIndexMap = DisPlayManagerConfig.Instance.PlayControls;
 
             DisPlayManager.GetInstance().IDisPlayControls.Clear();
             DisPlayManager.GetInstance().IDisPlayControls.Insert(0, FlowDisplayControl.GetInstance());
@@ -131,7 +131,7 @@ namespace ColorVision.Services
         /// </summary>
         public void GenDeviceDisplayControl()
         {
-            var nameToIndexMap = ServicesConfig.Instance.PlayControls;
+            var nameToIndexMap = DisPlayManagerConfig.Instance.PlayControls;
 
             LastGenControl = new ObservableCollection<DeviceService>();
             DisPlayManager.GetInstance().IDisPlayControls.Clear();
@@ -177,7 +177,7 @@ namespace ColorVision.Services
 
 
             for (int i = 0; i < DisPlayManager.GetInstance().IDisPlayControls.Count; i++)
-                ServicesConfig.Instance.PlayControls[DisPlayManager.GetInstance().IDisPlayControls[i].DisPlayName] = i;
+                DisPlayManagerConfig.Instance.PlayControls[DisPlayManager.GetInstance().IDisPlayControls[i].DisPlayName] = i;
         }
         private Dictionary<string, List<MQTTServiceBase>> svrDevices = new();
 

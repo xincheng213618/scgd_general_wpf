@@ -2,7 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.MySql;
 using ColorVision.Scheduler;
-using ColorVision.Services;
 using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.Solution.Searches;
@@ -376,7 +375,7 @@ namespace ColorVision
                     for (int i = 0; i < stackPanel1.Children.Count; i++)
                     {
                         if (stackPanel1.Children[i] is IDisPlayControl disPlayControl)
-                            ServicesConfig.Instance.PlayControls[disPlayControl.DisPlayName] = i;
+                            DisPlayManagerConfig.Instance.PlayControls[disPlayControl.DisPlayName] = i;
                     }
                 };
             }
@@ -587,5 +586,6 @@ namespace ColorVision
             }
 
         }
+   
     }
 }
