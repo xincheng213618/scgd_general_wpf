@@ -1,8 +1,7 @@
 ﻿#pragma warning disable CS8602
-using ColorVision.Update;
 using Quartz;
-using System.Diagnostics;
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
 
