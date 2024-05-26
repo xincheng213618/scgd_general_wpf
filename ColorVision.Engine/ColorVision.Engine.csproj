@@ -98,6 +98,13 @@
     <None Remove="Assets\png\归档查询.png" />
     <None Remove="Assets\png\综合查询.png" />
   </ItemGroup>
+	
+
+  <ItemGroup>
+    <Content Include="..\DLL\openh264-2.3.1-win64.dll" Link="openh264-2.3.1-win64.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\ColorVision.Common\ColorVision.Common.csproj" />
