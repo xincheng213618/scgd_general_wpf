@@ -321,9 +321,6 @@
   <data name="Code" xml:space="preserve">
     <value>标识</value>
   </data>
-  <data name="MTFToolTip" xml:space="preserve">
-    <value>调制传递函数</value>
-  </data>
   <data name="ThemePink" xml:space="preserve">
     <value>粉色</value>
   </data>
@@ -363,9 +360,6 @@
   <data name="PerformanceTest" xml:space="preserve">
     <value>性能检测</value>
   </data>
-  <data name="ProjectSettings" xml:space="preserve">
-    <value>工程设置</value>
-  </data>
   <data name="GeneralSettings" xml:space="preserve">
     <value>通用设置</value>
   </data>
@@ -384,17 +378,8 @@
   <data name="Project" xml:space="preserve">
     <value>工程</value>
   </data>
-  <data name="DefaultExportStorageFormat" xml:space="preserve">
-    <value>默认导出存储格式</value>
-  </data>
-  <data name="NewProjectFormat" xml:space="preserve">
-    <value>新建工程格式</value>
-  </data>
   <data name="ConfigureNewProject" xml:space="preserve">
     <value>配置新工程</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>项目名称</value>
   </data>
   <data name="CreateProject" xml:space="preserve">
     <value>创建工程</value>
@@ -414,20 +399,11 @@
   <data name="ServiceAgreement" xml:space="preserve">
     <value>服务协议</value>
   </data>
-  <data name="MyLicense_R" xml:space="preserve">
-    <value>我的许可证(_R)</value>
-  </data>
   <data name="SaveWindowLayout" xml:space="preserve">
     <value>保存窗口布局</value>
   </data>
   <data name="ApplyWindowLayout" xml:space="preserve">
     <value>应用窗口布局</value>
-  </data>
-  <data name="WorkflowEngine_F" xml:space="preserve">
-    <value>流程引擎(_F)</value>
-  </data>
-  <data name="RegistryCenter" xml:space="preserve">
-    <value>注册中心</value>
   </data>
   <data name="Success" xml:space="preserve">
     <value>成功</value>
@@ -462,17 +438,11 @@
   <data name="CameraLog" xml:space="preserve">
     <value>相机日志</value>
   </data>
-  <data name="RestartService" xml:space="preserve">
-    <value>重启服务</value>
-  </data>
   <data name="InstallCertificate" xml:space="preserve">
     <value>安装证书</value>
   </data>
   <data name="ApplicationExit" xml:space="preserve">
     <value>程序关闭</value>
-  </data>
-  <data name="EnterAcquisitionWindow" xml:space="preserve">
-    <value>进入采集窗口</value>
   </data>
   <data name="SelectResourceToLoad" xml:space="preserve">
     <value>请选择您要加载的资源：</value>
@@ -501,9 +471,6 @@
   <data name="TransmitChannel" xml:space="preserve">
     <value>发送信道</value>
   </data>
-  <data name="ReceiveChannel" xml:space="preserve">
-    <value>接收信道</value>
-  </data>
   <data name="CreateNewConfigurationFile" xml:space="preserve">
     <value>新建配置文件</value>
   </data>
@@ -518,12 +485,6 @@
   </data>
   <data name="SimulateReceive" xml:space="preserve">
     <value>模拟接受</value>
-  </data>
-  <data name="ViewSentData" xml:space="preserve">
-    <value>查看发送数据</value>
-  </data>
-  <data name="ViewReceivedData" xml:space="preserve">
-    <value>查看接受数据</value>
   </data>
   <data name="MsgLogWindow" xml:space="preserve">
     <value>Msg记录窗口</value>
@@ -555,9 +516,6 @@
   <data name="ErrorOccurred" xml:space="preserve">
     <value>发生错误</value>
   </data>
-  <data name="TemplateManagementWindow" xml:space="preserve">
-    <value>模板管理窗口</value>
-  </data>
   <data name="New" xml:space="preserve">
     <value>新建</value>
   </data>
@@ -567,20 +525,8 @@
   <data name="OutputView" xml:space="preserve">
     <value>输出视图</value>
   </data>
-  <data name="MqttConnectionConfiguration" xml:space="preserve">
-    <value>MQTT连接配置</value>
-  </data>
-  <data name="MqttConnection" xml:space="preserve">
-    <value>MQTT连接</value>
-  </data>
   <data name="ConnectionName" xml:space="preserve">
     <value>连接名</value>
-  </data>
-  <data name="MysqlConnectionConfiguration" xml:space="preserve">
-    <value>Mysql连接配置</value>
-  </data>
-  <data name="MysqlConnection" xml:space="preserve">
-    <value>Mysql连接</value>
   </data>
   <data name="ExecutionProcess" xml:space="preserve">
     <value>执行流程</value>
@@ -591,9 +537,6 @@
   <data name="Calculate" xml:space="preserve">
     <value>计算</value>
   </data>
-  <data name="NoRelatedItemsFound" xml:space="preserve">
-    <value>未找到相关项目</value>
-  </data>
   <data name="OpenItem" xml:space="preserve">
     <value>打开项目</value>
   </data>
@@ -602,9 +545,6 @@
   </data>
   <data name="CreateNewProjectOrFile" xml:space="preserve">
     <value>创建一个新的的项目或文件</value>
-  </data>
-  <data name="DatabaseConnectionFailed" xml:space="preserve">
-    <value>数据库连接失败，请先连接数据库在操作</value>
   </data>
   <data name="UnderDevelopment" xml:space="preserve">
     <value>开发中</value>
@@ -635,9 +575,6 @@
   </data>
   <data name="SetupWizard" xml:space="preserve">
     <value>配置向导</value>
-  </data>
-  <data name="WorkflowEngineDebugWindow" xml:space="preserve">
-    <value>流程引擎调试窗口</value>
   </data>
   <data name="MenuFlow" xml:space="preserve">
     <value>流程(_L)</value>
@@ -693,9 +630,6 @@
   <data name="Timeout" xml:space="preserve">
     <value>超时</value>
   </data>
-  <data name="MQTTLog" xml:space="preserve">
-    <value>MQTT日志</value>
-  </data>
   <data name="Topic" xml:space="preserve">
     <value>话题</value>
   </data>
@@ -704,9 +638,6 @@
   </data>
   <data name="MessageRetention" xml:space="preserve">
     <value>消息保留</value>
-  </data>
-  <data name="MenuAlgorithm" xml:space="preserve">
-    <value>算法(_A)</value>
   </data>
   <data name="CreateDevice" xml:space="preserve">
     <value>创建设备</value>
@@ -729,35 +660,17 @@
   <data name="PhysicalCameraManager" xml:space="preserve">
     <value>物理相机管理</value>
   </data>
-  <data name="MenuDevice" xml:space="preserve">
-    <value>设备配置(_D)</value>
-  </data>
   <data name="MenuService" xml:space="preserve">
     <value>管理员服务配置(_S)</value>
   </data>
   <data name="MenuLogin" xml:space="preserve">
     <value>登录账号(_L)</value>
   </data>
-  <data name="MenuCalibrationTool" xml:space="preserve">
-    <value>校正生成工具(_C)</value>
-  </data>
-  <data name="MenuBuildPOI" xml:space="preserve">
-    <value>BuildPOI模板设置(_B)</value>
-  </data>
   <data name="MenuDistortion" xml:space="preserve">
     <value>畸变模板设置(_D)</value>
   </data>
   <data name="MenuFocusPoints" xml:space="preserve">
     <value>发光区检测模板设置(_P)</value>
-  </data>
-  <data name="MenuFOV" xml:space="preserve">
-    <value>_FOV模板设置</value>
-  </data>
-  <data name="MenuGhost" xml:space="preserve">
-    <value>鬼影模板设置(_G)</value>
-  </data>
-  <data name="MenuLedCheck" xml:space="preserve">
-    <value>灯珠检测模板设置(_L)</value>
   </data>
   <data name="MenuMTF" xml:space="preserve">
     <value>_MTF模板设置</value>
@@ -771,20 +684,8 @@
   <data name="MenuSUM" xml:space="preserve">
     <value>源表模板设置(_S)</value>
   </data>
-  <data name="MenuSenSorHeYuan" xml:space="preserve">
-    <value>通用传感器模板设置(_S)</value>
-  </data>
   <data name="MenuPoi" xml:space="preserve">
     <value>关注点模板设置(_P)</value>
-  </data>
-  <data name="MenuCameraExp" xml:space="preserve">
-    <value>相机曝光模板设置(_B)</value>
-  </data>
-  <data name="MenuMeasure" xml:space="preserve">
-    <value>测量模板设置</value>
-  </data>
-  <data name="MenuValidue" xml:space="preserve">
-    <value>关注点校验模板设置(_B)</value>
   </data>
   <data name="Alias" xml:space="preserve">
     <value>别名</value>
@@ -809,15 +710,6 @@
   </data>
   <data name="Exchange" xml:space="preserve">
     <value>交换</value>
-  </data>
-  <data name="ExposureB" xml:space="preserve">
-    <value>曝光B</value>
-  </data>
-  <data name="ExposureG" xml:space="preserve">
-    <value>曝光G</value>
-  </data>
-  <data name="ExposureR" xml:space="preserve">
-    <value>曝光R</value>
   </data>
   <data name="BatchNumber" xml:space="preserve">
     <value>批次号</value>
@@ -861,20 +753,11 @@
   <data name="CreateTime" xml:space="preserve">
     <value>测量时间</value>
   </data>
-  <data name="ViewCamera_图像数据文件" xml:space="preserve">
-    <value>图像数据文件</value>
-  </data>
   <data name="Exposure" xml:space="preserve">
     <value>曝光</value>
   </data>
   <data name="Video" xml:space="preserve">
     <value>视频模式</value>
-  </data>
-  <data name="DeviceCameraSign1" xml:space="preserve">
-    <value>设备离线，请先配置相机ID</value>
-  </data>
-  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
-    <value>CIE图像数据区</value>
   </data>
   <data name="ImageSource" xml:space="preserve">
     <value>图像源</value>
@@ -900,14 +783,8 @@
   <data name="x86ServiceLog" xml:space="preserve">
     <value>x86服务日志</value>
   </data>
-  <data name="RCServiceLog" xml:space="preserve">
-    <value>RC服务日志</value>
-  </data>
   <data name="UpdateSpeed" xml:space="preserve">
     <value>更新速度</value>
-  </data>
-  <data name="DefaultCreateTemplateName" xml:space="preserve">
-    <value>default</value>
   </data>
   <data name="StartingService" xml:space="preserve">
     <value>正在启动服务</value>

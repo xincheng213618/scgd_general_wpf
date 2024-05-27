@@ -354,9 +354,6 @@
   <data name="PerformanceTest" xml:space="preserve">
     <value>性能試験</value>
   </data>
-  <data name="ProjectSettings" xml:space="preserve">
-    <value>プロジェクト設定</value>
-  </data>
   <data name="GeneralSettings" xml:space="preserve">
     <value>一般設定</value>
   </data>
@@ -375,17 +372,8 @@
   <data name="Project" xml:space="preserve">
     <value>プロジェクト</value>
   </data>
-  <data name="DefaultExportStorageFormat" xml:space="preserve">
-    <value>デフォルトのエクスポート保存形式</value>
-  </data>
-  <data name="NewProjectFormat" xml:space="preserve">
-    <value>新しいプロジェクト形式</value>
-  </data>
   <data name="ConfigureNewProject" xml:space="preserve">
     <value>新しいプロジェクトを構成する</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>プロジェクト名</value>
   </data>
   <data name="CreateProject" xml:space="preserve">
     <value>プロジェクトの作成</value>
@@ -405,23 +393,11 @@
   <data name="ServiceAgreement" xml:space="preserve">
     <value>役務契約</value>
   </data>
-  <data name="MyLicense_R" xml:space="preserve">
-    <value>マイライセンス(R)</value>
-  </data>
   <data name="SaveWindowLayout" xml:space="preserve">
     <value>ウィンドウレイアウトを保存</value>
   </data>
   <data name="ApplyWindowLayout" xml:space="preserve">
     <value>ウィンドウレイアウトを適用する</value>
-  </data>
-  <data name="WorkflowEngine_F" xml:space="preserve">
-    <value>プロセスエンジン(F)</value>
-  </data>
-  <data name="RegistryCenter" xml:space="preserve">
-    <value>登録センター</value>
-  </data>
-  <data name="MTFToolTip" xml:space="preserve">
-    <value>変調伝達関数</value>
   </data>
   <data name="EnableDatabase" xml:space="preserve">
     <value>データベースを有効にする</value>
@@ -462,17 +438,11 @@
   <data name="CameraLog" xml:space="preserve">
     <value>カメラログ</value>
   </data>
-  <data name="RestartService" xml:space="preserve">
-    <value>サービスを再起動する</value>
-  </data>
   <data name="InstallCertificate" xml:space="preserve">
     <value>証明書のインストール</value>
   </data>
   <data name="ApplicationExit" xml:space="preserve">
     <value>プログラムは終了します</value>
-  </data>
-  <data name="EnterAcquisitionWindow" xml:space="preserve">
-    <value>コレクションウィンドウに入る</value>
   </data>
   <data name="SelectResourceToLoad" xml:space="preserve">
     <value>ロードするリソースを選択してください:</value>
@@ -501,9 +471,6 @@
   <data name="TransmitChannel" xml:space="preserve">
     <value>送信チャンネル</value>
   </data>
-  <data name="ReceiveChannel" xml:space="preserve">
-    <value>受信チャンネル</value>
-  </data>
   <data name="CreateNewConfigurationFile" xml:space="preserve">
     <value>新しい設定ファイルを作成する</value>
   </data>
@@ -518,12 +485,6 @@
   </data>
   <data name="SimulateReceive" xml:space="preserve">
     <value>模擬合格</value>
-  </data>
-  <data name="ViewSentData" xml:space="preserve">
-    <value>送信データの表示</value>
-  </data>
-  <data name="ViewReceivedData" xml:space="preserve">
-    <value>受け入れデータの表示</value>
   </data>
   <data name="MsgLogWindow" xml:space="preserve">
     <value>メッセージ記録ウィンドウ</value>
@@ -555,9 +516,6 @@
   <data name="ErrorOccurred" xml:space="preserve">
     <value>エラーが発生しました</value>
   </data>
-  <data name="TemplateManagementWindow" xml:space="preserve">
-    <value>テンプレート管理画面</value>
-  </data>
   <data name="New" xml:space="preserve">
     <value>新しい</value>
   </data>
@@ -567,20 +525,8 @@
   <data name="OutputView" xml:space="preserve">
     <value>出力ビュー</value>
   </data>
-  <data name="MqttConnectionConfiguration" xml:space="preserve">
-    <value>MQTT接続の設定</value>
-  </data>
-  <data name="MqttConnection" xml:space="preserve">
-    <value>MQTT接続</value>
-  </data>
   <data name="ConnectionName" xml:space="preserve">
     <value>接続名</value>
-  </data>
-  <data name="MysqlConnectionConfiguration" xml:space="preserve">
-    <value>MySQL接続設定</value>
-  </data>
-  <data name="MysqlConnection" xml:space="preserve">
-    <value>MySQL接続</value>
   </data>
   <data name="ExecutionProcess" xml:space="preserve">
     <value>実装プロセス</value>
@@ -591,9 +537,6 @@
   <data name="Calculate" xml:space="preserve">
     <value>計算する</value>
   </data>
-  <data name="NoRelatedItemsFound" xml:space="preserve">
-    <value>関連商品は見つかりませんでした</value>
-  </data>
   <data name="OpenItem" xml:space="preserve">
     <value>プロジェクトを開く</value>
   </data>
@@ -602,9 +545,6 @@
   </data>
   <data name="CreateNewProjectOrFile" xml:space="preserve">
     <value>新しいプロジェクトまたはファイルを作成する</value>
-  </data>
-  <data name="DatabaseConnectionFailed" xml:space="preserve">
-    <value>データベース接続に失敗しました。操作する前にデータベースに接続してください</value>
   </data>
   <data name="UnderDevelopment" xml:space="preserve">
     <value>開発中</value>
@@ -635,9 +575,6 @@
   </data>
   <data name="SetupWizard" xml:space="preserve">
     <value>構成ウィザード</value>
-  </data>
-  <data name="WorkflowEngineDebugWindow" xml:space="preserve">
-    <value>プロセスエンジンのデバッグウィンドウ</value>
   </data>
   <data name="MenuFlow" xml:space="preserve">
     <value>プロセス(_L)</value>
@@ -693,9 +630,6 @@
   <data name="Timeout" xml:space="preserve">
     <value>タイムアウト</value>
   </data>
-  <data name="MQTTLog" xml:space="preserve">
-    <value>MQTTログ</value>
-  </data>
   <data name="Topic" xml:space="preserve">
     <value>トピック</value>
   </data>
@@ -704,9 +638,6 @@
   </data>
   <data name="MessageRetention" xml:space="preserve">
     <value>メッセージの保持</value>
-  </data>
-  <data name="MenuAlgorithm" xml:space="preserve">
-    <value>アルゴリズム(A)</value>
   </data>
   <data name="CreateDevice" xml:space="preserve">
     <value>デバイスの作成</value>
@@ -729,35 +660,17 @@
   <data name="PhysicalCameraManager" xml:space="preserve">
     <value>物理的なカメラの管理</value>
   </data>
-  <data name="MenuDevice" xml:space="preserve">
-    <value>デバイス構成(_D)</value>
-  </data>
   <data name="MenuService" xml:space="preserve">
     <value>管理者サービス構成(_S)</value>
   </data>
   <data name="MenuLogin" xml:space="preserve">
     <value>ログインアカウント(_L)</value>
   </data>
-  <data name="MenuCalibrationTool" xml:space="preserve">
-    <value>キャリブレーション生成ツール(_C)</value>
-  </data>
-  <data name="MenuBuildPOI" xml:space="preserve">
-    <value>BuildPOIテンプレート設定(B)</value>
-  </data>
   <data name="MenuDistortion" xml:space="preserve">
     <value>ディストーションテンプレート設定(D)</value>
   </data>
   <data name="MenuFocusPoints" xml:space="preserve">
     <value>発光領域検出テンプレート設定(F)</value>
-  </data>
-  <data name="MenuFOV" xml:space="preserve">
-    <value>FOVテンプレート設定(B)」;</value>
-  </data>
-  <data name="MenuGhost" xml:space="preserve">
-    <value>ゴーストテンプレート設定(G)</value>
-  </data>
-  <data name="MenuLedCheck" xml:space="preserve">
-    <value>ランプ球検出テンプレート設定(L)</value>
   </data>
   <data name="MenuMTF" xml:space="preserve">
     <value>MTF テンプレート設定(M)</value>
@@ -771,20 +684,8 @@
   <data name="MenuSUM" xml:space="preserve">
     <value>ソーステーブルテンプレート設定(S)</value>
   </data>
-  <data name="MenuSenSorHeYuan" xml:space="preserve">
-    <value>汎用センサーテンプレート設定(S)</value>
-  </data>
   <data name="MenuPoi" xml:space="preserve">
     <value>懸念テンプレートの設定（P）</value>
-  </data>
-  <data name="MenuCameraExp" xml:space="preserve">
-    <value>カメラ露出テンプレート設定（B）</value>
-  </data>
-  <data name="MenuMeasure" xml:space="preserve">
-    <value>測定テンプレートの設定</value>
-  </data>
-  <data name="MenuValidue" xml:space="preserve">
-    <value>懸念事項検証テンプレートの設定（B）</value>
   </data>
   <data name="Alias" xml:space="preserve">
     <value>エイリアス</value>
@@ -809,15 +710,6 @@
   </data>
   <data name="Exchange" xml:space="preserve">
     <value>交換</value>
-  </data>
-  <data name="ExposureB" xml:space="preserve">
-    <value>露出B</value>
-  </data>
-  <data name="ExposureG" xml:space="preserve">
-    <value>露出G</value>
-  </data>
-  <data name="ExposureR" xml:space="preserve">
-    <value>露出R</value>
   </data>
   <data name="BatchNumber" xml:space="preserve">
     <value>バッチ番号</value>
@@ -861,20 +753,11 @@
   <data name="CreateTime" xml:space="preserve">
     <value>時間を計る</value>
   </data>
-  <data name="ViewCamera_图像数据文件" xml:space="preserve">
-    <value>画像データファイル</value>
-  </data>
   <data name="Exposure" xml:space="preserve">
     <value>暴露</value>
   </data>
   <data name="Video" xml:space="preserve">
     <value>ビデオモード</value>
-  </data>
-  <data name="DeviceCameraSign1" xml:space="preserve">
-    <value>デバイスはオフラインです。最初にカメラ ID を設定してください</value>
-  </data>
-  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
-    <value>CIE画像データ領域</value>
   </data>
   <data name="ImageSource" xml:space="preserve">
     <value>画像ソース</value>
@@ -900,14 +783,8 @@
   <data name="x86ServiceLog" xml:space="preserve">
     <value>x86サービスログ</value>
   </data>
-  <data name="RCServiceLog" xml:space="preserve">
-    <value>RCサービスログ</value>
-  </data>
   <data name="UpdateSpeed" xml:space="preserve">
     <value>更新速度</value>
-  </data>
-  <data name="DefaultCreateTemplateName" xml:space="preserve">
-    <value>デフォルト</value>
   </data>
   <data name="StartingService" xml:space="preserve">
     <value>サービス開始</value>

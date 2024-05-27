@@ -191,29 +191,13 @@
           <source>数据库名称</source>
           <target state="new">資料庫名稱</target>
         </trans-unit>
-        <trans-unit id="DatabaseConnectionFailed" translate="yes" xml:space="preserve">
-          <source>数据库连接失败，请先连接数据库在操作</source>
-          <target state="new">資料庫連線失敗，請先連接資料庫在操作</target>
-        </trans-unit>
         <trans-unit id="Deadline" translate="yes" xml:space="preserve">
           <source>截至时间</source>
           <target state="new">截至時間</target>
         </trans-unit>
-        <trans-unit id="DefaultCreateTemplateName" translate="yes" xml:space="preserve">
-          <source>default</source>
-          <target state="new">default</target>
-        </trans-unit>
-        <trans-unit id="DefaultExportStorageFormat" translate="yes" xml:space="preserve">
-          <source>默认导出存储格式</source>
-          <target state="new">預設導出儲存格式</target>
-        </trans-unit>
         <trans-unit id="Delete" translate="yes" xml:space="preserve">
           <source>删除</source>
           <target state="new">刪除</target>
-        </trans-unit>
-        <trans-unit id="DeviceCameraSign1" translate="yes" xml:space="preserve">
-          <source>设备离线，请先配置相机ID</source>
-          <target state="new">設備離線，請先設定相機ID</target>
         </trans-unit>
         <trans-unit id="DeviceCode" translate="yes" xml:space="preserve">
           <source>设备码</source>
@@ -231,10 +215,6 @@
           <source>禁用硬件加速</source>
           <target state="new">禁用硬體加速</target>
         </trans-unit>
-        <trans-unit id="DisplayAlgorithmControl_CIE图像数据区" translate="yes" xml:space="preserve">
-          <source>CIE图像数据区</source>
-          <target state="new">CIE影像資料區</target>
-        </trans-unit>
         <trans-unit id="DownloadCancelled" translate="yes" xml:space="preserve">
           <source>下载已取消</source>
           <target state="new">下載已取消</target>
@@ -250,10 +230,6 @@
         <trans-unit id="EnableDatabase" translate="yes" xml:space="preserve">
           <source>启用数据库</source>
           <target state="new">啟用資料庫</target>
-        </trans-unit>
-        <trans-unit id="EnterAcquisitionWindow" translate="yes" xml:space="preserve">
-          <source>进入采集窗口</source>
-          <target state="new">進入採集視窗</target>
         </trans-unit>
         <trans-unit id="ErrorOccurred" translate="yes" xml:space="preserve">
           <source>发生错误</source>
@@ -278,18 +254,6 @@
         <trans-unit id="Exposure" translate="yes" xml:space="preserve">
           <source>曝光</source>
           <target state="new">曝光</target>
-        </trans-unit>
-        <trans-unit id="ExposureB" translate="yes" xml:space="preserve">
-          <source>曝光B</source>
-          <target state="new">曝光B</target>
-        </trans-unit>
-        <trans-unit id="ExposureG" translate="yes" xml:space="preserve">
-          <source>曝光G</source>
-          <target state="new">曝光G</target>
-        </trans-unit>
-        <trans-unit id="ExposureR" translate="yes" xml:space="preserve">
-          <source>曝光R</source>
-          <target state="new">曝光R</target>
         </trans-unit>
         <trans-unit id="Failure" translate="yes" xml:space="preserve">
           <source>失败</source>
@@ -423,14 +387,6 @@
           <source>日志级别</source>
           <target state="new">日誌等級</target>
         </trans-unit>
-        <trans-unit id="MQTTLog" translate="yes" xml:space="preserve">
-          <source>MQTT日志</source>
-          <target state="new">MQTT日誌</target>
-        </trans-unit>
-        <trans-unit id="MTFToolTip" translate="yes" xml:space="preserve">
-          <source>调制传递函数</source>
-          <target state="new">調製傳遞函數</target>
-        </trans-unit>
         <trans-unit id="Male" translate="yes" xml:space="preserve">
           <source>男</source>
           <target state="new">男</target>
@@ -447,22 +403,6 @@
           <source>关于(_A)</source>
           <target state="new">關於(_A)</target>
         </trans-unit>
-        <trans-unit id="MenuAlgorithm" translate="yes" xml:space="preserve">
-          <source>算法(_A)</source>
-          <target state="new">演算法(A)</target>
-        </trans-unit>
-        <trans-unit id="MenuBuildPOI" translate="yes" xml:space="preserve">
-          <source>BuildPOI模板设置(_B)</source>
-          <target state="new">BuildPOI模板設定(B)</target>
-        </trans-unit>
-        <trans-unit id="MenuCalibrationTool" translate="yes" xml:space="preserve">
-          <source>校正生成工具(_C)</source>
-          <target state="new">校正生成工具(_C)</target>
-        </trans-unit>
-        <trans-unit id="MenuCameraExp" translate="yes" xml:space="preserve">
-          <source>相机曝光模板设置(_B)</source>
-          <target state="new">相機曝光模板設定(_B)</target>
-        </trans-unit>
         <trans-unit id="MenuCopy" translate="yes" xml:space="preserve">
           <source>复制(_C)</source>
           <target state="new">複製(_C)</target>
@@ -474,10 +414,6 @@
         <trans-unit id="MenuDelete" translate="yes" xml:space="preserve">
           <source>删除(_D)</source>
           <target state="new">刪除(_D)</target>
-        </trans-unit>
-        <trans-unit id="MenuDevice" translate="yes" xml:space="preserve">
-          <source>设备配置(_D)</source>
-          <target state="new">設備配置(_D)</target>
         </trans-unit>
         <trans-unit id="MenuDistortion" translate="yes" xml:space="preserve">
           <source>畸变模板设置(_D)</source>
@@ -491,10 +427,6 @@
           <source>退出(_X)</source>
           <target state="new">退出(_X)</target>
         </trans-unit>
-        <trans-unit id="MenuFOV" translate="yes" xml:space="preserve">
-          <source>_FOV模板设置</source>
-          <target state="new">FOV模板設定(B)";</target>
-        </trans-unit>
         <trans-unit id="MenuFile" translate="yes" xml:space="preserve">
           <source>文件(_F)</source>
           <target state="new">文件(_F)</target>
@@ -507,10 +439,6 @@
           <source>发光区检测模板设置(_P)</source>
           <target state="new">發光區偵測模板設定(F)</target>
         </trans-unit>
-        <trans-unit id="MenuGhost" translate="yes" xml:space="preserve">
-          <source>鬼影模板设置(_G)</source>
-          <target state="new">鬼影模板設定(G)</target>
-        </trans-unit>
         <trans-unit id="MenuHelp" translate="yes" xml:space="preserve">
           <source>帮助(_H)</source>
           <target state="new">帮助(_H)</target>
@@ -519,10 +447,6 @@
           <source>语言(_L)</source>
           <target state="new">語言(_L）</target>
         </trans-unit>
-        <trans-unit id="MenuLedCheck" translate="yes" xml:space="preserve">
-          <source>灯珠检测模板设置(_L)</source>
-          <target state="new">燈珠偵測模板設定(L)</target>
-        </trans-unit>
         <trans-unit id="MenuLogin" translate="yes" xml:space="preserve">
           <source>登录账号(_L)</source>
           <target state="new">登入帳號(_L)</target>
@@ -530,10 +454,6 @@
         <trans-unit id="MenuMTF" translate="yes" xml:space="preserve">
           <source>_MTF模板设置</source>
           <target state="new">MTF模板設定(M)</target>
-        </trans-unit>
-        <trans-unit id="MenuMeasure" translate="yes" xml:space="preserve">
-          <source>测量模板设置</source>
-          <target state="new">測量模板設定</target>
         </trans-unit>
         <trans-unit id="MenuNew" translate="yes" xml:space="preserve">
           <source>新建(_N)</source>
@@ -571,10 +491,6 @@
           <source>源表模板设置(_S)</source>
           <target state="new">源表模板設定(_S)</target>
         </trans-unit>
-        <trans-unit id="MenuSenSorHeYuan" translate="yes" xml:space="preserve">
-          <source>通用传感器模板设置(_S)</source>
-          <target state="new">通用感測器模板設定(_H)</target>
-        </trans-unit>
         <trans-unit id="MenuService" translate="yes" xml:space="preserve">
           <source>管理员服务配置(_S)</source>
           <target state="new">管理員服務配置(_S)</target>
@@ -603,10 +519,6 @@
           <source>检查更新(_U)</source>
           <target state="new">檢查更新(_U)</target>
         </trans-unit>
-        <trans-unit id="MenuValidue" translate="yes" xml:space="preserve">
-          <source>关注点校验模板设置(_B)</source>
-          <target state="new">關注點校驗範本設定(B)</target>
-        </trans-unit>
         <trans-unit id="MenuView" translate="yes" xml:space="preserve">
           <source>视图(_V)</source>
           <target state="new">視圖(_V)</target>
@@ -627,14 +539,6 @@
           <source>最小化</source>
           <target state="new">最小化</target>
         </trans-unit>
-        <trans-unit id="MqttConnection" translate="yes" xml:space="preserve">
-          <source>MQTT连接</source>
-          <target state="new">MQTT連接</target>
-        </trans-unit>
-        <trans-unit id="MqttConnectionConfiguration" translate="yes" xml:space="preserve">
-          <source>MQTT连接配置</source>
-          <target state="new">MQTT連接配置</target>
-        </trans-unit>
         <trans-unit id="MsgList" translate="yes" xml:space="preserve">
           <source>消息列表</source>
           <target state="new">訊息清單</target>
@@ -642,18 +546,6 @@
         <trans-unit id="MsgLogWindow" translate="yes" xml:space="preserve">
           <source>Msg记录窗口</source>
           <target state="new">Msg記錄視窗</target>
-        </trans-unit>
-        <trans-unit id="MyLicense_R" translate="yes" xml:space="preserve">
-          <source>我的许可证(_R)</source>
-          <target state="new">我的許可證(R)</target>
-        </trans-unit>
-        <trans-unit id="MysqlConnection" translate="yes" xml:space="preserve">
-          <source>Mysql连接</source>
-          <target state="new">Mysql連接</target>
-        </trans-unit>
-        <trans-unit id="MysqlConnectionConfiguration" translate="yes" xml:space="preserve">
-          <source>Mysql连接配置</source>
-          <target state="new">Mysql連線配置</target>
         </trans-unit>
         <trans-unit id="Name" translate="yes" xml:space="preserve">
           <source>名称</source>
@@ -663,10 +555,6 @@
           <source>新建</source>
           <target state="new">新建</target>
         </trans-unit>
-        <trans-unit id="NewProjectFormat" translate="yes" xml:space="preserve">
-          <source>新建工程格式</source>
-          <target state="new">新工程格式</target>
-        </trans-unit>
         <trans-unit id="NewSolution" translate="yes" xml:space="preserve">
           <source>新建工程</source>
           <target state="new">新建工程</target>
@@ -674,10 +562,6 @@
         <trans-unit id="NewVersionFound" translate="yes" xml:space="preserve">
           <source>发现新版本</source>
           <target state="new">發現新版本</target>
-        </trans-unit>
-        <trans-unit id="NoRelatedItemsFound" translate="yes" xml:space="preserve">
-          <source>未找到相关项目</source>
-          <target state="new">未找到相關項目</target>
         </trans-unit>
         <trans-unit id="NotRunAsAdmin" translate="yes" xml:space="preserve">
           <source>以非管理员身份运行</source>
@@ -739,14 +623,6 @@
           <source>工程</source>
           <target state="new">工程</target>
         </trans-unit>
-        <trans-unit id="ProjectName" translate="yes" xml:space="preserve">
-          <source>项目名称</source>
-          <target state="new">項目名稱</target>
-        </trans-unit>
-        <trans-unit id="ProjectSettings" translate="yes" xml:space="preserve">
-          <source>工程设置</source>
-          <target state="new">工程設定</target>
-        </trans-unit>
         <trans-unit id="Property" translate="yes" xml:space="preserve">
           <source>属性</source>
           <target state="new">屬性</target>
@@ -755,21 +631,9 @@
           <source>快速预览</source>
           <target state="new">快速預覽</target>
         </trans-unit>
-        <trans-unit id="RCServiceLog" translate="yes" xml:space="preserve">
-          <source>RC服务日志</source>
-          <target state="new">RC服務日誌</target>
-        </trans-unit>
-        <trans-unit id="ReceiveChannel" translate="yes" xml:space="preserve">
-          <source>接收信道</source>
-          <target state="new">接收頻道</target>
-        </trans-unit>
         <trans-unit id="Refresh" translate="yes" xml:space="preserve">
           <source>刷新</source>
           <target state="new">重新整理</target>
-        </trans-unit>
-        <trans-unit id="RegistryCenter" translate="yes" xml:space="preserve">
-          <source>注册中心</source>
-          <target state="new">註冊中心</target>
         </trans-unit>
         <trans-unit id="Reset" translate="yes" xml:space="preserve">
           <source>重置</source>
@@ -778,10 +642,6 @@
         <trans-unit id="Reseted" translate="yes" xml:space="preserve">
           <source>已重置</source>
           <target state="new">已重置</target>
-        </trans-unit>
-        <trans-unit id="RestartService" translate="yes" xml:space="preserve">
-          <source>重启服务</source>
-          <target state="new">重啟服務</target>
         </trans-unit>
         <trans-unit id="Restore" translate="yes" xml:space="preserve">
           <source>向下还原</source>
@@ -939,10 +799,6 @@
           <source>模板</source>
           <target state="new">範本</target>
         </trans-unit>
-        <trans-unit id="TemplateManagementWindow" translate="yes" xml:space="preserve">
-          <source>模板管理窗口</source>
-          <target state="new">範本管理視窗</target>
-        </trans-unit>
         <trans-unit id="TemplateName" translate="yes" xml:space="preserve">
           <source>模板名称</source>
           <target state="new">模板名稱</target>
@@ -1027,18 +883,6 @@
           <source>视频模式</source>
           <target state="new">視訊模式</target>
         </trans-unit>
-        <trans-unit id="ViewCamera_图像数据文件" translate="yes" xml:space="preserve">
-          <source>图像数据文件</source>
-          <target state="new">影像資料檔案</target>
-        </trans-unit>
-        <trans-unit id="ViewReceivedData" translate="yes" xml:space="preserve">
-          <source>查看接受数据</source>
-          <target state="new">查看接受數據</target>
-        </trans-unit>
-        <trans-unit id="ViewSentData" translate="yes" xml:space="preserve">
-          <source>查看发送数据</source>
-          <target state="new">查看發送數據</target>
-        </trans-unit>
         <trans-unit id="WindowHidden" translate="yes" xml:space="preserve">
           <source>隐藏</source>
           <target state="new">隱藏</target>
@@ -1050,14 +894,6 @@
         <trans-unit id="Wizard" translate="yes" xml:space="preserve">
           <source>向导</source>
           <target state="new">嚮導</target>
-        </trans-unit>
-        <trans-unit id="WorkflowEngineDebugWindow" translate="yes" xml:space="preserve">
-          <source>流程引擎调试窗口</source>
-          <target state="new">流程引擎調試視窗</target>
-        </trans-unit>
-        <trans-unit id="WorkflowEngine_F" translate="yes" xml:space="preserve">
-          <source>流程引擎(_F)</source>
-          <target state="new">流程引擎(F)</target>
         </trans-unit>
         <trans-unit id="x64ServiceLog" translate="yes" xml:space="preserve">
           <source>x64服务日志</source>

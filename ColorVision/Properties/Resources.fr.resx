@@ -321,9 +321,6 @@
   <data name="Code" xml:space="preserve">
     <value>logo</value>
   </data>
-  <data name="MTFToolTip" xml:space="preserve">
-    <value>fonction de transfert de modulation</value>
-  </data>
   <data name="ThemePink" xml:space="preserve">
     <value>rose</value>
   </data>
@@ -363,9 +360,6 @@
   <data name="PerformanceTest" xml:space="preserve">
     <value>Test de performance</value>
   </data>
-  <data name="ProjectSettings" xml:space="preserve">
-    <value>Paramètres du projet</value>
-  </data>
   <data name="GeneralSettings" xml:space="preserve">
     <value>Réglages généraux</value>
   </data>
@@ -384,17 +378,8 @@
   <data name="Project" xml:space="preserve">
     <value>projet</value>
   </data>
-  <data name="DefaultExportStorageFormat" xml:space="preserve">
-    <value>Format de stockage d'exportation par défaut</value>
-  </data>
-  <data name="NewProjectFormat" xml:space="preserve">
-    <value>Nouveau format de projet</value>
-  </data>
   <data name="ConfigureNewProject" xml:space="preserve">
     <value>Configurer un nouveau projet</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>nom du projet</value>
   </data>
   <data name="CreateProject" xml:space="preserve">
     <value>Créer un projet</value>
@@ -414,20 +399,11 @@
   <data name="ServiceAgreement" xml:space="preserve">
     <value>Contrat de service</value>
   </data>
-  <data name="MyLicense_R" xml:space="preserve">
-    <value>Ma licence(R)</value>
-  </data>
   <data name="SaveWindowLayout" xml:space="preserve">
     <value>Enregistrer la disposition des fenêtres</value>
   </data>
   <data name="ApplyWindowLayout" xml:space="preserve">
     <value>Appliquer la disposition des fenêtres</value>
-  </data>
-  <data name="WorkflowEngine_F" xml:space="preserve">
-    <value>Moteur de processus (F)</value>
-  </data>
-  <data name="RegistryCenter" xml:space="preserve">
-    <value>Centre d'inscription</value>
   </data>
   <data name="Success" xml:space="preserve">
     <value>succès</value>
@@ -462,17 +438,11 @@
   <data name="CameraLog" xml:space="preserve">
     <value>Journal de la caméra</value>
   </data>
-  <data name="RestartService" xml:space="preserve">
-    <value>Redémarrer le service</value>
-  </data>
   <data name="InstallCertificate" xml:space="preserve">
     <value>Installer le certificat</value>
   </data>
   <data name="ApplicationExit" xml:space="preserve">
     <value>Le programme se termine</value>
-  </data>
-  <data name="EnterAcquisitionWindow" xml:space="preserve">
-    <value>Entrez dans la fenêtre de collecte</value>
   </data>
   <data name="SelectResourceToLoad" xml:space="preserve">
     <value>Veuillez sélectionner la ressource que vous souhaitez charger :</value>
@@ -501,9 +471,6 @@
   <data name="TransmitChannel" xml:space="preserve">
     <value>envoyer le canal</value>
   </data>
-  <data name="ReceiveChannel" xml:space="preserve">
-    <value>canal de réception</value>
-  </data>
   <data name="CreateNewConfigurationFile" xml:space="preserve">
     <value>Créer un nouveau fichier de configuration</value>
   </data>
@@ -518,12 +485,6 @@
   </data>
   <data name="SimulateReceive" xml:space="preserve">
     <value>Simulation d'acceptation</value>
-  </data>
-  <data name="ViewSentData" xml:space="preserve">
-    <value>Afficher les données d'envoi</value>
-  </data>
-  <data name="ViewReceivedData" xml:space="preserve">
-    <value>Afficher les données d'acceptation</value>
   </data>
   <data name="MsgLogWindow" xml:space="preserve">
     <value>Fenêtre d'enregistrement des messages</value>
@@ -555,9 +516,6 @@
   <data name="ErrorOccurred" xml:space="preserve">
     <value>Une erreur s'est produite</value>
   </data>
-  <data name="TemplateManagementWindow" xml:space="preserve">
-    <value>Fenêtre de gestion des modèles</value>
-  </data>
   <data name="New" xml:space="preserve">
     <value>Nouveau</value>
   </data>
@@ -567,20 +525,8 @@
   <data name="OutputView" xml:space="preserve">
     <value>Vue de sortie</value>
   </data>
-  <data name="MqttConnectionConfiguration" xml:space="preserve">
-    <value>Configuration de la connexion MQTT</value>
-  </data>
-  <data name="MqttConnection" xml:space="preserve">
-    <value>Connexion MQTT</value>
-  </data>
   <data name="ConnectionName" xml:space="preserve">
     <value>nom de connexion</value>
-  </data>
-  <data name="MysqlConnectionConfiguration" xml:space="preserve">
-    <value>Configuration de la connexion MySQL</value>
-  </data>
-  <data name="MysqlConnection" xml:space="preserve">
-    <value>Connexion MySQL</value>
   </data>
   <data name="ExecutionProcess" xml:space="preserve">
     <value>Processus</value>
@@ -591,9 +537,6 @@
   <data name="Calculate" xml:space="preserve">
     <value>calculer</value>
   </data>
-  <data name="NoRelatedItemsFound" xml:space="preserve">
-    <value>Aucun élément associé trouvé</value>
-  </data>
   <data name="OpenItem" xml:space="preserve">
     <value>Projet ouvert</value>
   </data>
@@ -602,9 +545,6 @@
   </data>
   <data name="CreateNewProjectOrFile" xml:space="preserve">
     <value>Créer un nouveau projet ou fichier</value>
-  </data>
-  <data name="DatabaseConnectionFailed" xml:space="preserve">
-    <value>La connexion à la base de données a échoué, veuillez vous connecter à la base de données avant de l'utiliser</value>
   </data>
   <data name="UnderDevelopment" xml:space="preserve">
     <value>En développement</value>
@@ -635,9 +575,6 @@
   </data>
   <data name="SetupWizard" xml:space="preserve">
     <value>Assistant de configuration</value>
-  </data>
-  <data name="WorkflowEngineDebugWindow" xml:space="preserve">
-    <value>Fenêtre de débogage du moteur de processus</value>
   </data>
   <data name="MenuFlow" xml:space="preserve">
     <value>F_low</value>
@@ -693,9 +630,6 @@
   <data name="Timeout" xml:space="preserve">
     <value>Temps mort</value>
   </data>
-  <data name="MQTTLog" xml:space="preserve">
-    <value>Journal MQTT</value>
-  </data>
   <data name="Topic" xml:space="preserve">
     <value>sujet</value>
   </data>
@@ -704,9 +638,6 @@
   </data>
   <data name="MessageRetention" xml:space="preserve">
     <value>conservation des messages</value>
-  </data>
-  <data name="MenuAlgorithm" xml:space="preserve">
-    <value>Algorithme(A)</value>
   </data>
   <data name="CreateDevice" xml:space="preserve">
     <value>Créer un appareil</value>
@@ -729,35 +660,17 @@
   <data name="PhysicalCameraManager" xml:space="preserve">
     <value>Gestion des caméras physiques</value>
   </data>
-  <data name="MenuDevice" xml:space="preserve">
-    <value>Configuration de l'appareil (_D)</value>
-  </data>
   <data name="MenuService" xml:space="preserve">
     <value>Configuration(S) du service d'administrateur(_S)</value>
   </data>
   <data name="MenuLogin" xml:space="preserve">
     <value>Compte de connexion (_L)</value>
   </data>
-  <data name="MenuCalibrationTool" xml:space="preserve">
-    <value>Outil de génération d'étalonnage (_C)</value>
-  </data>
-  <data name="MenuBuildPOI" xml:space="preserve">
-    <value>Paramètres du modèle BuildPOI (B)</value>
-  </data>
   <data name="MenuDistortion" xml:space="preserve">
     <value>Paramètres du modèle de distorsion (D)</value>
   </data>
   <data name="MenuFocusPoints" xml:space="preserve">
     <value>Paramètres du modèle de détection de zone lumineuse (F)</value>
-  </data>
-  <data name="MenuFOV" xml:space="preserve">
-    <value>Paramètres du modèle FOV (B)" ;</value>
-  </data>
-  <data name="MenuGhost" xml:space="preserve">
-    <value>Paramètres du modèle fantôme (G)</value>
-  </data>
-  <data name="MenuLedCheck" xml:space="preserve">
-    <value>Paramètre du modèle de détection de perles de lampe (L)</value>
   </data>
   <data name="MenuMTF" xml:space="preserve">
     <value>Paramètres du modèle MTF (M)</value>
@@ -771,20 +684,8 @@
   <data name="MenuSUM" xml:space="preserve">
     <value>Paramètres du modèle de table source (S)</value>
   </data>
-  <data name="MenuSenSorHeYuan" xml:space="preserve">
-    <value>Paramètres du modèle de capteur générique (S)</value>
-  </data>
   <data name="MenuPoi" xml:space="preserve">
     <value>Paramètres du modèle de préoccupation (P)</value>
-  </data>
-  <data name="MenuCameraExp" xml:space="preserve">
-    <value>Paramètres du modèle d'exposition de l'appareil photo (B)</value>
-  </data>
-  <data name="MenuMeasure" xml:space="preserve">
-    <value>Paramètres du modèle de mesure</value>
-  </data>
-  <data name="MenuValidue" xml:space="preserve">
-    <value>Paramètres du modèle de vérification concerné (B)</value>
   </data>
   <data name="Alias" xml:space="preserve">
     <value>Alias</value>
@@ -809,15 +710,6 @@
   </data>
   <data name="Exchange" xml:space="preserve">
     <value>échange</value>
-  </data>
-  <data name="ExposureB" xml:space="preserve">
-    <value>Exposition B</value>
-  </data>
-  <data name="ExposureG" xml:space="preserve">
-    <value>ExpositionG</value>
-  </data>
-  <data name="ExposureR" xml:space="preserve">
-    <value>Exposition R</value>
   </data>
   <data name="BatchNumber" xml:space="preserve">
     <value>numéro de lot</value>
@@ -861,20 +753,11 @@
   <data name="CreateTime" xml:space="preserve">
     <value>mesurer le temps</value>
   </data>
-  <data name="ViewCamera_图像数据文件" xml:space="preserve">
-    <value>fichier de données d'image</value>
-  </data>
   <data name="Exposure" xml:space="preserve">
     <value>exposition</value>
   </data>
   <data name="Video" xml:space="preserve">
     <value>mode vidéo</value>
-  </data>
-  <data name="DeviceCameraSign1" xml:space="preserve">
-    <value>L'appareil est hors ligne, veuillez d'abord configurer l'ID de la caméra</value>
-  </data>
-  <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
-    <value>Zone de données d'image CIE</value>
   </data>
   <data name="ImageSource" xml:space="preserve">
     <value>source d'images</value>
@@ -900,14 +783,8 @@
   <data name="x86ServiceLog" xml:space="preserve">
     <value>journal des services x86</value>
   </data>
-  <data name="RCServiceLog" xml:space="preserve">
-    <value>Journal de service RC</value>
-  </data>
   <data name="UpdateSpeed" xml:space="preserve">
     <value>Vitesse de mise à jour</value>
-  </data>
-  <data name="DefaultCreateTemplateName" xml:space="preserve">
-    <value>Défaut</value>
   </data>
   <data name="StartingService" xml:space="preserve">
     <value>Service de démarrage</value>
