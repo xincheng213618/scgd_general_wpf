@@ -1,9 +1,5 @@
-﻿using ColorVision.Common.Extension;
-using ColorVision.Media;
-using ColorVision.Net;
-using ColorVision.Solution;
+﻿using ColorVision.UI;
 using System;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
@@ -36,32 +32,18 @@ namespace ColorVision
                         int size = GlobalGetAtomName((ushort)wParam, chars, chars.Length);
                         if (size > 0)
                         {
-                            string result = new(chars, 0, size);
+                            string receivedString = new(chars, 0, size);
                             GlobalDeleteAtom((short)wParam);
 
-                            if (File.Exists(result))
+                            char separator = '\u0001';
+                            string[] parsedArgs = receivedString.Split(separator);
+                            var parser = ArgumentParser.GetInstance();
+                            parser.CommandLineArgs = parsedArgs;
+                            parser.Parse();
+                            string inputFile = parser.GetValue("input");
+                            if (inputFile != null)
                             {
-                                if (result.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    SolutionManager.GetInstance().OpenSolution(result);
-                                }
-                                if (result.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    ImageView imageView = new();
-                                    CVFileUtil.ReadCVRaw(result, out CVCIEFile fileInfo);
-                                    Window window = new() { Title = ColorVision.Properties.Resources.QuickPreview, Owner = Application.Current.MainWindow};
-                                    window.Content = imageView;
-                                    imageView.OpenImage(fileInfo);
-
-                                    window.Show();
-                                    window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() => {
-                                        imageView.ToolBarTop.ClearImage();
-                                    }));
-                                }
-                            }
-                            else
-                            {
-                                MessageBox.Show(result, "ColorVision");
+                                FileHandlerProcessor.GetInstance().ProcessFile(inputFile);
                             }
                         }
                     }

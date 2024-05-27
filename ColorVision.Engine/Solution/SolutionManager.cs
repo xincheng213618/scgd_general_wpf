@@ -55,7 +55,8 @@ namespace ColorVision.Solution
 
             bool su = false;
             var parser = ArgumentParser.GetInstance();
-            parser.AddArgument("s", false, "solutionpath");
+
+            parser.AddArgument("solutionpath", false, "s");
             parser.Parse();
             var solutionpath = parser.GetValue("solutionpath");
             if (solutionpath != null)

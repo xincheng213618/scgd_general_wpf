@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace ColorVision.UI
+﻿namespace ColorVision.UI
 {
     public class Argument
     {
@@ -29,7 +23,7 @@ namespace ColorVision.UI
         private readonly List<Argument> _arguments = new List<Argument>();
         private readonly Dictionary<string, string> _parsedArguments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-        public string[] CommandLineArgs { get; set; }
+        public string[] CommandLineArgs { get; set; } = Array.Empty<string>();
         public ArgumentParser()
         {
 
@@ -45,40 +39,36 @@ namespace ColorVision.UI
 
             for (int i = 0; i < args.Length; i++)
             {
-                if (args[i].StartsWith("-"))
+                if (args[i].StartsWith("-",StringComparison.CurrentCulture))
                 {
-                    string key = args[i].TrimStart('-').ToLower();
-                    if (aliasMap.ContainsKey(key))
+                    string key = args[i].TrimStart('-').ToLower(System.Globalization.CultureInfo.CurrentCulture);
+                    if (aliasMap.TryGetValue(key, out string? value))
                     {
-                        key = aliasMap[key];
+                        key = value;
                     }
 
                     if (_arguments.Exists(arg => arg.Name.Equals(key, StringComparison.OrdinalIgnoreCase)))
                     {
-                        var argument = _arguments.Find(arg => arg.Name.Equals(key, StringComparison.OrdinalIgnoreCase));
-                        string value = argument.IsFlag ? "true" : (i + 1 < args.Length && !args[i + 1].StartsWith("-")) ? args[i + 1] : null;
-
-                        if (value != null)
+                        Argument argument = _arguments.Find(arg => arg.Name.Equals(key, StringComparison.OrdinalIgnoreCase));
+                        if (argument != null)
                         {
-                            _parsedArguments[key] = value;
-                            if (!argument.IsFlag)
+                            string value1 = argument.IsFlag ? "true" : (i + 1 < args.Length && !args[i + 1].StartsWith("-", StringComparison.CurrentCulture)) ? args[i + 1] : null;
+                            if (value1 != null)
                             {
-                                i++; // Skip the next argument if it's a value
+                                _parsedArguments[key] = value1;
+                                if (!argument.IsFlag)
+                                {
+                                    i++; // Skip the next argument if it's a value
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        public bool GetFlag(string name)
-        {
-            return _parsedArguments.ContainsKey(name) && _parsedArguments[name].Equals("true", StringComparison.OrdinalIgnoreCase);
-        }
+        public bool GetFlag(string name) => _parsedArguments.TryGetValue(name, out var value) && value.Equals("true", StringComparison.OrdinalIgnoreCase);
 
-        public string GetValue(string name)
-        {
-            return _parsedArguments.ContainsKey(name) ? _parsedArguments[name] : null;
-        }
+        public string? GetValue(string name) => _parsedArguments.TryGetValue(name, out var value) ? value : null;
 
         private Dictionary<string, string> BuildAliasMap()
         {
@@ -86,10 +76,10 @@ namespace ColorVision.UI
 
             foreach (var argument in _arguments)
             {
-                aliasMap[argument.Name.ToLower()] = argument.Name.ToLower();
+                aliasMap[argument.Name.ToLowerInvariant()] = argument.Name;
                 foreach (var alias in argument.Aliases)
                 {
-                    aliasMap[alias.ToLower()] = argument.Name.ToLower();
+                    aliasMap[alias.ToLowerInvariant()] = argument.Name;
                 }
             }
 
