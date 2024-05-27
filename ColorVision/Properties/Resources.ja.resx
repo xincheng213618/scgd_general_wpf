@@ -285,15 +285,6 @@
   <data name="TesConnection" xml:space="preserve">
     <value>テスト接続</value>
   </data>
-  <data name="Host" xml:space="preserve">
-    <value>ホスト</value>
-  </data>
-  <data name="Port" xml:space="preserve">
-    <value>ポート</value>
-  </data>
-  <data name="Database" xml:space="preserve">
-    <value>名前データベース</value>
-  </data>
   <data name="UserName" xml:space="preserve">
     <value>ユーザー</value>
   </data>
@@ -372,12 +363,6 @@
   <data name="Project" xml:space="preserve">
     <value>プロジェクト</value>
   </data>
-  <data name="ConfigureNewProject" xml:space="preserve">
-    <value>新しいプロジェクトを構成する</value>
-  </data>
-  <data name="CreateProject" xml:space="preserve">
-    <value>プロジェクトの作成</value>
-  </data>
   <data name="Refresh" xml:space="preserve">
     <value>リフレッシュする</value>
   </data>
@@ -389,9 +374,6 @@
   </data>
   <data name="Import" xml:space="preserve">
     <value>輸入</value>
-  </data>
-  <data name="ServiceAgreement" xml:space="preserve">
-    <value>役務契約</value>
   </data>
   <data name="SaveWindowLayout" xml:space="preserve">
     <value>ウィンドウレイアウトを保存</value>
@@ -423,20 +405,11 @@
   <data name="Log" xml:space="preserve">
     <value>ログ</value>
   </data>
-  <data name="x64ServiceLog" xml:space="preserve">
-    <value>x64サービスログ</value>
-  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>正常に開始されました</value>
   </data>
   <data name="ExperimentalFeature" xml:space="preserve">
     <value>実験的な機能</value>
-  </data>
-  <data name="SpectrometerLog" xml:space="preserve">
-    <value>分光計のログ</value>
-  </data>
-  <data name="CameraLog" xml:space="preserve">
-    <value>カメラログ</value>
   </data>
   <data name="InstallCertificate" xml:space="preserve">
     <value>証明書のインストール</value>
@@ -444,50 +417,20 @@
   <data name="ApplicationExit" xml:space="preserve">
     <value>プログラムは終了します</value>
   </data>
-  <data name="SelectResourceToLoad" xml:space="preserve">
-    <value>ロードするリソースを選択してください:</value>
-  </data>
-  <data name="AdvancedSettings" xml:space="preserve">
-    <value>高度な設定</value>
-  </data>
   <data name="BasicInformation" xml:space="preserve">
     <value>基本情報</value>
-  </data>
-  <data name="DeviceIdentification" xml:space="preserve">
-    <value>機器のアイデンティティ</value>
-  </data>
-  <data name="DeviceName" xml:space="preserve">
-    <value>装置名</value>
   </data>
   <data name="Status" xml:space="preserve">
     <value>状態</value>
   </data>
-  <data name="ServiceIdentifier" xml:space="preserve">
-    <value>サービス識別子</value>
-  </data>
-  <data name="ServiceName" xml:space="preserve">
-    <value>サービス名</value>
-  </data>
   <data name="TransmitChannel" xml:space="preserve">
     <value>送信チャンネル</value>
-  </data>
-  <data name="CreateNewConfigurationFile" xml:space="preserve">
-    <value>新しい設定ファイルを作成する</value>
   </data>
   <data name="CopyConfigurationFile" xml:space="preserve">
     <value>設定ファイルをコピーする</value>
   </data>
   <data name="ClearData" xml:space="preserve">
     <value>データのクリア</value>
-  </data>
-  <data name="SimulateSend" xml:space="preserve">
-    <value>アナログ送信</value>
-  </data>
-  <data name="SimulateReceive" xml:space="preserve">
-    <value>模擬合格</value>
-  </data>
-  <data name="MsgLogWindow" xml:space="preserve">
-    <value>メッセージ記録ウィンドウ</value>
   </data>
   <data name="ImportLicense" xml:space="preserve">
     <value>輸入ライセンス</value>
@@ -528,24 +471,6 @@
   <data name="ConnectionName" xml:space="preserve">
     <value>接続名</value>
   </data>
-  <data name="ExecutionProcess" xml:space="preserve">
-    <value>実装プロセス</value>
-  </data>
-  <data name="StopProcess" xml:space="preserve">
-    <value>プロセスの停止</value>
-  </data>
-  <data name="Calculate" xml:space="preserve">
-    <value>計算する</value>
-  </data>
-  <data name="OpenItem" xml:space="preserve">
-    <value>プロジェクトを開く</value>
-  </data>
-  <data name="OpenLocalProjectOrFile" xml:space="preserve">
-    <value>ローカルプロジェクトまたはファイルを開きます</value>
-  </data>
-  <data name="CreateNewProjectOrFile" xml:space="preserve">
-    <value>新しいプロジェクトまたはファイルを作成する</value>
-  </data>
   <data name="UnderDevelopment" xml:space="preserve">
     <value>開発中</value>
   </data>
@@ -560,9 +485,6 @@
   </data>
   <data name="Loading" xml:space="preserve">
     <value>負荷</value>
-  </data>
-  <data name="ServiceConfiguration" xml:space="preserve">
-    <value>サービス構成</value>
   </data>
   <data name="ConfigurationComplete" xml:space="preserve">
     <value>設定が完了しました</value>
@@ -594,32 +516,14 @@
   <data name="Send" xml:space="preserve">
     <value>送信</value>
   </data>
-  <data name="Subscribe" xml:space="preserve">
-    <value>サブスクリプション</value>
-  </data>
   <data name="Unsubscribe" xml:space="preserve">
     <value>購読を解除する</value>
-  </data>
-  <data name="OpenSolution" xml:space="preserve">
-    <value>プロジェクトを開く</value>
-  </data>
-  <data name="NewSolution" xml:space="preserve">
-    <value>新築</value>
-  </data>
-  <data name="MsgList" xml:space="preserve">
-    <value>メッセージ一覧</value>
   </data>
   <data name="Filter" xml:space="preserve">
     <value>フィルター</value>
   </data>
   <data name="Gain" xml:space="preserve">
     <value>得</value>
-  </data>
-  <data name="AutoExposure" xml:space="preserve">
-    <value>自動露出</value>
-  </data>
-  <data name="Calibration" xml:space="preserve">
-    <value>較正</value>
   </data>
   <data name="Capture" xml:space="preserve">
     <value>捕獲</value>
@@ -633,65 +537,20 @@
   <data name="Topic" xml:space="preserve">
     <value>トピック</value>
   </data>
-  <data name="SubscribedTopic" xml:space="preserve">
-    <value>購読済みのトピック</value>
-  </data>
-  <data name="MessageRetention" xml:space="preserve">
-    <value>メッセージの保持</value>
-  </data>
-  <data name="CreateDevice" xml:space="preserve">
-    <value>デバイスの作成</value>
-  </data>
   <data name="Upload" xml:space="preserve">
     <value>アップロード</value>
   </data>
   <data name="Local" xml:space="preserve">
     <value>地元</value>
   </data>
-  <data name="GhostShadow" xml:space="preserve">
-    <value>おばけ</value>
-  </data>
   <data name="MenuRename" xml:space="preserve">
     <value>名前を変更(_M)</value>
-  </data>
-  <data name="MenuPhyCameraManager" xml:space="preserve">
-    <value>物理カメラ管理(_P)</value>
-  </data>
-  <data name="PhysicalCameraManager" xml:space="preserve">
-    <value>物理的なカメラの管理</value>
-  </data>
-  <data name="MenuService" xml:space="preserve">
-    <value>管理者サービス構成(_S)</value>
   </data>
   <data name="MenuLogin" xml:space="preserve">
     <value>ログインアカウント(_L)</value>
   </data>
-  <data name="MenuDistortion" xml:space="preserve">
-    <value>ディストーションテンプレート設定(D)</value>
-  </data>
-  <data name="MenuFocusPoints" xml:space="preserve">
-    <value>発光領域検出テンプレート設定(F)</value>
-  </data>
-  <data name="MenuMTF" xml:space="preserve">
-    <value>MTF テンプレート設定(M)</value>
-  </data>
-  <data name="MenuSFR" xml:space="preserve">
-    <value>_SFR テンプレート設定</value>
-  </data>
-  <data name="MenuPG" xml:space="preserve">
-    <value>PGテンプレートの設定</value>
-  </data>
-  <data name="MenuSUM" xml:space="preserve">
-    <value>ソーステーブルテンプレート設定(S)</value>
-  </data>
-  <data name="MenuPoi" xml:space="preserve">
-    <value>懸念テンプレートの設定（P）</value>
-  </data>
   <data name="Alias" xml:space="preserve">
     <value>エイリアス</value>
-  </data>
-  <data name="FocusPoint" xml:space="preserve">
-    <value>フォーカスポイント</value>
   </data>
   <data name="Layers" xml:space="preserve">
     <value>レイヤー</value>
@@ -702,17 +561,11 @@
   <data name="Search" xml:space="preserve">
     <value>検索</value>
   </data>
-  <data name="Flow" xml:space="preserve">
-    <value>プロセス</value>
-  </data>
   <data name="QuickPreview" xml:space="preserve">
     <value>クイックプレビュー</value>
   </data>
   <data name="Exchange" xml:space="preserve">
     <value>交換</value>
-  </data>
-  <data name="BatchNumber" xml:space="preserve">
-    <value>バッチ番号</value>
   </data>
   <data name="ImageFile" xml:space="preserve">
     <value>画像ファイル</value>
@@ -720,14 +573,8 @@
   <data name="File" xml:space="preserve">
     <value>書類</value>
   </data>
-  <data name="DeviceCode" xml:space="preserve">
-    <value>デバイスコード</value>
-  </data>
   <data name="StartTime" xml:space="preserve">
     <value>開始時間</value>
-  </data>
-  <data name="Deadline" xml:space="preserve">
-    <value>締め切り</value>
   </data>
   <data name="Parameter" xml:space="preserve">
     <value>パラメータ</value>
@@ -747,47 +594,14 @@
   <data name="AdvanceSearch" xml:space="preserve">
     <value>高度な検索</value>
   </data>
-  <data name="AlgorithmView_类型" xml:space="preserve">
-    <value>タイプ</value>
-  </data>
-  <data name="CreateTime" xml:space="preserve">
-    <value>時間を計る</value>
-  </data>
   <data name="Exposure" xml:space="preserve">
     <value>暴露</value>
-  </data>
-  <data name="Video" xml:space="preserve">
-    <value>ビデオモード</value>
   </data>
   <data name="ImageSource" xml:space="preserve">
     <value>画像ソース</value>
   </data>
-  <data name="SaveDataColumn" xml:space="preserve">
-    <value>セーブデータ欄</value>
-  </data>
-  <data name="Chart" xml:space="preserve">
-    <value>チャート</value>
-  </data>
-  <data name="Position" xml:space="preserve">
-    <value>位置</value>
-  </data>
-  <data name="Size" xml:space="preserve">
-    <value>サイズ</value>
-  </data>
-  <data name="Shape" xml:space="preserve">
-    <value>形</value>
-  </data>
-  <data name="ServiceLog" xml:space="preserve">
-    <value>サービスログ</value>
-  </data>
-  <data name="x86ServiceLog" xml:space="preserve">
-    <value>x86サービスログ</value>
-  </data>
   <data name="UpdateSpeed" xml:space="preserve">
     <value>更新速度</value>
-  </data>
-  <data name="StartingService" xml:space="preserve">
-    <value>サービス開始</value>
   </data>
   <data name="Update" xml:space="preserve">
     <value>更新する</value>

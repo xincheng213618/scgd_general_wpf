@@ -285,15 +285,6 @@
   <data name="TesConnection" xml:space="preserve">
     <value>연결 테스트</value>
   </data>
-  <data name="Host" xml:space="preserve">
-    <value>주인</value>
-  </data>
-  <data name="Port" xml:space="preserve">
-    <value>포트</value>
-  </data>
-  <data name="Database" xml:space="preserve">
-    <value>데이터베이스 이름 지정</value>
-  </data>
   <data name="UserName" xml:space="preserve">
     <value>사용자</value>
   </data>
@@ -372,12 +363,6 @@
   <data name="Project" xml:space="preserve">
     <value>프로젝트</value>
   </data>
-  <data name="ConfigureNewProject" xml:space="preserve">
-    <value>새 프로젝트 구성</value>
-  </data>
-  <data name="CreateProject" xml:space="preserve">
-    <value>프로젝트 생성</value>
-  </data>
   <data name="Refresh" xml:space="preserve">
     <value>새로 고치다</value>
   </data>
@@ -389,9 +374,6 @@
   </data>
   <data name="Import" xml:space="preserve">
     <value>수입</value>
-  </data>
-  <data name="ServiceAgreement" xml:space="preserve">
-    <value>약관 동의</value>
   </data>
   <data name="SaveWindowLayout" xml:space="preserve">
     <value>창 레이아웃 저장</value>
@@ -423,20 +405,11 @@
   <data name="Log" xml:space="preserve">
     <value>통나무</value>
   </data>
-  <data name="x64ServiceLog" xml:space="preserve">
-    <value>x64 서비스 로그</value>
-  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>성공적으로 시작되었습니다</value>
   </data>
   <data name="ExperimentalFeature" xml:space="preserve">
     <value>실험적 기능</value>
-  </data>
-  <data name="SpectrometerLog" xml:space="preserve">
-    <value>분광계 로그</value>
-  </data>
-  <data name="CameraLog" xml:space="preserve">
-    <value>카메라 로그</value>
   </data>
   <data name="InstallCertificate" xml:space="preserve">
     <value>인증서 설치</value>
@@ -444,50 +417,20 @@
   <data name="ApplicationExit" xml:space="preserve">
     <value>프로그램 종료</value>
   </data>
-  <data name="SelectResourceToLoad" xml:space="preserve">
-    <value>로드하려는 리소스를 선택하십시오:</value>
-  </data>
-  <data name="AdvancedSettings" xml:space="preserve">
-    <value>고급 설정</value>
-  </data>
   <data name="BasicInformation" xml:space="preserve">
     <value>기본 정보</value>
-  </data>
-  <data name="DeviceIdentification" xml:space="preserve">
-    <value>장비 아이덴티티</value>
-  </data>
-  <data name="DeviceName" xml:space="preserve">
-    <value>장치 이름</value>
   </data>
   <data name="Status" xml:space="preserve">
     <value>상태</value>
   </data>
-  <data name="ServiceIdentifier" xml:space="preserve">
-    <value>서비스 ID</value>
-  </data>
-  <data name="ServiceName" xml:space="preserve">
-    <value>서비스 이름</value>
-  </data>
   <data name="TransmitChannel" xml:space="preserve">
     <value>채널 보내기</value>
-  </data>
-  <data name="CreateNewConfigurationFile" xml:space="preserve">
-    <value>새 구성 파일 만들기</value>
   </data>
   <data name="CopyConfigurationFile" xml:space="preserve">
     <value>구성 파일 복사</value>
   </data>
   <data name="ClearData" xml:space="preserve">
     <value>데이터 지우기</value>
-  </data>
-  <data name="SimulateSend" xml:space="preserve">
-    <value>아날로그 전송</value>
-  </data>
-  <data name="SimulateReceive" xml:space="preserve">
-    <value>모의 수용</value>
-  </data>
-  <data name="MsgLogWindow" xml:space="preserve">
-    <value>메시지 녹음 창</value>
   </data>
   <data name="ImportLicense" xml:space="preserve">
     <value>수입 라이센스</value>
@@ -528,24 +471,6 @@
   <data name="ConnectionName" xml:space="preserve">
     <value>연결 이름</value>
   </data>
-  <data name="ExecutionProcess" xml:space="preserve">
-    <value>구현 프로세스</value>
-  </data>
-  <data name="StopProcess" xml:space="preserve">
-    <value>프로세스 중지</value>
-  </data>
-  <data name="Calculate" xml:space="preserve">
-    <value>계산하다</value>
-  </data>
-  <data name="OpenItem" xml:space="preserve">
-    <value>프로젝트 열기</value>
-  </data>
-  <data name="OpenLocalProjectOrFile" xml:space="preserve">
-    <value>로컬 프로젝트 또는 파일 열기</value>
-  </data>
-  <data name="CreateNewProjectOrFile" xml:space="preserve">
-    <value>새 프로젝트 또는 파일 만들기</value>
-  </data>
   <data name="UnderDevelopment" xml:space="preserve">
     <value>개발 중</value>
   </data>
@@ -560,9 +485,6 @@
   </data>
   <data name="Loading" xml:space="preserve">
     <value>짐</value>
-  </data>
-  <data name="ServiceConfiguration" xml:space="preserve">
-    <value>서비스 구성</value>
   </data>
   <data name="ConfigurationComplete" xml:space="preserve">
     <value>구성 완료</value>
@@ -594,32 +516,14 @@
   <data name="Send" xml:space="preserve">
     <value>보내다</value>
   </data>
-  <data name="Subscribe" xml:space="preserve">
-    <value>신청</value>
-  </data>
   <data name="Unsubscribe" xml:space="preserve">
     <value>구독 취소</value>
-  </data>
-  <data name="OpenSolution" xml:space="preserve">
-    <value>프로젝트 열기</value>
-  </data>
-  <data name="NewSolution" xml:space="preserve">
-    <value>신조</value>
-  </data>
-  <data name="MsgList" xml:space="preserve">
-    <value>메시지 목록</value>
   </data>
   <data name="Filter" xml:space="preserve">
     <value>필터</value>
   </data>
   <data name="Gain" xml:space="preserve">
     <value>얻다</value>
-  </data>
-  <data name="AutoExposure" xml:space="preserve">
-    <value>자동 노출</value>
-  </data>
-  <data name="Calibration" xml:space="preserve">
-    <value>구경 측정</value>
   </data>
   <data name="Capture" xml:space="preserve">
     <value>포착</value>
@@ -633,65 +537,20 @@
   <data name="Topic" xml:space="preserve">
     <value>주제</value>
   </data>
-  <data name="SubscribedTopic" xml:space="preserve">
-    <value>구독한 주제</value>
-  </data>
-  <data name="MessageRetention" xml:space="preserve">
-    <value>메시지 보존</value>
-  </data>
-  <data name="CreateDevice" xml:space="preserve">
-    <value>장치 만들기</value>
-  </data>
   <data name="Upload" xml:space="preserve">
     <value>업로드</value>
   </data>
   <data name="Local" xml:space="preserve">
     <value>현지의</value>
   </data>
-  <data name="GhostShadow" xml:space="preserve">
-    <value>귀신</value>
-  </data>
   <data name="MenuRename" xml:space="preserve">
     <value>이름 바꾸기(_M)</value>
-  </data>
-  <data name="MenuPhyCameraManager" xml:space="preserve">
-    <value>물리적 카메라 관리(_P)</value>
-  </data>
-  <data name="PhysicalCameraManager" xml:space="preserve">
-    <value>물리적 카메라 관리</value>
-  </data>
-  <data name="MenuService" xml:space="preserve">
-    <value>관리자 서비스 구성(_S)</value>
   </data>
   <data name="MenuLogin" xml:space="preserve">
     <value>로그인 계정(_L)</value>
   </data>
-  <data name="MenuDistortion" xml:space="preserve">
-    <value>왜곡 템플릿 설정(D)</value>
-  </data>
-  <data name="MenuFocusPoints" xml:space="preserve">
-    <value>발광 영역 감지 템플릿 설정(F)</value>
-  </data>
-  <data name="MenuMTF" xml:space="preserve">
-    <value>_MTF 템플릿 설정</value>
-  </data>
-  <data name="MenuSFR" xml:space="preserve">
-    <value>_SFR 템플릿 설정</value>
-  </data>
-  <data name="MenuPG" xml:space="preserve">
-    <value>PG 템플릿 설정</value>
-  </data>
-  <data name="MenuSUM" xml:space="preserve">
-    <value>소스 테이블 템플릿 설정(S)</value>
-  </data>
-  <data name="MenuPoi" xml:space="preserve">
-    <value>우려사항 템플릿 설정(P)</value>
-  </data>
   <data name="Alias" xml:space="preserve">
     <value>별명</value>
-  </data>
-  <data name="FocusPoint" xml:space="preserve">
-    <value>초점</value>
   </data>
   <data name="Layers" xml:space="preserve">
     <value>레이어</value>
@@ -702,17 +561,11 @@
   <data name="Search" xml:space="preserve">
     <value>찾다</value>
   </data>
-  <data name="Flow" xml:space="preserve">
-    <value>프로세스</value>
-  </data>
   <data name="QuickPreview" xml:space="preserve">
     <value>빠른 미리보기</value>
   </data>
   <data name="Exchange" xml:space="preserve">
     <value>교환</value>
-  </data>
-  <data name="BatchNumber" xml:space="preserve">
-    <value>배치 번호</value>
   </data>
   <data name="ImageFile" xml:space="preserve">
     <value>이미지 파일</value>
@@ -720,14 +573,8 @@
   <data name="File" xml:space="preserve">
     <value>문서</value>
   </data>
-  <data name="DeviceCode" xml:space="preserve">
-    <value>장치 코드</value>
-  </data>
   <data name="StartTime" xml:space="preserve">
     <value>시작 시간</value>
-  </data>
-  <data name="Deadline" xml:space="preserve">
-    <value>마감 시간</value>
   </data>
   <data name="Parameter" xml:space="preserve">
     <value>매개변수</value>
@@ -747,47 +594,14 @@
   <data name="AdvanceSearch" xml:space="preserve">
     <value>고급 검색</value>
   </data>
-  <data name="AlgorithmView_类型" xml:space="preserve">
-    <value>유형</value>
-  </data>
-  <data name="CreateTime" xml:space="preserve">
-    <value>시간을 측정하다</value>
-  </data>
   <data name="Exposure" xml:space="preserve">
     <value>노출</value>
-  </data>
-  <data name="Video" xml:space="preserve">
-    <value>비디오 모드</value>
   </data>
   <data name="ImageSource" xml:space="preserve">
     <value>이미지 소스</value>
   </data>
-  <data name="SaveDataColumn" xml:space="preserve">
-    <value>데이터 열 저장</value>
-  </data>
-  <data name="Chart" xml:space="preserve">
-    <value>차트</value>
-  </data>
-  <data name="Position" xml:space="preserve">
-    <value>위치</value>
-  </data>
-  <data name="Size" xml:space="preserve">
-    <value>크기</value>
-  </data>
-  <data name="Shape" xml:space="preserve">
-    <value>모양</value>
-  </data>
-  <data name="ServiceLog" xml:space="preserve">
-    <value>서비스 로그</value>
-  </data>
-  <data name="x86ServiceLog" xml:space="preserve">
-    <value>x86 서비스 로그</value>
-  </data>
   <data name="UpdateSpeed" xml:space="preserve">
     <value>업데이트 속도</value>
-  </data>
-  <data name="StartingService" xml:space="preserve">
-    <value>서비스 시작</value>
   </data>
   <data name="Update" xml:space="preserve">
     <value>고쳐 쓰다</value>

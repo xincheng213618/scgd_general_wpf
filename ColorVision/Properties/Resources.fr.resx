@@ -285,15 +285,6 @@
   <data name="TesConnection" xml:space="preserve">
     <value>tester la connexion</value>
   </data>
-  <data name="Host" xml:space="preserve">
-    <value>Hôte</value>
-  </data>
-  <data name="Port" xml:space="preserve">
-    <value>port</value>
-  </data>
-  <data name="Database" xml:space="preserve">
-    <value>Base de données de noms</value>
-  </data>
   <data name="UserName" xml:space="preserve">
     <value>utilisateur</value>
   </data>
@@ -378,12 +369,6 @@
   <data name="Project" xml:space="preserve">
     <value>projet</value>
   </data>
-  <data name="ConfigureNewProject" xml:space="preserve">
-    <value>Configurer un nouveau projet</value>
-  </data>
-  <data name="CreateProject" xml:space="preserve">
-    <value>Créer un projet</value>
-  </data>
   <data name="Refresh" xml:space="preserve">
     <value>rafraîchir</value>
   </data>
@@ -395,9 +380,6 @@
   </data>
   <data name="Import" xml:space="preserve">
     <value>importer</value>
-  </data>
-  <data name="ServiceAgreement" xml:space="preserve">
-    <value>Contrat de service</value>
   </data>
   <data name="SaveWindowLayout" xml:space="preserve">
     <value>Enregistrer la disposition des fenêtres</value>
@@ -423,20 +405,11 @@
   <data name="Log" xml:space="preserve">
     <value>enregistrer</value>
   </data>
-  <data name="x64ServiceLog" xml:space="preserve">
-    <value>journal des services x64</value>
-  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>Démarré avec succès</value>
   </data>
   <data name="ExperimentalFeature" xml:space="preserve">
     <value>Fonctionnalités expérimentales</value>
-  </data>
-  <data name="SpectrometerLog" xml:space="preserve">
-    <value>Journal du spectromètre</value>
-  </data>
-  <data name="CameraLog" xml:space="preserve">
-    <value>Journal de la caméra</value>
   </data>
   <data name="InstallCertificate" xml:space="preserve">
     <value>Installer le certificat</value>
@@ -444,50 +417,20 @@
   <data name="ApplicationExit" xml:space="preserve">
     <value>Le programme se termine</value>
   </data>
-  <data name="SelectResourceToLoad" xml:space="preserve">
-    <value>Veuillez sélectionner la ressource que vous souhaitez charger :</value>
-  </data>
-  <data name="AdvancedSettings" xml:space="preserve">
-    <value>réglages avancés</value>
-  </data>
   <data name="BasicInformation" xml:space="preserve">
     <value>Informations de base</value>
-  </data>
-  <data name="DeviceIdentification" xml:space="preserve">
-    <value>Identité de l'équipement</value>
-  </data>
-  <data name="DeviceName" xml:space="preserve">
-    <value>Nom de l'appareil</value>
   </data>
   <data name="Status" xml:space="preserve">
     <value>État</value>
   </data>
-  <data name="ServiceIdentifier" xml:space="preserve">
-    <value>Numéro de service</value>
-  </data>
-  <data name="ServiceName" xml:space="preserve">
-    <value>Nom du service</value>
-  </data>
   <data name="TransmitChannel" xml:space="preserve">
     <value>envoyer le canal</value>
-  </data>
-  <data name="CreateNewConfigurationFile" xml:space="preserve">
-    <value>Créer un nouveau fichier de configuration</value>
   </data>
   <data name="CopyConfigurationFile" xml:space="preserve">
     <value>Copier le fichier de configuration</value>
   </data>
   <data name="ClearData" xml:space="preserve">
     <value>Effacer les données</value>
-  </data>
-  <data name="SimulateSend" xml:space="preserve">
-    <value>Envoi analogique</value>
-  </data>
-  <data name="SimulateReceive" xml:space="preserve">
-    <value>Simulation d'acceptation</value>
-  </data>
-  <data name="MsgLogWindow" xml:space="preserve">
-    <value>Fenêtre d'enregistrement des messages</value>
   </data>
   <data name="ImportLicense" xml:space="preserve">
     <value>Licence d'importation</value>
@@ -528,24 +471,6 @@
   <data name="ConnectionName" xml:space="preserve">
     <value>nom de connexion</value>
   </data>
-  <data name="ExecutionProcess" xml:space="preserve">
-    <value>Processus</value>
-  </data>
-  <data name="StopProcess" xml:space="preserve">
-    <value>Arrêter le processus</value>
-  </data>
-  <data name="Calculate" xml:space="preserve">
-    <value>calculer</value>
-  </data>
-  <data name="OpenItem" xml:space="preserve">
-    <value>Projet ouvert</value>
-  </data>
-  <data name="OpenLocalProjectOrFile" xml:space="preserve">
-    <value>Ouvrir un projet ou un fichier local</value>
-  </data>
-  <data name="CreateNewProjectOrFile" xml:space="preserve">
-    <value>Créer un nouveau projet ou fichier</value>
-  </data>
   <data name="UnderDevelopment" xml:space="preserve">
     <value>En développement</value>
   </data>
@@ -560,9 +485,6 @@
   </data>
   <data name="Loading" xml:space="preserve">
     <value>charger</value>
-  </data>
-  <data name="ServiceConfiguration" xml:space="preserve">
-    <value>Configuration des services</value>
   </data>
   <data name="ConfigurationComplete" xml:space="preserve">
     <value>Configuration terminée</value>
@@ -594,32 +516,14 @@
   <data name="Send" xml:space="preserve">
     <value>envoyer</value>
   </data>
-  <data name="Subscribe" xml:space="preserve">
-    <value>abonnement</value>
-  </data>
   <data name="Unsubscribe" xml:space="preserve">
     <value>Se désabonner</value>
-  </data>
-  <data name="OpenSolution" xml:space="preserve">
-    <value>Projet ouvert</value>
-  </data>
-  <data name="NewSolution" xml:space="preserve">
-    <value>Nouvelle construction</value>
-  </data>
-  <data name="MsgList" xml:space="preserve">
-    <value>Liste des messages</value>
   </data>
   <data name="Filter" xml:space="preserve">
     <value>Filtre</value>
   </data>
   <data name="Gain" xml:space="preserve">
     <value>Gagner</value>
-  </data>
-  <data name="AutoExposure" xml:space="preserve">
-    <value>Exposition automatique</value>
-  </data>
-  <data name="Calibration" xml:space="preserve">
-    <value>Étalonnage</value>
   </data>
   <data name="Capture" xml:space="preserve">
     <value>Capturer</value>
@@ -633,65 +537,20 @@
   <data name="Topic" xml:space="preserve">
     <value>sujet</value>
   </data>
-  <data name="SubscribedTopic" xml:space="preserve">
-    <value>Sujets abonnés</value>
-  </data>
-  <data name="MessageRetention" xml:space="preserve">
-    <value>conservation des messages</value>
-  </data>
-  <data name="CreateDevice" xml:space="preserve">
-    <value>Créer un appareil</value>
-  </data>
   <data name="Upload" xml:space="preserve">
     <value>télécharger</value>
   </data>
   <data name="Local" xml:space="preserve">
     <value>locale</value>
   </data>
-  <data name="GhostShadow" xml:space="preserve">
-    <value>fantôme</value>
-  </data>
   <data name="MenuRename" xml:space="preserve">
     <value>Renommer(M)</value>
-  </data>
-  <data name="MenuPhyCameraManager" xml:space="preserve">
-    <value>Gestion des caméras physiques(_P)</value>
-  </data>
-  <data name="PhysicalCameraManager" xml:space="preserve">
-    <value>Gestion des caméras physiques</value>
-  </data>
-  <data name="MenuService" xml:space="preserve">
-    <value>Configuration(S) du service d'administrateur(_S)</value>
   </data>
   <data name="MenuLogin" xml:space="preserve">
     <value>Compte de connexion (_L)</value>
   </data>
-  <data name="MenuDistortion" xml:space="preserve">
-    <value>Paramètres du modèle de distorsion (D)</value>
-  </data>
-  <data name="MenuFocusPoints" xml:space="preserve">
-    <value>Paramètres du modèle de détection de zone lumineuse (F)</value>
-  </data>
-  <data name="MenuMTF" xml:space="preserve">
-    <value>Paramètres du modèle MTF (M)</value>
-  </data>
-  <data name="MenuSFR" xml:space="preserve">
-    <value>Paramètres du modèle SFR (M)</value>
-  </data>
-  <data name="MenuPG" xml:space="preserve">
-    <value>Paramètres du modèle PG</value>
-  </data>
-  <data name="MenuSUM" xml:space="preserve">
-    <value>Paramètres du modèle de table source (S)</value>
-  </data>
-  <data name="MenuPoi" xml:space="preserve">
-    <value>Paramètres du modèle de préoccupation (P)</value>
-  </data>
   <data name="Alias" xml:space="preserve">
     <value>Alias</value>
-  </data>
-  <data name="FocusPoint" xml:space="preserve">
-    <value>point de concentration</value>
   </data>
   <data name="Layers" xml:space="preserve">
     <value>Couches</value>
@@ -702,17 +561,11 @@
   <data name="Search" xml:space="preserve">
     <value>recherche</value>
   </data>
-  <data name="Flow" xml:space="preserve">
-    <value>Processus</value>
-  </data>
   <data name="QuickPreview" xml:space="preserve">
     <value>aperçu rapide</value>
   </data>
   <data name="Exchange" xml:space="preserve">
     <value>échange</value>
-  </data>
-  <data name="BatchNumber" xml:space="preserve">
-    <value>numéro de lot</value>
   </data>
   <data name="ImageFile" xml:space="preserve">
     <value>Fichiers images</value>
@@ -720,14 +573,8 @@
   <data name="File" xml:space="preserve">
     <value>document</value>
   </data>
-  <data name="DeviceCode" xml:space="preserve">
-    <value>Code de l'appareil</value>
-  </data>
   <data name="StartTime" xml:space="preserve">
     <value>Heure de départ</value>
-  </data>
-  <data name="Deadline" xml:space="preserve">
-    <value>Date limite</value>
   </data>
   <data name="Parameter" xml:space="preserve">
     <value>paramètre</value>
@@ -747,47 +594,14 @@
   <data name="AdvanceSearch" xml:space="preserve">
     <value>Recherche Avancée</value>
   </data>
-  <data name="AlgorithmView_类型" xml:space="preserve">
-    <value>taper</value>
-  </data>
-  <data name="CreateTime" xml:space="preserve">
-    <value>mesurer le temps</value>
-  </data>
   <data name="Exposure" xml:space="preserve">
     <value>exposition</value>
-  </data>
-  <data name="Video" xml:space="preserve">
-    <value>mode vidéo</value>
   </data>
   <data name="ImageSource" xml:space="preserve">
     <value>source d'images</value>
   </data>
-  <data name="SaveDataColumn" xml:space="preserve">
-    <value>Enregistrer la colonne de données</value>
-  </data>
-  <data name="Chart" xml:space="preserve">
-    <value>graphique</value>
-  </data>
-  <data name="Position" xml:space="preserve">
-    <value>Emplacement</value>
-  </data>
-  <data name="Size" xml:space="preserve">
-    <value>taille</value>
-  </data>
-  <data name="Shape" xml:space="preserve">
-    <value>forme</value>
-  </data>
-  <data name="ServiceLog" xml:space="preserve">
-    <value>Journal de service</value>
-  </data>
-  <data name="x86ServiceLog" xml:space="preserve">
-    <value>journal des services x86</value>
-  </data>
   <data name="UpdateSpeed" xml:space="preserve">
     <value>Vitesse de mise à jour</value>
-  </data>
-  <data name="StartingService" xml:space="preserve">
-    <value>Service de démarrage</value>
   </data>
   <data name="Update" xml:space="preserve">
     <value>renouveler</value>

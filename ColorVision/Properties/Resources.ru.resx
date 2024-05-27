@@ -285,15 +285,6 @@
   <data name="TesConnection" xml:space="preserve">
     <value>тестовое соединение</value>
   </data>
-  <data name="Host" xml:space="preserve">
-    <value>Хозяин</value>
-  </data>
-  <data name="Port" xml:space="preserve">
-    <value>порт</value>
-  </data>
-  <data name="Database" xml:space="preserve">
-    <value>База данных имен</value>
-  </data>
   <data name="UserName" xml:space="preserve">
     <value>пользователь</value>
   </data>
@@ -372,12 +363,6 @@
   <data name="Project" xml:space="preserve">
     <value>проект</value>
   </data>
-  <data name="ConfigureNewProject" xml:space="preserve">
-    <value>Настроить новый проект</value>
-  </data>
-  <data name="CreateProject" xml:space="preserve">
-    <value>Создать проект</value>
-  </data>
   <data name="Refresh" xml:space="preserve">
     <value>обновить</value>
   </data>
@@ -389,9 +374,6 @@
   </data>
   <data name="Import" xml:space="preserve">
     <value>Импортировать</value>
-  </data>
-  <data name="ServiceAgreement" xml:space="preserve">
-    <value>Сервисное соглашение</value>
   </data>
   <data name="SaveWindowLayout" xml:space="preserve">
     <value>Сохранить макет окна</value>
@@ -423,20 +405,11 @@
   <data name="Log" xml:space="preserve">
     <value>бревно</value>
   </data>
-  <data name="x64ServiceLog" xml:space="preserve">
-    <value>журнал обслуживания x64</value>
-  </data>
   <data name="LaunchSuccess" xml:space="preserve">
     <value>Началось успешно</value>
   </data>
   <data name="ExperimentalFeature" xml:space="preserve">
     <value>Экспериментальные возможности</value>
-  </data>
-  <data name="SpectrometerLog" xml:space="preserve">
-    <value>Журнал спектрометра</value>
-  </data>
-  <data name="CameraLog" xml:space="preserve">
-    <value>Журнал камеры</value>
   </data>
   <data name="InstallCertificate" xml:space="preserve">
     <value>Установить сертификат</value>
@@ -444,50 +417,20 @@
   <data name="ApplicationExit" xml:space="preserve">
     <value>Программа закрывается</value>
   </data>
-  <data name="SelectResourceToLoad" xml:space="preserve">
-    <value>Пожалуйста, выберите ресурс, который вы хотите загрузить:</value>
-  </data>
-  <data name="AdvancedSettings" xml:space="preserve">
-    <value>расширенные настройки</value>
-  </data>
   <data name="BasicInformation" xml:space="preserve">
     <value>Основная информация</value>
-  </data>
-  <data name="DeviceIdentification" xml:space="preserve">
-    <value>Идентификация оборудования</value>
-  </data>
-  <data name="DeviceName" xml:space="preserve">
-    <value>Имя устройства</value>
   </data>
   <data name="Status" xml:space="preserve">
     <value>состояние</value>
   </data>
-  <data name="ServiceIdentifier" xml:space="preserve">
-    <value>Идентификатор услуги</value>
-  </data>
-  <data name="ServiceName" xml:space="preserve">
-    <value>наименование услуги</value>
-  </data>
   <data name="TransmitChannel" xml:space="preserve">
     <value>отправить канал</value>
-  </data>
-  <data name="CreateNewConfigurationFile" xml:space="preserve">
-    <value>Создать новый файл конфигурации</value>
   </data>
   <data name="CopyConfigurationFile" xml:space="preserve">
     <value>Скопировать файл конфигурации</value>
   </data>
   <data name="ClearData" xml:space="preserve">
     <value>Очистить данные</value>
-  </data>
-  <data name="SimulateSend" xml:space="preserve">
-    <value>Аналоговая отправка</value>
-  </data>
-  <data name="SimulateReceive" xml:space="preserve">
-    <value>Ложное принятие</value>
-  </data>
-  <data name="MsgLogWindow" xml:space="preserve">
-    <value>Окно записи сообщения</value>
   </data>
   <data name="ImportLicense" xml:space="preserve">
     <value>Лицензия на импорт</value>
@@ -528,24 +471,6 @@
   <data name="ConnectionName" xml:space="preserve">
     <value>название соединения</value>
   </data>
-  <data name="ExecutionProcess" xml:space="preserve">
-    <value>Процесс</value>
-  </data>
-  <data name="StopProcess" xml:space="preserve">
-    <value>Остановить процесс</value>
-  </data>
-  <data name="Calculate" xml:space="preserve">
-    <value>вычислить</value>
-  </data>
-  <data name="OpenItem" xml:space="preserve">
-    <value>Открыть проект</value>
-  </data>
-  <data name="OpenLocalProjectOrFile" xml:space="preserve">
-    <value>Откройте локальный проект или файл</value>
-  </data>
-  <data name="CreateNewProjectOrFile" xml:space="preserve">
-    <value>Создать новый проект или файл</value>
-  </data>
   <data name="UnderDevelopment" xml:space="preserve">
     <value>В развитие</value>
   </data>
@@ -560,9 +485,6 @@
   </data>
   <data name="Loading" xml:space="preserve">
     <value>нагрузка</value>
-  </data>
-  <data name="ServiceConfiguration" xml:space="preserve">
-    <value>Конфигурация сервиса</value>
   </data>
   <data name="ConfigurationComplete" xml:space="preserve">
     <value>Настройка завершена</value>
@@ -594,32 +516,14 @@
   <data name="Send" xml:space="preserve">
     <value>отправлять</value>
   </data>
-  <data name="Subscribe" xml:space="preserve">
-    <value>подписка</value>
-  </data>
   <data name="Unsubscribe" xml:space="preserve">
     <value>Отписаться</value>
-  </data>
-  <data name="OpenSolution" xml:space="preserve">
-    <value>Открыть проект</value>
-  </data>
-  <data name="NewSolution" xml:space="preserve">
-    <value>Новое строительство</value>
-  </data>
-  <data name="MsgList" xml:space="preserve">
-    <value>Список сообщений</value>
   </data>
   <data name="Filter" xml:space="preserve">
     <value>фильтр</value>
   </data>
   <data name="Gain" xml:space="preserve">
     <value>Прирост</value>
-  </data>
-  <data name="AutoExposure" xml:space="preserve">
-    <value>Автоматическая экспозиция</value>
-  </data>
-  <data name="Calibration" xml:space="preserve">
-    <value>Калибровка</value>
   </data>
   <data name="Capture" xml:space="preserve">
     <value>Захватывать</value>
@@ -633,65 +537,20 @@
   <data name="Topic" xml:space="preserve">
     <value>тема</value>
   </data>
-  <data name="SubscribedTopic" xml:space="preserve">
-    <value>Подписанные темы</value>
-  </data>
-  <data name="MessageRetention" xml:space="preserve">
-    <value>сохранение сообщений</value>
-  </data>
-  <data name="CreateDevice" xml:space="preserve">
-    <value>Создать устройство</value>
-  </data>
   <data name="Upload" xml:space="preserve">
     <value>загрузить</value>
   </data>
   <data name="Local" xml:space="preserve">
     <value>местный</value>
   </data>
-  <data name="GhostShadow" xml:space="preserve">
-    <value>призрак</value>
-  </data>
   <data name="MenuRename" xml:space="preserve">
     <value>Переименовать(_М)</value>
-  </data>
-  <data name="MenuPhyCameraManager" xml:space="preserve">
-    <value>Физическое управление камерой(_P)</value>
-  </data>
-  <data name="PhysicalCameraManager" xml:space="preserve">
-    <value>Физическое управление камерой</value>
-  </data>
-  <data name="MenuService" xml:space="preserve">
-    <value>Конфигурация службы администратора(_S)</value>
   </data>
   <data name="MenuLogin" xml:space="preserve">
     <value>Вход в аккаунт(_L)</value>
   </data>
-  <data name="MenuDistortion" xml:space="preserve">
-    <value>Настройки шаблона искажения (D)</value>
-  </data>
-  <data name="MenuFocusPoints" xml:space="preserve">
-    <value>Настройки шаблона определения светящейся области (F)</value>
-  </data>
-  <data name="MenuMTF" xml:space="preserve">
-    <value>_MTF</value>
-  </data>
-  <data name="MenuSFR" xml:space="preserve">
-    <value>SFR (_S)</value>
-  </data>
-  <data name="MenuPG" xml:space="preserve">
-    <value>Настройки шаблона PG</value>
-  </data>
-  <data name="MenuSUM" xml:space="preserve">
-    <value>Настройки шаблона исходной таблицы(S)</value>
-  </data>
-  <data name="MenuPoi" xml:space="preserve">
-    <value>Настройки шаблона заботы (P)</value>
-  </data>
   <data name="Alias" xml:space="preserve">
     <value>Псевдоним</value>
-  </data>
-  <data name="FocusPoint" xml:space="preserve">
-    <value>точка фокусировки</value>
   </data>
   <data name="Layers" xml:space="preserve">
     <value>Слои</value>
@@ -702,17 +561,11 @@
   <data name="Search" xml:space="preserve">
     <value>поиск</value>
   </data>
-  <data name="Flow" xml:space="preserve">
-    <value>процесс</value>
-  </data>
   <data name="QuickPreview" xml:space="preserve">
     <value>быстрый предварительный просмотр</value>
   </data>
   <data name="Exchange" xml:space="preserve">
     <value>обмен</value>
-  </data>
-  <data name="BatchNumber" xml:space="preserve">
-    <value>серийный номер</value>
   </data>
   <data name="ImageFile" xml:space="preserve">
     <value>Файлы изображений</value>
@@ -720,14 +573,8 @@
   <data name="File" xml:space="preserve">
     <value>документ</value>
   </data>
-  <data name="DeviceCode" xml:space="preserve">
-    <value>Код устройства</value>
-  </data>
   <data name="StartTime" xml:space="preserve">
     <value>Время начала</value>
-  </data>
-  <data name="Deadline" xml:space="preserve">
-    <value>Крайний срок</value>
   </data>
   <data name="Parameter" xml:space="preserve">
     <value>параметр</value>
@@ -747,47 +594,14 @@
   <data name="AdvanceSearch" xml:space="preserve">
     <value>Расширенный поиск</value>
   </data>
-  <data name="AlgorithmView_类型" xml:space="preserve">
-    <value>тип</value>
-  </data>
-  <data name="CreateTime" xml:space="preserve">
-    <value>измерять время</value>
-  </data>
   <data name="Exposure" xml:space="preserve">
     <value>контакт</value>
-  </data>
-  <data name="Video" xml:space="preserve">
-    <value>видео режим</value>
   </data>
   <data name="ImageSource" xml:space="preserve">
     <value>источник изображения</value>
   </data>
-  <data name="SaveDataColumn" xml:space="preserve">
-    <value>Сохранить столбец данных</value>
-  </data>
-  <data name="Chart" xml:space="preserve">
-    <value>диаграмма</value>
-  </data>
-  <data name="Position" xml:space="preserve">
-    <value>Расположение</value>
-  </data>
-  <data name="Size" xml:space="preserve">
-    <value>размер</value>
-  </data>
-  <data name="Shape" xml:space="preserve">
-    <value>форма</value>
-  </data>
-  <data name="ServiceLog" xml:space="preserve">
-    <value>Журнал обслуживания</value>
-  </data>
-  <data name="x86ServiceLog" xml:space="preserve">
-    <value>журнал обслуживания x86</value>
-  </data>
   <data name="UpdateSpeed" xml:space="preserve">
     <value>Обновить скорость</value>
-  </data>
-  <data name="StartingService" xml:space="preserve">
-    <value>Запуск службы</value>
   </data>
   <data name="Update" xml:space="preserve">
     <value>возобновлять</value>
