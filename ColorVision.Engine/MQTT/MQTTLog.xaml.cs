@@ -34,7 +34,7 @@ namespace ColorVision.MQTT
 
         private void Execute()
         {
-            new MQTTLog() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new MQTTLog() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
     }
 

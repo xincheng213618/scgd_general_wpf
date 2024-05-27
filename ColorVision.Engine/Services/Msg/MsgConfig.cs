@@ -1,13 +1,15 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI;
+using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;
 
 namespace ColorVision.Services.Msg
 {
-    public class MsgConfig : ViewModelBase
+    public class MsgConfig : ViewModelBase,IConfig
     {
-        public static MsgConfig Instance => new MsgConfig();
+        public static MsgConfig Instance => ConfigHandler.GetInstance().GetRequiredService<MsgConfig>();
 
         private static readonly object _locker = new();
 
@@ -21,7 +23,7 @@ namespace ColorVision.Services.Msg
             timer.Elapsed += (s, e) =>
             {
                 lock (_locker)
-                {
+                { 
                     int itemsToRemoveCount = MsgRecords.Count - CacheLength;
                     if (itemsToRemoveCount > 0)
                         for (int i = 0; i < itemsToRemoveCount; i++)
@@ -35,7 +37,7 @@ namespace ColorVision.Services.Msg
         public int CacheLength { get => _CacheLength; set { _CacheLength = value; NotifyPropertyChanged(); } }
         private int _CacheLength = 1000;
 
-        [System.Text.Json.Serialization.JsonIgnore]
+        [JsonIgnore]
         public ObservableCollection<MsgRecord> MsgRecords { get; set; } = new ObservableCollection<MsgRecord>();
     }
 }

@@ -15,6 +15,20 @@ namespace ColorVision.Projects
         private bool _IsOpenConnect;
 
 
+        public int DeviceId { get => _DeviceId; set { _DeviceId = value; NotifyPropertyChanged(); } }
+        private int _DeviceId;
+
+        public string PortName { get => _PortName; set { _PortName = value; NotifyPropertyChanged(); } }
+        private string _PortName;
+
+        public string TestName { get => _TestName; set { _TestName = value; NotifyPropertyChanged(); } }
+        private string _TestName = "WBROtest";
+
+        public string DataPath { get => _DataPath; set { _DataPath = value; NotifyPropertyChanged(); } }
+        private string _DataPath;
+
+        public bool IsAutoUploadSn { get => _IsAutoUploadSn; set { _IsAutoUploadSn = value; NotifyPropertyChanged(); } }
+        private bool _IsAutoUploadSn;
 
     }
 
@@ -36,9 +50,16 @@ namespace ColorVision.Projects
 
         private SerialPort serialPort { get; set; }
 
+        public static HYMesConfig Config => HYMesConfig.Instance;
+
         public HYMesManager()
         {
             serialPort = new SerialPort { };
+
+            if (Config.IsOpenConnect)
+            {
+                OpenPort(Config.PortName);
+            }
         }
 
         public bool IsConnect { get => _IsConnect; set { _IsConnect = value; NotifyPropertyChanged(); } }
@@ -53,9 +74,7 @@ namespace ColorVision.Projects
                     serialPort = new SerialPort { PortName = portName, BaudRate = 38400 };
                     serialPort.Open();
                     string SetMsg = $"CSN,C,0,TEST202405140001";
-
                     byte[] buffer = System.Text.Encoding.UTF8.GetBytes(SetMsg);
-
                     byte[] framedMsg = new byte[buffer.Length + 2];
                     framedMsg[0] = 0x02; // STX (Start of Text)
                     buffer.CopyTo(framedMsg, 1); // Copy original message into the new array starting at index 1
@@ -131,40 +150,35 @@ namespace ColorVision.Projects
             }
         }
 
-        public int DeviceId { get=> _DeviceId; set{ _DeviceId = value; NotifyPropertyChanged();  } }
-        private int _DeviceId;
         public string SN { get => _SN; set {
                 if (_SN == value) return;
                 _SN = value; 
                 NotifyPropertyChanged();
-                SendSn();
+                if (Config.IsAutoUploadSn)
+                    UploadSN();
             }
         }
         private string _SN;
 
-        public void SendSn()
+        public void UploadSN()
         {
-            string SendMsg = $"CSN,C,{DeviceId},{SN}";
+            string SendMsg = $"CSN,C,{Config.DeviceId},{SN}";
             Send(System.Text.Encoding.UTF8.GetBytes(SendMsg));
         }
 
         public void SendPost()
         {
-            string SendMsg = $"CPT,C,{DeviceId}";
+            string SendMsg = $"CPT,C,{Config.DeviceId}";
             Send(System.Text.Encoding.UTF8.GetBytes(SendMsg));
         }
-
-        public string TestName { get => _TestName; set { _TestName = value;NotifyPropertyChanged(); } }
-        private string _TestName = "WBROtest";
-
         public void UploadMes()
         {
-            string SendMsg = $"CMI,C,{DeviceId},WBROtest,White,0.00/0.00/0.00/result,Blue,0.00/0.00/0.00/result,Red,0.00/0.00/0.00/result,Orange,0.00/0.00/0.00/result";
+            string SendMsg = $"CMI,C,{Config.DeviceId},{Config.TestName},White,0.00/0.00/0.00/result,Blue,0.00/0.00/0.00/result,Red,0.00/0.00/0.00/result,Orange,0.00/0.00/0.00/result";
             Send(System.Text.Encoding.UTF8.GetBytes(SendMsg));
         }
         public void UploadNG() 
         {
-            string SendMsg = $"CGI,C,{DeviceId},Default,errorW";
+            string SendMsg = $"CGI,C,{Config.DeviceId},Default,errorW";
             Send(System.Text.Encoding.UTF8.GetBytes(SendMsg));
         }
 

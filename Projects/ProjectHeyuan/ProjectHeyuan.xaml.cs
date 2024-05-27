@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS8602
-using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.MQTT;
 using ColorVision.Services;
@@ -7,39 +6,36 @@ using ColorVision.Services.DAO;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;
 using ColorVision.Services.Flow;
-using ColorVision.UI.Menus;
+using ColorVision.Solution;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Globalization;
 using System.IO.Ports;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Media;
 
 namespace ColorVision.Projects
 {
 
-    public class ProjectHeyuanExport : IMenuItem
+    public sealed class ConnectConverter : IValueConverter
     {
-        public string? OwnerGuid => "Tool";
-
-        public string? GuidId => "HeYuan";
-
-        public int Order => 100;
-        public Visibility Visibility => Visibility.Visible;
-        public string? Header => "河源精电";
-        public string? InputGestureText => null;
-
-        public object? Icon => null;
-
-        public RelayCommand Command => new(A => Execute());
-
-        private static void Execute()
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            new ProjectHeyuanWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            if (value is bool isconnect)
+            {
+                return isconnect ? "已经连接":"未连接";
+            }
+            return string.Empty;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotSupportedException("Converting from a string to a memory size is not supported.");
         }
     }
-
 
     /// <summary>
     /// ProjectHeyuanWindow.xaml 的交互逻辑
@@ -72,7 +68,6 @@ namespace ColorVision.Projects
             ComboBoxSer.SelectedIndex = 0;
 
             ListViewMes.ItemsSource = HYMesManager.GetInstance().SerialMsgs;
-
             FlowTemplate.ItemsSource = FlowParam.Params;
             this.DataContext = HYMesManager.GetInstance();
         }
@@ -166,7 +161,28 @@ namespace ColorVision.Projects
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
         {
-            HYMesManager.GetInstance().SendSn();
+            HYMesManager.GetInstance().UploadSN();
+        }
+
+        private void SelectDataPath_Click(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Forms.FolderBrowserDialog dialog = new();
+            dialog.UseDescriptionForTitle = true;
+            dialog.Description = "为新项目选择位置";
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                if (string.IsNullOrEmpty(dialog.SelectedPath))
+                {
+                    MessageBox.Show("文件夹路径不能为空", "提示");
+                    return;
+                }
+                HYMesManager.Config.DataPath = dialog.SelectedPath;
+            }
+        }
+
+        private void UploadSN(object sender, RoutedEventArgs e)
+        {
+            HYMesManager.GetInstance().UploadSN();
         }
     }
 }
