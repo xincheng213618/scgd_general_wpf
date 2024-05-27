@@ -1,18 +1,16 @@
-﻿using log4net.Layout;
-using log4net.Repository.Hierarchy;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.UI.HotKey;
+using ColorVision.UI.Menus;
 using log4net;
+using log4net.Appender;
+using log4net.Core;
+using log4net.Layout;
+using log4net.Repository.Hierarchy;
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using log4net.Appender;
-using log4net.Core;
-using ColorVision.MQTT;
-using ColorVision.UI.HotKey;
 using System.Windows.Input;
-using ColorVision.Properties;
-using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.UI.Menus;
 
 namespace ColorVision
 {
@@ -53,13 +51,6 @@ namespace ColorVision
         {
             InitializeComponent();
 
-            MQTTControl.GetInstance().MQTTMsgChanged += (e) =>
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    log.Info(e.ResultMsg);
-                });
-            };
 
             var hierarchy = (Hierarchy)LogManager.GetRepository();
             //hierarchy.Root.RemoveAllAppenders();

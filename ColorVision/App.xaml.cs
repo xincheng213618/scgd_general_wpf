@@ -1,20 +1,19 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MySql;
-using ColorVision.Services;
-using ColorVision.Services.RC;
-using ColorVision.Services.Templates;
-using ColorVision.Themes;
+﻿using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Languages;
+using ColorVision.Engine;
 using ColorVision.Wizards;
 using log4net;
 using log4net.Config;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
+using ColorVision.MySql;
+using System.Threading.Tasks;
 
 [assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
 namespace ColorVision
@@ -86,13 +85,29 @@ namespace ColorVision
             else
             {
                 MySqlControl.GetInstance().Connect();
-                MQTTControl.GetInstance().MQTTConnectChanged += async (s, e) =>
+                var _IComponentInitializers = new List<UI.IInitializer>();
+                MessageUpdater messageUpdater = new MessageUpdater();
+                foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
                 {
-                    await MQTTRCService.GetInstance().Connect();
-                };
-                Task.Run(() => MQTTControl.GetInstance().Connect());
-                ServiceManager.GetInstance().GenDeviceDisplayControl();
-                TemplateControl.GetInstance();
+                    foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitializer).IsAssignableFrom(t) && !t.IsAbstract))
+                    {
+                        if (Activator.CreateInstance(type, messageUpdater) is IInitializer componentInitialize)
+                        {
+                            _IComponentInitializers.Add(componentInitialize);
+                        }
+                    }
+                }
+                _IComponentInitializers = _IComponentInitializers.OrderBy(handler => handler.Order).ToList();
+
+                Task.Run( async () =>
+                {
+                    foreach (var item in _IComponentInitializers)
+                    {
+                        await item.InitializeAsync();
+                    }
+                });
+
+
                 MainWindow MainWindow = new MainWindow();
                 MainWindow.Show();
             }

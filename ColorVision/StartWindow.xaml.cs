@@ -15,6 +15,7 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision
 {
+
     /// <summary>
     /// StartWindow.xaml 的交互逻辑
     /// </summary>

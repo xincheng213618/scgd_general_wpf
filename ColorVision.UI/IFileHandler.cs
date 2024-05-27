@@ -55,17 +55,17 @@ namespace ColorVision.UI
 
     }
 
-    public class DefaultFileHandler : IFileHandler
-    {
-        public int Order => 4;
+    //public class DefaultFileHandler : IFileHandler
+    //{
+    //    public int Order => 4;
 
-        public bool CanHandle(string filePath)
-        {
-            return File.Exists(filePath);
-        }
-        public void Handle(string filePath)
-        {
-            PlatformHelper.Open(filePath);
-        }
-    }
+    //    public bool CanHandle(string filePath)
+    //    {
+    //        return File.Exists(filePath);
+    //    }
+    //    public void Handle(string filePath)
+    //    {
+    //        PlatformHelper.Open(filePath);
+    //    }
+    //}
 }

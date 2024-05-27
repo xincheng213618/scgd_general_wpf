@@ -1,13 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.MQTT;
-using ColorVision.MySql;
-using ColorVision.Services.RC;
 using ColorVision.UI;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Windows;
 using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Wizards

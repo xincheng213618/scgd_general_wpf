@@ -1,6 +1,5 @@
 ﻿using ColorVision.Adorners;
 using ColorVision.Common.Utilities;
-using ColorVision.MySql;
 using ColorVision.Scheduler;
 using ColorVision.Settings;
 using ColorVision.Solution;
@@ -147,8 +146,6 @@ namespace ColorVision
 
             Task.Run(CheckCertificate);
 
-            Task.Run(EnsureLocalInfile);
-
 
             SolutionTab1.Content = new TreeViewControl();
 
@@ -166,21 +163,6 @@ namespace ColorVision
             Application.Current.MainWindow = this;
         }
 
-        public async static Task EnsureLocalInfile()
-        {
-            await Task.Delay(3000);
-            log.Info($"{DateTime.Now}:EnsureLocalInfile ");
-            try
-            {
-                if (MySqlControl.GetInstance().IsConnect)
-                    MySqlControl.GetInstance().EnsureLocalInfile();
-            }
-            catch (Exception ex)
-            {
-                log.Info($"{DateTime.Now}:EnsureLocalInfile {ex.Message} ");
-
-            }
-        }
 
         public async Task CheckCertificate()
         {
