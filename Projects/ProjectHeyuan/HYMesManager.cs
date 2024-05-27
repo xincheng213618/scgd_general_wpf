@@ -67,6 +67,7 @@ namespace ColorVision.Projects
 
         public int OpenPort(string portName)
         {
+            IsConnect = false;
             try
             {
                 if (!serialPort.IsOpen)
@@ -134,8 +135,22 @@ namespace ColorVision.Projects
                         {
                             if (Msg.Contains("CSN,S"))
                             {
-                                UploadNG();
+                                string[] parts = Msg.Split(',');
+                                CSNResult = parts[^1].Contains('0');
+                                if(CSNResult)
+                                    UploadNG();
                             }
+                            if (Msg.Contains("CPT,S"))
+                            {
+                                string[] parts = Msg.Split(',');
+                                CPTResult = parts[^1].Contains('0'); 
+                            }
+                            if (Msg.Contains("CGI,S"))
+                            {
+                                string[] parts = Msg.Split(',');
+                                CGIResult = parts[^1].Contains('0');
+                            }
+
                             if (Msg.Contains("CMI,S"))
                             {
                                 SendPost();
@@ -160,8 +175,21 @@ namespace ColorVision.Projects
         }
         private string _SN;
 
+        public bool CSNResult { get => _UploadSNResult; set { _UploadSNResult = value; NotifyPropertyChanged(); } }
+        private bool _UploadSNResult;
+
+        public bool CPTResult { get => _CPTResult; set { _CPTResult = value; NotifyPropertyChanged(); } }
+        private bool _CPTResult;
+        public bool CGIResult { get => _CGIResult; set { _CGIResult = value; NotifyPropertyChanged(); } }
+        private bool _CGIResult;
+
         public void UploadSN()
         {
+            if (string.IsNullOrWhiteSpace(SN))
+            {
+                MessageBox.Show("产品编号为空");
+                return;
+            }
             string SendMsg = $"CSN,C,{Config.DeviceId},{SN}";
             Send(System.Text.Encoding.UTF8.GetBytes(SendMsg));
         }
@@ -192,6 +220,14 @@ namespace ColorVision.Projects
               SerialMsgs.Add(new SerialMsg() { SerialStatus = SerialStatus.Send, Bytes = framedMsg });
             if (serialPort.IsOpen)
                 serialPort.Write(framedMsg, 0, framedMsg.Length);
+        }
+
+        public void Close()
+        {
+            if (serialPort.IsOpen)
+                serialPort.Close();
+            serialPort.Dispose();
+            IsConnect = false;
         }
 
 

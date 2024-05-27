@@ -7,7 +7,7 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:HYMesManager}"
-        Title="ProjectHeiyuan" Height="700" Width="1280" Initialized="Window_Initialized">
+        Title="ProjectHeiyuan" Height="720" Width="1280" Initialized="Window_Initialized">
     <Window.Resources>
         <local:ConnectConverter x:Key="ConnectConverter"/>
     </Window.Resources>
@@ -25,7 +25,7 @@
             </Grid.RowDefinitions>
 
             <Grid Grid.Row="0">
-                <ListView x:Name="ListViewSetting">
+                <ListView x:Name="ListViewSetting" Height="200">
                     <ListView.Resources >
                     </ListView.Resources>
                     <ListView.ItemContainerStyle>
@@ -84,7 +84,7 @@
                 </ListView>
             </Grid>
             <Grid Grid.Row="1">
-                <ListView x:Name="ListViewResult">
+                <ListView x:Name="ListViewResult" Height="200">
                     <ListView.Resources >
                     </ListView.Resources>
                     <ListView.ItemContainerStyle>
@@ -169,6 +169,10 @@
                         <TextBlock Text="产品编号" Width="100"/>
                         <TextBox DockPanel.Dock="Right"  Text="{Binding SN}"  Width="200" HorizontalAlignment="Left" />
                         <Button Content="上传产品编号" Click="UploadSN"  Margin="5,0"/>
+                        <TextBlock Text="入账状态:" Margin="5"/>
+                        <TextBlock Text="{Binding CSNResult}" Margin="5,0"/>
+                        <TextBlock Text="上传NG:" Margin="5"/>
+                        <TextBlock Text="{Binding CGIResult}" Margin="5,0"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="设备序号" Width="100"/>

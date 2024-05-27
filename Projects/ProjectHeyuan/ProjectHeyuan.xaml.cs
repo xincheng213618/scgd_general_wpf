@@ -7,6 +7,7 @@ using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;
 using ColorVision.Services.Flow;
 using ColorVision.Solution;
+using FlowEngineLib;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
@@ -119,6 +120,12 @@ namespace ColorVision.Projects
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            if (string.IsNullOrWhiteSpace(HYMesManager.GetInstance().SN))
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "产品编号为空，在运行前请配置产品编号");
+                return;
+            }
+
             if (FlowTemplate.SelectedValue is FlowParam flowParam)
             {
                 string startNode = FlowDisplayControl.GetInstance().View.FlowEngineControl.GetStartNodeName();
@@ -149,14 +156,22 @@ namespace ColorVision.Projects
                     MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
                 }
             }
-
-
-
+            else
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "流程为空，请选择流程运行", "ColorVision");
+            }
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
         {
-            HYMesManager.GetInstance().OpenPort(ComboBoxSer.Text);
+            if (!HYMesManager.GetInstance().IsConnect)
+            {
+                int i = HYMesManager.GetInstance().OpenPort(ComboBoxSer.Text);
+            }
+            else
+            {
+                HYMesManager.GetInstance().Close();
+            }
         }
 
         private void Button_Click_2(object sender, RoutedEventArgs e)
