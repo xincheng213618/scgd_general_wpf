@@ -24,10 +24,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Update="Properties\Resource.Designer.cs">
+	  <Compile Update="Properties\Resources.Designer.cs">
 	    <DesignTime>True</DesignTime>
 	    <AutoGen>True</AutoGen>
-	    <DependentUpon>RESOURCES.RESX</DependentUpon>
+	    <DependentUpon>Resources.resx</DependentUpon>
 	  </Compile>
 	  <Compile Update="Themes\Contorls\Upload.xaml.cs">
 	    <SubType>Code</SubType>
@@ -37,7 +37,7 @@
 	<ItemGroup>
 	  <EmbeddedResource Update="Properties\RESOURCES.RESX">
 	    <Generator>PublicResXFileCodeGenerator</Generator>
-	    <LastGenOutput>Resource.Designer.cs</LastGenOutput>
+	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
 	  </EmbeddedResource>
 	</ItemGroup>
 </Project>

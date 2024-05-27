@@ -22,7 +22,7 @@ namespace ColorVision.Themes
             cmtheme.SetBinding(ComboBox.SelectedValueProperty, new Binding(nameof(ThemeConfig.Theme)));
 
             cmtheme.ItemsSource = from e1 in Enum.GetValues(typeof(Theme)).Cast<Theme>()
-                                  select new KeyValuePair<Theme, string>(e1, Resource.ResourceManager.GetString(e1.ToDescription(), CultureInfo.CurrentUICulture) ?? "");
+                                  select new KeyValuePair<Theme, string>(e1, Resources.ResourceManager.GetString(e1.ToDescription(), CultureInfo.CurrentUICulture) ?? "");
 
             cmtheme.SelectionChanged += (s, e) => Application.Current.ApplyTheme(ThemeConfig.Instance.Theme);
             cmtheme.DataContext = ThemeConfig.Instance;
@@ -31,8 +31,8 @@ namespace ColorVision.Themes
             {
                 new ConfigSettingMetadata
                 {
-                    Name = Resource.Theme,
-                    Description = Resource.Theme,
+                    Name = Resources.Theme,
+                    Description = Resources.Theme,
                     Type = ConfigSettingType.ComboBox,
                     BindingName = nameof(ThemeConfig.Theme),
                     Source = ThemeConfig.Instance,
@@ -40,8 +40,8 @@ namespace ColorVision.Themes
                 },
                 new ConfigSettingMetadata
                 {
-                    Name = Resource.TransparentWindow,
-                    Description = Resource.TransparentWindow,
+                    Name = Resources.TransparentWindow,
+                    Description = Resources.TransparentWindow,
                     Type = ConfigSettingType.Bool,
                     BindingName = nameof(ThemeConfig.TransparentWindow),
                     Source = ThemeConfig.Instance,
