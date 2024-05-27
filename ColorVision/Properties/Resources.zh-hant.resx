@@ -606,4 +606,7 @@
   <data name="Update" xml:space="preserve">
     <value>更新</value>
   </data>
+  <data name="ServiceAgreement" xml:space="preserve">
+    <value>服務協定</value>
+  </data>
 </root>

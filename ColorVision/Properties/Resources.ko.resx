@@ -606,4 +606,7 @@
   <data name="Update" xml:space="preserve">
     <value>고쳐 쓰다</value>
   </data>
+  <data name="ServiceAgreement" xml:space="preserve">
+    <value>약관 동의</value>
+  </data>
 </root>

@@ -606,4 +606,7 @@
   <data name="Update" xml:space="preserve">
     <value>renouveler</value>
   </data>
+  <data name="ServiceAgreement" xml:space="preserve">
+    <value>Contrat de service</value>
+  </data>
 </root>

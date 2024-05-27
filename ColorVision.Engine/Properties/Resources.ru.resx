@@ -288,9 +288,6 @@
   <data name="ServiceConfiguration" xml:space="preserve">
     <value>Конфигурация сервиса</value>
   </data>
-  <data name="ServiceAgreement" xml:space="preserve">
-    <value>Сервисное соглашение</value>
-  </data>
   <data name="SerialNumber1" xml:space="preserve">
     <value>серийный номер</value>
   </data>

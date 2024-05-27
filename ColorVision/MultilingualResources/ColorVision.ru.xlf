@@ -515,6 +515,10 @@
           <source>序号</source>
           <target state="new">серийный номер</target>
         </trans-unit>
+        <trans-unit id="ServiceAgreement" translate="yes" xml:space="preserve">
+          <source>服务协议</source>
+          <target state="new">Сервисное соглашение</target>
+        </trans-unit>
         <trans-unit id="Settings" translate="yes" xml:space="preserve">
           <source>设置</source>
           <target state="new">Настройки</target>

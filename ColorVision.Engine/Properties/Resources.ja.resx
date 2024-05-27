@@ -288,9 +288,6 @@
   <data name="ServiceConfiguration" xml:space="preserve">
     <value>サービス構成</value>
   </data>
-  <data name="ServiceAgreement" xml:space="preserve">
-    <value>役務契約</value>
-  </data>
   <data name="SerialNumber1" xml:space="preserve">
     <value>シリアルナンバー</value>
   </data>
