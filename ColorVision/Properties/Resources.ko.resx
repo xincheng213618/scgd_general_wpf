@@ -189,9 +189,6 @@
   <data name="Create_an_account" xml:space="preserve">
     <value>계정을 만들기</value>
   </data>
-  <data name="RecentFiles" xml:space="preserve">
-    <value>최근 파일(_F)</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>소개</value>
   </data>
@@ -393,9 +390,6 @@
   <data name="CreateProject" xml:space="preserve">
     <value>프로젝트 생성</value>
   </data>
-  <data name="SelectProjectSaveLocation" xml:space="preserve">
-    <value>프로젝트를 저장할 위치를 선택하세요</value>
-  </data>
   <data name="Refresh" xml:space="preserve">
     <value>새로 고치다</value>
   </data>
@@ -407,9 +401,6 @@
   </data>
   <data name="Import" xml:space="preserve">
     <value>수입</value>
-  </data>
-  <data name="SearchProjectFiles" xml:space="preserve">
-    <value>프로젝트 파일 검색</value>
   </data>
   <data name="ServiceAgreement" xml:space="preserve">
     <value>약관 동의</value>
@@ -531,9 +522,6 @@
   <data name="ViewSentData" xml:space="preserve">
     <value>전송 데이터 보기</value>
   </data>
-  <data name="ViewReceivedData" xml:space="preserve">
-    <value>승인 데이터 보기</value>
-  </data>
   <data name="MsgLogWindow" xml:space="preserve">
     <value>메시지 녹음 창</value>
   </data>
@@ -599,9 +587,6 @@
   </data>
   <data name="Calculate" xml:space="preserve">
     <value>계산하다</value>
-  </data>
-  <data name="RecentUsedContent" xml:space="preserve">
-    <value>최근 사용한 콘텐츠</value>
   </data>
   <data name="NoRelatedItemsFound" xml:space="preserve">
     <value>관련 항목을 찾을 수 없습니다</value>
@@ -926,5 +911,8 @@
   </data>
   <data name="Update" xml:space="preserve">
     <value>고쳐 쓰다</value>
+  </data>
+  <data name="ViewReceivedData" xml:space="preserve">
+    <value>ViewReceivedData</value>
   </data>
 </root>

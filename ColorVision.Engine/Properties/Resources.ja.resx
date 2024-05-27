@@ -306,12 +306,6 @@
   <data name="SelectResourceToLoad" xml:space="preserve">
     <value>ロードするリソースを選択してください:</value>
   </data>
-  <data name="SelectProjectSaveLocation" xml:space="preserve">
-    <value>プロジェクトを保存する場所を選択します</value>
-  </data>
-  <data name="SearchProjectFiles" xml:space="preserve">
-    <value>プロジェクトファイルの検索</value>
-  </data>
   <data name="Search" xml:space="preserve">
     <value>検索</value>
   </data>
@@ -350,12 +344,6 @@
   </data>
   <data name="Refresh" xml:space="preserve">
     <value>リフレッシュする</value>
-  </data>
-  <data name="RecentUsedContent" xml:space="preserve">
-    <value>最近使用したコンテンツ</value>
-  </data>
-  <data name="RecentFiles" xml:space="preserve">
-    <value>最近のファイル(_F)</value>
   </data>
   <data name="ReceiveChannel" xml:space="preserve">
     <value>受信チャンネル</value>
@@ -926,5 +914,8 @@
   </data>
   <data name="About" xml:space="preserve">
     <value>について</value>
+  </data>
+  <data name="SelectProjectSaveLocation" xml:space="preserve">
+    <value>プロジェクトを保存する場所を選択します</value>
   </data>
 </root>

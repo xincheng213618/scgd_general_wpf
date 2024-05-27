@@ -189,9 +189,6 @@
   <data name="Create_an_account" xml:space="preserve">
     <value>Create an account</value>
   </data>
-  <data name="RecentFiles" xml:space="preserve">
-    <value>Recent _Files</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>About</value>
   </data>
@@ -393,9 +390,6 @@
   <data name="CreateProject" xml:space="preserve">
     <value>Create Project</value>
   </data>
-  <data name="SelectProjectSaveLocation" xml:space="preserve">
-    <value>Choose where to save the project</value>
-  </data>
   <data name="Refresh" xml:space="preserve">
     <value>Refresh</value>
   </data>
@@ -407,9 +401,6 @@
   </data>
   <data name="Import" xml:space="preserve">
     <value>Import</value>
-  </data>
-  <data name="SearchProjectFiles" xml:space="preserve">
-    <value>Search project files</value>
   </data>
   <data name="ServiceAgreement" xml:space="preserve">
     <value>Service Agreement</value>
@@ -599,9 +590,6 @@
   </data>
   <data name="Calculate" xml:space="preserve">
     <value>Calculate</value>
-  </data>
-  <data name="RecentUsedContent" xml:space="preserve">
-    <value>Recently used content</value>
   </data>
   <data name="NoRelatedItemsFound" xml:space="preserve">
     <value>No related items found</value>

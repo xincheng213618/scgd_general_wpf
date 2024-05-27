@@ -306,12 +306,6 @@
   <data name="SelectResourceToLoad" xml:space="preserve">
     <value>Veuillez sélectionner la ressource que vous souhaitez charger :</value>
   </data>
-  <data name="SelectProjectSaveLocation" xml:space="preserve">
-    <value>Choisissez où enregistrer le projet</value>
-  </data>
-  <data name="SearchProjectFiles" xml:space="preserve">
-    <value>Rechercher des fichiers de projet</value>
-  </data>
   <data name="Search" xml:space="preserve">
     <value>recherche</value>
   </data>
@@ -350,12 +344,6 @@
   </data>
   <data name="Refresh" xml:space="preserve">
     <value>rafraîchir</value>
-  </data>
-  <data name="RecentUsedContent" xml:space="preserve">
-    <value>Contenu récemment utilisé</value>
-  </data>
-  <data name="RecentFiles" xml:space="preserve">
-    <value>Fichiers récemment utilisés (F)</value>
   </data>
   <data name="ReceiveChannel" xml:space="preserve">
     <value>canal de réception</value>
@@ -926,5 +914,8 @@
   </data>
   <data name="About" xml:space="preserve">
     <value>à propos</value>
+  </data>
+  <data name="SelectProjectSaveLocation" xml:space="preserve">
+    <value>Choisissez où enregistrer le projet</value>
   </data>
 </root>

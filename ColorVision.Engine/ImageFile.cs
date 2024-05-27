@@ -1,17 +1,16 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.NativeMethods;
 using ColorVision.Extension;
 using ColorVision.Media;
-using ColorVision.Common.NativeMethods;
-using System.Diagnostics;
+using ColorVision.Solution.V.Files;
+using System;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using QRCoder;
-using System;
 
-namespace ColorVision.Solution.V.Files
+namespace ColorVision.Engine
 {
     public class ImageFile : ViewModelBase,IFile
     {

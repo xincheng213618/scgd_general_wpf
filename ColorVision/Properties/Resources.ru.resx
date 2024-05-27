@@ -189,9 +189,6 @@
   <data name="Create_an_account" xml:space="preserve">
     <value>Зарегистрируйте</value>
   </data>
-  <data name="RecentFiles" xml:space="preserve">
-    <value>Недавно использованные файлы(F)</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>о</value>
   </data>
@@ -396,9 +393,6 @@
   <data name="CreateProject" xml:space="preserve">
     <value>Создать проект</value>
   </data>
-  <data name="SelectProjectSaveLocation" xml:space="preserve">
-    <value>Выберите, где сохранить проект</value>
-  </data>
   <data name="Refresh" xml:space="preserve">
     <value>обновить</value>
   </data>
@@ -410,9 +404,6 @@
   </data>
   <data name="Import" xml:space="preserve">
     <value>Импортировать</value>
-  </data>
-  <data name="SearchProjectFiles" xml:space="preserve">
-    <value>Поиск файлов проекта</value>
   </data>
   <data name="ServiceAgreement" xml:space="preserve">
     <value>Сервисное соглашение</value>
@@ -599,9 +590,6 @@
   </data>
   <data name="Calculate" xml:space="preserve">
     <value>вычислить</value>
-  </data>
-  <data name="RecentUsedContent" xml:space="preserve">
-    <value>Недавно использованный контент</value>
   </data>
   <data name="NoRelatedItemsFound" xml:space="preserve">
     <value>Похожие товары не найдены</value>

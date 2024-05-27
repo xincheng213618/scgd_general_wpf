@@ -286,12 +286,6 @@
   <data name="SelectResourceToLoad" xml:space="preserve">
     <value>请选择您要加载的资源：</value>
   </data>
-  <data name="SelectProjectSaveLocation" xml:space="preserve">
-    <value>选择项目保存位置</value>
-  </data>
-  <data name="SearchProjectFiles" xml:space="preserve">
-    <value>搜索工程文件</value>
-  </data>
   <data name="Search" xml:space="preserve">
     <value>搜索</value>
   </data>
@@ -330,12 +324,6 @@
   </data>
   <data name="Refresh" xml:space="preserve">
     <value>刷新</value>
-  </data>
-  <data name="RecentUsedContent" xml:space="preserve">
-    <value>最近使用的内容</value>
-  </data>
-  <data name="RecentFiles" xml:space="preserve">
-    <value>最近使用过的文件(_F)</value>
   </data>
   <data name="ReceiveChannel" xml:space="preserve">
     <value>接收信道</value>
@@ -906,5 +894,8 @@
   </data>
   <data name="About" xml:space="preserve">
     <value>关于</value>
+  </data>
+  <data name="SelectProjectSaveLocation" xml:space="preserve">
+    <value>选择项目保存位置</value>
   </data>
 </root>

@@ -1,6 +1,4 @@
-﻿using Microsoft.Xaml.Behaviors;
-using Microsoft.Xaml.Behaviors.Layout;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
@@ -71,13 +69,6 @@ namespace ColorVision.Solution.Searches
 
         private void Page_Initialized(object sender, EventArgs e) 
         {
-            FluidMoveBehavior fluidMoveBehavior = new()
-            {
-                AppliesTo = FluidMoveScope.Children,
-                Duration = TimeSpan.FromSeconds(0.1)
-            };
-
-            Interaction.GetBehaviors(ContentStackPanel).Add(fluidMoveBehavior);
             //ContentStackPanel.AddAdorners(this);
 
         }

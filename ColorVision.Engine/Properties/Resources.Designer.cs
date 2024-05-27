@@ -1771,24 +1771,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 最近使用过的文件(_F) 的本地化字符串。
-        /// </summary>
-        public static string RecentFiles {
-            get {
-                return ResourceManager.GetString("RecentFiles", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 最近使用的内容 的本地化字符串。
-        /// </summary>
-        public static string RecentUsedContent {
-            get {
-                return ResourceManager.GetString("RecentUsedContent", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 刷新 的本地化字符串。
         /// </summary>
         public static string Refresh {
@@ -1902,15 +1884,6 @@ namespace ColorVision.Engine.Properties {
         public static string Search {
             get {
                 return ResourceManager.GetString("Search", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 搜索工程文件 的本地化字符串。
-        /// </summary>
-        public static string SearchProjectFiles {
-            get {
-                return ResourceManager.GetString("SearchProjectFiles", resourceCulture);
             }
         }
         

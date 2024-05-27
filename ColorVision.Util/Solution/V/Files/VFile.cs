@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using System.Windows.Controls;
-using ColorVision.Engine.Properties;
+using ColorVision.Util.Properties;
 
 namespace ColorVision.Solution.V.Files
 {

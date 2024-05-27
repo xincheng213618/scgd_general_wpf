@@ -763,14 +763,6 @@
           <source>接收信道</source>
           <target state="new">受信チャンネル</target>
         </trans-unit>
-        <trans-unit id="RecentFiles" translate="yes" xml:space="preserve">
-          <source>最近使用过的文件(_F)</source>
-          <target state="new">最近のファイル(_F)</target>
-        </trans-unit>
-        <trans-unit id="RecentUsedContent" translate="yes" xml:space="preserve">
-          <source>最近使用的内容</source>
-          <target state="new">最近使用したコンテンツ</target>
-        </trans-unit>
         <trans-unit id="Refresh" translate="yes" xml:space="preserve">
           <source>刷新</source>
           <target state="new">リフレッシュする</target>
@@ -822,10 +814,6 @@
         <trans-unit id="Search" translate="yes" xml:space="preserve">
           <source>搜索</source>
           <target state="new">検索</target>
-        </trans-unit>
-        <trans-unit id="SearchProjectFiles" translate="yes" xml:space="preserve">
-          <source>搜索工程文件</source>
-          <target state="new">プロジェクトファイルの検索</target>
         </trans-unit>
         <trans-unit id="SelectProjectSaveLocation" translate="yes" xml:space="preserve">
           <source>选择项目保存位置</source>

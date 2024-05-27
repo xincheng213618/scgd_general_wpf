@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.Engine.Properties;
+using ColorVision.Util.Properties;
 
 namespace ColorVision.Solution
 {
@@ -47,7 +47,7 @@ namespace ColorVision.Solution
             if (sender is Button button)
             {
                 SolutionSetting.Instance.DefaultSaveName = "yyyy/dd/MM HH:mm:ss";
-                ButtonContentChange(button, ColorVision.Engine.Properties.Resources.Reseted);
+                ButtonContentChange(button, ColorVision.Util.Properties.Resources.Reseted);
             }
 
         }
@@ -57,7 +57,7 @@ namespace ColorVision.Solution
             if (sender is Button button)
             {
                 SolutionSetting.Instance.DefaultCreatName = "新建工程";
-                ButtonContentChange(button, ColorVision.Engine.Properties.Resources.Reseted);
+                ButtonContentChange(button, ColorVision.Util.Properties.Resources.Reseted);
             }
         }
 

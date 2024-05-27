@@ -189,9 +189,6 @@
   <data name="Create_an_account" xml:space="preserve">
     <value>Enregistrez un</value>
   </data>
-  <data name="RecentFiles" xml:space="preserve">
-    <value>Fichiers récemment utilisés (F)</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>à propos</value>
   </data>
@@ -402,9 +399,6 @@
   <data name="CreateProject" xml:space="preserve">
     <value>Créer un projet</value>
   </data>
-  <data name="SelectProjectSaveLocation" xml:space="preserve">
-    <value>Choisissez où enregistrer le projet</value>
-  </data>
   <data name="Refresh" xml:space="preserve">
     <value>rafraîchir</value>
   </data>
@@ -416,9 +410,6 @@
   </data>
   <data name="Import" xml:space="preserve">
     <value>importer</value>
-  </data>
-  <data name="SearchProjectFiles" xml:space="preserve">
-    <value>Rechercher des fichiers de projet</value>
   </data>
   <data name="ServiceAgreement" xml:space="preserve">
     <value>Contrat de service</value>
@@ -599,9 +590,6 @@
   </data>
   <data name="Calculate" xml:space="preserve">
     <value>calculer</value>
-  </data>
-  <data name="RecentUsedContent" xml:space="preserve">
-    <value>Contenu récemment utilisé</value>
   </data>
   <data name="NoRelatedItemsFound" xml:space="preserve">
     <value>Aucun élément associé trouvé</value>

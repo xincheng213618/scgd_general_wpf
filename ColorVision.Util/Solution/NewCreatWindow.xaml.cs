@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Properties;
+using ColorVision.Util.Properties;
 using ColorVision.RecentFile;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;

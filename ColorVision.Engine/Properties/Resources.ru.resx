@@ -306,12 +306,6 @@
   <data name="SelectResourceToLoad" xml:space="preserve">
     <value>Пожалуйста, выберите ресурс, который вы хотите загрузить:</value>
   </data>
-  <data name="SelectProjectSaveLocation" xml:space="preserve">
-    <value>Выберите, где сохранить проект</value>
-  </data>
-  <data name="SearchProjectFiles" xml:space="preserve">
-    <value>Поиск файлов проекта</value>
-  </data>
   <data name="Search" xml:space="preserve">
     <value>поиск</value>
   </data>
@@ -350,12 +344,6 @@
   </data>
   <data name="Refresh" xml:space="preserve">
     <value>обновить</value>
-  </data>
-  <data name="RecentUsedContent" xml:space="preserve">
-    <value>Недавно использованный контент</value>
-  </data>
-  <data name="RecentFiles" xml:space="preserve">
-    <value>Недавно использованные файлы(F)</value>
   </data>
   <data name="ReceiveChannel" xml:space="preserve">
     <value>канал приема</value>
@@ -926,5 +914,8 @@
   </data>
   <data name="About" xml:space="preserve">
     <value>о</value>
+  </data>
+  <data name="SelectProjectSaveLocation" xml:space="preserve">
+    <value>Выберите, где сохранить проект</value>
   </data>
 </root>

@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Solution.V.Files;
 using ColorVision.Solution.V.Folders;
-using ScottPlot.Drawing.Colormaps;
 using System;
 using System.Collections.Generic;
 using System.IO;

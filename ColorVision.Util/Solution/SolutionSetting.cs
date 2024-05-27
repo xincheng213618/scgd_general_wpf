@@ -1,10 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.RC;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
-using System.Collections.Generic;
 using System;
-using System.Windows;
+using System.Collections.Generic;
 
 namespace ColorVision.Solution
 {

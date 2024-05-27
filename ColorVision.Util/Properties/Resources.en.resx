@@ -159,4 +159,106 @@
   <data name="TransparentWindow" xml:space="preserve">
     <value>Transparent window</value>
   </data>
+  <data name="RecentUsedContent" xml:space="preserve">
+    <value>Recently used content</value>
+  </data>
+  <data name="RecentFiles" xml:space="preserve">
+    <value>Recent _Files</value>
+  </data>
+  <data name="SearchProjectFiles" xml:space="preserve">
+    <value>Search project files</value>
+  </data>
+  <data name="Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="Import" xml:space="preserve">
+    <value>Import</value>
+  </data>
+  <data name="Export" xml:space="preserve">
+    <value>Export</value>
+  </data>
+  <data name="Edit" xml:space="preserve">
+    <value>Edit</value>
+  </data>
+  <data name="Delete" xml:space="preserve">
+    <value>Delete</value>
+  </data>
+  <data name="Create" xml:space="preserve">
+    <value>Create</value>
+  </data>
+  <data name="Apply" xml:space="preserve">
+    <value>application</value>
+  </data>
+  <data name="OpenSolution" xml:space="preserve">
+    <value>Open Project</value>
+  </data>
+  <data name="OpenItem" xml:space="preserve">
+    <value>Open Project</value>
+  </data>
+  <data name="OpenLocalProjectOrFile" xml:space="preserve">
+    <value>Open a local project or file</value>
+  </data>
+  <data name="NewSolution" xml:space="preserve">
+    <value>New  Project</value>
+  </data>
+  <data name="NewProjectFormat" xml:space="preserve">
+    <value>New project format</value>
+  </data>
+  <data name="MenuNew" xml:space="preserve">
+    <value>_New</value>
+  </data>
+  <data name="Reset" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="MenuOpen" xml:space="preserve">
+    <value>_Open</value>
+  </data>
+  <data name="ProjectSettings" xml:space="preserve">
+    <value>Project Settings</value>
+  </data>
+  <data name="Property" xml:space="preserve">
+    <value>Property</value>
+  </data>
+  <data name="Reseted" xml:space="preserve">
+    <value>Reset Completed</value>
+  </data>
+  <data name="NoRelatedItemsFound" xml:space="preserve">
+    <value>No related items found</value>
+  </data>
+  <data name="Refresh" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="Clear" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="ConfigureNewProject" xml:space="preserve">
+    <value>Configure new project</value>
+  </data>
+  <data name="ProjectName" xml:space="preserve">
+    <value>Project Name</value>
+  </data>
+  <data name="Project" xml:space="preserve">
+    <value>Project</value>
+  </data>
+  <data name="ClearCache" xml:space="preserve">
+    <value>Clear Cache</value>
+  </data>
+  <data name="Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="CreateProject" xml:space="preserve">
+    <value>Create Project</value>
+  </data>
+  <data name="DefaultExportStorageFormat" xml:space="preserve">
+    <value>Default export storage format</value>
+  </data>
+  <data name="CreateNewProjectOrFile" xml:space="preserve">
+    <value>Create a new project or file</value>
+  </data>
+  <data name="SelectProjectSaveLocation" xml:space="preserve">
+    <value>Choose where to save the project</value>
+  </data>
 </root>

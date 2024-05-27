@@ -763,14 +763,6 @@
           <source>接收信道</source>
           <target state="new">수신 채널</target>
         </trans-unit>
-        <trans-unit id="RecentFiles" translate="yes" xml:space="preserve">
-          <source>最近使用过的文件(_F)</source>
-          <target state="new">최근 파일(_F)</target>
-        </trans-unit>
-        <trans-unit id="RecentUsedContent" translate="yes" xml:space="preserve">
-          <source>最近使用的内容</source>
-          <target state="new">최근 사용한 콘텐츠</target>
-        </trans-unit>
         <trans-unit id="Refresh" translate="yes" xml:space="preserve">
           <source>刷新</source>
           <target state="new">새로 고치다</target>
@@ -822,14 +814,6 @@
         <trans-unit id="Search" translate="yes" xml:space="preserve">
           <source>搜索</source>
           <target state="new">찾다</target>
-        </trans-unit>
-        <trans-unit id="SearchProjectFiles" translate="yes" xml:space="preserve">
-          <source>搜索工程文件</source>
-          <target state="new">프로젝트 파일 검색</target>
-        </trans-unit>
-        <trans-unit id="SelectProjectSaveLocation" translate="yes" xml:space="preserve">
-          <source>选择项目保存位置</source>
-          <target state="new">프로젝트를 저장할 위치를 선택하세요</target>
         </trans-unit>
         <trans-unit id="SelectResourceToLoad" translate="yes" xml:space="preserve">
           <source>请选择您要加载的资源：</source>
@@ -1049,7 +1033,7 @@
         </trans-unit>
         <trans-unit id="ViewReceivedData" translate="yes" xml:space="preserve">
           <source>查看接受数据</source>
-          <target state="new">승인 데이터 보기</target>
+          <target state="new">ViewReceivedData</target>
         </trans-unit>
         <trans-unit id="ViewSentData" translate="yes" xml:space="preserve">
           <source>查看发送数据</source>

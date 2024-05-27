@@ -6,13 +6,13 @@
              xmlns:svgc="http://sharpvectors.codeplex.com/svgc/"
              xmlns:local="clr-namespace:ColorVision.Solution"
              xmlns:hc="https://handyorg.github.io/handycontrol"
-             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+             xmlns:properties="clr-namespace:ColorVision.Util.Properties"
              mc:Ignorable="d" 
              d:DesignWidth="300" d:DesignHeight="600"  Initialized="UserControl_Initialized" Background="{DynamicResource GlobalBackground}" Loaded="UserControl_Loaded">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ResourceDictionary Source="/ColorVision.Engine;component/Solution/V/TreeView.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Util;component/Solution/V/TreeView.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </UserControl.Resources>

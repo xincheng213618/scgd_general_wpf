@@ -1,6 +1,6 @@
 ﻿using System.Windows.Controls;
 using System.Windows.Media;
-using ColorVision.Engine.Properties;
+using ColorVision.Util.Properties;
 
 namespace ColorVision.Solution.V.Folders
 {

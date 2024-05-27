@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Solution"
-             xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
+             xmlns:properties ="clr-namespace:ColorVision.Util.Properties"
              xmlns:ui ="http://schemas.lepo.co/wpfui/2022/xaml"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:SolutionSetting}"
