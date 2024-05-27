@@ -3,11 +3,13 @@ using ColorVision.Common.Utilities;
 using ColorVision.Extension;
 using ColorVision.RecentFile;
 using ColorVision.Solution.V;
+using ColorVision.UI;
 using log4net;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
+using YamlDotNet.Core;
 
 namespace ColorVision.Solution
 {
@@ -52,7 +54,15 @@ namespace ColorVision.Solution
             SolutionLoaded += SolutionManager_SolutionLoaded;
 
             bool su = false;
-            if (SolutionHistory.RecentFiles.Count > 0)
+            var parser = ArgumentParser.GetInstance();
+            parser.AddArgument("s", false, "solutionpath");
+            parser.Parse();
+            var solutionpath = parser.GetValue("solutionpath");
+            if (solutionpath != null)
+            {
+                su = OpenSolution(solutionpath);
+            }
+            else if (SolutionHistory.RecentFiles.Count > 0)
             {
                 su =OpenSolution(SolutionHistory.RecentFiles[0]);
             }

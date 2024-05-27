@@ -13,10 +13,13 @@ using ColorVision.Wizards;
 using log4net;
 using log4net.Config;
 using System;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using YamlDotNet.Core;
 
 [assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
 namespace ColorVision
@@ -28,7 +31,6 @@ namespace ColorVision
     public partial class App : Application
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(App));
-        public static bool IsReStart { get; set; }
 
         public App()
         {
@@ -38,6 +40,16 @@ namespace ColorVision
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            bool IsDebug = Debugger.IsAttached;
+            var parser = ArgumentParser.GetInstance();
+
+            parser.AddArgument("d", true, "debug");
+            parser.AddArgument("r", true, "restart");
+            parser.AddArgument("s", false, "solutionpath");
+            parser.Parse();
+
+            IsDebug = Debugger.IsAttached || parser.GetFlag("debug");
+
             Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
 
             PluginLoader.LoadPluginsAssembly("Plugins");
@@ -47,52 +59,55 @@ namespace ColorVision
             Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo(LanguageConfig.Instance.UICulture);
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("en");
             //Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("ja");
+            parser.AddArgument("i", false, "input");
+            parser.Parse();
 
-            if (Sysargs.Length > 0)
+            string inputFile = parser.GetValue("input");
+            if (inputFile != null)
             {
-                for (int i = 0; i < Sysargs.Length; i++)
+                if (inputFile.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (Sysargs[i].EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
-                    {
-                        ImageView imageView = new();
-                        CVFileUtil.ReadCVRaw(Sysargs[i], out CVCIEFile fileInfo);
-                        Window window = new() { Title = "快速预览" };
-                        window.Content = imageView;
-                        imageView.OpenImage(fileInfo);
-                        window.Show();
-                        return;
-                    }
-                    else if (Sysargs[i].EndsWith("cvcie", StringComparison.OrdinalIgnoreCase))
-                    {
-                        ImageView imageView = new();
-                        CVFileUtil.ReadCVRaw(Sysargs[i], out CVCIEFile fileInfo);
-                        Window window = new() { Title = "快速预览" };
-                        window.Content = imageView;
-                        imageView.OpenImage(fileInfo);
-                        window.Show();
-                        return;
-                    }
-                    else if (Tool.IsImageFile(Sysargs[i]))
-                    {
-                        ImageView imageView = new();
-                        Window window = new() { Title = "快速预览" };
-                        window.Content = imageView;
-                        imageView.OpenImage(Sysargs[i]);
-                        window.Show();
-                        return;
-                    }
-                    else if (File.Exists(Sysargs[i]))
-                    {
-                        PlatformHelper.Open(Sysargs[i]);
-                        return;
-                    }
+                    ImageView imageView = new();
+                    CVFileUtil.ReadCVRaw(inputFile, out CVCIEFile fileInfo);
+                    Window window = new() { Title = "快速预览" };
+                    window.Content = imageView;
+                    imageView.OpenImage(fileInfo);
+                    window.Show();
+                    return;
+                }
+                else if (inputFile.EndsWith("cvcie", StringComparison.OrdinalIgnoreCase))
+                {
+                    ImageView imageView = new();
+                    CVFileUtil.ReadCVRaw(inputFile, out CVCIEFile fileInfo);
+                    Window window = new() { Title = "快速预览" };
+                    window.Content = imageView;
+                    imageView.OpenImage(fileInfo);
+                    window.Show();
+                    return;
+                }
+                else if (Tool.IsImageFile(inputFile))
+                {
+                    ImageView imageView = new();
+                    Window window = new() { Title = "快速预览" };
+                    window.Content = imageView;
+                    imageView.OpenImage(inputFile);
+                    window.Show();
+                    return;
+                }
+                else if (File.Exists(inputFile))
+                {
+                    PlatformHelper.Open(inputFile);
+                    return;
                 }
             }
+
 
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
             //代码先进入启动窗口
+
+            bool IsReStart = parser.GetFlag("restart");
             if (!WizardConfig.Instance.WizardCompletionKey)
             {
                 WizardWindow wizardWindow = new();
