@@ -53,6 +53,7 @@ namespace ColorVision.Services
             if (MySqlControl.GetInstance().IsConnect)
             {
                 _messageUpdater.UpdateMessage("正在加载服务");
+                await Task.Delay(1);
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     ServiceManager ServiceManager = ServiceManager.GetInstance();

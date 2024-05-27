@@ -4,6 +4,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Properties;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
+using NPOI.Util.Collections;
 using System;
 using System.IO;
 using System.Windows;
@@ -12,9 +13,8 @@ using System.Windows.Input;
 
 namespace ColorVision.MQTT
 {
-    public class EXportMQTTLog : IHotKey, IMenuItem
+    public class ExportMQTTLox : IHotKey, IMenuItem
     {
-
         public string? OwnerGuid => "Help";
 
         public string? GuidId => "MQTTLog";
@@ -39,8 +39,31 @@ namespace ColorVision.MQTT
     }
 
 
+    public class ExportServiceLog : IMenuItem
+    {
 
-    public partial class MQTTLog : Window
+        public string? OwnerGuid => "Help";
+
+        public string? GuidId => "ServiceLog";
+
+        public int Order => 1;
+        public Visibility Visibility => Visibility.Visible;
+
+        public string? Header => Resources.ServiceLog;
+
+        public string? InputGestureText { get; }
+
+        public object? Icon { get; }
+
+        public RelayCommand Command => new(A => Execute());
+
+        private static void Execute()
+        {
+        }
+    }
+
+
+public partial class MQTTLog : Window
     {
 
         MQTTControl MQTTControl { get; set; }

@@ -100,47 +100,6 @@ namespace ColorVision
             Closed += (s, e) => { Environment.Exit(-1); };
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
 
-            MenuItem menulogs = new() { Header = ColorVision.Properties.Resources.ServiceLog };
-            MenuHelp.Items.Insert(0, menulogs);
-
-            MenuItem menulog = new() { Header = Properties.Resources.x64ServiceLog };
-            menulog.Click += (s, e) =>
-            {
-                PlatformHelper.OpenFolder("http://localhost:8064/system/log");
-            };
-            menulogs.Items.Insert(0, menulog);
-
-            MenuItem menulog1 = new() { Header = Properties.Resources.CameraLog };
-            menulog1.Click += (s, e) =>
-            {
-                PlatformHelper.OpenFolder("http://localhost:8064/system/device/camera/log");
-            };
-            menulogs.Items.Insert(1, menulog1);
-
-            MenuItem menulog2 = new() { Header = ColorVision.Properties.Resources.x86ServiceLog };
-            menulog2.Click += (s, e) =>
-            {
-                PlatformHelper.OpenFolder("http://localhost:8086/system/log");
-
-            };
-            menulogs.Items.Insert(2, menulog2);
-
-            MenuItem menulog3 = new() { Header = Properties.Resources.SpectrometerLog };
-            menulog3.Click += (s, e) =>
-            {
-                PlatformHelper.OpenFolder("http://localhost:8086/system/device/Spectrum/log");
-            };
-            menulogs.Items.Insert(3, menulog3);
-
-            MenuItem menulogs1 = new() { Header = ColorVision.Properties.Resources.RCServiceLog };
-            menulogs1.Click += (s, e) =>
-            {
-                PlatformHelper.OpenFolder("http://localhost:8080/system/log");
-            };
-            menulogs.Items.Insert(0, menulogs1);
-
-
-
 
             Task.Run(CheckVersion);
 
