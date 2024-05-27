@@ -80,7 +80,7 @@ namespace ColorVision
             else if (!IsReStart)
             {
                 ///正常进入窗口
-                StartWindow StartWindow = new();
+                StartWindow StartWindow = new StartWindow();
                 StartWindow.Show();
             }
             else
@@ -91,9 +91,9 @@ namespace ColorVision
                     await MQTTRCService.GetInstance().Connect();
                 };
                 Task.Run(() => MQTTControl.GetInstance().Connect());
-                MainWindow MainWindow = new();
                 ServiceManager.GetInstance().GenDeviceDisplayControl();
                 TemplateControl.GetInstance();
+                MainWindow MainWindow = new MainWindow();
                 MainWindow.Show();
             }
         }

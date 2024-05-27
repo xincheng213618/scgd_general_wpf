@@ -1,13 +1,10 @@
-﻿using ColorVision.MQTT;
-using ColorVision.MySql;
-using ColorVision.Services;
-using ColorVision.Services.RC;
-using ColorVision.Services.Templates;
-using ColorVision.Solution;
-using ColorVision.Themes;
+﻿using ColorVision.Themes;
+using ColorVision.UI;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.Versioning;
 using System.Threading;
@@ -21,7 +18,7 @@ namespace ColorVision
     /// <summary>
     /// StartWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class StartWindow : Window
+    public partial class StartWindow : Window, IMessageUpdater
     {
         public StartWindow()
         {
@@ -45,11 +42,30 @@ namespace ColorVision
             if (ThemeManager.Current.SystemTheme == Theme.Dark)
                 Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
 
-            MQTTControl.GetInstance();
-            MySqlControl.GetInstance();
+            _IComponentInitializers = new List<UI.IInitializer>();
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IInitializer).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type,this) is IInitializer componentInitialize)
+                    {
+                        _IComponentInitializers.Add(componentInitialize);
+                    }
+                }
+            }
+            _IComponentInitializers = _IComponentInitializers.OrderBy(handler => handler.Order).ToList();
             Thread thread = new(async () => await InitializedOver()) { IsBackground =true};
             thread.Start();
+        }
+        private  List<IInitializer> _IComponentInitializers;
 
+
+        public void UpdateMessage(string message)
+        {
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                TextBoxMsg.Text += $"{Environment.NewLine}{message}";
+            });
         }
         public static string? GetTargetFrameworkVersion()
         {
@@ -73,166 +89,27 @@ namespace ColorVision
         private async Task InitializedOver()
         {
             //检测服务连接情况，需要在界面启动之后，否则会出现问题。因为界面启动之后才会初始化MQTTControl和MySqlControl，所以代码上问题不大
+            UpdateMessage(ColorVision.Properties.Resources.StartingService);
+            foreach (var initializer in _IComponentInitializers)
+            {
+                await initializer.InitializeAsync();
+            }
             Application.Current.Dispatcher.Invoke(() =>
             {
-                TextBoxMsg.Text += ColorVision.Properties.Resources.StartingService;
-            });
-
-            if (MySqlSetting.Instance.IsUseMySql)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
+                try
                 {
-                    TextBoxMsg.Text += $"{Environment.NewLine}正在检测MySQL数据库连接情况";
-                });
-                bool IsConnect = await MySqlControl.GetInstance().Connect();
-
-
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    TextBoxMsg.Text += $"{Environment.NewLine}MySQL数据库连接{(MySqlControl.GetInstance().IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}";
-                    if (!IsConnect)
-                    {
-                        MySqlConnect mySqlConnect = new() { Owner = this };
-                        mySqlConnect.ShowDialog();
-                    }
-                });
-
-            }
-            else
-            {
-                Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}已经跳过数据库连接"; });
-                await Task.Delay(10);
-
-            }
-
-            if (MQTTSetting.Instance.IsUseMQTT)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    TextBoxMsg.Text += $"{Environment.NewLine}正在检测MQTT服务器连接情况";
-                });
-
-                bool IsConnect = await MQTTControl.GetInstance().Connect();
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    TextBoxMsg.Text += $"{Environment.NewLine}MQTT服务器连接{(MQTTControl.GetInstance().IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}";
-                    if (!IsConnect)
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            TextBoxMsg.Text += $"{Environment.NewLine}检测是否本地服务";
-                        });
-
-                        if (!RCManager.GetInstance().IsLocalServiceRunning())
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                TextBoxMsg.Text += $"{Environment.NewLine}打开本地服务管理";
-                            });
-                            if (RCManagerConfig.Instance.IsOpenCVWinSMS)
-                            {
-                                RCManager.GetInstance().OpenCVWinSMS();
-                            }
-                        }
-                        RCManager.GetInstance();
-                        MQTTConnect mQTTConnect = new() { Owner = this };
-                        mQTTConnect.ShowDialog();
-                    }
-                });
-            }
-            else
-            {
-                Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}已经跳过MQTT服务器连接"; });
-                await Task.Delay(10);
-            }
-
-            Application.Current.Dispatcher.Invoke(() => TemplateControl.GetInstance());
-
-            if (MQTTControl.GetInstance().IsConnect)
-            {
-                if (RCSetting.Instance.IsUseRCService)
-                {
-                    Application.Current.Dispatcher.Invoke(() =>
-                    {
-                        TextBoxMsg.Text += $"{Environment.NewLine}正在检测注册中心连接情况";
-                    });
-                    bool IsConnect = await MQTTRCService.GetInstance().Connect();
-                    Application.Current.Dispatcher.Invoke(() => 
-                    {
-                        TextBoxMsg.Text += $"{Environment.NewLine}注册中心: {(IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}";
-                        if (!IsConnect)
-                        {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                TextBoxMsg.Text += $"{Environment.NewLine}检测是否本地服务";
-                            });
-
-                            if (!RCManager.GetInstance().IsLocalServiceRunning())
-                            {
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    TextBoxMsg.Text += $"{Environment.NewLine}打开本地服务管理";
-                                });
-                                RCManager.GetInstance().OpenCVWinSMS();
-                            }
-
-                            RCServiceConnect rcServiceConnect = new() { Owner = this };
-                            rcServiceConnect.ShowDialog();
-                        }
-                    });
+                    MainWindow mainWindow = new();
+                    mainWindow.Show();
+                    Close();
                 }
-                else
+                catch (Exception ex)
                 {
-                    Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}已经跳过注册中心服务器连接"; });
-                    await Task.Delay(10);
+                    MessageBox.Show("窗口创建错误:" + ex.Message);
+                    Environment.Exit(-1);
                 }
-            }
-            else
-            {
-                Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}注册中心需要MQTT连接成功，已经跳过注册中心服务器连接"; });
-                await Task.Delay(20);
-            }
-
-            await Task.Delay(10);
-            Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}正在加载工程"; });
-            Application.Current.Dispatcher.Invoke(() => SolutionManager.GetInstance());
-            await Task.Delay(10);
-            Application.Current.Dispatcher.Invoke(() => { TextBoxMsg.Text += $"{Environment.NewLine}正在打开主窗口"; });
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                MainWindow mainWindow = new();
-                ServiceManager ServiceManager = ServiceManager.GetInstance();
-                if (MySqlControl.GetInstance().IsConnect)
-                {
-                    try
-                    {
-                        if (!ServicesConfig.Instance.IsDefaultOpenService)
-                        {
-                            TextBoxMsg.Text += $"{Environment.NewLine}初始化服务";
-                            ServiceManager.GenDeviceDisplayControl();
-                            new WindowDevices() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                        }
-                        else
-                        {
-                            TextBoxMsg.Text += $"{Environment.NewLine}自动配置服务中";
-                            ServiceManager.GenDeviceDisplayControl();
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show("窗口创建错误:" + ex.Message);
-                        Environment.Exit(-1);
-                    }
-                }
-                else
-                {
-                    TextBoxMsg.Text += $"{Environment.NewLine}数据库连接失败，跳过服务配置";
-                }
-                mainWindow.Show();
-                Close();
             });
         }
-        
+
         private void TextBoxMsg_TextChanged(object sender, TextChangedEventArgs e)
         {
             TextBoxMsg.ScrollToEnd();

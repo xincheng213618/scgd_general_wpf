@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Extension;
+using ColorVision.Common.Utilities;
 using ColorVision.MySql;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
@@ -30,9 +31,53 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Linq;
+using System.Threading.Tasks;
+using System.Windows;
 
 namespace ColorVision.Services
 {
+
+    public class ServiceInitializer : IInitializer
+    {
+        private readonly IMessageUpdater _messageUpdater;
+
+        public ServiceInitializer(IMessageUpdater messageUpdater)
+        {
+            _messageUpdater = messageUpdater;
+        }
+
+        public int Order => 5;
+
+        public async Task InitializeAsync()
+        {
+            if (MySqlControl.GetInstance().IsConnect)
+            {
+                _messageUpdater.UpdateMessage("正在加载服务");
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    ServiceManager ServiceManager = ServiceManager.GetInstance();
+                    if (!ServicesConfig.Instance.IsDefaultOpenService)
+                    {
+                        _messageUpdater.UpdateMessage("初始化服务");
+                        ServiceManager.GenDeviceDisplayControl();
+                        new WindowDevices() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                    }
+                    else
+                    {
+                        _messageUpdater.UpdateMessage("自动配置服务中");
+                        ServiceManager.GenDeviceDisplayControl();
+                    }
+                });
+
+            }
+            else
+            {
+                _messageUpdater.UpdateMessage("数据库连接失败，跳过服务配置");
+            }
+
+        }
+    }
+
     public class ServiceManager
     {
         private static ServiceManager _instance;

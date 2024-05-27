@@ -8,6 +8,7 @@ using System.Windows;
 
 namespace ColorVision.MySql
 {
+
     public class MySqlControl: ViewModelBase
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MySqlControl));

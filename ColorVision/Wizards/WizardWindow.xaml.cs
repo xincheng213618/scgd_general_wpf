@@ -2,10 +2,13 @@
 using ColorVision.MQTT;
 using ColorVision.MySql;
 using ColorVision.Services.RC;
-using ColorVision.Settings;
 using ColorVision.UI;
+using System.Collections.Generic;
+using System;
 using System.Diagnostics;
 using System.Windows;
+using System.Linq;
+using System.Windows.Controls;
 
 namespace ColorVision.Wizards
 {
@@ -27,7 +30,25 @@ namespace ColorVision.Wizards
         }
         private void Window_Initialized(object sender, System.EventArgs e)
         {
+            var IWizardSteps = new List<IWizardStep>();
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                foreach (var type in assembly.GetTypes().Where(t => typeof(IWizardStep).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is IWizardStep fileHandler)
+                    {
+                        IWizardSteps.Add(fileHandler);
+                    }
+                }
+            }
+            IWizardSteps = IWizardSteps.OrderBy(handler => handler.Order).ToList();
 
+
+            foreach (var step in IWizardSteps)
+            {
+                Button button = new Button() { Content = step.Title, Command = step.RelayCommand };
+                WizardStackPanel.Children.Add(button);
+            }
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -38,22 +59,5 @@ namespace ColorVision.Wizards
             Process.Start(Application.ResourceAssembly.Location.Replace(".dll", ".exe"), "-r");
             Application.Current.Shutdown();
         }
-
-        private void MysqlButton_Click(object sender, RoutedEventArgs e)
-        {
-            new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-        private void MQTTButton_Click(object sender, RoutedEventArgs e)
-        {
-            new MQTTConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-        private void RCButton_Click(object sender, RoutedEventArgs e)
-        {
-            new RCServiceConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-
     }
 }

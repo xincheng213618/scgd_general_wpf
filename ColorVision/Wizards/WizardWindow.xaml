@@ -30,20 +30,8 @@
         <Border Height="30">
             <TextBlock Grid.Row="0" Text="{x:Static properties:Resources.SetupWizard}" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
-        <StackPanel Grid.Row="1" Margin="10">
-            <DockPanel Margin="2">
-                <Path  Visibility="{Binding MySqlControl.IsConnect,Converter={StaticResource bool2VisibilityConverter}}" DockPanel.Dock="Right" Width="15" Height="15" Stretch="Fill" Fill="Green" Data="{StaticResource CheckMarkGeometry}"/>
-                <Button x:Name="MysqlButton" Content="Mysql配置" Click="MysqlButton_Click" Margin="10,0" />
-            </DockPanel>
-            <DockPanel Margin="2">
-                <Path Visibility="{Binding MQTTControl.IsConnect,Converter={StaticResource bool2VisibilityConverter}}" DockPanel.Dock="Right" Width="15" Height="15" Stretch="Fill" Fill="Green" Data="{StaticResource CheckMarkGeometry}"/>
-                <Button x:Name="MQTTButton" Content="MQTT配置" Click="MQTTButton_Click" Margin="10,0" />
-            </DockPanel>
-            <DockPanel Margin="2">
-                <Path Visibility="{Binding RCService.IsConnect,Converter={StaticResource bool2VisibilityConverter}}" DockPanel.Dock="Right" Width="15" Height="15" Stretch="Fill" Fill="Green" Data="{StaticResource CheckMarkGeometry}"/>
-                <Button x:Name="RCButton" Content="RC配置" Click="RCButton_Click" Margin="10,0" />
-            </DockPanel>
-        </StackPanel>
+        <StackPanel x:Name="WizardStackPanel" Grid.Row="1" Margin="10"/>
+
 
         <Grid Grid.Row="2">
             <Button  Content="{x:Static properties:Resources.ConfigurationComplete}" Height="30" Foreground="White" Background="{StaticResource PrimaryBrush}"  Click="Button_Click"/>
