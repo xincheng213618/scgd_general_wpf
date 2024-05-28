@@ -40,6 +40,24 @@ namespace ColorVision.Projects
         }
     }
 
+
+    public sealed class ColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool isconnect)
+            {
+                return isconnect ? Brushes.Red : Brushes.Blue;
+            }
+            return Brushes.Black; ;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotSupportedException("Converting from a string to a memory size is not supported.");
+        }
+    }
+
     /// <summary>
     /// ProjectHeyuanWindow.xaml 的交互逻辑
     /// </summary>
