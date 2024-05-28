@@ -52,7 +52,7 @@ namespace ColorVision
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            PluginLoader.Instance.LoadPluginsAssembly("Plugins");
+            PluginLoader.LoadPluginsUS("Plugins");
         }
     }
 }

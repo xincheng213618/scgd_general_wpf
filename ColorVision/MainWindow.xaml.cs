@@ -109,6 +109,8 @@ namespace ColorVision
             SolutionTab1.Content = new TreeViewControl();
 
             PluginLoader.LoadPlugins("Plugins");
+
+
             PluginLoader.LoadAssembly<IPlugin>(Assembly.GetExecutingAssembly());
             MenuManager.GetInstance().LoadMenuItemFromAssembly();
             this.LoadHotKeyFromAssembly();
@@ -118,6 +120,8 @@ namespace ColorVision
                 Task.Run(CheckUpdate);
             }
             QuartzSchedulerManager.GetInstance();
+
+
 
             Application.Current.MainWindow = this;
         }
