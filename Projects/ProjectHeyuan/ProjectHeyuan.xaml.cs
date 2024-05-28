@@ -151,7 +151,7 @@ namespace ColorVision.Projects
                             Results.Clear();
                             if (PoiResultCIExyuvDatas.Count ==4)
                             {
-                                for (int i = 0; i < 4; i++)
+                                for (int i = 0; i < PoiResultCIExyuvDatas.Count; i++)
                                 {
                                     List<string> strings = new List<string>() { "White", "Blue", "Red", "Orange" };
                                     var poiResultCIExyuvData1 = PoiResultCIExyuvDatas[i];
