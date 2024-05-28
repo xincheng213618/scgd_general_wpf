@@ -9,5 +9,8 @@ namespace ColorVision.Projects
 
         public float ValMin { get => _ValMin; set { _ValMin = value; NotifyPropertyChanged(); } }
         private float _ValMin;
+
+        public float Value { get => _Value; set { _Value = value; NotifyPropertyChanged(); } }
+        private float _Value;
     }
 }

@@ -161,40 +161,37 @@ namespace ColorVision.Services.Flow
 
         private  void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
-            if (FlowTemplate.SelectedValue is FlowParam flowParam)
+            string startNode = View.FlowEngineControl.GetStartNodeName();
+            if (!string.IsNullOrWhiteSpace(startNode))
             {
-                string startNode = View.FlowEngineControl.GetStartNodeName();
-                if (!string.IsNullOrWhiteSpace(startNode))
+                flowControl ??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
+
+                handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
+
+                handler.Cancelling += Handler_Cancelling; ;
+
+                flowControl.FlowData += (s, e) =>
                 {
-                    flowControl??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
-
-                    handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
-
-                    handler.Cancelling += Handler_Cancelling; ;
-
-                    flowControl.FlowData += (s, e) =>
+                    if (s is FlowControlData msg)
                     {
-                        if (s is FlowControlData msg)
+                        Application.Current.Dispatcher.Invoke(() =>
                         {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
-                            });
-                        }
-                    };
-                    flowControl.FlowCompleted += FlowControl_FlowCompleted;
-                    string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-                    ButtonRun.Visibility = Visibility.Collapsed;
-                    ButtonStop.Visibility = Visibility.Visible;
-                    flowControl.Start(sn);
-                    string name = string.Empty;
-                    if (IsName.IsChecked.HasValue && IsName.IsChecked.Value) { name = TextBoxName.Text; }
-                    BeginNewBatch(sn, name);
-                }
-                else
-                {
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
-                }
+                            handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
+                        });
+                    }
+                };
+                flowControl.FlowCompleted += FlowControl_FlowCompleted;
+                string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+                ButtonRun.Visibility = Visibility.Collapsed;
+                ButtonStop.Visibility = Visibility.Visible;
+                flowControl.Start(sn);
+                string name = string.Empty;
+                if (IsName.IsChecked.HasValue && IsName.IsChecked.Value) { name = TextBoxName.Text; }
+                BeginNewBatch(sn, name);
+            }
+            else
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
             }
         }
 

@@ -6,10 +6,10 @@ namespace ColorVision.Projects
     {
         public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string _Name;
-
         public NumSet X { get; set; }
         public NumSet Y { get; set; } 
         public NumSet Lv { get; set; }
-
     }
+
+
 }

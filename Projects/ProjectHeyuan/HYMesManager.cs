@@ -205,9 +205,9 @@ namespace ColorVision.Projects
             string SendMsg = $"CPT,C,{Config.DeviceId}";
             Send(System.Text.Encoding.UTF8.GetBytes(SendMsg));
         }
-        public void UploadMes()
+        public void UploadMes(ObservableCollection<TempResult> Results)
         {
-            string SendMsg = $"CMI,C,{Config.DeviceId},{Config.TestName},White,0.00/0.00/0.00/result,Blue,0.00/0.00/0.00/result,Red,0.00/0.00/0.00/result,Orange,0.00/0.00/0.00/result";
+            string SendMsg = $"CMI,C,{Config.DeviceId},{Config.TestName},White,{Results[0].X.Value:F2}/{Results[0].Y.Value:F2}/{Results[0].Lv.Value:F2}/result,Blue,{Results[1].X.Value:F2}/{Results[1].Y.Value:F2}/{Results[1].Lv.Value:F2}/result,Red,{Results[2].X.Value:F2}/{Results[2].Y.Value:F2}/{Results[2].Lv.Value:F2}/result,Orange,{Results[3].X.Value:F2}/{Results[3].Y.Value:F2}/{Results[3].Lv.Value:F2}/result";
             Send(System.Text.Encoding.UTF8.GetBytes(SendMsg));
         }
         public void UploadNG() 

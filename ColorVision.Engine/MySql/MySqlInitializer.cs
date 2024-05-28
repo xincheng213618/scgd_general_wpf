@@ -26,8 +26,11 @@ namespace ColorVision.MySql
                 _messageUpdater.UpdateMessage($"MySQL数据库连接{(MySqlControl.GetInstance().IsConnect ? Engine.Properties.Resources.Success : Engine.Properties.Resources.Failure)}");
                 if (!isConnect)
                 {
-                    MySqlConnect mySqlConnect = new() { Owner = Application.Current.MainWindow };
-                    mySqlConnect.ShowDialog();
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        MySqlConnect mySqlConnect = new() { Owner = Application.Current.MainWindow };
+                        mySqlConnect.ShowDialog();
+                    });
                 }
             }
             else

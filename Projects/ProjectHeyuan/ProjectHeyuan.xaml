@@ -103,7 +103,7 @@
                 </ListView>
             </Grid>
             <Grid Grid.Row="1" Margin="0,0,0,5">
-                <ListView x:Name="ListViewResult" Height="170">
+                <ListView x:Name="ListViewResult" Height="150">
                     <ListView.Resources >
                     </ListView.Resources>
                     <ListView.ItemContainerStyle>
@@ -129,45 +129,24 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="X(上限)">
+                            <GridViewColumn  Header="X" Width="70">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding  X.ValMax}" Width="40"/>
+                                        <TextBlock Text="{ Binding  X.Value, StringFormat={}{0:F2}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="X(下限)">
+                            <GridViewColumn  Header="Y" Width="70">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding  X.ValMin}" Width="40"/>
+                                        <TextBlock Text="{ Binding Y.Value, StringFormat={}{0:F2}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="Y(上限)">
+                            <GridViewColumn  Header="Lv" Width="70">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding Y.ValMax}" Width="40"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="Y(下限)">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding  Y.ValMin}" Width="40" />
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="Lv(上限)">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding Lv.ValMax}" Width="40"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="Lv(下限)">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding  Lv.ValMin}" Width="40" />
+                                        <TextBlock Text="{ Binding Lv.Value, StringFormat={}{0:F2}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
