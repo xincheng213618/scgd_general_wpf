@@ -17,6 +17,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO.Ports;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 
@@ -85,7 +86,6 @@ namespace ColorVision.Projects
 
             ListViewMes.ItemsSource = HYMesManager.GetInstance().SerialMsgs;
             FlowTemplate.ItemsSource = FlowParam.Params;
-            ValidateTemplate.ItemsSource = ValidateParam.CIEParams;
             this.DataContext = HYMesManager.GetInstance();
         }
         private Services.Flow.FlowControl flowControl;
@@ -228,11 +228,8 @@ namespace ColorVision.Projects
 
         private void ValidateTemplate_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            if (ValidateTemplate.SelectedValue is ValidateParam validateParam)
+            if (sender is ComboBox comboBox && comboBox.Tag is TempResult tempResult && comboBox.SelectedValue is ValidateParam validateParam)
             {
-                Settings.Clear();
-                TempResult tempResult = new TempResult() { Name = "White"};
-
                 foreach (var item in validateParam.ValidateSingles)
                 {
                     if (item.Model.Code == "CIE_x")
@@ -248,68 +245,14 @@ namespace ColorVision.Projects
                         tempResult.Lv = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
                     }
                 }
+            }
+        }
 
-                TempResult tempResult1 = new TempResult() { Name = "Blue" };
-
-                foreach (var item in validateParam.ValidateSingles)
-                {
-                    if (item.Model.Code == "CIE_x")
-                    {
-                        tempResult1.X = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
-                    }
-                    if (item.Model.Code == "CIE_y")
-                    {
-                        tempResult1.Y = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
-                    }
-                    if (item.Model.Code == "CIE_lv")
-                    {
-                        tempResult1.Lv = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
-                    }
-                }
-
-                TempResult tempResult2 = new TempResult() { Name = "Red" };
-
-                foreach (var item in validateParam.ValidateSingles)
-                {
-                    if (item.Model.Code == "CIE_x")
-                    {
-                        tempResult2.X = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
-                    }
-                    if (item.Model.Code == "CIE_y")
-                    {
-                        tempResult2.Y = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
-                    }
-                    if (item.Model.Code == "CIE_lv")
-                    {
-                        tempResult2.Lv = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
-                    }
-                }
-
-                TempResult tempResult3 = new TempResult() { Name = "Orange" };
-
-                foreach (var item in validateParam.ValidateSingles)
-                {
-                    if (item.Model.Code == "CIE_x")
-                    {
-                        tempResult3.X = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
-                    }
-                    if (item.Model.Code == "CIE_y")
-                    {
-                        tempResult3.Y = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
-                    }
-                    if (item.Model.Code == "CIE_lv")
-                    {
-                        tempResult3.Lv = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
-                    }
-                }
-
-
-
-                Settings.Add(tempResult);
-                Settings.Add(tempResult1);
-                Settings.Add(tempResult2);
-                Settings.Add(tempResult3);
-
+        private void ValidateTemplate_Initialized(object sender, EventArgs e)
+        {
+            if (sender is ComboBox comboBox)
+            {
+                comboBox.ItemsSource = ValidateParam.CIEParams;
             }
         }
     }
