@@ -114,23 +114,19 @@ namespace ColorVision.UI
         public static ConfigHandler GetInstance() { lock (_locker) { return _instance ??= new ConfigHandler(); } }
         public string DIFile { get; set; }
 
-        public const string ConfigDIFileName = "Config\\ColorVisionConfig.json";
+        public const string ConfigDIFileName = "ColorVisionConfig.json";
 
         public ConfigHandler()
         {
-
-
             if (Directory.Exists("Config"))
             {
-                DIFile = ConfigDIFileName;
+                DIFile = $"Config\\{ConfigDIFileName}";
             }
             else
             {
-                string DirectoryPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\ColorVision\\";
+                string DirectoryPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\ColorVision\\Config\\";
                 if (!Directory.Exists(DirectoryPath))
                     Directory.CreateDirectory(DirectoryPath);
-                if (!Directory.Exists(DirectoryPath + "\\Config"))
-                    Directory.CreateDirectory(DirectoryPath + "\\Config");
                 DIFile = DirectoryPath + ConfigDIFileName;
             }
 
