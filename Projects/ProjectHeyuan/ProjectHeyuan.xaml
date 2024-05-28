@@ -11,6 +11,7 @@
         Title="ProjectHeiyuan" Height="720" Width="1280" Initialized="Window_Initialized">
     <Window.Resources>
         <local:ConnectConverter x:Key="ConnectConverter"/>
+        <local:ColorConverter x:Key="ColorConverter"/>
     </Window.Resources>
     <Grid Margin="5">
         <Grid.ColumnDefinitions>
@@ -150,6 +151,16 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
+                            <GridViewColumn  Header="Lv(下限)">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <StackPanel Orientation="Horizontal" Margin="0,2">
+                                            <TextBlock Text="校验模板" Width="100"/>
+                                            <ComboBox  x:Name="ValidateTemplate" Initialized="ValidateTemplate_Initialized" Height="10" SelectedValuePath="Value" SelectionChanged="ValidateTemplate_SelectionChanged"  DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" Tag="{Binding .}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
                         </GridView>
                     </ListView.View>
                 </ListView>
@@ -184,10 +195,6 @@
                         <Button Content="上传产品编号" Click="UploadSN"  Margin="5,0"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,2">
-                        <TextBlock Text="校验模板" Width="100"/>
-                        <ComboBox  x:Name="ValidateTemplate" Height="10" SelectedValuePath="Value" SelectionChanged="ValidateTemplate_SelectionChanged"  DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="设备序号" Width="100"/>
                         <TextBox DockPanel.Dock="Right"  Text="{Binding Config.DeviceId}" Width="200" HorizontalAlignment="Left"/>
                     </StackPanel>
@@ -201,24 +208,24 @@
                         <Button Content=".."   Click="SelectDataPath_Click" Margin="5,0" VerticalAlignment="Bottom" />
                     </StackPanel>
                 </StackPanel>
-
+                
                 <Border HorizontalAlignment="Right" Width="150" Background="{StaticResource BackgroundBrush}" VerticalAlignment="Bottom" CornerRadius="5" Margin="0,5">
                     <StackPanel Orientation="Vertical"  Margin="5">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="入账状态:" Margin="5,2" Width="55"/>
-                            <TextBlock Text="{Binding CSNResult}" Margin="5,0"/>
+                            <TextBlock Text="{Binding CSNResult}" Foreground="{Binding CSNResult,Converter={StaticResource ColorConverter}}" Margin="5,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="上传NG:"  Margin="5,2"  Width="55"/>
-                            <TextBlock Text="{Binding CGIResult}" Margin="5,0"/>
+                            <TextBlock Text="{Binding CGIResult}" Foreground="{Binding CGIResult,Converter={StaticResource ColorConverter}}" Margin="5,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="上传MES:"  Margin="5,2"  Width="55"/>
-                            <TextBlock Text="{Binding CMIResult}" Margin="5,0"/>
+                            <TextBlock Text="{Binding CMIResult}" Foreground="{Binding CMIResult,Converter={StaticResource ColorConverter}}" Margin="5,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="过帐状态:" Margin="5,2"  Width="55"/>
-                            <TextBlock Text="{Binding CPTResult}" Margin="5,0"/>
+                            <TextBlock Text="{Binding CPTResult}" Foreground="{Binding CPTResult,Converter={StaticResource ColorConverter}}" Margin="5,0"/>
                         </StackPanel>
                     </StackPanel>
 
