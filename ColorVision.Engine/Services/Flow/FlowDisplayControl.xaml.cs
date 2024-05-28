@@ -166,7 +166,7 @@ namespace ColorVision.Services.Flow
                 string startNode = View.FlowEngineControl.GetStartNodeName();
                 if (!string.IsNullOrWhiteSpace(startNode))
                 {
-                    flowControl = new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
+                    flowControl??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
 
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
 
@@ -248,36 +248,6 @@ namespace ColorVision.Services.Flow
             FlowTemplate.SelectedIndex = -1;
             FlowTemplate.ItemsSource = FlowParam.Params;
             FlowTemplate.SelectedIndex = 0;
-        }
-        FlowControl rcflowControl;
-
-
-
-        private void Button_RCFlowRun_Click(object sender, RoutedEventArgs e)
-        {
-            if (FlowTemplate.SelectedItem is TemplateModel<FlowParam> flowParam)
-            {
-                rcflowControl ??= new FlowControl(MQTTControl.GetInstance(), "");
-                string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-                rcflowControl.Start(sn, flowParam.Value);
-            }
-            else
-            {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(),"没有选择流程","ColorVision");
-            }
-        }
-
-        private void Button_RCFlowStop_Click(object sender, RoutedEventArgs e)
-        {
-            if (FlowTemplate.SelectedItem is TemplateModel<FlowParam> flowParam)
-            {
-                rcflowControl ??= new FlowControl(MQTTControl.GetInstance(), "");
-                rcflowControl.Stop(flowParam.Value);
-            }
-            else
-            {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "没有选择流程", "ColorVision");
-            }
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
