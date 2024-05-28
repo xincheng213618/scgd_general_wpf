@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Services.Devices.Algorithm.Views;
 using ColorVision.UI;
 using System.Collections.ObjectModel;
 using System.IO.Ports;
@@ -153,6 +154,8 @@ namespace ColorVision.Projects
 
                             if (Msg.Contains("CMI,S"))
                             {
+                                string[] parts = Msg.Split(',');
+                                CMIResult = parts[^1].Contains('0');    
                                 SendPost();
                             }
                         });
@@ -182,6 +185,9 @@ namespace ColorVision.Projects
         private bool _CPTResult;
         public bool CGIResult { get => _CGIResult; set { _CGIResult = value; NotifyPropertyChanged(); } }
         private bool _CGIResult;
+
+        public bool CMIResult { get => _CMIResult; set { _CMIResult = value; NotifyPropertyChanged(); } }
+        private bool _CMIResult;
 
         public void UploadSN()
         {

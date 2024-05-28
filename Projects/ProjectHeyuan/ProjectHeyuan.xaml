@@ -157,6 +157,7 @@
                 </Grid>
 
             </Grid>
+            
 
             <Grid Grid.Row="3">
                 <StackPanel  Margin="0,2">
@@ -169,11 +170,9 @@
                         <TextBlock Text="产品编号" Width="100"/>
                         <TextBox DockPanel.Dock="Right"  Text="{Binding SN}"  Width="200" HorizontalAlignment="Left" />
                         <Button Content="上传产品编号" Click="UploadSN"  Margin="5,0"/>
-                        <TextBlock Text="入账状态:" Margin="5"/>
-                        <TextBlock Text="{Binding CSNResult}" Margin="5,0"/>
-                        <TextBlock Text="上传NG:" Margin="5"/>
-                        <TextBlock Text="{Binding CGIResult}" Margin="5,0"/>
                     </StackPanel>
+
+
                     <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="设备序号" Width="100"/>
                         <TextBox DockPanel.Dock="Right"  Text="{Binding Config.DeviceId}" Width="200" HorizontalAlignment="Left"/>
@@ -188,6 +187,28 @@
                         <Button Content=".."   Click="SelectDataPath_Click" Margin="5,0" VerticalAlignment="Bottom" />
                     </StackPanel>
                 </StackPanel>
+
+                <Border HorizontalAlignment="Right" Width="150" Background="{StaticResource BackgroundBrush}" CornerRadius="5" Margin="0,5">
+                    <StackPanel Orientation="Vertical"  Margin="5">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="入账状态:" Margin="5"/>
+                            <TextBlock Text="{Binding CSNResult}" Margin="5,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="上传NG:" Margin="5"/>
+                            <TextBlock Text="{Binding CGIResult}" Margin="5,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="上传MES:" Margin="5"/>
+                            <TextBlock Text="{Binding CMIResult}" Margin="5,0"/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="过帐状态:" Margin="5"/>
+                            <TextBlock Text="{Binding CPTResult}" Margin="5,0"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                </Border>
             </Grid>
             
         </Grid>
