@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.MySql;
+using ColorVision.MySql.ORM;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Flow.Dao;
 using ColorVision.Services.Templates;
@@ -8,8 +9,10 @@ using ColorVision.UI.Menus;
 using ColorVision.UserSpace;
 using CVCommCore;
 using NPOI.SS.Formula.Functions;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Windows;
 
@@ -52,9 +55,73 @@ namespace ColorVision.Services.Flow
             new WindowFlowEngine(TemplateParams[index].Value) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
         }
 
-        public override void Load() => FlowParam.LoadFlowParam();
+        private static ModMasterDao masterFlowDao = new ModMasterDao(ModMasterType.Flow);
+        public override void Load()
+        {
+            var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
+            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
+            {
+                List<ModMasterModel> flows = masterFlowDao.GetAll(UserConfig.Instance.TenantId);
+                foreach (var dbModel in flows)
+                {
+                    List<ModFlowDetailModel> flowDetails = ModFlowDetailDao.Instance.GetAllByPid(dbModel.Id);
+                    var param = new FlowParam(dbModel, flowDetails);
 
-        public override void Save() => FlowParam.Save2DB(TemplateParams);
+                    if (backup.TryGetValue(param.Id, out var model))
+                    {
+                        model.Value = param;
+                        model.Key = param.Name;
+
+                    }
+                    else
+                    {
+                        var item = new TemplateModel<FlowParam>(dbModel.Name ?? "default", param);
+                        TemplateParams.Add(item);
+                    }
+                }
+            }
+        }
+
+        public override void Save()
+        {
+            foreach (var item in TemplateParams)
+            {
+                FlowParam.Save2DB(item.Value);
+            }
+        }
+
+        public override void Export(int index)
+        {
+            System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
+            ofd.DefaultExt = "stn";
+            ofd.Filter = "*.stn|*.stn";
+            ofd.AddExtension = true;
+            ofd.RestoreDirectory = true;
+            ofd.Title = "导出流程";
+            ofd.FileName = TemplateParams[index].Key;
+            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            byte[] fileBytes = Convert.FromBase64String(TemplateParams[index].Value.DataBase64);
+            System.IO.File.WriteAllBytes(ofd.FileName, fileBytes);
+        }
+
+        public override void Import()
+        {
+            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            ofd.Filter = "*.stn|*.stn";
+            ofd.Title = "导入流程";
+            ofd.RestoreDirectory = true;
+            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            byte[] fileBytes = System.IO.File.ReadAllBytes(ofd.FileName);
+            string base64 = Convert.ToBase64String(fileBytes);
+            if (FlowParam.AddFlowParam(Path.GetFileNameWithoutExtension(ofd.FileName)) is FlowParam param)
+            {
+                param.DataBase64 = base64;
+                FlowParam.Save2DB(param);
+                var item = new TemplateModel<FlowParam>(param.Name ?? "default", param);
+                TemplateParams.Add(item);
+            }
+
+        }
 
         public override void Create(string templateName)
         {
@@ -80,34 +147,6 @@ namespace ColorVision.Services.Flow
         public static ObservableCollection<TemplateModel<FlowParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FlowParam>>();
 
         private static ModMasterDao masterFlowDao = new(ModMasterType.Flow);
-
-        public static void LoadFlowParam()
-        {
-            var backup = Params.ToDictionary(tp => tp.Id, tp => tp);
-            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
-            {
-                List<ModMasterModel> flows = masterFlowDao.GetAll(UserConfig.Instance.TenantId);
-                foreach (var dbModel in flows)
-                {
-                    List<ModFlowDetailModel> flowDetails = ModFlowDetailDao.Instance.GetAllByPid(dbModel.Id);
-                    var param = new FlowParam(dbModel, flowDetails);
-
-                    if (backup.TryGetValue(param.Id,out var model))
-                    {
-                        model.Value = param;
-                        model.Key = param.Name;
-
-                    }
-                    else
-                    {
-                        var item = new TemplateModel<FlowParam>(dbModel.Name ?? "default", param);
-                        Params.Add(item);
-                    }
-
-
-                }
-            }
-        }
 
         public static FlowParam? AddFlowParam(string text)
         {
@@ -158,13 +197,6 @@ namespace ColorVision.Services.Flow
             return ret;
         }
 
-        public static void Save2DB<T>(ObservableCollection<TemplateModel<T>> keyValuePairs) where T : FlowParam
-        {
-            foreach (var item in keyValuePairs)
-            {
-                Save2DB(item.Value);
-            }
-        }
 
         public static void Save2DB(FlowParam flowParam)
         {
