@@ -56,28 +56,28 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="X(上限)">
+                            <GridViewColumn  Header="x(上限)">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
                                         <TextBox Text="{ Binding  X.ValMax}" Width="40"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="X(下限)">
+                            <GridViewColumn  Header="x(下限)">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
                                         <TextBox Text="{ Binding  X.ValMin}" Width="40"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="Y(上限)">
+                            <GridViewColumn  Header="y(上限)">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
                                         <TextBox Text="{ Binding Y.ValMax}" Width="40"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="Y(下限)">
+                            <GridViewColumn  Header="y(下限)">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
                                         <TextBox Text="{ Binding  Y.ValMin}" Width="40" />
@@ -137,14 +137,14 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="X" Width="70">
+                            <GridViewColumn  Header="x" Width="70">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
                                         <TextBlock Text="{ Binding  X.Value, StringFormat={}{0:F2}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="Y" Width="70">
+                            <GridViewColumn  Header="y" Width="70">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
                                         <TextBlock Text="{ Binding Y.Value, StringFormat={}{0:F2}}" />

@@ -13,6 +13,7 @@ using FlowEngineLib;
 using log4net;
 using Microsoft.DwayneNeed.Win32.User32;
 using Microsoft.VisualBasic.Logging;
+using Mysqlx.Crud;
 using NPOI.SS.Formula.Functions;
 using Panuon.WPF.UI;
 using ST.Library.UI.NodeEditor;
@@ -135,11 +136,11 @@ namespace ColorVision.Projects
                         if (Batch != null)
                         {
                             var resultMaster = AlgResultMasterDao.Instance.GetAllByBatchid(Batch.Id);
-
                             List<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
                             foreach (var item in resultMaster)
                             {
-                                List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(Batch.Id);
+                                List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(item.Id);
+
                                 foreach (var pointResultModel in POIPointResultModels)
                                 {
                                     PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(pointResultModel);
@@ -148,31 +149,37 @@ namespace ColorVision.Projects
                             }
 
                             Results.Clear();
-                            List<string> strings = new List<string>() { "White", "Blue", "Red", "Orange" };
                             if (PoiResultCIExyuvDatas.Count ==4)
                             {
-                                for (int i = 0; i < strings.Count; i++)
+                                for (int i = 0; i < 4; i++)
                                 {
-                                    TempResult tempResult1 = new TempResult() { Name = strings[i] };
-
+                                    List<string> strings = new List<string>() { "White", "Blue", "Red", "Orange" };
                                     var poiResultCIExyuvData1 = PoiResultCIExyuvDatas[i];
-
+                                    TempResult tempResult1 = new TempResult() { Name = poiResultCIExyuvData1.Name };
+                                    tempResult1.X = new NumSet() { Value = (float)poiResultCIExyuvData1.x };
+                                    tempResult1.Y = new NumSet() { Value = (float)poiResultCIExyuvData1.y };
+                                    tempResult1.Lv = new NumSet() { Value = (float)poiResultCIExyuvData1.Y };
                                     foreach (var item in poiResultCIExyuvData1.ValidateSingles)
                                     {
                                         if (item.Rule.RType == ValidateRuleType.CIE_x)
                                         {
-                                            tempResult1.X = new NumSet() { Value = item.Value, ValMax = item.Rule.Max ?? 0, ValMin = item.Rule.Min ?? 0 };
                                         }
                                         if (item.Rule.RType == ValidateRuleType.CIE_y)
                                         {
-                                            tempResult1.Y = new NumSet() { Value = item.Value, ValMax = item.Rule.Max ?? 0, ValMin = item.Rule.Min ?? 0 };
                                         }
-                                        if (item.Rule.RType == ValidateRuleType.CIE_lv)
+                                        if (item.Rule.RType == ValidateRuleType.CIE_Y)
                                         {
-                                            tempResult1.Lv = new NumSet() { Value = item.Value, ValMax = item.Rule.Max ?? 0, ValMin = item.Rule.Min ?? 0 };
                                         }
                                     }
                                     Results.Add(tempResult1);
+
+                                    var sortedResults = Results.OrderBy(r => strings.IndexOf(r.Name)).ToList();
+                                    Results.Clear();
+                                    foreach (var result in sortedResults)
+                                    {
+                                        Results.Add(result);
+                                    }
+
                                 }
                                 HYMesManager.GetInstance().UploadMes(Results);
                                 log.Debug("mes 已经上传");
