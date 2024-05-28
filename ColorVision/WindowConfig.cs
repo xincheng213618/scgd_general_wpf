@@ -14,7 +14,7 @@ namespace ColorVision
         {
             get
             {
-                string iconPath = NativeMethods.IniFile.ReadStringFromIniFile(ConfigPath, nameof(WindowConfig), nameof(Icon), "");
+                string iconPath = Common.NativeMethods.IniFile.ReadStringFromIniFile(ConfigPath, nameof(WindowConfig), nameof(Icon), "");
                 if (iconPath != null && File.Exists(iconPath))
                 {
                     if (Path.GetExtension(iconPath).Contains("ico"))
@@ -41,7 +41,7 @@ namespace ColorVision
         {
             get
             {
-                string Title = NativeMethods.IniFile.ReadStringFromIniFile(ConfigPath, nameof(WindowConfig), nameof(Title), string.Empty);
+                string Title = Common.NativeMethods.IniFile.ReadStringFromIniFile(ConfigPath, nameof(WindowConfig), nameof(Title), string.Empty);
                 return string.IsNullOrEmpty(Title) ? null : Title;
             }
         }

@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace ColorVision.NativeMethods
+namespace ColorVision.Common.NativeMethods
 {
     public static class IniFile
     {

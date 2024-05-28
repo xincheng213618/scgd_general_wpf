@@ -1,24 +1,22 @@
-﻿using log4net.Layout;
-using log4net.Repository.Hierarchy;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.UI.HotKey;
+using ColorVision.UI.Menus;
 using log4net;
+using log4net.Appender;
+using log4net.Core;
+using log4net.Layout;
+using log4net.Repository.Hierarchy;
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using log4net.Appender;
-using log4net.Core;
-using ColorVision.MQTT;
-using ColorVision.UI.HotKey;
-using ColorVision.UI;
 using System.Windows.Input;
-using ColorVision.Properties;
-using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 
 namespace ColorVision
 {
     public class WindowLogExport : IHotKey, IMenuItem
     {
-        public HotKeys HotKeys => new(Properties.Resource.MenuAbout, new Hotkey(Key.F2, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(Properties.Resources.Log, new Hotkey(Key.F2, ModifierKeys.Control), Execute);
 
         public string? OwnerGuid => "Help";
 
@@ -26,7 +24,7 @@ namespace ColorVision
 
         public int Order => 10005;
 
-        public string? Header => ColorVision.Properties.Resource.Log;
+        public string? Header => ColorVision.Properties.Resources.Log;
 
         public string? InputGestureText => "Ctrl + F2";
 
@@ -53,13 +51,6 @@ namespace ColorVision
         {
             InitializeComponent();
 
-            MQTTControl.GetInstance().MQTTMsgChanged += (e) =>
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    log.Info(e.ResultMsg);
-                });
-            };
 
             var hierarchy = (Hierarchy)LogManager.GetRepository();
             //hierarchy.Root.RemoveAllAppenders();

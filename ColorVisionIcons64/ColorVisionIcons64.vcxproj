@@ -115,6 +115,12 @@
     <Bscmake>
       <PreserveSbr>true</PreserveSbr>
     </Bscmake>
+    <PostBuildEvent>
+      <Command>if not exist "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows" (mkdir "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows");
+	  if not exist "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows" (mkdir "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows");
+	  copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows";
+	  copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows";</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>

@@ -1,0 +1,45 @@
+﻿<Window x:Class="ColorVision.Services.Types.CreateType"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Services.Types"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:TypeService}"
+        Title="{x:Static properties:Resources.Create}" Background="{DynamicResource GlobalBackground}" Height="250" Width="400" Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+        <Style TargetType="TextBox" BasedOn="{StaticResource TextBoxBaseBaseStyle}">
+            <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Border Grid.Row="0" Background ="{DynamicResource RegionBrush}" CornerRadius="4">
+            <StackPanel>
+                <DockPanel Margin="2" >
+                    <TextBlock Text="{x:Static properties:Resources.Code}" MinWidth="50" />
+                    <hc:ComboBox x:Name="CreateCode" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"   />
+                </DockPanel>
+                <DockPanel Margin="2" >
+                    <TextBlock Text="{x:Static properties:Resources.Name}" Width="50" />
+                    <hc:ComboBox  x:Name="CreateName" IsEditable="True" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"  />
+                </DockPanel>
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Height="30">
+            <Button Content="{x:Static properties:Resources.Submit}" Foreground="White" Background="{StaticResource PrimaryBrush}"  Click="Button_Click" />
+        </Border>
+    </Grid>
+</Window>

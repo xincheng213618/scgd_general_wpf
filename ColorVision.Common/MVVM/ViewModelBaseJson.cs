@@ -6,7 +6,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Unicode;
 
-namespace ColorVision.Common.MVVM.Json
+namespace ColorVision.Common.MVVM
 {
     public static class Extensions
     {

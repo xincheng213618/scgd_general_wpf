@@ -13,9 +13,7 @@ namespace ColorVision.UI.HotKey
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             return (value is bool boll) && (boll) ? Properties.Resources.HotkeyNormal : Properties.Resources.HotkeyNormal;
-
         }
-
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
 
     }

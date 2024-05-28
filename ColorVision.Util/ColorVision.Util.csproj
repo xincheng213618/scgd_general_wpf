@@ -1,6 +1,5 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net6.0-windows</TargetFramework>
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>True</UseWindowsForms>
@@ -15,6 +14,7 @@
 		<PackageReference Include="log4net" Version="2.0.17" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="Panuon.WPF.UI" Version="1.2.1.2" />
+		<PackageReference Include="Quartz" Version="3.9.0" />
 		<PackageReference Include="WPF-UI" Version="2.1.0" />
 		<PackageReference Include="YamlDotNet" Version="15.1.2" />
 	</ItemGroup>
@@ -25,10 +25,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Update="Properties\Resource.Designer.cs">
+	  <Compile Update="Properties\Resources.Designer.cs">
 	    <DesignTime>True</DesignTime>
 	    <AutoGen>True</AutoGen>
-	    <DependentUpon>Resource.resx</DependentUpon>
+	    <DependentUpon>Resources.resx</DependentUpon>
 	  </Compile>
 	  <Compile Update="Themes\Contorls\Upload.xaml.cs">
 	    <SubType>Code</SubType>
@@ -36,9 +36,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Update="Properties\Resource.resx">
+	  <EmbeddedResource Update="Properties\RESOURCES.RESX">
 	    <Generator>PublicResXFileCodeGenerator</Generator>
-	    <LastGenOutput>Resource.Designer.cs</LastGenOutput>
+	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
 	  </EmbeddedResource>
 	</ItemGroup>
 </Project>

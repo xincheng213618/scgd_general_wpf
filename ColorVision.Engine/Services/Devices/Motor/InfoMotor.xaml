@@ -1,0 +1,164 @@
+﻿<UserControl x:Class="ColorVision.Services.Devices.Motor.InfoMotor"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ColorVision.Services.Devices.Motor"
+             xmlns:resx="clr-namespace:ColorVision.Engine.Properties"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance local:DeviceMotor}"
+             d:DesignHeight="400" d:DesignWidth="600" Initialized="UserControl_Initialized">
+        <UserControl.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+    </UserControl.Resources>
+    <Grid>
+        <Border Background="{DynamicResource  SecondaryRegionBrush}" BorderBrush="{DynamicResource BorderBrush}"  BorderThickness="1" CornerRadius="5"/>
+        <Grid Margin="5">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid x:Name="DeviceHeaderGrid" Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Border  Grid.Row="0" Background="{DynamicResource RegionBrush}" CornerRadius="5" >
+                    <DockPanel  Margin="10,5">
+                        <ToggleButton Style="{StaticResource ButtonMQTTConnect}" IsEnabled="False" DockPanel.Dock="Right" Width="20" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}"/>
+                        <Grid  Height="18"   HorizontalAlignment="Left"  Margin="0,0,4,0">
+                            <Image Source="{Binding Icon}"/>
+                        </Grid>
+                        <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
+                    </DockPanel>
+                </Border>
+                <Border Grid.Column="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5"  Margin="5,0,0,0">
+                    <DockPanel Margin="0,0,10,0">
+                        <Button Command="{Binding RefreshCommand}" Background="Transparent"  BorderThickness="0" >
+                            <Button.Triggers>
+                                <EventTrigger RoutedEvent="Button.Click">
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </EventTrigger>
+                            </Button.Triggers>
+                            <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}"  FontSize="20" ToolTip="刷新">
+                                <TextBlock.RenderTransform>
+                                    <RotateTransform x:Name="rotateTransform1" CenterX="10" CenterY="10"/>
+                                </TextBlock.RenderTransform>
+                            </TextBlock>
+                        </Button>
+
+                        <Grid x:Name="ButtonEdit" Width="25"  Margin="0,0,10,0">
+                            <Image Source="{StaticResource  DrawingImageEdit}" Width="17" Margin="0" />
+                            <Button Background="Transparent" BorderThickness="0" Command="{Binding EditCommand}"/>
+                        </Grid>
+                        <Grid x:Name="ButtonCopy" Width="25" Margin="0,0,0,0">
+                            <TextBlock  Text="&#xF413;"  FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center"/>
+                            <Button  Background="Transparent"  BorderThickness="0" Command="{Binding CopyCommand}"/>
+                        </Grid>
+                    </DockPanel>
+                </Border>
+            </Grid>
+            <Border  Grid.Row="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Margin="5,0" >
+                        <GroupBox Header="基本信息" Margin="0,5">
+                            <StackPanel Margin="5">
+                                <DockPanel>
+                                    <TextBlock Text="ID" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.Id}"/>
+                                </DockPanel>
+                                <DockPanel>
+                                    <TextBlock Text="发送信道" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SendTopic}"/>
+                                </DockPanel>
+                                <DockPanel>
+                                    <TextBlock Text="接收信道" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SubscribeTopic}"/>
+                                </DockPanel>
+                                <DockPanel>
+                                    <TextBlock Text="心跳时间(ms)"  Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.HeartbeatTime}"/>
+                                </DockPanel>
+                                <DockPanel>
+                                    <TextBlock Text="Token"  Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ServiceToken}"/>
+                                </DockPanel>
+                            </StackPanel>
+                        </GroupBox>
+
+                        <GroupBox Header="电机配置" Margin="0,5">
+                            <StackPanel Margin="5">
+                                <DockPanel>
+                                    <TextBlock Text="电机类型:" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.eFOCUSCOMMUN}" />
+                                </DockPanel>
+                                <DockPanel>
+                                    <TextBlock Text="串口:" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.SzComName}" />
+                                </DockPanel>
+                                <DockPanel>
+                                    <TextBlock Text="波特率:" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.BaudRate}" />
+                                </DockPanel>
+                                <DockPanel>
+                                    <TextBlock Text="超时时间" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.dwTimeOut}" />
+                                </DockPanel>
+                            </StackPanel>
+                        </GroupBox>
+                        <GroupBox Header="自动聚焦配置">
+                            <StackPanel Margin="5">
+                                <DockPanel>
+                                    <TextBlock Text="评价函数类型:" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.EvaFunc}" />
+                                </DockPanel>
+                                <DockPanel>
+                                    <TextBlock Text="超时时间:" Width="120"/>
+                                    <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.nTimeout}" />
+                                </DockPanel>
+                                <DockPanel>
+                                    <TextBlock Text="电机移动区间下限:" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.MinPosition}" />
+                                </DockPanel>
+                                <DockPanel>
+                                    <TextBlock Text="电机移动区间上限:" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.MaxPosition}" />
+                                </DockPanel>
+                                <DockPanel>
+                                    <TextBlock Text="步径摆动范围:" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.Forwardparam}" />
+                                </DockPanel>
+                                <DockPanel>
+                                    <TextBlock Text="目前使用步径:" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.CurStep}" />
+                                </DockPanel>
+                                <DockPanel>
+                                    <TextBlock Text="步径每次缩诚系数:" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.Curtailparam}" />
+                                </DockPanel>
+                                <DockPanel>
+                                    <TextBlock Text="停止步径:" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.StopStep}" />
+                                </DockPanel>
+                                <DockPanel>
+                                    <TextBlock Text="最低评价值:" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.AutoFocusConfig.MinValue}" />
+                                </DockPanel>
+                            </StackPanel>
+                        </GroupBox>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

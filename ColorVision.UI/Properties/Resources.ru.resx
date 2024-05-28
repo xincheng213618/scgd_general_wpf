@@ -183,4 +183,25 @@
   <data name="MenuLanguage" xml:space="preserve">
     <value>Язык(Л)</value>
   </data>
+  <data name="Theme" xml:space="preserve">
+    <value>тема</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>язык пользовательского интерфейса</value>
+  </data>
+  <data name="AutoSwitchSelectedView" xml:space="preserve">
+    <value>Автоматически переключать выбранные представления</value>
+  </data>
+  <data name="HotKeys" xml:space="preserve">
+    <value>быстрая клавиша</value>
+  </data>
+  <data name="WindowHidden" xml:space="preserve">
+    <value>скрывать</value>
+  </data>
+  <data name="WindowSingle" xml:space="preserve">
+    <value>независимое окно</value>
+  </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>Выход(Х)</value>
+  </data>
 </root>

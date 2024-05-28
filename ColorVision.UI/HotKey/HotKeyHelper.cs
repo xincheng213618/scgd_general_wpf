@@ -1,36 +1,42 @@
 ﻿using ColorVision.UI.HotKey.GlobalHotKey;
 using ColorVision.UI.HotKey.WindowHotKey;
-using ColorVision.UI;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.UI.HotKey
 {
-    public interface IHotKey
-    {
-        public HotKeys HotKeys { get; }
-    }
 
 
 
     public static partial class HotKeysExtension
     {
-        public static void LoadHotKeyFromAssembly<T>(this Window This) where T : IHotKey
+        public static void LoadHotKeyFromAssembly(this Window This)
         {
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                foreach (Type type in assembly.GetTypes().Where(t => typeof(T).IsAssignableFrom(t) && !t.IsAbstract))
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IHotKey).IsAssignableFrom(t) && !t.IsAbstract))
                 {
-                    if (Activator.CreateInstance(type) is T iHotKey)
+                    if (Activator.CreateInstance(type) is IHotKey iHotKey)
                     {
                         AddHotKeys(This, iHotKey.HotKeys);
                     }
                 }
             }
+
+            //设置控件为保存的值
+            var hotKeysDictionary = HotKeys.HotKeysList.GroupBy(hk => hk.Name).ToDictionary(g => g.Key, g => g.Last());
+
+            foreach (var hotKeys in HotKeyConfig.Instance.Hotkeys)
+            {
+                if (hotKeysDictionary.TryGetValue(hotKeys.Name, out var item))
+                {
+                    item.Hotkey = hotKeys.Hotkey;
+                    item.Kinds = hotKeys.Kinds;
+                }
+            }
+
+            HotKeyConfig.Instance.Hotkeys = HotKeys.HotKeysList;
+
         }
 
         public static bool AddHotKeys(this Window This, HotKeys hotKeys)

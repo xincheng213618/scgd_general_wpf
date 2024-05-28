@@ -1,73 +1,21 @@
-﻿using ColorVision.Common.Extension;
-using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.UI.HotKey;
-using ColorVision.UI.Languages;
-using ColorVision.MQTT;
-using ColorVision.MySql;
-using ColorVision.Properties;
-using ColorVision.Services.RC;
-using ColorVision.Themes;
+﻿using ColorVision.Themes;
 using ColorVision.Themes.Controls;
-using ColorVision.UI;
+using ColorVision.UI.Configs;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
+using System.Windows.Data;
 using System.Windows.Media;
-using ColorVision.Services.Msg;
-using ColorVision.Solution;
 
 namespace ColorVision.Settings
 {
-    public class ExportSetting : IHotKey,IMenuItem
-    {
-        public HotKeys HotKeys => new(Properties.Resource.MenuOptions, new Hotkey(Key.I, ModifierKeys.Control), Execute);
-        private void Execute()
-        {
-            new SettingWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-        public string? OwnerGuid => "Tool";
-
-        public string? GuidId => "MenuOptions";
-        public Visibility Visibility => Visibility.Visible;
-
-        public int Order => 100000;
-
-        public string? Header => Resource.MenuOptions;
-
-        public string? InputGestureText => "Ctrl + I";
-
-        public object? Icon { 
-            get
-            {
-                TextBlock text = new()
-                {
-                    Text = "\uE713", // 使用Unicode字符
-                    FontFamily = new FontFamily("Segoe MDL2 Assets"),
-                    FontSize = 15,
-                };
-                text.SetResourceReference(TextBlock.ForegroundProperty, "GlobalTextBrush");
-                return text;
-            }
-        }
-        public RelayCommand Command => new(A => Execute());
-    }
-
-
     /// <summary>
     /// SettingWindow.xaml 的交互逻辑
     /// </summary>
     public partial class SettingWindow : BaseWindow
     {
-        
-        public SoftwareConfig SoftwareConfig { get;set;}
         public SettingWindow()
         {
             InitializeComponent();
@@ -89,145 +37,74 @@ namespace ColorVision.Settings
         }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            SoftwareConfig = ConfigHandler.GetInstance().SoftwareConfig;
-            DataContext = SoftwareConfig;
-            AutoRunDock.DataContext = ConfigHandler.GetInstance();
-            GlobalConst.LogLevel.ForEach(it =>
+           LoadIConfigSetting();
+        }
+
+
+        public void LoadIConfigSetting()
+        {
+
+            void Add(ConfigSettingMetadata configSetting)
             {
-                cmbloglevel.Items.Add(it);
-            });
-
-            cmtheme.ItemsSource = from e1 in Enum.GetValues(typeof(Theme)).Cast<Theme>()
-                                  select new KeyValuePair<Theme, string>(e1, Properties.Resource.ResourceManager.GetString(e1.ToDescription(), CultureInfo.CurrentUICulture)??"");
-
-            cmtheme.SelectedValuePath = "Key";
-            cmtheme.DisplayMemberPath = "Value";
-            cmtheme.SelectionChanged += Cmtheme_SelectionChanged;
-
-            
-            if (LanguageManager.Current.Languages.Count <= 1)
-                lauagDock.Visibility = Visibility.Collapsed;
-
-            cmlauage.ItemsSource = from e1 in LanguageManager.Current.Languages
-                                   select new KeyValuePair<string, string>(e1, LanguageManager.keyValuePairs.TryGetValue(e1, out string value) ? value : e1);
-            cmlauage.SelectedValuePath = "Key";
-            cmlauage.DisplayMemberPath = "Value";
-
-            string temp = Thread.CurrentThread.CurrentUICulture.Name;
-
-            cmlauage.SelectionChanged += (s, e) =>
-            {
-                if (cmlauage.SelectedValue is string str)
+                if (configSetting.Type == ConfigSettingType.Bool)
                 {
-                    if (!LanguageManager.Current.LanguageChange(str))
+                    DockPanel dockPanel = new DockPanel() { Margin = new Thickness(5) };
+                    Wpf.Ui.Controls.ToggleSwitch toggleSwitch = new() { ToolTip = configSetting.Description };
+                    toggleSwitch.SetBinding(Wpf.Ui.Controls.ToggleSwitch.IsCheckedProperty, new Binding(configSetting.BindingName));
+                    toggleSwitch.DataContext = configSetting.Source;
+                    DockPanel.SetDock(toggleSwitch, Dock.Right);
+                    dockPanel.Children.Add(toggleSwitch);
+                    dockPanel.Children.Add(new TextBlock() { Text = configSetting.Name });
+                    UniversalStackPanel.Children.Add(dockPanel);
+                }
+                if (configSetting.Type == ConfigSettingType.ComboBox)
+                {
+                    DockPanel dockPanel = new DockPanel() { Margin = new Thickness(5) };
+                    ComboBox comboBox = configSetting.ComboBox;
+                    DockPanel.SetDock(comboBox, Dock.Right);
+                    dockPanel.Children.Add(comboBox);
+                    dockPanel.Children.Add(new TextBlock() { Text = configSetting.Name });
+                    UniversalStackPanel.Children.Add(dockPanel);
+                }
+                if (configSetting.Type == ConfigSettingType.TabItem)
+                {
+                    TabItem tabItem = new TabItem() { Header = configSetting.Name , Background = Brushes.Transparent};
+                    Grid grid = new Grid();
+                    grid.SetResourceReference(Grid.BackgroundProperty, "GlobalBorderBrush");
+                    GroupBox groupBox = new GroupBox
                     {
-                        LanguageConfig.Instance.UICulture = temp;
+                        Header = new TextBlock { Text = configSetting.Name, FontSize = 20 },
+                        Background = Brushes.Transparent,
+                        Template = (ControlTemplate)Resources["GroupBoxHeader1"]
+                    };
+                    groupBox.Content = configSetting.UserControl;
+                    grid.Children.Add(groupBox);
+                    tabItem.Content = grid;
+                    TabControlSetting.Items.Add(tabItem);
+                }
+            }
+            var allSettings = new List<ConfigSettingMetadata>();
+
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                foreach (var type in assembly.GetTypes().Where(t => typeof(IConfigSettingProvider).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is IConfigSettingProvider configSetting)
+                    {
+                        allSettings.AddRange(configSetting.GetConfigSettings());
                     }
                 }
-            };
+            }
+            // 先按 ConfigSettingType 分组，再在每个组内按 Order 排序
+            var sortedSettings = allSettings
+                .GroupBy(setting => setting.Type)
+                .SelectMany(group => group.OrderBy(setting => setting.Order));
 
-            lauagDock.DataContext = LanguageConfig.Instance;
-        }
-
-        private void Cmtheme_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            Application.Current.ApplyTheme(ThemeConfig.Instance.Theme);
-        }
-
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-        private void HotKeyStackPanel_Initialized(object sender, EventArgs e)
-        {
-            foreach (HotKeys hotKeys in HotKeys.HotKeysList)
+            // 将排序后的配置设置添加到集合中
+            foreach (var item in sortedSettings)
             {
-                HotKeyStackPanel.Children.Add(new HoyKeyControl(hotKeys));
+                Add(item);
             }
         }
-
-        private void SetDefault_Click(object sender, RoutedEventArgs e)
-        {
-            HotKeys.SetDefault();
-        }
-
-        private void ButtonLoad_Click(object sender, RoutedEventArgs e)
-        {
-            //string json = File.ReadAllText("Hotkey");
-            //List<HotKeys> HotKeysList = JsonSerializer.Deserialize<List<HotKeys>>(json) ?? new List<HotKeys>();
-            //foreach (HotKeys hotKeys in HotKeysList)
-            //{
-            //    foreach (var item in HotKeys.HotKeysList)
-            //    {
-            //        if (hotKeys.Name == item.Name)
-            //        {
-            //            item.Hotkey = hotKeys.Hotkey;
-            //            item.Kinds = hotKeys.Kinds;
-            //        }
-            //    }
-            //}
-        }
-
-        private void ButtonSave_Click(object sender, RoutedEventArgs e)
-        {
-            //JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions() { Encoder = JavaScriptEncoder.CreateSolution(UnicodeRanges.All) };
-            //string Json = JsonSerializer.Serialize(HotKeys.HotKeysList, jsonSerializerOptions);
-            //File.WriteAllText("Hotkey", Json);
-        }
-
-        private void SetProjectDefault__Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button)
-            {
-                SolutionSetting.Instance.DefaultSaveName = "yyyy/dd/MM HH:mm:ss";
-                ButtonContentChange(button, Properties.Resource.Reseted);
-            }
-
-        }
-
-        private void SetProjectDefaultCreatName_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button)
-            {
-                SolutionSetting.Instance.DefaultCreatName = "新建工程";
-                ButtonContentChange(button, Properties.Resource.Reseted);
-            }
-        }
-
-        private static async void ButtonContentChange(Button button, string Content)
-        {
-            if (button.Content.ToString() != Content)
-            {
-                var temp = button.Content;
-                button.Content = Content;
-                await Task.Delay(1000);
-                button.Content = temp;
-            }
-        }
-
-
-        private void TextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            new MQTTConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-        private void TextBlock_MouseLeftButtonDown2(object sender, MouseButtonEventArgs e)
-        {
-            new RCServiceConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-        private void TextBlock_MouseLeftButtonDown1(object sender, MouseButtonEventArgs e)
-        {
-            new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            MsgConfig.Instance.MsgRecords.Clear();
-            ConfigHandler.GetInstance().SaveConfig();
-            MessageBox.Show("MQTT历史记录清理完毕", "ColorVision");
-        }
-
-
     }
 }

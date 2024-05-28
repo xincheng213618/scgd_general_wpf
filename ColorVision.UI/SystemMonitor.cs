@@ -2,7 +2,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-
 namespace ColorVision.UI
 {
     public class SystemMonitorSetting: ViewModelBase,IConfig
@@ -16,6 +15,9 @@ namespace ColorVision.UI
         public bool IsShowTime { get => _ShowTime; set { _ShowTime = value; NotifyPropertyChanged(); } }
         private bool _ShowTime;
 
+        public bool IsShowRAM { get => _IsShowRAM; set { _IsShowRAM = value; NotifyPropertyChanged(); } }
+        private bool _IsShowRAM;
+
     }
 
     public class SystemMonitor : ViewModelBase, IDisposable
@@ -28,7 +30,7 @@ namespace ColorVision.UI
         private PerformanceCounter PCCPU;
         private PerformanceCounter PCCPUThis;
 
-        private double RAMAL = (double)NativeMethods.PerformanceInfo.GetTotalMemoryInMiB() / 1024;
+        private double RAMAL = (double)Common.NativeMethods.PerformanceInfo.GetTotalMemoryInMiB() / 1024;
         private PerformanceCounter PCRAM;
         private PerformanceCounter PCRAMThis;
 
@@ -36,23 +38,23 @@ namespace ColorVision.UI
 
         public int UpdateSpeed
         {
-            get => Setting.UpdateSpeed; set
+            get => Config.UpdateSpeed; set
             {
-                if (value != Setting.UpdateSpeed)
+                if (value != Config.UpdateSpeed)
                 {
-                    Setting.UpdateSpeed = value; NotifyPropertyChanged();
+                    Config.UpdateSpeed = value; NotifyPropertyChanged();
                     timer?.Dispose();
                     timer = new Timer(TimeRun, null, 0, value);
                 }
             }    
         }
 
-        public SystemMonitorSetting Setting { get; set; }
+        public SystemMonitorSetting Config { get; set; }
 
 
         public SystemMonitor()
         {
-            Setting = ConfigHandler1.GetInstance().GetRequiredService<SystemMonitorSetting>();
+            Config = ConfigHandler.GetInstance().GetRequiredService<SystemMonitorSetting>();
             Task.Run(() => 
             {
                 try
@@ -102,8 +104,8 @@ namespace ColorVision.UI
 
                 try
                 {
-                    if (Setting.IsShowTime)
-                        Time = DateTime.Now.ToString(Setting.DefaultTimeFormat);
+                    if (Config.IsShowTime)
+                        Time = DateTime.Now.ToString(Config.DefaultTimeFormat);
                 }
                 catch
                 {

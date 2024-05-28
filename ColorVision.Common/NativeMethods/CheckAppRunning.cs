@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 
-namespace ColorVision.NativeMethods
+namespace ColorVision.Common.NativeMethods
 {
     //这里备注一下：实现的功能为，检测到软件已经打开，就把软件的窗口置顶，并且闪烁几下，同时会检测软件的版本
     public static class CheckAppRunning

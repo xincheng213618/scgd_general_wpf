@@ -4,14 +4,12 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
-        xmlns:SettingUp ="clr-namespace:ColorVision.Settings"
-        xmlns:Solution="clr-namespace:ColorVision.Solution"  
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:properties="clr-namespace:ColorVision.Properties"
         xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util" 
         xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
         mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance Type=local:MainWindow}"
+        d:DataContext="{d:DesignInstance Type=local:MainWindowConfig}"
         Title="ColorVision" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid x:Name="Root">
         <Grid.RowDefinitions>
@@ -22,16 +20,11 @@
         <Border Grid.Row="0"  Height ="27 " BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1">
             <Grid>
                 <Menu x:Name="Menu1">
-                    <MenuItem x:Name="FileMenuItem" Header="{x:Static properties:Resource.MenuFile}"/>
-                    <MenuItem Header="{x:Static properties:Resource.MenuTemplate}"/>
-                    <MenuItem Header="{x:Static properties:Resource.MenuTool}"/>
-                    <MenuItem  x:Name="MenuStatusBar"  d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Header="{ x:Static properties:Resource.MenuView}">
-                        <MenuItem Header="{x:Static properties:Resource.MenuViewStatusBar}" IsChecked="{Binding SoftwareSetting.IsOpenStatusBar}"  Click="MenuStatusBar_Click" />
-                        <Separator/>
-                        <MenuItem Header="{x:Static properties:Resource.SaveWindowLayout}"  Click="MenuStatusBar_Click" />
-                        <MenuItem Header="{x:Static properties:Resource.ApplyWindowLayout}"  Click="MenuStatusBar_Click" />
-                    </MenuItem>
-                    <MenuItem x:Name="MenuHelp" Header="{x:Static properties:Resource.MenuHelp}">
+                    <MenuItem x:Name="MenuFile" Header="{x:Static properties:Resources.MenuFile}"/>
+                    <MenuItem x:Name="MenuTemplate" Header="{x:Static properties:Resources.MenuTemplate}"/>
+                    <MenuItem x:Name="MenuTool" Header="{x:Static properties:Resources.MenuTool}"/>
+                    <MenuItem x:Name="MenuView"  Header="{ x:Static properties:Resources.MenuView}"/> 
+                    <MenuItem x:Name="MenuHelp" Header="{x:Static properties:Resources.MenuHelp}">
                         <MenuItem Header="打开日志文件夹(_F)"  Click="LogF_Click"/>
                         <MenuItem Header="打开配置文件(_S)"  Click="Setting_Click"/>
                         <MenuItem Header="打开配置文件夹(_F)" Click="SettingF_Click"/>
@@ -50,12 +43,12 @@
             </Grid.ColumnDefinitions>
             <Button x:Name="ButtonShiftOut" Panel.ZIndex="100" Click="OnLeftMainContentShiftOut" Opacity="0.3" hc:IconElement.Geometry="{StaticResource LeftGeometry}" Padding="8 8 0 8" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0 0 -16 0" Style="{StaticResource ButtonIconCircular}" />
             <Border  Grid.Row="0" Panel.ZIndex="101"  Background="{DynamicResource GlobalBackground}" BorderThickness="0,0,1,0"  BorderBrush="{DynamicResource BorderBrush}" Margin="-1,0,0,0">
-                <Grid  x:Name="LeftMainContent" d:DataContext="{d:DesignInstance SettingUp:SoftwareConfig}"  Visibility="{Binding SoftwareSetting.IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" >
+                <Grid  x:Name="LeftMainContent" >
                     <UIElement.RenderTransform>
                         <TranslateTransform />
                     </UIElement.RenderTransform>
                     <TabControl Style="{StaticResource TabControlBaseStyle}" TabStripPlacement="Bottom" >
-                        <TabItem x:Name="ViewTab" Header="{x:Static properties:Resource.Acquire}" Width="150" >
+                        <TabItem x:Name="ViewTab" Header="{x:Static properties:Resources.Acquire}" Width="150" >
                             <ScrollViewer x:Name="ScrollViewerDisplay" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
                                 <StackPanel x:Name="StackPanelSPD" Initialized="StackPanelSPD_Initialized" >
                                     <behaviors:Interaction.Behaviors>
@@ -65,7 +58,7 @@
                             </ScrollViewer>
 
                         </TabItem>
-                        <TabItem x:Name="SolutionTab1" Header="{x:Static properties:Resource.Project}" Width="150" />
+                        <TabItem x:Name="SolutionTab1" Header="{x:Static properties:Resources.Project}" Width="150" />
                     </TabControl>
                 </Grid>
             </Border>
@@ -76,62 +69,49 @@
             <GridSplitter Panel.ZIndex="102" x:Name="GridSplitter" Margin="0,26,0,26" Grid.Column="0" HorizontalAlignment="Right" Width="4" Background="Transparent"/>
             <Button Grid.Column="0" x:Name="ButtonShiftIn" Panel.ZIndex="102"  Visibility="Collapsed" Click="OnLeftMainContentShiftIn" hc:IconElement.Geometry="{StaticResource RightGeometry}" Padding="8 8 0 8" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-16 0 -16 0" Style="{StaticResource ButtonIconCircular}" />
         </Grid>
-        <Grid Grid.Row="2" Height="35" x:Name="StatusBarGrid" d:DataContext="{d:DesignInstance SettingUp:ConfigHandler}" Visibility="{Binding SoftwareConfig.SoftwareSetting.IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}" >
-            <StatusBar BorderThickness="0,1,0,0" >
-                <StatusBar.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                        </Grid>
-                    </ItemsPanelTemplate>
-                </StatusBar.ItemsPanel>
+        <StatusBar Grid.Row="2" Height="35" x:Name="StatusBarGrid" Visibility="{Binding IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}"  Initialized="StatusBarGrid_Initialized" >
+            <StatusBar.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                </ItemsPanelTemplate>
+            </StatusBar.ItemsPanel>
+            <StatusBarItem Grid.Column="0">
 
-                <StatusBarItem Grid.Column="0">
-                    
-                </StatusBarItem>
-                
-                <StatusBarItem Grid.Column="1" >
-                    <DockPanel>
-                        <StackPanel Orientation="Horizontal" Margin="0" Visibility="{Binding ElementName=SolutionTab1,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter1}}" >
-                            <Button  Height="15" BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="1">
+            </StatusBarItem>
+            <StatusBarItem Grid.Column="1">
+                <StackPanel x:Name="StatusBarTextDocker" Orientation="Horizontal">
+                    <UserControl  Height="15"  Visibility="{Binding ElementName=SolutionTab1,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter1}}">
+                        <StackPanel Orientation="Horizontal" >
+                            <Button  BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="1">
                                 <Image Source="{DynamicResource DrawingImageSingleWindow}" Margin="-5" />
                             </Button>
-                            <Button  Height="15" BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="20">
+                            <Button  BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="20">
                                 <Image Source="{DynamicResource DrawingImageTwoWindow1}" Margin="-5" />
                             </Button>
-                            <Button  Height="15" BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="21">
+                            <Button BorderThickness="0" Background="Transparent" Click="ViewGrid_Click" Tag="21">
                                 <Image Source="{DynamicResource DrawingImageTwoWindow0}" Margin="-5" />
                             </Button>
-                            <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Background="Transparent" Tag="30">
+                            <Button  BorderThickness="0"  Click="ViewGrid_Click" Background="Transparent" Tag="30">
                                 <Image Source="{DynamicResource DrawingImageLeft1Right2}" Margin="-5" />
                             </Button>
-                            <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Background="Transparent" Tag="31">
+                            <Button  BorderThickness="0"  Click="ViewGrid_Click" Background="Transparent" Tag="31">
                                 <Image Source="{DynamicResource DrawingImageLeft2Right1}" Margin="-5" />
                             </Button>
-                            <Button  Height="15" BorderThickness="0"  Click="ViewGrid_Click" Background="Transparent" Tag="4">
+                            <Button  BorderThickness="0"  Click="ViewGrid_Click" Background="Transparent" Tag="4">
                                 <Image Source="{DynamicResource DrawingImageFourWindow}" Margin="-5" />
                             </Button>
                         </StackPanel>
-                        <StatusBarItem  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown1" Visibility="{Binding SoftwareConfig.MySqlSetting.IsUseMySql,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MySql" >
-                            <ToggleButton x:Name="StatusBarMysql" Style="{DynamicResource ButtonDrawingImageMysql}"  Height="20"  Margin="0,-10" IsChecked="{Binding SoftwareConfig.MySqlSetting.MySqlControl.IsConnect,Mode=OneWay}"  IsEnabled="False"/>
-                        </StatusBarItem>
-                        <StatusBarItem MouseLeftButtonDown="TextBlock_MouseLeftButtonDown" Visibility="{Binding SoftwareConfig.MQTTSetting.IsUseMQTT,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MQTT">
-                            <ToggleButton  x:Name="StatusBarMqtt"   Style="{DynamicResource ButtonDrawingImageMQTT}"  Height="20"  Margin="0,-10" IsChecked="{Binding SoftwareConfig.MQTTSetting.MQTTControl.IsConnect,Mode=OneWay}" IsEnabled="False" />
-                        </StatusBarItem>
-                        <StatusBarItem MouseLeftButtonDown="TextBlock_MouseLeftButtonDown_RC" Visibility="{Binding SoftwareConfig.RCSetting.IsUseRCService,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="{x:Static properties:Resource.RegistryCenter}">
-                            <ToggleButton  x:Name="StatusBarRCService"   Style="{DynamicResource ButtonDrawingImageRCService}"  Height="15"  Margin="0,-10" IsChecked="{Binding SoftwareConfig.RCSetting.RCServiceControl.IsConnect,Mode=OneWay}" IsEnabled="False" />
-                        </StatusBarItem>
-                        <StatusBarItem Visibility="{Binding SoftwareConfig.SolutionSetting.IsLackWarning,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="硬盘剩余空间">
-                            <ToggleButton  x:Name="StatusBarHardDisk"   Style="{DynamicResource ButtonDrawingImageHardDisk}"  Height="15"  Margin="0,-10" IsChecked="{Binding SoftwareConfig.SolutionSetting.IsLackWarning,Mode=OneWay}" IsEnabled="False" />
-                        </StatusBarItem>
-                        <StatusBarItem  x:Name="StatusBarItem1" Visibility="Collapsed"  Content="{Binding SystemMonitor.MemoryThis}"/>
-                        <StatusBarItem  x:Name="StatusBarItem2"   Content="{Binding SystemMonitor.Time}" Visibility="{Binding SystemMonitor.Setting.IsShowTime,Converter={StaticResource bool2VisibilityConverter}}"/>
-                    </DockPanel>
-                </StatusBarItem>
-            </StatusBar>
-        </Grid>
+                    </UserControl>
+
+                    <DockPanel x:Name="StatusBarIconDocker"/>
+
+                </StackPanel>
+            </StatusBarItem>
+        </StatusBar>
     </Grid>
 </Window>

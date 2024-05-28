@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision.NativeMethods
+namespace ColorVision.Common.NativeMethods
 {
 
     /// <summary>

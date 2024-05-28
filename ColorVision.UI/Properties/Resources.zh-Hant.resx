@@ -183,4 +183,25 @@
   <data name="MenuLanguage" xml:space="preserve">
     <value>語言(_L）</value>
   </data>
+  <data name="Theme" xml:space="preserve">
+    <value>主題</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>語言</value>
+  </data>
+  <data name="AutoSwitchSelectedView" xml:space="preserve">
+    <value>自動切換選取視圖</value>
+  </data>
+  <data name="HotKeys" xml:space="preserve">
+    <value>快捷鍵</value>
+  </data>
+  <data name="WindowHidden" xml:space="preserve">
+    <value>隱藏</value>
+  </data>
+  <data name="WindowSingle" xml:space="preserve">
+    <value>獨立視窗</value>
+  </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>退出(_X)</value>
+  </data>
 </root>

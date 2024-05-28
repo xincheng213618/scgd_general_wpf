@@ -1,15 +1,15 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.HotKey;
-using ColorVision.UI;
 using System;
 using System.Windows;
 using System.Windows.Input;
+using ColorVision.UI.Menus;
 
 namespace ColorVision.Update
 {
     public class ExportUpdate: IHotKey, IMenuItem
     {
-        public HotKeys HotKeys => new(Properties.Resource.MenuUpdate, new Hotkey(Key.U, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(ColorVision.Properties.Resources.Update, new Hotkey(Key.U, ModifierKeys.Control), Execute);
 
         public string? OwnerGuid => "Help";
 
@@ -18,7 +18,7 @@ namespace ColorVision.Update
         public int Order => 10003;
         public Visibility Visibility => Visibility.Visible;
 
-        public string? Header => Properties.Resource.MenuUpdate;
+        public string? Header => Properties.Resources.MenuUpdate;
 
         public string? InputGestureText => "Ctrl + U";
 

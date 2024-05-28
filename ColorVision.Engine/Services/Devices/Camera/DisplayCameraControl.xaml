@@ -1,0 +1,170 @@
+﻿<UserControl x:Class="ColorVision.Services.Devices.Camera.DisplayCameraControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ColorVision.Services.Devices.Camera"
+             xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
+             xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+             xmlns:cv="clr-namespace:ColorVision"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+             mc:Ignorable="d" 
+             d:DataContext="{d:DesignInstance local:DeviceCamera}"
+             d:DesignHeight="800" d:DesignWidth="300" Width="300" Initialized="UserControl_Initialized">
+    <UserControl.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+        <Style TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}">
+            <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
+        </Style>
+    </UserControl.Resources>
+    <StackPanel Margin="0,3">
+        <DockPanel Margin="0,0,5,0">
+            <Grid DockPanel.Dock="Right" >
+                <ToggleButton  Style="{StaticResource ButtonMQTTConnect}" Command="{Binding PropertyCommand}" Height="10" Width="10"  HorizontalAlignment="Center" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
+                <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
+                <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}"/>
+            </Grid>
+            <Grid  DockPanel.Dock="Right"  ToolTip="查看相机的温度数据">
+                <Image Source="{DynamicResource DITemperature}" Stretch="Uniform" Height="18"/>
+                <Button   Background="Transparent" BorderThickness="0" Command="{Binding FetchLatestTemperatureCommand}"/>
+            </Grid>
+            <Grid  DockPanel.Dock="Right" ToolTip="保存当前的曝光等参数">
+                <Image Source="{DynamicResource DrawingImageSave}" Stretch="Uniform" Height="18">
+                    <Image.RenderTransform>
+                        <ScaleTransform x:Name="ScaleTransform"/>
+                    </Image.RenderTransform>
+                </Image>
+                <Button Background="Transparent" BorderThickness="0" Command="{Binding DisPlaySaveCommand}">
+                    <Button.Triggers>
+                        <EventTrigger RoutedEvent="Button.Click">
+                            <BeginStoryboard>
+                                <Storyboard>
+                                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX" From="1" To="0.8" Duration="0:0:0.1" FillBehavior="Stop"/>
+                                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY" From="1" To="0.8" Duration="0:0:0.1" FillBehavior="Stop"/>
+                                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleX" From="0.8" To="1" BeginTime="0:0:0.1" Duration="0:0:0.1" FillBehavior="Stop"/>
+                                    <DoubleAnimation Storyboard.TargetName="ScaleTransform" Storyboard.TargetProperty="ScaleY" From="0.8" To="1" BeginTime="0:0:0.1" Duration="0:0:0.1" FillBehavior="Stop"/>
+                                </Storyboard>
+                            </BeginStoryboard>
+                        </EventTrigger>
+                    </Button.Triggers>
+                </Button>
+            </Grid>
+            <Grid >
+                <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding IsDisplayOpen}" />
+                <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="4,0,0,0">
+                    <Image Source="{Binding Icon}"/>
+                </Grid>
+            </Grid>
+        </DockPanel>
+        <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
+            <StackPanel Margin="3">
+                <Button x:Name="ButtonInit" Margin="0,0,0,3" Content="请先配置相机ID" Click="CameraInit_Click"/>
+                <Button x:Name="ButtonOffline" Margin="0,0,0,3" Visibility="Collapsed" Content="设备离线" Foreground="White" Background="Red" Click="CameraOffline_Click"/>
+                <StackPanel x:Name="StackPanelOpen" Margin="0,0,0,3">
+                    <DockPanel x:Name="ButtonOpen">
+                        <Button  DockPanel.Dock="Right" Grid.Column="1" Margin="5,0,0,0" Content="{x:Static properties:Resources.Video}"  Click="Video_Click"/>
+                        <Button  Grid.Column="0" Content="{x:Static properties:Resources.Open}"  Click="Open_Click" />
+                    </DockPanel>
+                    <Button x:Name="ButtonClose" Margin="0,0,0,3" Grid.Column="0" Content="{x:Static properties:Resources.Close}" Foreground="White" Background="Red"  Visibility="Collapsed" Click="Close_Click" />
+                    <StackPanel Visibility="{Binding DeviceService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter}}">
+                        <DockPanel Margin="0,2" >
+                            <TextBlock  Text="{x:Static properties:Resources.Exposure}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" MinWidth="50" />
+                            <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime}" MinWidth="50"/>
+                            <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeLog}" Minimum="0" Maximum="11.002"/>
+                        </DockPanel>
+                        
+                        <DockPanel Margin="0,2" >
+                            <TextBlock  Text="{x:Static properties:Resources.Gain}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="50" />
+                            <TextBox DockPanel.Dock="Right" Text="{Binding Config.Gain}" MinWidth="50"/>
+                            <hc:PreviewSlider TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="10" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.Gain}" Minimum="0" Maximum="5000"/>
+                        </DockPanel>
+                    </StackPanel>
+
+
+                    <StackPanel x:Name="StackPanelImage">
+                        <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
+                            <DockPanel Margin="0,2">
+                                <TextBlock  Text="{x:Static properties:Resources.Exposure}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" MinWidth="50"  />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTime}" Width="50"/>
+                                <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeLog}" Minimum="0" Maximum="11.002"/>
+                            </DockPanel>
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter}}">
+                            <DockPanel Margin="0,2">
+                                <TextBlock  Text="{x:Static properties:Resources.ExposureR}" VerticalAlignment="Center"  HorizontalAlignment="Center" Margin="0,0,5,0"  MinWidth="60" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeR}" Width="50"/>
+                                <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeRLog}" Minimum="0" Maximum="11.002"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock  Text="{x:Static properties:Resources.ExposureG}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0"  MinWidth="60" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeG}" Width="50"/>
+                                <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.01" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeGLog}" Minimum="0" Maximum="11.002"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock  Text="{x:Static properties:Resources.ExposureB}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" MinWidth="60" />
+                                <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeB}" Width="50"/>
+                                <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.001" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeBLog}" Minimum="0" Maximum="11.002"/>
+                            </DockPanel>
+                        </StackPanel>
+
+                        <StackPanel Margin="0,2" Visibility="{Binding DeviceService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter1}}">
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition  Width="*"/>
+                                    <ColumnDefinition  Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <Button Content="{x:Static properties:Resources.AutoExposure}" Margin="0,2" Click="AutoExplose_Click"  HorizontalAlignment="Left"/>
+                                    <DockPanel Margin="0,2">
+                                        <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
+                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="Calibration"  Click="MenuItem_Template"/>
+                                        </Grid>
+                                        <TextBlock Text="{x:Static properties:Resources.Calibration}"  Margin="0,0,5,0"/>
+                                        <ComboBox x:Name="ComboxCalibrationTemplate"   Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                    </DockPanel>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="{x:Static properties:Resources.Capture}" FontSize="15" FontWeight="Bold" Click="GetData_Click" HorizontalAlignment="Right" Margin="2,2,0,2"/>
+                            </Grid>
+                        </StackPanel>
+                        <GroupBox Header="电机操作" Visibility="{Binding Config.IsHaveMotor,Converter={StaticResource bool2VisibilityConverter}}">
+                            <StackPanel Margin="2">
+                                <Button Content="自动聚焦" Click="AutoFocus_Click" />
+                                <DockPanel Margin="0,2">
+                                    <Button  DockPanel.Dock="Right" Content="移动"  Click="Move_Click" />
+                                    <CheckBox  x:Name="CheckBoxIsAbs" Content="绝对位置" />
+                                    <TextBox x:Name="TextPos" Text="0"  BorderThickness="0,0,0,1" Margin="5,0"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <Button  DockPanel.Dock="Right" Content="MoveDiaphragm"  Click="Move1_Click" />
+                                    <TextBlock Text="位置"  Width="40"  />
+                                    <TextBox x:Name="TextDiaphragm" Text="0"  BorderThickness="0,0,0,1" Margin="5,0"/>
+                                </DockPanel>
+                                <Button  Margin="0,2" Content="返回原点"  Click="GoHome_Click" />
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Content="获取位置"  Click="GetPosition_Click" />
+                                    <TextBlock Text="当前位置：" Width="80"/>
+                                    <TextBox IsReadOnly="True" Text="{Binding Config.MotorConfig.Position}" Background="Transparent" BorderThickness="0,0,0,0"  Margin="5,0"/>
+                                </DockPanel>
+
+                            </StackPanel>
+                        </GroupBox>
+
+                    </StackPanel>
+                </StackPanel>
+                <DockPanel Margin="0,2" >
+                    <TextBlock Text="{x:Static properties:Resources.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0"/>
+                    <ComboBox x:Name="ComboxView" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key"/>
+                </DockPanel>
+            </StackPanel>
+        </Border>
+    </StackPanel>
+
+</UserControl>

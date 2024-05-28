@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
+using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -14,11 +15,33 @@ namespace ColorVision.UI.Sorts
         public static void AdjustGridViewColumn(this ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys, GridViewColumnCollection gridViewColumns) => GridViewColumnVisibility.AdjustGridViewColumn(gridViewColumns, gridViewColumnVisibilitys);
 
         public static void AdjustGridViewColumnAuto(this ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys, GridViewColumnCollection gridViewColumns) => GridViewColumnVisibility.AdjustGridViewColumnAuto(gridViewColumns, gridViewColumnVisibilitys);
+
+
+        public static void CopyToGridView(this ObservableCollection<GridViewColumnVisibility> source, ObservableCollection<GridViewColumnVisibility> target)
+        {
+            // 使用字典来加速查找过程
+            var targetDict = target.ToDictionary(item => item.ColumnName);
+
+            foreach (var sourceItem in source)
+            {
+                if (targetDict.TryGetValue(sourceItem.ColumnName, out var targetItem))
+                {
+                    targetItem.IsVisible = sourceItem.IsVisible;
+                    targetItem.IsSortD = sourceItem.IsSortD;
+                }
+            }
+        }
+
+
     }
+
+
 
    // https://stackoverflow.com/questions/747872/wpf-displaying-a-context-menu-for-a-gridviews-items
     public class GridViewColumnVisibility:ViewModelBase
     {
+
+
         public static void AddGridViewColumn(GridViewColumnCollection gridViewColumns, ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys)
         {
             gridViewColumnVisibilitys ??= new ObservableCollection<GridViewColumnVisibility>();
@@ -66,20 +89,6 @@ namespace ColorVision.UI.Sorts
             {
                 var desiredColumn = lists[i].GridViewColumn;
                 desiredColumn.Width = double.NaN;
-                if (gridViewColumns.Contains(desiredColumn))
-                {
-
-                    var actualIndex = gridViewColumns.IndexOf(desiredColumn);
-                    // 如果当前列的位置不正确，则将其移动到正确的位置
-                    if (actualIndex != i)
-                    {
-                        gridViewColumns.Move(actualIndex, i);
-                    }
-                }
-                else
-                {
-                    gridViewColumns.Insert(i, desiredColumn);
-                }
             }
         }
 
@@ -111,9 +120,9 @@ namespace ColorVision.UI.Sorts
             contextMenu.Items.Add(new Separator());
             foreach (var item in gridViewColumnVisibilitys)
             {
-                MenuItem menuItem = new();
+                MenuItem menuItem = new MenuItem();
                 menuItem.Header = item.ColumnName;
-                Binding binding = new("IsVisible")
+                Binding binding = new Binding("IsVisible")
                 {
                     Source = item,
                     Mode = BindingMode.TwoWay // 双向绑定
@@ -122,24 +131,24 @@ namespace ColorVision.UI.Sorts
                 menuItem.Click += (s, e) =>
                 {
                     item.IsVisible = !item.IsVisible;
+                };
+                item.VisibleChanged += (s, e) =>
+                {
                     AdjustGridViewColumn(gridViewColumns, gridViewColumnVisibilitys);
                 };
                 contextMenu.Items.Add(menuItem);
             }
         }
 
+        public object ColumnName { get; set; }
 
-
-
-        public object ColumnName { get; set; }    
-
+        [JsonIgnore]
         public GridViewColumn GridViewColumn { get; set; }
 
-        public bool IsVisible { get => _IsVisible; set { _IsVisible = value; NotifyPropertyChanged(); } }
-        private bool _IsVisible;
+        public event EventHandler VisibleChanged;
 
-        public bool IsSort { get => _IsSort; set { _IsSort = value; NotifyPropertyChanged(); } }
-        private bool _IsSort;
+        public bool IsVisible { get => _IsVisible; set { _IsVisible = value; NotifyPropertyChanged(); VisibleChanged?.Invoke(this, new EventArgs()); } }
+        private bool _IsVisible;
 
         public bool IsSortD { get => _IsSortD; set { _IsSortD = value; NotifyPropertyChanged(); } }
         private bool _IsSortD;

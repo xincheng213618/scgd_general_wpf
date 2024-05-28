@@ -1,8 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using System.Windows;
-using ColorVision.UI;
 using ColorVision.Properties;
+using ColorVision.UI.Menus;
 
 namespace ColorVision.Update
 {
@@ -11,7 +11,7 @@ namespace ColorVision.Update
         public string? OwnerGuid => "Help";
         public string? GuidId => "ChangeLog";
         public int Order => 10001;
-        public string? Header => Resource.ChangeLog;
+        public string? Header => Resources.ChangeLog;
 
         public string? InputGestureText => null;
 

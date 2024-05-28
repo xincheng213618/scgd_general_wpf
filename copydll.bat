@@ -22,29 +22,29 @@ copy /Y ".\packages\opencv\x64\opencv_highgui480.dll" ".\x64\Release\"
 copy /Y ".\packages\opencv\x64\opencv_imgcodecs480.dll" ".\x64\Release\"
 
 
-if not exist ".\ColorVision\bin\x64\Debug\net6.0-windows\" (
-    mkdir ".\ColorVision\bin\x64\Debug\net6.0-windows\"
+if not exist ".\ColorVision\bin\x64\Debug\net8.0-windows\" (
+    mkdir ".\ColorVision\bin\x64\Debug\net8.0-windows\"
 )
 
-copy /Y ".\packages\opencv\x64\opencv_core480d.dll" ".\ColorVision\bin\x64\Debug\net6.0-windows\""
-copy /Y ".\packages\opencv\x64\opencv_imgproc480d.dll" ".\ColorVision\bin\x64\Debug\net6.0-windows\""
-copy /Y ".\packages\opencv\x64\opencv_videoio480d.dll" ".\ColorVision\bin\x64\Debug\net6.0-windows\""
-copy /Y ".\packages\opencv\x64\opencv_highgui480d.dll" ".\ColorVision\bin\x64\Debug\net6.0-windows\""
-copy /Y ".\packages\opencv\x64\opencv_imgcodecs480d.dll" ".\ColorVision\bin\x64\Debug\net6.0-windows\""
-copy /Y ".\x64\Release\OpenCVHelper.dll" ".\ColorVision\bin\x64\Debug\net6.0-windows\"
+copy /Y ".\packages\opencv\x64\opencv_core480d.dll" ".\ColorVision\bin\x64\Debug\net8.0-windows\""
+copy /Y ".\packages\opencv\x64\opencv_imgproc480d.dll" ".\ColorVision\bin\x64\Debug\net8.0-windows\""
+copy /Y ".\packages\opencv\x64\opencv_videoio480d.dll" ".\ColorVision\bin\x64\Debug\net8.0-windows\""
+copy /Y ".\packages\opencv\x64\opencv_highgui480d.dll" ".\ColorVision\bin\x64\Debug\net8.0-windows\""
+copy /Y ".\packages\opencv\x64\opencv_imgcodecs480d.dll" ".\ColorVision\bin\x64\Debug\net8.0-windows\""
+copy /Y ".\x64\Release\OpenCVHelper.dll" ".\ColorVision\bin\x64\Debug\net8.0-windows\"
 
 
 
-if not exist ".\ColorVision\bin\x64\Release\net6.0-windows\" (
-    mkdir ".\ColorVision\bin\x64\Release\net6.0-windows\"
+if not exist ".\ColorVision\bin\x64\Release\net8.0-windows\" (
+    mkdir ".\ColorVision\bin\x64\Release\net8.0-windows\"
 )
 
-copy /Y ".\packages\opencv\x64\opencv_core480.dll" ".\ColorVision\bin\x64\Release\net6.0-windows\"
-copy /Y ".\packages\opencv\x64\opencv_imgproc480.dll" ".\ColorVision\bin\x64\Release\net6.0-windows\"
-copy /Y ".\packages\opencv\x64\opencv_videoio480.dll" ".\ColorVision\bin\x64\Release\net6.0-windows\"
-copy /Y ".\packages\opencv\x64\opencv_highgui480.dll" ".\ColorVision\bin\x64\Release\net6.0-windows\"
-copy /Y ".\packages\opencv\x64\opencv_imgcodecs480.dll" ".\ColorVision\bin\x64\Release\net6.0-windows\"
-copy /Y ".\x64\Release\OpenCVHelper.dll" ".\ColorVision\bin\x64\Release\net6.0-windows\"
+copy /Y ".\packages\opencv\x64\opencv_core480.dll" ".\ColorVision\bin\x64\Release\net8.0-windows\"
+copy /Y ".\packages\opencv\x64\opencv_imgproc480.dll" ".\ColorVision\bin\x64\Release\net8.0-windows\"
+copy /Y ".\packages\opencv\x64\opencv_videoio480.dll" ".\ColorVision\bin\x64\Release\net8.0-windows\"
+copy /Y ".\packages\opencv\x64\opencv_highgui480.dll" ".\ColorVision\bin\x64\Release\net8.0-windows\"
+copy /Y ".\packages\opencv\x64\opencv_imgcodecs480.dll" ".\ColorVision\bin\x64\Release\net8.0-windows\"
+copy /Y ".\x64\Release\OpenCVHelper.dll" ".\ColorVision\bin\x64\Release\net8.0-windows\"
 
 
 
@@ -56,8 +56,8 @@ REM REM Define source and destination directories
 REM set "SOURCE_DIR=.\packages\opencv\x64"
 REM set "DEBUG_DIR=.\x64\Debug"
 REM set "RELEASE_DIR=.\x64\Release"
-REM set "COLORVISION_DEBUG_DIR=.\ColorVision\bin\x64\Debug\net6.0-windows"
-REM set "COLORVISION_RELEASE_DIR=.\ColorVision\bin\x64\Release\net6.0-windows"
+REM set "COLORVISION_DEBUG_DIR=.\ColorVision\bin\x64\Debug\net8.0-windows"
+REM set "COLORVISION_RELEASE_DIR=.\ColorVision\bin\x64\Release\net8.0-windows"
 
 REM REM Define file names
 REM set "DEBUG_FILES=opencv_core480d.dll opencv_imgproc480d.dll opencv_videoio480d.dll opencv_highgui480d.dll opencv_imgcodecs480d.dll"

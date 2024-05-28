@@ -1,11 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
+using ColorVision.UI.Configs;
 using log4net;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Packaging;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Reflection;
@@ -17,9 +18,29 @@ using System.Windows;
 
 namespace ColorVision.Update
 {
+    public class AutoUpdateConfigProvider : IConfigSettingProvider
+    {
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+        {
+            return new List<ConfigSettingMetadata> 
+            {
+                new ConfigSettingMetadata
+                {
+                    Name = Properties.Resources.CheckUpdatesOnStartup,
+                    Description =  Properties.Resources.CheckUpdatesOnStartup,
+                    Order = 999,
+                    Type = ConfigSettingType.Bool,
+                    BindingName =nameof(AutoUpdateConfig.IsAutoUpdate),
+                    Source = AutoUpdateConfig.Instance,
+                }
+            };
+        }
+    }
+
+
     public class AutoUpdateConfig:ViewModelBase, IConfig
     {
-        public static AutoUpdateConfig Instance  => ConfigHandler1.GetInstance().GetRequiredService<AutoUpdateConfig>();    
+        public static AutoUpdateConfig Instance  => ConfigHandler.GetInstance().GetRequiredService<AutoUpdateConfig>();    
 
         public string UpdatePath { get => _UpdatePath;set { _UpdatePath = value; NotifyPropertyChanged(); } }
         private string _UpdatePath = "http://xc213618.ddns.me:9999/D%3A";
@@ -110,6 +131,22 @@ namespace ColorVision.Update
             windowUpdate.Show();
         }
 
+        public async Task<bool> GetUpdateStatue()
+        {
+            try
+            {
+                LatestVersion = await GetLatestVersionNumber(UpdateUrl);
+                if (LatestVersion > CurrentVersion)
+                {
+                    return true;
+                }
+            }
+            catch 
+            {
+            }
+            return false;
+        }
+
         // 调用函数以删除所有更新文件
         public async void CheckAndUpdate(bool detection = true)
         {
@@ -132,7 +169,7 @@ namespace ColorVision.Update
 
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            if (MessageBox.Show($"{changeLogForCurrentVersion}{Environment.NewLine} {Properties.Resource.ConfirmUpdate}?",$"{ Properties.Resource.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            if (MessageBox.Show($"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?",$"{ Properties.Resources.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
                                 Update(LatestVersion, Path.GetTempPath());
                             }
@@ -142,7 +179,7 @@ namespace ColorVision.Update
                     {
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            if (MessageBox.Show($"{Properties.Resource.NewVersionFound}{LatestVersion},{Properties.Resource.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            if (MessageBox.Show($"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
                                 Update(LatestVersion, Path.GetTempPath());
                             }
@@ -154,7 +191,7 @@ namespace ColorVision.Update
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         if (detection)
-                            MessageBox.Show(Properties.Resource.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
+                            MessageBox.Show(Application.Current.GetActiveWindow(),Properties.Resources.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
                     });
 
                 }
@@ -259,7 +296,7 @@ namespace ColorVision.Update
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    MessageBox.Show($"{Properties.Resource.ErrorOccurred}: {response.ReasonPhrase}");
+                    MessageBox.Show($"{Properties.Resources.ErrorOccurred}: {response.ReasonPhrase}");
                     return;
                 }
 
@@ -300,13 +337,13 @@ namespace ColorVision.Update
                             if (stopwatch.ElapsedMilliseconds > 200) // Update speed at least once per second
                             {
                                 double speed = totalReadBytes / stopwatch.Elapsed.TotalSeconds;
-                                SpeedValue = $"{ColorVision.Properties.Resource.CurrentSpeed} {speed / 1024 / 1024:F2} MB/s";
+                                SpeedValue = $"{ColorVision.Properties.Resources.CurrentSpeed} {speed / 1024 / 1024:F2} MB/s";
 
                                 if (totalBytes != -1L)
                                 {
                                     double remainingBytes = totalBytes - totalReadBytes;
                                     double remainingTime = remainingBytes / speed; // in seconds
-                                    RemainingTimeValue = $"{ColorVision.Properties.Resource.TimeLeft} {TimeSpan.FromSeconds(remainingTime):hh\\:mm\\:ss}";
+                                    RemainingTimeValue = $"{ColorVision.Properties.Resources.TimeLeft} {TimeSpan.FromSeconds(remainingTime):hh\\:mm\\:ss}";
                                 }
                             }
                         }
@@ -327,7 +364,7 @@ namespace ColorVision.Update
         private static void RestartApplication(string downloadPath)
         {
             // 保存数据库配置
-            ConfigHandler1.GetInstance().SaveConfigs();
+            ConfigHandler.GetInstance().SaveConfigs();
 
 
             // 启动新的实例
