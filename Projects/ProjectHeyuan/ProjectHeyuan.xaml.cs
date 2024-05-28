@@ -6,8 +6,10 @@ using ColorVision.Services.DAO;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;
 using ColorVision.Services.Flow;
+using ColorVision.Services.Templates.POI.Validate;
 using ColorVision.Solution;
 using FlowEngineLib;
+using NPOI.SS.Formula.Functions;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
@@ -53,16 +55,11 @@ namespace ColorVision.Projects
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            Settings.Add(new TempResult() { Name = "x(上限)"});
-            Settings.Add(new TempResult() { Name = "x(下限)" });
-            Settings.Add(new TempResult() { Name = "y(上限)" });
-            Settings.Add(new TempResult() { Name = "y(下限)" });
-            Settings.Add(new TempResult() { Name = "lv(上限)" });
-            Settings.Add(new TempResult() { Name = "lv(下限)" });
             ListViewSetting.ItemsSource = Settings;
-            Results.Add(new TempResult() { Name = "x" });
-            Results.Add(new TempResult() { Name = "y" });
-            Results.Add(new TempResult() { Name = "lv" });
+            Results.Add(new TempResult() { Name = "White" });
+            Results.Add(new TempResult() { Name = "Blue" });
+            Results.Add(new TempResult() { Name = "Orange" });
+            Results.Add(new TempResult() { Name = "Red" });
             ListViewResult.ItemsSource = Results;
 
             ComboBoxSer.ItemsSource = SerialPort.GetPortNames();
@@ -70,6 +67,7 @@ namespace ColorVision.Projects
 
             ListViewMes.ItemsSource = HYMesManager.GetInstance().SerialMsgs;
             FlowTemplate.ItemsSource = FlowParam.Params;
+            ValidateTemplate.ItemsSource = ValidateParam.CIEParams;
             this.DataContext = HYMesManager.GetInstance();
         }
         private Services.Flow.FlowControl flowControl;
@@ -103,7 +101,7 @@ namespace ColorVision.Projects
                             }
                             for (int i = 0; i < PoiResultCIExyuvDatas[0].ValidateSingles.Count; i++)
                             {
-                                Results.Add(new TempResult() { Name = PoiResultCIExyuvDatas[0].ValidateSingles[i].Rule.RType.ToString(), NumSet = new NumSet() { Orange = PoiResultCIExyuvDatas[0].ValidateSingles[i].Result.ToString() } });
+                                //Results.Add(new TempResult() { Name = PoiResultCIExyuvDatas[0].ValidateSingles[i].Rule.RType.ToString(), NumSet = new NumSet() { Orange = PoiResultCIExyuvDatas[0].ValidateSingles[i].Result.ToString() } });
                             }
                         }
                         HYMesManager.GetInstance().UploadMes();
@@ -198,6 +196,93 @@ namespace ColorVision.Projects
         private void UploadSN(object sender, RoutedEventArgs e)
         {
             HYMesManager.GetInstance().UploadSN();
+        }
+
+        private void ValidateTemplate_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (ValidateTemplate.SelectedValue is ValidateParam validateParam)
+            {
+                Settings.Clear();
+                TempResult tempResult = new TempResult() { Name = "White"};
+
+                foreach (var item in validateParam.ValidateSingles)
+                {
+                    if (item.Model.Code == "CIE_x")
+                    {
+                        tempResult.X = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
+                    }
+                    if (item.Model.Code == "CIE_y")
+                    {
+                        tempResult.Y = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
+                    }
+                    if (item.Model.Code == "CIE_lv")
+                    {
+                        tempResult.Lv = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
+                    }
+                }
+
+                TempResult tempResult1 = new TempResult() { Name = "Blue" };
+
+                foreach (var item in validateParam.ValidateSingles)
+                {
+                    if (item.Model.Code == "CIE_x")
+                    {
+                        tempResult1.X = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
+                    }
+                    if (item.Model.Code == "CIE_y")
+                    {
+                        tempResult1.Y = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
+                    }
+                    if (item.Model.Code == "CIE_lv")
+                    {
+                        tempResult1.Lv = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
+                    }
+                }
+
+                TempResult tempResult2 = new TempResult() { Name = "Red" };
+
+                foreach (var item in validateParam.ValidateSingles)
+                {
+                    if (item.Model.Code == "CIE_x")
+                    {
+                        tempResult2.X = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
+                    }
+                    if (item.Model.Code == "CIE_y")
+                    {
+                        tempResult2.Y = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
+                    }
+                    if (item.Model.Code == "CIE_lv")
+                    {
+                        tempResult2.Lv = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
+                    }
+                }
+
+                TempResult tempResult3 = new TempResult() { Name = "Orange" };
+
+                foreach (var item in validateParam.ValidateSingles)
+                {
+                    if (item.Model.Code == "CIE_x")
+                    {
+                        tempResult3.X = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
+                    }
+                    if (item.Model.Code == "CIE_y")
+                    {
+                        tempResult3.Y = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
+                    }
+                    if (item.Model.Code == "CIE_lv")
+                    {
+                        tempResult3.Lv = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
+                    }
+                }
+
+
+
+                Settings.Add(tempResult);
+                Settings.Add(tempResult1);
+                Settings.Add(tempResult2);
+                Settings.Add(tempResult3);
+
+            }
         }
     }
 }
