@@ -111,6 +111,11 @@ namespace ColorVision.Services.Flow
             ofd.Title = "导入流程";
             ofd.RestoreDirectory = true;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            if (TemplateParams.Any(a => a.Key.Equals(System.IO.Path.GetFileNameWithoutExtension(ofd.FileName), StringComparison.OrdinalIgnoreCase)))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "流程名称已存在", "ColorVision");
+                return;
+            }
             byte[] fileBytes = System.IO.File.ReadAllBytes(ofd.FileName);
             string base64 = Convert.ToBase64String(fileBytes);
             if (FlowParam.AddFlowParam(Path.GetFileNameWithoutExtension(ofd.FileName)) is FlowParam param)

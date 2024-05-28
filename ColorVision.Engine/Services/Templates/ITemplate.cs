@@ -250,7 +250,19 @@ namespace ColorVision.Services.Templates
 
         public override void Import()
         {
-            MessageBox.Show(Application.Current.GetActiveWindow(),"暂时不支持导入模板","ColorVision");
+            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            ofd.Filter = "*.cfg|*.cfg";
+            ofd.Title = "导入模板";
+            ofd.RestoreDirectory = true;
+            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            byte[] fileBytes = System.IO.File.ReadAllBytes(ofd.FileName);
+            if (TemplateParams.Any(a => a.Key.Equals(System.IO.Path.GetFileNameWithoutExtension(ofd.FileName), StringComparison.OrdinalIgnoreCase)))
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "模板名称已存在", "ColorVision");
+                return;
+            }
+
+
         }
 
 

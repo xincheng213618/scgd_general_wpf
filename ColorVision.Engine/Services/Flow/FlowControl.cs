@@ -135,6 +135,7 @@ namespace ColorVision.Services.Flow
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
+                log.Debug(Msg);
                 Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
                 try
                 {

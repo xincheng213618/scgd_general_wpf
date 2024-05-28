@@ -210,20 +210,7 @@ namespace ColorVision.Services.Templates
                 MessageBox.Show("请选择您要导出的流程", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
-
             ITemplate.Export(ListView1.SelectedIndex);
-
-            //            System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
-            //            ofd.DefaultExt = "stn";
-            //            ofd.Filter = "*.stn|*.stn";
-            //            ofd.AddExtension = false;
-            //            ofd.RestoreDirectory = true;
-            //            ofd.Title = "导出流程";
-            //            ofd.FileName = FlowParam.Params[ListView1.SelectedIndex].Key;
-            //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            //            Tool.Base64ToFile(FlowParam.Params[ListView1.SelectedIndex].Value.DataBase64, ofd.FileName);
-
-
         }
 
         private void Button_Import_Click(object sender, RoutedEventArgs e)
@@ -233,23 +220,6 @@ namespace ColorVision.Services.Templates
             //switch (TemplateType)
             //{
             //    case TemplateType.FlowParam:
-            //        if (true)
-            //        {
-            //            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
-            //            ofd.Filter = "*.stn|*.stn";
-            //            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            //            string name = Path.GetFileNameWithoutExtension(ofd.FileName);
-            //            FlowParam? flowParam = FlowParam.AddFlowParam(name);
-            //            if (flowParam != null)
-            //            {
-            //                flowParam.DataBase64 = Tool.FileToBase64(ofd.FileName); ;
-            //                CreateNewTemplate(FlowParam.Params, name, flowParam);
-
-            //                TemplateControl.Save2DB(flowParam);
-            //            }
-            //            else MessageBox.Show("数据库创建流程模板失败", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
-            //        }
-            //        break;
             //    case TemplateType.MeasureParam:
             //        if (true)
             //        {
