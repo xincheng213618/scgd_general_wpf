@@ -98,6 +98,13 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
+                            <GridViewColumn  Header="模板" Width="200" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <ComboBox  x:Name="ValidateTemplate" Initialized="ValidateTemplate_Initialized" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" SelectionChanged="ValidateTemplate_SelectionChanged"  DisplayMemberPath="Key" HorizontalAlignment="Left" Tag="{Binding .}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
                         </GridView>
                     </ListView.View>
 
@@ -151,16 +158,7 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="Lv(下限)">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <StackPanel Orientation="Horizontal" Margin="0,2">
-                                            <TextBlock Text="校验模板" Width="100"/>
-                                            <ComboBox  x:Name="ValidateTemplate" Initialized="ValidateTemplate_Initialized" Height="10" SelectedValuePath="Value" SelectionChanged="ValidateTemplate_SelectionChanged"  DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" Tag="{Binding .}" />
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
+
                         </GridView>
                     </ListView.View>
                 </ListView>
@@ -186,7 +184,7 @@
                 <StackPanel  Margin="0,2">
                     <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="流程" Width="100"/>
-                        <ComboBox  x:Name="FlowTemplate" Height="10" SelectedValuePath="Value"  DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
+                        <ComboBox  x:Name="FlowTemplate" Height="10" SelectedValuePath="Value" Text="{Binding Config.FlowName}" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,2">

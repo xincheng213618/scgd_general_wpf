@@ -15,6 +15,8 @@ namespace ColorVision.Projects
         public bool IsOpenConnect { get => _IsOpenConnect;set { _IsOpenConnect = value; NotifyPropertyChanged(); } }
         private bool _IsOpenConnect;
 
+        public string FlowName { get => _FlowName; set { _FlowName = value; NotifyPropertyChanged(); } }
+        private string _FlowName;
 
         public int DeviceId { get => _DeviceId; set { _DeviceId = value; NotifyPropertyChanged(); } }
         private int _DeviceId;
@@ -56,7 +58,6 @@ namespace ColorVision.Projects
         public HYMesManager()
         {
             serialPort = new SerialPort { };
-
             if (Config.IsOpenConnect)
             {
                 OpenPort(Config.PortName);

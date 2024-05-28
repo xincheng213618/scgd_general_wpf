@@ -53,7 +53,7 @@ namespace ColorVision.Projects
         {
             if (value is bool isconnect)
             {
-                return isconnect ? Brushes.Red : Brushes.Blue;
+                return isconnect ? Brushes.Blue : Brushes.Red;
             }
             return Brushes.Black; ;
         }
@@ -106,7 +106,12 @@ namespace ColorVision.Projects
                 }
             };
 
-            ValidateTemplate.ItemsSource = ValidateParam.CIEParams;
+            List<string> strings = new List<string>() { "White", "Blue", "Red", "Orange" };
+            foreach (var item in strings)
+            {
+                Settings.Add(new TempResult() { Name = item });
+            }
+
             this.DataContext = HYMesManager.GetInstance();
         }
         private Services.Flow.FlowControl flowControl;
