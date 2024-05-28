@@ -114,6 +114,7 @@ namespace ColorVision.Services.Flow
                 };
                 MQTTFlowRun<MQTTServiceInfo> req = new(serviceInfo.ServiceCode, devName, sn, serviceInfo.Token, data);
                 string Msg = JsonConvert.SerializeObject(req);
+                log.Debug(Msg);
                 Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
                 Task.Run(() => MQTTControl.PublishAsyncClient(serviceInfo.PublishTopic, Msg, false));
             }
