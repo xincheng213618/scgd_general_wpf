@@ -13,6 +13,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.UI.Menus;
+using ColorVision.Services.DAO;
 
 
 namespace ColorVision.Services.Flow
@@ -137,16 +138,9 @@ namespace ColorVision.Services.Flow
         private void FlowControl_FlowCompleted(object? sender, EventArgs e)
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
-            if (sender != null)
-            {
-                FlowControlData FlowControlData = (FlowControlData)sender;
-                ServiceManager.GetInstance().ProcResult(FlowControlData);
-            }
             handler?.Close();
-            if (sender != null)
+            if (sender is FlowControlData FlowControlData)
             {
-                FlowControlData FlowControlData = (FlowControlData)sender;
-
                 ButtonRun.Visibility = Visibility.Visible;
                 ButtonStop.Visibility = Visibility.Collapsed;
 
@@ -154,7 +148,7 @@ namespace ColorVision.Services.Flow
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(),"流程计算" + FlowControlData.EventName, "ColorVision");
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName, "ColorVision");
                     });
                 }
             }
@@ -195,7 +189,7 @@ namespace ColorVision.Services.Flow
                     flowControl.Start(sn);
                     string name = string.Empty;
                     if (IsName.IsChecked.HasValue && IsName.IsChecked.Value) { name = TextBoxName.Text; }
-                    ServiceManager.BeginNewBatch(sn, name);
+                    BeginNewBatch(sn, name);
                 }
                 else
                 {
@@ -204,6 +198,15 @@ namespace ColorVision.Services.Flow
             }
         }
 
+        public static void BeginNewBatch(string sn, string name)
+        {
+            BatchResultMasterModel batch = new();
+            batch.Name = string.IsNullOrEmpty(name) ? sn : name;
+            batch.Code = sn;
+            batch.CreateDate = DateTime.Now;
+            batch.TenantId = 0;
+            BatchResultMasterDao.Instance.Save(batch);
+        }
 
 
 

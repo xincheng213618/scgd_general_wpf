@@ -1,9 +1,12 @@
-﻿using ColorVision.Services.Devices.Spectrum.Configs;
+﻿using ColorVision.Services.DAO;
+using ColorVision.Services.Devices.SMU.Dao;
+using ColorVision.Services.Devices.Spectrum.Configs;
 using ColorVision.Services.Devices.Spectrum.Dao;
 using ColorVision.Services.Templates;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
+using Newtonsoft.Json;
 using ScottPlot;
 using ScottPlot.Plottable;
 using System;
@@ -563,6 +566,70 @@ namespace ColorVision.Services.Devices.Spectrum.Views
                 listL.Width = double.NaN;
             }
         }
+
+        public static void SpectrumDrawPlotFromDB(string bid)
+        {
+            List<SpectrumData> datas = new();
+            List<SpectumResultModel> resultSpec;
+            List<SMUResultModel> resultSMU;
+            BatchResultMasterModel batch = BatchResultMasterDao.Instance.GetByCode(bid);
+            if (batch == null)
+            {
+                resultSMU = SMUResultDao.Instance.selectBySN(bid);
+                resultSpec = SpectumResultDao.Instance.selectBySN(bid);
+            }
+            else
+            {
+                resultSMU = SMUResultDao.Instance.GetAllByPid(batch.Id);
+                resultSpec = SpectumResultDao.Instance.GetAllByPid(batch.Id);
+            }
+
+            for (int i = 0; i < resultSpec.Count; i++)
+            {
+                var item = resultSpec[i];
+                cvColorVision.GCSDLL.ColorParam param = new()
+                {
+                    fx = item.fx ?? 0,
+                    fy = item.fy ?? 0,
+                    fu = item.fu ?? 0,
+                    fv = item.fv ?? 0,
+                    fCCT = item.fCCT ?? 0,
+                    dC = item.dC ?? 0,
+                    fLd = item.fLd ?? 0,
+                    fPur = item.fPur ?? 0,
+                    fLp = item.fLp ?? 0,
+                    fHW = item.fHW ?? 0,
+                    fLav = item.fLav ?? 0,
+                    fRa = item.fRa ?? 0,
+                    fRR = item.fRR ?? 0,
+                    fGR = item.fGR ?? 0,
+                    fBR = item.fBR ?? 0,
+                    fIp = item.fIp ?? 0,
+                    fPh = item.fPh ?? 0,
+                    fPhe = item.fPhe ?? 0,
+                    fPlambda = item.fPlambda ?? 0,
+                    fSpect1 = item.fSpect1 ?? 0,
+                    fSpect2 = item.fSpect2 ?? 0,
+                    fInterval = item.fInterval ?? 0,
+                    fPL = JsonConvert.DeserializeObject<float[]>(item.fPL ?? string.Empty) ?? Array.Empty<float>(),
+                    fRi = JsonConvert.DeserializeObject<float[]>(item.fRi ?? string.Empty) ?? Array.Empty<float>(),
+                };
+                SpectrumData data = new(item.Id, param);
+                if (i < resultSMU.Count)
+                {
+                    data.V = resultSMU[i].VResult;
+                    data.I = resultSMU[i].IResult;
+                }
+                else
+                {
+                    data.V = float.NaN;
+                    data.I = float.NaN;
+                }
+
+                datas.Add(data);
+            }
+        }
+
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {

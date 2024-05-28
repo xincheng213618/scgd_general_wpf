@@ -14,10 +14,7 @@ using ColorVision.Services.Devices.Motor;
 using ColorVision.Services.Devices.PG;
 using ColorVision.Services.Devices.Sensor;
 using ColorVision.Services.Devices.SMU;
-using ColorVision.Services.Devices.SMU.Dao;
 using ColorVision.Services.Devices.Spectrum;
-using ColorVision.Services.Devices.Spectrum.Configs;
-using ColorVision.Services.Devices.Spectrum.Dao;
 using ColorVision.Services.Flow;
 using ColorVision.Services.PhyCameras;
 using ColorVision.Services.Terminal;
@@ -25,7 +22,6 @@ using ColorVision.Services.Types;
 using ColorVision.UI;
 using ColorVision.UserSpace;
 using FlowEngineLib;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -444,91 +440,6 @@ namespace ColorVision.Services
                 {
                     BaseResource calibrationResource = new(sysResourceModel);
                     groupResource.AddChild(calibrationResource);
-                }
-            }
-        }
-
-        public void ProcResult(FlowControlData flowControlData)
-        {
-            int totalTime = flowControlData.Params.TTL;
-            BatchResultMasterDao.Instance.UpdateEnd(flowControlData.SerialNumber, totalTime, flowControlData.EventName);
-            SpectrumDrawPlotFromDB(flowControlData.SerialNumber);
-        }
-
-
-        private SMUResultDao smuDao = new();
-
-        public void SpectrumDrawPlotFromDB(string bid)
-        {
-            List<SpectrumData> datas = new();
-            List<SpectumResultModel> resultSpec;
-            List<SMUResultModel> resultSMU;
-            BatchResultMasterModel batch = BatchResultMasterDao.Instance.GetByCode(bid);
-            if (batch == null)
-            {
-                 resultSMU = smuDao.selectBySN(bid);
-                 resultSpec = SpectumResultDao.Instance.selectBySN(bid);
-            }
-            else
-            {
-                resultSMU = smuDao.GetAllByPid(batch.Id);
-                resultSpec = SpectumResultDao.Instance.GetAllByPid(batch.Id);
-            }
-
-            for (int i = 0; i < resultSpec.Count; i++)
-            {
-                var item = resultSpec[i];
-                cvColorVision.GCSDLL.ColorParam param = new()
-                {
-                    fx = item.fx ?? 0,
-                    fy = item.fy ?? 0,
-                    fu = item.fu ?? 0,
-                    fv = item.fv ?? 0,
-                    fCCT = item.fCCT ?? 0,
-                    dC = item.dC ?? 0,
-                    fLd = item.fLd ?? 0,
-                    fPur = item.fPur ?? 0,
-                    fLp = item.fLp ?? 0,
-                    fHW = item.fHW ?? 0,
-                    fLav = item.fLav ?? 0,
-                    fRa = item.fRa ?? 0,
-                    fRR = item.fRR ?? 0,
-                    fGR = item.fGR ?? 0,
-                    fBR = item.fBR ?? 0,
-                    fIp = item.fIp ?? 0,
-                    fPh = item.fPh ?? 0,
-                    fPhe = item.fPhe ?? 0,
-                    fPlambda = item.fPlambda ?? 0,
-                    fSpect1 = item.fSpect1 ?? 0,
-                    fSpect2 = item.fSpect2 ?? 0,
-                    fInterval = item.fInterval ?? 0,
-                    fPL = JsonConvert.DeserializeObject<float[]>(item.fPL ?? string.Empty) ?? Array.Empty<float>(),
-                    fRi = JsonConvert.DeserializeObject<float[]>(item.fRi ?? string.Empty) ?? Array.Empty<float>(),
-                };
-                SpectrumData data = new(item.Id, param);
-                if (i < resultSMU.Count)
-                {
-                    data.V = resultSMU[i].VResult;
-                    data.I = resultSMU[i].IResult;
-                }
-                else
-                {
-                    data.V = float.NaN;
-                    data.I = float.NaN;
-                }
-
-                datas.Add(data);
-            }
-
-            foreach (var ctl in DisPlayManager.GetInstance().IDisPlayControls)
-            {
-                if (ctl is DisplaySpectrumControl spectrum)
-                {
-                    spectrum.SpectrumClear();
-                    foreach (SpectrumData data in datas)
-                    {
-                        spectrum.SpectrumDrawPlot(data);
-                    }
                 }
             }
         }

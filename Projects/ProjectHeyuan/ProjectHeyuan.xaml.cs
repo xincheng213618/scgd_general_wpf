@@ -147,7 +147,7 @@ namespace ColorVision.Projects
                     string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
                     flowControl.Start(sn);
                     string name = string.Empty;
-                    ServiceManager.BeginNewBatch(sn, name);
+                    BeginNewBatch(sn, name);
                 }
                 else
                 {
@@ -158,6 +158,16 @@ namespace ColorVision.Projects
             {
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "流程为空，请选择流程运行", "ColorVision");
             }
+        }
+
+        public static void BeginNewBatch(string sn, string name)
+        {
+            BatchResultMasterModel batch = new();
+            batch.Name = string.IsNullOrEmpty(name) ? sn : name;
+            batch.Code = sn;
+            batch.CreateDate = DateTime.Now;
+            batch.TenantId = 0;
+            BatchResultMasterDao.Instance.Save(batch);
         }
 
         private void Button_Click_1(object sender, RoutedEventArgs e)
