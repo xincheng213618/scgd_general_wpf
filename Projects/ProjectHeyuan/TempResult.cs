@@ -6,6 +6,9 @@ namespace ColorVision.Projects
     {
         public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string _Name;
+        public bool Result { get => _Result; set { _Result = value; NotifyPropertyChanged(); } }
+        private bool _Result = true;
+
         public NumSet X { get => _X; set { _X = value; NotifyPropertyChanged(); } }
         private NumSet _X;
         public NumSet Y { get => _Y; set { _Y = value; NotifyPropertyChanged(); } }

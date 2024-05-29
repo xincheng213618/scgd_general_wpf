@@ -130,8 +130,6 @@ namespace ColorVision.Projects
                 {
                     if (FlowControlData.EventName == "Completed")
                     {
-                        ResultText.Text = "OK";
-                        ResultText.Foreground = Brushes.Blue;
                         Results.Clear();
                         var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
                         if (Batch != null)
@@ -160,23 +158,23 @@ namespace ColorVision.Projects
                                     tempResult1.X = new NumSet() { Value = (float)poiResultCIExyuvData1.x };
                                     tempResult1.Y = new NumSet() { Value = (float)poiResultCIExyuvData1.y };
                                     tempResult1.Lv = new NumSet() { Value = (float)poiResultCIExyuvData1.Y };
-                                    tempResult1.Dw = new NumSet() { Value = (float)poiResultCIExyuvData1.Wave ,Result =true };
-                                  
+                                    tempResult1.Dw = new NumSet() { Value = (float)poiResultCIExyuvData1.Wave };
+                                 
                                     if (poiResultCIExyuvData1.ValidateSingles != null)
                                     {
                                         foreach (var item in poiResultCIExyuvData1.ValidateSingles)
                                         {
                                             if (item.Rule.RType == ValidateRuleType.CIE_x)
                                             {
-                                                tempResult1.X.Result = item.Result == ValidateRuleResultType.M;
+                                                tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
                                             }
                                             if (item.Rule.RType == ValidateRuleType.CIE_y)
                                             {
-                                                tempResult1.Y.Result = item.Result == ValidateRuleResultType.M;
+                                                tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
                                             }
-                                            if (item.Rule.RType == ValidateRuleType.CIE_Y)
+                                            if (item.Rule.RType == ValidateRuleType.CIE_lv)
                                             {
-                                                tempResult1.Lv.Result = item.Result == ValidateRuleResultType.M;
+                                                tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
                                             }
                                         }
                                     }
@@ -189,11 +187,40 @@ namespace ColorVision.Projects
                                 }
                                 var sortedResults = Results.OrderBy(r => strings.IndexOf(r.Name)).ToList();
                                 Results.Clear();
+                                bool IsOK = true;
+                                List<string> ngstring = new List<string>();
                                 foreach (var result in sortedResults)
                                 {
+                                    IsOK = IsOK && result.Result;
+                                    
+                                    if (!result.Result)
+                                    {
+                                        if (result.Name.Contains("White"))
+                                            ngstring.Add("errorW");
+                                        if (result.Name.Contains("Blue"))
+                                            ngstring.Add("errorB");
+                                        if (result.Name.Contains("Red"))
+                                            ngstring.Add("errorR");
+                                        if (result.Name.Contains("Orange"))
+                                            ngstring.Add("errorO");
+                                    }
+
                                     Results.Add(result);
                                 }
-                                HYMesManager.GetInstance().UploadMes(Results);
+                                if (IsOK)
+                                {
+                                    ResultText.Text = "OK";
+                                    ResultText.Foreground = Brushes.Blue;
+                                    HYMesManager.GetInstance().UploadMes(Results);
+                                }
+                                else
+                                {
+                                    ResultText.Text = "Fail";
+                                    ResultText.Foreground = Brushes.Red;
+                                    HYMesManager.GetInstance().Results = Results;
+                                    HYMesManager.GetInstance().UploadNG(string.Join(",", ngstring));
+                                }
+
                                 log.Debug("mes 已经上传");
                             }
                             else
