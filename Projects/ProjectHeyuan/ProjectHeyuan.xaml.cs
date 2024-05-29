@@ -151,35 +151,41 @@ namespace ColorVision.Projects
                             Results.Clear();
                             if (PoiResultCIExyuvDatas.Count ==4)
                             {
+                                List<string> strings = new List<string>() { "White", "Blue", "Red", "Orange" };
                                 for (int i = 0; i < PoiResultCIExyuvDatas.Count; i++)
                                 {
-                                    List<string> strings = new List<string>() { "White", "Blue", "Red", "Orange" };
                                     var poiResultCIExyuvData1 = PoiResultCIExyuvDatas[i];
                                     TempResult tempResult1 = new TempResult() { Name = poiResultCIExyuvData1.Name };
                                     tempResult1.X = new NumSet() { Value = (float)poiResultCIExyuvData1.x };
                                     tempResult1.Y = new NumSet() { Value = (float)poiResultCIExyuvData1.y };
                                     tempResult1.Lv = new NumSet() { Value = (float)poiResultCIExyuvData1.Y };
-                                    foreach (var item in poiResultCIExyuvData1.ValidateSingles)
+                                    if (poiResultCIExyuvData1.ValidateSingles != null)
                                     {
-                                        if (item.Rule.RType == ValidateRuleType.CIE_x)
+                                        foreach (var item in poiResultCIExyuvData1.ValidateSingles)
                                         {
-                                        }
-                                        if (item.Rule.RType == ValidateRuleType.CIE_y)
-                                        {
-                                        }
-                                        if (item.Rule.RType == ValidateRuleType.CIE_Y)
-                                        {
+                                            if (item.Rule.RType == ValidateRuleType.CIE_x)
+                                            {
+                                            }
+                                            if (item.Rule.RType == ValidateRuleType.CIE_y)
+                                            {
+                                            }
+                                            if (item.Rule.RType == ValidateRuleType.CIE_Y)
+                                            {
+                                            }
                                         }
                                     }
+                                    else
+                                    {
+                                        MessageBox.Show(Application.Current.GetActiveWindow(), $"{poiResultCIExyuvData1.Name}，没有配置校验模板", "ColorVision");
+                                    }
+
                                     Results.Add(tempResult1);
-
-                                    var sortedResults = Results.OrderBy(r => strings.IndexOf(r.Name)).ToList();
-                                    Results.Clear();
-                                    foreach (var result in sortedResults)
-                                    {
-                                        Results.Add(result);
-                                    }
-
+                                }
+                                var sortedResults = Results.OrderBy(r => strings.IndexOf(r.Name)).ToList();
+                                Results.Clear();
+                                foreach (var result in sortedResults)
+                                {
+                                    Results.Add(result);
                                 }
                                 HYMesManager.GetInstance().UploadMes(Results);
                                 log.Debug("mes 已经上传");

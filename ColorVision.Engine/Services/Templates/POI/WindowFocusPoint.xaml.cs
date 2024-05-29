@@ -433,9 +433,12 @@ namespace ColorVision.Services.Templates.POI
                             Circle.Attribute.Radius = item.PixWidth/2;
                             Circle.Attribute.Brush = Brushes.Transparent;
                             Circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Circle.Attribute.ID =i;
+                            Circle.Attribute.ID = i;
                             Circle.Attribute.Text = i.ToString();
+                            Circle.Attribute.Name = item.Name;
                             Circle.Attribute.Tag = item.Tag;
+                            Circle.Attribute.Tag1 = item.Id;
+
                             Circle.Render();
                             ImageShow.AddVisual(Circle);
                             break;
@@ -444,9 +447,10 @@ namespace ColorVision.Services.Templates.POI
                             Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Rectangle.Attribute.ID = i;
-                            Rectangle.Attribute.Name = i.ToString();
+                            Rectangle.Attribute.ID = item.Id;
+                            Rectangle.Attribute.Name = item.Name;
                             Rectangle.Attribute.Tag = item.Tag;
+                            Rectangle.Attribute.Tag1 = item.Id;
                             Rectangle.Render();
                             ImageShow.AddVisual(Rectangle);
                             break;
@@ -1094,25 +1098,22 @@ namespace ColorVision.Services.Templates.POI
                 {
                     PoiParamData poiParamData = new()
                     {
-                        Id = circle.ID,
+                        Id = circle.Tag1 ?? -1,
                         PointType = RiPointTypes.Circle,
                         PixX = circle.Center.X,
                         PixY = circle.Center.Y,
                         PixWidth = circle.Radius * 2,
                         PixHeight = circle.Radius * 2,
                         Tag = circle.Tag,
+                        Name = circle.Name
                     };
-                    if (circle is CircleTextAttribute circleTextAttribute)
-                    {
-                        poiParamData.Name = circleTextAttribute.Text;
-                    }
                     PoiParam.PoiPoints.Add(poiParamData);
                 }
                 else if (drawAttributeBase is RectangleAttribute rectangle)
                 {
                     PoiParamData poiParamData = new()
                     {
-                        Id = rectangle.ID,
+                        Id = rectangle.Tag1 ??-1,
                         Name = rectangle.Name,
                         PointType = RiPointTypes.Rect,
                         PixX = rectangle.Rect.X,
