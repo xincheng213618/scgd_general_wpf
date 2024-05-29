@@ -104,17 +104,17 @@ namespace ColorVision.Services.Flow
             System.IO.File.WriteAllBytes(ofd.FileName, fileBytes);
         }
 
-        public override void Import()
+        public override bool Import()
         {
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
             ofd.Filter = "*.stn|*.stn";
             ofd.Title = "导入流程";
             ofd.RestoreDirectory = true;
-            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
             if (TemplateParams.Any(a => a.Key.Equals(System.IO.Path.GetFileNameWithoutExtension(ofd.FileName), StringComparison.OrdinalIgnoreCase)))
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "流程名称已存在", "ColorVision");
-                return;
+                return false;
             }
             byte[] fileBytes = System.IO.File.ReadAllBytes(ofd.FileName);
             string base64 = Convert.ToBase64String(fileBytes);
@@ -125,7 +125,7 @@ namespace ColorVision.Services.Flow
                 var item = new TemplateModel<FlowParam>(param.Name ?? "default", param);
                 TemplateParams.Add(item);
             }
-
+            return false;
         }
 
         public override void Create(string templateName)

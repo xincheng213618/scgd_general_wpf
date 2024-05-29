@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8602
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Controls;
 using ColorVision.MQTT;
 using ColorVision.Services;
 using ColorVision.Services.DAO;
@@ -159,18 +160,23 @@ namespace ColorVision.Projects
                                     tempResult1.X = new NumSet() { Value = (float)poiResultCIExyuvData1.x };
                                     tempResult1.Y = new NumSet() { Value = (float)poiResultCIExyuvData1.y };
                                     tempResult1.Lv = new NumSet() { Value = (float)poiResultCIExyuvData1.Y };
+                                    tempResult1.Dw = new NumSet() { Value = (float)poiResultCIExyuvData1.Wave ,Result =true };
+                                  
                                     if (poiResultCIExyuvData1.ValidateSingles != null)
                                     {
                                         foreach (var item in poiResultCIExyuvData1.ValidateSingles)
                                         {
                                             if (item.Rule.RType == ValidateRuleType.CIE_x)
                                             {
+                                                tempResult1.X.Result = item.Result == ValidateRuleResultType.M;
                                             }
                                             if (item.Rule.RType == ValidateRuleType.CIE_y)
                                             {
+                                                tempResult1.Y.Result = item.Result == ValidateRuleResultType.M;
                                             }
                                             if (item.Rule.RType == ValidateRuleType.CIE_Y)
                                             {
+                                                tempResult1.Lv.Result = item.Result == ValidateRuleResultType.M;
                                             }
                                         }
                                     }
@@ -192,27 +198,32 @@ namespace ColorVision.Projects
                             }
                             else
                             {
+                                HYMesManager.GetInstance().UploadNG("流程结果数据错误");
                                 MessageBox.Show(Application.Current.GetActiveWindow(), "流程结果数据错误", "ColorVision");
                             }
                         }
                         else
                         {
+                            HYMesManager.GetInstance().UploadNG("找不到批次号");
                             MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号", "ColorVision");
                         }
                     }
                     else
                     {
+                        HYMesManager.GetInstance().UploadNG("流程运行失败");
                         MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName, "ColorVision");
                     }
                 }
                 else
                 {
+                    HYMesManager.GetInstance().UploadNG("流程运行失败");
                     MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName, "ColorVision");
                 }
 
             }
             else
             {
+                HYMesManager.GetInstance().UploadNG("流程运行异常");
                 MessageBox.Show(Application.Current.GetActiveWindow(), "1", "ColorVision");
             }
         }
@@ -326,6 +337,10 @@ namespace ColorVision.Projects
                     if (item.Model.Code == "CIE_lv")
                     {
                         tempResult.Lv = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
+                    }
+                    if (item.Model.Code == "CIE_dw")
+                    {
+                        tempResult.Dw = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
                     }
                 }
             }

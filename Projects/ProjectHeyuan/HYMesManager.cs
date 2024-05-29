@@ -139,8 +139,9 @@ namespace ColorVision.Projects
                             {
                                 string[] parts = Msg.Split(',');
                                 CSNResult = parts[^1].Contains('0');
-                                if(CSNResult)
-                                    UploadNG();
+                                CPTResult = null;
+                                CGIResult = null;
+                                CMIResult = null;
                             }
                             if (Msg.Contains("CPT,S"))
                             {
@@ -151,8 +152,8 @@ namespace ColorVision.Projects
                             {
                                 string[] parts = Msg.Split(',');
                                 CGIResult = parts[^1].Contains('0');
+                                SendPost();
                             }
-
                             if (Msg.Contains("CMI,S"))
                             {
                                 string[] parts = Msg.Split(',');
@@ -179,16 +180,16 @@ namespace ColorVision.Projects
         }
         private string _SN;
 
-        public bool CSNResult { get => _UploadSNResult; set { _UploadSNResult = value; NotifyPropertyChanged(); } }
-        private bool _UploadSNResult;
+        public bool? CSNResult { get => _CSNResult; set { _CSNResult = value; NotifyPropertyChanged(); } }
+        private bool? _CSNResult;
 
-        public bool CPTResult { get => _CPTResult; set { _CPTResult = value; NotifyPropertyChanged(); } }
-        private bool _CPTResult;
-        public bool CGIResult { get => _CGIResult; set { _CGIResult = value; NotifyPropertyChanged(); } }
-        private bool _CGIResult;
+        public bool? CPTResult { get => _CPTResult; set { _CPTResult = value; NotifyPropertyChanged(); } }
+        private bool? _CPTResult;
+        public bool? CGIResult { get => _CGIResult; set { _CGIResult = value; NotifyPropertyChanged(); } }
+        private bool? _CGIResult;
 
-        public bool CMIResult { get => _CMIResult; set { _CMIResult = value; NotifyPropertyChanged(); } }
-        private bool _CMIResult;
+        public bool? CMIResult { get => _CMIResult; set { _CMIResult = value; NotifyPropertyChanged(); } }
+        private bool? _CMIResult;
 
         public void UploadSN()
         {
@@ -208,12 +209,12 @@ namespace ColorVision.Projects
         }
         public void UploadMes(ObservableCollection<TempResult> Results)
         {
-            string SendMsg = $"CMI,C,{Config.DeviceId},{Config.TestName},White,{Results[0].X.Value:F2}/{Results[0].Y.Value:F2}/{Results[0].Lv.Value:F2}/result,Blue,{Results[1].X.Value:F2}/{Results[1].Y.Value:F2}/{Results[1].Lv.Value:F2}/result,Red,{Results[2].X.Value:F2}/{Results[2].Y.Value:F2}/{Results[2].Lv.Value:F2}/result,Orange,{Results[3].X.Value:F2}/{Results[3].Y.Value:F2}/{Results[3].Lv.Value:F2}/result";
+            string SendMsg = $"CMI,C,{Config.DeviceId},{Config.TestName},White,{Results[0].X.Value:F2}/{Results[0].Y.Value:F2}/{Results[0].Lv.Value:F2}/{Results[0].Dw.Value:F2}/{(Results[0].Dw.Result?"Pass":"Fail")},Blue,{Results[1].X.Value:F2}/{Results[1].Y.Value:F2}/{Results[1].Lv.Value:F2}/{Results[1].Dw.Value:F2}/{(Results[1].Dw.Result ? "Pass" : "Fail")},Red,{Results[2].X.Value:F2}/{Results[2].Y.Value:F2}/{Results[2].Lv.Value:F2}/{Results[2].Dw.Value:F2}/{(Results[2].Dw.Result ? "Pass" : "Fail")},Orange,{Results[3].X.Value:F2}/{Results[3].Y.Value:F2}/{Results[3].Lv.Value:F2}/{Results[3].Dw.Value:F2}/{(Results[3].Dw.Result ? "Pass" : "Fail")}";
             Send(System.Text.Encoding.UTF8.GetBytes(SendMsg));
         }
-        public void UploadNG() 
+        public void UploadNG(string Msg = "errorW") 
         {
-            string SendMsg = $"CGI,C,{Config.DeviceId},Default,errorW";
+            string SendMsg = $"CGI,C,{Config.DeviceId},Default,{Msg}";
             Send(System.Text.Encoding.UTF8.GetBytes(SendMsg));
         }
 

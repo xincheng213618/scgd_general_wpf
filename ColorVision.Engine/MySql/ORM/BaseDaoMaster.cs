@@ -69,7 +69,9 @@ namespace ColorVision.MySql.ORM
             DataTable d_info = GetDataTable();
             foreach (var item in datas)
             {
-                DataRow row = GetRow(item, d_info);
+                //DataRow row = GetRow(item, d_info);
+                DataRow row = d_info.NewRow();
+                d_info.Rows.Add(row);
                 Model2Row(item, row);
                 if (item.Id<=0)
                     row[PKField] = DBNull.Value;

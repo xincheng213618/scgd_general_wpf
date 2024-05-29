@@ -12,7 +12,7 @@ namespace ColorVision.Services.Templates
     {
         public ITemplate ITemplate { get; set; }
 
-        public CreateTemplate(ITemplate template)  
+        public CreateTemplate(ITemplate template,bool IsImport =false)  
         {
             ITemplate = template;
             InitializeComponent();

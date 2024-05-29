@@ -12,5 +12,8 @@ namespace ColorVision.Projects
 
         public float Value { get => _Value; set { _Value = value; NotifyPropertyChanged(); } }
         private float _Value;
+
+        public bool Result { get => _Result; set { _Result = value; NotifyPropertyChanged(); } }
+        private bool _Result;
     }
 }

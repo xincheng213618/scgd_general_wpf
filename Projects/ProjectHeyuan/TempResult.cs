@@ -12,6 +12,8 @@ namespace ColorVision.Projects
         private NumSet _Y;
         public NumSet Lv { get => _Lv; set { _Lv = value; NotifyPropertyChanged(); } }
         private NumSet _Lv;
+        public NumSet Dw { get => _dw; set { _dw = value; NotifyPropertyChanged(); } }
+        private NumSet _dw;
     }
 
 

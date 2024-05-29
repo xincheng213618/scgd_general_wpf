@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Templates.POI.Dao;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -41,8 +42,7 @@ namespace ColorVision.Services.Templates
         protected override bool SetProperty<T>(ref T storage, T value, [CallerMemberName] string propertyName = "")
         {
             storage = value;
-
-            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
+            if (parameters.Count>0)
             {
                 if (parameters.TryGetValue(propertyName, out ModDetailModel modDetailModel))
                 {
@@ -101,7 +101,7 @@ namespace ColorVision.Services.Templates
 
         public T? GetValue<T>(T? storage, [CallerMemberName] string propertyName = "")
         {
-            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
+            if (parameters != null && parameters.Count > 0)
             {
                 string val = "";
                 if (parameters.TryGetValue(propertyName, out ModDetailModel modDetailModel))
@@ -143,7 +143,6 @@ namespace ColorVision.Services.Templates
                     }
                 }
                 return default;
-
             }
             return storage;
         }

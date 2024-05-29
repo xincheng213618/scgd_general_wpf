@@ -1,9 +1,11 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Extension;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.UserSpace;
+using Newtonsoft.Json;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -63,9 +65,9 @@ namespace ColorVision.Services.Templates
         {
 
         }
-        public virtual void Import()
+        public virtual bool Import()
         {
-
+            throw new NotImplementedException();
         }
 
         public bool IsSideHide { get; set; }
@@ -140,6 +142,8 @@ namespace ColorVision.Services.Templates
 
                 CreateTemp = (T)Activator.CreateInstance(typeof(T), new object[] { modMaster, list });
             }
+            if (ExportTemp != null)
+                CreateTemp?.CopyFrom(ExportTemp);
             return CreateTemp ?? new T();
         }
 
@@ -245,24 +249,34 @@ namespace ColorVision.Services.Templates
             ofd.Title = "导出模板";
             ofd.FileName = TemplateParams[index].Key;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            TemplateParams[index].ToJsonFile(ofd.FileName);
+            TemplateParams[index].Value.ToJsonNFile(ofd.FileName);
         }
 
-        public override void Import()
+        public T? ExportTemp { get; set; }
+        public override bool Import()
         {
             System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
             ofd.Filter = "*.cfg|*.cfg";
             ofd.Title = "导入模板";
             ofd.RestoreDirectory = true;
-            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
+            //if (TemplateParams.Any(a => a.Key.Equals(System.IO.Path.GetFileNameWithoutExtension(ofd.FileName), StringComparison.OrdinalIgnoreCase)))
+            //{
+            //    MessageBox.Show(Application.Current.GetActiveWindow(), "模板名称已存在", "ColorVision");
+            //    return false;
+            //}
             byte[] fileBytes = System.IO.File.ReadAllBytes(ofd.FileName);
-            if (TemplateParams.Any(a => a.Key.Equals(System.IO.Path.GetFileNameWithoutExtension(ofd.FileName), StringComparison.OrdinalIgnoreCase)))
+            string fileContent = System.Text.Encoding.UTF8.GetString(fileBytes);
+            try
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "模板名称已存在", "ColorVision");
-                return;
+                ExportTemp = JsonConvert.DeserializeObject<T>(fileContent);
+                return true;
             }
-
-
+            catch (JsonException ex)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"解析模板文件时出错: {ex.Message}", "ColorVision");
+                return false;
+            }
         }
 
 
