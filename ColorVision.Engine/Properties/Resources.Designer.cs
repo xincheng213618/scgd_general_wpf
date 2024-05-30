@@ -286,6 +286,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 选择 的本地化字符串。
+        /// </summary>
+        public static string Choice {
+            get {
+                return ResourceManager.GetString("Choice", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 清除 的本地化字符串。
         /// </summary>
         public static string Clear {

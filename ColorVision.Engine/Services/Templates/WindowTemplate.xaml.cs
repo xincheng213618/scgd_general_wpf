@@ -2,6 +2,7 @@
 using ColorVision.Engine.Properties;
 using ColorVision.Services.Dao;
 using ColorVision.UI.Sorts;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -269,16 +270,29 @@ namespace ColorVision.Services.Templates
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
-            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null && ListView1.ItemsSource is ObservableCollection<TemplateModelBase> results)
+            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
             {
                 foreach (var item in GridViewColumnVisibilitys)
                 {
                     if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
                     {
-                        if (item.ColumnName.ToString() == Engine.Properties.Resources.SerialNumber1)
+
+                            //if (item.ColumnName.ToString() == Engine.Properties.Resources.SerialNumber1)
+                            //{
+                            //    item.IsSortD = !item.IsSortD;
+                            //    foreach (var modebase in ITemplate.ItemsSource.OfType<TemplateModelBase>())
+                            //    {
+                            //        results.SortByID(item.IsSortD);bb   
+                            //    }
+                            //}
+                            if (item.ColumnName.ToString() == Engine.Properties.Resources.Choice)
                         {
                             item.IsSortD = !item.IsSortD;
-                            results.SortByID(item.IsSortD);
+                            foreach (var modebase in ITemplate.ItemsSource.OfType<TemplateModelBase>()) 
+                            {
+                                modebase.IsSelected = item.IsSortD;
+                            }
+                            e.Handled = true;
                         }
                     }
                 }

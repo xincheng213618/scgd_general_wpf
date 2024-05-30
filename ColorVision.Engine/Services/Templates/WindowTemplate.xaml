@@ -65,7 +65,7 @@
                                 <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                             </Style>
                         </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn  Header="选择"  Width="40" >
+                        <GridViewColumn  Header="{x:Static properties:Resources.Choice}"  Width="40" >
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type local:TemplateModelBase}">
                                     <CheckBox IsChecked="{Binding IsSelected}"/>
