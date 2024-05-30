@@ -91,7 +91,8 @@ namespace ColorVision.Services.ShowPage.Dao
         {
 
         }
-        AlgorithmView AlgorithmView;
+
+        AlgorithmView? AlgorithmView;
         private void listView2_PreviewMouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
@@ -100,8 +101,10 @@ namespace ColorVision.Services.ShowPage.Dao
                 {
                     AlgorithmView = new AlgorithmView();
                     Window window = new Window() { Content = AlgorithmView };
+                    window.Closed += (s, args) => AlgorithmView = null; // 订阅窗口关闭事件
                     window.Show();
                 }
+
                 AlgorithmView.AlgResults.Add(AlgorithmResults[listView.SelectedIndex]);
                 AlgorithmView.RefreshResultListView();
             }

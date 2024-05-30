@@ -330,7 +330,8 @@ namespace ColorVision.Services
                             DeviceServices.Add(alg);
                             break;
                         case ServiceTypes.Calibration:
-                            DeviceCalibration deviceCalibration = new(sysResourceModel);
+                            
+                            DeviceCalibration deviceCalibration = new DeviceCalibration(sysResourceModel);
                             svrObj = deviceCalibration.DeviceService;
                             terminalService.AddChild(deviceCalibration);
                             DeviceServices.Add(deviceCalibration);
