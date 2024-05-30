@@ -25,12 +25,23 @@
                 <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
                 <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}" />
             </Grid>
+            <Button DockPanel.Dock="Right" Command="{Binding RefreshCommand}" Background="Transparent"  BorderThickness="0" >
+                <Button.Triggers>
+                    <EventTrigger RoutedEvent="Button.Click">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                </Button.Triggers>
+                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontWeight="Bold"  FontSize="12" ToolTip="刷新">
+                    <TextBlock.RenderTransform>
+                        <RotateTransform x:Name="rotateTransform1" CenterX="5" CenterY="5"/>
+                    </TextBlock.RenderTransform>
+                </TextBlock>
+            </Button>
             <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding IsDisplayOpen}" />
-            <TextBlock  FontSize="10" VerticalAlignment="Bottom" Margin="2">
-                <Run Text="("/>
-                <Run Text="{Binding Config.Code}"/>
-                <Run Text=")"/>
-            </TextBlock>
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="0">

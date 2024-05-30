@@ -30,6 +30,7 @@
                 <Image Source="{DynamicResource DrawingImageProperty}" Height="18" Margin="0,0,0,0"/>
                 <Button Background="Transparent" BorderThickness="0" Command="{Binding PropertyCommand}"/>
             </Grid>
+
             <Grid  DockPanel.Dock="Right"  ToolTip="查看相机的温度数据">
                 <Image Source="{DynamicResource DITemperature}" Stretch="Uniform" Height="18"/>
                 <Button   Background="Transparent" BorderThickness="0" Command="{Binding FetchLatestTemperatureCommand}"/>
@@ -40,6 +41,8 @@
                         <ScaleTransform x:Name="ScaleTransform"/>
                     </Image.RenderTransform>
                 </Image>
+                
+
                 <Button Background="Transparent" BorderThickness="0" Command="{Binding DisPlaySaveCommand}">
                     <Button.Triggers>
                         <EventTrigger RoutedEvent="Button.Click">
@@ -54,13 +57,31 @@
                         </EventTrigger>
                     </Button.Triggers>
                 </Button>
+                
             </Grid>
+            <Button DockPanel.Dock="Right" Command="{Binding RefreshCommand}" Background="Transparent"  BorderThickness="0" >
+                <Button.Triggers>
+                    <EventTrigger RoutedEvent="Button.Click">
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </EventTrigger>
+                </Button.Triggers>
+                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}" FontWeight="Bold"  FontSize="12" ToolTip="刷新">
+                    <TextBlock.RenderTransform>
+                        <RotateTransform x:Name="rotateTransform1" CenterX="5" CenterY="5"/>
+                    </TextBlock.RenderTransform>
+                </TextBlock>
+            </Button>
             <Grid >
                 <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}" Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding IsDisplayOpen}" />
                 <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="4,0,0,0">
                     <Image Source="{Binding Icon}"/>
                 </Grid>
             </Grid>
+            
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="3">
