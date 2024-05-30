@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8603
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.MQTT;
 using ColorVision.Services.Core;
@@ -308,6 +309,11 @@ namespace ColorVision.Services.RC
                                                 if (dev is DeviceService deviceService && deviceService.GetMQTTService() is MQTTServiceBase serviceBase)
                                                 {
                                                     serviceBase.DeviceStatus = baseDeviceConfig.DeviceStatus;
+
+                                                    if (serviceBase.DeviceStatus == DeviceStatusType.Unknown)
+                                                    {
+                                                        log.Debug(serviceBase.ToJson());
+                                                    }
                                                 }
 
                                                 if(updateTime) baseDeviceConfig.LastAliveTime = lastLive;
