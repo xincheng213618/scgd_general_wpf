@@ -1,14 +1,9 @@
-﻿using ColorVision.Common.Extension;
-using ColorVision.Common.Utilities;
-using ColorVision.Engine.Properties;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
-using ColorVision.UI;
 using ColorVision.UI.Sorts;
-using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;

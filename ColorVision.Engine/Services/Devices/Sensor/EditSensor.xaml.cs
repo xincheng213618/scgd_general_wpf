@@ -1,20 +1,9 @@
-﻿using ColorVision.Common.Extension;
-using ColorVision.Services.Devices.PG;
-using ColorVision.Services.Devices.Calibration;
-using ColorVision.Services.Devices.Spectrum;
-using cvColorVision;
-using SkiaSharp;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Services.Dao;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Drawing.Text;
-using System.Linq;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
-using ColorVision.Common.MVVM;
-using ColorVision.Services.Dao;
-using NPOI.SS.Formula.Functions;
 
 
 namespace ColorVision.Services.Devices.Sensor

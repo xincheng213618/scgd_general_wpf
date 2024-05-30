@@ -1,6 +1,5 @@
 ﻿#pragma warning disable CS8602
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Controls;
 using ColorVision.MQTT;
 using ColorVision.Services;
 using ColorVision.Services.DAO;
@@ -8,18 +7,11 @@ using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;
 using ColorVision.Services.Flow;
 using ColorVision.Services.Templates.POI.Validate;
-using ColorVision.Solution;
 using CVCommCore;
 using FlowEngineLib;
 using log4net;
-using Microsoft.DwayneNeed.Win32.User32;
-using Microsoft.VisualBasic.Logging;
-using Mysqlx.Crud;
-using NPOI.SS.Formula.Functions;
 using Panuon.WPF.UI;
 using ST.Library.UI.NodeEditor;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO.Ports;
