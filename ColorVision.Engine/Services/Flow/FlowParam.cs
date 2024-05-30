@@ -198,7 +198,7 @@ namespace ColorVision.Services.Flow
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(T)}模板失败", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(FlowParam)}模板失败", "ColorVision");
             }
         }
     }
