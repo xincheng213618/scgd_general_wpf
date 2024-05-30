@@ -116,13 +116,11 @@ namespace ColorVision.Services.Devices.Camera
 
                 switch (status)
                 {
-                    case DeviceStatusType.Unknown:
-                        SetVisibility(ButtonOpen, Visibility.Visible);
-                        break;
                     case DeviceStatusType.OffLine:
                         SetVisibility(StackPanelOpen, Visibility.Collapsed);
                         SetVisibility(ButtonOffline, Visibility.Visible);
                         break;
+                    case DeviceStatusType.Unknown:
                     case DeviceStatusType.Unauthorized:
                     case DeviceStatusType.UnInit:
                         SetVisibility(StackPanelOpen, Visibility.Collapsed);
