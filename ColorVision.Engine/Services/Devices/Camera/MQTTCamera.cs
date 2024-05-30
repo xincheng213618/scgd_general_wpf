@@ -25,7 +25,7 @@ namespace ColorVision.Services.Devices.Camera
         public MQTTCamera(ConfigCamera CameraConfig) : base(CameraConfig)
         {
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
-            DeviceStatus = DeviceStatusType.OffLine;
+            DeviceStatus = DeviceStatusType.UnInit;
         }
 
         public override void Dispose()
