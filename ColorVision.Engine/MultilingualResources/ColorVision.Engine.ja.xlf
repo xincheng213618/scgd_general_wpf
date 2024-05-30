@@ -103,6 +103,10 @@
           <source>软件启动时检测更新</source>
           <target state="new">ソフトウェアの起動時にアップデートを検出する</target>
         </trans-unit>
+        <trans-unit id="Choice" translate="yes" xml:space="preserve">
+          <source>选择</source>
+          <target state="new"></target>
+        </trans-unit>
         <trans-unit id="Clear" translate="yes" xml:space="preserve">
           <source>清除</source>
           <target state="new">クリア</target>

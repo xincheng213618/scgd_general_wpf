@@ -98,7 +98,7 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="dww(下限)">
+                            <GridViewColumn  Header="dw(下限)">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
                                         <TextBox Text="{ Binding  Dw.ValMin}" Width="40" />
@@ -176,6 +176,13 @@
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
                                         <TextBlock Text="{ Binding Dw.Value, StringFormat={}{0:F2}}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="结果" Width="70">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <TextBlock Text="{Binding Result}" Foreground="{Binding Result,Converter={StaticResource ColorConverter}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

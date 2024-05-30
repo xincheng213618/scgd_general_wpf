@@ -40,6 +40,11 @@
     <ApplicationDefinition Remove="App.xaml" />
   </ItemGroup>
 	
+
+  <ItemGroup>
+    <Content Remove="C:\Users\17917\.nuget\packages\dotnetcore.npoi\1.2.3\contentFiles\any\netstandard2.0\NOTICE.TXT" />
+  </ItemGroup>
+	
   <ItemGroup>
     <None Remove="Assets\Colormaps\colorscale_autumn.jpg" />
     <None Remove="Assets\Colormaps\colorscale_bone.jpg" />
