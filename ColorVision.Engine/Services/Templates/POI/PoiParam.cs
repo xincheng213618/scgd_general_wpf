@@ -9,7 +9,6 @@ using ColorVision.UI.Menus;
 using ColorVision.UI.Sorts;
 using ColorVision.UserSpace;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -106,7 +105,7 @@ namespace ColorVision.Services.Templates.POI
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(T)}模板失败", "ColorVision");
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(PoiParam)}模板失败", "ColorVision");
             }
         }
     }
