@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Extension;
 using ColorVision.MySql;
 using ColorVision.MySql.ORM;
 using ColorVision.Services.Dao;
@@ -13,6 +14,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Windows;
 
@@ -80,28 +82,86 @@ namespace ColorVision.Services.Flow
                     }
                 }
             }
+            SaveIndex.Clear();
         }
 
         public override void Save()
         {
-            foreach (var item in TemplateParams)
+            if (SaveIndex.Count == 0) return;
+
+            foreach (var index in SaveIndex)
             {
+                var item = TemplateParams[index];
                 FlowParam.Save2DB(item.Value);
             }
         }
 
         public override void Export(int index)
         {
-            System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
-            ofd.DefaultExt = "stn";
-            ofd.Filter = "*.stn|*.stn";
-            ofd.AddExtension = true;
-            ofd.RestoreDirectory = true;
-            ofd.Title = "导出流程";
-            ofd.FileName = TemplateParams[index].Key;
-            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            byte[] fileBytes = Convert.FromBase64String(TemplateParams[index].Value.DataBase64);
-            System.IO.File.WriteAllBytes(ofd.FileName, fileBytes);
+            int selectedCount = TemplateParams.Count(item => item.IsSelected);
+            if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
+
+            if (selectedCount <= 1)
+            {
+                System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
+                sfd.DefaultExt = "stn";
+                sfd.Filter = "*.stn|*.stn";
+                sfd.AddExtension = true;
+                sfd.RestoreDirectory = true;
+                sfd.Title = "导出流程";
+                sfd.FileName = Tool.SanitizeFileName(TemplateParams[index].Key);
+                if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+                byte[] fileBytes = Convert.FromBase64String(TemplateParams[index].Value.DataBase64);
+                System.IO.File.WriteAllBytes(sfd.FileName, fileBytes);
+            }
+            else
+            {
+                using System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
+                sfd.DefaultExt = "zip";
+                sfd.Filter = "*.zip|*.zip";
+                sfd.AddExtension = true;
+                sfd.RestoreDirectory = true;
+                sfd.Title = "导出";
+                sfd.FileName = $"{Code}.zip";
+                if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+                string tempDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+                Directory.CreateDirectory(tempDirectory);
+                try
+                {
+                    // 导出所有模板文件到临时目录
+                    foreach (var kvp in TemplateParams.Where(item => item.IsSelected == true))
+                    {
+                        string filePath = Path.Combine(tempDirectory, $"{Tool.SanitizeFileName(kvp.Key)}.stn");
+                        byte[] fileBytes = Convert.FromBase64String(TemplateParams[index].Value.DataBase64);
+                        System.IO.File.WriteAllBytes(filePath, fileBytes);
+                    }
+
+                    // 创建压缩文件
+                    using (FileStream zipToOpen = new FileStream(sfd.FileName, FileMode.Create))
+                    {
+                        using (ZipArchive archive = new ZipArchive(zipToOpen, ZipArchiveMode.Create))
+                        {
+                            foreach (string filePath in Directory.GetFiles(tempDirectory))
+                            {
+                                archive.CreateEntryFromFile(filePath, Path.GetFileName(filePath));
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    // 清理临时目录
+                    Directory.Delete(tempDirectory, true);
+                }
+            }
+
+
+
+
+
+
+
         }
 
         public override bool Import()

@@ -17,6 +17,16 @@ namespace ColorVision.Common.Utilities
 
     public static partial class Tool
     {
+        public static string SanitizeFileName(string fileName)
+        {
+            // 定义非法字符
+            char[] invalidChars = Path.GetInvalidFileNameChars();
+            foreach (char c in invalidChars)
+            {
+                fileName = fileName.Replace(c, '_'); // 将非法字符替换为下划线或其他合法字符
+            }
+            return fileName;
+        }
 
         public static bool ValidateModbusCRC16(byte[] data)
         {

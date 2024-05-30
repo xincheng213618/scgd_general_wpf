@@ -90,6 +90,7 @@ namespace ColorVision.Services.Templates
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
+                ITemplate.SetSaveIndex(listView.SelectedIndex);
                 if (ITemplate.IsUserControl)
                 {
                     ITemplate.SetUserControlDataContext(listView.SelectedIndex);

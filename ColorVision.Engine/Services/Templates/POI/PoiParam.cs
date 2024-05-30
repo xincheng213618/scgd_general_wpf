@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.MySql;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Flow;
 using ColorVision.Services.Templates.POI.Dao;
 using ColorVision.Services.Templates.POI.Validate;
 using ColorVision.UI.Menus;
@@ -75,14 +76,18 @@ namespace ColorVision.Services.Templates.POI
                     }
                 }
             }
+            SaveIndex.Clear();
         }
 
         public override void Save()
         {
-            foreach (var item in TemplateParams)
+            if (SaveIndex.Count == 0) return;
+            foreach (var index in SaveIndex)
             {
+                var item = TemplateParams[index];
                 PoiMasterDao.Instance.Save(new PoiMasterModel(item.Value));
             }
+            SaveIndex.Clear();
         }
         public override void Delete(int index)
         {

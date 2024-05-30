@@ -10,6 +10,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO.Compression;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -33,6 +35,16 @@ namespace ColorVision.Services.Templates
         public virtual string GetTemplateName(int index)
         {
             throw new NotImplementedException();
+        }
+
+        public List<int> SaveIndex { get; set; } = new List<int>();
+
+        public void SetSaveIndex(int Index)
+        {
+            if (!SaveIndex.Contains(Index))
+            {
+                SaveIndex.Add(Index);
+            }
         }
 
         public virtual object GetValue()
@@ -61,7 +73,6 @@ namespace ColorVision.Services.Templates
 
         }
         public virtual Type GetTemplateType { get; }
-
         public virtual void Export(int index)
         {
 
@@ -167,23 +178,30 @@ namespace ColorVision.Services.Templates
 
         public override void Save()
         {
-            foreach (var item in TemplateParams)
+            if (SaveIndex.Count == 0) return;
+
+            foreach (var index in SaveIndex)
             {
-                if (ModMasterDao.Instance.GetById(item.Value.Id) is ModMasterModel modMasterModel && modMasterModel.Pcode != null)
+                var item = TemplateParams[index];
+                var modMasterModel = ModMasterDao.Instance.GetById(item.Value.Id);
+
+                if (modMasterModel?.Pcode != null)
                 {
                     modMasterModel.Name = item.Value.Name;
-                    ModMasterDao modMasterDao = new(modMasterModel.Pcode);
+                    var modMasterDao = new ModMasterDao(modMasterModel.Pcode);
                     modMasterDao.Save(modMasterModel);
                 }
-                List<ModDetailModel> list = new();
-                item.Value.GetDetail(list);
-                ModDetailDao.Instance.UpdateByPid(item.Value.Id, list);
+
+                var details = new List<ModDetailModel>();
+                item.Value.GetDetail(details);
+                ModDetailDao.Instance.UpdateByPid(item.Value.Id, details);
             }
         }
 
         public override void Load() => LoadModParam(Code);
         public void LoadModParam(string ModeType)
         {
+            SaveIndex.Clear();
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
 
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
@@ -244,15 +262,66 @@ namespace ColorVision.Services.Templates
 
         public override void Export(int index)
         {
-            System.Windows.Forms.SaveFileDialog ofd = new System.Windows.Forms.SaveFileDialog();
-            ofd.DefaultExt = "cfg";
-            ofd.Filter = "*.cfg|*.cfg";
-            ofd.AddExtension = false;
-            ofd.RestoreDirectory = true;
-            ofd.Title = "导出模板";
-            ofd.FileName = TemplateParams[index].Key;
-            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            TemplateParams[index].Value.ToJsonNFile(ofd.FileName);
+            int selectedCount = TemplateParams.Count(item => item.IsSelected);
+            if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
+
+            if (selectedCount <= 1)
+            {
+                using System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
+                sfd.DefaultExt = "cfg";
+                sfd.Filter = "*.cfg|*.cfg";
+                sfd.AddExtension = false;
+                sfd.RestoreDirectory = true;
+                sfd.Title = "导出模板";
+                sfd.FileName = Tool.SanitizeFileName(TemplateParams[index].Key);
+                if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+                TemplateParams[index].Value.ToJsonNFile(sfd.FileName);
+            }
+            else
+            {
+                using System.Windows.Forms.SaveFileDialog sfd = new System.Windows.Forms.SaveFileDialog();
+                sfd.DefaultExt = "zip";
+                sfd.Filter = "*.zip|*.zip";
+                sfd.AddExtension = true;
+                sfd.RestoreDirectory = true;
+                sfd.Title = "导出";
+                sfd.FileName = $"{Code}.zip";
+                if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+
+                string tempDirectory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+                Directory.CreateDirectory(tempDirectory);
+                try
+                {
+                    // 导出所有模板文件到临时目录
+                    foreach (var kvp in TemplateParams.Where(item => item.IsSelected == true))
+                    {
+                        string filePath = Path.Combine(tempDirectory, $"{Tool.SanitizeFileName(kvp.Key)}.cfg");
+                        kvp.Value.ToJsonNFile(filePath);
+                    }
+
+                    // 创建压缩文件
+                    using (FileStream zipToOpen = new FileStream(sfd.FileName, FileMode.Create))
+                    {
+                        using (ZipArchive archive = new ZipArchive(zipToOpen, ZipArchiveMode.Create))
+                        {
+                            foreach (string filePath in Directory.GetFiles(tempDirectory))
+                            {
+                                archive.CreateEntryFromFile(filePath, Path.GetFileName(filePath));
+                            }
+                        }
+                    }
+                }
+                finally
+                {
+                    // 清理临时目录
+                    Directory.Delete(tempDirectory, true);
+                }
+            }
+        }
+
+        public void Export()
+        {
+
         }
 
         public T? ExportTemp { get; set; }
@@ -263,7 +332,7 @@ namespace ColorVision.Services.Templates
             ofd.Title = "导入模板";
             ofd.RestoreDirectory = true;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
-            //if (TemplateParams.Any(a => a.Key.Equals(System.IO.Path.GetFileNameWithoutExtension(ofd.FileName), StringComparison.OrdinalIgnoreCase)))
+            //if (TemplateParams.Any(a => a.Key.Equals(System.IO.Path.GetFileNameWithoutExtension(sfd.FileName), StringComparison.OrdinalIgnoreCase)))
             //{
             //    MessageBox.Show(Application.Current.GetActiveWindow(), "模板名称已存在", "ColorVision");
             //    return false;
