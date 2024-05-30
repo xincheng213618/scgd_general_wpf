@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using ColorVision.Common.NativeMethods;
+using System.Collections.ObjectModel;
 using System.Linq;
 
 namespace ColorVision.UI.Sorts
@@ -6,6 +7,11 @@ namespace ColorVision.UI.Sorts
     public interface ISortID
     {
         public int Id { get;  }
+    }
+
+    public interface ISortKey
+    {
+        public string Key { get; }
     }
 
     public static partial class SortableExtension
@@ -17,29 +23,34 @@ namespace ColorVision.UI.Sorts
                 collection.Add(item);
             }
         }
+        private static void UpdateCollection<T>(this ObservableCollection<T> collection, List<T> sortedItems)
+        {
+            if (collection == null) return;
+
+            for (int i = 0; i < sortedItems.Count; i++)
+            {
+                var item = sortedItems[i];
+                var currentIndex = collection.IndexOf(item);
+
+                if (currentIndex != i)
+                {
+                    collection.Move(currentIndex, i);
+                }
+            }
+        }
+
+        public static void SortByKey<T>(this ObservableCollection<T> collection, bool descending = false) where T : ISortKey
+        {
+            var sortedItems = collection.ToList();
+            sortedItems.Sort((x, y) => descending ? Shlwapi.CompareLogical(y.Key ?? string.Empty, x.Key ?? string.Empty) : Shlwapi.CompareLogical(x.Key ?? string.Empty, y.Key ?? string.Empty));
+            collection.UpdateCollection(sortedItems);
+        }
 
         public static void SortByID<T>(this ObservableCollection<T> collection, bool descending = false) where T : ISortID
         {
             var sortedItems = collection.ToList();
             sortedItems.Sort((x, y) => descending ? y.Id.CompareTo(x.Id) : x.Id.CompareTo(y.Id));
-
-            int index = 0;
-            while (index < sortedItems.Count)
-            {
-                if (!collection[index].Equals(sortedItems[index]))
-                {
-                    // 查找当前位置的正确项在未排序集合中的位置
-                    var correctItem = sortedItems[index];
-                    var currentIndex = collection.IndexOf(correctItem);
-
-                    // 交换集合中的项
-                    collection.Move(currentIndex, index);
-                }
-                else
-                {
-                    index++;
-                }
-            }
+            collection.UpdateCollection(sortedItems);
         }
     }
 }

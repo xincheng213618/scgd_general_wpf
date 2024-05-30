@@ -1,11 +1,14 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Extension;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Properties;
 using ColorVision.Services.Dao;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -272,32 +275,41 @@ namespace ColorVision.Services.Templates
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
             {
+                var columnName = gridViewColumnHeader.Content.ToString();
                 foreach (var item in GridViewColumnVisibilitys)
                 {
-                    if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
+                    if (item.ColumnName.ToString() == columnName)
                     {
+                        item.IsSortD = !item.IsSortD;
 
-                            //if (item.ColumnName.ToString() == Engine.Properties.Resources.SerialNumber1)
-                            //{
-                            //    item.IsSortD = !item.IsSortD;
-                            //    foreach (var modebase in ITemplate.ItemsSource.OfType<TemplateModelBase>())
-                            //    {
-                            //        results.SortByID(item.IsSortD);bb   
-                            //    }
-                            //}
-                            if (item.ColumnName.ToString() == Engine.Properties.Resources.Choice)
+                        var collection = ITemplate.GetValue();
+                        var itemType = collection.GetType().GetGenericArguments().FirstOrDefault();
+
+                        if (itemType != null)
                         {
-                            item.IsSortD = !item.IsSortD;
-                            foreach (var modebase in ITemplate.ItemsSource.OfType<TemplateModelBase>()) 
+                            if (columnName == Engine.Properties.Resources.SerialNumber1 && typeof(ISortID).IsAssignableFrom(itemType))
                             {
-                                modebase.IsSelected = item.IsSortD;
+                                SortableExtension.InvokeSortMethod("SortByID", itemType, collection, item.IsSortD);
                             }
-                            e.Handled = true;
+                            else if (columnName == Engine.Properties.Resources.Name && typeof(ISortKey).IsAssignableFrom(itemType))
+                            {
+                                SortableExtension.InvokeSortMethod("SortByKey", itemType, collection, item.IsSortD);
+                            }
+                            else if (columnName == Engine.Properties.Resources.Choice)
+                            {
+                                foreach (var modebase in ITemplate.ItemsSource.OfType<TemplateModelBase>())
+                                {
+                                    modebase.IsSelected = item.IsSortD;
+                                }
+                                e.Handled = true;
+                            }
                         }
                     }
                 }
             }
         }
+
+
 
 
         private void MenuItem_Click(object sender, RoutedEventArgs e)

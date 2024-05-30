@@ -7,7 +7,7 @@ using System.Windows.Controls;
 
 namespace ColorVision.Services.Templates
 {
-    public class TemplateModelBase : ViewModelBase, ISortID
+    public class TemplateModelBase : ViewModelBase, ISortID,ISortKey
     {
         public ContextMenu ContentMenu { get; set; }
 
@@ -17,9 +17,6 @@ namespace ColorVision.Services.Templates
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
         private bool _IsSelected;
         public virtual string Key { get; set; }
-
-        public string Tag { get => _Tag; set { _Tag = value; NotifyPropertyChanged(); } }
-        private string _Tag;
 
         public virtual bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
         private bool _IsEditMode;

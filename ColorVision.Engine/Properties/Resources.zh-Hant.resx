@@ -915,4 +915,7 @@
   <data name="SelectProjectSaveLocation" xml:space="preserve">
     <value>選擇項目保存位置</value>
   </data>
+  <data name="Choice" xml:space="preserve">
+    <value>選擇</value>
+  </data>
 </root>

@@ -105,7 +105,7 @@
         </trans-unit>
         <trans-unit id="Choice" translate="yes" xml:space="preserve">
           <source>选择</source>
-          <target state="new"></target>
+          <target state="new">выбирать</target>
         </trans-unit>
         <trans-unit id="Clear" translate="yes" xml:space="preserve">
           <source>清除</source>

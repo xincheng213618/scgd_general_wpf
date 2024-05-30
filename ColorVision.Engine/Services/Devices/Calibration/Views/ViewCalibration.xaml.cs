@@ -385,6 +385,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content !=null)
             {
+
                 foreach (var item in GridViewColumnVisibilitys)
                 {
                     if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())

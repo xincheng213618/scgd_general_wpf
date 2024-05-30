@@ -60,6 +60,7 @@ namespace ColorVision.Services.Templates
         {
 
         }
+        public virtual Type GetTemplateType { get; }
 
         public virtual void Export(int index)
         {
@@ -110,6 +111,8 @@ namespace ColorVision.Services.Templates
     public class ITemplate<T> : ITemplate where T : ParamBase, new()
     {
         public ObservableCollection<TemplateModel<T>> TemplateParams { get; set; } = new ObservableCollection<TemplateModel<T>>();
+
+        public override Type GetTemplateType => typeof(T);
 
         public int FindIndex(int id) => TemplateParams.ToList().FindIndex(a => a.Id == id);        
 
