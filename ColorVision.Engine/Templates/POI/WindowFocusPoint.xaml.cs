@@ -1371,32 +1371,7 @@ namespace ColorVision.Services.Templates.POI
 
         private void Import_Draw_Click(object sender, RoutedEventArgs e)
         {
-            var ListConfigs = new ObservableCollection<TemplateModelBase>();
-            foreach (var item in PoiParam.Params)
-            {
-                if (item.Value != PoiParam)
-                {
-                    TemplateModel<PoiParam> listConfig = new(item.Key, item.Value);
-                    ListConfigs.Add(listConfig);
-                }
-            }
-            WindowFocusPointAdd windowFocusPointAd = new(ListConfigs) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            windowFocusPointAd.Closed += (s, e) =>
-            {
-                if (windowFocusPointAd.SelectPoiParam != null)
-                {
-                    var SelectPoiParam = windowFocusPointAd.SelectPoiParam;
-
-                    if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-                        PoiParam.LoadPoiDetailFromDB(SelectPoiParam);
-
-                    foreach (var item in SelectPoiParam.PoiPoints)
-                    {
-                        PoiParam.PoiPoints.Add(item);
-                    }
-                    MessageBox.Show("导入成功", "ColorVision");
-                }
-            };
+            WindowFocusPointAdd windowFocusPointAd = new WindowFocusPointAdd(PoiParam) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
             windowFocusPointAd.ShowDialog();
         }
 

@@ -1,23 +1,23 @@
-﻿using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
-using ColorVision.Themes.Controls;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Services.Templates.POI;
 using System.Collections.ObjectModel;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Templates.POI
+namespace ColorVision.Engine.Templates.POI
 {
     /// <summary>
     /// WindowFocusPointAdd.xaml 的交互逻辑
     /// </summary>
-    public partial class WindowFocusPointAdd : BaseWindow
+    public partial class WindowFocusPointAdd : Window
     {
-        public ObservableCollection<TemplateModelBase> ListConfigs { get; set; }
-        public WindowFocusPointAdd(ObservableCollection<TemplateModelBase> ListConfigs )
+        PoiParam PoiParam { get; set; }
+
+        public WindowFocusPointAdd(PoiParam poiParam)
         {
-            this.ListConfigs = ListConfigs;
+            PoiParam = poiParam;
             InitializeComponent();
-            ListView1.ItemsSource = ListConfigs;
         }
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
@@ -29,10 +29,21 @@ namespace ColorVision.Services.Templates.POI
         {
             if (ListView1.SelectedIndex > -1)
             {
-                if (ListConfigs[ListView1.SelectedIndex].GetValue() is PoiParam poiParam)
-                SelectPoiParam = poiParam;
-                Close();
+                if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
+                    PoiParam.LoadPoiDetailFromDB(SelectPoiParam);
+
+                foreach (var item in SelectPoiParam.PoiPoints)
+                {
+                    PoiParam.PoiPoints.Add(item);
+                }
+                MessageBox.Show("导入成功", "ColorVision");
             }
+        }
+
+        private void Window_Initialized(object sender, System.EventArgs e)
+        {
+
+            ListView1.ItemsSource = PoiParam.Params;
         }
     }
 }
