@@ -1,7 +1,7 @@
-﻿using ColorVision.Themes;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Languages;
-using ColorVision.Engine;
 using ColorVision.Wizards;
 using log4net;
 using log4net.Config;
@@ -11,9 +11,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
-using System.Windows;
-using ColorVision.Engine.MySql;
 using System.Threading.Tasks;
+using System.Windows;
 
 [assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
 namespace ColorVision

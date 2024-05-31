@@ -1,14 +1,19 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Templates;
 using ColorVision.Services.DAO;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Configs;
 using ColorVision.UI.Menus;
 using ColorVision.UI.Views;
 using ColorVision.Util.Interfaces;
+using Mysqlx.Crud;
+using NPOI.Util.Collections;
 using Panuon.WPF.UI;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,10 +23,37 @@ using System.Windows.Media;
 
 namespace ColorVision.Services.Flow
 {
-    /// <summary>
-    /// FlowDisplayControl.xaml 的交互逻辑
-    /// </summary>
-    public partial class FlowDisplayControl : UserControl, IDisPlayControl, IIcon
+    public class FlowDisplayControlConfig : ViewModelBase,IConfig
+    {
+        public static FlowDisplayControlConfig Instance =>ConfigHandler.GetInstance().GetRequiredService<FlowDisplayControlConfig>();
+
+        public bool ForceDisableDwayneNeed { get => _ForceDisableDwayneNeed; set { _ForceDisableDwayneNeed = value; NotifyPropertyChanged(); } }
+        private bool _ForceDisableDwayneNeed = true;
+    }
+
+    public class FlowDisplayControlConfigProvider : IConfigSettingProvider
+    {
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+        {
+            return new List<ConfigSettingMetadata> {
+                            new ConfigSettingMetadata
+                            {
+                                Name = "ForceDisableDwayneNeed",
+                                Description = "重启生效",
+                                Type = ConfigSettingType.Bool,
+                                BindingName = nameof(FlowDisplayControlConfig.ForceDisableDwayneNeed),
+                                Source = FlowDisplayControlConfig.Instance,
+                                Order = 800
+                            }
+            };
+        }
+    }
+
+
+        /// <summary>
+        /// FlowDisplayControl.xaml 的交互逻辑
+        /// </summary>
+        public partial class FlowDisplayControl : UserControl, IDisPlayControl, IIcon
     {
 
         private static FlowDisplayControl _instance;
@@ -43,9 +75,14 @@ namespace ColorVision.Services.Flow
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
 
-            using System.Drawing.Graphics graphics = System.Drawing.Graphics.FromHwnd(IntPtr.Zero);
-            View = graphics.DpiX > 96 ? new CVFlowView1() : new CVFlowView();
-
+            if (FlowDisplayControlConfig.Instance.ForceDisableDwayneNeed)
+            {
+                View = new CVFlowView1();
+            }
+            else
+            {
+                View = new CVFlowView();
+            }
             View.View.Title = $"流程窗口 ";
             this.SetIconResource("DrawingImageFlow", View.View);
 

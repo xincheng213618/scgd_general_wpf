@@ -38,16 +38,12 @@
 
         <Grid x:Name="ContentGrid" Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition x:Name="ColumnDefinitionLeft" Width="302" MaxWidth="600"/>
+                <ColumnDefinition x:Name="ColumnDefinitionLeft" Width="Auto" MaxWidth="600"/>
                 <ColumnDefinition  Width="*" MinWidth="200"/>
             </Grid.ColumnDefinitions>
-            <Button x:Name="ButtonShiftOut" Panel.ZIndex="100" Click="OnLeftMainContentShiftOut" Opacity="0.3" hc:IconElement.Geometry="{StaticResource LeftGeometry}" Padding="8 8 0 8" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0 0 -16 0" Style="{StaticResource ButtonIconCircular}" />
-            <Border  Grid.Row="0" Panel.ZIndex="101"  Background="{DynamicResource GlobalBackground}" BorderThickness="0,0,1,0"  BorderBrush="{DynamicResource BorderBrush}" Margin="-1,0,0,0">
-                <Grid  x:Name="LeftMainContent" >
-                    <UIElement.RenderTransform>
-                        <TranslateTransform />
-                    </UIElement.RenderTransform>
-                    <TabControl Style="{StaticResource TabControlBaseStyle}" TabStripPlacement="Bottom" >
+            <Border  x:Name="LeftMainContent"  Grid.Row="0" Panel.ZIndex="101" Margin="-2,-1,0,0" Background="{DynamicResource GlobalBackground}" Visibility="{Binding IsOpenSidebar,Converter={StaticResource bool2VisibilityConverter}}" BorderBrush="{DynamicResource BorderBrush}" >
+                <Grid >
+                    <TabControl Style="{StaticResource TabControlBaseStyle}" TabStripPlacement="Bottom"  Width="300">
                         <TabItem x:Name="ViewTab" Header="{x:Static properties:Resources.Acquire}" Width="150" >
                             <ScrollViewer x:Name="ScrollViewerDisplay" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" >
                                 <StackPanel x:Name="StackPanelSPD" Initialized="StackPanelSPD_Initialized" >
@@ -56,7 +52,6 @@
                                     </behaviors:Interaction.Behaviors>
                                 </StackPanel>
                             </ScrollViewer>
-
                         </TabItem>
                         <TabItem x:Name="SolutionTab1" Header="{x:Static properties:Resources.Project}" Width="150" />
                     </TabControl>
@@ -66,8 +61,6 @@
                 <Grid x:Name="ViewGrid" Background="LightGray"  Visibility="{Binding ElementName=SolutionTab1,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter1}}"/>
                 <Grid x:Name="SolutionGrid" Background="LightGray" Visibility="{Binding ElementName=SolutionTab1,Path=IsSelected,Converter={StaticResource bool2VisibilityConverter}}"/>
             </Grid>
-            <GridSplitter Panel.ZIndex="102" x:Name="GridSplitter" Margin="0,26,0,26" Grid.Column="0" HorizontalAlignment="Right" Width="4" Background="Transparent"/>
-            <Button Grid.Column="0" x:Name="ButtonShiftIn" Panel.ZIndex="102"  Visibility="Collapsed" Click="OnLeftMainContentShiftIn" hc:IconElement.Geometry="{StaticResource RightGeometry}" Padding="8 8 0 8" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="-16 0 -16 0" Style="{StaticResource ButtonIconCircular}" />
         </Grid>
         <StatusBar Grid.Row="2" Height="35" x:Name="StatusBarGrid" Visibility="{Binding IsOpenStatusBar,Converter={StaticResource bool2VisibilityConverter}}"  Initialized="StatusBarGrid_Initialized" >
             <StatusBar.ItemsPanel>

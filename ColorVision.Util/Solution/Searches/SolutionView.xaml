@@ -16,7 +16,7 @@
         </Grid.RowDefinitions>
         <Grid Grid.Row="0" Height="40" >
             <Border x:Name="MainSetting"  BorderBrush="{DynamicResource BorderBrush}" Background="#01FFFFFF" BorderThickness="0,0,0,1"/>
-            <StackPanel Height="40" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" >
+            <StackPanel Height="40" Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center" >
                 <Button x:Name="BackStack"  Width="30" Background="#01FFFFFF" BorderThickness="0" Command="NavigationCommands.BrowseBack"  CommandTarget="{Binding ElementName=MainFrame}">
                     <Path  Stretch="Uniform" Data="{StaticResource LeftGeometry}" Stroke="{DynamicResource IconSolidColorBrush}" Fill="{DynamicResource IconSolidColorBrush}" />
                 </Button>

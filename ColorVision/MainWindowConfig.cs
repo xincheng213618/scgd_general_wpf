@@ -9,46 +9,6 @@ using System.Windows.Data;
 
 namespace ColorVision
 {
-    public class MainWindowConfigProvider : IConfigSettingProvider
-    {
-        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
-            return new List<ConfigSettingMetadata> {
-                            new ConfigSettingMetadata
-                            {
-                                Name = Properties.Resources.StartRecoverUILayout,
-                                Description = Properties.Resources.StartRecoverUILayout,
-                                Type = ConfigSettingType.Bool,
-                                BindingName = nameof(MainWindowConfig.IsRestoreWindow),
-                                Source = MainWindowConfig.Instance
-                            }
-            };
-        }
-    }
-
-    public class ExportMainWindowConfig : IMenuItemMeta
-    {
-        public string? OwnerGuid => "View";
-        public string? GuidId => "MenuViewStatusBar";
-        public int Order => 10000;
-        public string? Header => Properties.Resources.MenuViewStatusBar;
-        public MenuItem MenuItem
-        {
-            get
-            {
-                MenuItem MenuDump = new() { Header = Header };
-                MenuDump.SetBinding(MenuItem.IsCheckedProperty, new Binding(nameof(MainWindowConfig.IsOpenStatusBar)));
-                MenuDump.Click += (s,e) => MainWindowConfig.Instance.IsOpenStatusBar = !MainWindowConfig.Instance.IsOpenStatusBar;
-                MenuDump.DataContext = MainWindowConfig.Instance;
-                return MenuDump;
-            }
-        }
-        public string? InputGestureText => null;
-        public object? Icon => null;
-        public RelayCommand Command => null;
-        public Visibility Visibility => Visibility.Visible;
-    }
-
 
     public class MainWindowConfig : ViewModelBase, IConfig
     {
@@ -96,4 +56,69 @@ namespace ColorVision
             WindowState = (int)window.WindowState;
         }
     }
+
+
+    public class MainWindowConfigProvider : IConfigSettingProvider
+    {
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+        {
+            return new List<ConfigSettingMetadata> {
+                            new ConfigSettingMetadata
+                            {
+                                Name = Properties.Resources.StartRecoverUILayout,
+                                Description = Properties.Resources.StartRecoverUILayout,
+                                Type = ConfigSettingType.Bool,
+                                BindingName = nameof(MainWindowConfig.IsRestoreWindow),
+                                Source = MainWindowConfig.Instance
+                            }
+            };
+        }
+    }
+
+    public class ExportMenuViewStatusBar : IMenuItemMeta
+    {
+        public string? OwnerGuid => "View";
+        public string? GuidId => "MenuViewStatusBar";
+        public int Order => 2;
+        public string? Header => Properties.Resources.MenuViewStatusBar;
+        public MenuItem MenuItem
+        {
+            get
+            {
+                MenuItem menuItem = new() { Header = Header };
+                menuItem.SetBinding(MenuItem.IsCheckedProperty, new Binding(nameof(MainWindowConfig.IsOpenStatusBar)));
+                menuItem.Click += (s,e) => MainWindowConfig.Instance.IsOpenStatusBar = !MainWindowConfig.Instance.IsOpenStatusBar;
+                menuItem.DataContext = MainWindowConfig.Instance;
+                return menuItem;
+            }
+        }
+        public string? InputGestureText => null;
+        public object? Icon => null;
+        public RelayCommand Command => null;
+        public Visibility Visibility => Visibility.Visible;
+    }
+    public class ExportMenuViewSidebar : IMenuItemMeta
+    {
+        public string? OwnerGuid => "View";
+        public string? GuidId => "MenuViewSidebar";
+        public int Order => 1;
+        public string? Header => Properties.Resources.MenuViewSidebar;
+        public MenuItem MenuItem
+        {
+            get
+            {
+                MenuItem menuItem = new() { Header = Header };
+                menuItem.SetBinding(MenuItem.IsCheckedProperty, new Binding(nameof(MainWindowConfig.IsOpenSidebar)));
+                menuItem.Click += (s, e) => MainWindowConfig.Instance.IsOpenSidebar = !MainWindowConfig.Instance.IsOpenSidebar;
+                menuItem.DataContext = MainWindowConfig.Instance;
+                return menuItem;
+            }
+        }
+        public string? InputGestureText => null;
+        public object? Icon => null;
+        public RelayCommand Command => null;
+        public Visibility Visibility => Visibility.Visible;
+    }
+
+
 }
