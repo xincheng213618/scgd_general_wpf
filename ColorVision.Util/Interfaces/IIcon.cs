@@ -3,7 +3,7 @@ using ColorVision.UI.Views;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ColorVision.UI.Interfaces
+namespace ColorVision.Util.Interfaces
 {
     public interface IIcon
     {

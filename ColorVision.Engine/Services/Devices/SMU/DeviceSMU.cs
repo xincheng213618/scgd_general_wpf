@@ -9,7 +9,7 @@ using ColorVision.Common.Utilities;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using ColorVision.UI.Interfaces;
+using ColorVision.Util.Interfaces;
 
 namespace ColorVision.Services.Devices.SMU
 {

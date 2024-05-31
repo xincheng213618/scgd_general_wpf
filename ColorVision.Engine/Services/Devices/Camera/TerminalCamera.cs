@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI.Interfaces;
+using ColorVision.Util.Interfaces;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Terminal;
 using System.Windows;
