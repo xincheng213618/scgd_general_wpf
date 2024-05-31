@@ -229,6 +229,13 @@ namespace ColorVision.Services.Devices.Camera
                     else expTime = new double[] { Device.Config.ExpTime };
                     MsgRecord msgRecord = DService.GetData(expTime, new CalibrationParam() { Id = -1,Name ="Empty" });
                     ServicesHelper.SendCommand(button, msgRecord);
+                    msgRecord.MsgRecordStateChanged += (s) =>
+                    {
+                        if (s == MsgRecordState.Timeout)
+                        {
+                            MessageBox.Show("取图失败,请检查是否为物理相机配置校正");
+                        }
+                    };
                 }  
 
             }
