@@ -88,9 +88,6 @@
 
   <ItemGroup>
     <PackageReference Include="log4net" Version="2.0.17" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
-    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.77" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
   <ItemGroup>
@@ -103,33 +100,6 @@
     <ProjectReference Include="..\ColorVision.Engine\ColorVision.Engine.csproj" />
     <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
     <ProjectReference Include="..\ColorVision.Util\ColorVision.Util.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="CVCommCore">
-      <HintPath>..\DLL\CVCommCore.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="CVImageChannelLib">
-      <HintPath>..\DLL\CVImageChannelLib.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="FlowEngineLib">
-      <HintPath>..\DLL\FlowEngineLib.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="MQTTMessageLib">
-      <HintPath>..\DLL\MQTTMessageLib.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="OpenH264Lib">
-      <HintPath>..\DLL\OpenH264Lib.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="ST.Library.UI">
-      <HintPath>..\DLL\ST.Library.UI.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
   </ItemGroup>
 
   <ItemGroup>
