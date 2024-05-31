@@ -62,7 +62,6 @@ namespace ColorVision.Services.Templates.POI.Validate
             ValidateControl = new ValidateControl();
         }
 
-
         public ValidateControl ValidateControl { get; set; }
 
         public override UserControl GetUserControl() => ValidateControl;

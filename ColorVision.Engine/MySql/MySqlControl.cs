@@ -103,7 +103,6 @@ namespace ColorVision.MySql
             return count;
         }
 
-
         public void EnsureLocalInfile()
         {
             string checkLocalInfile = "SHOW GLOBAL VARIABLES LIKE 'local_infile';";

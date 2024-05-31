@@ -9,7 +9,6 @@ namespace ColorVision.Services.Terminal
     {
 
     }
-
     public class MQTTServiceTerminalBase<T> : MQTTServiceTerminalBase where T : TerminalServiceConfig
     {
         public T Config { get; set; }

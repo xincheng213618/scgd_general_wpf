@@ -12,8 +12,12 @@ namespace ColorVision.Engine.Controls
 
         public ObservableCollection<string> UploadList { get; }
 
+
         public event EventHandler UploadClosed;
     }
+
+
+
 
 
     /// <summary>

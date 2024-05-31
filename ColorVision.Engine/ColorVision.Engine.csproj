@@ -200,10 +200,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Services\RC\Dao\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Page Update="MQTT\MQTTConnect.xaml">
       <SubType>Designer</SubType>
     </Page>
