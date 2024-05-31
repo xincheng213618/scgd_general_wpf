@@ -95,9 +95,6 @@ namespace ColorVision.Services.Devices.Camera
             if (PhyCamera != null)
             {
                 PhyCamera.SetDeviceCamera(this);
-                Config.IsChannelThree = PhyCamera.Config.IsChannelThree;
-                PhyCamera.Config.CameraCfg.CopyTo(Config.CameraCfg);
-                PhyCamera.Config.CFW.CopyTo(Config.CFW);
             }
             base.Save();
         }

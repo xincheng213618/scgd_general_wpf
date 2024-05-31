@@ -31,7 +31,6 @@ namespace ColorVision.Services.PhyCameras
             DataContext = Device;
         }
 
-
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
