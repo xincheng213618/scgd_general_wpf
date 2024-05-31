@@ -1,11 +1,14 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
+using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
+using Mysqlx.Prepare;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Input;
 
 namespace ColorVision
 {
@@ -75,7 +78,7 @@ namespace ColorVision
         }
     }
 
-    public class ExportMenuViewStatusBar : IMenuItemMeta
+    public class ExportMenuViewStatusBar : IMenuItemMeta,IHotKey
     {
         public string? OwnerGuid => "View";
         public string? GuidId => "MenuViewStatusBar";
@@ -96,8 +99,16 @@ namespace ColorVision
         public object? Icon => null;
         public RelayCommand Command => null;
         public Visibility Visibility => Visibility.Visible;
+
+        public HotKeys HotKeys => new(Properties.Resources.MenuViewStatusBar, new Hotkey(Key.B, ModifierKeys.Control | ModifierKeys.Shift), Execute);
+
+        public static void Execute()
+        {
+            MainWindowConfig.Instance.IsOpenStatusBar = !MainWindowConfig.Instance.IsOpenStatusBar;
+        }
+
     }
-    public class ExportMenuViewSidebar : IMenuItemMeta
+    public class ExportMenuViewSidebar : IMenuItemMeta, IHotKey
     {
         public string? OwnerGuid => "View";
         public string? GuidId => "MenuViewSidebar";
@@ -118,6 +129,13 @@ namespace ColorVision
         public object? Icon => null;
         public RelayCommand Command => null;
         public Visibility Visibility => Visibility.Visible;
+
+        public HotKeys HotKeys => new(Properties.Resources.MenuViewSidebar, new Hotkey(Key.S, ModifierKeys.Control | ModifierKeys.Shift), Execute);
+
+        public static void Execute()
+        {
+            MainWindowConfig.Instance.IsOpenSidebar = !MainWindowConfig.Instance.IsOpenSidebar;
+        }
     }
 
 

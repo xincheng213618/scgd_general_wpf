@@ -62,6 +62,7 @@ namespace ColorVision
         private void Window_Initialized(object sender, EventArgs e)
         {
             MenuManager.GetInstance().Menu = Menu1;
+            MainWindowConfig.IsOpenSidebar = true;
             this.DataContext = MainWindowConfig;
             if (!WindowConfig.IsExist || (WindowConfig.IsExist && WindowConfig.Icon == null))
             {
