@@ -2,7 +2,7 @@
 using System;
 using System.Text;
 
-namespace ColorVision.Projects
+namespace ColorVision.Projects.ProjectHeyuan
 {
     public enum SerialStatus
     {

@@ -1,7 +1,7 @@
-﻿<Application x:Class="ProjectHeyuan.App"
+﻿<Application x:Class="ColorVision.Projects.ProjectHeyuan.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:ProjectHeyuan"
+             xmlns:local="clr-namespace:ColorVision.Projects.ProjectHeyuan"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              >
     <Application.Resources>

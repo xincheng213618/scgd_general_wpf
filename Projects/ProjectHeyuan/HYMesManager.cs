@@ -1,12 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Devices.Algorithm.Views;
 using ColorVision.UI;
 using System.Collections.ObjectModel;
 using System.IO.Ports;
 using System.Text;
 using System.Windows;
 
-namespace ColorVision.Projects
+namespace ColorVision.Projects.ProjectHeyuan
 {
     public class HYMesConfig: ViewModelBase, IConfig
     {

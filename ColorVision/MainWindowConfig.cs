@@ -1,18 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Properties;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
-using ColorVision.UI.Dump;
 using ColorVision.UI.Menus;
-using ColorVision.UI.Properties;
-using ColorVision.UI.Views;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 
 namespace ColorVision

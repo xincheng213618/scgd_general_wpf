@@ -1,17 +1,14 @@
-﻿using ColorVision.Themes;
-using ColorVision.UI.Languages;
-using ColorVision.UI;
-using System.Configuration;
-using System.Data;
-using System.Windows;
-using ColorVision.MQTT;
+﻿using ColorVision.MQTT;
 using ColorVision.MySql;
-using ColorVision.Services.Templates;
 using ColorVision.Services;
 using ColorVision.Services.RC;
-using ColorVision.Projects;
+using ColorVision.Services.Templates;
+using ColorVision.Themes;
+using ColorVision.UI;
+using ColorVision.UI.Languages;
+using System.Windows;
 
-namespace ProjectHeyuan
+namespace ColorVision.Projects.ProjectHeyuan
 {
     /// <summary>
     /// Interaction logic for App.xaml

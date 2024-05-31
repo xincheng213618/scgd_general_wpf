@@ -20,7 +20,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 
-namespace ColorVision.Projects
+namespace ColorVision.Projects.ProjectHeyuan
 {
 
     public sealed class ConnectConverter : IValueConverter

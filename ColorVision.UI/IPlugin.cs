@@ -70,7 +70,7 @@ namespace ColorVision.UI
             }
             return plugins;
         }
-        public static PluginLoadContext loadContext { get; set; }
+        public static PluginLoadContext? loadContext { get; set; }
 
         public static void LoadPluginsUS(string path)
         {

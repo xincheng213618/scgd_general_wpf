@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 
-namespace ColorVision.Projects
+namespace ColorVision.Projects.ProjectHeyuan
 {
     public class TempResult : ViewModelBase
     {
