@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8602,CA1707
 
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Extension;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Msg;

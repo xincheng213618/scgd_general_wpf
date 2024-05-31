@@ -2,7 +2,7 @@
 using cvColorVision;
 using ColorVision.Common.MVVM;
 
-namespace ColorVision.Services.Devices.Camera.Configs
+namespace ColorVision.Engine.Services.PhyCameras.Configs
 {
     public class ChannelCfg : ViewModelBase
     {

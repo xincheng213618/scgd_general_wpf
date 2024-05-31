@@ -154,28 +154,28 @@
                             <GridViewColumn  Header="x" Width="70">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding  X.Value, StringFormat={}{0:F2}}" />
+                                        <TextBlock Text="{ Binding  X.Value, StringFormat={}{0:F3}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="y" Width="70">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding Y.Value, StringFormat={}{0:F2}}" />
+                                        <TextBlock Text="{ Binding Y.Value, StringFormat={}{0:F3}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="Lv" Width="70">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding Lv.Value, StringFormat={}{0:F2}}" />
+                                        <TextBlock Text="{ Binding Lv.Value, StringFormat={}{0:F3}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
                             <GridViewColumn  Header="dw" Width="70">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding Dw.Value, StringFormat={}{0:F2}}" />
+                                        <TextBlock Text="{ Binding Dw.Value, StringFormat={}{0:F3}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

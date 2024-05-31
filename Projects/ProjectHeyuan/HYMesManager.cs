@@ -215,7 +215,7 @@ namespace ColorVision.Projects
 
         public void UploadMes(ObservableCollection<TempResult> Results)
         {
-            string SendMsg = $"CMI,C,{Config.DeviceId},{Config.TestName},White,{Results[0].X.Value:F2}/{Results[0].Y.Value:F2}/{Results[0].Lv.Value:F2}/{Results[0].Dw.Value:F2}/{(Results[0].Result?"Pass":"Fail")},Blue,{Results[1].X.Value:F2}/{Results[1].Y.Value:F2}/{Results[1].Lv.Value:F2}/{Results[1].Dw.Value:F2}/{(Results[1].Result ? "Pass" : "Fail")},Red,{Results[2].X.Value:F2}/{Results[2].Y.Value:F2}/{Results[2].Lv.Value:F2}/{Results[2].Dw.Value:F2}/{(Results[2].Result ? "Pass" : "Fail")},Orange,{Results[3].X.Value:F2}/{Results[3].Y.Value:F2}/{Results[3].Lv.Value:F2}/{Results[3].Dw.Value:F2}/{(Results[3].Result ? "Pass" : "Fail")}";
+            string SendMsg = $"CMI,C,{Config.DeviceId},{Config.TestName},White,{Results[0].X.Value:F3}/{Results[0].Y.Value:F3}/{Results[0].Lv.Value:F3}/{Results[0].Dw.Value:F3}/{(Results[0].Result?"Pass":"Fail")},Blue,{Results[1].X.Value:F3}/{Results[1].Y.Value:F3}/{Results[1].Lv.Value:F3}/{Results[1].Dw.Value:F3}/{(Results[1].Result ? "Pass" : "Fail")},Red,{Results[2].X.Value:F3}/{Results[2].Y.Value:F3}/{Results[2].Lv.Value:F3}/{Results[2].Dw.Value:F3}/{(Results[2].Result ? "Pass" : "Fail")},Orange,{Results[3].X.Value:F3}/{Results[3].Y.Value:F3}/{Results[3].Lv.Value:F3}/{Results[3].Dw.Value:F3}/{(Results[3].Result ? "Pass" : "Fail")}";
             Send(System.Text.Encoding.UTF8.GetBytes(SendMsg));
         }
         public void UploadNG(string Msg = "errorW") 

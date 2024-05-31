@@ -2,8 +2,8 @@
 using ColorVision.Common.MVVM;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.Camera.Configs
-{
+namespace ColorVision.Engine.Services.PhyCameras.Configs
+{ 
     public enum CameraConfigType
     {
         Camera = 0,

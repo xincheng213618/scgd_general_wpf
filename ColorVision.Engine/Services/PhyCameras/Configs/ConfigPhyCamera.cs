@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Services.Devices.Camera.Configs;
 using cvColorVision;
 using Newtonsoft.Json;
@@ -74,7 +75,6 @@ namespace ColorVision.Services.PhyCameras.Configs
         public CameraCfg CameraCfg { get; set; } = new CameraCfg();
         public CFWPORT CFW { get; set; } = new CFWPORT();
         public ExpTimeCfg ExpTimeCfg { get; set; } = new ExpTimeCfg();
-
         public FileSeviceConfig FileServerCfg { get; set; } = new FileSeviceConfig();
     }
 
@@ -82,7 +82,6 @@ namespace ColorVision.Services.PhyCameras.Configs
     {
         public string FileBasePath { get => _FileBasePath; set { _FileBasePath = value; NotifyPropertyChanged(); } }
         private string _FileBasePath = "D:\\CVTest";
-
         /// <summary>
         /// 端口地址
         /// </summary>
