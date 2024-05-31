@@ -6,7 +6,6 @@
              xmlns:local="clr-namespace:ColorVision.Services.Devices.Camera"
              xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
              xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
-             xmlns:cv="clr-namespace:ColorVision"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              mc:Ignorable="d" 
