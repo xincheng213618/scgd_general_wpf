@@ -17,14 +17,15 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Border Grid.Row="0">
-            <StackPanel>
-                <DockPanel Margin="0,2">
-                    <TextBlock Text="相机ID" Width="50"/>
-                    <hc:ComboBox  x:Name="CameraID" IsEditable="True" SelectedIndex="0" SelectedValue="{Binding CreateConfig.Code}" Text="{Binding CreateConfig.CameraID}"  hc:InfoElement.ShowClearButton="True"  />
+            <StackPanel >
+                <hc:ComboBox  x:Name="CameraCode" IsEditable="True" SelectedIndex="0" SelectedValue="{Binding CreateConfig.CameraID}" Text="{Binding CreateConfig.Code}" />
+                <DockPanel Margin="5,5,0,0" >
+                    <TextBlock Text="设备名称" Width="120" />
+                    <TextBlock x:Name="DeviceName" Text="" />
                 </DockPanel>
-                <DockPanel Margin="0,2" >
-                    <TextBlock Text="Code" Width="50" />
-                    <hc:ComboBox  x:Name="CreateName" IsEditable="True" Text="{Binding CreateConfig.Code}" SelectedIndex="0"  hc:InfoElement.ShowClearButton="True"  />
+                <DockPanel Margin="5,5" >
+                    <TextBlock Text="相机ID" Width="120" />
+                    <TextBlock Text="{Binding CreateConfig.CameraID}" />
                 </DockPanel>
             </StackPanel>
         </Border>

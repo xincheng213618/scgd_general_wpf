@@ -1,38 +1,26 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.UI.Menus;
-using System;
+﻿using System;
+using System.Globalization;
 using System.Windows;
+using System.Windows.Data;
 
 namespace ColorVision.Services.PhyCameras
 {
-
-    public class ExportPhyCamerManager : IMenuItem
+    public sealed class NameStringConverter : IValueConverter
     {
-        public string? OwnerGuid => "Tool";
-
-        public string? GuidId => "PhyCamerManager";
-
-        public int Order => 9;
-
-        public string? Header => ColorVision.Engine.Properties.Resources.MenuPhyCameraManager;
-
-        public string? InputGestureText => null;
-
-        public object? Icon => null;
-
-        public RelayCommand Command => new(A => Execute());
-
-        private static void Execute()
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
-            new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
+            if (value is string name)
+            {
+                return string.IsNullOrWhiteSpace(name) ?  "没有配置相机ID" : name;
+            }
+            return string.Empty;
         }
-        public Visibility Visibility => Visibility.Visible;
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotSupportedException("Converting from a string to a memory size is not supported.");
+        }
     }
-
-
-
-
 
     /// <summary>
     /// PhyCameraManagerWindow.xaml 的交互逻辑
@@ -48,6 +36,7 @@ namespace ColorVision.Services.PhyCameras
         {
             this.DataContext = PhyCameraManager.GetInstance();
             ServicesHelper.SelectAndFocusFirstNode(TreeView1);
+            PhyCameraManager.GetInstance().Loaded +=(s,e) => ServicesHelper.SelectAndFocusFirstNode(TreeView1);
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)

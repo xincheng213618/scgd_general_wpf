@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
 using ColorVision.Services.PhyCameras.Configs;
+using ColorVision.Services.PhyCameras.Dao;
 using ColorVision.Services.RC;
 using ColorVision.UserSpace;
 using cvColorVision;
@@ -38,9 +39,26 @@ namespace ColorVision.Services.PhyCameras
                 Channel = ImageChannel.One,
             };
 
-            CameraID.ItemsSource = SysResourceDao.Instance.GetAllEmptyCameraId();
-            CameraID.DisplayMemberPath = "Name";
-            CameraID.SelectedValuePath = "Code";
+            var list = SysResourceDao.Instance.GetAllEmptyCameraId();
+
+            if (list != null)
+            {
+                CameraCode.ItemsSource = list;
+                CameraCode.DisplayMemberPath = "Code";
+                CameraCode.SelectedValuePath = "Name";
+
+                CameraCode.SelectionChanged += (s, e) =>
+                {
+                    if (CameraCode.SelectedIndex >= 0)
+                        DeviceName.Text = CameraLicenseDao.Instance.GetByMAC(list[CameraCode.SelectedIndex].Code??string.Empty)?.Model;
+                };
+            }
+            else
+            {
+                MessageBox.Show("找不到可以添加的相机");
+            }
+
+
             DataContext = this;
 
             var Config = CreateConfig;

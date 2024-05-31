@@ -5,11 +5,8 @@ using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.PhyCameras.Configs;
 using ColorVision.Services.PhyCameras.Dao;
-using ColorVision.Services.RC;
 using ColorVision.Services.Types;
-using ColorVision.UserSpace;
 using cvColorVision;
-using CVCommCore;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -25,12 +22,12 @@ namespace ColorVision.Services.PhyCameras
     public class PhyCameraManager
     {
         private static PhyCameraManager _instance;
-        private static readonly object _locker = new();
-        public static PhyCameraManager GetInstance() { lock (_locker) { return _instance ??= new PhyCameraManager(); } }
+        private static readonly object Locker = new();
+        public static PhyCameraManager GetInstance() { lock (Locker) { return _instance ??= new PhyCameraManager(); } }
         public RelayCommand CreateCommand { get; set; }
         public RelayCommand ImportCommand { get; set; }
 
-        public PhyCameraManager() 
+        public PhyCameraManager()
         {
             CreateCommand = new RelayCommand(a => Create());
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadPhyCamera();
@@ -38,26 +35,30 @@ namespace ColorVision.Services.PhyCameras
                 LoadPhyCamera();
 
             ImportCommand = new RelayCommand(a => Import());
-
         }
 
-
-
-        public PhyCamera? GetPhyCamera(string CamerID) => PhyCameras.FirstOrDefault(a => a.Name == CamerID);
+        public PhyCamera? GetPhyCamera(string cameraID) => PhyCameras.FirstOrDefault(a => a.Name == cameraID);
 
         public void Create()
         {
-            CreateWindow createWindow = new(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            var createWindow = new CreateWindow(this)
+            {
+                Owner = Application.Current.GetActiveWindow(),
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
             createWindow.ShowDialog();
         }
+
         public void Import()
         {
-            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
-            openFileDialog.RestoreDirectory = true;
-            openFileDialog.Multiselect = true; // 允许多选
-            openFileDialog.Filter = "All files (*.*)|*.zip;*.lic"; // 可以设置特定的文件类型过滤器
-            openFileDialog.Title = "请选择许可证文件";
-            openFileDialog.FilterIndex = 1;
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog
+            {
+                RestoreDirectory = true,
+                Multiselect = true,
+                Filter = "All files (*.*)|*.zip;*.lic",
+                Title = "请选择许可证文件",
+                FilterIndex = 1
+            };
 
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
@@ -66,116 +67,108 @@ namespace ColorVision.Services.PhyCameras
 
                 foreach (string file in selectedFiles)
                 {
-                    if (Path.GetExtension(file) == ".zip")
+                    try
                     {
-                        try
+                        if (Path.GetExtension(file).Equals(".zip", StringComparison.OrdinalIgnoreCase))
                         {
-                            using ZipArchive archive = ZipFile.OpenRead(file);
-                            var licFiles = archive.Entries.Where(entry => Path.GetExtension(entry.FullName).Equals(".lic", StringComparison.OrdinalIgnoreCase)).ToList();
-
-                            foreach (var item in licFiles)
-                            {
-                                CameraLicenseModel? cameraLicenseModel = licenses.Find(a => a.MacAddress == Path.GetFileNameWithoutExtension(item.FullName));
-                                if (cameraLicenseModel==null)
-                                    cameraLicenseModel = new CameraLicenseModel();
-                                cameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(item.FullName);
-                                using var stream = item.Open();
-                                using var reader = new StreamReader(stream, Encoding.UTF8); // 假设文件编码为UTF-8
-                                cameraLicenseModel.LicenseValue = reader.ReadToEnd();
-
-                                cameraLicenseModel.CusTomerName = cameraLicenseModel.ColorVisionLincense.Licensee;
-                                cameraLicenseModel.Model = cameraLicenseModel.ColorVisionLincense.DeviceMode;
-                                cameraLicenseModel.ExpiryDate = cameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
-
-                                int ret = CameraLicenseDao.Instance.Save(cameraLicenseModel);
-                                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} {(ret == -1 ? "添加失败" : "添加成功")}", "ColorVision");
-                                SysDictionaryModel? sysDictionaryModel = SysDictionaryDao.Instance.GetAll().Find(a => a.Code == cameraLicenseModel.MacAddress);
-                                if (sysDictionaryModel == null)
-                                {
-                                    sysDictionaryModel = new SysDictionaryModel();
-                                    sysDictionaryModel.Code = cameraLicenseModel.MacAddress;
-                                    sysDictionaryModel.Type = (int)ServiceTypes.PhyCamera;
-                                    SysDictionaryDao.Instance.Save(sysDictionaryModel);
-
-                                    SysResourceModel? sysResourceModel = SysResourceDao.Instance.GetByCode(cameraLicenseModel.MacAddress);
-                                    if (sysResourceModel == null)
-                                        sysResourceModel = new SysResourceModel("", cameraLicenseModel.MacAddress, (int)PhysicalResourceType.PhyCamera, UserConfig.Instance.TenantId);
-
-                                    var CreateConfig = new ConfigPhyCamera
-                                    {
-                                        CameraType = CameraType.LV_Q,
-                                        TakeImageMode = TakeImageMode.Measure_Normal,
-                                        ImageBpp = ImageBpp.bpp8,
-                                        Channel = ImageChannel.One,
-                                    };
-
-                                    sysResourceModel.Value = JsonConvert.SerializeObject(CreateConfig);
-                                    int ret1 = SysResourceDao.Instance.Save(sysResourceModel);
-                                    if (ret1 < 0)
-                                    {
-                                        MessageBox.Show(Application.Current.GetActiveWindow(), "不允许创建没有Code的相机", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
-                                    }
-                                    this.LoadPhyCamera();
-
-                                }
-                            }
+                            ProcessZipFile(file, licenses);
                         }
-                        catch (Exception ex)
+                        else if (Path.GetExtension(file).Equals(".lic", StringComparison.OrdinalIgnoreCase))
                         {
-                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"解压失败 :{ex.Message}", "ColorVision");
+                            ProcessLicFile(file, licenses);
+                        }
+                        else
+                        {
+                            MessageBox.Show(WindowHelpers.GetActiveWindow(), "不支持的许可文件后缀", "ColorVision");
                         }
                     }
-                    else if (Path.GetExtension(file) == ".lic")
+                    catch (Exception ex)
                     {
-                        CameraLicenseModel? cameraLicenseModel = licenses.Find(a => a.MacAddress == Path.GetFileNameWithoutExtension(openFileDialog.SafeFileName));
-                        if (cameraLicenseModel == null)
-                            cameraLicenseModel = new CameraLicenseModel();
-
-                        cameraLicenseModel.MacAddress = Path.GetFileNameWithoutExtension(openFileDialog.SafeFileName);
-                        cameraLicenseModel.LicenseValue = File.ReadAllText(file);
-                        cameraLicenseModel.CusTomerName = cameraLicenseModel.ColorVisionLincense.Licensee;
-                        cameraLicenseModel.Model = cameraLicenseModel.ColorVisionLincense.DeviceMode;
-                        cameraLicenseModel.ExpiryDate = cameraLicenseModel.ColorVisionLincense.ExpiryDateTime;
-
-                        int ret = CameraLicenseDao.Instance.Save(cameraLicenseModel);
-
-                        MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} {(ret == -1 ? "添加许可证失败" : "添加许可证成功")}", "ColorVision");
-
-                        var sysDictionaryModel = SysResourceDao.Instance.GetAll().Find(a => a.Code == cameraLicenseModel.MacAddress);
-                        if (sysDictionaryModel == null)
-                        {
-                            sysDictionaryModel = new SysResourceModel();
-                            sysDictionaryModel.Code = cameraLicenseModel.MacAddress;
-                            sysDictionaryModel.Type = (int)ServiceTypes.PhyCamera;
-
-                            var CreateConfig = new ConfigPhyCamera
-                            {
-                                CameraType = CameraType.LV_Q,
-                                TakeImageMode = TakeImageMode.Measure_Normal,
-                                ImageBpp = ImageBpp.bpp8,
-                                Channel = ImageChannel.One,
-                            };
-
-                            sysDictionaryModel.Value = JsonConvert.SerializeObject(CreateConfig);
-
-                            ret = SysResourceDao.Instance.Save(sysDictionaryModel);
-                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} {(ret == -1 ? "添加物理相机失败" : "添加物理相机成功")}", "ColorVision");
-                        }
-                        this.LoadPhyCamera();
-                    }
-                    else
-                    {
-                        MessageBox.Show(WindowHelpers.GetActiveWindow(), "不支持的许可文件后缀", "ColorVision");
+                        MessageBox.Show(WindowHelpers.GetActiveWindow(), $"处理文件失败 :{ex.Message}", "ColorVision");
                     }
                 }
             }
             LoadPhyCamera();
         }
 
+        private static void ProcessZipFile(string file, List<CameraLicenseModel> licenses)
+        {
+            using ZipArchive archive = ZipFile.OpenRead(file);
+            var licFiles = archive.Entries.Where(entry => Path.GetExtension(entry.FullName).Equals(".lic", StringComparison.OrdinalIgnoreCase)).ToList();
+
+            foreach (var item in licFiles)
+            {
+                var licenseModel = GetOrCreateLicenseModel(Path.GetFileNameWithoutExtension(item.FullName), licenses);
+                using var stream = item.Open();
+                using var reader = new StreamReader(stream, Encoding.UTF8);
+                licenseModel.LicenseValue = reader.ReadToEnd();
+
+                UpdateLicenseModel(licenseModel);
+            }
+        }
+
+        private static void ProcessLicFile(string file, List<CameraLicenseModel> licenses)
+        {
+            var licenseModel = GetOrCreateLicenseModel(Path.GetFileNameWithoutExtension(file), licenses);
+            licenseModel.LicenseValue = File.ReadAllText(file);
+
+            UpdateLicenseModel(licenseModel);
+        }
+
+        private static CameraLicenseModel GetOrCreateLicenseModel(string macAddress, List<CameraLicenseModel> licenses)
+        {
+            var licenseModel = licenses.Find(a => a.MacAddress == macAddress) ?? new CameraLicenseModel { MacAddress = macAddress };
+            return licenseModel;
+        }
+
+        private static void UpdateLicenseModel(CameraLicenseModel licenseModel)
+        {
+            licenseModel.CusTomerName = licenseModel.ColorVisionLincense.Licensee;
+            licenseModel.Model = licenseModel.ColorVisionLincense.DeviceMode;
+            licenseModel.ExpiryDate = licenseModel.ColorVisionLincense.ExpiryDateTime;
+
+            int ret = CameraLicenseDao.Instance.Save(licenseModel);
+
+            UpdateSysResource(licenseModel);
+        }
+
+        private static void UpdateSysResource(CameraLicenseModel licenseModel)
+        {
+            var sysDictionaryModel = SysResourceDao.Instance.GetAll().Find(a => a.Code == licenseModel.MacAddress);
+            if (sysDictionaryModel == null)
+            {
+                sysDictionaryModel = new SysResourceModel
+                {
+                    Code = licenseModel.MacAddress,
+                    Type = (int)ServiceTypes.PhyCamera,
+                    Value = JsonConvert.SerializeObject(CreateDefaultConfig())
+                };
+
+                int ret = SysResourceDao.Instance.Save(sysDictionaryModel);
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{licenseModel.MacAddress} {(ret == -1 ? "添加物理相机失败" : "添加物理相机成功")}", "ColorVision");
+            }
+            else
+            {
+                sysDictionaryModel.Value = JsonConvert.SerializeObject(CreateDefaultConfig());
+                SysResourceDao.Instance.Save(sysDictionaryModel);
+            }
+        }
+
+        private static ConfigPhyCamera CreateDefaultConfig()
+        {
+            return new ConfigPhyCamera
+            {
+                CameraType = CameraType.LV_Q,
+                TakeImageMode = TakeImageMode.Measure_Normal,
+                ImageBpp = ImageBpp.bpp8,
+                Channel = ImageChannel.One,
+            };
+        }
 
         public EventHandler Loaded { get; set; }
 
         public ObservableCollection<PhyCamera> PhyCameras { get; set; } = new ObservableCollection<PhyCamera>();
+
         public void LoadPhyCamera()
         {
             PhyCameras.Clear();
@@ -188,53 +181,57 @@ namespace ColorVision.Services.PhyCameras
                 }
             }
 
-            foreach (var phycamrea in PhyCameras)
+            foreach (var phyCamera in PhyCameras)
             {
-                List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetResourceItems(phycamrea.SysResourceModel.Id);
-                foreach (var sysResourceModel in sysResourceModels)
-                {
-                    if (sysResourceModel.Type == (int)ServiceTypes.Group)
-                    {
-                        GroupResource groupResource = new(sysResourceModel);
-                        phycamrea.AddChild(groupResource);
-                        GroupResource.LoadgroupResource(groupResource);
-                    }
-                    else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
-                    {
-                        CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
-                        phycamrea.AddChild(calibrationResource);
-                    }
-                    else
-                    {
-                        BaseFileResource calibrationResource = new(sysResourceModel);
-                        phycamrea.AddChild(calibrationResource);
-                    }
-                }
-
+                LoadPhyCameraResources(phyCamera);
             }
-            Loaded?.Invoke(this, new EventArgs());
+            Loaded?.Invoke(this, EventArgs.Empty);
         }
 
-        public static void LoadgroupResource(GroupResource groupResource)
+        private static void LoadPhyCameraResources(PhyCamera phyCamera)
         {
-            List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetGroupResourceItems(groupResource.SysResourceModel.Id);
+            var sysResourceModels = SysResourceDao.Instance.GetResourceItems(phyCamera.SysResourceModel.Id);
             foreach (var sysResourceModel in sysResourceModels)
             {
-                if (sysResourceModel.Type == (int)ServiceTypes.Group)
+                switch (sysResourceModel.Type)
                 {
-                    GroupResource groupResource1 = new(sysResourceModel);
-                    LoadgroupResource(groupResource1);
-                    groupResource.AddChild(groupResource);
+                    case (int)ServiceTypes.Group:
+                        var groupResource = new GroupResource(sysResourceModel);
+                        phyCamera.AddChild(groupResource);
+                        LoadGroupResource(groupResource);
+                        break;
+                    case >= 30 and <= 40:
+                        var calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
+                        phyCamera.AddChild(calibrationResource);
+                        break;
+                    default:
+                        var baseFileResource = new BaseFileResource(sysResourceModel);
+                        phyCamera.AddChild(baseFileResource);
+                        break;
                 }
-                else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
+            }
+        }
+
+        public static void LoadGroupResource(GroupResource groupResource)
+        {
+            var sysResourceModels = SysResourceDao.Instance.GetGroupResourceItems(groupResource.SysResourceModel.Id);
+            foreach (var sysResourceModel in sysResourceModels)
+            {
+                switch (sysResourceModel.Type)
                 {
-                    CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
-                    groupResource.AddChild(calibrationResource);
-                }
-                else
-                {
-                    BaseResource calibrationResource = new(sysResourceModel);
-                    groupResource.AddChild(calibrationResource);
+                    case (int)ServiceTypes.Group:
+                        var nestedGroupResource = new GroupResource(sysResourceModel);
+                        LoadGroupResource(nestedGroupResource);
+                        groupResource.AddChild(nestedGroupResource);
+                        break;
+                    case >= 30 and <= 40:
+                        var calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
+                        groupResource.AddChild(calibrationResource);
+                        break;
+                    default:
+                        var baseResource = new BaseResource(sysResourceModel);
+                        groupResource.AddChild(baseResource);
+                        break;
                 }
             }
             groupResource.SetCalibrationResource();
