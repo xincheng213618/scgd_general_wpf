@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.Engine.Media;
-using ColorVision.Extension;
+using ColorVision.UI.Extension;
 using ColorVision.Solution.V.Files;
 using System;
 using System.IO;

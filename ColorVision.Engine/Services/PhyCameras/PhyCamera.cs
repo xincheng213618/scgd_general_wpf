@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Controls;
-using ColorVision.Extension;
+using ColorVision.UI.Extension;
 using ColorVision.Handler;
 using ColorVision.Util.Interfaces;
 using ColorVision.Services.Core;

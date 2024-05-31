@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Extension;
+using ColorVision.UI.Extension;
 using ColorVision.Engine.MySql;
 using ColorVision.Services.Dao;
 using ColorVision.UserSpace;

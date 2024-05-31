@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Extension;
+using ColorVision.UI.Extension;
 using ColorVision.Common.NativeMethods;
 using System.IO;
 using System.Windows.Controls;

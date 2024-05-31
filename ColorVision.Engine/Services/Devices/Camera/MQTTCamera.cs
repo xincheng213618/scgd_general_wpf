@@ -2,7 +2,7 @@
 
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.PhyCameras.Configs;
-using ColorVision.Extension;
+using ColorVision.UI.Extension;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Msg;
 using ColorVision.Services.PhyCameras.Templates;

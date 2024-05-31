@@ -13,7 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 
-namespace ColorVision.Extension
+namespace ColorVision.UI.Extension
 {
     /// <summary>
     // 扩展加载，没有特殊标记的丢在这里，反正会自动识别加载

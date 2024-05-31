@@ -1,7 +1,7 @@
 ﻿#pragma warning disable CS8604,CS8631
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Extension;
+using ColorVision.UI.Extension;
 using ColorVision.Util.Interfaces;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
