@@ -3,7 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using System.Windows;
 
-namespace ColorVision.MQTT
+namespace ColorVision.Engine.MQTT
 {
     public class MQTTWizardStep : IWizardStep
     {

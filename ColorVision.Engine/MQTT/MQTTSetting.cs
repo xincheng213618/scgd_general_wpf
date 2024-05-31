@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace ColorVision.MQTT
+namespace ColorVision.Engine.MQTT
 {
     public delegate void UseMQTTHandler(bool IsUseMQTT);
 

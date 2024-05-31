@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.UI.Interfaces;
-using ColorVision.MQTT;
+using ColorVision.Engine.MQTT;
 using ColorVision.Services.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;

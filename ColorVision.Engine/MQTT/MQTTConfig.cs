@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 
-namespace ColorVision.MQTT
+namespace ColorVision.Engine.MQTT
 {
 
     /// <summary>

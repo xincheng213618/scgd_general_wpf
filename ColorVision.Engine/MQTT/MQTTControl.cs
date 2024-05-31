@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ColorVision.MQTT
+namespace ColorVision.Engine.MQTT
 {
     public class MQTTControl : ViewModelBase
     {
