@@ -1,6 +1,5 @@
 ﻿using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql;
-using ColorVision.Services.Templates;
 using ColorVision.Services;
 using ColorVision.Themes;
 using ColorVision.UI.Languages;
@@ -11,6 +10,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Windows;
 using ColorVision.Services.RC;
+using ColorVision.Engine.Templates;
 
 namespace ColorVision.Engine
 {

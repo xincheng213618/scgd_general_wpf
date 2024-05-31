@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
+using ColorVision.Engine.Templates;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Templates;
 using ColorVision.UserSpace;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

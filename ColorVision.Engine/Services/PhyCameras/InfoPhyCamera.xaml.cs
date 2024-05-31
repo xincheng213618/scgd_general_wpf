@@ -1,8 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
-using ColorVision.Services.Dao;
+using ColorVision.Engine.Templates;
 using ColorVision.Services.PhyCameras.Templates;
-using ColorVision.Services.Templates;
 using System;
 using System.Windows;
 using System.Windows.Controls;

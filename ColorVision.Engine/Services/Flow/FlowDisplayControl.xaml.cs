@@ -1,10 +1,12 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Util.Interfaces;
 using ColorVision.Engine.MQTT;
-using ColorVision.Services.Templates;
+using ColorVision.Engine.Templates;
+using ColorVision.Services.DAO;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Menus;
 using ColorVision.UI.Views;
+using ColorVision.Util.Interfaces;
 using Panuon.WPF.UI;
 using System;
 using System.ComponentModel;
@@ -12,8 +14,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.UI.Menus;
-using ColorVision.Services.DAO;
 
 
 namespace ColorVision.Services.Flow

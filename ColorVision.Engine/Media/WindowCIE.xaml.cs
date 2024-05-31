@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using System;
 using ColorVision.Util.Draw.Special;
 
-namespace ColorVision.Media
+namespace ColorVision.Engine.Media
 {
 
     public class CIEColorConverter

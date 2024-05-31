@@ -4,7 +4,7 @@ using ColorVision.Common.NativeMethods;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Properties;
 using ColorVision.Extension;
-using ColorVision.Media;
+using ColorVision.Engine.Media;
 using ColorVision.Net;
 using ColorVision.Solution.V.Files;
 using System.IO;

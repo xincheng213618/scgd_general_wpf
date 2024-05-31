@@ -1,12 +1,12 @@
 ﻿#pragma warning disable CS8602
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
+using ColorVision.Engine.Templates.POI.Validate;
 using ColorVision.Services;
 using ColorVision.Services.DAO;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;
 using ColorVision.Services.Flow;
-using ColorVision.Services.Templates.POI.Validate;
 using CVCommCore;
 using FlowEngineLib;
 using log4net;

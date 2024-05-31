@@ -2,7 +2,7 @@
 using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Media;
+using ColorVision.Engine.Media;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Export;

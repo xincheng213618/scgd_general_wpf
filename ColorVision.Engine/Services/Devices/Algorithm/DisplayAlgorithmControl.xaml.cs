@@ -1,6 +1,8 @@
 ﻿#pragma warning disable CS8604,CS0168,CS8629,CA1822,CS8602
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Net;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Services.Devices.Algorithm.Templates;
@@ -9,7 +11,6 @@ using ColorVision.Services.Devices.Calibration;
 using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.Msg;
 using ColorVision.Services.Templates;
-using ColorVision.Services.Templates.POI;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;

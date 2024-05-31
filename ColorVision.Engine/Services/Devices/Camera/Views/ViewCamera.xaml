@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Services.Devices.Camera.Views"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
-             xmlns:cv="clr-namespace:ColorVision.Media"
+             xmlns:cv="clr-namespace:ColorVision.Engine.Media"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
              xmlns:hc="https://handyorg.github.io/handycontrol" 
              mc:Ignorable="d" 
