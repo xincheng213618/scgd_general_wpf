@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Templates.POI.Validate;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Windows;
 
 namespace ColorVision.Engine.Templates.POI
@@ -12,6 +13,31 @@ namespace ColorVision.Engine.Templates.POI
         X = 0,
         Y = 1,
         Z = 2
+    }
+    public enum RiPointTypes
+    {
+        Circle = 0,
+        Rect = 1,
+        Mask = 2,
+        Polygon =3
+    }
+
+    public enum BorderType
+    {
+        [Description("绝对值")]
+        Absolute,
+        [Description("相对值")]
+        Relative
+    }
+
+    public enum DrawingPOIPosition
+    {
+        [Description("线上")]
+        LineOn,
+        [Description("内切")]
+        Internal,
+        [Description("外切")]
+        External
     }
 
     public class POIFilter : ViewModelBase

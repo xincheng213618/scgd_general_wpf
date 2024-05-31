@@ -3,9 +3,9 @@ using ColorVision.Engine.Templates.POI.Dao;
 
 namespace ColorVision.Engine.Templates.POI
 {
-    public class PoiParamData : ISortID
+    public class PoiPoint : ISortID
     {
-        public PoiParamData(PoiDetailModel dbModel)
+        public PoiPoint(PoiDetailModel dbModel)
         {
             Id = dbModel.Id;
             Name = dbModel.Name ?? dbModel.Id.ToString();
@@ -23,7 +23,7 @@ namespace ColorVision.Engine.Templates.POI
             Tag = dbModel.ValidateId;
         }
 
-        public PoiParamData()
+        public PoiPoint()
         {
         }
 

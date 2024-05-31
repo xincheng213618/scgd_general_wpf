@@ -12,12 +12,8 @@ using System.Windows.Media;
 
 namespace ColorVision.Services.Templates.POI
 {
-    public partial class WindowFocusPoint : Window, INotifyPropertyChanged
+    public partial class WindowFocusPoint : Window
     {
-        public event PropertyChangedEventHandler? PropertyChanged;
-        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-
-
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)

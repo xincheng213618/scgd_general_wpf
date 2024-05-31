@@ -32,7 +32,7 @@ using System.Windows.Media.Imaging;
 
 namespace ColorVision.Services.Templates.POI
 {
-    public partial class WindowFocusPoint : Window, INotifyPropertyChanged
+    public partial class WindowFocusPoint : Window
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(WindowFocusPoint));
         private string TagName { get; set; } = "P_";
@@ -1098,7 +1098,7 @@ namespace ColorVision.Services.Templates.POI
                 DrawBaseAttribute drawAttributeBase = item.BaseAttribute;
                 if (drawAttributeBase is CircleAttribute circle)
                 {
-                    PoiParamData poiParamData = new()
+                    PoiPoint poiParamData = new()
                     {
                         Id = circle.Tag1 ?? -1,
                         PointType = RiPointTypes.Circle,
@@ -1113,7 +1113,7 @@ namespace ColorVision.Services.Templates.POI
                 }
                 else if (drawAttributeBase is RectangleAttribute rectangle)
                 {
-                    PoiParamData poiParamData = new()
+                    PoiPoint poiParamData = new()
                     {
                         Id = rectangle.Tag1 ??-1,
                         Name = rectangle.Name,
@@ -1580,11 +1580,6 @@ namespace ColorVision.Services.Templates.POI
             {
                 comboBox.ItemsSource = ValidateParam.CIEParams;
             }
-        }
-
-        private void MenuItem_Template(object sender, RoutedEventArgs e)
-        {
-
         }
     }
 

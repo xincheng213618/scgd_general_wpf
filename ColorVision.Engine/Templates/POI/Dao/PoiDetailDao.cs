@@ -22,7 +22,7 @@ namespace ColorVision.Engine.Templates.POI.Dao
 
         }
 
-        public PoiDetailModel(int pid, PoiParamData data)
+        public PoiDetailModel(int pid, PoiPoint data)
         {
             Id = data.Id;
             Pid = pid;
