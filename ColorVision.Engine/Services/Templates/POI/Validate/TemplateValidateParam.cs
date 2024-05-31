@@ -16,9 +16,9 @@ namespace ColorVision.Services.Templates.POI.Validate
     {
         public TemplateValidateCIEAVGParam()
         {
-            Title = "Validate.CIE.AVG";
+            Title = "Comply.CIE.AVG";
             TemplateParams = ValidateParam.CIEAVGParams;
-            Code = "Validate.CIE.AVG";
+            Code = "Comply.CIE.AVG";
             IsUserControl = true;
             ValidateControl = new ValidateControl();
         }
@@ -55,9 +55,9 @@ namespace ColorVision.Services.Templates.POI.Validate
     {
         public TemplateValidateParam()
         {
-            Title = "Validate.CIE";
+            Title = "Comply.CIE";
             TemplateParams = ValidateParam.CIEParams;
-            Code = "Validate.CIE";
+            Code = "Comply.CIE";
             IsUserControl = true;
             ValidateControl = new ValidateControl();
         }
