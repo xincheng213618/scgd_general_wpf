@@ -111,6 +111,12 @@ namespace ColorVision.Engine.Templates.POI.Validate
 
         }
 
+        public override bool Import()
+        {
+            MessageBox.Show(Application.Current.GetActiveWindow(), $"暂不支持模板{Code}的导入", "ColorVision");
+            return false;
+        }
+
         public override void Create(string templateName)
         {
             ValidateTemplateMasterModel modMaster = new ValidateTemplateMasterModel() { Code = Code, Name = templateName, TenantId = UserConfig.Instance.TenantId };
