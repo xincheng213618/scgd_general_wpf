@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 
-namespace ColorVision.MySql.ORM
+namespace ColorVision.Engine.MySql.ORM
 {
     public class BaseTableDao<T> : BaseDao where T : IPKModel
     {

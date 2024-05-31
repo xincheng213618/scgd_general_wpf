@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.MySql
+namespace ColorVision.Engine.MySql
 {
     public class MySqlInitializer : IInitializer
     {

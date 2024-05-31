@@ -3,7 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using System.Windows;
 
-namespace ColorVision.MySql
+namespace ColorVision.Engine.MySql
 {
     public class MysqlWizardStep : IWizardStep
     {

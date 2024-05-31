@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Data;
 
-namespace ColorVision.MySql.ORM
+namespace ColorVision.Engine.MySql.ORM
 {
     public class BaseDao1 : BaseDao
     {

@@ -1,4 +1,4 @@
-﻿using ColorVision.MySql.ORM;
+﻿using ColorVision.Engine.MySql.ORM;
 using System.Data;
 
 namespace ColorVision.Services.Devices.Algorithm.Dao

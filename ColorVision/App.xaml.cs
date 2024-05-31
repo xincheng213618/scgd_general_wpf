@@ -12,7 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Windows;
-using ColorVision.MySql;
+using ColorVision.Engine.MySql;
 using System.Threading.Tasks;
 
 [assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]

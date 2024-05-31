@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 
-namespace ColorVision.MySql.ORM
+namespace ColorVision.Engine.MySql.ORM
 {
     /// <summary>
     /// 因为项目中本身包含Service,所以这里取消Service层的设置，直接从Dao层

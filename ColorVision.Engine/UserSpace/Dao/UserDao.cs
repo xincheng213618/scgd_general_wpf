@@ -1,6 +1,6 @@
 ﻿using System;
-using ColorVision.MySql;
-using ColorVision.MySql.ORM;
+using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
 using log4net;
 using MySql.Data.MySqlClient;
 

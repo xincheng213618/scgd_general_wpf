@@ -1,4 +1,4 @@
-﻿namespace ColorVision.Power
+﻿namespace ColorVision.Powers
 {
     public class PowerConfig
     {
