@@ -9,7 +9,6 @@ namespace ColorVision.Engine
 {
     public class ExportCameraLog : IMenuItem
     {
-
         public string? OwnerGuid => "ServiceLog";
 
         public string? GuidId => "CameraLog";

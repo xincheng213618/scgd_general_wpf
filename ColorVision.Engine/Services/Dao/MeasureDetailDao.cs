@@ -14,6 +14,7 @@ namespace ColorVision.Services.Dao
         public bool IsEnable { get; set; } = true;
         public bool IsDelete { get; set; }
     }
+
     public class MeasureDetailDao : BaseDaoMaster<MeasureDetailModel>
     {
         public MeasureDetailDao() : base("v_scgd_measure_template_detail", "t_scgd_measure_template_detail", "id", true)
