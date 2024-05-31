@@ -5,19 +5,19 @@ using ColorVision.Engine.Properties;
 using ColorVision.UI.Menus;
 using System.Windows;
 
-namespace ColorVision.Engine
+namespace ColorVision.Engine.UIExport.MenuExports
 {
-    public class ExportSpectrometerLog : IMenuItem
+    public class ExportRCServiceLog : IMenuItem
     {
 
         public string? OwnerGuid => "ServiceLog";
 
-        public string? GuidId => "SpectrometerLog";
+        public string? GuidId => "RCServiceLog";
 
         public int Order => 1;
         public Visibility Visibility => Visibility.Visible;
 
-        public string? Header => Resources.SpectrometerLog;
+        public string? Header => Resources.RCServiceLog;
 
         public string? InputGestureText { get; }
 
@@ -27,7 +27,7 @@ namespace ColorVision.Engine
 
         private static void Execute()
         {
-            PlatformHelper.OpenFolder("http://localhost:8086/system/device/Spectrum/log");
+            PlatformHelper.OpenFolder("http://localhost:8080/system/log");
         }
     }
 }

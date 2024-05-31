@@ -7,7 +7,7 @@ using MQTTMessageLib.FileServer;
 using System;
 using System.Windows;
 
-namespace ColorVision.Engine
+namespace ColorVision.Engine.UIExport.SolutionExports
 {
     public class CVRawFileHandler : IFileHandler
     {
@@ -33,7 +33,8 @@ namespace ColorVision.Engine
             window.Show();
             if (Application.Current.MainWindow != window)
             {
-                window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() => {
+                window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
+                {
                     imageView.ToolBarTop.ClearImage();
                 }));
             }
@@ -53,7 +54,7 @@ namespace ColorVision.Engine
         {
             ImageView imageView = new();
             CVFileUtil.ReadCVRaw(filePath, out CVCIEFile fileInfo);
-            Window window = new() { Title = Properties.Resources.QuickPreview};
+            Window window = new() { Title = Properties.Resources.QuickPreview };
             if (Application.Current.MainWindow != window)
             {
                 window.Owner = Application.Current.GetActiveWindow();
@@ -63,7 +64,8 @@ namespace ColorVision.Engine
             window.Show();
             if (Application.Current.MainWindow != window)
             {
-                window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() => {
+                window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
+                {
                     imageView.ToolBarTop.ClearImage();
                 }));
             }

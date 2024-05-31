@@ -26,7 +26,6 @@ namespace ColorVision
         public Visibility Visibility => Visibility.Visible;
     }
 
-
     /// <summary>
     /// PluginManagerWindow.xaml 的交互逻辑
     /// </summary>

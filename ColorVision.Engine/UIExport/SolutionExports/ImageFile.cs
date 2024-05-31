@@ -10,16 +10,16 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Engine
+namespace ColorVision.Engine.UIExport.SolutionExports
 {
-    public class ImageFile : ViewModelBase,IFile
+    public class ImageFile : ViewModelBase, IFile
     {
         public ImageFile() { }
         public FileInfo FileInfo { get; set; }
         public ContextMenu ContextMenu { get; set; }
         public RelayCommand AttributesCommand { get; set; }
         public string Extension { get => ".jpg|.png|.jpeg|.tif|.bmp"; }
-        public ImageFile(FileInfo fileInfo) 
+        public ImageFile(FileInfo fileInfo)
         {
             FileInfo = fileInfo;
             Name = FileInfo.Name;
@@ -40,7 +40,7 @@ namespace ColorVision.Engine
 
         public void Copy()
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
 
         public void Delete()
@@ -66,14 +66,14 @@ namespace ColorVision.Engine
         public async Task<Task> RunAsync(ImageView imageView)
         {
             await Task.Delay(100);
-            imageView.OpenImage(FileInfo.FullName); 
+            imageView.OpenImage(FileInfo.FullName);
             return Task.CompletedTask;
         }
 
 
         public void ReName()
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
         }
     }
 

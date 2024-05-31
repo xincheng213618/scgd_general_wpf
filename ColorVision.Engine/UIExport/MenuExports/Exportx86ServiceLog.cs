@@ -5,19 +5,19 @@ using ColorVision.Engine.Properties;
 using ColorVision.UI.Menus;
 using System.Windows;
 
-namespace ColorVision.Engine
+namespace ColorVision.Engine.UIExport.MenuExports
 {
-    public class ExportRCServiceLog : IMenuItem
+    public class Exportx86ServiceLog : IMenuItem
     {
 
         public string? OwnerGuid => "ServiceLog";
 
-        public string? GuidId => "RCServiceLog";
+        public string? GuidId => "x86ServiceLog";
 
         public int Order => 1;
         public Visibility Visibility => Visibility.Visible;
 
-        public string? Header => Resources.RCServiceLog;
+        public string? Header => Resources.CameraLog;
 
         public string? InputGestureText { get; }
 
@@ -27,7 +27,7 @@ namespace ColorVision.Engine
 
         private static void Execute()
         {
-            PlatformHelper.OpenFolder("http://localhost:8080/system/log");
+            PlatformHelper.OpenFolder("http://localhost:8086/system/log");
         }
     }
 }

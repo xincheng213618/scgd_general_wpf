@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using ColorVision.UI.Menus;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -19,6 +20,13 @@ namespace ColorVision.Engine
         public MainWindow()
         {
             InitializeComponent();
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+
+            MenuManager.GetInstance().Menu = Menu1;
+
         }
     }
 }

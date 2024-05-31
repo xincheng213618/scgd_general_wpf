@@ -5,7 +5,7 @@ using ColorVision.Engine.Properties;
 using ColorVision.UI.Menus;
 using System.Windows;
 
-namespace ColorVision.Engine
+namespace ColorVision.Engine.UIExport.MenuExports
 {
     public class ExportCameraLog : IMenuItem
     {
