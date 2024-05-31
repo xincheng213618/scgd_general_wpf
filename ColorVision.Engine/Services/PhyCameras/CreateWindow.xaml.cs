@@ -31,6 +31,9 @@ namespace ColorVision.Services.PhyCameras
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            DataContext = this;
+
+
             CreateConfig = new ConfigPhyCamera
             {
                 CameraType = CameraType.LV_Q,
@@ -38,6 +41,8 @@ namespace ColorVision.Services.PhyCameras
                 ImageBpp = ImageBpp.bpp8,
                 Channel = ImageChannel.One,
             };
+            var Config = CreateConfig;
+
 
             var list = SysResourceDao.Instance.GetAllEmptyCameraId();
 
@@ -46,7 +51,8 @@ namespace ColorVision.Services.PhyCameras
                 CameraCode.ItemsSource = list;
                 CameraCode.DisplayMemberPath = "Code";
                 CameraCode.SelectedValuePath = "Name";
-
+                CameraCode.SelectedIndex = 0;
+                Config.Code = list[0].Code ??string.Empty;
                 CameraCode.SelectionChanged += (s, e) =>
                 {
                     if (CameraCode.SelectedIndex >= 0)
@@ -58,10 +64,6 @@ namespace ColorVision.Services.PhyCameras
                 MessageBox.Show("找不到可以添加的相机");
             }
 
-
-            DataContext = this;
-
-            var Config = CreateConfig;
 
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());

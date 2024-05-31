@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.MySql;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
+using ColorVision.Services.Devices.Camera;
 using ColorVision.Services.PhyCameras.Configs;
 using ColorVision.Services.PhyCameras.Dao;
 using ColorVision.Services.Types;
@@ -41,6 +42,16 @@ namespace ColorVision.Services.PhyCameras
 
         public void Create()
         {
+            if (SysResourceDao.Instance.GetAllEmptyCameraId().Count <= 0)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到未创建的相机,请插上相机后在尝试",nameof(PhyCameraManager));
+                foreach (var item in ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>())
+                {
+                    item.RefreshDeviceId();
+                }
+                return;
+            }
+
             var createWindow = new CreateWindow(this)
             {
                 Owner = Application.Current.GetActiveWindow(),
