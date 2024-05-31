@@ -3,8 +3,14 @@ using ColorVision.Common.Utilities;
 using ColorVision.MySql;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
+using ColorVision.Services.PhyCameras.Configs;
 using ColorVision.Services.PhyCameras.Dao;
+using ColorVision.Services.RC;
 using ColorVision.Services.Types;
+using ColorVision.UserSpace;
+using cvColorVision;
+using CVCommCore;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -90,6 +96,27 @@ namespace ColorVision.Services.PhyCameras
                                     sysDictionaryModel.Code = cameraLicenseModel.MacAddress;
                                     sysDictionaryModel.Type = (int)ServiceTypes.PhyCamera;
                                     SysDictionaryDao.Instance.Save(sysDictionaryModel);
+
+                                    SysResourceModel? sysResourceModel = SysResourceDao.Instance.GetByCode(cameraLicenseModel.MacAddress);
+                                    if (sysResourceModel == null)
+                                        sysResourceModel = new SysResourceModel("", cameraLicenseModel.MacAddress, (int)PhysicalResourceType.PhyCamera, UserConfig.Instance.TenantId);
+
+                                    var CreateConfig = new ConfigPhyCamera
+                                    {
+                                        CameraType = CameraType.LV_Q,
+                                        TakeImageMode = TakeImageMode.Measure_Normal,
+                                        ImageBpp = ImageBpp.bpp8,
+                                        Channel = ImageChannel.One,
+                                    };
+
+                                    sysResourceModel.Value = JsonConvert.SerializeObject(CreateConfig);
+                                    int ret1 = SysResourceDao.Instance.Save(sysResourceModel);
+                                    if (ret1 < 0)
+                                    {
+                                        MessageBox.Show(Application.Current.GetActiveWindow(), "不允许创建没有Code的相机", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);
+                                    }
+                                    this.LoadPhyCamera();
+
                                 }
                             }
                         }
@@ -120,9 +147,21 @@ namespace ColorVision.Services.PhyCameras
                             sysDictionaryModel = new SysResourceModel();
                             sysDictionaryModel.Code = cameraLicenseModel.MacAddress;
                             sysDictionaryModel.Type = (int)ServiceTypes.PhyCamera;
+
+                            var CreateConfig = new ConfigPhyCamera
+                            {
+                                CameraType = CameraType.LV_Q,
+                                TakeImageMode = TakeImageMode.Measure_Normal,
+                                ImageBpp = ImageBpp.bpp8,
+                                Channel = ImageChannel.One,
+                            };
+
+                            sysDictionaryModel.Value = JsonConvert.SerializeObject(CreateConfig);
+
                             ret = SysResourceDao.Instance.Save(sysDictionaryModel);
                             MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{cameraLicenseModel.MacAddress} {(ret == -1 ? "添加物理相机失败" : "添加物理相机成功")}", "ColorVision");
                         }
+                        this.LoadPhyCamera();
                     }
                     else
                     {

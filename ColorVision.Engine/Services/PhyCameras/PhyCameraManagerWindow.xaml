@@ -31,7 +31,7 @@
                     <TreeView.Resources>
                         <HierarchicalDataTemplate DataType="{x:Type local:PhyCamera}">
                             <StackPanel >
-                                <TextBlock Text="{Binding Name}"/>
+                                <TextBlock Text="{Binding Id}"/>
                             </StackPanel>
                         </HierarchicalDataTemplate>
                     </TreeView.Resources>
