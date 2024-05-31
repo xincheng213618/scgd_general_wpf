@@ -4,6 +4,7 @@ using ColorVision.Services.Dao;
 using ColorVision.Services.Templates.POI.Validate.Dao;
 using ColorVision.UserSpace;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -23,6 +24,32 @@ namespace ColorVision.Services.Templates.POI.Validate
         }
     }
 
+    public class TemplateValidateCIEVARParam : TemplateValidateParam
+    {
+        public static ObservableCollection<TemplateModel<ValidateParam>> CIEVARParams { get; set; } = new ObservableCollection<TemplateModel<ValidateParam>>();
+        public TemplateValidateCIEVARParam()
+        {
+            Title = "Comply.CIE.VAR";
+            TemplateParams = CIEVARParams;
+            Code = "Comply.CIE.VAR";
+            IsUserControl = true;
+            ValidateControl = new ValidateControl();
+        }
+    }
+
+
+    public class TemplateValidateCIESTDEVParam : TemplateValidateParam
+    {
+        public static ObservableCollection<TemplateModel<ValidateParam>> CIESTDEVParams { get; set; } = new ObservableCollection<TemplateModel<ValidateParam>>();
+        public TemplateValidateCIESTDEVParam()
+        {
+            Title = "Comply.CIE.STDEV";
+            TemplateParams = CIESTDEVParams;
+            Code = "Comply.CIE.STDEV";
+            IsUserControl = true;
+            ValidateControl = new ValidateControl();
+        }
+    }
 
     public class TemplateValidateParam : ITemplate<ValidateParam>, IITemplateLoad
     {

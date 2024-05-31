@@ -64,7 +64,6 @@ namespace ColorVision.Services.PhyCameras
                 MessageBox.Show("找不到可以添加的相机");
             }
 
-
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
 

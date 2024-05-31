@@ -120,7 +120,6 @@ namespace ColorVision.Services.ShowPage.Dao
                  GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilities);
         }
 
-
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)

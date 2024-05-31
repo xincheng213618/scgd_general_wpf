@@ -61,4 +61,43 @@ namespace ColorVision.Services.Templates.POI.Validate
             new WindowTemplate(new TemplateValidateCIEAVGParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
     }
+
+    public class ExportValidueCIEVAR : IMenuItem
+    {
+        public string OwnerGuid => "Validue";
+
+        public string GuidId => "ValidueCIEVAR";
+        public int Order => 2;
+        public Visibility Visibility => Visibility.Visible;
+        public string Header => "CIE方差合规";
+
+        public string InputGestureText { get; }
+
+        public object Icon { get; }
+
+        public RelayCommand Command => new RelayCommand(a =>
+        {
+            new WindowTemplate(new TemplateValidateCIEVARParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        });
+    }
+
+
+    public class ExportValidueCIESTDEV : IMenuItem
+    {
+        public string OwnerGuid => "Validue";
+
+        public string GuidId => "ValidueCIESTDEV";
+        public int Order => 2;
+        public Visibility Visibility => Visibility.Visible;
+        public string Header => "CIE标准差合规";
+
+        public string InputGestureText { get; }
+
+        public object Icon { get; }
+
+        public RelayCommand Command => new RelayCommand(a =>
+        {
+            new WindowTemplate(new TemplateValidateCIESTDEVParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        });
+    }
 }
