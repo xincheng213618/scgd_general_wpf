@@ -33,6 +33,11 @@ namespace ColorVision
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
+            if (!UI.ACE.License.Check())
+            {
+                UI.ACE.License.Create();
+            }
+
             bool IsDebug = Debugger.IsAttached;
             var parser = ArgumentParser.GetInstance();
 
