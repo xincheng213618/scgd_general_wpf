@@ -228,11 +228,11 @@ namespace ColorVision
         public static async Task CheckUpdate()
         {
             await Task.Delay(1000);
-            await Application.Current.Dispatcher.InvokeAsync(() =>
+            await Application.Current.Dispatcher.InvokeAsync(async () =>
             {
                 AutoUpdater.DeleteAllCachedUpdateFiles();
                 AutoUpdater autoUpdater = AutoUpdater.GetInstance();
-                autoUpdater.CheckAndUpdate(false);
+                await autoUpdater.CheckAndUpdate(false);
             });
         }
 

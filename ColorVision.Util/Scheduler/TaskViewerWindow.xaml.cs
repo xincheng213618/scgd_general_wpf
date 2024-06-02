@@ -1,7 +1,5 @@
 ﻿#pragma warning disable CS8604
-using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI.Menus;
 using Quartz;
 using Quartz.Impl;
 using Quartz.Impl.Matchers;
@@ -12,41 +10,22 @@ using System.Windows;
 
 namespace ColorVision.Scheduler
 {
-
-    public class AboutMsgExport :  IMenuItem
-    {
-        public string? OwnerGuid => "Help";
-        public string? GuidId => "TaskViewerWindow";
-
-        public int Order => 1000;
-
-        public Visibility Visibility => Visibility.Visible;
-
-        public string? Header => "TaskViewerWindow";
-
-        public string? InputGestureText => "Ctrl + F1";
-
-        public object? Icon => null;
-
-        public RelayCommand Command => new(A => new TaskViewerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
-
-    }
-
-
     /// <summary>
     /// TaskViewerWindow.xaml 的交互逻辑
     /// </summary>
     public partial class TaskViewerWindow : Window
     {
-        private ObservableCollection<SchedulerInfo> _taskInfos;
+        public ObservableCollection<SchedulerInfo> TaskInfos { get; set; }
+
+        public static QuartzSchedulerManager QuartzSchedulerManager => QuartzSchedulerManager.GetInstance();
 
         public TaskViewerWindow()
         {
             InitializeComponent();
-            _taskInfos = new ObservableCollection<SchedulerInfo>();
-            ListViewTask.ItemsSource = _taskInfos;
+            this.DataContext = QuartzSchedulerManager;
+           TaskInfos = QuartzSchedulerManager.GetInstance().TaskInfos;
+            ListViewTask.ItemsSource = TaskInfos;
             LoadTasks();
-            TaskComboBox.ItemsSource = QuartzSchedulerManager.GetInstance().Jobs;
             // 订阅监听器事件
             var listener = QuartzSchedulerManager.GetInstance().Listener;
             if (listener != null)
@@ -79,14 +58,24 @@ namespace ColorVision.Scheduler
 
                 foreach (var trigger in triggers)
                 {
-                    var taskInfo = new SchedulerInfo
+                    var existingTaskInfo = TaskInfos.FirstOrDefault(t => t.JobName == jobKey.Name && t.GroupName == jobKey.Group);
+                    if (existingTaskInfo != null)
                     {
-                        JobName = jobKey.Name,
-                        GroupName = jobKey.Group,
-                        NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString() ?? "N/A",
-                        PreviousFireTime = trigger.GetPreviousFireTimeUtc()?.ToLocalTime().ToString() ?? "N/A"
-                    };
-                    _taskInfos.Add(taskInfo);
+                        existingTaskInfo.NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
+                        existingTaskInfo.PreviousFireTime = trigger.GetPreviousFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
+                    }
+                    else
+                    {
+                        var taskInfo = new SchedulerInfo
+                        {
+                            JobName = jobKey.Name,
+                            GroupName = jobKey.Group,
+                            NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A",
+                            PreviousFireTime = trigger.GetPreviousFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A"
+                        };
+                        TaskInfos.Add(taskInfo);
+                    }
+
                 }
             }
         }
@@ -102,11 +91,11 @@ namespace ColorVision.Scheduler
                 {
                     JobName = jobKey.Name,
                     GroupName = jobKey.Group,
-                    NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString() ?? "N/A",
-                    PreviousFireTime = trigger.GetPreviousFireTimeUtc()?.ToLocalTime().ToString() ?? "N/A"
+                    NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A",
+                    PreviousFireTime = trigger.GetPreviousFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A"
                 };
 
-                var existingTaskInfo = _taskInfos.FirstOrDefault(t => t.JobName == updatedTaskInfo.JobName && t.GroupName == updatedTaskInfo.GroupName);
+                var existingTaskInfo = TaskInfos.FirstOrDefault(t => t.JobName == updatedTaskInfo.JobName && t.GroupName == updatedTaskInfo.GroupName);
 
                 if (existingTaskInfo != null)
                 {
@@ -117,7 +106,7 @@ namespace ColorVision.Scheduler
                 else
                 {
                     // 添加新任务信息
-                    _taskInfos.Add(updatedTaskInfo);
+                    TaskInfos.Add(updatedTaskInfo);
                 }
             }
         }
@@ -125,17 +114,8 @@ namespace ColorVision.Scheduler
 
         private void CreateTaskButton_Click(object sender, RoutedEventArgs e)
         {
-            var jobName = JobNameTextBox.Text;
-            var groupName = GroupNameTextBox.Text;
-            var cronExpression = CronExpressionTextBox.Text;
-
-            if (string.IsNullOrWhiteSpace(jobName) || string.IsNullOrWhiteSpace(groupName) || string.IsNullOrWhiteSpace(cronExpression))
-            {
-                MessageBox.Show("Please fill in all fields.");
-                return;
-            }
-            var taskInfo = QuartzSchedulerManager.GetInstance().CreateJob(jobName, groupName, cronExpression, TaskComboBox.Text);
-            _taskInfos.Add(taskInfo.Result);
+            CreateTask createTask = new CreateTask() { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation =WindowStartupLocation.CenterOwner };
+            createTask.ShowDialog();
         }
     }
 }

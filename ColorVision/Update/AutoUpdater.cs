@@ -148,7 +148,7 @@ namespace ColorVision.Update
         }
 
         // 调用函数以删除所有更新文件
-        public async void CheckAndUpdate(bool detection = true)
+        public async Task CheckAndUpdate(bool detection = true)
         {
             // 获取本地版本
             try

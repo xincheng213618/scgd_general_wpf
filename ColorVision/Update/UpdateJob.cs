@@ -1,7 +1,9 @@
 ﻿#pragma warning disable CS8602
+using ColorVision.Scheduler;
 using Quartz;
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -11,12 +13,22 @@ namespace ColorVision.Update
     {
         public Task Execute(IJobExecutionContext context)
         {
-            // 定时任务逻辑
+            var schedulerInfo = QuartzSchedulerManager.GetInstance().TaskInfos.First(x => x.JobName == context.JobDetail.Key.Name && x.GroupName == context.JobDetail.Key.Group);
+
             Application.Current.Dispatcher.Invoke(() =>
+            {
+                schedulerInfo.Status = SchedulerStatus.Running;
+            });
+            // 定时任务逻辑
+            Application.Current.Dispatcher.Invoke(async () =>
             {
                 AutoUpdater.DeleteAllCachedUpdateFiles();
                 AutoUpdater autoUpdater = AutoUpdater.GetInstance();
-                autoUpdater.CheckAndUpdate(true);
+                await autoUpdater.CheckAndUpdate(false);
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    schedulerInfo.Status = SchedulerStatus.Ready;
+                });
             });
             return Task.CompletedTask;
         }

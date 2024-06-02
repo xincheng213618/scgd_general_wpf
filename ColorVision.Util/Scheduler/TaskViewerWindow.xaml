@@ -5,19 +5,23 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Scheduler"
         mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:QuartzSchedulerManager}"
         Title="TaskViewerWindow" Height="450" Width="800">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <StackPanel Orientation="Horizontal">
-            <TextBox Name="JobNameTextBox" Width="100" Margin="5" />
-            <TextBox Name="GroupNameTextBox" Width="100" Margin="5" />
-            <TextBox Name="CronExpressionTextBox" Width="200" Margin="5" />
-            <ComboBox x:Name="TaskComboBox"  DisplayMemberPath="Key" SelectedValuePath="Value" />
-            <Button Name="CreateTaskButton" Content="Create Task" Click="CreateTaskButton_Click" Margin="5"/>
-        </StackPanel>
+        <DockPanel>
+            <Button DockPanel.Dock="Right" Content="Create Task" Click="CreateTaskButton_Click" Margin="5"/>
+            <StackPanel Orientation="Horizontal">
+                <Button  Content="Start" Command="{Binding StartCommand}"  Margin="5"/>
+                <Button  Content="PauseAll" Command="{Binding PauseAllCommand}"  Margin="5"/>
+                <Button  Content="ResumeAll" Command="{Binding ResumeAllCommand}"  Margin="5"/>
+                <Button  Content="Shutdown" Command="{Binding ShutdownCommand}"  Margin="5"/>
+            </StackPanel>
+        </DockPanel>
+
         <ListView x:Name="ListViewTask" Grid.Row="1" >
             <ListView.View>
                 <GridView>
@@ -32,6 +36,13 @@
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <TextBlock Text="{Binding JobName}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn Header="CronExpression">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
+                                <TextBlock Text="{Binding CronExpression}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
@@ -56,12 +67,13 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="PreviousFireTime">
+                    <GridViewColumn Header="Command">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <StackPanel Orientation="Horizontal">
                                     <Button Content="Stop" Command="{Binding StopCommand}"/>
-                                    <Button Content="Remove" Command="{Binding RemoveCommand}"/>
+                                    <Button Content="Resume" Command="{Binding ResumeJobCommand}"/>
+                                    <Button Content="Delete" Command="{Binding DeleteCommand}"/>
                                 </StackPanel>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>

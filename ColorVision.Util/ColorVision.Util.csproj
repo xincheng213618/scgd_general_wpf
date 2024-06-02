@@ -30,6 +30,9 @@
 	    <AutoGen>True</AutoGen>
 	    <DependentUpon>Resources.resx</DependentUpon>
 	  </Compile>
+	  <Compile Update="Scheduler\CreateTask.xaml.cs">
+	    <SubType>Code</SubType>
+	  </Compile>
 	  <Compile Update="Themes\Contorls\Upload.xaml.cs">
 	    <SubType>Code</SubType>
 	  </Compile>
