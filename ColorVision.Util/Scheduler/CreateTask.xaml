@@ -28,22 +28,25 @@
         <Border Grid.Row="0" Background ="{DynamicResource RegionBrush}" CornerRadius="4">
             <StackPanel>
                 <DockPanel Margin="2">
-                    <TextBlock Text="Task" Width="100" />
+                    <TextBlock Text="任务" Width="100" />
                     <ComboBox x:Name="TaskComboBox"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding JobType}"  SelectionChanged="TaskComboBox_SelectionChanged"/>
                 </DockPanel>
                 <DockPanel Margin="2" >
-                    <TextBlock Text="JobName" MinWidth="100" />
-                    <TextBox Margin="5" Text="{Binding JobName}" />
+                    <TextBlock Text="任务名称" MinWidth="100" />
+                    <TextBox  Text="{Binding JobName}" />
                 </DockPanel>
                 <DockPanel Margin="2" >
                     <TextBlock Text="GroupName" MinWidth="100" />
-                    <TextBox  Margin="5" Text="{Binding GroupName}"  />
+                    <TextBox  Text="{Binding GroupName}"  />
                 </DockPanel>
                 <DockPanel Margin="2" >
                     <TextBlock Text="CronExpression" Width="100" />
-                    <TextBox Margin="5"  Text="{Binding CronExpression}"/>
+                    <TextBox  Text="{Binding CronExpression}"/>
                 </DockPanel>
-
+                <DockPanel Margin="2" >
+                    <TextBlock Text="次数" Width="100" />
+                    <TextBox  Text="{Binding MaxCount}"/>
+                </DockPanel>
             </StackPanel>
         </Border>
 

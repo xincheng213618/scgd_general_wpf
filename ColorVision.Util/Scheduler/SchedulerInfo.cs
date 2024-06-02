@@ -13,14 +13,14 @@ namespace ColorVision.Scheduler
 
     public class SchedulerInfo: ViewModelBase
     {
-        public RelayCommand StopCommand { get; set; }
+        public RelayCommand PausedCommand { get; set; }
         public RelayCommand DeleteCommand { get; set; }
         public RelayCommand RunCommand { get; set; }
         public RelayCommand ResumeJobCommand { get; set; }
 
         public SchedulerInfo()
         {
-            StopCommand = new RelayCommand(ExecuteStopCommand,a => Status != SchedulerStatus.Paused);
+            PausedCommand = new RelayCommand(ExecuteStopCommand,a => Status != SchedulerStatus.Paused);
             ResumeJobCommand = new RelayCommand(ExecuteResumeJobCommand, a => Status == SchedulerStatus.Paused);
             DeleteCommand = new RelayCommand(ExecuteDeleteCommand, a => true);
         }
@@ -47,6 +47,13 @@ namespace ColorVision.Scheduler
 
         public SchedulerStatus Status { get => _Status; set { _Status = value; NotifyPropertyChanged(); } }
         private SchedulerStatus _Status;
+
+        public int MaxCount { get => _MaxCount; set { _MaxCount = value; NotifyPropertyChanged(); } }
+        private int _MaxCount = 1;
+
+        public int RunCount { get => _RunCount; set { _RunCount = value; NotifyPropertyChanged(); } }
+        private int _RunCount = 0;
+
 
         public string JobName { get => _JobName; set { _JobName = value; NotifyPropertyChanged(); } }
         private string _JobName;

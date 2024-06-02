@@ -23,7 +23,7 @@ namespace ColorVision.Scheduler
         {
             InitializeComponent();
             this.DataContext = QuartzSchedulerManager;
-           TaskInfos = QuartzSchedulerManager.GetInstance().TaskInfos;
+            TaskInfos = QuartzSchedulerManager.GetInstance().TaskInfos;
             ListViewTask.ItemsSource = TaskInfos;
             LoadTasks();
             // 订阅监听器事件
@@ -49,7 +49,7 @@ namespace ColorVision.Scheduler
         }
         private async Task GetScheduledTasks()
         {
-            var scheduler = await StdSchedulerFactory.GetDefaultScheduler();
+            var scheduler = QuartzSchedulerManager.Scheduler;
             var jobKeys = await scheduler.GetJobKeys(GroupMatcher<JobKey>.AnyGroup());
 
             foreach (var jobKey in jobKeys)
