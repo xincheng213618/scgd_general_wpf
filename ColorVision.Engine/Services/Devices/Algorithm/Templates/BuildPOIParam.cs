@@ -1,9 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.MySql;
+using ColorVision.Engine.MySql;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Templates;
-using ColorVision.Services.Templates.POI;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

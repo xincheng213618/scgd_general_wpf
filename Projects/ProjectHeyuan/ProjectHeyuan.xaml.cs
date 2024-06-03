@@ -1,26 +1,26 @@
 ﻿#pragma warning disable CS8602
 using ColorVision.Common.Utilities;
-using ColorVision.MQTT;
+using ColorVision.Engine.MQTT;
+using ColorVision.Engine.Templates.POI.Validate;
 using ColorVision.Services;
 using ColorVision.Services.DAO;
 using ColorVision.Services.Devices.Algorithm.Dao;
 using ColorVision.Services.Devices.Algorithm.Views;
 using ColorVision.Services.Flow;
-using ColorVision.Services.Templates.POI.Validate;
-using ColorVision.Solution;
+using CVCommCore;
 using FlowEngineLib;
-using NPOI.SS.Formula.Functions;
+using log4net;
 using Panuon.WPF.UI;
-using System;
-using System.Collections.Generic;
+using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO.Ports;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media;
 
-namespace ColorVision.Projects
+namespace ColorVision.Projects.ProjectHeyuan
 {
 
     public sealed class ConnectConverter : IValueConverter
@@ -40,11 +40,30 @@ namespace ColorVision.Projects
         }
     }
 
+
+    public sealed class ColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool isconnect)
+            {
+                return isconnect ? Brushes.Blue : Brushes.Red;
+            }
+            return Brushes.Black; ;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotSupportedException("Converting from a string to a memory size is not supported.");
+        }
+    }
+
     /// <summary>
     /// ProjectHeyuanWindow.xaml 的交互逻辑
     /// </summary>
     public partial class ProjectHeyuanWindow : Window
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(ProjectHeyuanWindow));
         public ProjectHeyuanWindow()
         {
             InitializeComponent();
@@ -53,21 +72,40 @@ namespace ColorVision.Projects
         public ObservableCollection<TempResult> Settings { get; set; } = new ObservableCollection<TempResult>();
         public ObservableCollection<TempResult> Results { get; set; } = new ObservableCollection<TempResult>();
 
+
+        private FlowEngineLib.FlowEngineControl flowEngine;
         private void Window_Initialized(object sender, EventArgs e)
         {
-            ListViewSetting.ItemsSource = Settings;
-            Results.Add(new TempResult() { Name = "White" });
-            Results.Add(new TempResult() { Name = "Blue" });
-            Results.Add(new TempResult() { Name = "Orange" });
-            Results.Add(new TempResult() { Name = "Red" });
-            ListViewResult.ItemsSource = Results;
+            MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
+            FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
+            flowEngine = new FlowEngineControl(false);
 
+            STNodeEditor STNodeEditorMain = new STNodeEditor();
+            STNodeEditorMain.LoadAssembly("FlowEngineLib.dll");
+            flowEngine.AttachNodeEditor(STNodeEditorMain);
+
+            ListViewSetting.ItemsSource = Settings;
+            ListViewResult.ItemsSource = Results;
             ComboBoxSer.ItemsSource = SerialPort.GetPortNames();
             ComboBoxSer.SelectedIndex = 0;
 
             ListViewMes.ItemsSource = HYMesManager.GetInstance().SerialMsgs;
             FlowTemplate.ItemsSource = FlowParam.Params;
-            ValidateTemplate.ItemsSource = ValidateParam.CIEParams;
+            FlowTemplate.SelectionChanged += (s, e) =>
+            {
+                if (FlowTemplate.SelectedIndex > -1)
+                {
+                    var tokens = ServiceManager.GetInstance().ServiceTokens;
+                    flowEngine.LoadFromBase64(FlowParam.Params[FlowTemplate.SelectedIndex].Value.DataBase64, tokens);
+                }
+            };
+
+            List<string> strings = new List<string>() { "White", "Blue", "Red", "Orange" };
+            foreach (var item in strings)
+            {
+                Settings.Add(new TempResult() { Name = item });
+            }
+
             this.DataContext = HYMesManager.GetInstance();
         }
         private Services.Flow.FlowControl flowControl;
@@ -78,41 +116,134 @@ namespace ColorVision.Projects
         {
             flowControl.FlowCompleted -= FlowControl_FlowCompleted;
             handler?.Close();
-            if (sender != null)
+            if (sender is FlowControlData FlowControlData)
             {
-                FlowControlData FlowControlData = (FlowControlData)sender;
- 
                 if (FlowControlData.EventName == "Completed" || FlowControlData.EventName == "Canceled" || FlowControlData.EventName == "OverTime" || FlowControlData.EventName == "Failed")
                 {
                     if (FlowControlData.EventName == "Completed")
                     {
-                        ResultText.Text = "OK";
-                        ResultText.Foreground = Brushes.Blue;
                         Results.Clear();
                         var Batch = BatchResultMasterDao.Instance.GetByCode(FlowControlData.SerialNumber);
                         if (Batch != null)
                         {
-                            List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(Batch.Id);
+                            var resultMaster = AlgResultMasterDao.Instance.GetAllByBatchid(Batch.Id);
                             List<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new List<PoiResultCIExyuvData>();
-                            foreach (var item in POIPointResultModels)
+                            foreach (var item in resultMaster)
                             {
-                                PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(item);
-                                PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                                List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(item.Id);
+
+                                foreach (var pointResultModel in POIPointResultModels)
+                                {
+                                    PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData(pointResultModel);
+                                    PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                                }
                             }
-                            for (int i = 0; i < PoiResultCIExyuvDatas[0].ValidateSingles.Count; i++)
+
+                            Results.Clear();
+                            if (PoiResultCIExyuvDatas.Count ==4)
                             {
-                                //Results.Add(new TempResult() { Name = PoiResultCIExyuvDatas[0].ValidateSingles[i].Rule.RType.ToString(), NumSet = new NumSet() { Orange = PoiResultCIExyuvDatas[0].ValidateSingles[i].Result.ToString() } });
+                                List<string> strings = new List<string>() { "White", "Blue", "Red", "Orange" };
+                                for (int i = 0; i < PoiResultCIExyuvDatas.Count; i++)
+                                {
+                                    var poiResultCIExyuvData1 = PoiResultCIExyuvDatas[i];
+                                    TempResult tempResult1 = new TempResult() { Name = poiResultCIExyuvData1.Name };
+                                    tempResult1.X = new NumSet() { Value = (float)poiResultCIExyuvData1.x };
+                                    tempResult1.Y = new NumSet() { Value = (float)poiResultCIExyuvData1.y };
+                                    tempResult1.Lv = new NumSet() { Value = (float)poiResultCIExyuvData1.Y };
+                                    tempResult1.Dw = new NumSet() { Value = (float)poiResultCIExyuvData1.Wave };
+                                 
+                                    if (poiResultCIExyuvData1.ValidateSingles != null)
+                                    {
+                                        foreach (var item in poiResultCIExyuvData1.ValidateSingles)
+                                        {
+                                            if (item.Rule.RType == ValidateRuleType.CIE_x)
+                                            {
+                                                tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
+                                            }
+                                            if (item.Rule.RType == ValidateRuleType.CIE_y)
+                                            {
+                                                tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
+                                            }
+                                            if (item.Rule.RType == ValidateRuleType.CIE_lv)
+                                            {
+                                                tempResult1.Result = tempResult1.Result && item.Result == ValidateRuleResultType.M;
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        MessageBox.Show(Application.Current.GetActiveWindow(), $"{poiResultCIExyuvData1.Name}，没有配置校验模板", "ColorVision");
+                                    }
+
+                                    Results.Add(tempResult1);
+                                }
+                                var sortedResults = Results.OrderBy(r => strings.IndexOf(r.Name)).ToList();
+                                Results.Clear();
+                                bool IsOK = true;
+                                List<string> ngstring = new List<string>();
+                                foreach (var result in sortedResults)
+                                {
+                                    IsOK = IsOK && result.Result;
+                                    
+                                    if (!result.Result)
+                                    {
+                                        if (result.Name.Contains("White"))
+                                            ngstring.Add("errorW");
+                                        if (result.Name.Contains("Blue"))
+                                            ngstring.Add("errorB");
+                                        if (result.Name.Contains("Red"))
+                                            ngstring.Add("errorR");
+                                        if (result.Name.Contains("Orange"))
+                                            ngstring.Add("errorO");
+                                    }
+
+                                    Results.Add(result);
+                                }
+                                if (IsOK)
+                                {
+                                    ResultText.Text = "OK";
+                                    ResultText.Foreground = Brushes.Blue;
+                                    HYMesManager.GetInstance().UploadMes(Results);
+                                }
+                                else
+                                {
+                                    ResultText.Text = "Fail";
+                                    ResultText.Foreground = Brushes.Red;
+                                    HYMesManager.GetInstance().Results = Results;
+                                    HYMesManager.GetInstance().UploadNG(string.Join(",", ngstring));
+                                }
+
+                                log.Debug("mes 已经上传");
+                            }
+                            else
+                            {
+                                HYMesManager.GetInstance().UploadNG("流程结果数据错误");
+                                MessageBox.Show(Application.Current.GetActiveWindow(), "流程结果数据错误", "ColorVision");
                             }
                         }
-                        HYMesManager.GetInstance().UploadMes();
+                        else
+                        {
+                            HYMesManager.GetInstance().UploadNG("找不到批次号");
+                            MessageBox.Show(Application.Current.GetActiveWindow(), "找不到批次号", "ColorVision");
+                        }
                     }
                     else
                     {
-                        ResultText.Text =  "不合格";
-                        ResultText.Foreground =  Brushes.Red;
-                        HYMesManager.GetInstance().UploadMes();
+                        HYMesManager.GetInstance().UploadNG("流程运行失败");
+                        MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName, "ColorVision");
                     }
                 }
+                else
+                {
+                    HYMesManager.GetInstance().UploadNG("流程运行失败");
+                    MessageBox.Show(Application.Current.GetActiveWindow(), "流程运行失败" + FlowControlData.EventName, "ColorVision");
+                }
+
+            }
+            else
+            {
+                HYMesManager.GetInstance().UploadNG("流程运行异常");
+                MessageBox.Show(Application.Current.GetActiveWindow(), "1", "ColorVision");
             }
         }
 
@@ -126,10 +257,10 @@ namespace ColorVision.Projects
 
             if (FlowTemplate.SelectedValue is FlowParam flowParam)
             {
-                string startNode = FlowDisplayControl.GetInstance().View.FlowEngineControl.GetStartNodeName();
+                string startNode = flowEngine.GetStartNodeName();
                 if (!string.IsNullOrWhiteSpace(startNode))
                 {
-                    flowControl = new Services.Flow.FlowControl(MQTTControl.GetInstance(), FlowDisplayControl.GetInstance().View.FlowEngineControl);
+                    flowControl ??= new Services.Flow.FlowControl(MQTTControl.GetInstance(), flowEngine);
 
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
 
@@ -210,11 +341,8 @@ namespace ColorVision.Projects
 
         private void ValidateTemplate_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            if (ValidateTemplate.SelectedValue is ValidateParam validateParam)
+            if (sender is ComboBox comboBox && comboBox.Tag is TempResult tempResult && comboBox.SelectedValue is ValidateParam validateParam)
             {
-                Settings.Clear();
-                TempResult tempResult = new TempResult() { Name = "White"};
-
                 foreach (var item in validateParam.ValidateSingles)
                 {
                     if (item.Model.Code == "CIE_x")
@@ -229,69 +357,19 @@ namespace ColorVision.Projects
                     {
                         tempResult.Lv = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
                     }
-                }
-
-                TempResult tempResult1 = new TempResult() { Name = "Blue" };
-
-                foreach (var item in validateParam.ValidateSingles)
-                {
-                    if (item.Model.Code == "CIE_x")
+                    if (item.Model.Code == "CIE_dw")
                     {
-                        tempResult1.X = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
-                    }
-                    if (item.Model.Code == "CIE_y")
-                    {
-                        tempResult1.Y = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
-                    }
-                    if (item.Model.Code == "CIE_lv")
-                    {
-                        tempResult1.Lv = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
+                        tempResult.Dw = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
                     }
                 }
+            }
+        }
 
-                TempResult tempResult2 = new TempResult() { Name = "Red" };
-
-                foreach (var item in validateParam.ValidateSingles)
-                {
-                    if (item.Model.Code == "CIE_x")
-                    {
-                        tempResult2.X = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
-                    }
-                    if (item.Model.Code == "CIE_y")
-                    {
-                        tempResult2.Y = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
-                    }
-                    if (item.Model.Code == "CIE_lv")
-                    {
-                        tempResult2.Lv = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
-                    }
-                }
-
-                TempResult tempResult3 = new TempResult() { Name = "Orange" };
-
-                foreach (var item in validateParam.ValidateSingles)
-                {
-                    if (item.Model.Code == "CIE_x")
-                    {
-                        tempResult3.X = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
-                    }
-                    if (item.Model.Code == "CIE_y")
-                    {
-                        tempResult3.Y = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
-                    }
-                    if (item.Model.Code == "CIE_lv")
-                    {
-                        tempResult3.Lv = new NumSet() { ValMin = item.ValMin, ValMax = item.ValMax };
-                    }
-                }
-
-
-
-                Settings.Add(tempResult);
-                Settings.Add(tempResult1);
-                Settings.Add(tempResult2);
-                Settings.Add(tempResult3);
-
+        private void ValidateTemplate_Initialized(object sender, EventArgs e)
+        {
+            if (sender is ComboBox comboBox)
+            {
+                comboBox.ItemsSource = ValidateParam.CIEParams;
             }
         }
     }

@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 
-namespace ColorVision.MySql
+namespace ColorVision.Engine.MySql
 {
     /// <summary>
     /// MySql配置

@@ -103,6 +103,10 @@
           <source>软件启动时检测更新</source>
           <target state="new">소프트웨어가 시작될 때 업데이트 감지</target>
         </trans-unit>
+        <trans-unit id="Choice" translate="yes" xml:space="preserve">
+          <source>选择</source>
+          <target state="new">선택하다</target>
+        </trans-unit>
         <trans-unit id="Clear" translate="yes" xml:space="preserve">
           <source>清除</source>
           <target state="new">분명한</target>

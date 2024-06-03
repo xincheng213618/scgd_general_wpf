@@ -1,4 +1,4 @@
-﻿namespace ColorVision.MQTT
+﻿namespace ColorVision.Engine.MQTT
 {
     public delegate void MQTTMsgHandler(MQMsg resultDataMQTT);
     public class MQMsg

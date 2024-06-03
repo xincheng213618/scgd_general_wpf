@@ -1,7 +1,12 @@
 ﻿#pragma warning disable CS8602
+using ColorVision.Scheduler;
+using NPOI.SS.Formula.Functions;
+using OpenCvSharp.Aruco;
 using Quartz;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -9,59 +14,38 @@ namespace ColorVision.Update
 {
     public class UpdateJob : IJob
     {
+
         public Task Execute(IJobExecutionContext context)
         {
-            // 定时任务逻辑
+            var schedulerInfo = QuartzSchedulerManager.GetInstance().TaskInfos.First(x => x.JobName == context.JobDetail.Key.Name && x.GroupName == context.JobDetail.Key.Group);
+            schedulerInfo.RunCount++;
             Application.Current.Dispatcher.Invoke(() =>
+            {
+                schedulerInfo.Status = SchedulerStatus.Running;
+            });
+            // 定时任务逻辑
+            Application.Current.Dispatcher.Invoke(async () =>
             {
                 AutoUpdater.DeleteAllCachedUpdateFiles();
                 AutoUpdater autoUpdater = AutoUpdater.GetInstance();
-                autoUpdater.CheckAndUpdate(true);
+                await autoUpdater.CheckAndUpdate(true);
+
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    schedulerInfo.Status = SchedulerStatus.Ready;
+                });
             });
-            return Task.CompletedTask;
-        }
-    }
-
-    public class ExcutCMDJob : IJob
-    {
-        public Task Execute(IJobExecutionContext context)
-        {
-            // 从作业上下文获取脚本路径
-            string scriptPath = context.JobDetail.JobDataMap.GetString("scriptPath");
-
-            // 执行 CMD 脚本
-            ExecuteCmdScript(scriptPath);
-
-            return Task.CompletedTask;
-        }
-
-        private static void ExecuteCmdScript(string scriptPath)
-        {
-            try
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                ProcessStartInfo processInfo = new ProcessStartInfo("cmd.exe", $"/c \"{scriptPath}\"")
+                if (schedulerInfo.IsCron && schedulerInfo.RunCount > schedulerInfo.RepeatCount)
                 {
-                    CreateNoWindow = true,
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true
-                };
+                    schedulerInfo.DeleteCommand.RaiseExecute(context);
 
-                using (Process process = Process.Start(processInfo))
-                {
-                    process.OutputDataReceived += (sender, args) => Console.WriteLine(args.Data);
-                    process.ErrorDataReceived += (sender, args) => Console.WriteLine($"ERROR: {args.Data}");
-
-                    process.BeginOutputReadLine();
-                    process.BeginErrorReadLine();
-
-                    process.WaitForExit();
                 }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Exception occurred while executing CMD script: {ex.Message}");
-            }
+            });
+
+
+            return Task.CompletedTask;
         }
     }
 }

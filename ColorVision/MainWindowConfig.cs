@@ -1,62 +1,17 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Properties;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
-using ColorVision.UI.Dump;
+using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
-using ColorVision.UI.Properties;
-using ColorVision.UI.Views;
+using Mysqlx.Prepare;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Input;
 
 namespace ColorVision
 {
-    public class MainWindowConfigProvider : IConfigSettingProvider
-    {
-        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
-            return new List<ConfigSettingMetadata> {
-                            new ConfigSettingMetadata
-                            {
-                                Name = Properties.Resources.StartRecoverUILayout,
-                                Description = Properties.Resources.StartRecoverUILayout,
-                                Type = ConfigSettingType.Bool,
-                                BindingName = nameof(MainWindowConfig.IsRestoreWindow),
-                                Source = MainWindowConfig.Instance
-                            }
-            };
-        }
-    }
-
-    public class ExportMainWindowConfig : IMenuItemMeta
-    {
-        public string? OwnerGuid => "View";
-        public string? GuidId => "MenuViewStatusBar";
-        public int Order => 10000;
-        public string? Header => Properties.Resources.MenuViewStatusBar;
-        public MenuItem MenuItem
-        {
-            get
-            {
-                MenuItem MenuDump = new() { Header = Header };
-                MenuDump.SetBinding(MenuItem.IsCheckedProperty, new Binding(nameof(MainWindowConfig.IsOpenStatusBar)));
-                MenuDump.Click += (s,e) => MainWindowConfig.Instance.IsOpenStatusBar = !MainWindowConfig.Instance.IsOpenStatusBar;
-                MenuDump.DataContext = MainWindowConfig.Instance;
-                return MenuDump;
-            }
-        }
-        public string? InputGestureText => null;
-        public object? Icon => null;
-        public RelayCommand Command => null;
-        public Visibility Visibility => Visibility.Visible;
-    }
-
 
     public class MainWindowConfig : ViewModelBase, IConfig
     {
@@ -104,4 +59,84 @@ namespace ColorVision
             WindowState = (int)window.WindowState;
         }
     }
+
+
+    public class MainWindowConfigProvider : IConfigSettingProvider
+    {
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+        {
+            return new List<ConfigSettingMetadata> {
+                            new ConfigSettingMetadata
+                            {
+                                Name = Properties.Resources.StartRecoverUILayout,
+                                Description = Properties.Resources.StartRecoverUILayout,
+                                Type = ConfigSettingType.Bool,
+                                BindingName = nameof(MainWindowConfig.IsRestoreWindow),
+                                Source = MainWindowConfig.Instance
+                            }
+            };
+        }
+    }
+
+    public class ExportMenuViewStatusBar : IMenuItemMeta,IHotKey
+    {
+        public string? OwnerGuid => "View";
+        public string? GuidId => "MenuViewStatusBar";
+        public int Order => 2;
+        public string? Header => Properties.Resources.MenuViewStatusBar;
+        public MenuItem MenuItem
+        {
+            get
+            {
+                MenuItem menuItem = new() { Header = Header };
+                menuItem.SetBinding(MenuItem.IsCheckedProperty, new Binding(nameof(MainWindowConfig.IsOpenStatusBar)));
+                menuItem.Click += (s,e) => MainWindowConfig.Instance.IsOpenStatusBar = !MainWindowConfig.Instance.IsOpenStatusBar;
+                menuItem.DataContext = MainWindowConfig.Instance;
+                return menuItem;
+            }
+        }
+        public string? InputGestureText => null;
+        public object? Icon => null;
+        public RelayCommand Command => null;
+        public Visibility Visibility => Visibility.Visible;
+
+        public HotKeys HotKeys => new(Properties.Resources.MenuViewStatusBar, new Hotkey(Key.B, ModifierKeys.Control | ModifierKeys.Shift), Execute);
+
+        public static void Execute()
+        {
+            MainWindowConfig.Instance.IsOpenStatusBar = !MainWindowConfig.Instance.IsOpenStatusBar;
+        }
+
+    }
+    public class ExportMenuViewSidebar : IMenuItemMeta, IHotKey
+    {
+        public string? OwnerGuid => "View";
+        public string? GuidId => "MenuViewSidebar";
+        public int Order => 1;
+        public string? Header => Properties.Resources.MenuViewSidebar;
+        public MenuItem MenuItem
+        {
+            get
+            {
+                MenuItem menuItem = new() { Header = Header };
+                menuItem.SetBinding(MenuItem.IsCheckedProperty, new Binding(nameof(MainWindowConfig.IsOpenSidebar)));
+                menuItem.Click += (s, e) => MainWindowConfig.Instance.IsOpenSidebar = !MainWindowConfig.Instance.IsOpenSidebar;
+                menuItem.DataContext = MainWindowConfig.Instance;
+                return menuItem;
+            }
+        }
+        public string? InputGestureText => null;
+        public object? Icon => null;
+        public RelayCommand Command => null;
+        public Visibility Visibility => Visibility.Visible;
+
+        public HotKeys HotKeys => new(Properties.Resources.MenuViewSidebar, new Hotkey(Key.S, ModifierKeys.Control | ModifierKeys.Shift), Execute);
+
+        public static void Execute()
+        {
+            MainWindowConfig.Instance.IsOpenSidebar = !MainWindowConfig.Instance.IsOpenSidebar;
+        }
+    }
+
+
 }

@@ -1,4 +1,4 @@
-﻿using ColorVision.MQTT;
+﻿using ColorVision.Engine.MQTT;
 using ColorVision.Services.Core;
 using System;
 using System.Threading.Tasks;
@@ -9,7 +9,6 @@ namespace ColorVision.Services.Terminal
     {
 
     }
-
     public class MQTTServiceTerminalBase<T> : MQTTServiceTerminalBase where T : TerminalServiceConfig
     {
         public T Config { get; set; }

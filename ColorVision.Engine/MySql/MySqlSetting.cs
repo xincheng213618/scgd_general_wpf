@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace ColorVision.MySql
+namespace ColorVision.Engine.MySql
 {
     public delegate void UseMySqlHandler(bool IsUseMySql);
 

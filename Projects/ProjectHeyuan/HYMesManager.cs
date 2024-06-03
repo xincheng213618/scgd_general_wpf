@@ -1,12 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Devices.Algorithm.Views;
 using ColorVision.UI;
 using System.Collections.ObjectModel;
 using System.IO.Ports;
 using System.Text;
 using System.Windows;
 
-namespace ColorVision.Projects
+namespace ColorVision.Projects.ProjectHeyuan
 {
     public class HYMesConfig: ViewModelBase, IConfig
     {
@@ -15,6 +14,8 @@ namespace ColorVision.Projects
         public bool IsOpenConnect { get => _IsOpenConnect;set { _IsOpenConnect = value; NotifyPropertyChanged(); } }
         private bool _IsOpenConnect;
 
+        public string FlowName { get => _FlowName; set { _FlowName = value; NotifyPropertyChanged(); } }
+        private string _FlowName;
 
         public int DeviceId { get => _DeviceId; set { _DeviceId = value; NotifyPropertyChanged(); } }
         private int _DeviceId;
@@ -56,7 +57,6 @@ namespace ColorVision.Projects
         public HYMesManager()
         {
             serialPort = new SerialPort { };
-
             if (Config.IsOpenConnect)
             {
                 OpenPort(Config.PortName);
@@ -138,8 +138,9 @@ namespace ColorVision.Projects
                             {
                                 string[] parts = Msg.Split(',');
                                 CSNResult = parts[^1].Contains('0');
-                                if(CSNResult)
-                                    UploadNG();
+                                CPTResult = null;
+                                CGIResult = null;
+                                CMIResult = null;
                             }
                             if (Msg.Contains("CPT,S"))
                             {
@@ -150,8 +151,11 @@ namespace ColorVision.Projects
                             {
                                 string[] parts = Msg.Split(',');
                                 CGIResult = parts[^1].Contains('0');
+                                if (CGIResult == true)
+                                {
+                                    UploadMes(Results);
+                                }
                             }
-
                             if (Msg.Contains("CMI,S"))
                             {
                                 string[] parts = Msg.Split(',');
@@ -178,16 +182,16 @@ namespace ColorVision.Projects
         }
         private string _SN;
 
-        public bool CSNResult { get => _UploadSNResult; set { _UploadSNResult = value; NotifyPropertyChanged(); } }
-        private bool _UploadSNResult;
+        public bool? CSNResult { get => _CSNResult; set { _CSNResult = value; NotifyPropertyChanged(); } }
+        private bool? _CSNResult;
 
-        public bool CPTResult { get => _CPTResult; set { _CPTResult = value; NotifyPropertyChanged(); } }
-        private bool _CPTResult;
-        public bool CGIResult { get => _CGIResult; set { _CGIResult = value; NotifyPropertyChanged(); } }
-        private bool _CGIResult;
+        public bool? CPTResult { get => _CPTResult; set { _CPTResult = value; NotifyPropertyChanged(); } }
+        private bool? _CPTResult;
+        public bool? CGIResult { get => _CGIResult; set { _CGIResult = value; NotifyPropertyChanged(); } }
+        private bool? _CGIResult;
 
-        public bool CMIResult { get => _CMIResult; set { _CMIResult = value; NotifyPropertyChanged(); } }
-        private bool _CMIResult;
+        public bool? CMIResult { get => _CMIResult; set { _CMIResult = value; NotifyPropertyChanged(); } }
+        private bool? _CMIResult;
 
         public void UploadSN()
         {
@@ -205,14 +209,17 @@ namespace ColorVision.Projects
             string SendMsg = $"CPT,C,{Config.DeviceId}";
             Send(System.Text.Encoding.UTF8.GetBytes(SendMsg));
         }
-        public void UploadMes()
+
+        public ObservableCollection<TempResult> Results { get; set; } =new ObservableCollection<TempResult>();
+
+        public void UploadMes(ObservableCollection<TempResult> Results)
         {
-            string SendMsg = $"CMI,C,{Config.DeviceId},{Config.TestName},White,0.00/0.00/0.00/result,Blue,0.00/0.00/0.00/result,Red,0.00/0.00/0.00/result,Orange,0.00/0.00/0.00/result";
+            string SendMsg = $"CMI,C,{Config.DeviceId},{Config.TestName},White,{Results[0].X.Value:F3}/{Results[0].Y.Value:F3}/{Results[0].Lv.Value:F3}/{Results[0].Dw.Value:F3}/{(Results[0].Result?"Pass":"Fail")},Blue,{Results[1].X.Value:F3}/{Results[1].Y.Value:F3}/{Results[1].Lv.Value:F3}/{Results[1].Dw.Value:F3}/{(Results[1].Result ? "Pass" : "Fail")},Red,{Results[2].X.Value:F3}/{Results[2].Y.Value:F3}/{Results[2].Lv.Value:F3}/{Results[2].Dw.Value:F3}/{(Results[2].Result ? "Pass" : "Fail")},Orange,{Results[3].X.Value:F3}/{Results[3].Y.Value:F3}/{Results[3].Lv.Value:F3}/{Results[3].Dw.Value:F3}/{(Results[3].Result ? "Pass" : "Fail")}";
             Send(System.Text.Encoding.UTF8.GetBytes(SendMsg));
         }
-        public void UploadNG() 
+        public void UploadNG(string Msg = "errorW") 
         {
-            string SendMsg = $"CGI,C,{Config.DeviceId},Default,errorW";
+            string SendMsg = $"CGI,C,{Config.DeviceId},Default,{Msg}";
             Send(System.Text.Encoding.UTF8.GetBytes(SendMsg));
         }
 

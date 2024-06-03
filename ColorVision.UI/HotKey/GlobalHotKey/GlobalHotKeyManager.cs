@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.UI.HotKey.WindowHotKey;
+using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
@@ -7,17 +8,32 @@ namespace ColorVision.UI.HotKey.GlobalHotKey
 {
     public class GlobalHotKeyManager
     {
-        public IntPtr WindowHandle { get; set; } 
+        public IntPtr WindowHandle { get; set; }
+
+        public static Dictionary<IntPtr, GlobalHotKeyManager> Instances { get; set; } = new Dictionary<IntPtr, GlobalHotKeyManager>();
+
+
         private GlobalHotKeyManager(IntPtr intPtr)
         {
             WindowHandle = intPtr;
+            Instances.Add(intPtr,this);
         }
         private static readonly object locker = new();
 
         public static GlobalHotKeyManager GetInstance(Window window)
         {
             IntPtr intPtr = new WindowInteropHelper(window).EnsureHandle();
-            lock (locker) { return new GlobalHotKeyManager(intPtr); }
+            lock (locker)
+            {
+                if (Instances.TryGetValue(intPtr, out GlobalHotKeyManager globalHotKeyManager))
+                {
+                    return globalHotKeyManager;
+                }
+                else
+                {
+                    return new GlobalHotKeyManager(intPtr);
+                }
+            }
         }
 
 

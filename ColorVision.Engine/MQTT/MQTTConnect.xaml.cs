@@ -7,7 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.MQTT
+namespace ColorVision.Engine.MQTT
 {
     /// <summary>
     /// MySqlConnect.xaml 的交互逻辑

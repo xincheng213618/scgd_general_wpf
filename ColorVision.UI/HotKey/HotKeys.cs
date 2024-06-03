@@ -81,7 +81,6 @@ namespace ColorVision.UI.HotKey
             get => _Kinds; set
             {
                 if (value == _Kinds) return;
-                _Kinds = value;
                 if (Control != null)
                 {
                     if (_Kinds == HotKeyKinds.Global)
@@ -92,7 +91,7 @@ namespace ColorVision.UI.HotKey
                     {
                         WindowHotKeyManager.GetInstance(Control).UnRegister(this);
                     }
-
+                    _Kinds = value;
                     if (_Kinds == HotKeyKinds.Global)
                     {
                         IsRegistered = GlobalHotKeyManager.GetInstance(Window.GetWindow(Control)).Register(this);
@@ -102,12 +101,11 @@ namespace ColorVision.UI.HotKey
                         IsRegistered = WindowHotKeyManager.GetInstance(Control).Register(this);
                     }
                 }
+                _Kinds = value;
                 NotifyPropertyChanged(nameof(IsGlobal));
                 NotifyPropertyChanged();
             }
         }
-        private HotKeyKinds _Kinds = HotKeyKinds.Windows;
-
         public bool IsGlobal
         {
             get => Kinds == HotKeyKinds.Global; set
@@ -122,6 +120,9 @@ namespace ColorVision.UI.HotKey
                 }
             }
         }
+        private HotKeyKinds _Kinds = HotKeyKinds.Windows;
+
+
 
 
 

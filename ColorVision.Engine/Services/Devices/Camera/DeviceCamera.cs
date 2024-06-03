@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI.Interfaces;
+using ColorVision.Util.Interfaces;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera.Configs;
@@ -95,9 +95,6 @@ namespace ColorVision.Services.Devices.Camera
             if (PhyCamera != null)
             {
                 PhyCamera.SetDeviceCamera(this);
-                Config.IsChannelThree = PhyCamera.Config.IsChannelThree;
-                PhyCamera.Config.CameraCfg.CopyTo(Config.CameraCfg);
-                PhyCamera.Config.CFW.CopyTo(Config.CFW);
             }
             base.Save();
         }

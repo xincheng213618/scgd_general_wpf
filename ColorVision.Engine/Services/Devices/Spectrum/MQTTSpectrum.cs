@@ -1,5 +1,5 @@
 ﻿using ColorVision.Services.Devices.Spectrum.Configs;
-using ColorVision.MQTT;
+using ColorVision.Engine.MQTT;
 using ColorVision.Services.Msg;
 using MQTTMessageLib;
 using MQTTMessageLib.Spectrum;

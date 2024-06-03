@@ -1,12 +1,11 @@
 ﻿#pragma warning disable CA1401,CA1051,CA2101,CA1707
 using System;
 using System.Runtime.InteropServices;
-using System.Windows.Media.Imaging;
-using System.Windows.Media;
 using System.Windows;
-using System.Runtime.CompilerServices;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 
-namespace ColorVision
+namespace ColorVision.Engine
 {
     public struct HImage : IDisposable
     {

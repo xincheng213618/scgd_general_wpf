@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.Utilities;
-using ColorVision.MySql;
+using ColorVision.Engine.MySql;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.DAO;
@@ -330,7 +330,8 @@ namespace ColorVision.Services
                             DeviceServices.Add(alg);
                             break;
                         case ServiceTypes.Calibration:
-                            DeviceCalibration deviceCalibration = new(sysResourceModel);
+                            
+                            DeviceCalibration deviceCalibration = new DeviceCalibration(sysResourceModel);
                             svrObj = deviceCalibration.DeviceService;
                             terminalService.AddChild(deviceCalibration);
                             DeviceServices.Add(deviceCalibration);

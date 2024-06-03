@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 
-namespace ColorVision.MySql.ORM
+namespace ColorVision.Engine.MySql.ORM
 {
 
     public class BaseDaoMaster<T> : BaseDao1 where T : IPKModel
@@ -65,7 +65,7 @@ namespace ColorVision.MySql.ORM
 
         public int SaveByPid(int pid, List<T> datas)
         {
-            DeleteAllByPid(pid);
+            DeleteAllByPid(pid,false);
             DataTable d_info = GetDataTable();
             foreach (var item in datas)
             {
@@ -73,7 +73,8 @@ namespace ColorVision.MySql.ORM
                 DataRow row = d_info.NewRow();
                 d_info.Rows.Add(row);
                 Model2Row(item, row);
-                row[PKField] = DBNull.Value;
+                if (item.Id<=0)
+                    row[PKField] = DBNull.Value;
             }
             return BulkInsertAsync(d_info);
         }
@@ -392,7 +393,7 @@ namespace ColorVision.MySql.ORM
             string sql = IsLogicDel ? $"UPDATE {TableName} SET is_delete = 1 WHERE tenant_id = @tenant_id" : $"DELETE FROM {TableName} WHERE tenant_id = @tenant_id";
             return ExecuteNonQuery(sql, new Dictionary<string, object> { { "tenant_id", tenantId } });
         }
-        public int DeleteAllByPid(int pid)
+        public int DeleteAllByPid(int pid, bool IsLogicDel = true)
         {
             string sql = IsLogicDel ? $"UPDATE {TableName} SET is_delete = 1 WHERE pid = @pid" : $"DELETE FROM {TableName} WHERE pid = @pid";
             return ExecuteNonQuery(sql, new Dictionary<string, object> { { "pid", pid } });

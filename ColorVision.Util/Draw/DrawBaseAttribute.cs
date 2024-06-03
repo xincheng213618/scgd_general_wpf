@@ -19,6 +19,9 @@ namespace ColorVision.Draw
 
         public int? Tag { get => _Tag; set { _Tag = value; NotifyPropertyChanged(); } }
         private int? _Tag;
+        public int? Tag1 { get => _Tag1; set { _Tag1 = value; NotifyPropertyChanged(); } }
+        private int? _Tag1;
+
     }
 
 

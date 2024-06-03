@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.MQTT;
+using ColorVision.Engine.MQTT;
 using ColorVision.Services.Types;
 using FlowEngineLib;
 using log4net;
@@ -114,6 +114,7 @@ namespace ColorVision.Services.Flow
                 };
                 MQTTFlowRun<MQTTServiceInfo> req = new(serviceInfo.ServiceCode, devName, sn, serviceInfo.Token, data);
                 string Msg = JsonConvert.SerializeObject(req);
+                log.Debug(Msg);
                 Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
                 Task.Run(() => MQTTControl.PublishAsyncClient(serviceInfo.PublishTopic, Msg, false));
             }
@@ -135,6 +136,7 @@ namespace ColorVision.Services.Flow
             if (arg.ApplicationMessage.Topic == SubscribeTopic)
             {
                 string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
+                log.Debug(Msg);
                 Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
                 try
                 {

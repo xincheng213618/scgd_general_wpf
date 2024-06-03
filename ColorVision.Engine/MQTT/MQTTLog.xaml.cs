@@ -11,7 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.MQTT
+namespace ColorVision.Engine.MQTT
 {
     public class ExportMQTTLox : IHotKey, IMenuItem
     {

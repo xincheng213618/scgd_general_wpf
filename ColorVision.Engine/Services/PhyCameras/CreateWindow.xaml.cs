@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Services.Dao;
 using ColorVision.Services.PhyCameras.Configs;
+using ColorVision.Services.PhyCameras.Dao;
 using ColorVision.Services.RC;
 using ColorVision.UserSpace;
 using cvColorVision;
@@ -30,6 +31,9 @@ namespace ColorVision.Services.PhyCameras
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            DataContext = this;
+
+
             CreateConfig = new ConfigPhyCamera
             {
                 CameraType = CameraType.LV_Q,
@@ -37,13 +41,28 @@ namespace ColorVision.Services.PhyCameras
                 ImageBpp = ImageBpp.bpp8,
                 Channel = ImageChannel.One,
             };
-
-            CameraID.ItemsSource = SysResourceDao.Instance.GetAllEmptyCameraId();
-            CameraID.DisplayMemberPath = "Name";
-            CameraID.SelectedValuePath = "Code";
-            DataContext = this;
-
             var Config = CreateConfig;
+
+
+            var list = SysResourceDao.Instance.GetAllEmptyCameraId();
+
+            if (list != null)
+            {
+                CameraCode.ItemsSource = list;
+                CameraCode.DisplayMemberPath = "Code";
+                CameraCode.SelectedValuePath = "Name";
+                CameraCode.SelectedIndex = 0;
+                Config.Code = list[0].Code ??string.Empty;
+                CameraCode.SelectionChanged += (s, e) =>
+                {
+                    if (CameraCode.SelectedIndex >= 0)
+                        DeviceName.Text = CameraLicenseDao.Instance.GetByMAC(list[CameraCode.SelectedIndex].Code??string.Empty)?.Model;
+                };
+            }
+            else
+            {
+                MessageBox.Show("找不到可以添加的相机");
+            }
 
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());

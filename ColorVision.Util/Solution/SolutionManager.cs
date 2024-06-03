@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Extension;
+using ColorVision.UI.Extension;
 using ColorVision.RecentFile;
 using ColorVision.Solution.V;
 using ColorVision.UI;

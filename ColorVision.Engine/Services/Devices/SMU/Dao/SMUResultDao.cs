@@ -1,5 +1,5 @@
-﻿using ColorVision.MySql;
-using ColorVision.MySql.ORM;
+﻿using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.Services.Devices.SMU.Configs;
 using System;
 using System.Collections.Generic;

@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using ColorVision.UI.Interfaces;
+using ColorVision.Util.Interfaces;
 using ColorVision.UI;
 
 namespace ColorVision.Services.Terminal

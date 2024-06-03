@@ -62,7 +62,8 @@ namespace ColorVision
         private void Window_Initialized(object sender, EventArgs e)
         {
             MenuManager.GetInstance().Menu = Menu1;
-            StatusBarGrid.DataContext = MainWindowConfig;
+            MainWindowConfig.IsOpenSidebar = true;
+            this.DataContext = MainWindowConfig;
             if (!WindowConfig.IsExist || (WindowConfig.IsExist && WindowConfig.Icon == null))
             {
                 ThemeManager.Current.SystemThemeChanged += (e) =>
@@ -227,11 +228,11 @@ namespace ColorVision
         public static async Task CheckUpdate()
         {
             await Task.Delay(1000);
-            await Application.Current.Dispatcher.InvokeAsync(() =>
+            await Application.Current.Dispatcher.InvokeAsync(async () =>
             {
                 AutoUpdater.DeleteAllCachedUpdateFiles();
                 AutoUpdater autoUpdater = AutoUpdater.GetInstance();
-                autoUpdater.CheckAndUpdate(false);
+                await autoUpdater.CheckAndUpdate(false);
             });
         }
 
@@ -389,61 +390,6 @@ namespace ColorVision
             else
             {
                 new LoginWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-            }
-
-        }
-
-
-        private GridLength _columnDefinitionWidth;
-        private void OnLeftMainContentShiftOut(object sender, RoutedEventArgs e)
-        {
-            ButtonShiftOut.Collapse();
-            GridSplitter.IsEnabled = false;
-
-            double targetValue = -ColumnDefinitionLeft.MaxWidth;
-            _columnDefinitionWidth = ColumnDefinitionLeft.Width;
-
-            DoubleAnimation animation = AnimationHelper.CreateAnimation(targetValue, milliseconds: 1);
-            animation.FillBehavior = FillBehavior.Stop;
-            animation.Completed += OnAnimationCompleted;
-            LeftMainContent.RenderTransform.BeginAnimation(TranslateTransform.XProperty, animation);
-            void OnAnimationCompleted(object? _, EventArgs args)
-            {
-                animation.Completed -= OnAnimationCompleted;
-                LeftMainContent.RenderTransform.SetCurrentValue(TranslateTransform.XProperty, targetValue);
-
-                Grid.SetColumn(MainContent, 0);
-                Grid.SetColumnSpan(MainContent, 2);
-                ColumnDefinitionLeft.MinWidth = 0;
-                ColumnDefinitionLeft.Width = new GridLength(0);
-                ButtonShiftIn.Show();
-            }
-        }
-
-        private void OnLeftMainContentShiftIn(object sender, RoutedEventArgs e)
-        {
-            ButtonShiftIn.Collapse();
-
-            GridSplitter.IsEnabled = true;
-
-            double targetValue = ColumnDefinitionLeft.Width.Value;
-
-            DoubleAnimation animation = AnimationHelper.CreateAnimation(targetValue, milliseconds: 1);
-            animation.FillBehavior = FillBehavior.Stop;
-            animation.Completed += OnAnimationCompleted;
-            LeftMainContent.RenderTransform.BeginAnimation(TranslateTransform.XProperty, animation);
-
-            void OnAnimationCompleted(object? _, EventArgs args)
-            {
-                animation.Completed -= OnAnimationCompleted;
-                LeftMainContent.RenderTransform.SetCurrentValue(TranslateTransform.XProperty, targetValue);
-
-                Grid.SetColumn(MainContent, 1);
-                Grid.SetColumnSpan(MainContent, 1);
-
-                ColumnDefinitionLeft.MinWidth = 240;
-                ColumnDefinitionLeft.Width = _columnDefinitionWidth;
-                ButtonShiftOut.Show();
             }
         }
 

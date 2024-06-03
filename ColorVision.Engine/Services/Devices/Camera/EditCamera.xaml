@@ -41,27 +41,29 @@
                         </StackPanel>
                     </GroupBox>
 
-                    <DockPanel Margin="0,2">
-                        <TextBlock Text="物理相机ID" Width="120"/>
-                        <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Text="{Binding CameraID}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
-                    </DockPanel>
+
                     <GroupBox Header="配置信息" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
+                                <Button Content="应用参数" DockPanel.Dock="Right" Click="UpdateConfig_Click"/>
+                                <TextBlock Text="物理相机ID" Width="120"/>
+                                <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Text="{Binding CameraID}" SelectionChanged="CameraPhyID_SelectionChanged" hc:InfoElement.ShowClearButton="True"  />
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
                                 <TextBlock Text="相机类型" Width="120"/>
-                                <hc:ComboBox x:Name="ComboxCameraType"  SelectedValue="{Binding CameraType}" SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,10,0"/>
+                                <hc:ComboBox x:Name="ComboxCameraType"  SelectedValue="{Binding CameraType}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="默认取图模式" Width="120"/>
-                                <ComboBox  x:Name="ComboxCameraTakeImageMode"  SelectedValue="{Binding TakeImageMode}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,10,0"/>
+                                <ComboBox  x:Name="ComboxCameraTakeImageMode"  SelectedValue="{Binding TakeImageMode}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  />
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="默认通道数" Width="120"/>
-                                <hc:ComboBox  x:Name="ComboxCameraChannel"   SelectedValue="{Binding Channel}"   SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="0,0,10,0"/>
+                                <hc:ComboBox  x:Name="ComboxCameraChannel"   SelectedValue="{Binding Channel}"   SelectedValuePath="Key"  DisplayMemberPath="Value" />
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="默认图像位数" Width="120"/>
-                                <ComboBox  x:Name="ComboxCameraImageBpp"    SelectedValue="{Binding ImageBpp}"  SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="0,0,10,0" />
+                                <ComboBox  x:Name="ComboxCameraImageBpp"    SelectedValue="{Binding ImageBpp}"  SelectedValuePath="Key"  DisplayMemberPath="Value" />
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>

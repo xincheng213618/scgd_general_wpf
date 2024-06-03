@@ -1,5 +1,57 @@
 #   CHANGELOAG
 
+## [1.1.0.11]  2024-06-03
+
+1.修复热键全局和窗口模式下无法切换的BUG
+
+2.修复热键全局模式在启动时无法加载配置的BUG
+
+3.移除原有的窗口侧边栏移动和缩小的控件，改成通过菜单和快捷键可以快速切换侧边栏，同时侧边栏大小固定
+
+4.DwayneNeed 现在不作为默认启用，修改到菜单中，可以选择开启
+
+5.代码命名逻辑上的一些优化配置
+
+6.模板配置现在和服务同一个级别不在归属于服务
+
+7.修复关注导入窗口，无法正确从其他模板中导入关注点的问题
+
+8.现在计划任务支持一次模式，多次模式以及Cron表达式
+
+## [1.1.0.10]  2024-05-31
+
+1.修复物理相机在创建和导入时出现的一些问题
+
+2.移除多余的引用，代码规范化
+
+3.移除原有的主窗口的位置移动的管理，现在主窗口的侧边栏和状态栏现菜单和热键控制
+
+4.现在模板窗口可以按照名称和序号排序
+
+5.现在模板窗口可以多选导出压缩包
+
+6.调整了相机视图下，不同状态的逻辑
+
+7.增加一些校验模板,现在校验模板不允许导入
+
+## [1.1.0.8]  2024-05-29
+
+1.Fix 关注点批量插入时会多次插入的问题，以及名称的问题
+
+2.河源项目的一些修改
+
+3.添加模板创建和导出的逻辑
+
+4.现在插件可以在Appdata里面进行动态加载，同时插件的版本独立化，不在和主程序同步
+
+5.添加插件管理的窗口
+
+6.在项目中，流程现在是单独创建和调用，不在共享主界面的逻辑
+
+7.修改配置页面的加载逻辑
+
+8.一些其他的稳定性修复
+
 ## [1.1.0.3]  2024-05-28
 
 1.增加一个命令行解析的类，实现简单的Argparse，支持 flag 以及value 两种方式，并且允许在程序运行中解析。
@@ -10,7 +62,7 @@
 
 4.将Engine和程序实现解耦，程序在运行的时候去加载Engine
 
-5.移除掉主窗口中多与的语言资源
+5.移除掉主窗口中多余的语言资源
 
 ## [1.1.0.1]  2024-05-25
 
@@ -170,7 +222,7 @@
 
 详细：
 
-更新了CHANGELOG.md文件，添加了版本1.0.10.2的更新内容，包括更新项目的代码依赖环境和增加ColorVision.UI这个依赖库。在ColorVision.Net.csproj，ColorVision.Util.csproj和ColorVision.csproj文件中，log4net的版本从2.0.15更新到了2.0.17，同时在ColorVision.Util.csproj中，其他几个依赖库的版本也进行了更新。在ColorVision.csproj文件中，添加了对ColorVision.UI的项目引用。在IDisPlayControl.cs文件中，原有的代码被删除，可能是因为这部分代码被移动到了其他地方。在MainWindow.Menu.cs文件中，添加了对ColorVision.Engine.Controls，ColorVision.Services.PhyCameras和ColorVision.UI的引用。在MainWindow.xaml.cs和其他多个.xaml.cs文件中，添加了对ColorVision.UI的引用。在SettingWindow.xaml文件中，TabControl的样式进行了微调。在Directory.Build.props文件中，项目的版本号从1.0.10.1更新到了1.0.10.2。在scgd_general_wpf.sln文件中，添加了对ColorVision.UI项目的引用。新增了ColorVision.UI.csproj项目文件，该项目引用了log4net库，并且引用了ColorVision.Common和ColorVision.Util两个项目。新增了IDisPlayControl.cs和MenuManager.cs两个文件，这两个文件定义了一些接口和类。新增了Resources.Designer.cs文件，该文件是由工具自动生成的，用于查找本地化的字符串等资源。在其他多个文件中，删除了对ColorVision.UI.Interfaces的引用，可能是因为这部分代码被移动到了其他地方。新增了多个资源文件，用于存储不同语言环境下的字符串和其他资源，以实现应用程序的本地化。在每个资源文件中，都添加了一个名为`MenuFile`的数据项，其值分别为不同语言环境下显示菜单项“文件”的文本。
+更新了CHANGELOG.md文件，添加了版本1.0.10.2的更新内容，包括更新项目的代码依赖环境和增加ColorVision.UI这个依赖库。在ColorVision.Net.csproj，ColorVision.Util.csproj和ColorVision.csproj文件中，log4net的版本从2.0.15更新到了2.0.17，同时在ColorVision.Util.csproj中，其他几个依赖库的版本也进行了更新。在ColorVision.csproj文件中，添加了对ColorVision.UI的项目引用。在IDisPlayControl.cs文件中，原有的代码被删除，可能是因为这部分代码被移动到了其他地方。在MainWindow.Menu.cs文件中，添加了对ColorVision.Engine.Controls，ColorVision.Services.PhyCameras和ColorVision.UI的引用。在MainWindow.xaml.cs和其他多个.xaml.cs文件中，添加了对ColorVision.UI的引用。在SettingWindow.xaml文件中，TabControl的样式进行了微调。在Directory.Build.props文件中，项目的版本号从1.0.10.1更新到了1.0.10.2。在scgd_general_wpf.sln文件中，添加了对ColorVision.UI项目的引用。新增了ColorVision.UI.csproj项目文件，该项目引用了log4net库，并且引用了ColorVision.Common和ColorVision.Util两个项目。新增了IDisPlayControl.cs和MenuManager.cs两个文件，这两个文件定义了一些接口和类。新增了Resources.Designer.cs文件，该文件是由工具自动生成的，用于查找本地化的字符串等资源。在其他多个文件中，删除了对ColorVision.Util.Interfaces的引用，可能是因为这部分代码被移动到了其他地方。新增了多个资源文件，用于存储不同语言环境下的字符串和其他资源，以实现应用程序的本地化。在每个资源文件中，都添加了一个名为`MenuFile`的数据项，其值分别为不同语言环境下显示菜单项“文件”的文本。
 
 ## [1.0.10.1] 2024-04-24
 
@@ -1505,4 +1557,4 @@
 
 2.添加 snk强加密，修改程序启动方式
 
-3.创建图像Demo，支持缩放
+3.创建图像Demo，支持缩放  

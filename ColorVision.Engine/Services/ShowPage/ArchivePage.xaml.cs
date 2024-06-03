@@ -18,12 +18,8 @@ namespace ColorVision.Services.ShowPage.Dao
         }
         public ArchivedMasterModel ArchivedMasterModel { get; set; }
         public int Id { get => ArchivedMasterModel.Id; set => throw new NotImplementedException(); }
-
-        public int IdShow { get => ArchivedMasterModel.Id;set { ArchivedMasterModel.Id = value; } }
-
         public DateTime? CreateTime { get => ArchivedMasterModel.CreateDate; }
     }
-
 
     /// <summary>
     /// ArchivePage.xaml 的交互逻辑

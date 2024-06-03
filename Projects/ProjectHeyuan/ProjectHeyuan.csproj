@@ -18,6 +18,9 @@
     <Reference Include="FlowEngineLib">
       <HintPath>..\..\DLL\FlowEngineLib.dll</HintPath>
     </Reference>
+    <Reference Include="ST.Library.UI">
+      <HintPath>..\..\DLL\ST.Library.UI.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">

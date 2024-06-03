@@ -1,13 +1,13 @@
 ﻿#pragma warning disable CS8604,CS8629
 using ColorVision.Common.Utilities;
 using ColorVision.Draw;
-using ColorVision.Media;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.Media;
 using ColorVision.Net;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera.Views;
 using ColorVision.Services.Msg;
-using ColorVision.Services.Templates;
-using ColorVision.Services.Templates.POI;
 using ColorVision.Solution;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
@@ -385,6 +385,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
         {
             if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content !=null)
             {
+
                 foreach (var item in GridViewColumnVisibilitys)
                 {
                     if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())

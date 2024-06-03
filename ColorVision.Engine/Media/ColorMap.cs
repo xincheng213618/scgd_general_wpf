@@ -5,7 +5,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Resources;
 
-namespace ColorVision.Media
+namespace ColorVision.Engine.Media
 {
 
     public class ColorMap

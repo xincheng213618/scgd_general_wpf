@@ -1,9 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Controls;
-using ColorVision.Extension;
+using ColorVision.UI.Extension;
 using ColorVision.Handler;
-using ColorVision.UI.Interfaces;
+using ColorVision.Util.Interfaces;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices;
@@ -14,7 +14,6 @@ using ColorVision.Services.PhyCameras.Configs;
 using ColorVision.Services.PhyCameras.Dao;
 using ColorVision.Services.PhyCameras.Templates;
 using ColorVision.Services.RC;
-using ColorVision.Services.Templates;
 using ColorVision.Services.Types;
 using ColorVision.Themes.Controls;
 using cvColorVision;
@@ -32,6 +31,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using ColorVision.UI;
+using ColorVision.Engine.Templates;
 
 namespace ColorVision.Services.PhyCameras
 {

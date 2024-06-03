@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.MQTT;
-using ColorVision.Services.Core;
+using ColorVision.Engine.MQTT;
 using ColorVision.Services.Msg;
 using ColorVision.Services.RC;
 using CVCommCore;

@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.MySql
+namespace ColorVision.Engine.MySql
 {
 
     public class MySqlControl: ViewModelBase
@@ -54,7 +54,7 @@ namespace ColorVision.MySql
 
         public static string GetConnectionString(MySqlConfig MySqlConfig,int timeout = 3 )
         {
-            string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={timeout}";
+            string connStr = $"server={MySqlConfig.Host};port={MySqlConfig.Port};uid={MySqlConfig.UserName};pwd={MySqlConfig.UserPwd};database={MySqlConfig.Database};charset=utf8;Connect Timeout={timeout};SSL Mode =None";
             return connStr;
         }
 
@@ -102,7 +102,6 @@ namespace ColorVision.MySql
             }
             return count;
         }
-
 
         public void EnsureLocalInfile()
         {

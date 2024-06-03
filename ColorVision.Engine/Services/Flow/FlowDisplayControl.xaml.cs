@@ -1,27 +1,59 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.UI.Interfaces;
-using ColorVision.MQTT;
-using ColorVision.Services.Templates;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Engine.MQTT;
+using ColorVision.Engine.Templates;
+using ColorVision.Services.DAO;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Configs;
+using ColorVision.UI.Menus;
 using ColorVision.UI.Views;
+using ColorVision.Util.Interfaces;
+using Mysqlx.Crud;
+using NPOI.Util.Collections;
 using Panuon.WPF.UI;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.UI.Menus;
-using ColorVision.Services.DAO;
 
 
 namespace ColorVision.Services.Flow
 {
-    /// <summary>
-    /// FlowDisplayControl.xaml 的交互逻辑
-    /// </summary>
-    public partial class FlowDisplayControl : UserControl, IDisPlayControl, IIcon
+    public class FlowDisplayControlConfig : ViewModelBase,IConfig
+    {
+        public static FlowDisplayControlConfig Instance =>ConfigHandler.GetInstance().GetRequiredService<FlowDisplayControlConfig>();
+
+        public bool ForceDisableDwayneNeed { get => _ForceDisableDwayneNeed; set { _ForceDisableDwayneNeed = value; NotifyPropertyChanged(); } }
+        private bool _ForceDisableDwayneNeed = true;
+    }
+
+    public class FlowDisplayControlConfigProvider : IConfigSettingProvider
+    {
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+        {
+            return new List<ConfigSettingMetadata> {
+                            new ConfigSettingMetadata
+                            {
+                                Name = "ForceDisableDwayneNeed",
+                                Description = "重启生效",
+                                Type = ConfigSettingType.Bool,
+                                BindingName = nameof(FlowDisplayControlConfig.ForceDisableDwayneNeed),
+                                Source = FlowDisplayControlConfig.Instance,
+                                Order = 800
+                            }
+            };
+        }
+    }
+
+
+        /// <summary>
+        /// FlowDisplayControl.xaml 的交互逻辑
+        /// </summary>
+        public partial class FlowDisplayControl : UserControl, IDisPlayControl, IIcon
     {
 
         private static FlowDisplayControl _instance;
@@ -43,9 +75,14 @@ namespace ColorVision.Services.Flow
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
 
-            using System.Drawing.Graphics graphics = System.Drawing.Graphics.FromHwnd(IntPtr.Zero);
-            View = graphics.DpiX > 96 ? new CVFlowView1() : new CVFlowView();
-
+            if (FlowDisplayControlConfig.Instance.ForceDisableDwayneNeed)
+            {
+                View = new CVFlowView1();
+            }
+            else
+            {
+                View = new CVFlowView();
+            }
             View.View.Title = $"流程窗口 ";
             this.SetIconResource("DrawingImageFlow", View.View);
 
@@ -161,40 +198,37 @@ namespace ColorVision.Services.Flow
 
         private  void Button_FlowRun_Click(object sender, RoutedEventArgs e)
         {
-            if (FlowTemplate.SelectedValue is FlowParam flowParam)
+            string startNode = View.FlowEngineControl.GetStartNodeName();
+            if (!string.IsNullOrWhiteSpace(startNode))
             {
-                string startNode = View.FlowEngineControl.GetStartNodeName();
-                if (!string.IsNullOrWhiteSpace(startNode))
+                flowControl ??= new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
+
+                handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
+
+                handler.Cancelling += Handler_Cancelling; ;
+
+                flowControl.FlowData += (s, e) =>
                 {
-                    flowControl = new FlowControl(MQTTControl.GetInstance(), View.FlowEngineControl);
-
-                    handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
-
-                    handler.Cancelling += Handler_Cancelling; ;
-
-                    flowControl.FlowData += (s, e) =>
+                    if (s is FlowControlData msg)
                     {
-                        if (s is FlowControlData msg)
+                        Application.Current.Dispatcher.Invoke(() =>
                         {
-                            Application.Current.Dispatcher.Invoke(() =>
-                            {
-                                handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
-                            });
-                        }
-                    };
-                    flowControl.FlowCompleted += FlowControl_FlowCompleted;
-                    string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-                    ButtonRun.Visibility = Visibility.Collapsed;
-                    ButtonStop.Visibility = Visibility.Visible;
-                    flowControl.Start(sn);
-                    string name = string.Empty;
-                    if (IsName.IsChecked.HasValue && IsName.IsChecked.Value) { name = TextBoxName.Text; }
-                    BeginNewBatch(sn, name);
-                }
-                else
-                {
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
-                }
+                            handler?.UpdateMessage("TTL: " + msg.Params.TTL.ToString());
+                        });
+                    }
+                };
+                flowControl.FlowCompleted += FlowControl_FlowCompleted;
+                string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+                ButtonRun.Visibility = Visibility.Collapsed;
+                ButtonStop.Visibility = Visibility.Visible;
+                flowControl.Start(sn);
+                string name = string.Empty;
+                if (IsName.IsChecked.HasValue && IsName.IsChecked.Value) { name = TextBoxName.Text; }
+                BeginNewBatch(sn, name);
+            }
+            else
+            {
+                MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到完整流程，运行失败", "ColorVision");
             }
         }
 
@@ -248,36 +282,6 @@ namespace ColorVision.Services.Flow
             FlowTemplate.SelectedIndex = -1;
             FlowTemplate.ItemsSource = FlowParam.Params;
             FlowTemplate.SelectedIndex = 0;
-        }
-        FlowControl rcflowControl;
-
-
-
-        private void Button_RCFlowRun_Click(object sender, RoutedEventArgs e)
-        {
-            if (FlowTemplate.SelectedItem is TemplateModel<FlowParam> flowParam)
-            {
-                rcflowControl ??= new FlowControl(MQTTControl.GetInstance(), "");
-                string sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-                rcflowControl.Start(sn, flowParam.Value);
-            }
-            else
-            {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(),"没有选择流程","ColorVision");
-            }
-        }
-
-        private void Button_RCFlowStop_Click(object sender, RoutedEventArgs e)
-        {
-            if (FlowTemplate.SelectedItem is TemplateModel<FlowParam> flowParam)
-            {
-                rcflowControl ??= new FlowControl(MQTTControl.GetInstance(), "");
-                rcflowControl.Stop(flowParam.Value);
-            }
-            else
-            {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "没有选择流程", "ColorVision");
-            }
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

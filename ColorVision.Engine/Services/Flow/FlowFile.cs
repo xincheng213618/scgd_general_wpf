@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
-using ColorVision.Extension;
+using ColorVision.UI.Extension;
 using ColorVision.Solution.V.Files;
 using System.IO;
 using System.Windows;

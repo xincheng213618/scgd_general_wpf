@@ -1,6 +1,6 @@
 ﻿using System.Data;
-using ColorVision.MySql;
-using ColorVision.MySql.ORM;
+using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Services.Devices.Algorithm.Dao
 {

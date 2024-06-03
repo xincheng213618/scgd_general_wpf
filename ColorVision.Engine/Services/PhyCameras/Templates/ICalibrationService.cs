@@ -1,5 +1,5 @@
-﻿using ColorVision.Services.Dao;
-using ColorVision.Services.Templates;
+﻿using ColorVision.Engine.Templates;
+using ColorVision.Services.Dao;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Services.PhyCameras.Templates

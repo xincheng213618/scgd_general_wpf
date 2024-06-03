@@ -6,7 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.MySql
+namespace ColorVision.Engine.MySql
 {
     /// <summary>
     /// MySqlConnect.xaml 的交互逻辑

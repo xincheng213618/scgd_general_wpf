@@ -1,4 +1,4 @@
-﻿using ColorVision.Extension;
+﻿using ColorVision.UI.Extension;
 using System.Windows;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;

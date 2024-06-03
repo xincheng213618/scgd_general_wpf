@@ -1,16 +1,17 @@
-﻿<Window x:Class="ColorVision.Projects.ProjectHeyuanWindow"
+﻿<Window x:Class="ColorVision.Projects.ProjectHeyuan.ProjectHeyuanWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.Projects"
-        xmlns:value="clr-namespace:ColorVision.Services.Templates.POI.Validate;assembly=ColorVision.Engine"
+        xmlns:local="clr-namespace:ColorVision.Projects.ProjectHeyuan"
+        xmlns:value="clr-namespace:ColorVision.Engine.Templates.POI.Validate;assembly=ColorVision.Engine"
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:HYMesManager}"
         Title="ProjectHeiyuan" Height="720" Width="1280" Initialized="Window_Initialized">
     <Window.Resources>
         <local:ConnectConverter x:Key="ConnectConverter"/>
+        <local:ColorConverter x:Key="ColorConverter"/>
     </Window.Resources>
     <Grid Margin="5">
         <Grid.ColumnDefinitions>
@@ -55,28 +56,28 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="X(上限)">
+                            <GridViewColumn  Header="x(上限)">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
                                         <TextBox Text="{ Binding  X.ValMax}" Width="40"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="X(下限)">
+                            <GridViewColumn  Header="x(下限)">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
                                         <TextBox Text="{ Binding  X.ValMin}" Width="40"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="Y(上限)">
+                            <GridViewColumn  Header="y(上限)">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
                                         <TextBox Text="{ Binding Y.ValMax}" Width="40"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="Y(下限)">
+                            <GridViewColumn  Header="y(下限)">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
                                         <TextBox Text="{ Binding  Y.ValMin}" Width="40" />
@@ -97,13 +98,34 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
+                            <GridViewColumn  Header="dw(下限)">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <TextBox Text="{ Binding  Dw.ValMin}" Width="40" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="dw(下限)">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <TextBox Text="{ Binding  Dw.ValMin}" Width="40" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="模板" Width="200" >
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate  DataType="{x:Type local:TempResult}">
+                                        <ComboBox  x:Name="ValidateTemplate" Initialized="ValidateTemplate_Initialized" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" SelectionChanged="ValidateTemplate_SelectionChanged"  DisplayMemberPath="Key" HorizontalAlignment="Left" Tag="{Binding .}" />
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
                         </GridView>
                     </ListView.View>
 
                 </ListView>
             </Grid>
             <Grid Grid.Row="1" Margin="0,0,0,5">
-                <ListView x:Name="ListViewResult" Height="170">
+                <ListView x:Name="ListViewResult" Height="150">
                     <ListView.Resources >
                     </ListView.Resources>
                     <ListView.ItemContainerStyle>
@@ -129,45 +151,38 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="X(上限)">
+                            <GridViewColumn  Header="x" Width="70">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding  X.ValMax}" Width="40"/>
+                                        <TextBlock Text="{ Binding  X.Value, StringFormat={}{0:F3}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="X(下限)">
+                            <GridViewColumn  Header="y" Width="70">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding  X.ValMin}" Width="40"/>
+                                        <TextBlock Text="{ Binding Y.Value, StringFormat={}{0:F3}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="Y(上限)">
+                            <GridViewColumn  Header="Lv" Width="70">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding Y.ValMax}" Width="40"/>
+                                        <TextBlock Text="{ Binding Lv.Value, StringFormat={}{0:F3}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="Y(下限)">
+                            <GridViewColumn  Header="dw" Width="70">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding  Y.ValMin}" Width="40" />
+                                        <TextBlock Text="{ Binding Dw.Value, StringFormat={}{0:F3}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-                            <GridViewColumn  Header="Lv(上限)">
+                            <GridViewColumn  Header="结果" Width="70">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding Lv.ValMax}" Width="40"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="Lv(下限)">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate  DataType="{x:Type local:TempResult}">
-                                        <TextBlock Text="{ Binding  Lv.ValMin}" Width="40" />
+                                        <TextBlock Text="{Binding Result}" Foreground="{Binding Result,Converter={StaticResource ColorConverter}}" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
@@ -196,17 +211,13 @@
                 <StackPanel  Margin="0,2">
                     <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="流程" Width="100"/>
-                        <ComboBox  x:Name="FlowTemplate" Height="10" SelectedValuePath="Value"  DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
+                        <ComboBox  x:Name="FlowTemplate" Height="10" SelectedValuePath="Value" Text="{Binding Config.FlowName}" DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="产品编号" Width="100"/>
                         <TextBox DockPanel.Dock="Right"  Text="{Binding SN}"  Width="200" HorizontalAlignment="Left" />
                         <Button Content="上传产品编号" Click="UploadSN"  Margin="5,0"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,2">
-                        <TextBlock Text="校验模板" Width="100"/>
-                        <ComboBox  x:Name="ValidateTemplate" Height="10" SelectedValuePath="Value" SelectionChanged="ValidateTemplate_SelectionChanged"  DisplayMemberPath="Key" Width="200" HorizontalAlignment="Left" />
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="设备序号" Width="100"/>
@@ -222,24 +233,24 @@
                         <Button Content=".."   Click="SelectDataPath_Click" Margin="5,0" VerticalAlignment="Bottom" />
                     </StackPanel>
                 </StackPanel>
-
+                
                 <Border HorizontalAlignment="Right" Width="150" Background="{StaticResource BackgroundBrush}" VerticalAlignment="Bottom" CornerRadius="5" Margin="0,5">
                     <StackPanel Orientation="Vertical"  Margin="5">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="入账状态:" Margin="5,2" Width="55"/>
-                            <TextBlock Text="{Binding CSNResult}" Margin="5,0"/>
+                            <TextBlock Text="{Binding CSNResult}" Foreground="{Binding CSNResult,Converter={StaticResource ColorConverter}}" Margin="5,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="上传NG:"  Margin="5,2"  Width="55"/>
-                            <TextBlock Text="{Binding CGIResult}" Margin="5,0"/>
+                            <TextBlock Text="{Binding CGIResult}" Foreground="{Binding CGIResult,Converter={StaticResource ColorConverter}}" Margin="5,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="上传MES:"  Margin="5,2"  Width="55"/>
-                            <TextBlock Text="{Binding CMIResult}" Margin="5,0"/>
+                            <TextBlock Text="{Binding CMIResult}" Foreground="{Binding CMIResult,Converter={StaticResource ColorConverter}}" Margin="5,0"/>
                         </StackPanel>
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="过帐状态:" Margin="5,2"  Width="55"/>
-                            <TextBlock Text="{Binding CPTResult}" Margin="5,0"/>
+                            <TextBlock Text="{Binding CPTResult}" Foreground="{Binding CPTResult,Converter={StaticResource ColorConverter}}" Margin="5,0"/>
                         </StackPanel>
                     </StackPanel>
 

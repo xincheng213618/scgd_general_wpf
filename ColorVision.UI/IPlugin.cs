@@ -2,6 +2,7 @@
 using log4net;
 using log4net.Plugin;
 using Newtonsoft.Json;
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -69,7 +70,7 @@ namespace ColorVision.UI
             }
             return plugins;
         }
-        public static PluginLoadContext loadContext { get; set; }
+        public static PluginLoadContext? loadContext { get; set; }
 
         public static void LoadPluginsUS(string path)
         {
@@ -109,6 +110,26 @@ namespace ColorVision.UI
 
         public static void LoadPluginsAssembly(string path)
         {
+            string DirectoryPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\ColorVision\\{path}";
+            if (!Directory.Exists(DirectoryPath))
+                Directory.CreateDirectory(DirectoryPath);
+
+            // 获取所有 dll 文件
+            foreach (string file in Directory.GetFiles(DirectoryPath, "*.dll"))
+            {
+                try
+                {
+                    FileVersionInfo versionInfo = FileVersionInfo.GetVersionInfo(file);
+                    string version = versionInfo.FileVersion;
+                    byte[] assemblyBytes = File.ReadAllBytes(file);
+                    Assembly assembly = Assembly.Load(assemblyBytes); 
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                }
+            }
+
             if (!Directory.Exists(path)) 
                 return ;
             // 获取所有 dll 文件
@@ -116,13 +137,12 @@ namespace ColorVision.UI
             {
                 try
                 {
-                    Assembly assembly = Assembly.LoadFrom(file);
+                    Assembly assembly = Assembly.LoadFrom(file); ;
                 }
                 catch(Exception ex)
                 {
                     log.Error(ex);
                 }
-
             }
         }
 
@@ -135,7 +155,7 @@ namespace ColorVision.UI
             {
                 try
                 {
-                    Assembly assembly = Assembly.LoadFrom(file);
+                    Assembly assembly = Assembly.LoadFrom(file); ;
                     foreach (var type in assembly.GetTypes().Where(t => typeof(IPlugin).IsAssignableFrom(t) && !t.IsAbstract))
                     {
                         if (Activator.CreateInstance(type) is IPlugin plugin)

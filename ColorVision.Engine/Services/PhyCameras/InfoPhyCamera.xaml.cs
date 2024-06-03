@@ -1,8 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.MySql;
-using ColorVision.Services.Dao;
+using ColorVision.Engine.MySql;
+using ColorVision.Engine.Templates;
 using ColorVision.Services.PhyCameras.Templates;
-using ColorVision.Services.Templates;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -30,7 +29,6 @@ namespace ColorVision.Services.PhyCameras
             if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             DataContext = Device;
         }
-
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {

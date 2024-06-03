@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
+using ColorVision.Engine;
 using ColorVision.Net;
 using ColorVision.Services.Devices.Algorithm.Views;
 using ColorVision.UI.Views;
@@ -27,7 +28,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision.Media
+namespace ColorVision.Engine.Media
 {
     /// <summary>
     /// ImageView.xaml 的交互逻辑

@@ -200,5 +200,30 @@ namespace ColorVision.Services.Devices.Camera
             EditConfig.CopyTo(DeviceCamera.Config);
             Close();
         }
+
+        private void CameraPhyID_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is ComboBox comboBox && comboBox.SelectedIndex > -1 && EditConfig !=null)
+            {
+                UpdateConfig();
+            }
+        }
+        public void UpdateConfig()
+        {
+            var phyCamera = PhyCameraManager.GetInstance().PhyCameras[CameraPhyID.SelectedIndex];
+            EditConfig.Channel = phyCamera.Config.Channel;
+            EditConfig.CameraCfg.CopyFrom(phyCamera.Config.CameraCfg);
+            EditConfig.CFW.CopyFrom(phyCamera.Config.CFW);
+            EditConfig.CameraID = phyCamera.Config.CameraID;
+            EditConfig.CameraType = phyCamera.Config.CameraType;
+            EditConfig.TakeImageMode = phyCamera.Config.TakeImageMode;
+            EditConfig.ImageBpp = phyCamera.Config.ImageBpp;
+        }
+
+        private void UpdateConfig_Click(object sender, RoutedEventArgs e)
+        {
+            UpdateConfig();
+
+        }
     }
 }

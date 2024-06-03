@@ -8,6 +8,9 @@
         d:DataContext="{d:DesignInstance local:PhyCameraManager}"
         xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
         Title="{x:Static properties:Resources.PhysicalCameraManager}" Height="550" Width="1280" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized">
+    <Window.Resources>
+        <local:NameStringConverter x:Key="NameStringConverter"/>
+    </Window.Resources>
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -15,7 +18,7 @@
         </Grid.RowDefinitions>
         <Grid Grid.Row="1">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
             <Grid>
@@ -23,15 +26,17 @@
                     <RowDefinition Height="auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <StackPanel Orientation="Horizontal" Margin="5">
-                    <Button Content="添加相机" Command="{Binding CreateCommand}"/>
-                    <Button Content="许可证导入" Command="{Binding ImportCommand}"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
+                    <Button Content="添加未创建的相机" Command="{Binding CreateCommand}" Margin="0,0,5,0"/>
+                    <Button Content="许可证导入" Command="{Binding ImportCommand}" Margin="0,0,5,0"/>
                 </StackPanel>
                 <TreeView x:Name="TreeView1" Grid.Row="1" ItemsSource="{Binding PhyCameras}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged" Margin="0,0,5,0">
                     <TreeView.Resources>
                         <HierarchicalDataTemplate DataType="{x:Type local:PhyCamera}">
-                            <StackPanel >
-                                <TextBlock Text="{Binding Name}"/>
+                            <StackPanel Margin="5">
+                                <TextBlock Text="{Binding Id}"/>
+                                <TextBlock Text="{Binding CameraLicenseModel.Model}"/>
+                                <TextBlock Text="{Binding Name,Converter={StaticResource NameStringConverter}}"/>
                             </StackPanel>
                         </HierarchicalDataTemplate>
                     </TreeView.Resources>

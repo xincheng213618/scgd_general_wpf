@@ -1,0 +1,94 @@
+﻿<Window x:Class="ColorVision.Scheduler.CreateTask"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Scheduler"
+        xmlns:properties="clr-namespace:ColorVision.Util.Properties"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:SchedulerInfo}"
+        Title="{x:Static properties:Resources.Create}" Background="{DynamicResource GlobalBackground}" Height="400" Width="400" Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+            <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+        <Style TargetType="TextBox" BasedOn="{StaticResource TextBoxBaseBaseStyle}">
+            <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Border Grid.Row="0" Background ="{DynamicResource RegionBrush}" CornerRadius="4">
+            <StackPanel>
+                <DockPanel Margin="2">
+                    <TextBlock Text="任务" Width="100" />
+                    <ComboBox x:Name="TaskComboBox"  Style="{StaticResource ComboBox.Small}" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding JobType}"  SelectionChanged="TaskComboBox_SelectionChanged"/>
+                </DockPanel>
+                <DockPanel Margin="2" >
+                    <TextBlock Text="任务名称" MinWidth="100" />
+                    <TextBox  Text="{Binding JobName}" Style="{StaticResource TextBox.Small}" />
+                </DockPanel>
+                <DockPanel Margin="2" >
+                    <TextBlock Text="GroupName" MinWidth="100" />
+                    <TextBox  Text="{Binding GroupName}"  Style="{StaticResource TextBox.Small}" />
+                </DockPanel>
+                <DockPanel Margin="2">
+                    <TextBlock Text="任务" Width="100" />
+                    <ComboBox x:Name="ComboBoxMode" Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding Mode}"  SelectionChanged="TaskComboBox_SelectionChanged"/>
+                </DockPanel>
+                <DockPanel Margin="2">
+                    <TextBlock Text="Delay" Width="100" />
+                    <CheckBox IsChecked="{Binding IsDelayed}" Width="50"/>
+                    <TextBox Text="{Binding Delay}"  Style="{StaticResource TextBox.Small}" Visibility="{Binding IsDelayed ,Converter={StaticResource bool2VisibilityConverter}}"/>
+                </DockPanel>
+
+                <StackPanel Visibility="{Binding IsJobInterval ,Converter={StaticResource bool2VisibilityConverter}}">
+                    <DockPanel Margin="2" >
+                        <TextBlock Text="重复次数" Width="100" />
+                        <ComboBox Initialized="ComboBoxRepeat_Initialized"  Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding RepeatMode}"  Width="100" Margin="0,0,5,0"/>
+                        <TextBox Text="{Binding RepeatCount}" Style="{StaticResource TextBox.Small}"  Visibility="{Binding IsRepeatMultiple ,Converter={StaticResource bool2VisibilityConverter}}"/>
+                    </DockPanel>
+                    <DockPanel Margin="2"  Visibility="{Binding IsRepeatOnce ,Converter={StaticResource bool2VisibilityConverter1}}">
+                        <TextBlock Text="间隔时间" Width="100" />
+                        <TextBox Text="{Binding Interval}"  Style="{StaticResource TextBox.Small}" />
+                    </DockPanel>
+                </StackPanel>
+                <StackPanel Visibility="{Binding IsSimple ,Converter={StaticResource bool2VisibilityConverter}}">
+                    <DockPanel Margin="2" >
+                        <TextBlock Text="重复次数" Width="100" />
+                        <ComboBox  Initialized="ComboBoxRepeat_Initialized"  Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding RepeatMode}"  Width="100" Margin="0,0,5,0"/>
+                        <TextBox Text="{Binding RepeatCount}" Style="{StaticResource TextBox.Small}"  Visibility="{Binding IsRepeatMultiple ,Converter={StaticResource bool2VisibilityConverter}}"/>
+                    </DockPanel>
+                    <DockPanel Margin="2"  Visibility="{Binding IsRepeatOnce ,Converter={StaticResource bool2VisibilityConverter1}}">
+                        <TextBlock Text="间隔时间" Width="100" />
+                        <TextBox Text="{Binding Interval}"  Style="{StaticResource TextBox.Small}" />
+                    </DockPanel>
+                </StackPanel>
+
+                <StackPanel Visibility="{Binding IsCron ,Converter={StaticResource bool2VisibilityConverter}}">
+                    <DockPanel Margin="2">
+                        <TextBlock Text="CronExpression" Width="100" />
+                        <TextBox  Text="{Binding CronExpression}" Style="{StaticResource TextBox.Small}"/>
+                    </DockPanel>
+                    <DockPanel Margin="2" >
+                        <TextBlock Text="重复次数" Width="100" />
+                        <ComboBox  Initialized="ComboBoxRepeat_Initialized"  Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding RepeatMode}"  Width="100" Margin="0,0,5,0"/>
+                        <TextBox Text="{Binding RepeatCount}" Style="{StaticResource TextBox.Small}"  Visibility="{Binding IsRepeatMultiple ,Converter={StaticResource bool2VisibilityConverter}}"/>
+                    </DockPanel>
+                </StackPanel>
+
+            </StackPanel>
+        </Border>
+
+        <Border Grid.Row="1" Height="30">
+            <Button Content="{x:Static properties:Resources.Create}" Foreground="White" Background="{StaticResource PrimaryBrush}"  Click="Button_Click" />
+        </Border>
+    </Grid>
+</Window>

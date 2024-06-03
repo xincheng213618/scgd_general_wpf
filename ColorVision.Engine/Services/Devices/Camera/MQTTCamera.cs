@@ -1,7 +1,8 @@
 ﻿#pragma warning disable CS8602,CA1707
 
 using ColorVision.Common.Utilities;
-using ColorVision.Extension;
+using ColorVision.Engine.Services.PhyCameras.Configs;
+using ColorVision.UI.Extension;
 using ColorVision.Services.Devices.Camera.Configs;
 using ColorVision.Services.Msg;
 using ColorVision.Services.PhyCameras.Templates;
@@ -25,7 +26,7 @@ namespace ColorVision.Services.Devices.Camera
         public MQTTCamera(ConfigCamera CameraConfig) : base(CameraConfig)
         {
             MsgReturnReceived += MQTTCamera_MsgReturnChanged;
-            DeviceStatus = DeviceStatusType.OffLine;
+            DeviceStatus = DeviceStatusType.UnInit;
         }
 
         public override void Dispose()
@@ -175,18 +176,22 @@ namespace ColorVision.Services.Devices.Camera
             ///如果配置电机，则传入电机的参数
             if (Config.IsHaveMotor)
             {
-                var AutoFocus = new Dictionary<string, object>() { };
-                AutoFocus.Add("eFOCUS_COMMUN", Config.MotorConfig.eFOCUSCOMMUN);
-                AutoFocus.Add("szComName", Config.MotorConfig.SzComName);
-                AutoFocus.Add("BaudRate", Config.MotorConfig.BaudRate);
+                var AutoFocus = new Dictionary<string, object>
+                {
+                    { "eFOCUS_COMMUN", Config.MotorConfig.eFOCUSCOMMUN },
+                    { "szComName", Config.MotorConfig.SzComName },
+                    { "BaudRate", Config.MotorConfig.BaudRate }
+                };
                 Params.Add("AutoFocus", AutoFocus);
             }
 
             if (Config.CFW.IsCOM)
             {
-                var CFWPORT = new Dictionary<string, object>() { };
-                CFWPORT.Add("szComName", Config.CFW.SzComName);
-                CFWPORT.Add("BaudRate", Config.CFW.BaudRate);
+                var CFWPORT = new Dictionary<string, object>
+                {
+                    { "szComName", Config.CFW.SzComName },
+                    { "BaudRate", Config.CFW.BaudRate }
+                };
                 Params.Add("CFWPORT", CFWPORT);
             }
 

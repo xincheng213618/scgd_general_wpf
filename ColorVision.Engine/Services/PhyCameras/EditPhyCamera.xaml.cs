@@ -117,10 +117,12 @@ namespace ColorVision.Services.PhyCameras
             chType3.ItemsSource = ImageChannelTypeList;
 
 
-            Dictionary<ImageChannelType, ComboBox> keyValuePairs = new() { };
-            keyValuePairs.Add(ImageChannelType.Gray_X, chType1);
-            keyValuePairs.Add(ImageChannelType.Gray_Y, chType2);
-            keyValuePairs.Add(ImageChannelType.Gray_Z, chType3);
+            Dictionary<ImageChannelType, ComboBox> keyValuePairs = new()
+            {
+                { ImageChannelType.Gray_X, chType1 },
+                { ImageChannelType.Gray_Y, chType2 },
+                { ImageChannelType.Gray_Z, chType3 }
+            };
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
