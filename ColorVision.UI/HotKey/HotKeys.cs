@@ -101,12 +101,11 @@ namespace ColorVision.UI.HotKey
                         IsRegistered = WindowHotKeyManager.GetInstance(Control).Register(this);
                     }
                 }
+                _Kinds = value;
                 NotifyPropertyChanged(nameof(IsGlobal));
                 NotifyPropertyChanged();
             }
         }
-        private HotKeyKinds _Kinds = HotKeyKinds.Windows;
-
         public bool IsGlobal
         {
             get => Kinds == HotKeyKinds.Global; set
@@ -121,6 +120,9 @@ namespace ColorVision.UI.HotKey
                 }
             }
         }
+        private HotKeyKinds _Kinds = HotKeyKinds.Windows;
+
+
 
 
 
