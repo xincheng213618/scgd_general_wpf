@@ -8,7 +8,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:SchedulerInfo}"
-        Title="{x:Static properties:Resources.Create}" Background="{DynamicResource GlobalBackground}" Height="250" Width="400" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.Create}" Background="{DynamicResource GlobalBackground}" Height="400" Width="400" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -29,24 +29,61 @@
             <StackPanel>
                 <DockPanel Margin="2">
                     <TextBlock Text="任务" Width="100" />
-                    <ComboBox x:Name="TaskComboBox"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding JobType}"  SelectionChanged="TaskComboBox_SelectionChanged"/>
+                    <ComboBox x:Name="TaskComboBox"  Style="{StaticResource ComboBox.Small}" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding JobType}"  SelectionChanged="TaskComboBox_SelectionChanged"/>
                 </DockPanel>
                 <DockPanel Margin="2" >
                     <TextBlock Text="任务名称" MinWidth="100" />
-                    <TextBox  Text="{Binding JobName}" />
+                    <TextBox  Text="{Binding JobName}" Style="{StaticResource TextBox.Small}" />
                 </DockPanel>
                 <DockPanel Margin="2" >
                     <TextBlock Text="GroupName" MinWidth="100" />
-                    <TextBox  Text="{Binding GroupName}"  />
+                    <TextBox  Text="{Binding GroupName}"  Style="{StaticResource TextBox.Small}" />
                 </DockPanel>
-                <DockPanel Margin="2" >
-                    <TextBlock Text="CronExpression" Width="100" />
-                    <TextBox  Text="{Binding CronExpression}"/>
+                <DockPanel Margin="2">
+                    <TextBlock Text="任务" Width="100" />
+                    <ComboBox x:Name="ComboBoxMode" Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding Mode}"  SelectionChanged="TaskComboBox_SelectionChanged"/>
                 </DockPanel>
-                <DockPanel Margin="2" >
-                    <TextBlock Text="次数" Width="100" />
-                    <TextBox  Text="{Binding MaxCount}"/>
+                <DockPanel Margin="2">
+                    <TextBlock Text="Delay" Width="100" />
+                    <CheckBox IsChecked="{Binding IsDelayed}" Width="50"/>
+                    <TextBox Text="{Binding Delay}"  Style="{StaticResource TextBox.Small}" Visibility="{Binding IsDelayed ,Converter={StaticResource bool2VisibilityConverter}}"/>
                 </DockPanel>
+
+                <StackPanel Visibility="{Binding IsJobInterval ,Converter={StaticResource bool2VisibilityConverter}}">
+                    <DockPanel Margin="2" >
+                        <TextBlock Text="重复次数" Width="100" />
+                        <ComboBox Initialized="ComboBoxRepeat_Initialized"  Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding RepeatMode}"  Width="100" Margin="0,0,5,0"/>
+                        <TextBox Text="{Binding RepeatCount}" Style="{StaticResource TextBox.Small}"  Visibility="{Binding IsRepeatMultiple ,Converter={StaticResource bool2VisibilityConverter}}"/>
+                    </DockPanel>
+                    <DockPanel Margin="2"  Visibility="{Binding IsRepeatOnce ,Converter={StaticResource bool2VisibilityConverter1}}">
+                        <TextBlock Text="间隔时间" Width="100" />
+                        <TextBox Text="{Binding Interval}"  Style="{StaticResource TextBox.Small}" />
+                    </DockPanel>
+                </StackPanel>
+                <StackPanel Visibility="{Binding IsSimple ,Converter={StaticResource bool2VisibilityConverter}}">
+                    <DockPanel Margin="2" >
+                        <TextBlock Text="重复次数" Width="100" />
+                        <ComboBox  Initialized="ComboBoxRepeat_Initialized"  Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding RepeatMode}"  Width="100" Margin="0,0,5,0"/>
+                        <TextBox Text="{Binding RepeatCount}" Style="{StaticResource TextBox.Small}"  Visibility="{Binding IsRepeatMultiple ,Converter={StaticResource bool2VisibilityConverter}}"/>
+                    </DockPanel>
+                    <DockPanel Margin="2"  Visibility="{Binding IsRepeatOnce ,Converter={StaticResource bool2VisibilityConverter1}}">
+                        <TextBlock Text="间隔时间" Width="100" />
+                        <TextBox Text="{Binding Interval}"  Style="{StaticResource TextBox.Small}" />
+                    </DockPanel>
+                </StackPanel>
+
+                <StackPanel Visibility="{Binding IsCron ,Converter={StaticResource bool2VisibilityConverter}}">
+                    <DockPanel Margin="2">
+                        <TextBlock Text="CronExpression" Width="100" />
+                        <TextBox  Text="{Binding CronExpression}" Style="{StaticResource TextBox.Small}"/>
+                    </DockPanel>
+                    <DockPanel Margin="2" >
+                        <TextBlock Text="重复次数" Width="100" />
+                        <ComboBox  Initialized="ComboBoxRepeat_Initialized"  Style="{StaticResource ComboBox.Small}"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding RepeatMode}"  Width="100" Margin="0,0,5,0"/>
+                        <TextBox Text="{Binding RepeatCount}" Style="{StaticResource TextBox.Small}"  Visibility="{Binding IsRepeatMultiple ,Converter={StaticResource bool2VisibilityConverter}}"/>
+                    </DockPanel>
+                </StackPanel>
+
             </StackPanel>
         </Border>
 

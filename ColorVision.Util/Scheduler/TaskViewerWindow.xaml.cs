@@ -96,7 +96,6 @@ namespace ColorVision.Scheduler
                 };
 
                 var existingTaskInfo = TaskInfos.FirstOrDefault(t => t.JobName == updatedTaskInfo.JobName && t.GroupName == updatedTaskInfo.GroupName);
-
                 if (existingTaskInfo != null)
                 {
                     // 更新现有任务信息

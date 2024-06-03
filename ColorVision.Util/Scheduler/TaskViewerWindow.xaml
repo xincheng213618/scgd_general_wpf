@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Scheduler"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:QuartzSchedulerManager}"
-        Title="TaskViewerWindow" Height="450" Width="800">
+        Title="TaskViewerWindow" Height="450" Width="1024">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -39,10 +39,10 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn Header="CronExpression">
+                    <GridViewColumn Header="RunCount">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
-                                <TextBlock Text="{Binding CronExpression}"/>
+                                <TextBlock Text="{Binding RunCount}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
@@ -71,7 +71,7 @@
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SchedulerInfo}">
                                 <StackPanel Orientation="Horizontal">
-                                    <Button Content="Stop" Command="{Binding StopCommand}"/>
+                                    <Button Content="Stop" Command="{Binding  PausedCommand}"/>
                                     <Button Content="Resume" Command="{Binding ResumeJobCommand}"/>
                                     <Button Content="Delete" Command="{Binding DeleteCommand}"/>
                                 </StackPanel>

@@ -1,9 +1,12 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Extension;
+using ColorVision.Common.Utilities;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ColorVision.Scheduler
@@ -13,7 +16,7 @@ namespace ColorVision.Scheduler
     /// </summary>
     public partial class CreateTask : Window
     {
-        public SchedulerInfo SchedulerInfo { get; set; }
+        public SchedulerInfo SchedulerInfo { get; set; } = new SchedulerInfo();
         public CreateTask()
         {
             InitializeComponent();
@@ -21,16 +24,22 @@ namespace ColorVision.Scheduler
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            ComboBoxMode.ItemsSource = from e1 in Enum.GetValues(typeof(JobExecutionMode)).Cast<JobExecutionMode>()
+                                       select new KeyValuePair<JobExecutionMode, string>(e1, e1.ToString());
+
             TaskComboBox.ItemsSource = QuartzSchedulerManager.GetInstance().Jobs;
-            SchedulerInfo = new SchedulerInfo();
             this.DataContext = SchedulerInfo;
         }
 
 
         private void TaskComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            SchedulerInfo.JobName = QuartzSchedulerManager.GetInstance().GetNewJobName(SchedulerInfo.JobType.Name);
-            SchedulerInfo.GroupName = QuartzSchedulerManager.GetInstance().GetNewGroupName(SchedulerInfo.JobType.Name);
+            if (SchedulerInfo.JobType != null)
+            {
+                SchedulerInfo.JobName = QuartzSchedulerManager.GetInstance().GetNewJobName(SchedulerInfo.JobType.Name);
+                SchedulerInfo.GroupName = QuartzSchedulerManager.GetInstance().GetNewGroupName(SchedulerInfo.JobType.Name);
+            }
+
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -38,7 +47,7 @@ namespace ColorVision.Scheduler
             var groupName = SchedulerInfo.GroupName;
             var cronExpression = SchedulerInfo.CronExpression;
 
-            if (string.IsNullOrWhiteSpace(jobName) || string.IsNullOrWhiteSpace(groupName) || string.IsNullOrWhiteSpace(cronExpression))
+            if (string.IsNullOrWhiteSpace(jobName) || string.IsNullOrWhiteSpace(groupName))
             {
                 MessageBox.Show("Please fill in all fields.");
                 return;
@@ -57,5 +66,13 @@ namespace ColorVision.Scheduler
         }
 
 
+        private void ComboBoxRepeat_Initialized(object sender, EventArgs e)
+        {
+            if (sender is ComboBox comboBox)
+            {
+                comboBox.ItemsSource = from e1 in Enum.GetValues(typeof(JobRepeatMode)).Cast<JobRepeatMode>()
+                                       select new KeyValuePair<string,JobRepeatMode>(e1.ToDescription(), e1);
+            }
+        }
     }
 }

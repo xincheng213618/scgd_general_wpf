@@ -133,22 +133,86 @@ namespace ColorVision.Scheduler
             var selectedJobType = schedulerInfo.JobType;
 
             var scheduler = await StdSchedulerFactory.GetDefaultScheduler();
-
             // 动态创建Job实例
             var job = JobBuilder.Create(selectedJobType)
                 .WithIdentity(schedulerInfo.JobName, schedulerInfo.GroupName)
                 .Build();
 
             // 创建触发器
-            var trigger = TriggerBuilder.Create()
-                .WithIdentity($"{schedulerInfo.JobName}-trigger", schedulerInfo.GroupName)
-                .WithCronSchedule(schedulerInfo.CronExpression)
-                .Build();
-            // 调度Job
-            await scheduler.ScheduleJob(job, trigger);
-            schedulerInfo.NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
-            TaskInfos.Add(schedulerInfo);
-            MessageBox.Show("Task created successfully.");
+            TriggerBuilder triggerBuilder = TriggerBuilder.Create().WithIdentity($"{schedulerInfo.JobName}-trigger", schedulerInfo.GroupName);
+
+            switch (schedulerInfo.JobStartMode)
+            {
+                case JobStartMode.Immediate:
+                    triggerBuilder.StartNow();
+                    break;
+                case JobStartMode.Delayed:
+                    triggerBuilder.StartAt(DateBuilder.FutureDate((int)schedulerInfo.Delay.TotalSeconds, IntervalUnit.Second));
+                    break;
+                default:
+                    break;
+            }
+            switch (schedulerInfo.Mode)
+            {
+                case JobExecutionMode.Simple:
+
+
+
+                    triggerBuilder
+                        .WithSimpleSchedule(x => 
+                        {
+                            switch (schedulerInfo.RepeatMode)
+                            {
+                                case JobRepeatMode.Multiple:
+                                    x.WithInterval(schedulerInfo.Interval);
+                                    x.WithRepeatCount(schedulerInfo.RepeatCount);
+                                    break;
+                                case JobRepeatMode.Forever:
+                                    x.WithInterval(schedulerInfo.Interval);
+                                    x.RepeatForever();
+                                    break;
+                            case JobRepeatMode.Once:
+                            default:
+                                    break;
+                            }
+                        });
+                    break;
+                case JobExecutionMode.Calendar:
+                    triggerBuilder.WithCalendarIntervalSchedule(x => x.WithIntervalInDays(1)); // 每天执行一次
+                    break;
+                case JobExecutionMode.Interval:
+                    triggerBuilder.WithDailyTimeIntervalSchedule(x =>
+                    {
+                        x.WithInterval((int)schedulerInfo.Interval.TotalSeconds ,IntervalUnit.Second);
+                        switch (schedulerInfo.RepeatMode)
+                        {
+                            case JobRepeatMode.Multiple:
+                                x.WithRepeatCount(schedulerInfo.RepeatCount);
+                                break;
+                            case JobRepeatMode.Forever:
+                            case JobRepeatMode.Once:
+                                x.WithRepeatCount(0);
+                                break;
+                            default:
+                                break;
+                        }
+                    });
+                    break;
+                case JobExecutionMode.Cron:
+                    triggerBuilder.WithCronSchedule(schedulerInfo.CronExpression);
+                    break;
+                default:
+                    break;
+            }
+
+            if (triggerBuilder != null)
+            {
+                ITrigger trigger = triggerBuilder.Build();
+                // 调度Job
+                await scheduler.ScheduleJob(job, trigger);
+                schedulerInfo.NextFireTime = trigger.GetNextFireTimeUtc()?.ToLocalTime().ToString("yyyy/MM/dd HH:mm:ss") ?? "N/A";
+                TaskInfos.Add(schedulerInfo);
+            }
         }
 
         public async Task<SchedulerInfo?> CreateJob(string jobName, string groupName, string cronExpression, string selectedJobName)
