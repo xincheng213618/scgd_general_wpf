@@ -21,7 +21,6 @@ namespace ColorVision.UI.HotKey.WindowHotKey
             HotKeysList = new List<HotKeys>();
         }
 
-        private static WindowHotKeyManager instance;
 
         public static WindowHotKeyManager GetInstance(Control control)
         {
@@ -33,10 +32,9 @@ namespace ColorVision.UI.HotKey.WindowHotKey
                 }
                 else
                 {
-                    instance = new WindowHotKeyManager(control);
+                    return new WindowHotKeyManager(control);
                 }
             }
-            return instance;
         }
 
 
