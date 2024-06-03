@@ -8,7 +8,7 @@ namespace ColorVision.Scheduler
 {
     public class ExportMenuTaskViewer :  IMenuItem
     {
-        public string? OwnerGuid => "Help";
+        public string? OwnerGuid => "Tool";
         public string? GuidId => "TaskViewerWindow";
 
         public int Order => 1000;
@@ -21,7 +21,7 @@ namespace ColorVision.Scheduler
 
         public object? Icon => null;
 
-        public RelayCommand Command => new(A => new TaskViewerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog());
+        public RelayCommand Command => new(A => new TaskViewerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show());
 
     }
 }
