@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
+using ColorVision.Scheduler;
 using ColorVision.Services.Dao;
 using ColorVision.Services.Devices.Camera.Video;
 using ColorVision.Services.Devices.Camera.Views;
@@ -35,12 +36,21 @@ namespace ColorVision.Services.Devices.Camera
     {
         public Task Execute(IJobExecutionContext context)
         {
+            var schedulerInfo = QuartzSchedulerManager.GetInstance().TaskInfos.First(x => x.JobName == context.JobDetail.Key.Name && x.GroupName == context.JobDetail.Key.Group);
+            schedulerInfo.RunCount++;
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                schedulerInfo.Status = SchedulerStatus.Running;
+            });
             // 定时任务逻辑
             Application.Current.Dispatcher.Invoke(() =>
             {
                 var lsit = ServiceManager.GetInstance().DeviceServices.OfType<DeviceCamera>().ToList();
                 DeviceCamera deviceCamera = lsit.FirstOrDefault();
                 deviceCamera?.DisplayCameraControlLazy.Value.GetData();
+
+
+                schedulerInfo.Status = SchedulerStatus.Ready;
             });
             return Task.CompletedTask;
         }
