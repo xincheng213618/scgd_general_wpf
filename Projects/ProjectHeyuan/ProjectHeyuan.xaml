@@ -220,12 +220,12 @@
                         <Button Content="上传产品编号" Click="UploadSN"  Margin="5,0"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,2">
-                        <TextBlock Text="设备序号" Width="100"/>
-                        <TextBox DockPanel.Dock="Right"  Text="{Binding Config.DeviceId}" Width="200" HorizontalAlignment="Left"/>
+                        <TextBlock Text="型號名稱" Width="100"/>
+                        <TextBox DockPanel.Dock="Right"   Text="{Binding Config.TestName}" Width="200" HorizontalAlignment="Left"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,2">
-                        <TextBlock Text="产品测试名称" Width="100"/>
-                        <TextBox DockPanel.Dock="Right"   Text="{Binding Config.TestName}" Width="200" HorizontalAlignment="Left"/>
+                        <TextBlock Text="设备序号" Width="100"/>
+                        <TextBox DockPanel.Dock="Right"  Text="{Binding Config.DeviceId}" Width="200" HorizontalAlignment="Left"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="数据存储路径" Width="100"/>
