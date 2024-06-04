@@ -1,6 +1,7 @@
-﻿#pragma warning disable CS8602
+﻿#pragma warning disable CS8602,CA1707
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
+using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI.Validate;
 using ColorVision.Services;
 using ColorVision.Services.DAO;
@@ -14,7 +15,9 @@ using Panuon.WPF.UI;
 using ST.Library.UI.NodeEditor;
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.IO;
 using System.IO.Ports;
+using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -58,6 +61,96 @@ namespace ColorVision.Projects.ProjectHeyuan
         }
     }
 
+
+
+    public class DataRecord
+    {
+        public int SequenceNumber { get; set; }
+        public string Model { get; set; }
+        public string ProductID { get; set; }
+        public DateTime Date { get; set; }
+        public TimeSpan Time { get; set; }
+        public double White_x { get; set; }
+        public double White_y { get; set; }
+        public double White_lv { get; set; }
+        public double White_wl { get; set; }
+        public string White_Result { get; set; }
+        public double Red_x { get; set; }
+        public double Red_y { get; set; }
+        public double Red_lv { get; set; }
+        public double Red_wl { get; set; }
+        public string Red_Result { get; set; }
+        public double Orange_x { get; set; }
+        public double Orange_y { get; set; }
+        public double Orange_lv { get; set; }
+        public double Orange_wl { get; set; }
+        public string Orange_Result { get; set; }
+        public double Blue_x { get; set; }
+        public double Blue_y { get; set; }
+        public double Blue_lv { get; set; }
+        public double Blue_wl { get; set; }
+        public string Blue_Result { get; set; }
+        public string Final_Result { get; set; }
+    }
+
+    public class CsvHandler
+    {
+        private string _filePath;
+        private int _currentSequenceNumber;
+
+        public CsvHandler(string filePath)
+        {
+            _filePath = filePath;
+            _currentSequenceNumber = GetLastSequenceNumber();
+        }
+
+        private int GetLastSequenceNumber()
+        {
+            if (!File.Exists(_filePath))
+            {
+                return 0;
+            }
+
+            using (var reader = new StreamReader(_filePath))
+            {
+                string line;
+                string lastLine = null;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    lastLine = line;
+                }
+
+                if (lastLine != null)
+                {
+                    var values = lastLine.Split(',');
+                    if (int.TryParse(values[0], out int sequenceNumber))
+                    {
+                        return sequenceNumber;
+                    }
+                }
+            }
+
+            return 0;
+        }
+
+        public void SaveRecord(DataRecord record)
+        {
+            record.SequenceNumber = ++_currentSequenceNumber;
+
+            using (var writer = new StreamWriter(_filePath, true))
+            {
+                if (new FileInfo(_filePath).Length == 0)
+                {
+                    // Write header if file is empty
+                    writer.WriteLine("SequenceNumber,Model,ProductID,Date,Time,White_x,White_y,White_lv,White_wl,White_Result,Red_x,Red_y,Red_lv,Red_wl,Red_Result,Orange_x,Orange_y,Orange_lv,Orange_wl,Orange_Result,Blue_x,Blue_y,Blue_lv,Blue_wl,Blue_Result,Final_Result");
+                }
+
+                writer.WriteLine($"{record.SequenceNumber},{record.Model},{record.ProductID},{record.Date.ToString("yyyy-MM-dd")},{record.Time},{record.White_x},{record.White_y},{record.White_lv},{record.White_wl},{record.White_Result},{record.Red_x},{record.Red_y},{record.Red_lv},{record.Red_wl},{record.Red_Result},{record.Orange_x},{record.Orange_y},{record.Orange_lv},{record.Orange_wl},{record.Orange_Result},{record.Blue_x},{record.Blue_y},{record.Blue_lv},{record.Blue_wl},{record.Blue_Result},{record.Final_Result}");
+            }
+        }
+    }
+
+
     /// <summary>
     /// ProjectHeyuanWindow.xaml 的交互逻辑
     /// </summary>
@@ -68,6 +161,10 @@ namespace ColorVision.Projects.ProjectHeyuan
         {
             InitializeComponent();
         }
+
+
+
+
 
         public ObservableCollection<TempResult> Settings { get; set; } = new ObservableCollection<TempResult>();
         public ObservableCollection<TempResult> Results { get; set; } = new ObservableCollection<TempResult>();
@@ -212,7 +309,6 @@ namespace ColorVision.Projects.ProjectHeyuan
                                     HYMesManager.GetInstance().Results = Results;
                                     HYMesManager.GetInstance().UploadNG(string.Join(",", ngstring));
                                 }
-
                                 log.Debug("mes 已经上传");
                             }
                             else
@@ -254,6 +350,49 @@ namespace ColorVision.Projects.ProjectHeyuan
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), "产品编号为空，在运行前请配置产品编号");
                 return;
             }
+
+            if (Directory.Exists(HYMesManager.Config.DataPath))
+            {
+                string FilePath = HYMesManager.Config.DataPath + "\\" + DateTime.Now.ToString("yyyy-MM-dd") + "_" + HYMesManager.Config.DeviceId + "_" + Environment.MachineName +".csv";
+                CsvHandler csvHandler = new CsvHandler(FilePath);
+
+                var record = new DataRecord
+                {
+                    Model = HYMesManager.Config.TestName,
+                    ProductID = HYMesManager.GetInstance().SN,
+                    Date = DateTime.Now.Date,
+                    Time = DateTime.Now.TimeOfDay,
+                    White_x = 0.3127,
+                    White_y = 0.3290,
+                    White_lv = 100.0,
+                    White_wl = 550.0,
+                    White_Result = "Pass",
+                    Red_x = 0.6400,
+                    Red_y = 0.3300,
+                    Red_lv = 50.0,
+                    Red_wl = 620.0,
+                    Red_Result = "Pass",
+                    Orange_x = 0.5800,
+                    Orange_y = 0.4100,
+                    Orange_lv = 40.0,
+                    Orange_wl = 600.0,
+                    Orange_Result = "Pass",
+                    Blue_x = 0.1500,
+                    Blue_y = 0.0600,
+                    Blue_lv = 30.0,
+                    Blue_wl = 470.0,
+                    Blue_Result = "Pass",
+                    Final_Result = "Pass"
+                };
+                csvHandler.SaveRecord(record);
+                // 清空产品编号
+                TextBoxSn.Text = string.Empty;
+
+                // 将焦点移动到产品编号输入框
+                TextBoxSn.Focus();
+            }
+
+
 
             if (FlowTemplate.SelectedValue is FlowParam flowParam)
             {
