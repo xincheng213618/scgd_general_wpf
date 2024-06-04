@@ -39,14 +39,6 @@
           <source>别名</source>
           <target state="new">Псевдоним</target>
         </trans-unit>
-        <trans-unit id="Apply" translate="yes" xml:space="preserve">
-          <source>应用</source>
-          <target state="new">приложение</target>
-        </trans-unit>
-        <trans-unit id="ApplyWindowLayout" translate="yes" xml:space="preserve">
-          <source>应用窗口布局</source>
-          <target state="new">Применить макет окна</target>
-        </trans-unit>
         <trans-unit id="AutoExposure" translate="yes" xml:space="preserve">
           <source>自动曝光</source>
           <target state="new">Автоматическая экспозиция</target>
@@ -90,14 +82,6 @@
         <trans-unit id="Chart" translate="yes" xml:space="preserve">
           <source>图表</source>
           <target state="new">диаграмма</target>
-        </trans-unit>
-        <trans-unit id="CheckForUpdates" translate="yes" xml:space="preserve">
-          <source>检查更新</source>
-          <target state="new">Проверьте наличие обновлений</target>
-        </trans-unit>
-        <trans-unit id="CheckUpdatesOnStartup" translate="yes" xml:space="preserve">
-          <source>软件启动时检测更新</source>
-          <target state="new">Обнаружение обновлений при запуске программного обеспечения</target>
         </trans-unit>
         <trans-unit id="Choice" translate="yes" xml:space="preserve">
           <source>选择</source>
@@ -163,14 +147,6 @@
           <source>新建配置文件</source>
           <target state="new">Создать новый файл конфигурации</target>
         </trans-unit>
-        <trans-unit id="CreateNewProjectOrFile" translate="yes" xml:space="preserve">
-          <source>创建一个新的的项目或文件</source>
-          <target state="new">Создать новый проект или файл</target>
-        </trans-unit>
-        <trans-unit id="CreateProject" translate="yes" xml:space="preserve">
-          <source>创建工程</source>
-          <target state="new">Создать проект</target>
-        </trans-unit>
         <trans-unit id="CreateTime" translate="yes" xml:space="preserve">
           <source>测量时间</source>
           <target state="new">измерять время</target>
@@ -227,10 +203,6 @@
           <source>设备名称</source>
           <target state="new">Имя устройства</target>
         </trans-unit>
-        <trans-unit id="DisableHardwareAcceleration" translate="yes" xml:space="preserve">
-          <source>禁用硬件加速</source>
-          <target state="new">Отключить аппаратное ускорение</target>
-        </trans-unit>
         <trans-unit id="DisplayAlgorithmControl_CIE图像数据区" translate="yes" xml:space="preserve">
           <source>CIE图像数据区</source>
           <target state="new">Область данных изображения CIE</target>
@@ -266,10 +238,6 @@
         <trans-unit id="ExecutionProcess" translate="yes" xml:space="preserve">
           <source>执行流程</source>
           <target state="new">Процесс</target>
-        </trans-unit>
-        <trans-unit id="ExperimentalFeature" translate="yes" xml:space="preserve">
-          <source>实验性功能</source>
-          <target state="new">Экспериментальные возможности</target>
         </trans-unit>
         <trans-unit id="Export" translate="yes" xml:space="preserve">
           <source>导出</source>
@@ -327,14 +295,6 @@
           <source>增益</source>
           <target state="new">Прирост</target>
         </trans-unit>
-        <trans-unit id="General" translate="yes" xml:space="preserve">
-          <source>通用</source>
-          <target state="new">Универсальный</target>
-        </trans-unit>
-        <trans-unit id="GeneralSettings" translate="yes" xml:space="preserve">
-          <source>通用设置</source>
-          <target state="new">Общие настройки</target>
-        </trans-unit>
         <trans-unit id="GhostShadow" translate="yes" xml:space="preserve">
           <source>鬼影</source>
           <target state="new">призрак</target>
@@ -346,10 +306,6 @@
         <trans-unit id="Host" translate="yes" xml:space="preserve">
           <source>主机</source>
           <target state="new">Хозяин</target>
-        </trans-unit>
-        <trans-unit id="HotKeys" translate="yes" xml:space="preserve">
-          <source>快捷键</source>
-          <target state="new">быстрая клавиша</target>
         </trans-unit>
         <trans-unit id="ImageFile" translate="yes" xml:space="preserve">
           <source>图片文件</source>
@@ -379,10 +335,6 @@
           <source>查询</source>
           <target state="new">Запросить</target>
         </trans-unit>
-        <trans-unit id="InstallCertificate" translate="yes" xml:space="preserve">
-          <source>安装证书</source>
-          <target state="new">Установить сертификат</target>
-        </trans-unit>
         <trans-unit id="IsDefaultOpenService" translate="yes" xml:space="preserve">
           <source>软件启动时打开服务</source>
           <target state="new">Исдефолтопенсервице</target>
@@ -390,14 +342,6 @@
         <trans-unit id="IsRetorePlayControls" translate="yes" xml:space="preserve">
           <source>恢复上次关闭时采集窗口</source>
           <target state="new">Исретореплейконтролс</target>
-        </trans-unit>
-        <trans-unit id="Language" translate="yes" xml:space="preserve">
-          <source>用户界面语言</source>
-          <target state="new">язык пользовательского интерфейса</target>
-        </trans-unit>
-        <trans-unit id="LanguageResartSign" translate="yes" xml:space="preserve">
-          <source>您必须重新启动才能使用新的语言设置</source>
-          <target state="new">Необходимо перезагрузить компьютер, чтобы использовать новые языковые настройки</target>
         </trans-unit>
         <trans-unit id="LaunchSoftwareWithLocalService" translate="yes" xml:space="preserve">
           <source>软件启动时打开本地服务</source>
@@ -423,14 +367,6 @@
           <source>本地</source>
           <target state="new">местный</target>
         </trans-unit>
-        <trans-unit id="Log" translate="yes" xml:space="preserve">
-          <source>日志</source>
-          <target state="new">бревно</target>
-        </trans-unit>
-        <trans-unit id="LogLevel" translate="yes" xml:space="preserve">
-          <source>日志级别</source>
-          <target state="new">Уровень журнала</target>
-        </trans-unit>
         <trans-unit id="MQTTLog" translate="yes" xml:space="preserve">
           <source>MQTT日志</source>
           <target state="new">Журнал MQTT</target>
@@ -446,14 +382,6 @@
         <trans-unit id="Manager" translate="yes" xml:space="preserve">
           <source>管理</source>
           <target state="new">управлять</target>
-        </trans-unit>
-        <trans-unit id="Maximize" translate="yes" xml:space="preserve">
-          <source>最大化</source>
-          <target state="new">максимизировать</target>
-        </trans-unit>
-        <trans-unit id="MenuAbout" translate="yes" xml:space="preserve">
-          <source>关于(_A)</source>
-          <target state="new">Об</target>
         </trans-unit>
         <trans-unit id="MenuAlgorithm" translate="yes" xml:space="preserve">
           <source>算法(_A)</source>
@@ -495,10 +423,6 @@
           <source>编辑(_E)</source>
           <target state="new">Изменить (Е)</target>
         </trans-unit>
-        <trans-unit id="MenuExit" translate="yes" xml:space="preserve">
-          <source>退出(_X)</source>
-          <target state="new">Выход(Х)</target>
-        </trans-unit>
         <trans-unit id="MenuFOV" translate="yes" xml:space="preserve">
           <source>_FOV模板设置</source>
           <target state="new">Настройки шаблона поля зрения (B)";</target>
@@ -518,14 +442,6 @@
         <trans-unit id="MenuGhost" translate="yes" xml:space="preserve">
           <source>鬼影模板设置(_G)</source>
           <target state="new">Настройки шаблона призрака (G)</target>
-        </trans-unit>
-        <trans-unit id="MenuHelp" translate="yes" xml:space="preserve">
-          <source>帮助(_H)</source>
-          <target state="new">помощь</target>
-        </trans-unit>
-        <trans-unit id="MenuLanguage" translate="yes" xml:space="preserve">
-          <source>语言(_L)</source>
-          <target state="new">Язык(Л)</target>
         </trans-unit>
         <trans-unit id="MenuLedCheck" translate="yes" xml:space="preserve">
           <source>灯珠检测模板设置(_L)</source>
@@ -619,14 +535,6 @@
           <source>视图(_V)</source>
           <target state="new">Посмотреть(В)</target>
         </trans-unit>
-        <trans-unit id="MenuViewSidebar" translate="yes" xml:space="preserve">
-          <source>侧边栏</source>
-          <target state="new">Боковая панель</target>
-        </trans-unit>
-        <trans-unit id="MenuViewStatusBar" translate="yes" xml:space="preserve">
-          <source>状态栏</source>
-          <target state="new">Статус бар</target>
-        </trans-unit>
         <trans-unit id="MessageRetention" translate="yes" xml:space="preserve">
           <source>消息保留</source>
           <target state="new">сохранение сообщений</target>
@@ -671,25 +579,9 @@
           <source>新建</source>
           <target state="new">Новый</target>
         </trans-unit>
-        <trans-unit id="NewProjectFormat" translate="yes" xml:space="preserve">
-          <source>新建工程格式</source>
-          <target state="new">Новый формат проекта</target>
-        </trans-unit>
-        <trans-unit id="NewSolution" translate="yes" xml:space="preserve">
-          <source>新建工程</source>
-          <target state="new">Новое строительство</target>
-        </trans-unit>
-        <trans-unit id="NewVersionFound" translate="yes" xml:space="preserve">
-          <source>发现新版本</source>
-          <target state="new">найдена новая версия</target>
-        </trans-unit>
         <trans-unit id="NoRelatedItemsFound" translate="yes" xml:space="preserve">
           <source>未找到相关项目</source>
           <target state="new">Похожие товары не найдены</target>
-        </trans-unit>
-        <trans-unit id="NotRunAsAdmin" translate="yes" xml:space="preserve">
-          <source>以非管理员身份运行</source>
-          <target state="new">Запуск от имени администратора</target>
         </trans-unit>
         <trans-unit id="OK" translate="yes" xml:space="preserve">
           <source>确定</source>
@@ -703,14 +595,6 @@
           <source>打开项目</source>
           <target state="new">Открыть проект</target>
         </trans-unit>
-        <trans-unit id="OpenLocalProjectOrFile" translate="yes" xml:space="preserve">
-          <source>打开本地的项目或文件</source>
-          <target state="new">Откройте локальный проект или файл</target>
-        </trans-unit>
-        <trans-unit id="OpenSolution" translate="yes" xml:space="preserve">
-          <source>打开工程</source>
-          <target state="new">Открыть проект</target>
-        </trans-unit>
         <trans-unit id="OutputView" translate="yes" xml:space="preserve">
           <source>输出视图</source>
           <target state="new">Выходной вид</target>
@@ -722,10 +606,6 @@
         <trans-unit id="Password" translate="yes" xml:space="preserve">
           <source>密码</source>
           <target state="new">Пароль</target>
-        </trans-unit>
-        <trans-unit id="PerformanceTest" translate="yes" xml:space="preserve">
-          <source>性能检测</source>
-          <target state="new">Тестирование производительности</target>
         </trans-unit>
         <trans-unit id="PhysicalCameraManager" translate="yes" xml:space="preserve">
           <source>物理相机管理</source>
@@ -742,18 +622,6 @@
         <trans-unit id="Position" translate="yes" xml:space="preserve">
           <source>位置</source>
           <target state="new">Расположение</target>
-        </trans-unit>
-        <trans-unit id="Project" translate="yes" xml:space="preserve">
-          <source>工程</source>
-          <target state="new">проект</target>
-        </trans-unit>
-        <trans-unit id="ProjectName" translate="yes" xml:space="preserve">
-          <source>项目名称</source>
-          <target state="new">название проекта</target>
-        </trans-unit>
-        <trans-unit id="ProjectSettings" translate="yes" xml:space="preserve">
-          <source>工程设置</source>
-          <target state="new">Настройки проекта</target>
         </trans-unit>
         <trans-unit id="Property" translate="yes" xml:space="preserve">
           <source>属性</source>
@@ -798,10 +666,6 @@
         <trans-unit id="Result" translate="yes" xml:space="preserve">
           <source>结果</source>
           <target state="new">результат</target>
-        </trans-unit>
-        <trans-unit id="RunAsAdmin" translate="yes" xml:space="preserve">
-          <source>以管理员身份运行</source>
-          <target state="new">Запустить от имени администратора</target>
         </trans-unit>
         <trans-unit id="Save" translate="yes" xml:space="preserve">
           <source>保存</source>
@@ -863,10 +727,6 @@
           <source>设置</source>
           <target state="new">Настройки</target>
         </trans-unit>
-        <trans-unit id="SetupWizard" translate="yes" xml:space="preserve">
-          <source>配置向导</source>
-          <target state="new">Мастер настройки</target>
-        </trans-unit>
         <trans-unit id="Shape" translate="yes" xml:space="preserve">
           <source>形状</source>
           <target state="new">форма</target>
@@ -891,17 +751,9 @@
           <source>大小</source>
           <target state="new">размер</target>
         </trans-unit>
-        <trans-unit id="SoftwareVersion" translate="yes" xml:space="preserve">
-          <source>软件版本</source>
-          <target state="new">Версия ПО</target>
-        </trans-unit>
         <trans-unit id="SpectrometerLog" translate="yes" xml:space="preserve">
           <source>光谱仪日志</source>
           <target state="new">Журнал спектрометра</target>
-        </trans-unit>
-        <trans-unit id="StartRecoverUILayout" translate="yes" xml:space="preserve">
-          <source>恢复上次退出时窗口的大小和位置</source>
-          <target state="new">Макет интерфейса запуска восстановления</target>
         </trans-unit>
         <trans-unit id="StartTime" translate="yes" xml:space="preserve">
           <source>开始时间</source>
@@ -983,18 +835,6 @@
           <source>退订</source>
           <target state="new">Отписаться</target>
         </trans-unit>
-        <trans-unit id="Update" translate="yes" xml:space="preserve">
-          <source>更新</source>
-          <target state="new">возобновлять</target>
-        </trans-unit>
-        <trans-unit id="UpdateSpeed" translate="yes" xml:space="preserve">
-          <source>更新速度</source>
-          <target state="new">Обновить скорость</target>
-        </trans-unit>
-        <trans-unit id="Upgrade" translate="yes" xml:space="preserve">
-          <source>升级</source>
-          <target state="new">обновление</target>
-        </trans-unit>
         <trans-unit id="Upload" translate="yes" xml:space="preserve">
           <source>上传</source>
           <target state="new">загрузить</target>
@@ -1030,10 +870,6 @@
         <trans-unit id="WindowSingle" translate="yes" xml:space="preserve">
           <source>独立窗口</source>
           <target state="new">независимое окно</target>
-        </trans-unit>
-        <trans-unit id="Wizard" translate="yes" xml:space="preserve">
-          <source>向导</source>
-          <target state="new">волшебник</target>
         </trans-unit>
         <trans-unit id="WorkflowEngineDebugWindow" translate="yes" xml:space="preserve">
           <source>流程引擎调试窗口</source>

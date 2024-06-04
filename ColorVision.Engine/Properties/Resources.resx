@@ -109,9 +109,6 @@
   <data name="WorkflowEngine_F" xml:space="preserve">
     <value>流程引擎(_F)</value>
   </data>
-  <data name="Wizard" xml:space="preserve">
-    <value>向导</value>
-  </data>
   <data name="WindowSingle" xml:space="preserve">
     <value>独立窗口</value>
   </data>
@@ -138,15 +135,6 @@
   </data>
   <data name="Upload" xml:space="preserve">
     <value>上传</value>
-  </data>
-  <data name="Upgrade" xml:space="preserve">
-    <value>升级</value>
-  </data>
-  <data name="UpdateSpeed" xml:space="preserve">
-    <value>更新速度</value>
-  </data>
-  <data name="Update" xml:space="preserve">
-    <value>更新</value>
   </data>
   <data name="Unsubscribe" xml:space="preserve">
     <value>退订</value>
@@ -205,17 +193,11 @@
   <data name="StartTime" xml:space="preserve">
     <value>开始时间</value>
   </data>
-  <data name="StartRecoverUILayout" xml:space="preserve">
-    <value>恢复上次退出时窗口的大小和位置</value>
-  </data>
   <data name="StartingService" xml:space="preserve">
     <value>正在启动服务</value>
   </data>
   <data name="SpectrometerLog" xml:space="preserve">
     <value>光谱仪日志</value>
-  </data>
-  <data name="SoftwareVersion" xml:space="preserve">
-    <value>软件版本</value>
   </data>
   <data name="Size" xml:space="preserve">
     <value>大小</value>
@@ -234,12 +216,6 @@
   </data>
   <data name="Shape" xml:space="preserve">
     <value>形状</value>
-  </data>
-  <data name="SetupWizard" xml:space="preserve">
-    <value>配置向导</value>
-  </data>
-  <data name="Settings" xml:space="preserve">
-    <value>设置</value>
   </data>
   <data name="ServiceName" xml:space="preserve">
     <value>服务名称</value>
@@ -280,9 +256,6 @@
   <data name="Save" xml:space="preserve">
     <value>保存</value>
   </data>
-  <data name="RunAsAdmin" xml:space="preserve">
-    <value>以管理员身份运行</value>
-  </data>
   <data name="Result" xml:space="preserve">
     <value>结果</value>
   </data>
@@ -316,15 +289,6 @@
   <data name="Property" xml:space="preserve">
     <value>属性</value>
   </data>
-  <data name="ProjectSettings" xml:space="preserve">
-    <value>工程设置</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>项目名称</value>
-  </data>
-  <data name="Project" xml:space="preserve">
-    <value>工程</value>
-  </data>
   <data name="Position" xml:space="preserve">
     <value>位置</value>
   </data>
@@ -337,9 +301,6 @@
   <data name="PhysicalCameraManager" xml:space="preserve">
     <value>物理相机管理</value>
   </data>
-  <data name="PerformanceTest" xml:space="preserve">
-    <value>性能检测</value>
-  </data>
   <data name="Password" xml:space="preserve">
     <value>密码</value>
   </data>
@@ -348,12 +309,6 @@
   </data>
   <data name="OutputView" xml:space="preserve">
     <value>输出视图</value>
-  </data>
-  <data name="OpenSolution" xml:space="preserve">
-    <value>打开工程</value>
-  </data>
-  <data name="OpenLocalProjectOrFile" xml:space="preserve">
-    <value>打开本地的项目或文件</value>
   </data>
   <data name="OpenItem" xml:space="preserve">
     <value>打开项目</value>
@@ -364,20 +319,8 @@
   <data name="OK" xml:space="preserve">
     <value>确定</value>
   </data>
-  <data name="NotRunAsAdmin" xml:space="preserve">
-    <value>以非管理员身份运行</value>
-  </data>
   <data name="NoRelatedItemsFound" xml:space="preserve">
     <value>未找到相关项目</value>
-  </data>
-  <data name="NewVersionFound" xml:space="preserve">
-    <value>发现新版本</value>
-  </data>
-  <data name="NewSolution" xml:space="preserve">
-    <value>新建工程</value>
-  </data>
-  <data name="NewProjectFormat" xml:space="preserve">
-    <value>新建工程格式</value>
   </data>
   <data name="New" xml:space="preserve">
     <value>新建</value>
@@ -417,12 +360,6 @@
   </data>
   <data name="MessageRetention" xml:space="preserve">
     <value>消息保留</value>
-  </data>
-  <data name="MenuViewStatusBar" xml:space="preserve">
-    <value>状态栏</value>
-  </data>
-  <data name="MenuViewSidebar" xml:space="preserve">
-    <value>侧边栏</value>
   </data>
   <data name="MenuView" xml:space="preserve">
     <value>视图(_V)</value>
@@ -493,12 +430,6 @@
   <data name="MenuLedCheck" xml:space="preserve">
     <value>灯珠检测模板设置(_L)</value>
   </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>语言(_L)</value>
-  </data>
-  <data name="MenuHelp" xml:space="preserve">
-    <value>帮助(_H)</value>
-  </data>
   <data name="MenuGhost" xml:space="preserve">
     <value>鬼影模板设置(_G)</value>
   </data>
@@ -510,12 +441,6 @@
   </data>
   <data name="MenuFlow" xml:space="preserve">
     <value>流程(_L)</value>
-  </data>
-  <data name="MenuFile" xml:space="preserve">
-    <value>文件(_F)</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
-    <value>退出(_X)</value>
   </data>
   <data name="MenuEdit" xml:space="preserve">
     <value>编辑(_E)</value>
@@ -547,23 +472,11 @@
   <data name="MenuAlgorithm" xml:space="preserve">
     <value>算法(_A)</value>
   </data>
-  <data name="MenuAbout" xml:space="preserve">
-    <value>关于(_A)</value>
-  </data>
-  <data name="Maximize" xml:space="preserve">
-    <value>最大化</value>
-  </data>
   <data name="Manager" xml:space="preserve">
     <value>管理</value>
   </data>
   <data name="Male" xml:space="preserve">
     <value>男</value>
-  </data>
-  <data name="LogLevel" xml:space="preserve">
-    <value>日志级别</value>
-  </data>
-  <data name="Log" xml:space="preserve">
-    <value>日志</value>
   </data>
   <data name="Local" xml:space="preserve">
     <value>本地</value>
@@ -582,15 +495,6 @@
   </data>
   <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
     <value>软件启动时打开本地服务</value>
-  </data>
-  <data name="LanguageResartSign" xml:space="preserve">
-    <value>您必须重新启动才能使用新的语言设置</value>
-  </data>
-  <data name="Language" xml:space="preserve">
-    <value>用户界面语言</value>
-  </data>
-  <data name="InstallCertificate" xml:space="preserve">
-    <value>安装证书</value>
   </data>
   <data name="Inquire" xml:space="preserve">
     <value>查询</value>
@@ -613,9 +517,6 @@
   <data name="ImageFile" xml:space="preserve">
     <value>图片文件</value>
   </data>
-  <data name="HotKeys" xml:space="preserve">
-    <value>快捷键</value>
-  </data>
   <data name="Host" xml:space="preserve">
     <value>主机</value>
   </data>
@@ -624,12 +525,6 @@
   </data>
   <data name="GhostShadow" xml:space="preserve">
     <value>鬼影</value>
-  </data>
-  <data name="GeneralSettings" xml:space="preserve">
-    <value>通用设置</value>
-  </data>
-  <data name="General" xml:space="preserve">
-    <value>通用</value>
   </data>
   <data name="Gain" xml:space="preserve">
     <value>增益</value>
@@ -673,9 +568,6 @@
   <data name="Export" xml:space="preserve">
     <value>导出</value>
   </data>
-  <data name="ExperimentalFeature" xml:space="preserve">
-    <value>实验性功能</value>
-  </data>
   <data name="ExecutionProcess" xml:space="preserve">
     <value>执行流程</value>
   </data>
@@ -702,9 +594,6 @@
   </data>
   <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
     <value>CIE图像数据区</value>
-  </data>
-  <data name="DisableHardwareAcceleration" xml:space="preserve">
-    <value>禁用硬件加速</value>
   </data>
   <data name="DeviceName" xml:space="preserve">
     <value>设备名称</value>
@@ -744,12 +633,6 @@
   </data>
   <data name="CreateTime" xml:space="preserve">
     <value>测量时间</value>
-  </data>
-  <data name="CreateProject" xml:space="preserve">
-    <value>创建工程</value>
-  </data>
-  <data name="CreateNewProjectOrFile" xml:space="preserve">
-    <value>创建一个新的的项目或文件</value>
   </data>
   <data name="CreateNewConfigurationFile" xml:space="preserve">
     <value>新建配置文件</value>
@@ -799,12 +682,6 @@
   <data name="Clear" xml:space="preserve">
     <value>清除</value>
   </data>
-  <data name="CheckUpdatesOnStartup" xml:space="preserve">
-    <value>软件启动时检测更新</value>
-  </data>
-  <data name="CheckForUpdates" xml:space="preserve">
-    <value>检查更新</value>
-  </data>
   <data name="Chart" xml:space="preserve">
     <value>图表</value>
   </data>
@@ -837,12 +714,6 @@
   </data>
   <data name="AutoExposure" xml:space="preserve">
     <value>自动曝光</value>
-  </data>
-  <data name="ApplyWindowLayout" xml:space="preserve">
-    <value>应用窗口布局</value>
-  </data>
-  <data name="Apply" xml:space="preserve">
-    <value>应用</value>
   </data>
   <data name="Alias" xml:space="preserve">
     <value>别名</value>
@@ -882,5 +753,11 @@
   </data>
   <data name="IsRetorePlayControls" xml:space="preserve">
     <value>恢复上次关闭时采集窗口</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="MenuFile" xml:space="preserve">
+    <value>文件(_F)</value>
   </data>
 </root>

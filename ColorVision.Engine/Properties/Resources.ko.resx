@@ -129,9 +129,6 @@
   <data name="WorkflowEngine_F" xml:space="preserve">
     <value>프로세스 엔진(F)</value>
   </data>
-  <data name="Wizard" xml:space="preserve">
-    <value>마법사</value>
-  </data>
   <data name="WindowSingle" xml:space="preserve">
     <value>독립 창</value>
   </data>
@@ -158,15 +155,6 @@
   </data>
   <data name="Upload" xml:space="preserve">
     <value>업로드</value>
-  </data>
-  <data name="Upgrade" xml:space="preserve">
-    <value>업그레이드</value>
-  </data>
-  <data name="UpdateSpeed" xml:space="preserve">
-    <value>업데이트 속도</value>
-  </data>
-  <data name="Update" xml:space="preserve">
-    <value>고쳐 쓰다</value>
   </data>
   <data name="Unsubscribe" xml:space="preserve">
     <value>구독 취소</value>
@@ -225,17 +213,11 @@
   <data name="StartTime" xml:space="preserve">
     <value>시작 시간</value>
   </data>
-  <data name="StartRecoverUILayout" xml:space="preserve">
-    <value>복구 인터페이스 레이아웃 시작</value>
-  </data>
   <data name="StartingService" xml:space="preserve">
     <value>서비스 시작</value>
   </data>
   <data name="SpectrometerLog" xml:space="preserve">
     <value>분광계 로그</value>
-  </data>
-  <data name="SoftwareVersion" xml:space="preserve">
-    <value>소프트웨어 버전</value>
   </data>
   <data name="Size" xml:space="preserve">
     <value>크기</value>
@@ -254,12 +236,6 @@
   </data>
   <data name="Shape" xml:space="preserve">
     <value>모양</value>
-  </data>
-  <data name="SetupWizard" xml:space="preserve">
-    <value>구성 마법사</value>
-  </data>
-  <data name="Settings" xml:space="preserve">
-    <value>설정</value>
   </data>
   <data name="ServiceName" xml:space="preserve">
     <value>서비스 이름</value>
@@ -300,9 +276,6 @@
   <data name="Save" xml:space="preserve">
     <value>저장</value>
   </data>
-  <data name="RunAsAdmin" xml:space="preserve">
-    <value>관리자로 실행</value>
-  </data>
   <data name="Result" xml:space="preserve">
     <value>결과</value>
   </data>
@@ -336,15 +309,6 @@
   <data name="Property" xml:space="preserve">
     <value>속성</value>
   </data>
-  <data name="ProjectSettings" xml:space="preserve">
-    <value>프로젝트 설정</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>프로젝트 이름</value>
-  </data>
-  <data name="Project" xml:space="preserve">
-    <value>프로젝트</value>
-  </data>
   <data name="Position" xml:space="preserve">
     <value>위치</value>
   </data>
@@ -357,9 +321,6 @@
   <data name="PhysicalCameraManager" xml:space="preserve">
     <value>물리적 카메라 관리</value>
   </data>
-  <data name="PerformanceTest" xml:space="preserve">
-    <value>성능 시험</value>
-  </data>
   <data name="Password" xml:space="preserve">
     <value>비밀번호</value>
   </data>
@@ -368,12 +329,6 @@
   </data>
   <data name="OutputView" xml:space="preserve">
     <value>출력 보기</value>
-  </data>
-  <data name="OpenSolution" xml:space="preserve">
-    <value>프로젝트 열기</value>
-  </data>
-  <data name="OpenLocalProjectOrFile" xml:space="preserve">
-    <value>로컬 프로젝트 또는 파일 열기</value>
   </data>
   <data name="OpenItem" xml:space="preserve">
     <value>프로젝트 열기</value>
@@ -384,20 +339,8 @@
   <data name="OK" xml:space="preserve">
     <value>OK</value>
   </data>
-  <data name="NotRunAsAdmin" xml:space="preserve">
-    <value>비관리자로 실행</value>
-  </data>
   <data name="NoRelatedItemsFound" xml:space="preserve">
     <value>관련 항목을 찾을 수 없습니다</value>
-  </data>
-  <data name="NewVersionFound" xml:space="preserve">
-    <value>새 버전이 발견되었습니다</value>
-  </data>
-  <data name="NewSolution" xml:space="preserve">
-    <value>신조</value>
-  </data>
-  <data name="NewProjectFormat" xml:space="preserve">
-    <value>새로운 프로젝트 형식</value>
   </data>
   <data name="New" xml:space="preserve">
     <value>새로운</value>
@@ -437,12 +380,6 @@
   </data>
   <data name="MessageRetention" xml:space="preserve">
     <value>메시지 보존</value>
-  </data>
-  <data name="MenuViewStatusBar" xml:space="preserve">
-    <value>상태 표시줄</value>
-  </data>
-  <data name="MenuViewSidebar" xml:space="preserve">
-    <value>사이드바</value>
   </data>
   <data name="MenuView" xml:space="preserve">
     <value>보기 (_V)</value>
@@ -513,12 +450,6 @@
   <data name="MenuLedCheck" xml:space="preserve">
     <value>램프 비드 감지 템플릿 설정(L)</value>
   </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>언어(_L)</value>
-  </data>
-  <data name="MenuHelp" xml:space="preserve">
-    <value>도움 (_H)</value>
-  </data>
   <data name="MenuGhost" xml:space="preserve">
     <value>고스트 템플릿 설정(G)</value>
   </data>
@@ -530,12 +461,6 @@
   </data>
   <data name="MenuFlow" xml:space="preserve">
     <value>공정(_L)</value>
-  </data>
-  <data name="MenuFile" xml:space="preserve">
-    <value>파일 (_F)</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
-    <value>종료 (_X)</value>
   </data>
   <data name="MenuEdit" xml:space="preserve">
     <value>편집 (_E)</value>
@@ -567,23 +492,11 @@
   <data name="MenuAlgorithm" xml:space="preserve">
     <value>알고리즘(A)</value>
   </data>
-  <data name="MenuAbout" xml:space="preserve">
-    <value>소개 (_A)</value>
-  </data>
-  <data name="Maximize" xml:space="preserve">
-    <value>최대화</value>
-  </data>
   <data name="Manager" xml:space="preserve">
     <value>관리하다</value>
   </data>
   <data name="Male" xml:space="preserve">
     <value>남성</value>
-  </data>
-  <data name="LogLevel" xml:space="preserve">
-    <value>로그 수준</value>
-  </data>
-  <data name="Log" xml:space="preserve">
-    <value>통나무</value>
   </data>
   <data name="Local" xml:space="preserve">
     <value>현지의</value>
@@ -602,15 +515,6 @@
   </data>
   <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
     <value>소프트웨어가 시작될 때 로컬 서비스 열기</value>
-  </data>
-  <data name="LanguageResartSign" xml:space="preserve">
-    <value>새로운 언어 설정을 적용하려면 재시작해야 합니다</value>
-  </data>
-  <data name="Language" xml:space="preserve">
-    <value>UI 언어</value>
-  </data>
-  <data name="InstallCertificate" xml:space="preserve">
-    <value>인증서 설치</value>
   </data>
   <data name="Inquire" xml:space="preserve">
     <value>문의</value>
@@ -633,9 +537,6 @@
   <data name="ImageFile" xml:space="preserve">
     <value>이미지 파일</value>
   </data>
-  <data name="HotKeys" xml:space="preserve">
-    <value>키보드 단축키</value>
-  </data>
   <data name="Host" xml:space="preserve">
     <value>주인</value>
   </data>
@@ -644,12 +545,6 @@
   </data>
   <data name="GhostShadow" xml:space="preserve">
     <value>귀신</value>
-  </data>
-  <data name="GeneralSettings" xml:space="preserve">
-    <value>일반 설정</value>
-  </data>
-  <data name="General" xml:space="preserve">
-    <value>만능인</value>
   </data>
   <data name="Gain" xml:space="preserve">
     <value>얻다</value>
@@ -693,9 +588,6 @@
   <data name="Export" xml:space="preserve">
     <value>내보내다</value>
   </data>
-  <data name="ExperimentalFeature" xml:space="preserve">
-    <value>실험적 기능</value>
-  </data>
   <data name="ExecutionProcess" xml:space="preserve">
     <value>구현 프로세스</value>
   </data>
@@ -722,9 +614,6 @@
   </data>
   <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
     <value>CIE 이미지 데이터 영역</value>
-  </data>
-  <data name="DisableHardwareAcceleration" xml:space="preserve">
-    <value>하드웨어 가속 비활성화</value>
   </data>
   <data name="DeviceName" xml:space="preserve">
     <value>장치 이름</value>
@@ -764,12 +653,6 @@
   </data>
   <data name="CreateTime" xml:space="preserve">
     <value>시간을 측정하다</value>
-  </data>
-  <data name="CreateProject" xml:space="preserve">
-    <value>프로젝트 생성</value>
-  </data>
-  <data name="CreateNewProjectOrFile" xml:space="preserve">
-    <value>새 프로젝트 또는 파일 만들기</value>
   </data>
   <data name="CreateNewConfigurationFile" xml:space="preserve">
     <value>새 구성 파일 만들기</value>
@@ -819,12 +702,6 @@
   <data name="Clear" xml:space="preserve">
     <value>분명한</value>
   </data>
-  <data name="CheckUpdatesOnStartup" xml:space="preserve">
-    <value>소프트웨어가 시작될 때 업데이트 감지</value>
-  </data>
-  <data name="CheckForUpdates" xml:space="preserve">
-    <value>업데이트 확인</value>
-  </data>
   <data name="Chart" xml:space="preserve">
     <value>차트</value>
   </data>
@@ -857,12 +734,6 @@
   </data>
   <data name="AutoExposure" xml:space="preserve">
     <value>자동 노출</value>
-  </data>
-  <data name="ApplyWindowLayout" xml:space="preserve">
-    <value>창 레이아웃 적용</value>
-  </data>
-  <data name="Apply" xml:space="preserve">
-    <value>애플리케이션</value>
   </data>
   <data name="Alias" xml:space="preserve">
     <value>별명</value>
@@ -902,5 +773,11 @@
   </data>
   <data name="IsRetorePlayControls" xml:space="preserve">
     <value>IsRetorePlayControls</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>설정</value>
+  </data>
+  <data name="MenuFile" xml:space="preserve">
+    <value>파일 (_F)</value>
   </data>
 </root>
