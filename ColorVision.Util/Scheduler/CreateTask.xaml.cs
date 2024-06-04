@@ -74,5 +74,10 @@ namespace ColorVision.Scheduler
                                        select new KeyValuePair<string,JobRepeatMode>(e1.ToDescription(), e1);
             }
         }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            PlatformHelper.Open("https://cron.qqe2.com/");
+        }
     }
 }
