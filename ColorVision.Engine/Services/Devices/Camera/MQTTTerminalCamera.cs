@@ -1,12 +1,4 @@
-﻿using ColorVision.Services.Msg;
-using ColorVision.Services.OnlineLicensing;
-using ColorVision.Services.Terminal;
-using MQTTMessageLib;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Windows;
+﻿using ColorVision.Services.Terminal;
 
 namespace ColorVision.Services.Devices.Camera
 {

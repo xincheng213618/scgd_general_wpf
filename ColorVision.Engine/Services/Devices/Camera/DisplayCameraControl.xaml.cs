@@ -340,26 +340,11 @@ namespace ColorVision.Services.Devices.Camera
             ServicesHelper.SendCommandEx(sender, DService.AutoFocus);
         }
 
-        private void SetChannel()
-        {
-            MsgSend msg = new()
-            {
-                EventName = "SetParam",
-                Params = new Dictionary<string, object>() { { "Func",new List<ParamFunction> (){
-                    new() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 0 }, { "nPort", DService.Config.CFW.ChannelCfgs[0].Cfwport },{ "eImgChlType", (int)DService.Config.CFW.ChannelCfgs[0].Chtype } } },
-                    new() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 1 }, { "nPort", DService.Config.CFW.ChannelCfgs[1].Cfwport },{ "eImgChlType", (int)DService.Config.CFW.ChannelCfgs[1].Chtype } } },
-                    new() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 2 }, { "nPort", DService.Config.CFW.ChannelCfgs[2].Cfwport },{ "eImgChlType", (int)DService.Config.CFW.ChannelCfgs[2].Chtype } } },
-                } } }
-            };
-            DService.PublishAsyncClient(msg);
-        }
 
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
         }
-
-        TemplateControl TemplateControl { get; set; }
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
@@ -368,16 +353,14 @@ namespace ColorVision.Services.Devices.Camera
                 MessageBox.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
                 return;
             }
-
-                WindowTemplate windowTemplate;
-                if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-                {
-                    MessageBox.Show(Application.Current.MainWindow, Engine.Properties.Resources.DatabaseConnectionFailed, "ColorVision");
-                    return;
-                }
-                var ITemplate = new TemplateCalibrationParam(Device.PhyCamera) ;
-                windowTemplate = new WindowTemplate(ITemplate, ComboxCalibrationTemplate.SelectedIndex-1) { Owner = Application.Current.GetActiveWindow() };
-                windowTemplate.ShowDialog();
+            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
+            {
+                MessageBox.Show(Application.Current.MainWindow, Engine.Properties.Resources.DatabaseConnectionFailed, "ColorVision");
+                return;
+            }
+            var ITemplate = new TemplateCalibrationParam(Device.PhyCamera);
+            var windowTemplate = new WindowTemplate(ITemplate, ComboxCalibrationTemplate.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
+            windowTemplate.ShowDialog();
         }
 
         private void Move_Click(object sender, RoutedEventArgs e)
@@ -448,13 +431,6 @@ namespace ColorVision.Services.Devices.Camera
             }
         }
 
-
-
-
-        private void SliderexpTime_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-
-        }
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)

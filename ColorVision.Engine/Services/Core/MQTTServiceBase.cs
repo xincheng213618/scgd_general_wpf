@@ -137,7 +137,7 @@ namespace ColorVision.Services.Core
         {
             TimeSpan sp = DateTime.Now - LastAliveTime;
             //这里其实有问题,但是返回信号并不标准，只能按照这种写法
-            long overTime = HeartbeatTime + HeartbeatTime / 2;
+            long overTime = HeartbeatTime + HeartbeatTime / 2 +1 ;
             if (sp > TimeSpan.FromMilliseconds(overTime))
             {
                 DisConnected?.Invoke(sender, new EventArgs());
