@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Engine.Templates;
+using ColorVision.Services.RC;
 
 namespace ColorVision.Services.Devices.Spectrum
 {
@@ -82,7 +83,7 @@ namespace ColorVision.Services.Devices.Spectrum
             await Task.Delay(10);
 
             string md5 = Tool.CalculateMD5(UploadFilePath);
-            var msgRecord = await DeviceService.UploadFileAsync(UploadFileName, UploadFilePath,201);
+            var msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Code, UploadFileName, UploadFilePath, 201);
             SysResourceModel sysResourceModel = new();
             sysResourceModel.Name = UploadFileName;
             sysResourceModel.Code = md5;
