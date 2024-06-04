@@ -36,6 +36,7 @@ namespace ColorVision.Engine.Controls
         public event EventHandler UploadClosed;
     }
 
+
     public class FileUploadInfo:ViewModelBase
     {
         public RelayCommand OpenFilePathCommand { get; set; }

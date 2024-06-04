@@ -216,12 +216,6 @@
   <data name="WindowHidden" xml:space="preserve">
     <value>숨기기</value>
   </data>
-  <data name="WindowSingle" xml:space="preserve">
-    <value>독립 창</value>
-  </data>
-  <data name="HotKeys" xml:space="preserve">
-    <value>키보드 단축키</value>
-  </data>
   <data name="Close" xml:space="preserve">
     <value>닫기</value>
   </data>
@@ -237,29 +231,11 @@
   <data name="Restore" xml:space="preserve">
     <value>아래로 복원</value>
   </data>
-  <data name="ThemeLight" xml:space="preserve">
-    <value>밝은</value>
-  </data>
-  <data name="ThemeDark" xml:space="preserve">
-    <value>진한 색상</value>
-  </data>
-  <data name="ThemeUseSystem" xml:space="preserve">
-    <value>시스템 테마 사용</value>
-  </data>
-  <data name="LanguageResartSign" xml:space="preserve">
-    <value>새로운 언어 설정을 적용하려면 재시작해야 합니다</value>
-  </data>
   <data name="Save" xml:space="preserve">
     <value>저장</value>
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>취소</value>
-  </data>
-  <data name="Female" xml:space="preserve">
-    <value>여성</value>
-  </data>
-  <data name="Male" xml:space="preserve">
-    <value>남성</value>
   </data>
   <data name="OK" xml:space="preserve">
     <value>OK</value>
@@ -281,15 +257,6 @@
   </data>
   <data name="Add" xml:space="preserve">
     <value>추가하다</value>
-  </data>
-  <data name="TesConnection" xml:space="preserve">
-    <value>연결 테스트</value>
-  </data>
-  <data name="UserName" xml:space="preserve">
-    <value>사용자</value>
-  </data>
-  <data name="UserPwd" xml:space="preserve">
-    <value>비밀번호</value>
   </data>
   <data name="Settings" xml:space="preserve">
     <value>설정</value>
@@ -339,9 +306,6 @@
   <data name="Clear" xml:space="preserve">
     <value>분명한</value>
   </data>
-  <data name="HistoryCache" xml:space="preserve">
-    <value>히스토리 캐시</value>
-  </data>
   <data name="PerformanceTest" xml:space="preserve">
     <value>성능 시험</value>
   </data>
@@ -383,9 +347,6 @@
   </data>
   <data name="EnableDatabase" xml:space="preserve">
     <value>데이터베이스 활성화</value>
-  </data>
-  <data name="ClearCache" xml:space="preserve">
-    <value>캐시 지우기</value>
   </data>
   <data name="Success" xml:space="preserve">
     <value>성공</value>

@@ -216,12 +216,6 @@
   <data name="WindowHidden" xml:space="preserve">
     <value>非表示</value>
   </data>
-  <data name="WindowSingle" xml:space="preserve">
-    <value>独立したウィンドウ</value>
-  </data>
-  <data name="HotKeys" xml:space="preserve">
-    <value>ショートカットキー</value>
-  </data>
   <data name="Close" xml:space="preserve">
     <value>キャンセル</value>
   </data>
@@ -237,29 +231,11 @@
   <data name="Restore" xml:space="preserve">
     <value>リセットする</value>
   </data>
-  <data name="ThemeLight" xml:space="preserve">
-    <value>ライトテーマ</value>
-  </data>
-  <data name="ThemeDark" xml:space="preserve">
-    <value>ダークカラー</value>
-  </data>
-  <data name="ThemeUseSystem" xml:space="preserve">
-    <value>システムのテーマを使用する</value>
-  </data>
-  <data name="LanguageResartSign" xml:space="preserve">
-    <value>新しい言語設定を使用するためには、再起動が必要です</value>
-  </data>
   <data name="Save" xml:space="preserve">
     <value>保存</value>
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>キャンセル</value>
-  </data>
-  <data name="Male" xml:space="preserve">
-    <value>男性</value>
-  </data>
-  <data name="Female" xml:space="preserve">
-    <value>女性</value>
   </data>
   <data name="OK" xml:space="preserve">
     <value>OK</value>
@@ -281,15 +257,6 @@
   </data>
   <data name="Add" xml:space="preserve">
     <value>追加</value>
-  </data>
-  <data name="TesConnection" xml:space="preserve">
-    <value>テスト接続</value>
-  </data>
-  <data name="UserName" xml:space="preserve">
-    <value>ユーザー</value>
-  </data>
-  <data name="UserPwd" xml:space="preserve">
-    <value>パスワード</value>
   </data>
   <data name="Settings" xml:space="preserve">
     <value>設定</value>
@@ -339,9 +306,6 @@
   <data name="Clear" xml:space="preserve">
     <value>クリア</value>
   </data>
-  <data name="HistoryCache" xml:space="preserve">
-    <value>履歴キャッシュ</value>
-  </data>
   <data name="PerformanceTest" xml:space="preserve">
     <value>性能試験</value>
   </data>
@@ -383,9 +347,6 @@
   </data>
   <data name="EnableDatabase" xml:space="preserve">
     <value>データベースを有効にする</value>
-  </data>
-  <data name="ClearCache" xml:space="preserve">
-    <value>キャッシュの消去</value>
   </data>
   <data name="Success" xml:space="preserve">
     <value>成功</value>

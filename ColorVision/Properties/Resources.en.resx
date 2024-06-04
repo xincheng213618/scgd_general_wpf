@@ -216,12 +216,6 @@
   <data name="WindowHidden" xml:space="preserve">
     <value>Hide</value>
   </data>
-  <data name="WindowSingle" xml:space="preserve">
-    <value>Independent</value>
-  </data>
-  <data name="HotKeys" xml:space="preserve">
-    <value>HotKeys</value>
-  </data>
   <data name="Close" xml:space="preserve">
     <value>Close</value>
   </data>
@@ -237,29 +231,11 @@
   <data name="Restore" xml:space="preserve">
     <value>Restore</value>
   </data>
-  <data name="ThemeLight" xml:space="preserve">
-    <value>Light</value>
-  </data>
-  <data name="ThemeDark" xml:space="preserve">
-    <value>Drak</value>
-  </data>
-  <data name="ThemeUseSystem" xml:space="preserve">
-    <value>UseSystem</value>
-  </data>
-  <data name="LanguageResartSign" xml:space="preserve">
-    <value>You must restart to apply your new language settings</value>
-  </data>
   <data name="Save" xml:space="preserve">
     <value>Save</value>
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>Cancel</value>
-  </data>
-  <data name="Female" xml:space="preserve">
-    <value>Female</value>
-  </data>
-  <data name="Male" xml:space="preserve">
-    <value>Male</value>
   </data>
   <data name="OK" xml:space="preserve">
     <value>OK</value>
@@ -281,15 +257,6 @@
   </data>
   <data name="Add" xml:space="preserve">
     <value>Add</value>
-  </data>
-  <data name="TesConnection" xml:space="preserve">
-    <value>Test Connection</value>
-  </data>
-  <data name="UserName" xml:space="preserve">
-    <value>UserName</value>
-  </data>
-  <data name="UserPwd" xml:space="preserve">
-    <value>UserPwd</value>
   </data>
   <data name="Settings" xml:space="preserve">
     <value>Settings</value>
@@ -339,9 +306,6 @@
   <data name="Clear" xml:space="preserve">
     <value>Clear</value>
   </data>
-  <data name="HistoryCache" xml:space="preserve">
-    <value>history cache</value>
-  </data>
   <data name="PerformanceTest" xml:space="preserve">
     <value>Performance testing</value>
   </data>
@@ -383,9 +347,6 @@
   </data>
   <data name="EnableDatabase" xml:space="preserve">
     <value>Enable Database</value>
-  </data>
-  <data name="ClearCache" xml:space="preserve">
-    <value>Clear Cache</value>
   </data>
   <data name="Success" xml:space="preserve">
     <value>Success</value>

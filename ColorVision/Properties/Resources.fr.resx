@@ -216,12 +216,6 @@
   <data name="WindowHidden" xml:space="preserve">
     <value>cacher</value>
   </data>
-  <data name="WindowSingle" xml:space="preserve">
-    <value>fenêtre indépendante</value>
-  </data>
-  <data name="HotKeys" xml:space="preserve">
-    <value>touche de raccourci</value>
-  </data>
   <data name="Close" xml:space="preserve">
     <value>fermeture</value>
   </data>
@@ -237,29 +231,11 @@
   <data name="Restore" xml:space="preserve">
     <value>Restaurer</value>
   </data>
-  <data name="ThemeLight" xml:space="preserve">
-    <value>couleur claire</value>
-  </data>
-  <data name="ThemeDark" xml:space="preserve">
-    <value>Sombre</value>
-  </data>
-  <data name="ThemeUseSystem" xml:space="preserve">
-    <value>Suivez le système</value>
-  </data>
-  <data name="LanguageResartSign" xml:space="preserve">
-    <value>Vous devez redémarrer pour utiliser les nouveaux paramètres de langue</value>
-  </data>
   <data name="Save" xml:space="preserve">
     <value>sauvegarder</value>
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>Annuler</value>
-  </data>
-  <data name="Female" xml:space="preserve">
-    <value>femelle</value>
-  </data>
-  <data name="Male" xml:space="preserve">
-    <value>mâle</value>
   </data>
   <data name="OK" xml:space="preserve">
     <value>Bien sûr</value>
@@ -281,15 +257,6 @@
   </data>
   <data name="Add" xml:space="preserve">
     <value>Ajouter à</value>
-  </data>
-  <data name="TesConnection" xml:space="preserve">
-    <value>tester la connexion</value>
-  </data>
-  <data name="UserName" xml:space="preserve">
-    <value>utilisateur</value>
-  </data>
-  <data name="UserPwd" xml:space="preserve">
-    <value>mot de passe</value>
   </data>
   <data name="Settings" xml:space="preserve">
     <value>installation</value>
@@ -339,14 +306,8 @@
   <data name="Wizard" xml:space="preserve">
     <value>magicien</value>
   </data>
-  <data name="ClearCache" xml:space="preserve">
-    <value>vider le cache</value>
-  </data>
   <data name="Clear" xml:space="preserve">
     <value>Clair</value>
-  </data>
-  <data name="HistoryCache" xml:space="preserve">
-    <value>cache historique</value>
   </data>
   <data name="PerformanceTest" xml:space="preserve">
     <value>Test de performance</value>

@@ -216,12 +216,6 @@
   <data name="WindowHidden" xml:space="preserve">
     <value>隐藏</value>
   </data>
-  <data name="WindowSingle" xml:space="preserve">
-    <value>独立窗口</value>
-  </data>
-  <data name="HotKeys" xml:space="preserve">
-    <value>快捷键</value>
-  </data>
   <data name="Close" xml:space="preserve">
     <value>关闭</value>
   </data>
@@ -237,29 +231,11 @@
   <data name="Restore" xml:space="preserve">
     <value>向下还原</value>
   </data>
-  <data name="ThemeLight" xml:space="preserve">
-    <value>浅色</value>
-  </data>
-  <data name="ThemeDark" xml:space="preserve">
-    <value>深色</value>
-  </data>
-  <data name="ThemeUseSystem" xml:space="preserve">
-    <value>跟随系统</value>
-  </data>
-  <data name="LanguageResartSign" xml:space="preserve">
-    <value>您必须重新启动才能使用新的语言设置</value>
-  </data>
   <data name="Save" xml:space="preserve">
     <value>保存</value>
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>取消</value>
-  </data>
-  <data name="Female" xml:space="preserve">
-    <value>女</value>
-  </data>
-  <data name="Male" xml:space="preserve">
-    <value>男</value>
   </data>
   <data name="OK" xml:space="preserve">
     <value>确定</value>
@@ -281,15 +257,6 @@
   </data>
   <data name="Add" xml:space="preserve">
     <value>添加</value>
-  </data>
-  <data name="TesConnection" xml:space="preserve">
-    <value>测试连接</value>
-  </data>
-  <data name="UserName" xml:space="preserve">
-    <value>用户</value>
-  </data>
-  <data name="UserPwd" xml:space="preserve">
-    <value>密码</value>
   </data>
   <data name="Settings" xml:space="preserve">
     <value>设置</value>
@@ -339,14 +306,8 @@
   <data name="Wizard" xml:space="preserve">
     <value>向导</value>
   </data>
-  <data name="ClearCache" xml:space="preserve">
-    <value>清除缓存</value>
-  </data>
   <data name="Clear" xml:space="preserve">
     <value>清除</value>
-  </data>
-  <data name="HistoryCache" xml:space="preserve">
-    <value>历史缓存</value>
   </data>
   <data name="PerformanceTest" xml:space="preserve">
     <value>性能检测</value>

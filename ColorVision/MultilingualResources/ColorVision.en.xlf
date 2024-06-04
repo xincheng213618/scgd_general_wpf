@@ -75,10 +75,6 @@
           <source>清除</source>
           <target state="new">Clear</target>
         </trans-unit>
-        <trans-unit id="ClearCache" translate="yes" xml:space="preserve">
-          <source>清除缓存</source>
-          <target state="new">Clear Cache</target>
-        </trans-unit>
         <trans-unit id="ClearData" translate="yes" xml:space="preserve">
           <source>清空数据</source>
           <target state="new">Clear data</target>
@@ -179,10 +175,6 @@
           <source>失败</source>
           <target state="new">Fail</target>
         </trans-unit>
-        <trans-unit id="Female" translate="yes" xml:space="preserve">
-          <source>女</source>
-          <target state="new">Female</target>
-        </trans-unit>
         <trans-unit id="File" translate="yes" xml:space="preserve">
           <source>文件</source>
           <target state="new">File</target>
@@ -210,14 +202,6 @@
         <trans-unit id="GeneralSettings" translate="yes" xml:space="preserve">
           <source>通用设置</source>
           <target state="new">General settings</target>
-        </trans-unit>
-        <trans-unit id="HistoryCache" translate="yes" xml:space="preserve">
-          <source>历史缓存</source>
-          <target state="new">history cache</target>
-        </trans-unit>
-        <trans-unit id="HotKeys" translate="yes" xml:space="preserve">
-          <source>快捷键</source>
-          <target state="new">HotKeys</target>
         </trans-unit>
         <trans-unit id="ImageFile" translate="yes" xml:space="preserve">
           <source>图片文件</source>
@@ -255,10 +239,6 @@
           <source>用户界面语言</source>
           <target state="new">Language</target>
         </trans-unit>
-        <trans-unit id="LanguageResartSign" translate="yes" xml:space="preserve">
-          <source>您必须重新启动才能使用新的语言设置</source>
-          <target state="new">You must restart to apply your new language settings</target>
-        </trans-unit>
         <trans-unit id="LaunchSoftwareWithLocalService" translate="yes" xml:space="preserve">
           <source>软件启动时打开本地服务</source>
           <target state="new">Open the local service when the software starts</target>
@@ -290,10 +270,6 @@
         <trans-unit id="LogLevel" translate="yes" xml:space="preserve">
           <source>日志级别</source>
           <target state="new">Log level</target>
-        </trans-unit>
-        <trans-unit id="Male" translate="yes" xml:space="preserve">
-          <source>男</source>
-          <target state="new">Male</target>
         </trans-unit>
         <trans-unit id="Manager" translate="yes" xml:space="preserve">
           <source>管理</source>
@@ -571,29 +547,13 @@
           <source>模板名称</source>
           <target state="new">Template Name</target>
         </trans-unit>
-        <trans-unit id="TesConnection" translate="yes" xml:space="preserve">
-          <source>测试连接</source>
-          <target state="new">Test Connection</target>
-        </trans-unit>
         <trans-unit id="Theme" translate="yes" xml:space="preserve">
           <source>主题</source>
           <target state="new">Theme</target>
         </trans-unit>
-        <trans-unit id="ThemeDark" translate="yes" xml:space="preserve">
-          <source>深色</source>
-          <target state="new">Drak</target>
-        </trans-unit>
-        <trans-unit id="ThemeLight" translate="yes" xml:space="preserve">
-          <source>浅色</source>
-          <target state="new">Light</target>
-        </trans-unit>
         <trans-unit id="ThemePink" translate="yes" xml:space="preserve">
           <source>粉色</source>
           <target state="new">Pink</target>
-        </trans-unit>
-        <trans-unit id="ThemeUseSystem" translate="yes" xml:space="preserve">
-          <source>跟随系统</source>
-          <target state="new">UseSystem</target>
         </trans-unit>
         <trans-unit id="TimeLeft" translate="yes" xml:space="preserve">
           <source>剩余时间：</source>
@@ -639,21 +599,9 @@
           <source>上传</source>
           <target state="new">Upload</target>
         </trans-unit>
-        <trans-unit id="UserName" translate="yes" xml:space="preserve">
-          <source>用户</source>
-          <target state="new">UserName</target>
-        </trans-unit>
-        <trans-unit id="UserPwd" translate="yes" xml:space="preserve">
-          <source>密码</source>
-          <target state="new">UserPwd</target>
-        </trans-unit>
         <trans-unit id="WindowHidden" translate="yes" xml:space="preserve">
           <source>隐藏</source>
           <target state="new">Hide</target>
-        </trans-unit>
-        <trans-unit id="WindowSingle" translate="yes" xml:space="preserve">
-          <source>独立窗口</source>
-          <target state="new">Independent</target>
         </trans-unit>
         <trans-unit id="Wizard" translate="yes" xml:space="preserve">
           <source>向导</source>

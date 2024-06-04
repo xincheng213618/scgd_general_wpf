@@ -223,15 +223,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 清除缓存 的本地化字符串。
-        /// </summary>
-        public static string ClearCache {
-            get {
-                return ResourceManager.GetString("ClearCache", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 清空数据 的本地化字符串。
         /// </summary>
         public static string ClearData {
@@ -457,15 +448,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 女 的本地化字符串。
-        /// </summary>
-        public static string Female {
-            get {
-                return ResourceManager.GetString("Female", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 文件 的本地化字符串。
         /// </summary>
         public static string File {
@@ -525,24 +507,6 @@ namespace ColorVision.Properties {
         public static string GeneralSettings {
             get {
                 return ResourceManager.GetString("GeneralSettings", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 历史缓存 的本地化字符串。
-        /// </summary>
-        public static string HistoryCache {
-            get {
-                return ResourceManager.GetString("HistoryCache", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 快捷键 的本地化字符串。
-        /// </summary>
-        public static string HotKeys {
-            get {
-                return ResourceManager.GetString("HotKeys", resourceCulture);
             }
         }
         
@@ -628,15 +592,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 您必须重新启动才能使用新的语言设置 的本地化字符串。
-        /// </summary>
-        public static string LanguageResartSign {
-            get {
-                return ResourceManager.GetString("LanguageResartSign", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 软件启动时打开本地服务 的本地化字符串。
         /// </summary>
         public static string LaunchSoftwareWithLocalService {
@@ -705,15 +660,6 @@ namespace ColorVision.Properties {
         public static string LogLevel {
             get {
                 return ResourceManager.GetString("LogLevel", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 男 的本地化字符串。
-        /// </summary>
-        public static string Male {
-            get {
-                return ResourceManager.GetString("Male", resourceCulture);
             }
         }
         
@@ -1339,15 +1285,6 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 测试连接 的本地化字符串。
-        /// </summary>
-        public static string TesConnection {
-            get {
-                return ResourceManager.GetString("TesConnection", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 主题 的本地化字符串。
         /// </summary>
         public static string Theme {
@@ -1357,38 +1294,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 深色 的本地化字符串。
-        /// </summary>
-        public static string ThemeDark {
-            get {
-                return ResourceManager.GetString("ThemeDark", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 浅色 的本地化字符串。
-        /// </summary>
-        public static string ThemeLight {
-            get {
-                return ResourceManager.GetString("ThemeLight", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 粉色 的本地化字符串。
         /// </summary>
         public static string ThemePink {
             get {
                 return ResourceManager.GetString("ThemePink", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 跟随系统 的本地化字符串。
-        /// </summary>
-        public static string ThemeUseSystem {
-            get {
-                return ResourceManager.GetString("ThemeUseSystem", resourceCulture);
             }
         }
         
@@ -1492,38 +1402,11 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
-        ///   查找类似 用户 的本地化字符串。
-        /// </summary>
-        public static string UserName {
-            get {
-                return ResourceManager.GetString("UserName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 密码 的本地化字符串。
-        /// </summary>
-        public static string UserPwd {
-            get {
-                return ResourceManager.GetString("UserPwd", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 隐藏 的本地化字符串。
         /// </summary>
         public static string WindowHidden {
             get {
                 return ResourceManager.GetString("WindowHidden", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 独立窗口 的本地化字符串。
-        /// </summary>
-        public static string WindowSingle {
-            get {
-                return ResourceManager.GetString("WindowSingle", resourceCulture);
             }
         }
         
