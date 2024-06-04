@@ -47,69 +47,73 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder"  Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
             <StackPanel Margin="5">
-                <DockPanel Margin="0,0,0,5">
-                    <TextBlock  Text="平均次数" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                    <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=SpectrumSliderAveNum,Path=Value}"  Width="50"/>
-                    <hc:PreviewSlider x:Name="SpectrumSliderAveNum"  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="1"  Value="1" Maximum="100">
-                        <hc:PreviewSlider.PreviewContent>
-                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0"/>
-                        </hc:PreviewSlider.PreviewContent>
-                    </hc:PreviewSlider>
-                </DockPanel>
-                <DockPanel Margin="0,0,0,5">
-                    <TextBlock  Text="积分时间" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                    <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=SpectrumSliderIntTime,Path=Value}"  Width="50"/>
-                    <hc:PreviewSlider x:Name="SpectrumSliderIntTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000">
-                        <hc:PreviewSlider.PreviewContent>
-                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0"/>
-                        </hc:PreviewSlider.PreviewContent>
-                    </hc:PreviewSlider>
-                </DockPanel>
-                <StackPanel Margin="0,0,0,5" Visibility="Visible">
-                    <UniformGrid Columns="3">
-                        <CheckBox Content="自动积分" x:Name="AutoIntTime"/>
-                        <CheckBox Content="自动校零"  IsChecked="{Binding Config.IsShutterEnable}" x:Name="AutoShutterDark"/>
-                        <CheckBox Content="自适应校零" x:Name="AutoDark"/>
-                    </UniformGrid>
-                </StackPanel>
-
-                <StackPanel Margin="0,0,0,5" Visibility="Visible">
-                    <DockPanel Margin="0,2">
-                        <TextBlock Text="光谱仪模板文件：" />
+                <DockPanel Margin="0,0,0,2">
+                    <DockPanel x:Name="TemplateChoice" Margin="0,2">
+                        <TextBlock Text="模板:"  MinWidth="60"/>
                         <ComboBox x:Name="ComboxResourceTemplate" Width="130" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                         <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
                             <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="SpectrumResourceParam"  Click="MenuItem_Template"/>
                         </Grid>
                     </DockPanel>
-                    <UniformGrid Columns="2">
-                        <Button x:Name="btn_connect" Content="打开" Click="Button_Click_Open"/>
-                        <!--<Button x:Name="btn_getPatam" Content="获取参数"  Click="Button_Click_GetParam"/>-->
-                        <Button x:Name="btn_oneTest" Content="单次测试"  Click="Button_Click_OneTest"/>
-                        <Button x:Name="btn_autoTest" Content="自动测试"  Click="Button_Click_AutoTest"/>
-                        <Button x:Name="btn_oneInitDark" Content="单次校零"  Click="Button_Click_Init_Dark"/>
-                    </UniformGrid>
-                </StackPanel>
-                <GroupBox Header="Shutter" Margin="0,0,0,5" Visibility="{Binding Config.IsShutterEnable,Converter={StaticResource bool2VisibilityConverter}}">
-                    <StackPanel Margin="5">
-                        <DockPanel  Margin="0,2">
-                            <TextBlock Text="{Binding Config.ShutterCfg.Addr}" MinWidth="40"/>
-                            <TextBlock Text=":"/>
-                            <TextBlock Text="{Binding Config.ShutterCfg.BaudRate}" MinWidth="40"/>
-                            <Button Content="连接" Click="Button_Click_Shutter_Connect" Visibility="Collapsed"/>
-                        </DockPanel>
-                        <DockPanel  Margin="0,2">
-                            <TextBlock Text="{Binding Config.ShutterCfg.OpenCmd}" MinWidth="40"/>
-                            <Button Content="打开" Click="Button_Click_Shutter_Doopen"/>
-                        </DockPanel>
-                        <DockPanel  Margin="0,2">
-                            <TextBlock Text="{Binding Config.ShutterCfg.CloseCmd}" MinWidth="40"/>
-                            <Button Content="关闭" Click="Button_Click_Shutter_Doclose"/>
-                        </DockPanel>
+                    <Button x:Name="btn_connect" Margin="0,0,0,2" Content="打开" Click="Button_Click_Open"/>
+                </DockPanel>
+                <StackPanel x:Name="StackPanelOpen">
+                    <DockPanel Margin="0,0,0,5">
+                        <TextBlock  Text="平均次数" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                        <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=SpectrumSliderAveNum,Path=Value}"  Width="50"/>
+                        <hc:PreviewSlider x:Name="SpectrumSliderAveNum"  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="1"  Value="1" Maximum="100">
+                            <hc:PreviewSlider.PreviewContent>
+                                <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0"/>
+                            </hc:PreviewSlider.PreviewContent>
+                        </hc:PreviewSlider>
+                    </DockPanel>
+                    <DockPanel Margin="0,0,0,5">
+                        <TextBlock  Text="积分时间" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                        <TextBox DockPanel.Dock="Right" Text="{Binding ElementName=SpectrumSliderIntTime,Path=Value}"  Width="50"/>
+                        <hc:PreviewSlider x:Name="SpectrumSliderIntTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="100" Maximum="6000">
+                            <hc:PreviewSlider.PreviewContent>
+                                <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0"/>
+                            </hc:PreviewSlider.PreviewContent>
+                        </hc:PreviewSlider>
+                    </DockPanel>
+                    <StackPanel Margin="0,0,0,5">
+                        <UniformGrid Columns="3">
+                            <CheckBox Content="自动积分" x:Name="AutoIntTime"/>
+                            <CheckBox Content="自动校零"  IsChecked="{Binding Config.IsShutterEnable}" x:Name="AutoShutterDark"/>
+                            <CheckBox Content="自适应校零" x:Name="AutoDark"/>
+                        </UniformGrid>
                     </StackPanel>
-                </GroupBox>
 
-                <DockPanel>
+                    <StackPanel Margin="0,0,0,5">
+                        <UniformGrid Columns="3">
+                            <!--<Button x:Name="btn_getPatam" Content="获取参数"  Click="Button_Click_GetParam"/>-->
+                            <Button x:Name="btn_oneTest" Content="单次测试"  Margin="2" Click="Button_Click_OneTest"/>
+                            <Button x:Name="btn_autoTest" Content="自动测试"  Margin="2" Click="Button_Click_AutoTest"/>
+                            <Button x:Name="btn_oneInitDark" Content="单次校零"  Margin="2" Click="Button_Click_Init_Dark"/>
+                        </UniformGrid>
+                    </StackPanel>
+                    <GroupBox Header="Shutter" Margin="0,0,0,5" Visibility="{Binding Config.IsShutterEnable,Converter={StaticResource bool2VisibilityConverter}}">
+                        <StackPanel Margin="5">
+                            <DockPanel  Margin="0,2">
+                                <TextBlock Text="{Binding Config.ShutterCfg.Addr}" MinWidth="40"/>
+                                <TextBlock Text=":"/>
+                                <TextBlock Text="{Binding Config.ShutterCfg.BaudRate}" MinWidth="40"/>
+                                <Button Content="连接" Click="Button_Click_Shutter_Connect" Visibility="Collapsed"/>
+                            </DockPanel>
+                            <DockPanel  Margin="0,2">
+                                <TextBlock Text="{Binding Config.ShutterCfg.OpenCmd}" MinWidth="40"/>
+                                <Button Content="打开" Click="Button_Click_Shutter_Doopen"/>
+                            </DockPanel>
+                            <DockPanel  Margin="0,2">
+                                <TextBlock Text="{Binding Config.ShutterCfg.CloseCmd}" MinWidth="40"/>
+                                <Button Content="关闭" Click="Button_Click_Shutter_Doclose"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
+
+                <DockPanel Margin="0,2,0,0" >
                     <TextBlock Text="{x:Static properties:Resources.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0"/>
                     <ComboBox x:Name="ComboxView"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Value" DisplayMemberPath="Key"   />
                 </DockPanel>

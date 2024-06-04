@@ -53,6 +53,13 @@ namespace ColorVision.Services.Devices.Spectrum
             };
             void UpdateUI(DeviceStatusType status)
             {
+                void SetVisibility(UIElement element, Visibility visibility) => element.Visibility = visibility;
+                void HideAllButtons()
+                {
+                    SetVisibility(TemplateChoice, Visibility.Collapsed);
+                    SetVisibility(StackPanelOpen, Visibility.Collapsed);
+                }
+                HideAllButtons();
                 switch (status)
                 {
                     case DeviceStatusType.OffLine:
@@ -60,13 +67,16 @@ namespace ColorVision.Services.Devices.Spectrum
                     case DeviceStatusType.Unknown:
                     case DeviceStatusType.Unauthorized:
                     case DeviceStatusType.UnInit:
+                        SetVisibility(TemplateChoice, Visibility.Visible);
                         btn_connect.Content = "打开";
                         break;
                     case DeviceStatusType.Closed:
+                        SetVisibility(TemplateChoice, Visibility.Visible);
                         btn_connect.Content = "打开";
                         break;
                     case DeviceStatusType.LiveOpened:
                     case DeviceStatusType.Opened:
+                        SetVisibility(StackPanelOpen, Visibility.Collapsed);
                         btn_connect.Content = "关闭";
                         break;
                     case DeviceStatusType.Closing:
@@ -85,46 +95,7 @@ namespace ColorVision.Services.Devices.Spectrum
                 doSpectrumHeartbeat(e);
             };
 
-
-            SpectrumResourceParams = new ObservableCollection<TemplateModel<SpectrumResourceParam>>();
-            SpectrumResourceParams.Insert(0, new TemplateModel<SpectrumResourceParam>("Empty", new SpectrumResourceParam() { Id = -1 }));
-
-            foreach (var item in DeviceSpectrum.SpectrumResourceParams)
-                SpectrumResourceParams.Add(item);
-
-            DeviceSpectrum.SpectrumResourceParams.CollectionChanged += (s, e) =>
-            {
-                switch (e.Action)
-                {
-                    case NotifyCollectionChangedAction.Add:
-                        // 处理添加项
-                        if (e.NewItems != null)
-                            foreach (TemplateModel<SpectrumResourceParam> newItem in e.NewItems)
-                                SpectrumResourceParams.Add(newItem);
-                        break;
-                    case NotifyCollectionChangedAction.Remove:
-                        // 处理移除项
-                        if (e.OldItems != null)
-                            foreach (TemplateModel<SpectrumResourceParam> newItem in e.OldItems)
-                                SpectrumResourceParams.Remove(newItem);
-                        break;
-                    case NotifyCollectionChangedAction.Replace:
-                        // 处理替换项
-                        // ...
-                        break;
-                    case NotifyCollectionChangedAction.Move:
-                        // 处理移动项
-                        // ...
-                        break;
-                    case NotifyCollectionChangedAction.Reset:
-                        // 处理清空集合
-                        SpectrumResourceParams.Clear();
-                        SpectrumResourceParams.Insert(0, new TemplateModel<SpectrumResourceParam>("Empty", new SpectrumResourceParam()) { Id = -1 });
-                        break;
-                }
-            };
-
-            ComboxResourceTemplate.ItemsSource = SpectrumResourceParams;
+            ComboxResourceTemplate.ItemsSource = DeviceSpectrum.SpectrumResourceParams.CreateEmpty();
             ComboxResourceTemplate.SelectedIndex = 0;
 
             PreviewMouseDown += UserControl_PreviewMouseDown;
@@ -156,8 +127,6 @@ namespace ColorVision.Services.Devices.Spectrum
             }
         }
 
-
-        public ObservableCollection<TemplateModel<SpectrumResourceParam>> SpectrumResourceParams { get; set; }
 
         private void doHeartbeat(HeartbeatParam e)
         {
@@ -230,6 +199,7 @@ namespace ColorVision.Services.Devices.Spectrum
                 {
                      if (ComboxResourceTemplate.SelectedValue is SpectrumResourceParam param)
                     {
+                        btn_connect.Content = "打开中";
                         SpectrumService.Open(param);
                     }
                     else
