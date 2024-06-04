@@ -32,13 +32,6 @@ namespace ColorVision.Services.Devices.Spectrum
 
         public MQTTSpectrum(ConfigSpectrum spectrumConfig) : base(spectrumConfig)
         {
-            Config = spectrumConfig;
-
-            SendTopic = spectrumConfig.SendTopic;
-            SubscribeTopic = spectrumConfig.SubscribeTopic;
-
-            MQTTControl = MQTTControl.GetInstance();
-            MQTTControl.SubscribeCache(SubscribeTopic);
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
             cmdMap = new Dictionary<string, MsgSend>();
         }
@@ -122,16 +115,6 @@ namespace ColorVision.Services.Devices.Spectrum
         public void DoSpectumHeartbeat(SpectrumHeartbeatParam heartbeat)
         {
             Application.Current.Dispatcher.Invoke(() => HeartbeatHandlerEvent?.Invoke(heartbeat));
-        }
-
-        public bool Init()
-        {
-            MsgSend msg = new()
-            {
-                EventName = "Init"
-            };
-            PublishAsyncClient(msg);
-            return true;
         }
 
 
@@ -342,51 +325,6 @@ namespace ColorVision.Services.Devices.Spectrum
                 ServiceName = Config.Code,
             };
             PublishAsyncClient(msg);
-        }
-
-
-        public async Task<MsgRecord> UploadFileAsync(string name, string fileName, int fileType, int timeout = 50000)
-        {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start(); // 开始计时
-
-            TaskCompletionSource<MsgRecord> tcs = new();
-            string md5 = Tool.CalculateMD5(fileName);
-            MsgSend msg = new()
-            {
-                EventName = MQTTFileServerEventEnum.Event_File_Upload,
-                Params = new Dictionary<string, object> { { "Name", name }, { "FileName", fileName }, { "FileExtType", FileExtType.Calibration }, { "MD5", md5 } }
-            };
-            MsgRecord msgRecord = PublishAsyncClient(msg);
-
-            MsgRecordStateChangedHandler handler = (sender) =>
-            {
-                log.Info($"{fileName}  状态{sender}  Operation time: {stopwatch.ElapsedMilliseconds} ms");
-                tcs.TrySetResult(msgRecord);
-            };
-            msgRecord.MsgRecordStateChanged += handler;
-            var timeoutTask = Task.Delay(timeout);
-            try
-            {
-
-                var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
-                if (completedTask == timeoutTask)
-                {
-                    log.Info($"{fileName}  超时  Operation time: {stopwatch.ElapsedMilliseconds} ms");
-                    tcs.TrySetException(new TimeoutException("The operation has timed out."));
-                }
-                return await tcs.Task; // 如果超时，这里将会抛出异常
-            }
-            catch (Exception ex)
-            {
-                log.Info($"{fileName}  异常 {ex.Message} Operation time: {stopwatch.ElapsedMilliseconds} ms");
-                tcs.TrySetException(ex);
-                return await tcs.Task; // 
-            }
-            finally
-            {
-                msgRecord.MsgRecordStateChanged -= handler;
-            }
         }
     }
 }
