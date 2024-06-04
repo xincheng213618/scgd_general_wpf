@@ -8,9 +8,11 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
 using CVCommCore;
+using Mysqlx.Crud;
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -49,11 +51,34 @@ namespace ColorVision.Services.Devices.Spectrum
                 if (e != null)
                     View.SpectrumDrawPlot(e);
             };
-
-            SpectrumService.HeartbeatEvent += e =>
+            void UpdateUI(DeviceStatusType status)
             {
-                doHeartbeat(e);
-            };
+                switch (status)
+                {
+                    case DeviceStatusType.OffLine:
+                        break;
+                    case DeviceStatusType.Unknown:
+                    case DeviceStatusType.Unauthorized:
+                    case DeviceStatusType.UnInit:
+                        btn_connect.Content = "打开";
+                        break;
+                    case DeviceStatusType.Closed:
+                        btn_connect.Content = "打开";
+                        break;
+                    case DeviceStatusType.LiveOpened:
+                    case DeviceStatusType.Opened:
+                        btn_connect.Content = "关闭";
+                        break;
+                    case DeviceStatusType.Closing:
+                    case DeviceStatusType.Opening:
+                    default:
+                        // No specific action needed
+                        break;
+                }
+            }
+
+            UpdateUI(SpectrumService.DeviceStatus);
+            SpectrumService.DeviceStatusChanged += UpdateUI;
 
             SpectrumService.HeartbeatHandlerEvent += (e) =>
             {

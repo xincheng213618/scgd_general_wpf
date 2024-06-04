@@ -30,6 +30,7 @@
                                 <TextBox  x:Name="TextBox_CIEImgPath" Text="{Binding Path}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
+                                <Button Content="在线Cron表达式生成器" DockPanel.Dock="Right" Click="Button_Click_1" Margin="5,0,0,0"/>
                                 <TextBlock  Text="Cron表达式" Width="120"/>
                                 <TextBox  x:Name="TextBox_Endpoint" Text="{Binding CronExpression}"/>
                             </DockPanel>

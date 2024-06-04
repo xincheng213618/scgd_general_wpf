@@ -61,5 +61,10 @@ namespace ColorVision.Services.ShowPage.Dao
                 EditConfig.Path = dialog.SelectedPath;
             }
         }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            PlatformHelper.Open("https://cron.qqe2.com/");
+        }
     }
 }

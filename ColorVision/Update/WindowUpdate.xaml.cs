@@ -26,9 +26,9 @@ namespace ColorVision.Update
 
         public RelayCommand Command => new(A => Execute());
 
-        private void Execute()
+        private async void Execute()
         {
-            AutoUpdater.GetInstance().CheckAndUpdate();
+            await AutoUpdater.GetInstance().CheckAndUpdate();
         }
     }
 
