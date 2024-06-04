@@ -169,21 +169,6 @@
   <data name="TimeLeft" xml:space="preserve">
     <value>剩余时间：</value>
   </data>
-  <data name="ThemeUseSystem" xml:space="preserve">
-    <value>跟随系统</value>
-  </data>
-  <data name="ThemePink" xml:space="preserve">
-    <value>粉色</value>
-  </data>
-  <data name="ThemeLight" xml:space="preserve">
-    <value>浅色</value>
-  </data>
-  <data name="ThemeDark" xml:space="preserve">
-    <value>深色</value>
-  </data>
-  <data name="Theme" xml:space="preserve">
-    <value>主题</value>
-  </data>
   <data name="TesConnection" xml:space="preserve">
     <value>测试连接</value>
   </data>
@@ -297,9 +282,6 @@
   </data>
   <data name="RunAsAdmin" xml:space="preserve">
     <value>以管理员身份运行</value>
-  </data>
-  <data name="Rollback" xml:space="preserve">
-    <value>回退</value>
   </data>
   <data name="Result" xml:space="preserve">
     <value>结果</value>
@@ -861,9 +843,6 @@
   </data>
   <data name="Apply" xml:space="preserve">
     <value>应用</value>
-  </data>
-  <data name="ApplicationExit" xml:space="preserve">
-    <value>程序关闭</value>
   </data>
   <data name="Alias" xml:space="preserve">
     <value>别名</value>

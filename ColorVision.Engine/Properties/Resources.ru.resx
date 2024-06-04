@@ -189,21 +189,6 @@
   <data name="TimeLeft" xml:space="preserve">
     <value>оставшееся время:</value>
   </data>
-  <data name="ThemeUseSystem" xml:space="preserve">
-    <value>Следуйте системе</value>
-  </data>
-  <data name="ThemePink" xml:space="preserve">
-    <value>розовый</value>
-  </data>
-  <data name="ThemeLight" xml:space="preserve">
-    <value>светлый цвет</value>
-  </data>
-  <data name="ThemeDark" xml:space="preserve">
-    <value>Темный</value>
-  </data>
-  <data name="Theme" xml:space="preserve">
-    <value>тема</value>
-  </data>
   <data name="TesConnection" xml:space="preserve">
     <value>тестовое соединение</value>
   </data>
@@ -317,9 +302,6 @@
   </data>
   <data name="RunAsAdmin" xml:space="preserve">
     <value>Запустить от имени администратора</value>
-  </data>
-  <data name="Rollback" xml:space="preserve">
-    <value>возвращаться</value>
   </data>
   <data name="Result" xml:space="preserve">
     <value>результат</value>
@@ -881,9 +863,6 @@
   </data>
   <data name="Apply" xml:space="preserve">
     <value>приложение</value>
-  </data>
-  <data name="ApplicationExit" xml:space="preserve">
-    <value>Программа закрывается</value>
   </data>
   <data name="Alias" xml:space="preserve">
     <value>Псевдоним</value>

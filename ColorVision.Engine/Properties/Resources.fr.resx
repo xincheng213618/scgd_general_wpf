@@ -189,21 +189,6 @@
   <data name="TimeLeft" xml:space="preserve">
     <value>temps restant:</value>
   </data>
-  <data name="ThemeUseSystem" xml:space="preserve">
-    <value>Suivez le système</value>
-  </data>
-  <data name="ThemePink" xml:space="preserve">
-    <value>rose</value>
-  </data>
-  <data name="ThemeLight" xml:space="preserve">
-    <value>couleur claire</value>
-  </data>
-  <data name="ThemeDark" xml:space="preserve">
-    <value>Sombre</value>
-  </data>
-  <data name="Theme" xml:space="preserve">
-    <value>thème</value>
-  </data>
   <data name="TesConnection" xml:space="preserve">
     <value>tester la connexion</value>
   </data>
@@ -317,9 +302,6 @@
   </data>
   <data name="RunAsAdmin" xml:space="preserve">
     <value>Exécuter en tant qu'administrateur</value>
-  </data>
-  <data name="Rollback" xml:space="preserve">
-    <value>retourner</value>
   </data>
   <data name="Result" xml:space="preserve">
     <value>résultat</value>
@@ -881,9 +863,6 @@
   </data>
   <data name="Apply" xml:space="preserve">
     <value>application</value>
-  </data>
-  <data name="ApplicationExit" xml:space="preserve">
-    <value>Le programme se termine</value>
   </data>
   <data name="Alias" xml:space="preserve">
     <value>Alias</value>

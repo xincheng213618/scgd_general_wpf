@@ -39,10 +39,6 @@
           <source>别名</source>
           <target state="new">別名</target>
         </trans-unit>
-        <trans-unit id="ApplicationExit" translate="yes" xml:space="preserve">
-          <source>程序关闭</source>
-          <target state="new">程式關閉</target>
-        </trans-unit>
         <trans-unit id="Apply" translate="yes" xml:space="preserve">
           <source>应用</source>
           <target state="new">應用</target>
@@ -803,10 +799,6 @@
           <source>结果</source>
           <target state="new">結果</target>
         </trans-unit>
-        <trans-unit id="Rollback" translate="yes" xml:space="preserve">
-          <source>回退</source>
-          <target state="new">回退</target>
-        </trans-unit>
         <trans-unit id="RunAsAdmin" translate="yes" xml:space="preserve">
           <source>以管理员身份运行</source>
           <target state="new">以管理員身份執行</target>
@@ -962,26 +954,6 @@
         <trans-unit id="TesConnection" translate="yes" xml:space="preserve">
           <source>测试连接</source>
           <target state="new">測試連接</target>
-        </trans-unit>
-        <trans-unit id="Theme" translate="yes" xml:space="preserve">
-          <source>主题</source>
-          <target state="new">主題</target>
-        </trans-unit>
-        <trans-unit id="ThemeDark" translate="yes" xml:space="preserve">
-          <source>深色</source>
-          <target state="new">黑色</target>
-        </trans-unit>
-        <trans-unit id="ThemeLight" translate="yes" xml:space="preserve">
-          <source>浅色</source>
-          <target state="new">白色</target>
-        </trans-unit>
-        <trans-unit id="ThemePink" translate="yes" xml:space="preserve">
-          <source>粉色</source>
-          <target state="new">粉紅色</target>
-        </trans-unit>
-        <trans-unit id="ThemeUseSystem" translate="yes" xml:space="preserve">
-          <source>跟随系统</source>
-          <target state="new">跟随系统</target>
         </trans-unit>
         <trans-unit id="TimeLeft" translate="yes" xml:space="preserve">
           <source>剩余时间：</source>

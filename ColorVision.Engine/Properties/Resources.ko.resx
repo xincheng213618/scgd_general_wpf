@@ -189,21 +189,6 @@
   <data name="TimeLeft" xml:space="preserve">
     <value>남은 시간:</value>
   </data>
-  <data name="ThemeUseSystem" xml:space="preserve">
-    <value>시스템 테마 사용</value>
-  </data>
-  <data name="ThemePink" xml:space="preserve">
-    <value>분홍색</value>
-  </data>
-  <data name="ThemeLight" xml:space="preserve">
-    <value>밝은</value>
-  </data>
-  <data name="ThemeDark" xml:space="preserve">
-    <value>진한 색상</value>
-  </data>
-  <data name="Theme" xml:space="preserve">
-    <value>테마</value>
-  </data>
   <data name="TesConnection" xml:space="preserve">
     <value>연결 테스트</value>
   </data>
@@ -317,9 +302,6 @@
   </data>
   <data name="RunAsAdmin" xml:space="preserve">
     <value>관리자로 실행</value>
-  </data>
-  <data name="Rollback" xml:space="preserve">
-    <value>돌아가다</value>
   </data>
   <data name="Result" xml:space="preserve">
     <value>결과</value>
@@ -881,9 +863,6 @@
   </data>
   <data name="Apply" xml:space="preserve">
     <value>애플리케이션</value>
-  </data>
-  <data name="ApplicationExit" xml:space="preserve">
-    <value>프로그램 종료</value>
   </data>
   <data name="Alias" xml:space="preserve">
     <value>별명</value>

@@ -39,10 +39,6 @@
           <source>别名</source>
           <target state="new">Псевдоним</target>
         </trans-unit>
-        <trans-unit id="ApplicationExit" translate="yes" xml:space="preserve">
-          <source>程序关闭</source>
-          <target state="new">Программа закрывается</target>
-        </trans-unit>
         <trans-unit id="Apply" translate="yes" xml:space="preserve">
           <source>应用</source>
           <target state="new">приложение</target>
@@ -803,10 +799,6 @@
           <source>结果</source>
           <target state="new">результат</target>
         </trans-unit>
-        <trans-unit id="Rollback" translate="yes" xml:space="preserve">
-          <source>回退</source>
-          <target state="new">возвращаться</target>
-        </trans-unit>
         <trans-unit id="RunAsAdmin" translate="yes" xml:space="preserve">
           <source>以管理员身份运行</source>
           <target state="new">Запустить от имени администратора</target>
@@ -962,26 +954,6 @@
         <trans-unit id="TesConnection" translate="yes" xml:space="preserve">
           <source>测试连接</source>
           <target state="new">тестовое соединение</target>
-        </trans-unit>
-        <trans-unit id="Theme" translate="yes" xml:space="preserve">
-          <source>主题</source>
-          <target state="new">тема</target>
-        </trans-unit>
-        <trans-unit id="ThemeDark" translate="yes" xml:space="preserve">
-          <source>深色</source>
-          <target state="new">Темный</target>
-        </trans-unit>
-        <trans-unit id="ThemeLight" translate="yes" xml:space="preserve">
-          <source>浅色</source>
-          <target state="new">светлый цвет</target>
-        </trans-unit>
-        <trans-unit id="ThemePink" translate="yes" xml:space="preserve">
-          <source>粉色</source>
-          <target state="new">розовый</target>
-        </trans-unit>
-        <trans-unit id="ThemeUseSystem" translate="yes" xml:space="preserve">
-          <source>跟随系统</source>
-          <target state="new">Следуйте системе</target>
         </trans-unit>
         <trans-unit id="TimeLeft" translate="yes" xml:space="preserve">
           <source>剩余时间：</source>

@@ -7,25 +7,9 @@
           <source>关于</source>
           <target state="new">소개</target>
         </trans-unit>
-        <trans-unit id="Account" translate="yes" xml:space="preserve">
-          <source>账号</source>
-          <target state="new">계정</target>
-        </trans-unit>
-        <trans-unit id="AccountLogin" translate="yes" xml:space="preserve">
-          <source>账号登录</source>
-          <target state="new">계정 로그인</target>
-        </trans-unit>
         <trans-unit id="Acquire" translate="yes" xml:space="preserve">
           <source>采集</source>
           <target state="new">수집</target>
-        </trans-unit>
-        <trans-unit id="Add" translate="yes" xml:space="preserve">
-          <source>添加</source>
-          <target state="new">추가하다</target>
-        </trans-unit>
-        <trans-unit id="AdvanceSearch" translate="yes" xml:space="preserve">
-          <source>高级查询</source>
-          <target state="new">고급 검색</target>
         </trans-unit>
         <trans-unit id="Alias" translate="yes" xml:space="preserve">
           <source>别名</source>
@@ -35,29 +19,9 @@
           <source>程序关闭</source>
           <target state="new">프로그램 종료</target>
         </trans-unit>
-        <trans-unit id="Apply" translate="yes" xml:space="preserve">
-          <source>应用</source>
-          <target state="new">애플리케이션</target>
-        </trans-unit>
-        <trans-unit id="ApplyWindowLayout" translate="yes" xml:space="preserve">
-          <source>应用窗口布局</source>
-          <target state="new">창 레이아웃 적용</target>
-        </trans-unit>
-        <trans-unit id="AutoSwitchSelectedView" translate="yes" xml:space="preserve">
-          <source>自动切换选中视图</source>
-          <target state="new">선택한 보기를 자동으로 전환</target>
-        </trans-unit>
-        <trans-unit id="BasicInformation" translate="yes" xml:space="preserve">
-          <source>基本信息</source>
-          <target state="new">기본 정보</target>
-        </trans-unit>
         <trans-unit id="Cancel" translate="yes" xml:space="preserve">
           <source>取消</source>
           <target state="new">취소</target>
-        </trans-unit>
-        <trans-unit id="Capture" translate="yes" xml:space="preserve">
-          <source>取图</source>
-          <target state="new">포착</target>
         </trans-unit>
         <trans-unit id="ChangeLog" translate="yes" xml:space="preserve">
           <source>变更日志</source>
@@ -75,17 +39,9 @@
           <source>清除</source>
           <target state="new">분명한</target>
         </trans-unit>
-        <trans-unit id="ClearData" translate="yes" xml:space="preserve">
-          <source>清空数据</source>
-          <target state="new">데이터 지우기</target>
-        </trans-unit>
         <trans-unit id="Close" translate="yes" xml:space="preserve">
           <source>关闭</source>
           <target state="new">닫기</target>
-        </trans-unit>
-        <trans-unit id="Code" translate="yes" xml:space="preserve">
-          <source>标识</source>
-          <target state="new">암호</target>
         </trans-unit>
         <trans-unit id="ColorVisionUpdater" translate="yes" xml:space="preserve">
           <source>ColorVision 更新程序</source>
@@ -103,22 +59,6 @@
           <source>连接名</source>
           <target state="new">연결 이름</target>
         </trans-unit>
-        <trans-unit id="CopyConfigurationFile" translate="yes" xml:space="preserve">
-          <source>复制配置文件</source>
-          <target state="new">구성 파일 복사</target>
-        </trans-unit>
-        <trans-unit id="CopySerialNumber" translate="yes" xml:space="preserve">
-          <source>复制序列号</source>
-          <target state="new">일련번호 복사</target>
-        </trans-unit>
-        <trans-unit id="Create" translate="yes" xml:space="preserve">
-          <source>创建</source>
-          <target state="new">만들다</target>
-        </trans-unit>
-        <trans-unit id="Create_an_account" translate="yes" xml:space="preserve">
-          <source>注册一个</source>
-          <target state="new">계정을 만들기</target>
-        </trans-unit>
         <trans-unit id="CurrentSpeed" translate="yes" xml:space="preserve">
           <source>当前速度：</source>
           <target state="new">현재 속도:</target>
@@ -126,14 +66,6 @@
         <trans-unit id="CurrentVersionIsUpToDate" translate="yes" xml:space="preserve">
           <source>当前版本已经是最新版本</source>
           <target state="new">현재 버전은 이미 최신 버전입니다</target>
-        </trans-unit>
-        <trans-unit id="Delete" translate="yes" xml:space="preserve">
-          <source>删除</source>
-          <target state="new">삭제</target>
-        </trans-unit>
-        <trans-unit id="DisableHardwareAcceleration" translate="yes" xml:space="preserve">
-          <source>禁用硬件加速</source>
-          <target state="new">하드웨어 가속 비활성화</target>
         </trans-unit>
         <trans-unit id="DownloadCancelled" translate="yes" xml:space="preserve">
           <source>下载已取消</source>
@@ -143,10 +75,6 @@
           <source>用时</source>
           <target state="new">시간 비용</target>
         </trans-unit>
-        <trans-unit id="Edit" translate="yes" xml:space="preserve">
-          <source>编辑</source>
-          <target state="new">편집</target>
-        </trans-unit>
         <trans-unit id="EnableDatabase" translate="yes" xml:space="preserve">
           <source>启用数据库</source>
           <target state="new">데이터베이스 활성화</target>
@@ -155,45 +83,9 @@
           <source>发生错误</source>
           <target state="new">에러 발생됨</target>
         </trans-unit>
-        <trans-unit id="Exchange" translate="yes" xml:space="preserve">
-          <source>交换</source>
-          <target state="new">교환</target>
-        </trans-unit>
         <trans-unit id="ExperimentalFeature" translate="yes" xml:space="preserve">
           <source>实验性功能</source>
           <target state="new">실험적 기능</target>
-        </trans-unit>
-        <trans-unit id="Export" translate="yes" xml:space="preserve">
-          <source>导出</source>
-          <target state="new">내보내다</target>
-        </trans-unit>
-        <trans-unit id="Exposure" translate="yes" xml:space="preserve">
-          <source>曝光</source>
-          <target state="new">노출</target>
-        </trans-unit>
-        <trans-unit id="Failure" translate="yes" xml:space="preserve">
-          <source>失败</source>
-          <target state="new">실패하다</target>
-        </trans-unit>
-        <trans-unit id="File" translate="yes" xml:space="preserve">
-          <source>文件</source>
-          <target state="new">문서</target>
-        </trans-unit>
-        <trans-unit id="FillAccount" translate="yes" xml:space="preserve">
-          <source>请输入账号</source>
-          <target state="new">계정을 입력해주세요</target>
-        </trans-unit>
-        <trans-unit id="FillPassword" translate="yes" xml:space="preserve">
-          <source>请输入密码</source>
-          <target state="new">비밀번호를 입력해주세요</target>
-        </trans-unit>
-        <trans-unit id="Filter" translate="yes" xml:space="preserve">
-          <source>筛选</source>
-          <target state="new">필터</target>
-        </trans-unit>
-        <trans-unit id="Gain" translate="yes" xml:space="preserve">
-          <source>增益</source>
-          <target state="new">얻다</target>
         </trans-unit>
         <trans-unit id="General" translate="yes" xml:space="preserve">
           <source>通用</source>
@@ -203,41 +95,9 @@
           <source>通用设置</source>
           <target state="new">일반 설정</target>
         </trans-unit>
-        <trans-unit id="ImageFile" translate="yes" xml:space="preserve">
-          <source>图片文件</source>
-          <target state="new">이미지 파일</target>
-        </trans-unit>
-        <trans-unit id="ImageInfo" translate="yes" xml:space="preserve">
-          <source>图像信息</source>
-          <target state="new">이미지 정보</target>
-        </trans-unit>
-        <trans-unit id="ImageSource" translate="yes" xml:space="preserve">
-          <source>图像源</source>
-          <target state="new">이미지 소스</target>
-        </trans-unit>
-        <trans-unit id="Import" translate="yes" xml:space="preserve">
-          <source>导入</source>
-          <target state="new">수입</target>
-        </trans-unit>
-        <trans-unit id="ImportLicense" translate="yes" xml:space="preserve">
-          <source>导入许可证</source>
-          <target state="new">수입 라이센스</target>
-        </trans-unit>
-        <trans-unit id="Info" translate="yes" xml:space="preserve">
-          <source>信息</source>
-          <target state="new">정보</target>
-        </trans-unit>
-        <trans-unit id="Inquire" translate="yes" xml:space="preserve">
-          <source>查询</source>
-          <target state="new">문의</target>
-        </trans-unit>
         <trans-unit id="InstallCertificate" translate="yes" xml:space="preserve">
           <source>安装证书</source>
           <target state="new">인증서 설치</target>
-        </trans-unit>
-        <trans-unit id="Language" translate="yes" xml:space="preserve">
-          <source>用户界面语言</source>
-          <target state="new">UI 언어</target>
         </trans-unit>
         <trans-unit id="LaunchSoftwareWithLocalService" translate="yes" xml:space="preserve">
           <source>软件启动时打开本地服务</source>
@@ -246,14 +106,6 @@
         <trans-unit id="LaunchSuccess" translate="yes" xml:space="preserve">
           <source>启动成功</source>
           <target state="new">성공적으로 시작되었습니다</target>
-        </trans-unit>
-        <trans-unit id="Layers" translate="yes" xml:space="preserve">
-          <source>图层</source>
-          <target state="new">레이어</target>
-        </trans-unit>
-        <trans-unit id="LicenseManagement" translate="yes" xml:space="preserve">
-          <source>许可证管理</source>
-          <target state="new">라이선스 관리</target>
         </trans-unit>
         <trans-unit id="Loading" translate="yes" xml:space="preserve">
           <source>加载</source>
@@ -270,10 +122,6 @@
         <trans-unit id="LogLevel" translate="yes" xml:space="preserve">
           <source>日志级别</source>
           <target state="new">로그 수준</target>
-        </trans-unit>
-        <trans-unit id="Manager" translate="yes" xml:space="preserve">
-          <source>管理</source>
-          <target state="new">관리하다</target>
         </trans-unit>
         <trans-unit id="Maximize" translate="yes" xml:space="preserve">
           <source>最大化</source>
@@ -307,21 +155,9 @@
           <source>文件(_F)</source>
           <target state="new">파일 (_F)</target>
         </trans-unit>
-        <trans-unit id="MenuFlow" translate="yes" xml:space="preserve">
-          <source>流程(_L)</source>
-          <target state="new">공정(_L)</target>
-        </trans-unit>
         <trans-unit id="MenuHelp" translate="yes" xml:space="preserve">
           <source>帮助(_H)</source>
           <target state="new">도움 (_H)</target>
-        </trans-unit>
-        <trans-unit id="MenuLanguage" translate="yes" xml:space="preserve">
-          <source>语言(_L)</source>
-          <target state="new">언어(_L)</target>
-        </trans-unit>
-        <trans-unit id="MenuLogin" translate="yes" xml:space="preserve">
-          <source>登录账号(_L)</source>
-          <target state="new">로그인 계정(_L)</target>
         </trans-unit>
         <trans-unit id="MenuNew" translate="yes" xml:space="preserve">
           <source>新建(_N)</source>
@@ -346,10 +182,6 @@
         <trans-unit id="MenuTemplate" translate="yes" xml:space="preserve">
           <source>模板(_M)</source>
           <target state="new">템플릿(_M)</target>
-        </trans-unit>
-        <trans-unit id="MenuTheme" translate="yes" xml:space="preserve">
-          <source>主题(_H)</source>
-          <target state="new">테마(_H)</target>
         </trans-unit>
         <trans-unit id="MenuTool" translate="yes" xml:space="preserve">
           <source>工具(_T)</source>
@@ -379,14 +211,6 @@
           <source>最小化</source>
           <target state="new">최소화</target>
         </trans-unit>
-        <trans-unit id="Name" translate="yes" xml:space="preserve">
-          <source>名称</source>
-          <target state="new">이름</target>
-        </trans-unit>
-        <trans-unit id="New" translate="yes" xml:space="preserve">
-          <source>新建</source>
-          <target state="new">새로운</target>
-        </trans-unit>
         <trans-unit id="NewVersionFound" translate="yes" xml:space="preserve">
           <source>发现新版本</source>
           <target state="new">새 버전이 발견되었습니다</target>
@@ -398,22 +222,6 @@
         <trans-unit id="OK" translate="yes" xml:space="preserve">
           <source>确定</source>
           <target state="new">OK</target>
-        </trans-unit>
-        <trans-unit id="Open" translate="yes" xml:space="preserve">
-          <source>打开</source>
-          <target state="new">열려 있는</target>
-        </trans-unit>
-        <trans-unit id="OutputView" translate="yes" xml:space="preserve">
-          <source>输出视图</source>
-          <target state="new">출력 보기</target>
-        </trans-unit>
-        <trans-unit id="Parameter" translate="yes" xml:space="preserve">
-          <source>参数</source>
-          <target state="new">매개변수</target>
-        </trans-unit>
-        <trans-unit id="Password" translate="yes" xml:space="preserve">
-          <source>密码</source>
-          <target state="new">비밀번호</target>
         </trans-unit>
         <trans-unit id="PerformanceTest" translate="yes" xml:space="preserve">
           <source>性能检测</source>
@@ -427,33 +235,9 @@
           <source>工程</source>
           <target state="new">프로젝트</target>
         </trans-unit>
-        <trans-unit id="Property" translate="yes" xml:space="preserve">
-          <source>属性</source>
-          <target state="new">속성</target>
-        </trans-unit>
-        <trans-unit id="QuickPreview" translate="yes" xml:space="preserve">
-          <source>快速预览</source>
-          <target state="new">빠른 미리보기</target>
-        </trans-unit>
-        <trans-unit id="Refresh" translate="yes" xml:space="preserve">
-          <source>刷新</source>
-          <target state="new">새로 고치다</target>
-        </trans-unit>
-        <trans-unit id="Reset" translate="yes" xml:space="preserve">
-          <source>重置</source>
-          <target state="new">초기화</target>
-        </trans-unit>
-        <trans-unit id="Reseted" translate="yes" xml:space="preserve">
-          <source>已重置</source>
-          <target state="new">재설정 완료</target>
-        </trans-unit>
         <trans-unit id="Restore" translate="yes" xml:space="preserve">
           <source>向下还原</source>
           <target state="new">아래로 복원</target>
-        </trans-unit>
-        <trans-unit id="Result" translate="yes" xml:space="preserve">
-          <source>结果</source>
-          <target state="new">결과</target>
         </trans-unit>
         <trans-unit id="Rollback" translate="yes" xml:space="preserve">
           <source>回退</source>
@@ -467,28 +251,12 @@
           <source>保存</source>
           <target state="new">저장</target>
         </trans-unit>
-        <trans-unit id="SaveWindowLayout" translate="yes" xml:space="preserve">
-          <source>保存窗口布局</source>
-          <target state="new">창 레이아웃 저장</target>
-        </trans-unit>
-        <trans-unit id="Search" translate="yes" xml:space="preserve">
-          <source>搜索</source>
-          <target state="new">찾다</target>
-        </trans-unit>
-        <trans-unit id="Send" translate="yes" xml:space="preserve">
-          <source>发送</source>
-          <target state="new">보내다</target>
-        </trans-unit>
         <trans-unit id="Sended" translate="yes" xml:space="preserve">
           <source>已经发送</source>
           <target state="new">보냄</target>
         </trans-unit>
         <trans-unit id="SerialNumber" translate="yes" xml:space="preserve">
           <source>序列号</source>
-          <target state="new">일련번호</target>
-        </trans-unit>
-        <trans-unit id="SerialNumber1" translate="yes" xml:space="preserve">
-          <source>序号</source>
           <target state="new">일련번호</target>
         </trans-unit>
         <trans-unit id="ServiceAgreement" translate="yes" xml:space="preserve">
@@ -503,14 +271,6 @@
           <source>配置向导</source>
           <target state="new">구성 마법사</target>
         </trans-unit>
-        <trans-unit id="Sign_in" translate="yes" xml:space="preserve">
-          <source>登录</source>
-          <target state="new">로그인</target>
-        </trans-unit>
-        <trans-unit id="Sign_out" translate="yes" xml:space="preserve">
-          <source>退出</source>
-          <target state="new">로그아웃</target>
-        </trans-unit>
         <trans-unit id="SoftwareVersion" translate="yes" xml:space="preserve">
           <source>软件版本</source>
           <target state="new">소프트웨어 버전</target>
@@ -519,69 +279,17 @@
           <source>恢复上次退出时窗口的大小和位置</source>
           <target state="new">복구 인터페이스 레이아웃 시작</target>
         </trans-unit>
-        <trans-unit id="StartTime" translate="yes" xml:space="preserve">
-          <source>开始时间</source>
-          <target state="new">시작 시간</target>
-        </trans-unit>
-        <trans-unit id="Status" translate="yes" xml:space="preserve">
-          <source>状态</source>
-          <target state="new">상태</target>
-        </trans-unit>
-        <trans-unit id="Submit" translate="yes" xml:space="preserve">
-          <source>提交</source>
-          <target state="new">제출</target>
-        </trans-unit>
-        <trans-unit id="Success" translate="yes" xml:space="preserve">
-          <source>成功</source>
-          <target state="new">성공</target>
-        </trans-unit>
         <trans-unit id="TbSettingsStartBoot" translate="yes" xml:space="preserve">
           <source>开机启动(可能会不成功)</source>
           <target state="new">자동 시작</target>
-        </trans-unit>
-        <trans-unit id="Template" translate="yes" xml:space="preserve">
-          <source>模板</source>
-          <target state="new">주형</target>
-        </trans-unit>
-        <trans-unit id="TemplateName" translate="yes" xml:space="preserve">
-          <source>模板名称</source>
-          <target state="new">템플릿 이름</target>
-        </trans-unit>
-        <trans-unit id="Theme" translate="yes" xml:space="preserve">
-          <source>主题</source>
-          <target state="new">테마</target>
-        </trans-unit>
-        <trans-unit id="ThemePink" translate="yes" xml:space="preserve">
-          <source>粉色</source>
-          <target state="new">분홍색</target>
         </trans-unit>
         <trans-unit id="TimeLeft" translate="yes" xml:space="preserve">
           <source>剩余时间：</source>
           <target state="new">남은 시간:</target>
         </trans-unit>
-        <trans-unit id="Timeout" translate="yes" xml:space="preserve">
-          <source>超时</source>
-          <target state="new">시간 초과</target>
-        </trans-unit>
-        <trans-unit id="Topic" translate="yes" xml:space="preserve">
-          <source>话题</source>
-          <target state="new">주제</target>
-        </trans-unit>
-        <trans-unit id="TransmitChannel" translate="yes" xml:space="preserve">
-          <source>发送信道</source>
-          <target state="new">채널 보내기</target>
-        </trans-unit>
         <trans-unit id="TransparentWindow" translate="yes" xml:space="preserve">
           <source>透明窗口</source>
           <target state="new">투명한 창</target>
-        </trans-unit>
-        <trans-unit id="UnderDevelopment" translate="yes" xml:space="preserve">
-          <source>开发中</source>
-          <target state="new">개발 중</target>
-        </trans-unit>
-        <trans-unit id="Unsubscribe" translate="yes" xml:space="preserve">
-          <source>退订</source>
-          <target state="new">구독 취소</target>
         </trans-unit>
         <trans-unit id="Update" translate="yes" xml:space="preserve">
           <source>更新</source>
@@ -594,10 +302,6 @@
         <trans-unit id="Upgrade" translate="yes" xml:space="preserve">
           <source>升级</source>
           <target state="new">업그레이드</target>
-        </trans-unit>
-        <trans-unit id="Upload" translate="yes" xml:space="preserve">
-          <source>上传</source>
-          <target state="new">업로드</target>
         </trans-unit>
         <trans-unit id="WindowHidden" translate="yes" xml:space="preserve">
           <source>隐藏</source>

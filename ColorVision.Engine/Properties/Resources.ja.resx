@@ -189,21 +189,6 @@
   <data name="TimeLeft" xml:space="preserve">
     <value>残り時間：</value>
   </data>
-  <data name="ThemeUseSystem" xml:space="preserve">
-    <value>システムのテーマを使用する</value>
-  </data>
-  <data name="ThemePink" xml:space="preserve">
-    <value>ピンク</value>
-  </data>
-  <data name="ThemeLight" xml:space="preserve">
-    <value>ライトテーマ</value>
-  </data>
-  <data name="ThemeDark" xml:space="preserve">
-    <value>ダークカラー</value>
-  </data>
-  <data name="Theme" xml:space="preserve">
-    <value>テーマ</value>
-  </data>
   <data name="TesConnection" xml:space="preserve">
     <value>テスト接続</value>
   </data>
@@ -317,9 +302,6 @@
   </data>
   <data name="RunAsAdmin" xml:space="preserve">
     <value>管理者として実行</value>
-  </data>
-  <data name="Rollback" xml:space="preserve">
-    <value>戻る</value>
   </data>
   <data name="Result" xml:space="preserve">
     <value>結果</value>
@@ -881,9 +863,6 @@
   </data>
   <data name="Apply" xml:space="preserve">
     <value>応用</value>
-  </data>
-  <data name="ApplicationExit" xml:space="preserve">
-    <value>プログラムは終了します</value>
   </data>
   <data name="Alias" xml:space="preserve">
     <value>エイリアス</value>

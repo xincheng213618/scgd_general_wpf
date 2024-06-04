@@ -39,10 +39,6 @@
           <source>别名</source>
           <target state="new">Aliases</target>
         </trans-unit>
-        <trans-unit id="ApplicationExit" translate="yes" xml:space="preserve">
-          <source>程序关闭</source>
-          <target state="new">Program closes</target>
-        </trans-unit>
         <trans-unit id="Apply" translate="yes" xml:space="preserve">
           <source>应用</source>
           <target state="new">application</target>
@@ -803,10 +799,6 @@
           <source>结果</source>
           <target state="new">Result</target>
         </trans-unit>
-        <trans-unit id="Rollback" translate="yes" xml:space="preserve">
-          <source>回退</source>
-          <target state="new">Rollback</target>
-        </trans-unit>
         <trans-unit id="RunAsAdmin" translate="yes" xml:space="preserve">
           <source>以管理员身份运行</source>
           <target state="new">Run as administrator</target>
@@ -962,26 +954,6 @@
         <trans-unit id="TesConnection" translate="yes" xml:space="preserve">
           <source>测试连接</source>
           <target state="new">Test Connection</target>
-        </trans-unit>
-        <trans-unit id="Theme" translate="yes" xml:space="preserve">
-          <source>主题</source>
-          <target state="new">Theme</target>
-        </trans-unit>
-        <trans-unit id="ThemeDark" translate="yes" xml:space="preserve">
-          <source>深色</source>
-          <target state="new">Drak</target>
-        </trans-unit>
-        <trans-unit id="ThemeLight" translate="yes" xml:space="preserve">
-          <source>浅色</source>
-          <target state="new">Light</target>
-        </trans-unit>
-        <trans-unit id="ThemePink" translate="yes" xml:space="preserve">
-          <source>粉色</source>
-          <target state="new">Pink</target>
-        </trans-unit>
-        <trans-unit id="ThemeUseSystem" translate="yes" xml:space="preserve">
-          <source>跟随系统</source>
-          <target state="new">UseSystem</target>
         </trans-unit>
         <trans-unit id="TimeLeft" translate="yes" xml:space="preserve">
           <source>剩余时间：</source>

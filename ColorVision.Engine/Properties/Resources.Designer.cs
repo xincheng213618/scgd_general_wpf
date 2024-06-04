@@ -142,15 +142,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 程序关闭 的本地化字符串。
-        /// </summary>
-        public static string ApplicationExit {
-            get {
-                return ResourceManager.GetString("ApplicationExit", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 应用 的本地化字符串。
         /// </summary>
         public static string Apply {
@@ -1861,15 +1852,6 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
-        ///   查找类似 回退 的本地化字符串。
-        /// </summary>
-        public static string Rollback {
-            get {
-                return ResourceManager.GetString("Rollback", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 以管理员身份运行 的本地化字符串。
         /// </summary>
         public static string RunAsAdmin {
@@ -2217,51 +2199,6 @@ namespace ColorVision.Engine.Properties {
         public static string TesConnection {
             get {
                 return ResourceManager.GetString("TesConnection", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 主题 的本地化字符串。
-        /// </summary>
-        public static string Theme {
-            get {
-                return ResourceManager.GetString("Theme", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 深色 的本地化字符串。
-        /// </summary>
-        public static string ThemeDark {
-            get {
-                return ResourceManager.GetString("ThemeDark", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 浅色 的本地化字符串。
-        /// </summary>
-        public static string ThemeLight {
-            get {
-                return ResourceManager.GetString("ThemeLight", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 粉色 的本地化字符串。
-        /// </summary>
-        public static string ThemePink {
-            get {
-                return ResourceManager.GetString("ThemePink", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 跟随系统 的本地化字符串。
-        /// </summary>
-        public static string ThemeUseSystem {
-            get {
-                return ResourceManager.GetString("ThemeUseSystem", resourceCulture);
             }
         }
         
