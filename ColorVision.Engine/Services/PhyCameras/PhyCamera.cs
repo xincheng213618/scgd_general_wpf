@@ -309,6 +309,7 @@ namespace ColorVision.Services.PhyCameras
 
         public void UploadCalibration(object sender)
         {
+            UploadList.Clear();
             UploadWindow uploadwindow = new("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
             uploadwindow.OnUpload += (s, e) =>
             {
@@ -327,7 +328,7 @@ namespace ColorVision.Services.PhyCameras
         private string _Msg;
 
         public event EventHandler UploadClosed;
-        public ObservableCollection<string> UploadList { get; set; } = new ObservableCollection<string>();
+        public ObservableCollection<FileUploadInfo> UploadList { get; set; } = new ObservableCollection<FileUploadInfo>();
 
         public async void UploadData(string UploadFilePath)
         {
@@ -366,7 +367,7 @@ namespace ColorVision.Services.PhyCameras
                         {
                             Application.Current.Dispatcher.Invoke(() =>
                             {
-                                UploadList.Add(item1.Title);
+                                UploadList.Add(new FileUploadInfo() { FileName = item1.Title });
                             });
                         }
                     }
@@ -422,6 +423,9 @@ namespace ColorVision.Services.PhyCameras
                                 default:
                                     break;
                             }
+                            UploadList.First(a => a.FileName == item1.Title).FilePath = FilePath;
+                            UploadList.First(a => a.FileName == item1.Title).FileSize = MemorySize.MemorySizeText(MemorySize.FileSize(FilePath));
+
                             string md5 = Tool.CalculateMD5(FilePath);
                             if (string.IsNullOrWhiteSpace(md5))
                                 continue;
@@ -441,8 +445,10 @@ namespace ColorVision.Services.PhyCameras
                                 }
                             }
                             if (isExist)
+                            {
+                                UploadList.First(a => a.FileName == item1.Title).IsSucess = true;
                                 continue;
-
+                            }
 
                             Msg = "正在上传校正文件：" + item1.Title + " 请稍后...";
                             await Task.Delay(10);
@@ -495,6 +501,8 @@ namespace ColorVision.Services.PhyCameras
 
                             if (msgRecord != null && msgRecord.MsgRecordState == MsgRecordState.Success)
                             {
+                                UploadList.First(a => a.FileName == item1.Title).IsSucess = true;
+
                                 string FileName = msgRecord.MsgReturn.Data.FileName;
 
                                 SysResourceModel sysResourceModel = new();
@@ -515,6 +523,10 @@ namespace ColorVision.Services.PhyCameras
                                     });
                                     keyValuePairs2.TryAdd(item1.Title, calibrationResource);
                                 }
+                            }
+                            else
+                            {
+                                UploadList.First(a => a.FileName == item1.Title).IsSucess = false;
                             }
 
                         }

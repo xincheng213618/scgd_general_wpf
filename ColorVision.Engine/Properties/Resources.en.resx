@@ -916,6 +916,12 @@
     <value>Choose where to save the project</value>
   </data>
   <data name="Choice" xml:space="preserve">
-    <value>choose</value>
+    <value>Choice</value>
+  </data>
+  <data name="IsDefaultOpenService" xml:space="preserve">
+    <value>IsDefaultOpenService</value>
+  </data>
+  <data name="IsRetorePlayControls" xml:space="preserve">
+    <value>IsRetorePlayControls</value>
   </data>
 </root>

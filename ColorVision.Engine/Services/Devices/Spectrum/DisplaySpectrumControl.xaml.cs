@@ -76,7 +76,7 @@ namespace ColorVision.Services.Devices.Spectrum
                         break;
                     case DeviceStatusType.LiveOpened:
                     case DeviceStatusType.Opened:
-                        SetVisibility(StackPanelOpen, Visibility.Collapsed);
+                        SetVisibility(StackPanelOpen, Visibility.Visible);
                         btn_connect.Content = "关闭";
                         break;
                     case DeviceStatusType.Closing:

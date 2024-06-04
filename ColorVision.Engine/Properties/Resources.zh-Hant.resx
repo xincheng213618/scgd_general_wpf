@@ -918,4 +918,10 @@
   <data name="Choice" xml:space="preserve">
     <value>選擇</value>
   </data>
+  <data name="IsDefaultOpenService" xml:space="preserve">
+    <value>是預設開放服務</value>
+  </data>
+  <data name="IsRetorePlayControls" xml:space="preserve">
+    <value>是否恢復采集控件</value>
+  </data>
 </root>

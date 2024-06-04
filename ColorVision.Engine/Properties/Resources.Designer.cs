@@ -925,6 +925,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 软件启动时打开服务 的本地化字符串。
+        /// </summary>
+        public static string IsDefaultOpenService {
+            get {
+                return ResourceManager.GetString("IsDefaultOpenService", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 恢复上次关闭时采集窗口 的本地化字符串。
+        /// </summary>
+        public static string IsRetorePlayControls {
+            get {
+                return ResourceManager.GetString("IsRetorePlayControls", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 用户界面语言 的本地化字符串。
         /// </summary>
         public static string Language {

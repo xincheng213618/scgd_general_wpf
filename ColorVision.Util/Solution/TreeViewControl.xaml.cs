@@ -16,27 +16,22 @@ namespace ColorVision.Solution
     /// </summary>
     public partial class TreeViewControl : UserControl
     {
-        public SolutionManager SolutionManager { get; set; }
+        public static SolutionManager SolutionManager => SolutionManager.GetInstance();
         public TreeViewControl()
         {
             InitializeComponent();
         }
-        public ObservableCollection<SolutionExplorer> SolutionExplorers { get => SolutionManager.SolutionExplorers; }
+
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            SolutionManager = SolutionManager.GetInstance();
-            SolutionTreeView.ItemsSource = SolutionExplorers;
+            this.DataContext = SolutionManager;
+            SolutionTreeView.ItemsSource = SolutionManager.SolutionExplorers;
             IniCommand();
-
             Window window = Application.Current.MainWindow;
             if (window != null)
                 window.Closing += Window_Closed;
         }
         
-        private void Refresh_Click(object sender, RoutedEventArgs e)
-        {
-            SolutionExplorers[0].Refresh();
-        }
 
         private void TreeViewControl_Drop(object sender, DragEventArgs e)
         {
@@ -128,7 +123,7 @@ namespace ColorVision.Solution
 
 
 
-                if (SolutionExplorers.Count != 1 && item.DataContext is SolutionExplorer solutionExplorer)
+                if (SolutionManager.SolutionExplorers.Count != 1 && item.DataContext is SolutionExplorer solutionExplorer)
                 {
 
                 }
@@ -141,48 +136,6 @@ namespace ColorVision.Solution
             {
                 SelectedTreeViewItem = null;
             }
-        }
-
-        private void OpenSolution(object sender, RoutedEventArgs e)
-        {
-            SolutionManager.OpenSolutionWindow();
-        }
-
-        private void Save_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
-
-        private void Config_Set_Click(object sender, RoutedEventArgs e)
-        {
-        }
-
-
-        private void SolutionNewCreat(object sender, RoutedEventArgs e)
-        {
-            SolutionManager.NewCreateWindow();
-        }
-
-
-        private void Close_Click(object sender, RoutedEventArgs e)
-        {
-        }
-
-
-        private unsafe void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            HandyControl.Controls.Growl.Info("此功能在测试中");
-        }
-
-        private void Button_Click_4(object sender, RoutedEventArgs e)
-        {
-            HandyControl.Controls.Growl.Info("此功能还在开发中，暂停使用");
-        }
-
-        private void Button_Click_5(object sender, RoutedEventArgs e)
-        {
-            HandyControl.Controls.Growl.Info("此功能在测试中");
         }
 
 

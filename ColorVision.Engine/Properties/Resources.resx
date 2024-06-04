@@ -898,4 +898,10 @@
   <data name="Choice" xml:space="preserve">
     <value>选择</value>
   </data>
+  <data name="IsDefaultOpenService" xml:space="preserve">
+    <value>软件启动时打开服务</value>
+  </data>
+  <data name="IsRetorePlayControls" xml:space="preserve">
+    <value>恢复上次关闭时采集窗口</value>
+  </data>
 </root>

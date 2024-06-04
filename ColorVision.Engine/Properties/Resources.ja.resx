@@ -918,4 +918,10 @@
   <data name="Choice" xml:space="preserve">
     <value>選ぶ</value>
   </data>
+  <data name="IsDefaultOpenService" xml:space="preserve">
+    <value>デフォルトオープンサービス</value>
+  </data>
+  <data name="IsRetorePlayControls" xml:space="preserve">
+    <value>再生コントロールを復元するかどうか</value>
+  </data>
 </root>

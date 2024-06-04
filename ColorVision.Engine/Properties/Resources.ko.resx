@@ -918,4 +918,10 @@
   <data name="Choice" xml:space="preserve">
     <value>선택하다</value>
   </data>
+  <data name="IsDefaultOpenService" xml:space="preserve">
+    <value>IsDefaultOpenService</value>
+  </data>
+  <data name="IsRetorePlayControls" xml:space="preserve">
+    <value>IsRetorePlayControls</value>
+  </data>
 </root>

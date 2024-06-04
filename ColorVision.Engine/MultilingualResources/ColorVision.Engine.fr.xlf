@@ -387,6 +387,14 @@
           <source>安装证书</source>
           <target state="new">Installer le certificat</target>
         </trans-unit>
+        <trans-unit id="IsDefaultOpenService" translate="yes" xml:space="preserve">
+          <source>软件启动时打开服务</source>
+          <target state="new">EstDefaultOpenService</target>
+        </trans-unit>
+        <trans-unit id="IsRetorePlayControls" translate="yes" xml:space="preserve">
+          <source>恢复上次关闭时采集窗口</source>
+          <target state="new">IsRetorePlayControls</target>
+        </trans-unit>
         <trans-unit id="Language" translate="yes" xml:space="preserve">
           <source>用户界面语言</source>
           <target state="new">langue de l'interface utilisateur</target>

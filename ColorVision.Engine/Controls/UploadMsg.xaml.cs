@@ -1,21 +1,65 @@
-﻿using System;
+﻿using ColorVision.Common.MVVM;
+using System;
 using System.Collections.ObjectModel;
+using System.Drawing;
+using System.Globalization;
 using System.Windows;
+using System.Windows.Data;
 using System.Windows.Documents;
 
 namespace ColorVision.Engine.Controls
 {
+    public sealed class ColorConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool isconnect)
+            {
+                return isconnect ? Brushes.Blue : Brushes.Red;
+            }
+            return Brushes.Black; ;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotSupportedException("Converting from a string to a memory size is not supported.");
+        }
+    }
 
     public interface IUploadMsg
     {
         public string Msg { get; }
 
-        public ObservableCollection<string> UploadList { get; }
+        public ObservableCollection<FileUploadInfo> UploadList { get; }
 
 
         public event EventHandler UploadClosed;
     }
 
+    public class FileUploadInfo:ViewModelBase
+    {
+        public RelayCommand OpenFilePathCommand { get; set; }
+
+        public FileUploadInfo()
+        {
+
+        }
+
+
+        public string FileName { get => _FileName; set { _FileName = value; NotifyPropertyChanged(); } }
+        private string _FileName;
+
+        public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); } }
+        private string _FilePath;
+
+        public string FileSize { get => _FileSize; set { _FileSize = value; NotifyPropertyChanged(); } }
+        private string _FileSize;
+        public string FileProgressValue { get => _FileProgressValue; set { _FileProgressValue = value; NotifyPropertyChanged(); } }
+        private string _FileProgressValue;
+
+        public bool IsSucess { get => _IsSucess; set { _IsSucess = value; NotifyPropertyChanged(); } }
+        private bool _IsSucess;
+    }
 
 
 

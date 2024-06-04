@@ -918,4 +918,10 @@
   <data name="Choice" xml:space="preserve">
     <value>выбирать</value>
   </data>
+  <data name="IsDefaultOpenService" xml:space="preserve">
+    <value>Исдефолтопенсервице</value>
+  </data>
+  <data name="IsRetorePlayControls" xml:space="preserve">
+    <value>Исретореплейконтролс</value>
+  </data>
 </root>

@@ -105,7 +105,7 @@
         </trans-unit>
         <trans-unit id="Choice" translate="yes" xml:space="preserve">
           <source>选择</source>
-          <target state="new">choose</target>
+          <target state="new">Choice</target>
         </trans-unit>
         <trans-unit id="Clear" translate="yes" xml:space="preserve">
           <source>清除</source>
@@ -386,6 +386,14 @@
         <trans-unit id="InstallCertificate" translate="yes" xml:space="preserve">
           <source>安装证书</source>
           <target state="new">Install Certificate</target>
+        </trans-unit>
+        <trans-unit id="IsDefaultOpenService" translate="yes" xml:space="preserve">
+          <source>软件启动时打开服务</source>
+          <target state="new">IsDefaultOpenService</target>
+        </trans-unit>
+        <trans-unit id="IsRetorePlayControls" translate="yes" xml:space="preserve">
+          <source>恢复上次关闭时采集窗口</source>
+          <target state="new">IsRetorePlayControls</target>
         </trans-unit>
         <trans-unit id="Language" translate="yes" xml:space="preserve">
           <source>用户界面语言</source>
