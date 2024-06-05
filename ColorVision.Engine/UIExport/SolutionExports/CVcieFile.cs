@@ -48,7 +48,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports
         {
             if (File.Exists(FileInfo.FullName))
             {
-                ImageView imageView = new();
+                ImageView imageView = new() { ToolTip = Name };
 
                 CVFileUtil.ReadCVRaw(FileInfo.FullName, out CVCIEFile fileInfo);
 
