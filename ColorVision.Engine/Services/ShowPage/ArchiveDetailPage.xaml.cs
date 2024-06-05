@@ -11,8 +11,16 @@ namespace ColorVision.Engine.Services.ShowPage.Dao
 {
     public class ViewArchiveDetailResult : ViewModelBase
     {
+        public RelayCommand ExportCommand { get; set; }
+
+        public ContextMenu ContextMenu { get; set; }
+
         public ViewArchiveDetailResult(ArchivedDetailModel  model)
         {
+            ExportCommand = new RelayCommand(a => { MessageBox.Show("!"); }, a => true);
+            ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Export, Command = ExportCommand });
+
             ArchivedDetailModel = model;
         }
 
@@ -104,15 +112,11 @@ namespace ColorVision.Engine.Services.ShowPage.Dao
             ConfigArchivedModel configArchivedModel = ConfigArchivedDao.Instance.GetById(1);
             if (configArchivedModel == null)
             {
-                MessageBox.Show("找不到归档配置信息");
-
+                MessageBox.Show(Application.Current.GetActiveWindow(),"找不到归档配置信息","ColorVision");
+                return;
             }
-            else
-            {
-                EditArchived editArchived = new(configArchivedModel) {  Owner =Application.Current.GetActiveWindow()};
-                editArchived.ShowDialog();
-            }
-
+            EditArchived editArchived = new EditArchived(configArchivedModel) { Owner = Application.Current.GetActiveWindow() };
+            editArchived.ShowDialog();
 
         }
     }

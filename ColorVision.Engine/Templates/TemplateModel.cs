@@ -4,15 +4,13 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Windows.Controls;
+using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Templates
 {
     public class TemplateModelBase : ViewModelBase, ISortID, ISortKey
     {
-        public ContextMenu ContentMenu { get; set; }
-
-        public RelayCommand ReNameCommand { get; set; }
-
+        public ContextMenu ContextMenu { get; set; }
         public virtual int Id { get; set; }
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
         private bool _IsSelected;
@@ -29,21 +27,26 @@ namespace ColorVision.Engine.Templates
 
     public class TemplateModel<T> : TemplateModelBase where T : ParamBase
     {
+        public RelayCommand ReNameCommand { get; set; }
+        public RelayCommand DeleteCommand { get; set; }
+        public IList<TemplateModel<T>> Parent { get; set; }
 
-        public TemplateModel()
+        public TemplateModel() : base()
         {
             ReNameCommand = new RelayCommand(a => IsEditMode = true);
-            ContentMenu = new ContextMenu();
-            ContentMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
+            DeleteCommand = new RelayCommand(a => Parent?.Remove(this), a => Parent != null);
+            ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, InputGestureText = "F2", Command = DeleteCommand });
         }
 
-        public TemplateModel(string Key, T Value)
+        public TemplateModel(string Key, T Value) :base()
         {
             this.Value = Value;
             this.Key = Key;
             ReNameCommand = new RelayCommand(a => IsEditMode = true);
-            ContentMenu = new ContextMenu();
-            ContentMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
+            ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
         }
         public TemplateModel(KeyValuePair<string, T> keyValuePair)
         {

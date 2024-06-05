@@ -41,7 +41,7 @@
 
             </Grid>
 
-            <ListView Grid.Row="1" x:Name="ListView1" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="0" Margin="2"  PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">
+            <ListView Grid.Row="1" x:Name="ListView1"  BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="0" Margin="2"  PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">
                 <ListView.Resources>
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
                     <ContextMenu x:Key="ContextMenuItem">
@@ -51,7 +51,7 @@
                 </ListView.Resources>
                 <ListView.ItemContainerStyle>
                     <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
-                        <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
+                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
                     </Style>
                 </ListView.ItemContainerStyle>
                 <ListView.View>
@@ -88,16 +88,6 @@
                                             <TextBox  Text="{Binding Key}" LostFocus="TextBox_LostFocus" GotFocus="TextBox_GotFocus"  PreviewKeyDown="TextBox_PreviewKeyDown" Tag="{Binding .}"   HorizontalAlignment="Left" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}"/>
                                         </Grid>
                                     </DockPanel>
-                                </DataTemplate>
-                            </GridViewColumn.CellTemplate>
-                        </GridViewColumn>
-                        <GridViewColumn  Width="100"  Header="重命名">
-                            <GridViewColumn.CellTemplate>
-                                <DataTemplate  DataType="{x:Type local:TemplateModelBase}">
-                                    <Grid>
-                                        <Image Source="{DynamicResource DrawingImageEdit}" Height="15" Width="15"/>
-                                        <Button Background="Transparent" BorderThickness="0" Click="Button_Click" Height="15" Width="15" Tag="{Binding .}"/>
-                                    </Grid>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>

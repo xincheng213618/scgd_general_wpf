@@ -57,9 +57,12 @@ namespace ColorVision.Engine.Templates
         {
             throw new NotImplementedException();
         }
-
-
         public virtual object GetValue(int index)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual object GetParamValue(int index)
         {
             throw new NotImplementedException();
         }
@@ -133,7 +136,8 @@ namespace ColorVision.Engine.Templates
         public override object GetValue() => TemplateParams;
 
         public override bool ExitsTemplateName(string templateName) => TemplateParams.Any(a => a.Key.Equals(templateName, StringComparison.OrdinalIgnoreCase));
-        public override object GetValue(int index) => TemplateParams[index].Value;
+        public override object GetParamValue(int index) => TemplateParams[index].Value;
+        public override object GetValue(int index) => TemplateParams[index];
 
         public override IEnumerable ItemsSource { get => TemplateParams; }
 

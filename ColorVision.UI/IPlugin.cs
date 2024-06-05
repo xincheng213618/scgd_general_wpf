@@ -1,7 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using log4net;
-using log4net.Plugin;
-using Newtonsoft.Json;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;

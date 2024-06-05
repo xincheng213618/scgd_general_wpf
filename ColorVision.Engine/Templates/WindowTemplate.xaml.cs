@@ -8,6 +8,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.Engine.Templates
 {
@@ -64,6 +65,23 @@ namespace ColorVision.Engine.Templates
             }
             Closed += WindowTemplate_Closed;
 
+            this.PreviewKeyDown += (s, e) =>
+            {
+                if (e.Key == Key.F2)
+                {
+                    if (ITemplate.GetValue(ListView1.SelectedIndex) is TemplateModelBase templateModelBase)
+                    {
+                        templateModelBase.IsEditMode = true;
+                    }
+                }
+                if (e.Key == Key.Enter)
+                {
+                    if (ITemplate.GetValue(ListView1.SelectedIndex) is TemplateModelBase templateModelBase)
+                    {
+                        templateModelBase.IsEditMode = false;
+                    }
+                }
+            };
         }
 
 
@@ -74,18 +92,38 @@ namespace ColorVision.Engine.Templates
 
         private void ListView1_PreviewMouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (sender is ListView listView && listView.SelectedIndex > -1)
+            DependencyObject source = (DependencyObject)e.OriginalSource;
+
+            while (source != null && !(source is ListViewItem))
             {
-                ITemplate.PreviewMouseDoubleClick(listView.SelectedIndex);
+                source = VisualTreeHelper.GetParent(source);
             }
+
+            if (source is ListViewItem)
+            {
+                if (sender is ListView listView && listView.SelectedIndex > -1)
+                {
+                    ITemplate.PreviewMouseDoubleClick(listView.SelectedIndex);
+                }
+            }
+
         }
         private MeasureMasterDao measureMaster = new();
         private MeasureDetailDao measureDetail = new();
 
+        private int LastSelectedIndex = -1;
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
+                if (LastSelectedIndex >= 0 && LastSelectedIndex< listView.Items.Count)
+                {
+                    if (ITemplate.GetValue(LastSelectedIndex) is TemplateModelBase templateModelBase)
+                    {
+                        templateModelBase.IsEditMode = false;
+                    }
+                }
+
                 ITemplate.SetSaveIndex(listView.SelectedIndex);
                 if (ITemplate.IsUserControl)
                 {
@@ -93,22 +131,9 @@ namespace ColorVision.Engine.Templates
                 }
                 else
                 {
-                    PropertyGrid1.SelectedObject = ITemplate.GetValue(listView.SelectedIndex);
+                    PropertyGrid1.SelectedObject = ITemplate.GetParamValue(listView.SelectedIndex);
                 }
-
-                //if (UserControl is MeasureParamControl mpc && MeasureParam.Params[listView.SelectedIndex].Value is MeasureParam mp)
-                //{
-                //    mpc.MasterID = mp.Id;
-                //    List<MeasureDetailModel> des = measureDetail.GetAllByPid(mp.Id); 
-                //    mpc.Reload(des);
-                //    mpc.ModTypeConfigs.Clear();
-                //    mpc.ModTypeConfigs.Add(new MParamConfig(-1,"关注点","POI"));
-                //    List<SysModMasterModel> sysModMaster = SysModMasterDao.Instance.GetAllById(UserConfig.Instance.TenantId);
-                //    foreach (SysModMasterModel Model in sysModMaster)
-                //    {
-                //        mpc.ModTypeConfigs.Add(new MParamConfig(Model));
-                //    }
-                //}
+                LastSelectedIndex = listView.SelectedIndex;
             }
         }
 
@@ -178,7 +203,7 @@ namespace ColorVision.Engine.Templates
             {
                 if (e.Key == Key.F2)
                 {
-                    templateModelBase.IsEditMode = true;
+                    templateModelBase.IsEditMode = false;
                 }
                 if (e.Key == Key.Escape || e.Key == Key.Enter)
                 {
@@ -196,13 +221,6 @@ namespace ColorVision.Engine.Templates
         }
 
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.Tag is TemplateModelBase templateModelBase)  
-            {
-                templateModelBase.IsEditMode = true;
-            }
-        }
 
         private void Button_Export_Click(object sender, RoutedEventArgs e)
         {
@@ -304,6 +322,7 @@ namespace ColorVision.Engine.Templates
                     }
                 }
             }
+            e.Handled = true;
         }
 
 
