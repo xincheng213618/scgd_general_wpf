@@ -7,13 +7,26 @@ using System.Windows.Data;
 
 namespace ColorVision.UI.Languages
 {
-
-    public class LaunagesConfigSetingProvider : IConfigSettingProvider
+    public class LanguageConfig:IConfig, IConfigSettingProvider
     {
+        public static LanguageConfig Instance => ConfigHandler.GetInstance().GetRequiredService<LanguageConfig>();
+
+        /// <summary>
+        /// 语言
+        /// </summary>
+        public string UICulture
+        {
+            get => LanguageManager.GetDefaultLanguages().Contains(_UICulture) ? _UICulture : CultureInfo.InstalledUICulture.Name;
+            set { _UICulture = value; }
+        }
+        private string _UICulture = CultureInfo.InstalledUICulture.Name;
+
+
+
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
             ComboBox cmlauage = new ComboBox() { SelectedValuePath = "Key", DisplayMemberPath = "Value" };
-            cmlauage.SetBinding(ComboBox.SelectedValueProperty, new Binding(nameof(LanguageConfig.UICulture)));
+            BindingExpressionBase bindingExpressionBase = cmlauage.SetBinding(ComboBox.SelectedValueProperty, new Binding(nameof(LanguageConfig.UICulture)));
             cmlauage.ItemsSource = from e1 in LanguageManager.Current.Languages
                                    select new KeyValuePair<string, string>(e1, LanguageManager.keyValuePairs.TryGetValue(e1, out string value) ? value : e1);
             string temp = Thread.CurrentThread.CurrentUICulture.Name;
@@ -23,7 +36,7 @@ namespace ColorVision.UI.Languages
                 {
                     if (!LanguageManager.Current.LanguageChange(str))
                     {
-                        LanguageConfig.Instance.UICulture = temp;
+                        Instance.UICulture = temp;
                     }
                 }
             };
@@ -42,20 +55,5 @@ namespace ColorVision.UI.Languages
                 }
             };
         }
-    }
-
-    public class LanguageConfig:IConfig
-    {
-        public static LanguageConfig Instance => ConfigHandler.GetInstance().GetRequiredService<LanguageConfig>();
-
-        /// <summary>
-        /// 语言
-        /// </summary>
-        public string UICulture
-        {
-            get => LanguageManager.GetDefaultLanguages().Contains(_UICulture) ? _UICulture : CultureInfo.InstalledUICulture.Name;
-            set { _UICulture = value; }
-        }
-        private string _UICulture = CultureInfo.InstalledUICulture.Name;
     }
 }

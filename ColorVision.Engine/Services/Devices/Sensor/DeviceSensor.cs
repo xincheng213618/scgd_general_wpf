@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
         public override UserControl GetDeviceControl() => new InfoSensor(this);
         public override UserControl GetDeviceInfo() => new InfoSensor(this, false);
-        public override UserControl GetDisplayControl() => new DisplaySensorControl(this);
+        public override UserControl GetDisplayControl() => new DisplaySensor(this);
 
         public override MQTTServiceBase? GetMQTTService()
         {

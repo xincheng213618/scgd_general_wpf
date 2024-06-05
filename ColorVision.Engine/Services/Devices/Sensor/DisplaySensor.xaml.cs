@@ -17,14 +17,14 @@ namespace ColorVision.Engine.Services.Devices.Sensor
     /// <summary>
     /// DisplaySMUControl.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplaySensorControl : UserControl, IDisPlayControl
+    public partial class DisplaySensor : UserControl, IDisPlayControl
     {
 
         public DeviceSensor Device { get; set; }
         private MQTTSensor DeviceService { get => Device.DeviceService;  }
         public string DisPlayName => Device.Config.Name;
 
-        public DisplaySensorControl(DeviceSensor device)
+        public DisplaySensor(DeviceSensor device)
         {
             Device = device;
             InitializeComponent();

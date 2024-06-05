@@ -27,7 +27,7 @@ namespace ColorVision.Engine.Services.Devices.PG
         public override UserControl GetDeviceControl() => new InfoPG(this);
         public override UserControl GetDeviceInfo() => new InfoPG(this, false);
 
-        public override UserControl GetDisplayControl() => new DisplayPGControl(this);
+        public override UserControl GetDisplayControl() => new DisplayPG(this);
         public override MQTTServiceBase? GetMQTTService()
         {
             return DeviceService;

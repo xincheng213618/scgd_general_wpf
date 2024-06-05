@@ -20,7 +20,6 @@ namespace ColorVision.Engine.Services.ShowPage.Dao
             ExportCommand = new RelayCommand(a => { MessageBox.Show("!"); }, a => true);
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Export, Command = ExportCommand });
-
             ArchivedDetailModel = model;
         }
 

@@ -66,7 +66,7 @@ namespace ColorVision.Engine.Services.SysDictionary
         public DicModParam(SysDictionaryModModel modMasterModel,List<SysDictionaryModDetaiModel> dicModParams) 
         {
             Id = modMasterModel.Id;
-            Name = modMasterModel.Name;
+            Name = modMasterModel.Name ??"default";
             ModDetaiModels = new ObservableCollection<SysDictionaryModDetaiModel>(dicModParams);
             foreach (var item in dicModParams)
             {

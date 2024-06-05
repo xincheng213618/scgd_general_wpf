@@ -13,7 +13,7 @@ using System.Windows.Input;
 namespace ColorVision
 {
 
-    public class MainWindowConfig : ViewModelBase, IConfig
+    public class MainWindowConfig : ViewModelBase, IConfig, IConfigSettingProvider
     {
         public static MainWindowConfig Instance => ConfigHandler.GetInstance().GetRequiredService<MainWindowConfig>();
 
@@ -58,11 +58,7 @@ namespace ColorVision
             Width = window.Width;
             WindowState = (int)window.WindowState;
         }
-    }
 
-
-    public class MainWindowConfigProvider : IConfigSettingProvider
-    {
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
             return new List<ConfigSettingMetadata> {
@@ -77,6 +73,7 @@ namespace ColorVision
             };
         }
     }
+
 
     public class ExportMenuViewStatusBar : IMenuItemMeta,IHotKey
     {

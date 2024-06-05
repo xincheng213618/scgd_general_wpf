@@ -10,16 +10,16 @@ using System.Windows.Input;
 namespace ColorVision.Engine.Services.Devices.PG
 {
     /// <summary>
-    /// DisplayPGControl.xaml 的交互逻辑
+    /// DisplayPG.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayPGControl : UserControl, IDisPlayControl
+    public partial class DisplayPG : UserControl, IDisPlayControl
     {
         private MQTTPG PGService { get => DevicePG.DeviceService; }
         private DevicePG DevicePG { get; set; }
         public string DisPlayName => DevicePG.Config.Name;
 
 
-        public DisplayPGControl(DevicePG devicePG)
+        public DisplayPG(DevicePG devicePG)
         {
             DevicePG = devicePG;
             InitializeComponent();

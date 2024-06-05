@@ -1,13 +1,120 @@
-﻿#pragma warning disable CA2201,CA2101
+﻿#pragma warning disable CA2201,CA2101,CA1707,CA1711
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using static ColorVision.Handler.ProxySetting.InternetConnectionOption;
+using static ColorVision.Common.NativeMethods.InternetConnectionOption;
 
-namespace ColorVision.Handler
+namespace ColorVision.Common.NativeMethods
 {
-    sealed class ProxySetting
+    #region WinInet structures
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    public struct InternetPerConnOptionList
+    {
+        public int dwSize;               // size of the INTERNET_PER_CONN_OPTION_LIST struct
+        public IntPtr szConnection;         // connection name to set/query options
+        public int dwOptionCount;        // number of options to set/query
+        public int dwOptionError;           // on error, which option failed
+
+        //[MarshalAs(UnmanagedType.)]
+        public IntPtr options;
+    };
+
+    #endregion WinInet structures
+
+    #region WinInet enums
+
+    //
+    // options manifests for Internet{Query|Set}Option
+    //
+    public enum InternetOption : uint
+    {
+        INTERNET_OPTION_PER_CONNECTION_OPTION = 75,
+        INTERNET_OPTION_REFRESH = 37,
+        INTERNET_OPTION_SETTINGS_CHANGED = 39
+    }
+
+    //
+    // Options used in INTERNET_PER_CONN_OPTON struct
+    //
+    public enum PerConnOption
+    {
+        INTERNET_PER_CONN_FLAGS = 1, // Sets or retrieves the connection type. The Value member will contain one or more of the values from PerConnFlags
+        INTERNET_PER_CONN_PROXY_SERVER = 2, // Sets or retrieves a string containing the proxy servers.
+        INTERNET_PER_CONN_PROXY_BYPASS = 3, // Sets or retrieves a string containing the URLs that do not use the proxy server.
+        INTERNET_PER_CONN_AUTOCONFIG_URL = 4//, // Sets or retrieves a string containing the URL to the automatic configuration script.
+    }
+
+    //
+    // PER_CONN_FLAGS
+    //
+    [Flags]
+    public enum PerConnFlags
+    {
+        PROXY_TYPE_DIRECT = 0x00000001,  // direct to net
+        PROXY_TYPE_PROXY = 0x00000002,  // via named proxy
+        PROXY_TYPE_AUTO_PROXY_URL = 0x00000004,  // autoproxy URL
+        PROXY_TYPE_AUTO_DETECT = 0x00000008   // use autoproxy detection
+    }
+
+    public enum ErrorCode : uint
+    {
+        ERROR_BUFFER_TOO_SMALL = 603,
+        ERROR_INVALID_SIZE = 632
+    }
+
+    #endregion WinInet enums
+
+
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+    public struct InternetConnectionOption
+    {
+        private static readonly int Size;
+        public PerConnOption m_Option;
+        public InternetConnectionOptionValue m_Value;
+
+        static InternetConnectionOption()
+        {
+            Size = Marshal.SizeOf(typeof(InternetConnectionOption));
+        }
+
+        // Nested Types
+        [StructLayout(LayoutKind.Explicit)]
+        public struct InternetConnectionOptionValue
+        {
+            // Fields
+            [FieldOffset(0)]
+            public System.Runtime.InteropServices.ComTypes.FILETIME m_FileTime;
+
+            [FieldOffset(0)]
+            public int m_Int;
+
+            [FieldOffset(0)]
+            public IntPtr m_StringPtr;
+        }
+
+        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
+        public struct RASENTRYNAME
+        {
+            public int dwSize;
+
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = RAS_MaxEntryName + 1)]
+            public string szEntryName;
+
+            public int dwFlags;
+
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = MAX_PATH + 1)]
+            public string szPhonebookPath;
+        }
+
+        // Constants
+        public const int RAS_MaxEntryName = 256;
+
+        public const int MAX_PATH = 260; // Standard MAX_PATH value in Windows
+    }
+
+    public sealed class ProxySetting
     {
         /// <summary>
         // set to use no proxy
@@ -202,111 +309,7 @@ namespace ColorVision.Handler
             throw new ApplicationException($"RasEnumEntries failed with error code: {result}");
         }
 
-        #region WinInet structures
 
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        public struct InternetPerConnOptionList
-        {
-            public int dwSize;               // size of the INTERNET_PER_CONN_OPTION_LIST struct
-            public IntPtr szConnection;         // connection name to set/query options
-            public int dwOptionCount;        // number of options to set/query
-            public int dwOptionError;           // on error, which option failed
-
-            //[MarshalAs(UnmanagedType.)]
-            public IntPtr options;
-        };
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        public struct InternetConnectionOption
-        {
-            private static readonly int Size;
-            public PerConnOption m_Option;
-            public InternetConnectionOptionValue m_Value;
-
-            static InternetConnectionOption()
-            {
-                Size = Marshal.SizeOf(typeof(InternetConnectionOption));
-            }
-
-            // Nested Types
-            [StructLayout(LayoutKind.Explicit)]
-            public struct InternetConnectionOptionValue
-            {
-                // Fields
-                [FieldOffset(0)]
-                public System.Runtime.InteropServices.ComTypes.FILETIME m_FileTime;
-
-                [FieldOffset(0)]
-                public int m_Int;
-
-                [FieldOffset(0)]
-                public IntPtr m_StringPtr;
-            }
-
-            [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-            public struct RASENTRYNAME
-            {
-                public int dwSize;
-
-                [MarshalAs(UnmanagedType.ByValTStr, SizeConst = RAS_MaxEntryName + 1)]
-                public string szEntryName;
-
-                public int dwFlags;
-
-                [MarshalAs(UnmanagedType.ByValTStr, SizeConst = MAX_PATH + 1)]
-                public string szPhonebookPath;
-            }
-
-            // Constants
-            public const int RAS_MaxEntryName = 256;
-
-            public const int MAX_PATH = 260; // Standard MAX_PATH value in Windows
-        }
-
-        #endregion WinInet structures
-
-        #region WinInet enums
-
-        //
-        // options manifests for Internet{Query|Set}Option
-        //
-        public enum InternetOption : uint
-        {
-            INTERNET_OPTION_PER_CONNECTION_OPTION = 75,
-            INTERNET_OPTION_REFRESH = 37,
-            INTERNET_OPTION_SETTINGS_CHANGED = 39
-        }
-
-        //
-        // Options used in INTERNET_PER_CONN_OPTON struct
-        //
-        public enum PerConnOption
-        {
-            INTERNET_PER_CONN_FLAGS = 1, // Sets or retrieves the connection type. The Value member will contain one or more of the values from PerConnFlags
-            INTERNET_PER_CONN_PROXY_SERVER = 2, // Sets or retrieves a string containing the proxy servers.
-            INTERNET_PER_CONN_PROXY_BYPASS = 3, // Sets or retrieves a string containing the URLs that do not use the proxy server.
-            INTERNET_PER_CONN_AUTOCONFIG_URL = 4//, // Sets or retrieves a string containing the URL to the automatic configuration script.
-        }
-
-        //
-        // PER_CONN_FLAGS
-        //
-        [Flags]
-        public enum PerConnFlags
-        {
-            PROXY_TYPE_DIRECT = 0x00000001,  // direct to net
-            PROXY_TYPE_PROXY = 0x00000002,  // via named proxy
-            PROXY_TYPE_AUTO_PROXY_URL = 0x00000004,  // autoproxy URL
-            PROXY_TYPE_AUTO_DETECT = 0x00000008   // use autoproxy detection
-        }
-
-        public enum ErrorCode : uint
-        {
-            ERROR_BUFFER_TOO_SMALL = 603,
-            ERROR_INVALID_SIZE = 632
-        }
-
-        #endregion WinInet enums
 
         internal static class NativeMethods
         {

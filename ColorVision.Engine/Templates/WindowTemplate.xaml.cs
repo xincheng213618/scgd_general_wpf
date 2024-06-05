@@ -69,14 +69,14 @@ namespace ColorVision.Engine.Templates
             {
                 if (e.Key == Key.F2)
                 {
-                    if (ITemplate.GetValue(ListView1.SelectedIndex) is TemplateModelBase templateModelBase)
+                    if (ListView1.SelectedIndex >-1 && ITemplate.GetValue(ListView1.SelectedIndex) is TemplateModelBase templateModelBase)
                     {
                         templateModelBase.IsEditMode = true;
                     }
                 }
                 if (e.Key == Key.Enter)
                 {
-                    if (ITemplate.GetValue(ListView1.SelectedIndex) is TemplateModelBase templateModelBase)
+                    if (ListView1.SelectedIndex > -1 && ITemplate.GetValue(ListView1.SelectedIndex) is TemplateModelBase templateModelBase)
                     {
                         templateModelBase.IsEditMode = false;
                     }
