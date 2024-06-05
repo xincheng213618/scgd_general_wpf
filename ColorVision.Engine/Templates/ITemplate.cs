@@ -15,6 +15,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.Engine.Services.SysDictionary;
 
 namespace ColorVision.Engine.Templates
 {

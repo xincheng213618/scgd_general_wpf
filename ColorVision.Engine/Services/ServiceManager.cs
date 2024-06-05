@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
+using ColorVision.Engine.Services.SysDictionary;
 using ColorVision.Services.Core;
 using ColorVision.Services.Dao;
 using ColorVision.Services.DAO;

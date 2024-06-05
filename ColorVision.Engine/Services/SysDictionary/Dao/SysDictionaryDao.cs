@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 
-namespace ColorVision.Services.Dao
+namespace ColorVision.Engine.Services.SysDictionary
 {
     public class SysDictionaryModel : PKModel
     {
@@ -37,7 +37,7 @@ namespace ColorVision.Services.Dao
 
         public List<SysDictionaryModel> GetServiceTypes()
         {
-            List<SysDictionaryModel> result = this.GetAllByPcode("service_type");
+            List<SysDictionaryModel> result = GetAllByPcode("service_type");
             return result;
         }
 
