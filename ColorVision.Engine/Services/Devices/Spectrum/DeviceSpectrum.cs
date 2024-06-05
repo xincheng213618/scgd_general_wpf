@@ -1,21 +1,20 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Controls;
-using ColorVision.Util.Interfaces;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
-using ColorVision.Engine.Services.Templates;
+using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
+using ColorVision.Util.Controls;
+using ColorVision.Util.Interfaces;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Services.RC;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {

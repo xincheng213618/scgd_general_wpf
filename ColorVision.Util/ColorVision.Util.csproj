@@ -6,6 +6,10 @@
 		<ImplicitUsings>disable</ImplicitUsings>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 	</PropertyGroup>
+	<ItemGroup>
+	  <None Remove="Assets\uploadbg.avif" />
+	  <None Remove="Controls\uploadbg.avif" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Extended.Wpf.Toolkit" Version="4.6.0" />
@@ -20,6 +24,10 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\ColorVision.Common\ColorVision.Common.csproj" />
 	  <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Resource Include="Assets\Image\uploadbg.avif" />
 	</ItemGroup>
 
 	<ItemGroup>

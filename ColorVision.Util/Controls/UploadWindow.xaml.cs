@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Controls
+namespace ColorVision.Util.Controls
 {
     /// <summary>
     /// UploadWindow.xaml 的交互逻辑

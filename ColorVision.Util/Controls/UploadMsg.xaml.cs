@@ -7,7 +7,7 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Documents;
 
-namespace ColorVision.Engine.Controls
+namespace ColorVision.Util.Controls
 {
     public sealed class ColorConverter : IValueConverter
     {
@@ -64,7 +64,6 @@ namespace ColorVision.Engine.Controls
         private string _FileSize;
         public string FileProgressValue { get => _FileProgressValue; set { _FileProgressValue = value; NotifyPropertyChanged(); } }
         private string _FileProgressValue;
-
         public UploadStatus UploadStatus { get => _UploadStatus; set { _UploadStatus = value; NotifyPropertyChanged(); } }
         private UploadStatus _UploadStatus;
 

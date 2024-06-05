@@ -1,9 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Controls;
-using ColorVision.UI.Extension;
-using ColorVision.Handler;
-using ColorVision.Util.Interfaces;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices;
@@ -15,7 +11,13 @@ using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Services.PhyCameras.Templates;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
+using ColorVision.Engine.Templates;
+using ColorVision.Handler;
 using ColorVision.Themes.Controls;
+using ColorVision.UI;
+using ColorVision.UI.Extension;
+using ColorVision.Util.Controls;
+using ColorVision.Util.Interfaces;
 using cvColorVision;
 using log4net;
 using Newtonsoft.Json;
@@ -30,8 +32,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using ColorVision.UI;
-using ColorVision.Engine.Templates;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
