@@ -52,7 +52,6 @@ namespace ColorVision.Services.Dao
                 IsEnable = item.Field<bool>("is_enable"),
                 IsDelete = item.Field<bool>("is_delete"),
             };
-
             return model;
         }
 

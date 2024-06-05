@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using ColorVision.Engine.Templates.POI.Validate;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.SysDictionary
@@ -12,6 +13,15 @@ namespace ColorVision.Engine.Services.SysDictionary
         {
             InitializeComponent();
         }
+
+        public DicModParam Param { get; set; }
+
+        public void SetParam(DicModParam param)
+        {
+            Param = param;
+            this.DataContext = Param;
+        }
+
 
         private void Button_Del_Click(object sender, RoutedEventArgs e)
         {

@@ -9,7 +9,7 @@
              d:DataContext="{d:DesignInstance local:DicModParam}"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid Margin="5">
-        <ListView x:Name="ListView1" Grid.Row="1" ItemsSource="{Binding ValidateSingles}"  ScrollViewer.HorizontalScrollBarVisibility="Auto" >
+        <ListView x:Name="ListView1" Grid.Row="1" ItemsSource="{Binding  ModDetaiModels}"  ScrollViewer.HorizontalScrollBarVisibility="Auto" >
             <ListView.Resources>
                 <ContextMenu x:Key="ContextMenuItem">
                     <MenuItem Header="{x:Static properties:Resources.MenuDelete}"  Click="Button_Del_Click" Tag="{Binding .}"  />
@@ -30,16 +30,29 @@
                             <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                         </Style>
                     </GridView.ColumnHeaderContainerStyle>
-                    <GridViewColumn  Header="Code">
+                    <GridViewColumn  Header="Name">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SysDictionaryModDetaiModel}">
-                                <TextBlock Text="{Binding Model.Co}" />
+                                <TextBlock Text="{Binding  Name}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="AddressCode">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:SysDictionaryModDetaiModel}">
+                                <TextBlock Text="{Binding  AddressCode}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="DefaultValue">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:SysDictionaryModDetaiModel}">
+                                <TextBlock Text="{Binding  DefaultValue}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                 </GridView>
             </ListView.View>
-
         </ListView>
 
     </Grid>
