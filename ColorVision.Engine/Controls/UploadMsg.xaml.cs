@@ -36,6 +36,14 @@ namespace ColorVision.Engine.Controls
         public event EventHandler UploadClosed;
     }
 
+    public enum UploadStatus
+    {
+        Uploading,    // 上传中
+        Waiting,      // 等待中
+        Completed,    // 上传完成
+        Failed,       // 失败
+        CheckingMD5   // 检查 MD5
+    }
 
     public class FileUploadInfo:ViewModelBase
     {
@@ -45,7 +53,6 @@ namespace ColorVision.Engine.Controls
         {
 
         }
-
 
         public string FileName { get => _FileName; set { _FileName = value; NotifyPropertyChanged(); } }
         private string _FileName;
@@ -58,8 +65,9 @@ namespace ColorVision.Engine.Controls
         public string FileProgressValue { get => _FileProgressValue; set { _FileProgressValue = value; NotifyPropertyChanged(); } }
         private string _FileProgressValue;
 
-        public bool IsSucess { get => _IsSucess; set { _IsSucess = value; NotifyPropertyChanged(); } }
-        private bool _IsSucess;
+        public UploadStatus UploadStatus { get => _UploadStatus; set { _UploadStatus = value; NotifyPropertyChanged(); } }
+        private UploadStatus _UploadStatus;
+
     }
 
 

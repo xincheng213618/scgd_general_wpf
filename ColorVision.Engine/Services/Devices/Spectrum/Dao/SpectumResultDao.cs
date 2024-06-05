@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 
-namespace ColorVision.Services.Devices.Spectrum.Dao
+namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
 {
     public class SpectumResultDao : BaseTableDao<SpectumResultModel>
     {

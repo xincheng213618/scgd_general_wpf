@@ -5,9 +5,9 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Media;
 using ColorVision.Net;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera.Views;
-using ColorVision.Services.Msg;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Camera.Views;
+using ColorVision.Engine.Services.Msg;
 using ColorVision.Solution;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
@@ -30,7 +30,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 
 
-namespace ColorVision.Services.Devices.Calibration.Views
+namespace ColorVision.Engine.Services.Devices.Calibration.Views
 {
     /// <summary>
     /// ViewCamera.xaml 的交互逻辑

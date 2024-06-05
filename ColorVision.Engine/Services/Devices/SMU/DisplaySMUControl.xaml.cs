@@ -1,9 +1,9 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
-using ColorVision.Services.Devices.SMU.Configs;
-using ColorVision.Services.Devices.SMU.Views;
-using ColorVision.Services.Templates;
+using ColorVision.Engine.Services.Devices.SMU.Configs;
+using ColorVision.Engine.Services.Devices.SMU.Views;
+using ColorVision.Engine.Services.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
@@ -15,7 +15,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 
 
-namespace ColorVision.Services.Devices.SMU
+namespace ColorVision.Engine.Services.Devices.SMU
 {
     /// <summary>
     /// DisplaySMUControl.xaml 的交互逻辑

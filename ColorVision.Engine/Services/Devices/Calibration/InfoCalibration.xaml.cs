@@ -3,7 +3,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.Calibration
+namespace ColorVision.Engine.Services.Devices.Calibration
 {
     /// <summary>
     /// InfoSMU.xaml 的交互逻辑

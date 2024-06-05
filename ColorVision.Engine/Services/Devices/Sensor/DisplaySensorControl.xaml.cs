@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Templates;
-using ColorVision.Services.Devices.Sensor.Templates;
-using ColorVision.Services.Templates;
+using ColorVision.Engine.Services.Devices.Sensor.Templates;
+using ColorVision.Engine.Services.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
 using CVCommCore;
@@ -12,7 +12,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Devices.Sensor
+namespace ColorVision.Engine.Services.Devices.Sensor
 {
     /// <summary>
     /// DisplaySMUControl.xaml 的交互逻辑

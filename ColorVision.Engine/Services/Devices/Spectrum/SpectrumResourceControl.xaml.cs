@@ -1,10 +1,10 @@
-﻿using ColorVision.Services.Core;
+﻿using ColorVision.Engine.Services.Core;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.Spectrum
+namespace ColorVision.Engine.Services.Devices.Spectrum
 {
     /// <summary>
     /// SpectrumResourceControl.xaml 的交互逻辑

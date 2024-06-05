@@ -1,11 +1,11 @@
-﻿using ColorVision.Services.Devices;
+﻿using ColorVision.Engine.Services.Devices;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 
 
-namespace ColorVision.Services.Terminal
+namespace ColorVision.Engine.Services.Terminal
 {
     /// <summary>
     /// TerminalServiceControl.xaml 的交互逻辑

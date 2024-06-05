@@ -1,11 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.Sensor
+namespace ColorVision.Engine.Services.Devices.Sensor
 {
     public class DeviceSensor : DeviceService<ConfigSensor>
     {

@@ -2,14 +2,14 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
-using ColorVision.Services.Dao;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.Sensor.Templates
+namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
     public class ExportFilterWheel : IMenuItem
     {

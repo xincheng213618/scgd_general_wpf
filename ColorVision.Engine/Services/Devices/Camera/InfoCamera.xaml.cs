@@ -3,7 +3,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.Camera
+namespace ColorVision.Engine.Services.Devices.Camera
 {
     /// <summary>
     /// InfoPG.xaml 的交互逻辑

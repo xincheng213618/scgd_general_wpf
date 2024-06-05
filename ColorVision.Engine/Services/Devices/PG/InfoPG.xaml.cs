@@ -1,9 +1,9 @@
-﻿using ColorVision.Services;
+﻿using ColorVision.Engine.Services;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.PG
+namespace ColorVision.Engine.Services.Devices.PG
 {
     /// <summary>
     /// InfoPG.xaml 的交互逻辑

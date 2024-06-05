@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.ServiceProcess;
 using System.Threading.Tasks;
 
-namespace ColorVision.Services.RC
+namespace ColorVision.Engine.Services.RC
 {
 
     public class RCManagerConfig : ViewModelBase, IConfig

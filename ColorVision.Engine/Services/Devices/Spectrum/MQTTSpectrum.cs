@@ -1,6 +1,6 @@
-﻿using ColorVision.Services.Devices.Spectrum.Configs;
+﻿using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.MQTT;
-using ColorVision.Services.Msg;
+using ColorVision.Engine.Services.Msg;
 using MQTTMessageLib;
 using MQTTMessageLib.Spectrum;
 using MQTTnet.Client;
@@ -16,7 +16,7 @@ using MQTTMessageLib.FileServer;
 using System.Diagnostics;
 using CVCommCore;
 
-namespace ColorVision.Services.Devices.Spectrum
+namespace ColorVision.Engine.Services.Devices.Spectrum
 {
     public delegate void MQTTSpectrumDataHandler(SpectrumData? colorPara);
     public delegate void MQTTAutoParamHandler(AutoIntTimeParam colorPara);

@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.MQTT;
-using ColorVision.Services.Msg;
-using ColorVision.Services.RC;
+using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Services.RC;
 using CVCommCore;
 using log4net;
 using MQTTMessageLib;
@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
 
-namespace ColorVision.Services.Core
+namespace ColorVision.Engine.Services.Core
 {
     public class MQTTServiceBase : ViewModelBase, IHeartbeat, IServiceConfig, IDisposable
     {

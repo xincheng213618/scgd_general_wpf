@@ -3,7 +3,7 @@ using ColorVision.UI;
 using ColorVision.UI.Configs;
 using System.Collections.Generic;
 
-namespace ColorVision.Services
+namespace ColorVision.Engine.Services
 {
     public class ServicesConfigProvider : IConfigSettingProvider
     {

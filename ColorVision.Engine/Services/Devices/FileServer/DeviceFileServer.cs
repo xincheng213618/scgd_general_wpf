@@ -1,12 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Media;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Common.Utilities;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.FileServer
+namespace ColorVision.Engine.Services.Devices.FileServer
 {
     public class DeviceFileServer : DeviceService<ConfigFileServer>
     {

@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.UserSpace;
 using cvColorVision;
 using Newtonsoft.Json;
@@ -9,7 +9,7 @@ using System;
 using System.Linq;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.Camera
+namespace ColorVision.Engine.Services.Devices.Camera
 {
     /// <summary>
     /// CreateWindow.xaml 的交互逻辑

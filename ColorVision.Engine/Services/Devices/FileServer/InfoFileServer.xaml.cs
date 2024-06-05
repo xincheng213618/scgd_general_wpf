@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Common.Utilities;
 
-namespace ColorVision.Services.Devices.FileServer
+namespace ColorVision.Engine.Services.Devices.FileServer
 {
     /// <summary>
     /// DeviceImageControl.xaml 的交互逻辑

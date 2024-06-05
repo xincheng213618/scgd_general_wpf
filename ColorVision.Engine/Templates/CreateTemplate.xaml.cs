@@ -22,12 +22,13 @@ namespace ColorVision.Engine.Templates
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.Title += ITemplate.Title;
-            List<string> list = new List<string>();
-
-            list.Add(ITemplate.NewCreateFileName(ITemplate.Code + "_" + TemplateConfig.Instance.DefaultCreateTemplateName));
-            list.Add(ITemplate.NewCreateFileName(ITemplate.Code + "." + TemplateConfig.Instance.DefaultCreateTemplateName));
-            list.Add(ITemplate.NewCreateFileName(ITemplate.Code));
-            list.Add(ITemplate.NewCreateFileName(TemplateConfig.Instance.DefaultCreateTemplateName));
+            List<string> list =
+            [
+                ITemplate.NewCreateFileName(ITemplate.Code + "_" + TemplateConfig.Instance.DefaultCreateTemplateName),
+                ITemplate.NewCreateFileName(ITemplate.Code + "." + TemplateConfig.Instance.DefaultCreateTemplateName),
+                ITemplate.NewCreateFileName(ITemplate.Code),
+                ITemplate.NewCreateFileName(TemplateConfig.Instance.DefaultCreateTemplateName),
+            ];
 
             CreateCode.ItemsSource = list;
             CreateCode.SelectedIndex = 0;

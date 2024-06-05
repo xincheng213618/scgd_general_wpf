@@ -12,11 +12,11 @@
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <TextBlock Text="{Binding Msg}"  Margin="5" FontSize="18" HorizontalAlignment="Center"/>
-        <ListView Grid.Row="1" ItemsSource="{Binding UploadList}" Background="Transparent">
+        <TextBlock Grid.Row="1" Text="{Binding Msg}"  Margin="5" FontSize="17" HorizontalAlignment="Center"/>
+        <ListView Grid.Row="0" ItemsSource="{Binding UploadList}" Background="Transparent" Padding="0">
             <ListView.Resources >
                 <ContextMenu x:Key="ContextMenuItem">
                 </ContextMenu>
@@ -49,10 +49,10 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="IsSucess" Width="100">
+                    <GridViewColumn  Header="结果" Width="100">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate DataType="{x:Type local:FileUploadInfo}">
-                                <TextBlock Text="{Binding IsSucess}" Foreground="{Binding IsSucess,Converter={StaticResource ColorConverter}}"/>
+                                <TextBlock Text="{Binding UploadStatus}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

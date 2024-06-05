@@ -1,13 +1,13 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
-using ColorVision.Services.PhyCameras.Templates;
+using ColorVision.Engine.Services.PhyCameras.Templates;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 
-namespace ColorVision.Services.PhyCameras
+namespace ColorVision.Engine.Services.PhyCameras
 {
     /// <summary>
     /// InfoPG.xaml 的交互逻辑

@@ -1,12 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.PhyCameras.Configs;
-using ColorVision.Services.PhyCameras.Dao;
-using ColorVision.Services.Types;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.PhyCameras.Configs;
+using ColorVision.Engine.Services.PhyCameras.Dao;
+using ColorVision.Engine.Services.Types;
 using cvColorVision;
 using Newtonsoft.Json;
 using System;
@@ -18,7 +18,7 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 
-namespace ColorVision.Services.PhyCameras
+namespace ColorVision.Engine.Services.PhyCameras
 {
     public class PhyCameraManager
     {

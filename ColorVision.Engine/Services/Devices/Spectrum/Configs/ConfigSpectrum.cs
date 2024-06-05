@@ -1,9 +1,9 @@
-﻿using ColorVision.Services.Devices.Camera.Configs;
-using ColorVision.Services.Core;
+﻿using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Core;
 using CVCommCore;
 using Newtonsoft.Json;
 
-namespace ColorVision.Services.Devices.Spectrum.Configs
+namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 {
 
     public class ConfigSpectrum : DeviceServiceConfig, IServiceConfig

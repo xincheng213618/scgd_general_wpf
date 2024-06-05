@@ -1,6 +1,6 @@
-﻿using ColorVision.Services.Terminal;
+﻿using ColorVision.Engine.Services.Terminal;
 
-namespace ColorVision.Services.Devices.Camera
+namespace ColorVision.Engine.Services.Devices.Camera
 {
     public class MQTTTerminalCamera : MQTTServiceTerminalBase<TerminalServiceConfig>
     {

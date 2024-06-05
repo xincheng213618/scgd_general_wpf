@@ -1,11 +1,11 @@
-﻿using ColorVision.Services.Devices.PG;
+﻿using ColorVision.Engine.Services.Devices.PG;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.Sensor
+namespace ColorVision.Engine.Services.Devices.Sensor
 {
     /// <summary>
     /// InfoPG.xaml 的交互逻辑

@@ -5,7 +5,7 @@ using CVImageChannelLib;
 using log4net;
 using OpenCvSharp.Extensions;
 
-namespace ColorVision.Services.Devices.Camera.Video
+namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
 
     public delegate void CameraVideoFrameHandler(System.Drawing.Bitmap bitmap);

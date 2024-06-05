@@ -1,4 +1,4 @@
-﻿using ColorVision.Services.Msg;
+﻿using ColorVision.Engine.Services.Msg;
 using CVCommCore;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib;
@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.Algorithm
+namespace ColorVision.Engine.Services.Devices.Algorithm
 {
     public class MQTTAlgorithm : MQTTDeviceService<ConfigAlgorithm>
     {

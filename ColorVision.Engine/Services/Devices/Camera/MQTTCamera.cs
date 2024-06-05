@@ -1,8 +1,8 @@
 ﻿#pragma warning disable CS8602,CA1707
 using ColorVision.Common.Utilities;
-using ColorVision.Services.Devices.Camera.Configs;
-using ColorVision.Services.Msg;
-using ColorVision.Services.PhyCameras.Templates;
+using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Services.PhyCameras.Templates;
 using cvColorVision;
 using CVCommCore;
 using CVCommCore.CVImage;
@@ -13,7 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.Camera
+namespace ColorVision.Engine.Services.Devices.Camera
 {
 
     public class MQTTCamera : MQTTDeviceService<ConfigCamera>

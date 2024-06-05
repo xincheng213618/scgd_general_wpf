@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 
-namespace ColorVision.Services.Devices.Camera.Video
+namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
     public class CameraVideoConfig : ViewModelBase
     {

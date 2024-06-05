@@ -2,7 +2,7 @@
 using MQTTMessageLib.Algorithm;
 using System.Data;
 
-namespace ColorVision.Services.Devices.Algorithm.Dao
+namespace ColorVision.Engine.Services.Devices.Algorithm.Dao
 {
     public class AlgResultDistortionModel : PKModel
     {

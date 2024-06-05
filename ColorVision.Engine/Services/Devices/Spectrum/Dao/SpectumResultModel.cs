@@ -6,7 +6,7 @@ using System.Linq;
 using ColorVision;
 using ColorVision.Engine.MySql.ORM;
 
-namespace ColorVision.Services.Devices.Spectrum.Dao
+namespace ColorVision.Engine.Services.Devices.Spectrum.Dao
 {
     public class SpectumResultModel : PKModel
     {

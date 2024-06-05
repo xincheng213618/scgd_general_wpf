@@ -5,7 +5,7 @@ using System.Windows;
 using System.Windows.Input;
 
 
-namespace ColorVision.Services.ShowPage.Dao
+namespace ColorVision.Engine.Services.ShowPage.Dao
 {
     /// <summary>
     /// EditCalibration.xaml 的交互逻辑

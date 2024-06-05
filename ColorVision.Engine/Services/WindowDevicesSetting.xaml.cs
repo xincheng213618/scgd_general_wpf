@@ -1,4 +1,4 @@
-﻿using ColorVision.Services.Devices;
+﻿using ColorVision.Engine.Services.Devices;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -7,7 +7,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 
-namespace ColorVision.Services
+namespace ColorVision.Engine.Services
 {
     /// <summary>
     /// Window1.xaml 的交互逻辑

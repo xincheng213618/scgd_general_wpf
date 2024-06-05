@@ -22,6 +22,7 @@
 		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.9.0.20240103" />
 		<PackageReference Include="QRCoder.Xaml" Version="1.5.1" />
 		<PackageReference Include="ScottPlot.WPF" Version="4.1.67" />
+		<PackageReference Include="System.IO.Ports" Version="8.0.0" />
 		<PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.0" />
 	</ItemGroup>
 

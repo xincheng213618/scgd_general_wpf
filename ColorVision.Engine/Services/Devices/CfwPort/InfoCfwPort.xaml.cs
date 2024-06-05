@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.CfwPort
+namespace ColorVision.Engine.Services.Devices.CfwPort
 {
     /// <summary>
     /// InfoSMU.xaml 的交互逻辑

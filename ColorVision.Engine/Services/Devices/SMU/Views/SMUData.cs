@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 
-namespace ColorVision.Services.Devices.SMU.Views
+namespace ColorVision.Engine.Services.Devices.SMU.Views
 {
     public class SMUData : ViewModelBase
     {

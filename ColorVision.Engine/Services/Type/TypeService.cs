@@ -1,13 +1,13 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.SysDictionary;
-using ColorVision.Services.Terminal;
+using ColorVision.Engine.Services.Terminal;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Types
+namespace ColorVision.Engine.Services.Types
 {
     public enum ServiceTypes
     {

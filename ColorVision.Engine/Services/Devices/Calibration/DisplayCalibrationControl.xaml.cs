@@ -1,11 +1,11 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
-using ColorVision.Services.Devices.Calibration.Views;
-using ColorVision.Services.Msg;
-using ColorVision.Services.PhyCameras;
-using ColorVision.Services.PhyCameras.Templates;
-using ColorVision.Services.Templates;
+using ColorVision.Engine.Services.Devices.Calibration.Views;
+using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras.Templates;
+using ColorVision.Engine.Services.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
@@ -16,7 +16,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Devices.Calibration
+namespace ColorVision.Engine.Services.Devices.Calibration
 {
 
 
@@ -177,6 +177,7 @@ namespace ColorVision.Services.Devices.Calibration
         {
             DeviceService.GetRawFiles();
         }
+        public TemplateControl TemplateControl { get; set; }
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
@@ -185,6 +186,8 @@ namespace ColorVision.Services.Devices.Calibration
                 MessageBox.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
                 return;
             }
+            if (sender is Button button)
+            {
                 WindowTemplate windowTemplate;
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {

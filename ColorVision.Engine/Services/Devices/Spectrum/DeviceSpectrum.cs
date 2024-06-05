@@ -2,11 +2,11 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Controls;
 using ColorVision.Util.Interfaces;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Spectrum.Configs;
-using ColorVision.Services.Devices.Spectrum.Views;
-using ColorVision.Services.Templates;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Services.Templates;
 using ColorVision.Themes.Controls;
 using System;
 using System.Collections.ObjectModel;
@@ -15,9 +15,9 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Engine.Templates;
-using ColorVision.Services.RC;
+using ColorVision.Engine.Services.RC;
 
-namespace ColorVision.Services.Devices.Spectrum
+namespace ColorVision.Engine.Services.Devices.Spectrum
 {
     public class DeviceSpectrum : DeviceService<ConfigSpectrum>, IUploadMsg
     {

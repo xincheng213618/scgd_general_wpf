@@ -1,10 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Core;
+using ColorVision.Engine.Services.Core;
 using Newtonsoft.Json;
 using System;
 using System.Windows;
 
-namespace ColorVision.Services.Msg
+namespace ColorVision.Engine.Services.Msg
 {
     public delegate void MsgRecordStateChangedHandler(MsgRecordState msgRecordState);
     public delegate void MsgRecordSucessChangedHandler(MsgReturn msgReturn);

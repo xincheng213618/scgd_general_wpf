@@ -3,9 +3,9 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.UserSpace;
 using cvColorVision;
 using System;
@@ -16,7 +16,7 @@ using System.Windows;
 using System.Windows.Controls;
 
 
-namespace ColorVision.Services.PhyCameras.Templates
+namespace ColorVision.Engine.Services.PhyCameras.Templates
 {
     public class CalibrationBase : ModelBase
     {

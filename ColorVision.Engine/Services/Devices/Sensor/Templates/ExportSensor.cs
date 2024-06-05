@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.Sensor.Templates
+namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
     public class ExportSensor : IMenuItem
     {

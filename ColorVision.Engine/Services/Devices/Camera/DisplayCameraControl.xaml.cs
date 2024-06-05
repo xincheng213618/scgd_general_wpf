@@ -2,13 +2,13 @@
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
 using ColorVision.Scheduler;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera.Video;
-using ColorVision.Services.Devices.Camera.Views;
-using ColorVision.Services.Msg;
-using ColorVision.Services.PhyCameras;
-using ColorVision.Services.PhyCameras.Templates;
-using ColorVision.Services.Templates;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Camera.Video;
+using ColorVision.Engine.Services.Devices.Camera.Views;
+using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras.Templates;
+using ColorVision.Engine.Services.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
@@ -30,7 +30,7 @@ using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
-namespace ColorVision.Services.Devices.Camera
+namespace ColorVision.Engine.Services.Devices.Camera
 {
     public class CameraCaptureJob : IJob
     {

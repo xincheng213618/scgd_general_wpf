@@ -1,4 +1,4 @@
-﻿namespace ColorVision.Services.Devices.SMU.Configs
+﻿namespace ColorVision.Engine.Services.Devices.SMU.Configs
 {
     public delegate void MQTTSMUScanResultHandler(SMUScanResultData data);
     public class SMUScanParam

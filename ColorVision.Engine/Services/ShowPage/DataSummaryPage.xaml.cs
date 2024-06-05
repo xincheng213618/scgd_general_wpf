@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.DAO;
-using ColorVision.Services.RC;
+using ColorVision.Engine.Services.DAO;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Solution.Searches;
 using ColorVision.UI.Sorts;
 using System;
@@ -9,7 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Services.ShowPage.Dao
+namespace ColorVision.Engine.Services.ShowPage.Dao
 {
     public enum ArchiveStatus
     {

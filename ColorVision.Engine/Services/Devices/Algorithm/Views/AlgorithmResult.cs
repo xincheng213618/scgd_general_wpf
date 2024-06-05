@@ -1,12 +1,12 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Common.MVVM;
 using ColorVision.UI.Sorts;
-using ColorVision.Services.Devices.Algorithm.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Dao;
 using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Services.Devices.Algorithm.Views
+namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
     public delegate void CurSelectionChanged(AlgorithmResult data);
 

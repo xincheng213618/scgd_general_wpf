@@ -1,13 +1,13 @@
 ﻿using ColorVision.Util.Interfaces;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Themes;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Services.Devices.CfwPort
+namespace ColorVision.Engine.Services.Devices.CfwPort
 {
     public class DeviceCfwPort : DeviceService<ConfigCfwPort>
     {

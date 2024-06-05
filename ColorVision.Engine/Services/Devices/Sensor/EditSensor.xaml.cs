@@ -6,7 +6,7 @@ using System.Windows;
 using System.Windows.Input;
 
 
-namespace ColorVision.Services.Devices.Sensor
+namespace ColorVision.Engine.Services.Devices.Sensor
 {
     /// <summary>
     /// EditSensor.xaml 的交互逻辑

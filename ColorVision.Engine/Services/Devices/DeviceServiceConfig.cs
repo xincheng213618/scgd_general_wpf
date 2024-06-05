@@ -1,10 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Core;
+using ColorVision.Engine.Services.Core;
 using CVCommCore;
 using Newtonsoft.Json;
 using System;
 
-namespace ColorVision.Services.Devices
+namespace ColorVision.Engine.Services.Devices
 {
     public class BaseConfig: ViewModelBase, IServiceConfig, IHeartbeat
     {

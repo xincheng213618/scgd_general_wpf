@@ -1,9 +1,9 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
-using ColorVision.Services.Devices.Spectrum.Configs;
-using ColorVision.Services.Devices.Spectrum.Views;
-using ColorVision.Services.Templates;
+using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Services.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
@@ -20,7 +20,7 @@ using System.Windows.Input;
 using static cvColorVision.GCSDLL;
 
 
-namespace ColorVision.Services.Devices.Spectrum
+namespace ColorVision.Engine.Services.Devices.Spectrum
 {
     /// <summary>
     /// DisplaySpectrumControl.xaml 的交互逻辑

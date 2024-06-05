@@ -1,4 +1,4 @@
-﻿namespace ColorVision.Services.Devices.FileServer
+﻿namespace ColorVision.Engine.Services.Devices.FileServer
 {
     public class ConfigFileServer : DeviceServiceConfig
     {

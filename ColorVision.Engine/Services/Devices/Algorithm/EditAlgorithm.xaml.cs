@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.Algorithm
+namespace ColorVision.Engine.Services.Devices.Algorithm
 {
     /// <summary>
     /// EditAlgorithm.xaml 的交互逻辑

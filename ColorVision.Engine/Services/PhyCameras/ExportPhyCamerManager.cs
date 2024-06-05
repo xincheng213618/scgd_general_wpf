@@ -3,7 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.UI.Menus;
 using System.Windows;
 
-namespace ColorVision.Services.PhyCameras
+namespace ColorVision.Engine.Services.PhyCameras
 {
     public class ExportPhyCamerManager : IMenuItem
     {

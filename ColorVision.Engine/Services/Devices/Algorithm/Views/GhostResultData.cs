@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Devices.Algorithm.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Dao;
 
-namespace ColorVision.Services.Devices.Algorithm.Views
+namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
     public class GhostResultData : ViewModelBase
     {

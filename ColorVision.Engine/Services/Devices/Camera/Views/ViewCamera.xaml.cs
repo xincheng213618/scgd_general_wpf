@@ -6,10 +6,10 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Media;
 using ColorVision.Net;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Algorithm.Views;
-using ColorVision.Services.Export;
-using ColorVision.Services.Msg;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.Export;
+using ColorVision.Engine.Services.Msg;
 using ColorVision.Solution;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
@@ -30,7 +30,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ColorVision.Services.Devices.Camera.Views
+namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
     public class ViewCameraConfig : IConfig
     {

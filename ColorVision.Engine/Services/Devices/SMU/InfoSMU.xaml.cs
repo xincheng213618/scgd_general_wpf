@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.SMU
+namespace ColorVision.Engine.Services.Devices.SMU
 {
     /// <summary>
     /// InfoSMU.xaml 的交互逻辑

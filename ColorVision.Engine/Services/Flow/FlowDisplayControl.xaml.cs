@@ -2,7 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Templates;
-using ColorVision.Services.DAO;
+using ColorVision.Engine.Services.DAO;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
@@ -21,7 +21,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 
 
-namespace ColorVision.Services.Flow
+namespace ColorVision.Engine.Services.Flow
 {
     public class FlowDisplayControlConfig : ViewModelBase,IConfig
     {

@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.Utilities;
-using ColorVision.Services.Msg;
+using ColorVision.Engine.Services.Msg;
 using Panuon.WPF.UI;
 using System;
 using System.Globalization;
@@ -11,7 +11,7 @@ using System.Windows.Input;
 using System.Windows.Threading;
 
 
-namespace ColorVision.Services
+namespace ColorVision.Engine.Services
 {
     internal static partial class ServicesHelper
     {

@@ -1,9 +1,9 @@
-﻿using ColorVision.Services.Msg;
+﻿using ColorVision.Engine.Services.Msg;
 using MQTTMessageLib;
 using MQTTMessageLib.Sensor;
 using System.Collections.Generic;
 
-namespace ColorVision.Services.Devices.Sensor
+namespace ColorVision.Engine.Services.Devices.Sensor
 {
 
 

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.Motor
+namespace ColorVision.Engine.Services.Devices.Motor
 {
     /// <summary>
     /// InfoSMU.xaml 的交互逻辑

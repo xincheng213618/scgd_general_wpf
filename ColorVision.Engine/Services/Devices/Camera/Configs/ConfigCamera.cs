@@ -1,10 +1,10 @@
 ﻿using Newtonsoft.Json;
 using cvColorVision;
-using ColorVision.Services.Devices.Camera.Video;
+using ColorVision.Engine.Services.Devices.Camera.Video;
 using System;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 
-namespace ColorVision.Services.Devices.Camera.Configs
+namespace ColorVision.Engine.Services.Devices.Camera.Configs
 {
     /// <summary>
     /// 相机配置

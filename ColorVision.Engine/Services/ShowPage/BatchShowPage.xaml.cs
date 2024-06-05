@@ -1,7 +1,7 @@
-﻿using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Algorithm.Dao;
-using ColorVision.Services.Devices.Algorithm.Views;
-using ColorVision.Services.Devices.Camera.Views;
+﻿using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
@@ -9,7 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Services.ShowPage.Dao
+namespace ColorVision.Engine.Services.ShowPage.Dao
 {
     /// <summary>
     /// BatchShowPage.xaml 的交互逻辑
