@@ -12,8 +12,6 @@ using ColorVision.UI.Menus;
 using ColorVision.UI.Views;
 using ColorVision.Update;
 using ColorVision.UserSpace;
-using HandyControl.Tools;
-using HandyControl.Tools.Extension;
 using log4net;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
@@ -31,8 +29,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
-using System.Windows.Media;
-using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision
