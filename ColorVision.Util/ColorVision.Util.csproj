@@ -11,8 +11,6 @@
 		<PackageReference Include="Extended.Wpf.Toolkit" Version="4.6.0" />
 		<PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
 		<PackageReference Include="HandyControl" Version="3.5.1" />
-		<PackageReference Include="log4net" Version="2.0.17" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="Panuon.WPF.UI" Version="1.2.1.2" />
 		<PackageReference Include="Quartz" Version="3.9.0" />
 		<PackageReference Include="WPF-UI" Version="2.1.0" />

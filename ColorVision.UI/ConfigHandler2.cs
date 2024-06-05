@@ -60,7 +60,7 @@
 //                    log.Info($"读取配置文件{fileName}失败，正常初始化配置文件");
 //                    T t = (T)Activator.CreateInstance(typeof(T));
 //                    WriteConfig(fileName, t);
-//                    return t;
+//                    return t; 
 //                }
 //            }
 
