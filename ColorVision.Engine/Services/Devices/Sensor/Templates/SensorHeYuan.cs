@@ -59,7 +59,6 @@ namespace ColorVision.Services.Devices.Sensor.Templates
 
         }
 
-
         [Category("SensorHeYuan"), Description("上电")]
         public string? PowerOn { get => GetValue(_PowerOn); set { SetProperty(ref _PowerOn, value); } }
         private string? _PowerOn = "5A 05 07 02 31 02 9B,5A 06 08 03 31 02 00 9E";
