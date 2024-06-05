@@ -10,6 +10,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using YamlDotNet.Core;
+using System.Windows.Controls;
 
 namespace ColorVision.Solution
 {
@@ -86,6 +87,13 @@ namespace ColorVision.Solution
         }
 
 
+        public event EventHandler<UserControl> OpenFile;
+
+
+        public void OpenFileWindow(UserControl userControl)
+        {
+            OpenFile?.Invoke(this, userControl);
+        }
 
 
         private void SolutionManager_SolutionLoaded(object? sender, EventArgs e)

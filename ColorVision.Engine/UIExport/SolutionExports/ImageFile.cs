@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ColorVision.Solution;
 
 namespace ColorVision.Engine.UIExport.SolutionExports
 {
@@ -57,11 +58,14 @@ namespace ColorVision.Engine.UIExport.SolutionExports
 
         public void Open()
         {
-            ImageView imageView = new();
-            Window window = new() { };
-            window.Content = imageView;
+            ImageView imageView = new ImageView() { ToolTip =Name };
+            SolutionManager.GetInstance().OpenFileWindow(imageView);
             _ = RunAsync(imageView);
-            window.Show();
+
+            //Window window = new() { };
+            //window.Content = imageView;
+            //_ = RunAsync(imageView);
+            //window.Show();
         }
         public async Task<Task> RunAsync(ImageView imageView)
         {

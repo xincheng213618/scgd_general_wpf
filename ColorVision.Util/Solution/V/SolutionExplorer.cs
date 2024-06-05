@@ -190,7 +190,7 @@ namespace ColorVision.Solution.V
                 }
                 foreach (var key in FileTypes.Keys)
                 {
-                    if (key == extension)
+                    if (key.Contains(extension))
                         matchingTypes.Add(FileTypes[key]);
                 }
                 foreach (var key in FileTypes.Keys)

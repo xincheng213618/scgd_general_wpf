@@ -11,6 +11,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ColorVision.Solution;
 
 namespace ColorVision.Engine.UIExport.SolutionExports
 {
@@ -50,15 +51,20 @@ namespace ColorVision.Engine.UIExport.SolutionExports
                 ImageView imageView = new();
 
                 CVFileUtil.ReadCVRaw(FileInfo.FullName, out CVCIEFile fileInfo);
-                Window window = new() { Title = Resources.QuickPreview, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                window.Content = imageView;
-                imageView.OpenImage(new NetFileUtil().OpenLocalCVFile(FileInfo.FullName));
 
-                window.Show();
-                window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
-                {
-                    imageView.ToolBarTop.ClearImage();
-                }));
+
+                imageView.OpenImage(new NetFileUtil().OpenLocalCVFile(FileInfo.FullName));
+                SolutionManager.GetInstance().OpenFileWindow(imageView);
+
+                //Window window = new() { Title = Resources.QuickPreview, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                //window.Content = imageView;
+                //imageView.OpenImage(new NetFileUtil().OpenLocalCVFile(FileInfo.FullName));
+
+                //window.Show();
+                //window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
+                //{
+                //    imageView.ToolBarTop.ClearImage();
+                //}));
             }
             else
             {

@@ -1,7 +1,9 @@
 ﻿using ColorVision.UI.Views;
+using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using Xceed.Wpf.AvalonDock.Layout;
 
 namespace ColorVision.Solution.Searches
 {
@@ -14,7 +16,6 @@ namespace ColorVision.Solution.Searches
         {
             InitializeComponent();
         }
-
         public View View { get; set; }
 
         private void UserControl_Initialized(object sender, System.EventArgs e)
@@ -34,8 +35,6 @@ namespace ColorVision.Solution.Searches
                 content2.SetBinding(ItemsControl.ItemsSourceProperty, new Binding { Path = new PropertyPath("ForwardStack"), Source = MainFrame });
                 BrowseForward.ContextMenu = content2;
             }
-
-
             ContextMenu contextMenu = new();
             MainSetting.ContextMenu = contextMenu;
             MenuItem menuItem = new() { Header = "独立窗口" };
@@ -44,6 +43,13 @@ namespace ColorVision.Solution.Searches
                 View.ViewIndex = -2;
             };
             contextMenu.Items.Add(menuItem);;
+
+            SolutionManager.GetInstance().OpenFile += (s, e) =>
+            {
+                LayoutDocument layoutDocument = new LayoutDocument() { ContentId = Guid.NewGuid().ToString(), Content = e, Title = e.ToolTip.ToString() };
+                LayoutDocumentPane.Children.Add(layoutDocument);
+                LayoutDocumentPane.SelectedContentIndex = LayoutDocumentPane.IndexOf(layoutDocument) ;
+            };
         }
 
         private void View_ViewIndexChangedEvent(int oindex, int index)

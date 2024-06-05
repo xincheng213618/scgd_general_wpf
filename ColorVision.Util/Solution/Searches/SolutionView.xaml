@@ -23,7 +23,7 @@
             <xcad:LayoutRoot x:Name="_layoutRoot">
                 <xcad:LayoutPanel Orientation="Horizontal">
                     <xcad:LayoutDocumentPaneGroup>
-                        <xcad:LayoutDocumentPane>
+                        <xcad:LayoutDocumentPane x:Name="LayoutDocumentPane">
                             <xcad:LayoutDocument ContentId="查询" Title="  查询   " CanClose="False" >
                                 <Grid Background="{DynamicResource GlobalBackground}">
                                     <Grid.RowDefinitions>
