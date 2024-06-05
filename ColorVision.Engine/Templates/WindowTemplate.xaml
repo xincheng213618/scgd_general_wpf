@@ -85,7 +85,7 @@
                                     <DockPanel Height="20">
                                         <Grid VerticalAlignment="Center">
                                             <TextBlock Text="{Binding Key}" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}" />
-                                            <TextBox  Text="{Binding Key}" LostFocus="TextBox_LostFocus" GotFocus="TextBox_GotFocus"  PreviewKeyDown="TextBox_PreviewKeyDown" Tag="{Binding .}"   HorizontalAlignment="Left" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}"/>
+                                            <TextBox  Text="{Binding Key}" LostFocus="TextBox_LostFocus" Tag="{Binding .}"   HorizontalAlignment="Left" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}"/>
                                         </Grid>
                                     </DockPanel>
                                 </DataTemplate>
@@ -97,6 +97,7 @@
             <TextBlock Grid.Row="1"  x:Name="SearchNoneText" Visibility="Collapsed" VerticalAlignment="Top" FontSize="16" Margin="20,80,0,0" Text="{x:Static properties:Resources.NoRelatedItemsFound}" />
 
         </Grid>
+        <GridSplitter  Width="2"/>
 
         <Grid Grid.Row="0" Grid.Column="1"  Grid.RowSpan="2"  x:Name="GridProperty" >
             <!--<hc:PropertyGrid x:Name="PropertyGrid1"   hc:TipElement.Visibility="Visible"  />-->

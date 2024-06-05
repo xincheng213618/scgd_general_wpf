@@ -197,20 +197,6 @@ namespace ColorVision.Engine.Templates
 
         }
 
-        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (sender is TextBox textBox && textBox.Tag is TemplateModelBase templateModelBase)
-            {
-                if (e.Key == Key.F2)
-                {
-                    templateModelBase.IsEditMode = false;
-                }
-                if (e.Key == Key.Escape || e.Key == Key.Enter)
-                {
-                    templateModelBase.IsEditMode = false;
-                }
-            }
-        }
 
         private void TextBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
