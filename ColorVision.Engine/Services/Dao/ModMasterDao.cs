@@ -23,7 +23,6 @@ namespace ColorVision.Services.Dao
         public const string BuildPOI = "BuildPOI";
         public const string SpectrumResource = "SpectrumResource";
         public const string CameraExposure = "camera_exp_time";
-        public const string SensorHeYuan = "Sensor.HeYuan";
 
     }
 

@@ -3,7 +3,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
 using ColorVision.Services.Dao;
-using ColorVision.Services.Templates;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -35,39 +34,13 @@ namespace ColorVision.Services.Devices.Sensor.Templates
         });
     }
 
-    public class ExportSensor : IMenuItem
-    {
-        public string OwnerGuid => "Template";
-
-        public string? GuidId => "Sensor";
-        public int Order => 21;
-        public string? Header => ColorVision.Engine.Properties.Resources.MenuSensor;
-
-        public string? InputGestureText { get; }
-
-        public object? Icon { get; }
-        public Visibility Visibility => Visibility.Visible;
-
-        public RelayCommand Command => new(a => {
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
-                return;
-            }
-        });
-    }
-
-
-
-
-
 
     public class TemplateSensorHeYuan : ITemplate<SensorHeYuan>, IITemplateLoad
     {
         public TemplateSensorHeYuan()
         {
             Title = "SensorHeYuan设置";
-            Code = ModMasterType.SensorHeYuan;
+            Code = "Sensor.HeYuan";
             TemplateParams = SensorHeYuan.SensorHeYuans;
         }
     }
@@ -76,9 +49,9 @@ namespace ColorVision.Services.Devices.Sensor.Templates
     {
         public static ObservableCollection<TemplateModel<SensorHeYuan>> SensorHeYuans { get; set; } = new ObservableCollection<TemplateModel<SensorHeYuan>>();
 
-
         public SensorHeYuan() : base()
         {
+
         }
 
         public SensorHeYuan(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
