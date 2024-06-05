@@ -92,10 +92,6 @@ namespace ColorVision.Engine.Services.SysDictionary
             Id = modMasterModel.Id;
             Name = modMasterModel.Name ??"default";
             ModDetaiModels = new ObservableCollection<SysDictionaryModDetaiModel>(dicModParams);
-            foreach (var item in dicModParams)
-            {
-                ModDetaiModels.Add(item);
-            }
             CreateCommand = new RelayCommand(a => new CreateModeDetail(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(), a => true);
         }
 

@@ -7,6 +7,9 @@
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 	</PropertyGroup>
 	<ItemGroup>
+	  <None Remove="Assets\Image\background0.png" />
+	  <None Remove="Assets\Image\归档查询.png" />
+	  <None Remove="Assets\Image\综合查询.png" />
 	  <None Remove="Assets\uploadbg.avif" />
 	  <None Remove="Controls\uploadbg.avif" />
 	</ItemGroup>
@@ -27,7 +30,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <Resource Include="Assets\Image\background0.png">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </Resource>
 	  <Resource Include="Assets\Image\uploadbg.avif" />
+	  <Resource Include="Assets\Image\归档查询.png" />
+	  <Resource Include="Assets\Image\综合查询.png" />
 	</ItemGroup>
 
 	<ItemGroup>

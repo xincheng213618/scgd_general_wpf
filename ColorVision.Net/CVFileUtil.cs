@@ -1,18 +1,11 @@
 ﻿#pragma warning disable CA1806,CA1833,CA1401,CA2101,CA1838,CS8603,CA1051,CA1707,CS8625
+using MQTTMessageLib.FileServer;
+using OpenCvSharp;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Security.Cryptography;
-using System.Threading.Channels;
-using System.Threading;
-using System.Linq;
-using OpenCvSharp;
-using static System.Net.Mime.MediaTypeNames;
-using System.Collections.Generic;
 using System.Text;
-using OpenCvSharp.Flann;
-using MQTTMessageLib.FileServer;
-using System.Security.Cryptography.Xml;
 
 
 namespace ColorVision.Net
