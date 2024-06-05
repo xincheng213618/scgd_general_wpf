@@ -495,8 +495,12 @@
           <source>源表模板设置(_S)</source>
           <target state="new">Paramètres du modèle de table source (S)</target>
         </trans-unit>
-        <trans-unit id="MenuSenSorHeYuan" translate="yes" xml:space="preserve">
+        <trans-unit id="MenuSensor" translate="yes" xml:space="preserve">
           <source>通用传感器模板设置(_S)</source>
+          <target state="new">Paramètres du modèle de capteur générique (S)</target>
+        </trans-unit>
+        <trans-unit id="MenuSensorHeYuan" translate="yes" xml:space="preserve">
+          <source>河源指令集</source>
           <target state="new">Paramètres du modèle de capteur générique (S)</target>
         </trans-unit>
         <trans-unit id="MenuService" translate="yes" xml:space="preserve">
@@ -578,6 +582,10 @@
         <trans-unit id="New" translate="yes" xml:space="preserve">
           <source>新建</source>
           <target state="new">Nouveau</target>
+        </trans-unit>
+        <trans-unit id="NoRelatedItemsFound" translate="yes" xml:space="preserve">
+          <source>未找到相关项目</source>
+          <target state="new">Aucun élément associé trouvé</target>
         </trans-unit>
         <trans-unit id="OK" translate="yes" xml:space="preserve">
           <source>确定</source>

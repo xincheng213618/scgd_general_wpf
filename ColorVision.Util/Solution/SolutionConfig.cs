@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using System.Collections.ObjectModel;
 
 namespace ColorVision.Solution
 {
@@ -19,5 +20,8 @@ namespace ColorVision.Solution
             }
         }
         private string _FullPath;
+
+
+        public ObservableCollection<string> Path { get; set; }
     }
 }

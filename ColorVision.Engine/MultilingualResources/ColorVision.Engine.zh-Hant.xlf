@@ -495,8 +495,12 @@
           <source>源表模板设置(_S)</source>
           <target state="new">源表模板設定(_S)</target>
         </trans-unit>
-        <trans-unit id="MenuSenSorHeYuan" translate="yes" xml:space="preserve">
+        <trans-unit id="MenuSensor" translate="yes" xml:space="preserve">
           <source>通用传感器模板设置(_S)</source>
+          <target state="new">通用感測器模板設定(_H)</target>
+        </trans-unit>
+        <trans-unit id="MenuSensorHeYuan" translate="yes" xml:space="preserve">
+          <source>河源指令集</source>
           <target state="new">通用感測器模板設定(_H)</target>
         </trans-unit>
         <trans-unit id="MenuService" translate="yes" xml:space="preserve">

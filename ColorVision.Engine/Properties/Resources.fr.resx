@@ -414,7 +414,7 @@
   <data name="MenuService" xml:space="preserve">
     <value>Configuration(S) du service d'administrateur(_S)</value>
   </data>
-  <data name="MenuSenSorHeYuan" xml:space="preserve">
+  <data name="MenuSensor" xml:space="preserve">
     <value>Paramètres du modèle de capteur générique (S)</value>
   </data>
   <data name="MenuRename" xml:space="preserve">
@@ -779,5 +779,8 @@
   </data>
   <data name="MenuFile" xml:space="preserve">
     <value>Fichier(F)</value>
+  </data>
+  <data name="MenuSensorHeYuan" xml:space="preserve">
+    <value>Paramètres du modèle de capteur générique (S)</value>
   </data>
 </root>

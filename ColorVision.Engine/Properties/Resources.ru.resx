@@ -414,7 +414,7 @@
   <data name="MenuService" xml:space="preserve">
     <value>Конфигурация службы администратора(_S)</value>
   </data>
-  <data name="MenuSenSorHeYuan" xml:space="preserve">
+  <data name="MenuSensor" xml:space="preserve">
     <value>Общие настройки шаблона датчика(S)</value>
   </data>
   <data name="MenuRename" xml:space="preserve">
@@ -779,5 +779,8 @@
   </data>
   <data name="MenuFile" xml:space="preserve">
     <value>Файл(Ф)</value>
+  </data>
+  <data name="MenuSensorHeYuan" xml:space="preserve">
+    <value>Общие настройки шаблона датчика(S)</value>
   </data>
 </root>

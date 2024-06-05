@@ -14,11 +14,11 @@ namespace ColorVision.Services.Devices.Sensor.Templates
 {
     public class ExportSensorHeYuan : IMenuItem
     {
-        public string OwnerGuid => "Template";
+        public string OwnerGuid => "Sensor";
 
         public string? GuidId => "SensorHeYuan";
         public int Order => 21;
-        public string? Header => ColorVision.Engine.Properties.Resources.MenuSenSorHeYuan;
+        public string? Header => ColorVision.Engine.Properties.Resources.MenuSensorHeYuan;
 
         public string? InputGestureText { get; }
 
@@ -34,6 +34,33 @@ namespace ColorVision.Services.Devices.Sensor.Templates
             new WindowTemplate(new TemplateSensorHeYuan()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
     }
+
+    public class ExportSensor : IMenuItem
+    {
+        public string OwnerGuid => "Template";
+
+        public string? GuidId => "Sensor";
+        public int Order => 21;
+        public string? Header => ColorVision.Engine.Properties.Resources.MenuSensor;
+
+        public string? InputGestureText { get; }
+
+        public object? Icon { get; }
+        public Visibility Visibility => Visibility.Visible;
+
+        public RelayCommand Command => new(a => {
+            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
+                return;
+            }
+        });
+    }
+
+
+
+
+
 
     public class TemplateSensorHeYuan : ITemplate<SensorHeYuan>, IITemplateLoad
     {

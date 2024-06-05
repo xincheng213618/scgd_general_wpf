@@ -7,6 +7,7 @@ using ColorVision.UserSpace;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.Measure
 {
@@ -41,6 +42,11 @@ namespace ColorVision.Engine.Templates.Measure
         {
             Title = "MeasureParam";
             TemplateParams = MeasureParam.Params;
+            IsUserControl = true;
+        }
+        public override UserControl GetUserControl()
+        {
+            return new MeasureParamControl();
         }
 
         public override void Load() => MeasureParam.LoadMeasureParams();

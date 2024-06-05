@@ -58,11 +58,11 @@ namespace ColorVision.Engine.Templates.Measure
     /// </summary>
     public partial class MeasureParamControl : UserControl
     {
-        private TemplateControl TemplateControl = TemplateControl.GetInstance();
         public MeasureParamControl()
         {
             InitializeComponent();
         }
+
         private MeasureDetailDao measureDetail = new();
         public int MasterID { get; set; }
         public ObservableCollection<MParamConfig> ListConfigs { get; set; } = new ObservableCollection<MParamConfig>();

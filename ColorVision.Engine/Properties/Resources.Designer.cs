@@ -1134,9 +1134,18 @@ namespace ColorVision.Engine.Properties {
         /// <summary>
         ///   查找类似 通用传感器模板设置(_S) 的本地化字符串。
         /// </summary>
-        public static string MenuSenSorHeYuan {
+        public static string MenuSensor {
             get {
-                return ResourceManager.GetString("MenuSenSorHeYuan", resourceCulture);
+                return ResourceManager.GetString("MenuSensor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 河源指令集 的本地化字符串。
+        /// </summary>
+        public static string MenuSensorHeYuan {
+            get {
+                return ResourceManager.GetString("MenuSensorHeYuan", resourceCulture);
             }
         }
         

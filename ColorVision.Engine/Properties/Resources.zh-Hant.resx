@@ -414,7 +414,7 @@
   <data name="MenuService" xml:space="preserve">
     <value>管理員服務配置(_S)</value>
   </data>
-  <data name="MenuSenSorHeYuan" xml:space="preserve">
+  <data name="MenuSensor" xml:space="preserve">
     <value>通用感測器模板設定(_H)</value>
   </data>
   <data name="MenuRename" xml:space="preserve">
@@ -779,5 +779,8 @@
   </data>
   <data name="MenuFile" xml:space="preserve">
     <value>文件(_F)</value>
+  </data>
+  <data name="MenuSensorHeYuan" xml:space="preserve">
+    <value>通用感測器模板設定(_H)</value>
   </data>
 </root>
