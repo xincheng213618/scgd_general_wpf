@@ -177,7 +177,6 @@ namespace ColorVision.Services.Devices.Calibration
         {
             DeviceService.GetRawFiles();
         }
-        public TemplateControl TemplateControl { get; set; }
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
@@ -186,9 +185,6 @@ namespace ColorVision.Services.Devices.Calibration
                 MessageBox.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
                 return;
             }
-            if (sender is Button button)
-            {
-                TemplateControl = TemplateControl.GetInstance();
                 WindowTemplate windowTemplate;
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {

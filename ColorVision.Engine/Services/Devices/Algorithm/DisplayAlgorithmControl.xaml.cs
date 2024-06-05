@@ -602,13 +602,11 @@ namespace ColorVision.Services.Devices.Algorithm
             }
         }
 
-        TemplateControl TemplateControl { get; set; }
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
             if (sender is Control button)
             {
-                TemplateControl= TemplateControl.GetInstance();
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
                     MessageBox.Show(Application.Current.MainWindow, "数据库连接失败，请先连接数据库在操作", "ColorVision");
