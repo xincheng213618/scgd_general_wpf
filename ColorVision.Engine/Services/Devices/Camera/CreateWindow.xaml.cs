@@ -54,8 +54,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             DataContext = this;
 
-            var Config = CreateConfig;
-
         }
         SysDeviceModel? saveDevConfigInfo(DeviceServiceConfig deviceConfig, SysResourceModel sysResource)
         {

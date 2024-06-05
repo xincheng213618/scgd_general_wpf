@@ -8,8 +8,15 @@
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DicModParam}"
              d:DesignHeight="450" d:DesignWidth="800">
-    <Grid Margin="5">
-        <ListView x:Name="ListView1" Grid.Row="1" ItemsSource="{Binding  ModDetaiModels}"  ScrollViewer.HorizontalScrollBarVisibility="Auto" >
+    <Grid >
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" Margin="0,5">
+            <Button Content="添加" Command="{Binding CreateCommand}"/>
+        </StackPanel>
+        <ListView x:Name="ListView1" Grid.Row="1" Padding="5,0" ItemsSource="{Binding  ModDetaiModels}"  ScrollViewer.HorizontalScrollBarVisibility="Auto" >
             <ListView.Resources>
                 <ContextMenu x:Key="ContextMenuItem">
                     <MenuItem Header="{x:Static properties:Resources.MenuDelete}"  Click="Button_Del_Click" Tag="{Binding .}"  />
@@ -30,7 +37,14 @@
                             <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                         </Style>
                     </GridView.ColumnHeaderContainerStyle>
-                    <GridViewColumn  Header="Name">
+                    <GridViewColumn  Header="Symbol"  Width="100">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:SysDictionaryModDetaiModel}">
+                                <TextBlock Text="{Binding  Symbol}" />
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="Name" Width="100">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SysDictionaryModDetaiModel}">
                                 <TextBlock Text="{Binding  Name}" />
@@ -44,16 +58,29 @@
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
-                    <GridViewColumn  Header="DefaultValue">
+                    <GridViewColumn  Header="DefaultValue" Width="150">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SysDictionaryModDetaiModel}">
-                                <TextBlock Text="{Binding  DefaultValue}" />
+                                <TextBox Text="{Binding  DefaultValue}"  Width="100"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="IsEnable" Width="150">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:SysDictionaryModDetaiModel}">
+                                <CheckBox IsChecked="{Binding  IsEnable}"  Width="100"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="CreateDate" Width="150">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate  DataType="{x:Type local:SysDictionaryModDetaiModel}">
+                                <TextBlock Text="{Binding CreateDate}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
                 </GridView>
             </ListView.View>
         </ListView>
-
     </Grid>
 </UserControl>

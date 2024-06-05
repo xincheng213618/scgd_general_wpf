@@ -13,7 +13,7 @@ namespace ColorVision.Engine.Services.SysDictionary
 
         public string? GuidId => "DicModParam";
         public int Order => 31;
-        public string? Header => "DicMod";
+        public string? Header => "模板字典表";
         public Visibility Visibility => Visibility.Visible;
         public string? InputGestureText => null;
 

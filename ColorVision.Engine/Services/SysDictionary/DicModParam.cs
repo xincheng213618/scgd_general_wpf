@@ -1,11 +1,15 @@
-﻿using ColorVision.Engine.MySql;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI.Dao;
 using ColorVision.Engine.Templates.POI.Validate;
 using ColorVision.UserSpace;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.SysDictionary
@@ -45,6 +49,25 @@ namespace ColorVision.Engine.Services.SysDictionary
             }
         }
 
+        public override void Save()
+        {
+            if (SaveIndex.Count == 0) return;
+
+            foreach (var index in SaveIndex)
+            {
+                if (index > -1 && index < TemplateParams.Count)
+                {
+                    var item = TemplateParams[index];
+                    var modMasterModel = SysDictionaryModDao.Instance.GetById(item.Value.Id);
+
+                    foreach (var modDetaiModel in TemplateParams[index].Value.ModDetaiModels)
+                    {
+                        SysDictionaryModDetailDao.Instance.Save(modDetaiModel);
+                    }
+                }
+            }
+        }
+
         public override void Create(string templateName)
         {
 
@@ -57,10 +80,11 @@ namespace ColorVision.Engine.Services.SysDictionary
         public static ObservableCollection<TemplateModel<DicModParam>> Params { get; set; } = new ObservableCollection<TemplateModel<DicModParam>>();
 
         public SysDictionaryModModel modMasterModel { get; set; }
+        public RelayCommand CreateCommand { get; set; }
 
         public DicModParam()
         {
-
+            CreateCommand = new RelayCommand(a => new CreateModeDetail(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(), a => true);
         }
 
         public DicModParam(SysDictionaryModModel modMasterModel,List<SysDictionaryModDetaiModel> dicModParams) 
@@ -72,6 +96,7 @@ namespace ColorVision.Engine.Services.SysDictionary
             {
                 ModDetaiModels.Add(item);
             }
+            CreateCommand = new RelayCommand(a => new CreateModeDetail(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(), a => true);
         }
 
         public ObservableCollection<SysDictionaryModDetaiModel> ModDetaiModels { get; set; }

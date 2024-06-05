@@ -32,5 +32,10 @@ namespace ColorVision.Engine.Services.SysDictionary
         {
 
         }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }
