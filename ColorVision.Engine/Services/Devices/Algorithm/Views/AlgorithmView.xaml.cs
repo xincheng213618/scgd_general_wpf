@@ -202,6 +202,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             DrawPoiPoint.Add(item.Point);
                         ImageView.AddPOIPoint(DrawPoiPoint);
                         listViewSide.Visibility = Visibility.Visible;
+                        break;
+                    case AlgorithmResultType.LEDStripDetection:
+
 
                         break;
                     case AlgorithmResultType.POI_XYZ:

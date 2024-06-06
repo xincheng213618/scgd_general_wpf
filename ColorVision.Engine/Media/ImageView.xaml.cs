@@ -821,7 +821,7 @@ namespace ColorVision.Engine.Media
                         Circle1.Attribute.Brush = Brushes.Red;
                         Circle1.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
                         Circle1.Attribute.ID = item.Id ?? -1;
-                        Circle.Attribute.Text = item.Name;
+                        Circle1.Attribute.Text = item.Name;
                         Circle1.Render();
                         ImageShow.AddVisual(Circle1);
                         break;
