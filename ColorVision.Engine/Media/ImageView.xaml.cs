@@ -814,6 +814,17 @@ namespace ColorVision.Engine.Media
                         break;
                     case POIPointTypes.Mask:
                         break;
+                    case POIPointTypes.SolidPoint:
+                        DrawingVisualCircleWord Circle1 = new();
+                        Circle1.Attribute.Center = new Point(item.PixelX, item.PixelY);
+                        Circle1.Attribute.Radius = 10;
+                        Circle1.Attribute.Brush = Brushes.Red;
+                        Circle1.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
+                        Circle1.Attribute.ID = item.Id ?? -1;
+                        Circle.Attribute.Text = item.Name;
+                        Circle1.Render();
+                        ImageShow.AddVisual(Circle1);
+                        break;
                     default:
                         break;
                 }

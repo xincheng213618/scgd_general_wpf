@@ -736,12 +736,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private void LEDStripDetection_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxLedCheckTemplate.SelectedIndex == -1)
+            if (ComboxLEDStripDetectionTemplate.SelectedIndex == -1)
             {
                 MessageBox.Show(Application.Current.MainWindow, "请先选择灯带检测模板", "ColorVision");
                 return;
             }
-
             if (ComboxPoiTemplate1.SelectedIndex == -1)
             {
                 MessageBox.Show(Application.Current.MainWindow, "请先选择关注点模板", "ColorVision");

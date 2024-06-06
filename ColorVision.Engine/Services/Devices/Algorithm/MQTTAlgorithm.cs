@@ -327,7 +327,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             MsgSend msg = new()
             {
-                EventName = MQTTAlgorithmEventEnum.Event_LED_Check_GetData,
+                EventName = MQTTAlgorithmEventEnum.Event_LED_StripDetection,
                 SerialNumber = sn,
                 Params = Params
             };
