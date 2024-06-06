@@ -23,7 +23,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates
 
         public string? GuidId => "LEDStripDetection";
         public int Order => 2;
-        public string? Header => "灯条检测算法";
+        public string? Header => "灯带检测模板设置";
         public string? InputGestureText { get; }
         public object? Icon { get; }
 

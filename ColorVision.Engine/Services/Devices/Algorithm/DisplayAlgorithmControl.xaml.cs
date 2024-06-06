@@ -232,6 +232,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxBuildPoiTemplate.ItemsSource = BuildPOIParam.BuildPOIParams;
             ComboxBuildPoiTemplate.SelectedIndex = 0;
 
+            ComboxLEDStripDetectionTemplate.ItemsSource = LEDStripDetectionParam.Params;
+            ComboxLEDStripDetectionTemplate.SelectedIndex = 0;
+
             this.AddViewConfig(View, ComboxView);
 
 
@@ -615,7 +618,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 switch (button.Tag?.ToString() ?? string.Empty)
                 {
                     case "MTFParam":
-                        new WindowTemplate(new TemplateMTFParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplateMTFParam(), ComboxMTFTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "SFRParam":
                         new WindowTemplate(new TemplateSFRParam(), ComboxSFRTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
@@ -624,25 +627,25 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                         new WindowTemplate(new TemplateFOVParam(), ComboxFOVTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "GhostParam":
-                        new WindowTemplate(new TemplateGhostParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplateGhostParam(), ComboxGhostTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "DistortionParam":
-                        new WindowTemplate(new TemplateDistortionParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplateDistortionParam(),ComboxDistortionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "LedCheckParam":
-                        new WindowTemplate(new TemplateLedCheckParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplateLedCheckParam(), ComboxLedCheckTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "FocusPointsParam":
-                        new WindowTemplate(new TemplateFocusPointsParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplateFocusPointsParam(),ComboxFocusPointsTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "FocusParm":
                         new WindowTemplate(new TemplatePOI()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
                         break;
                     case "BuildPOIParmam":
-                        new WindowTemplate(new TemplateBuildPOIParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplateBuildPOIParam(),ComboxBuildPoiTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     case "LEDStripDetection":
-                        new WindowTemplate(new TemplateLEDStripDetectionParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        new WindowTemplate(new TemplateLEDStripDetectionParam(), ComboxLEDStripDetectionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
