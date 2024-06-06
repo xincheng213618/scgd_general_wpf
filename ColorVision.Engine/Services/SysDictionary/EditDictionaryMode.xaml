@@ -68,7 +68,7 @@
                     <GridViewColumn  Header="IsEnable" Width="150">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:SysDictionaryModDetaiModel}">
-                                <CheckBox IsChecked="{Binding  IsEnable}"  Width="100"/>
+                                <CheckBox IsChecked="{Binding  IsEnable}"  Width="50"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>

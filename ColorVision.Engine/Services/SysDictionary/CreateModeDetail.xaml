@@ -28,6 +28,10 @@
         <Border x:Name="BorderEdit" Grid.Row="0" d:DataContext="{d:DesignInstance local:SysDictionaryModDetaiModel}" Background ="{DynamicResource RegionBrush}" CornerRadius="4">
             <StackPanel>
                 <DockPanel Margin="2">
+                    <TextBlock Text="Id" Width="100" />
+                    <TextBox Text="{Binding Id}"/>
+                </DockPanel>
+                <DockPanel Margin="2">
                     <TextBlock Text="符号" Width="100" />
                     <TextBox Text="{Binding Symbol}"/>
                 </DockPanel>

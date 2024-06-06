@@ -7,8 +7,12 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI.Dao;
 using ColorVision.Engine.Templates.POI.Validate;
 using ColorVision.UserSpace;
+using NPOI.SS.Formula.Functions;
+using NPOI.XWPF.UserModel;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -37,17 +41,30 @@ namespace ColorVision.Engine.Services.SysDictionary
 
         public override void Load()
         {
-            TemplateParams.Clear();
+            var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
+
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
                 var models = SysDictionaryModDao.Instance.GetAllByTenantId(UserConfig.Instance.TenantId);
                 foreach (var model in models)
                 {
-                   var list =  SysDictionaryModDetailDao.Instance.GetAllByPid(model.Id);
-                    TemplateParams.Add(new TemplateModel<DicModParam>(model.Name ?? "default", new DicModParam(model, list)));
+                    var list = SysDictionaryModDetailDao.Instance.GetAllByPid(model.Id);
+                    var t = new DicModParam(model, list);
+
+                    if (backup.TryGetValue(t.Id, out var template))
+                    {
+                        template.Value = t;
+                        template.Key = t.Name;
+                    }
+                    else
+                    {
+                        var templateModel = new TemplateModel<DicModParam>(t.Name ?? "default", t);
+                        TemplateParams.Add(templateModel);
+                    }
                 }
             }
         }
+
 
         public override void Save()
         {
@@ -70,7 +87,12 @@ namespace ColorVision.Engine.Services.SysDictionary
 
         public override void Create(string templateName)
         {
-            MessageBox.Show("不允许创建");
+            SysDictionaryModModel sysDictionaryModModel = new SysDictionaryModModel() { Name = templateName, Code = templateName ,ModType =5 };
+            SysDictionaryModDao.Instance.Save(sysDictionaryModModel);
+            var list = SysDictionaryModDetailDao.Instance.GetAllByPid(sysDictionaryModModel.Id);
+            var t = new DicModParam(sysDictionaryModModel, list);
+            var templateModel = new TemplateModel<DicModParam>(t.Name ?? "default", t);
+            TemplateParams.Add(templateModel);
         }
     }
 

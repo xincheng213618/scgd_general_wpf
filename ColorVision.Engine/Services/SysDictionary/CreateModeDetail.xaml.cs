@@ -36,8 +36,15 @@ namespace ColorVision.Engine.Services.SysDictionary
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             int i = SysDictionaryModDetailDao.Instance.Save(CreateConfig);
-            DicModParam.ModDetaiModels.Add(CreateConfig);
-            this.Close();
+            if (i > 0)
+            {
+                DicModParam.ModDetaiModels.Add(CreateConfig);
+                this.Close();
+            }
+            else
+            {
+                MessageBox.Show("添加失败");
+            }
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)

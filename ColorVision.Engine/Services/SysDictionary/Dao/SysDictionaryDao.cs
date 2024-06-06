@@ -12,6 +12,7 @@ namespace ColorVision.Engine.Services.SysDictionary
         public int Pid { get; set; }
         public int Value { get; set; }
         public int TenantId { get; set; }
+
     }
     public class SysDictionaryDao : BaseDaoMaster<SysDictionaryModel>
     {

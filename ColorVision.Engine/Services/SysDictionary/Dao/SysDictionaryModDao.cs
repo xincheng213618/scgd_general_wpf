@@ -1,14 +1,30 @@
-﻿using ColorVision.Engine.MySql.ORM;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.MySql.ORM;
+using System;
 using System.Collections.Generic;
 using System.Data;
 
 namespace ColorVision.Engine.Services.SysDictionary
 {
-    public class SysDictionaryModModel : PKModel
+    public class SysDictionaryModModel : ViewModelBase,IPKModel
     {
-        public string? Code { get; set; }
-        public string? Name { get; set; }
-        public int TenantId { get; set; }
+        public int Id { get; set; }
+        public int? PId { get => _PId; set { _PId = value; NotifyPropertyChanged(); } }
+        private int? _PId;
+
+        public short ModType { get => _ModType; set { _ModType = value; NotifyPropertyChanged(); } }
+        private short _ModType;
+
+        public string? Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }
+        private string? _Code;
+
+        public string? Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        private string? _Name;
+
+        public int TenantId { get => _TenantId; set { _TenantId = value; NotifyPropertyChanged(); } }
+        private int _TenantId;
+        public DateTime CreateDate { get => _CreateDate; set { _CreateDate = value; NotifyPropertyChanged(); } }
+        private DateTime _CreateDate;
     }
 
     public class SysDictionaryModDao : BaseTableDao<SysDictionaryModModel>
@@ -17,6 +33,30 @@ namespace ColorVision.Engine.Services.SysDictionary
 
         public SysDictionaryModDao() : base("t_scgd_sys_dictionary_mod_master", "id")
         {
+        }
+        public override DataTable CreateColumns(DataTable dataTable)
+        {
+            dataTable.Columns.Add("id", typeof(int));
+            dataTable.Columns.Add("code", typeof(string));
+            dataTable.Columns.Add("name", typeof(string));
+            dataTable.Columns.Add("tenant_id", typeof(int));
+            dataTable.Columns.Add("pid", typeof(int?));
+            dataTable.Columns.Add("mod_type", typeof(short));
+            dataTable.Columns.Add("create_date", typeof(DateTime));
+            return dataTable;        
+        }
+
+        public override DataRow Model2Row(SysDictionaryModModel item, DataRow row)
+        {
+            if (item.Id > 0) row["id"] = item.Id;
+            row["code"] = DataTableExtension.IsDBNull(item.Code);
+            row["name"] = DataTableExtension.IsDBNull(item.Name);
+            row["tenant_id"] = DataTableExtension.IsDBNull(item.TenantId);
+            row["pid"] = DataTableExtension.IsDBNull(item.PId);
+            row["mod_type"] = DataTableExtension.IsDBNull(item.ModType);
+            row["create_date"] = DataTableExtension.IsDBNull(item.CreateDate);
+            return row;
+            
         }
 
         public override SysDictionaryModModel GetModelFromDataRow(DataRow item)
@@ -27,6 +67,9 @@ namespace ColorVision.Engine.Services.SysDictionary
                 Code = item.Field<string>("code"),
                 Name = item.Field<string>("name"),
                 TenantId = item.Field<int>("tenant_id"),
+                PId = item.Field<int?>("pid"),
+                ModType = item.Field<short>("mod_type"),
+                CreateDate = item.Field<DateTime>("create_date")
             };
 
             return model;

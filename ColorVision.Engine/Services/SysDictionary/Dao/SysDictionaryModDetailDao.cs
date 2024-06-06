@@ -8,7 +8,8 @@ namespace ColorVision.Engine.Services.SysDictionary
     public class SysDictionaryModDetaiModel : ViewModelBase,IPKModel
     {
         public int Id { get; set; }
-        public int PId { get; set; }
+        public int PId { get => _PId; set { _PId = value; NotifyPropertyChanged(); } }
+        private int _PId;
 
         public long AddressCode { get => _AddressCode; set { _AddressCode = value; NotifyPropertyChanged(); } }
         private long _AddressCode;
