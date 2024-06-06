@@ -70,7 +70,7 @@ namespace ColorVision.Engine.Services.SysDictionary
 
         public override void Create(string templateName)
         {
-
+            MessageBox.Show("不允许创建");
         }
     }
 
