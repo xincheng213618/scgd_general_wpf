@@ -4,14 +4,14 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Templates;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Templates;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.PG.Templates
+namespace ColorVision.Engine.Services.Devices.PG.Templates
 {
 
     public class ExportPGParam : IMenuItem

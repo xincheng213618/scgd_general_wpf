@@ -1,9 +1,9 @@
-﻿<Window x:Class="ColorVision.Services.Devices.Sensor.EditSensor"
+﻿<Window x:Class="ColorVision.Engine.Services.Devices.Sensor.EditSensor"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:local="clr-namespace:ColorVision.Services.Devices.Sensor"
+             xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Sensor"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
@@ -42,23 +42,38 @@
 
                     <GroupBox Header="配置信息" Margin="0,5">
                         <StackPanel Margin="5">
+                            <DockPanel Margin="0,10" >
+                                <TextBlock Text="通讯方式" Width="120"/>
+                                <RadioButton x:Name="IsComm" Content="串口" IsChecked="{Binding IsNet,Converter={StaticResource Boolean2BooleanReConverter}}"/>
+                                <RadioButton x:Name="IsNet" Content="TCP/IP" IsChecked="{Binding  IsNet}"/>
+                            </DockPanel>
                             <DockPanel Margin="0,2" >
                                 <TextBlock Text="类别型号" Width="120"/>
-                                <ComboBox x:Name="pgCategory" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding Category}"/>
+                                <ComboBox x:Name="ComboBoxSensor" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding Category}"/>
                             </DockPanel>
-                            <DockPanel Margin="0,2" >
-                                <TextBlock Text="通讯方式" Width="120"/>
-                                <RadioButton x:Name="IsNet" Content="TCP/IP" IsChecked="{Binding  IsNet}"/>
-                                <RadioButton x:Name="IsComm" Content="串口" IsChecked="{Binding IsNet,Converter={StaticResource Boolean2BooleanReConverter}}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2" >
-                                <TextBlock  x:Name="TextBlockPGIP"   Text="IP地址" Width="120"/>
-                                <TextBox Text="{Binding Addr}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2" >
-                                <TextBlock  x:Name="TextBlockPGPort"   Text="端口" Width="120"/>
-                                <TextBox Text="{Binding Port}"/>
-                            </DockPanel>
+                            <StackPanel Visibility="{Binding IsNet, Converter={StaticResource bool2VisibilityConverter}}">
+                                <DockPanel Margin="0,2" >
+                                    <TextBlock Text="IP地址" Width="120"/>
+                                    <TextBox Text="{Binding Addr}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2" >
+                                    <TextBlock  Text="端口" Width="120"/>
+                                    <TextBox  Text="{Binding Port}"/>
+                                </DockPanel>
+                            </StackPanel>
+                            <StackPanel Visibility="{Binding IsNet, Converter={StaticResource bool2VisibilityConverter1}}">
+                                <DockPanel Margin="0,2" >
+                                    <TextBlock   Text="串口" Width="120"/>
+                                    <hc:ComboBox  x:Name="ComboBoxSerial" IsEditable="True" Text="{Binding Addr}" hc:InfoElement.ShowClearButton="True" />
+                                </DockPanel>
+                                <DockPanel Margin="0,2" >
+                                    <TextBlock Text="波特率" Width="120"/>
+                                    <hc:ComboBox  x:Name="ComboBoxPort" IsEditable="True" SelectedIndex="0" Text="{Binding Port}" hc:InfoElement.ShowClearButton="True"  />
+                                </DockPanel>
+                            </StackPanel>
+
+
+
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>

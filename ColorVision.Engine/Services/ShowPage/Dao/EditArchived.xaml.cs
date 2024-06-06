@@ -5,7 +5,7 @@ using System.Windows;
 using System.Windows.Input;
 
 
-namespace ColorVision.Services.ShowPage.Dao
+namespace ColorVision.Engine.Services.ShowPage.Dao
 {
     /// <summary>
     /// EditCalibration.xaml 的交互逻辑
@@ -60,6 +60,11 @@ namespace ColorVision.Services.ShowPage.Dao
                 }
                 EditConfig.Path = dialog.SelectedPath;
             }
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            PlatformHelper.Open("https://cron.qqe2.com/");
         }
     }
 }

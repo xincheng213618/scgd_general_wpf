@@ -1,9 +1,9 @@
-﻿<UserControl x:Class="ColorVision.Services.Devices.Camera.DisplayCameraControl"
+﻿<UserControl x:Class="ColorVision.Engine.Services.Devices.Camera.DisplayCameraControl"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision.Services.Devices.Camera"
+             xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Camera"
              xmlns:ScottPlot="clr-namespace:ScottPlot;assembly=ScottPlot.WPF"
              xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
              xmlns:hc="https://handyorg.github.io/handycontrol"
@@ -178,7 +178,7 @@
 
                     </StackPanel>
                 </StackPanel>
-                <DockPanel Margin="0,2" >
+                <DockPanel Margin="0,2,0,0" >
                     <TextBlock Text="{x:Static properties:Resources.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0"/>
                     <ComboBox x:Name="ComboxView" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key"/>
                 </DockPanel>

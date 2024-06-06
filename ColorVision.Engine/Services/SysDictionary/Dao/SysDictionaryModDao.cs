@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 
-namespace ColorVision.Services.Dao
+namespace ColorVision.Engine.Services.SysDictionary
 {
     public class SysDictionaryModModel : PKModel
     {

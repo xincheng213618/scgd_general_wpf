@@ -10,7 +10,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ColorVision.Services.Templates.POI
+namespace ColorVision.Engine.Services.Templates.POI
 {
     public partial class WindowFocusPoint : Window
     {

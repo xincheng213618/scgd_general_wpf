@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Services.Devices;
-using ColorVision.Services.Terminal;
+using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.Terminal;
 using ColorVision.UI.Menus;
 using ColorVision.UserSpace;
 using System;
@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services
+namespace ColorVision.Engine.Services
 {
     public class WindowDevicesMenuItem : IMenuItem
     {

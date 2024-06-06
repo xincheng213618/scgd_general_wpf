@@ -1,6 +1,6 @@
-﻿using ColorVision.Services.Devices.PG;
+﻿using ColorVision.Engine.Services.Devices.PG;
 
-namespace ColorVision.Services.Devices.Sensor
+namespace ColorVision.Engine.Services.Devices.Sensor
 {
     public class ConfigSensor : DeviceServiceConfig
     {

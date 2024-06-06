@@ -1,6 +1,6 @@
 ﻿using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.Camera
+namespace ColorVision.Engine.Services.Devices.Camera
 {
     /// <summary>
     /// ServiceTerminalCamera.xaml 的交互逻辑

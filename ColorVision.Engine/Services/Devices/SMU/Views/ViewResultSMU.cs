@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.Sorts;
-using ColorVision.Services.Devices.SMU.Dao;
+using ColorVision.Engine.Services.Devices.SMU.Dao;
 using Newtonsoft.Json;
 using ScottPlot;
 using ScottPlot.Plottable;
@@ -9,7 +9,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Drawing;
 
-namespace ColorVision.Services.Devices.SMU.Views
+namespace ColorVision.Engine.Services.Devices.SMU.Views
 {
     public class ViewResultSMU : ViewModelBase, ISortable
     {

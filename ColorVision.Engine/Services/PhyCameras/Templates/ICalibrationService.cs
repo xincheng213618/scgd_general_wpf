@@ -1,8 +1,8 @@
 ﻿using ColorVision.Engine.Templates;
-using ColorVision.Services.Dao;
+using ColorVision.Engine.Services.Dao;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Services.PhyCameras.Templates
+namespace ColorVision.Engine.Services.PhyCameras.Templates
 {
     public interface ICalibrationService<T>
     {

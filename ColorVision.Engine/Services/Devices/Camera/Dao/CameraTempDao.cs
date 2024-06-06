@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 
-namespace ColorVision.Services.Dao
+namespace ColorVision.Engine.Services.Dao
 {
     public class CameraTempModel : PKModel
     {

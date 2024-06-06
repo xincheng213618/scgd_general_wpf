@@ -1,6 +1,6 @@
-﻿using ColorVision.Services.Devices.Camera.Configs;
+﻿using ColorVision.Engine.Services.Devices.Camera.Configs;
 
-namespace ColorVision.Services.Devices.Calibration
+namespace ColorVision.Engine.Services.Devices.Calibration
 {
     public class ConfigCalibration: DeviceServiceConfig
     {

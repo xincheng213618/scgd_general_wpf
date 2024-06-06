@@ -1,12 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Dao;
+using ColorVision.Engine.Services.SysDictionary;
 using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
 
 
-namespace ColorVision.Services.Devices.Sensor
+namespace ColorVision.Engine.Services.Devices.Sensor
 {
     /// <summary>
     /// EditSensor.xaml 的交互逻辑
@@ -35,7 +35,6 @@ namespace ColorVision.Services.Devices.Sensor
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             var list1 = SysDictionaryModDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "mod_type", 5 } });
-
             var liss = new Dictionary<string, string>() {  };
 
             foreach (var item in list1)
@@ -43,20 +42,14 @@ namespace ColorVision.Services.Devices.Sensor
                 if (item.Name !=null && item.Code !=null)
                     liss.Add(item.Name, item.Code);
             }
+            ComboBoxSensor.ItemsSource = liss;
 
 
-            pgCategory.ItemsSource = liss;
+            List<int> BaudRates = new() { 115200, 38400, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 57600 };
+            List<string> Serials = new() { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10" };
+            ComboBoxPort.ItemsSource = BaudRates;
+            ComboBoxSerial.ItemsSource = Serials;
 
-            IsComm.Checked += (s,e)=>
-            {
-                TextBlockPGIP.Text = "串口";
-                TextBlockPGPort.Text = "波特率";
-            };
-            IsNet.Checked += (s,e)=> 
-            {
-                TextBlockPGIP.Text = "IP地址";
-                TextBlockPGPort.Text = "端口";
-            };
 
             DataContext = Device;
             EditConfig = Device.Config.Clone();

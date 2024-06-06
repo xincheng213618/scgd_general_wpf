@@ -84,10 +84,6 @@
     <None Remove="Assets\png\PowerToy.png" />
     <None Remove="Assets\png\归档查询.png" />
     <None Remove="Assets\png\综合查询.png" />
-  </ItemGroup>  
-
-  <ItemGroup>
-    <PackageReference Include="log4net" Version="2.0.17" />
   </ItemGroup>
 
   <ItemGroup>

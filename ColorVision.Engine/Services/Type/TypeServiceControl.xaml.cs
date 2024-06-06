@@ -1,8 +1,8 @@
-﻿using ColorVision.Services.Terminal;
+﻿using ColorVision.Engine.Services.Terminal;
 using System;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Types
+namespace ColorVision.Engine.Services.Types
 {
     /// <summary>
     /// TypeServiceControl.xaml 的交互逻辑

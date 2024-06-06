@@ -1,16 +1,16 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.RC;
-using ColorVision.Services.Terminal;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Services.Terminal;
 using ColorVision.UserSpace;
 using Newtonsoft.Json;
 using System;
 using System.Windows;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Types
+namespace ColorVision.Engine.Services.Types
 {
     /// <summary>
     /// EditTerminal.xaml 的交互逻辑

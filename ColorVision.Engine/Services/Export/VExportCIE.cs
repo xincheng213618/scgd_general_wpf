@@ -7,7 +7,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 
-namespace ColorVision.Services.Export
+namespace ColorVision.Engine.Services.Export
 {
     public class VExportCIE : ViewModelBase
     {

@@ -4,7 +4,7 @@ using System;
 using System.Threading;
 using System.Windows;
 
-namespace ColorVision.Services.Export
+namespace ColorVision.Engine.Services.Export
 {
 
 

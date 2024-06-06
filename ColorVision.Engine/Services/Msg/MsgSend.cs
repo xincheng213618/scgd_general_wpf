@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace ColorVision.Services.Msg
+namespace ColorVision.Engine.Services.Msg
 {
     public class MsgSend : IMsg
     {

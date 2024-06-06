@@ -3,7 +3,7 @@ using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Services.Core
+namespace ColorVision.Engine.Services.Core
 {
     public class BaseResourceObject : ViewModelBase
     {

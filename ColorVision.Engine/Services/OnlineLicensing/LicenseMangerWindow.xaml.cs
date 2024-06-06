@@ -13,7 +13,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ColorVision.Services.OnlineLicensing
+namespace ColorVision.Engine.Services.OnlineLicensing
 {
 
     public class ExportLincense : IHotKey, IMenuItem

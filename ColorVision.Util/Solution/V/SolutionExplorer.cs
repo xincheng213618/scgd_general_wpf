@@ -11,11 +11,6 @@ using System.Windows.Controls;
 
 namespace ColorVision.Solution.V
 {
-    public class CVSolution:ViewModelBase
-    {
-       
-    }
-
 
     public class SolutionExplorer: VObject
     {

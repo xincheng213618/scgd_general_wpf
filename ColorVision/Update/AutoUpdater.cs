@@ -74,7 +74,7 @@ namespace ColorVision.Update
 
         public AutoUpdater()
         {
-            UpdateCommand = new RelayCommand((e) =>  CheckAndUpdate(false));
+            UpdateCommand = new RelayCommand( async (e) => await CheckAndUpdate(false));
         }
 
         public RelayCommand UpdateCommand { get; set; }

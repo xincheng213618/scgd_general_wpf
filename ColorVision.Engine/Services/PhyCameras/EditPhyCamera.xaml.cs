@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
-using ColorVision.Services.Dao;
-using ColorVision.Services.PhyCameras.Configs;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.PhyCameras.Configs;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
@@ -11,7 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 
 
-namespace ColorVision.Services.PhyCameras
+namespace ColorVision.Engine.Services.PhyCameras
 {
     /// <summary>
     /// EditPhyCamera.xaml 的交互逻辑

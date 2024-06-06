@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
-using ColorVision.Services.Devices.Calibration;
-using ColorVision.Services.Devices.SMU.Configs;
+using ColorVision.Engine.Services.Devices.Calibration;
+using ColorVision.Engine.Services.Devices.SMU.Configs;
 using cvColorVision;
 using SkiaSharp;
 using System;
@@ -14,7 +14,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 
 
-namespace ColorVision.Services.Devices.SMU
+namespace ColorVision.Engine.Services.Devices.SMU
 {
     /// <summary>
     /// EditSMU.xaml 的交互逻辑

@@ -11,7 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Msg
+namespace ColorVision.Engine.Services.Msg
 {
     public class HotKeyMsgList : IHotKey, IMenuItem
     {

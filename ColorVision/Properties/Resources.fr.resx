@@ -162,9 +162,6 @@
   <data name="MenuTool" xml:space="preserve">
     <value>Outil(T)</value>
   </data>
-  <data name="Sign_in" xml:space="preserve">
-    <value>Se connecter</value>
-  </data>
   <data name="MenuAbout" xml:space="preserve">
     <value>À propos de)</value>
   </data>
@@ -174,53 +171,14 @@
   <data name="MenuOptions" xml:space="preserve">
     <value>_Option</value>
   </data>
-  <data name="Account" xml:space="preserve">
-    <value>compte</value>
-  </data>
-  <data name="Password" xml:space="preserve">
-    <value>mot de passe</value>
-  </data>
-  <data name="AccountLogin" xml:space="preserve">
-    <value>Connexion au compte</value>
-  </data>
-  <data name="Sign_out" xml:space="preserve">
-    <value>quitter</value>
-  </data>
-  <data name="Create_an_account" xml:space="preserve">
-    <value>Enregistrez un</value>
-  </data>
   <data name="About" xml:space="preserve">
     <value>à propos</value>
-  </data>
-  <data name="Language" xml:space="preserve">
-    <value>langue de l'interface utilisateur</value>
-  </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>_Langue</value>
-  </data>
-  <data name="Theme" xml:space="preserve">
-    <value>thème</value>
-  </data>
-  <data name="MenuTheme" xml:space="preserve">
-    <value>Sujet (H)</value>
-  </data>
-  <data name="FillPassword" xml:space="preserve">
-    <value>Veuillez entrer le mot de passe</value>
-  </data>
-  <data name="FillAccount" xml:space="preserve">
-    <value>Veuillez saisir votre nom d'utilisateur</value>
   </data>
   <data name="TbSettingsStartBoot" xml:space="preserve">
     <value>Démarrage (peut échouer)</value>
   </data>
   <data name="WindowHidden" xml:space="preserve">
     <value>cacher</value>
-  </data>
-  <data name="WindowSingle" xml:space="preserve">
-    <value>fenêtre indépendante</value>
-  </data>
-  <data name="HotKeys" xml:space="preserve">
-    <value>touche de raccourci</value>
   </data>
   <data name="Close" xml:space="preserve">
     <value>fermeture</value>
@@ -237,83 +195,20 @@
   <data name="Restore" xml:space="preserve">
     <value>Restaurer</value>
   </data>
-  <data name="ThemeLight" xml:space="preserve">
-    <value>couleur claire</value>
-  </data>
-  <data name="ThemeDark" xml:space="preserve">
-    <value>Sombre</value>
-  </data>
-  <data name="ThemeUseSystem" xml:space="preserve">
-    <value>Suivez le système</value>
-  </data>
-  <data name="LanguageResartSign" xml:space="preserve">
-    <value>Vous devez redémarrer pour utiliser les nouveaux paramètres de langue</value>
-  </data>
   <data name="Save" xml:space="preserve">
     <value>sauvegarder</value>
   </data>
   <data name="Cancel" xml:space="preserve">
     <value>Annuler</value>
   </data>
-  <data name="Female" xml:space="preserve">
-    <value>femelle</value>
-  </data>
-  <data name="Male" xml:space="preserve">
-    <value>mâle</value>
-  </data>
   <data name="OK" xml:space="preserve">
     <value>Bien sûr</value>
-  </data>
-  <data name="Edit" xml:space="preserve">
-    <value>modifier</value>
-  </data>
-  <data name="Submit" xml:space="preserve">
-    <value>soumettre</value>
-  </data>
-  <data name="Reset" xml:space="preserve">
-    <value>réinitialiser</value>
-  </data>
-  <data name="Reseted" xml:space="preserve">
-    <value>Réinitialiser</value>
-  </data>
-  <data name="Delete" xml:space="preserve">
-    <value>supprimer</value>
-  </data>
-  <data name="Add" xml:space="preserve">
-    <value>Ajouter à</value>
-  </data>
-  <data name="TesConnection" xml:space="preserve">
-    <value>tester la connexion</value>
-  </data>
-  <data name="UserName" xml:space="preserve">
-    <value>utilisateur</value>
-  </data>
-  <data name="UserPwd" xml:space="preserve">
-    <value>mot de passe</value>
   </data>
   <data name="Settings" xml:space="preserve">
     <value>installation</value>
   </data>
-  <data name="Property" xml:space="preserve">
-    <value>Les attributs</value>
-  </data>
-  <data name="Template" xml:space="preserve">
-    <value>modèle</value>
-  </data>
   <data name="MenuTemplate" xml:space="preserve">
     <value>_Modèle</value>
-  </data>
-  <data name="Open" xml:space="preserve">
-    <value>Ouvrir</value>
-  </data>
-  <data name="Name" xml:space="preserve">
-    <value>nom</value>
-  </data>
-  <data name="Code" xml:space="preserve">
-    <value>logo</value>
-  </data>
-  <data name="ThemePink" xml:space="preserve">
-    <value>rose</value>
   </data>
   <data name="EnableDatabase" xml:space="preserve">
     <value>Activer la base de données</value>
@@ -321,17 +216,11 @@
   <data name="StartRecoverUILayout" xml:space="preserve">
     <value>Démarrer la disposition de l’interface de récupération</value>
   </data>
-  <data name="AutoSwitchSelectedView" xml:space="preserve">
-    <value>Changer automatiquement les vues sélectionnées</value>
-  </data>
   <data name="LogLevel" xml:space="preserve">
     <value>Niveau de journalisation</value>
   </data>
   <data name="SoftwareVersion" xml:space="preserve">
     <value>Une version de logiciel</value>
-  </data>
-  <data name="DisableHardwareAcceleration" xml:space="preserve">
-    <value>Désactiver l'accélération matérielle</value>
   </data>
   <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
     <value>Ouvrez le service local au démarrage du logiciel</value>
@@ -339,14 +228,8 @@
   <data name="Wizard" xml:space="preserve">
     <value>magicien</value>
   </data>
-  <data name="ClearCache" xml:space="preserve">
-    <value>vider le cache</value>
-  </data>
   <data name="Clear" xml:space="preserve">
     <value>Clair</value>
-  </data>
-  <data name="HistoryCache" xml:space="preserve">
-    <value>cache historique</value>
   </data>
   <data name="PerformanceTest" xml:space="preserve">
     <value>Test de performance</value>
@@ -369,30 +252,6 @@
   <data name="Project" xml:space="preserve">
     <value>projet</value>
   </data>
-  <data name="Refresh" xml:space="preserve">
-    <value>rafraîchir</value>
-  </data>
-  <data name="Export" xml:space="preserve">
-    <value>Exporter</value>
-  </data>
-  <data name="Apply" xml:space="preserve">
-    <value>application</value>
-  </data>
-  <data name="Import" xml:space="preserve">
-    <value>importer</value>
-  </data>
-  <data name="SaveWindowLayout" xml:space="preserve">
-    <value>Enregistrer la disposition des fenêtres</value>
-  </data>
-  <data name="ApplyWindowLayout" xml:space="preserve">
-    <value>Appliquer la disposition des fenêtres</value>
-  </data>
-  <data name="Success" xml:space="preserve">
-    <value>succès</value>
-  </data>
-  <data name="Failure" xml:space="preserve">
-    <value>échouer</value>
-  </data>
   <data name="Acquire" xml:space="preserve">
     <value>collection</value>
   </data>
@@ -414,33 +273,6 @@
   <data name="InstallCertificate" xml:space="preserve">
     <value>Installer le certificat</value>
   </data>
-  <data name="ApplicationExit" xml:space="preserve">
-    <value>Le programme se termine</value>
-  </data>
-  <data name="BasicInformation" xml:space="preserve">
-    <value>Informations de base</value>
-  </data>
-  <data name="Status" xml:space="preserve">
-    <value>État</value>
-  </data>
-  <data name="TransmitChannel" xml:space="preserve">
-    <value>envoyer le canal</value>
-  </data>
-  <data name="CopyConfigurationFile" xml:space="preserve">
-    <value>Copier le fichier de configuration</value>
-  </data>
-  <data name="ClearData" xml:space="preserve">
-    <value>Effacer les données</value>
-  </data>
-  <data name="ImportLicense" xml:space="preserve">
-    <value>Licence d'importation</value>
-  </data>
-  <data name="LicenseManagement" xml:space="preserve">
-    <value>Gestion des licences</value>
-  </data>
-  <data name="CopySerialNumber" xml:space="preserve">
-    <value>Copier le numéro de série</value>
-  </data>
   <data name="SerialNumber" xml:space="preserve">
     <value>numéro de série</value>
   </data>
@@ -459,26 +291,11 @@
   <data name="ErrorOccurred" xml:space="preserve">
     <value>Une erreur s'est produite</value>
   </data>
-  <data name="New" xml:space="preserve">
-    <value>Nouveau</value>
-  </data>
-  <data name="TemplateName" xml:space="preserve">
-    <value>Nom du modèle</value>
-  </data>
-  <data name="OutputView" xml:space="preserve">
-    <value>Vue de sortie</value>
-  </data>
   <data name="ConnectionName" xml:space="preserve">
     <value>nom de connexion</value>
   </data>
-  <data name="UnderDevelopment" xml:space="preserve">
-    <value>En développement</value>
-  </data>
   <data name="ChangeLog" xml:space="preserve">
     <value>Journal des modifications</value>
-  </data>
-  <data name="SerialNumber1" xml:space="preserve">
-    <value>numéro de série</value>
   </data>
   <data name="ColorVisionUpdater" xml:space="preserve">
     <value>Programme de mise à jour ColorVision</value>
@@ -498,47 +315,11 @@
   <data name="SetupWizard" xml:space="preserve">
     <value>Assistant de configuration</value>
   </data>
-  <data name="MenuFlow" xml:space="preserve">
-    <value>F_low</value>
-  </data>
-  <data name="Create" xml:space="preserve">
-    <value>créer</value>
-  </data>
   <data name="Upgrade" xml:space="preserve">
     <value>mise à niveau</value>
   </data>
-  <data name="Rollback" xml:space="preserve">
-    <value>retourner</value>
-  </data>
-  <data name="Manager" xml:space="preserve">
-    <value>gérer</value>
-  </data>
-  <data name="Send" xml:space="preserve">
-    <value>envoyer</value>
-  </data>
-  <data name="Unsubscribe" xml:space="preserve">
-    <value>Se désabonner</value>
-  </data>
-  <data name="Filter" xml:space="preserve">
-    <value>Filtre</value>
-  </data>
-  <data name="Gain" xml:space="preserve">
-    <value>Gagner</value>
-  </data>
-  <data name="Capture" xml:space="preserve">
-    <value>Capturer</value>
-  </data>
   <data name="Sended" xml:space="preserve">
     <value>Envoyé</value>
-  </data>
-  <data name="Timeout" xml:space="preserve">
-    <value>Temps mort</value>
-  </data>
-  <data name="Topic" xml:space="preserve">
-    <value>sujet</value>
-  </data>
-  <data name="Upload" xml:space="preserve">
-    <value>télécharger</value>
   </data>
   <data name="Local" xml:space="preserve">
     <value>locale</value>
@@ -546,59 +327,11 @@
   <data name="MenuRename" xml:space="preserve">
     <value>Renommer(M)</value>
   </data>
-  <data name="MenuLogin" xml:space="preserve">
-    <value>Compte de connexion (_L)</value>
-  </data>
   <data name="Alias" xml:space="preserve">
     <value>Alias</value>
   </data>
-  <data name="Layers" xml:space="preserve">
-    <value>Couches</value>
-  </data>
-  <data name="Inquire" xml:space="preserve">
-    <value>Renseigner</value>
-  </data>
-  <data name="Search" xml:space="preserve">
-    <value>recherche</value>
-  </data>
-  <data name="QuickPreview" xml:space="preserve">
-    <value>aperçu rapide</value>
-  </data>
-  <data name="Exchange" xml:space="preserve">
-    <value>échange</value>
-  </data>
-  <data name="ImageFile" xml:space="preserve">
-    <value>Fichiers images</value>
-  </data>
-  <data name="File" xml:space="preserve">
-    <value>document</value>
-  </data>
-  <data name="StartTime" xml:space="preserve">
-    <value>Heure de départ</value>
-  </data>
-  <data name="Parameter" xml:space="preserve">
-    <value>paramètre</value>
-  </data>
-  <data name="Result" xml:space="preserve">
-    <value>résultat</value>
-  </data>
-  <data name="Info" xml:space="preserve">
-    <value>information</value>
-  </data>
   <data name="Duration" xml:space="preserve">
     <value>coût du temps</value>
-  </data>
-  <data name="ImageInfo" xml:space="preserve">
-    <value>Informations sur les images</value>
-  </data>
-  <data name="AdvanceSearch" xml:space="preserve">
-    <value>Recherche Avancée</value>
-  </data>
-  <data name="Exposure" xml:space="preserve">
-    <value>exposition</value>
-  </data>
-  <data name="ImageSource" xml:space="preserve">
-    <value>source d'images</value>
   </data>
   <data name="UpdateSpeed" xml:space="preserve">
     <value>Vitesse de mise à jour</value>
@@ -608,5 +341,11 @@
   </data>
   <data name="ServiceAgreement" xml:space="preserve">
     <value>Contrat de service</value>
+  </data>
+  <data name="ApplicationExit" xml:space="preserve">
+    <value>Le programme se termine</value>
+  </data>
+  <data name="Rollback" xml:space="preserve">
+    <value>retourner</value>
   </data>
 </root>

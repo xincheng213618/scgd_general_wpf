@@ -19,15 +19,13 @@ namespace ColorVision.Engine.Templates
 
         public TemplateControl()
         {
-            MySqlControl.GetInstance().MySqlConnectChanged += (s, e) =>
-            {
-                Init();
-            };
             Init();
+            MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => Init();
         }
 
         private static async void Init()
         {
+            if (!MySqlControl.GetInstance().IsConnect) return;
             await Task.Delay(100);
             foreach (var type in Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(IITemplateLoad).IsAssignableFrom(t) && !t.IsAbstract))
             {

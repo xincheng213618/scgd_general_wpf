@@ -7,7 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Services.Flow
+namespace ColorVision.Engine.Services.Flow
 {
     public class FlowFile : ViewModelBase, IFile
     {

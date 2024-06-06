@@ -5,7 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Devices.Camera.Video
+namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
     /// <summary>
     /// MySqlConnect.xaml 的交互逻辑

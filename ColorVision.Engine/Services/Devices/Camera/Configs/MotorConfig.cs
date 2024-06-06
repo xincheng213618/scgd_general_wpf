@@ -2,7 +2,7 @@
 using cvColorVision;
 using ColorVision.Common.MVVM;
 
-namespace ColorVision.Services.Devices.Camera.Configs
+namespace ColorVision.Engine.Services.Devices.Camera.Configs
 {
     public class MotorConfig : ViewModelBase
     {

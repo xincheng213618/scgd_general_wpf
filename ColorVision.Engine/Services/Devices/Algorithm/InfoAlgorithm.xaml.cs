@@ -3,7 +3,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.Algorithm
+namespace ColorVision.Engine.Services.Devices.Algorithm
 {
     /// <summary>
     /// InfoAlgorithm.xaml 的交互逻辑s

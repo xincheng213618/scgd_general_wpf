@@ -1,13 +1,12 @@
 ﻿#pragma warning disable CS8602,CA1707
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Templates;
+using ColorVision.Engine.Services;
+using ColorVision.Engine.Services.DAO;
+using ColorVision.Engine.Services.Devices.Algorithm.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Templates.POI.Validate;
-using ColorVision.Services;
-using ColorVision.Services.DAO;
-using ColorVision.Services.Devices.Algorithm.Dao;
-using ColorVision.Services.Devices.Algorithm.Views;
-using ColorVision.Services.Flow;
 using CVCommCore;
 using FlowEngineLib;
 using log4net;
@@ -17,7 +16,6 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.IO.Ports;
-using System.Text;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -205,7 +203,7 @@ namespace ColorVision.Projects.ProjectHeyuan
 
             this.DataContext = HYMesManager.GetInstance();
         }
-        private Services.Flow.FlowControl flowControl;
+        private Engine.Services.Flow.FlowControl flowControl;
 
         private IPendingHandler handler;
 
@@ -309,6 +307,47 @@ namespace ColorVision.Projects.ProjectHeyuan
                                     HYMesManager.GetInstance().Results = Results;
                                     HYMesManager.GetInstance().UploadNG(string.Join(",", ngstring));
                                 }
+
+                                if (Directory.Exists(HYMesManager.Config.DataPath))
+                                {
+                                    string FilePath = HYMesManager.Config.DataPath + "\\" + DateTime.Now.ToString("yyyy-MM-dd") + "_" + HYMesManager.Config.DeviceId + "_" + Environment.MachineName + ".csv";
+                                    CsvHandler csvHandler = new CsvHandler(FilePath);
+
+                                    var record = new DataRecord
+                                    {
+                                        Model = HYMesManager.Config.TestName,
+                                        ProductID = HYMesManager.GetInstance().SN,
+                                        Date = DateTime.Now.Date,
+                                        Time = DateTime.Now.TimeOfDay,
+                                        White_x = 0.3127,
+                                        White_y = 0.3290,
+                                        White_lv = 100.0,
+                                        White_wl = 550.0,
+                                        White_Result = "Pass",
+                                        Red_x = 0.6400,
+                                        Red_y = 0.3300,
+                                        Red_lv = 50.0,
+                                        Red_wl = 620.0,
+                                        Red_Result = "Pass",
+                                        Orange_x = 0.5800,
+                                        Orange_y = 0.4100,
+                                        Orange_lv = 40.0,
+                                        Orange_wl = 600.0,
+                                        Orange_Result = "Pass",
+                                        Blue_x = 0.1500,
+                                        Blue_y = 0.0600,
+                                        Blue_lv = 30.0,
+                                        Blue_wl = 470.0,
+                                        Blue_Result = "Pass",
+                                        Final_Result = "Pass"
+                                    };
+                                    csvHandler.SaveRecord(record);
+                                    // 清空产品编号
+                                    TextBoxSn.Text = string.Empty;
+
+                                    // 将焦点移动到产品编号输入框
+                                    TextBoxSn.Focus();
+                                }
                                 log.Debug("mes 已经上传");
                             }
                             else
@@ -351,55 +390,12 @@ namespace ColorVision.Projects.ProjectHeyuan
                 return;
             }
 
-            if (Directory.Exists(HYMesManager.Config.DataPath))
-            {
-                string FilePath = HYMesManager.Config.DataPath + "\\" + DateTime.Now.ToString("yyyy-MM-dd") + "_" + HYMesManager.Config.DeviceId + "_" + Environment.MachineName +".csv";
-                CsvHandler csvHandler = new CsvHandler(FilePath);
-
-                var record = new DataRecord
-                {
-                    Model = HYMesManager.Config.TestName,
-                    ProductID = HYMesManager.GetInstance().SN,
-                    Date = DateTime.Now.Date,
-                    Time = DateTime.Now.TimeOfDay,
-                    White_x = 0.3127,
-                    White_y = 0.3290,
-                    White_lv = 100.0,
-                    White_wl = 550.0,
-                    White_Result = "Pass",
-                    Red_x = 0.6400,
-                    Red_y = 0.3300,
-                    Red_lv = 50.0,
-                    Red_wl = 620.0,
-                    Red_Result = "Pass",
-                    Orange_x = 0.5800,
-                    Orange_y = 0.4100,
-                    Orange_lv = 40.0,
-                    Orange_wl = 600.0,
-                    Orange_Result = "Pass",
-                    Blue_x = 0.1500,
-                    Blue_y = 0.0600,
-                    Blue_lv = 30.0,
-                    Blue_wl = 470.0,
-                    Blue_Result = "Pass",
-                    Final_Result = "Pass"
-                };
-                csvHandler.SaveRecord(record);
-                // 清空产品编号
-                TextBoxSn.Text = string.Empty;
-
-                // 将焦点移动到产品编号输入框
-                TextBoxSn.Focus();
-            }
-
-
-
             if (FlowTemplate.SelectedValue is FlowParam flowParam)
             {
                 string startNode = flowEngine.GetStartNodeName();
                 if (!string.IsNullOrWhiteSpace(startNode))
                 {
-                    flowControl ??= new Services.Flow.FlowControl(MQTTControl.GetInstance(), flowEngine);
+                    flowControl ??= new Engine.Services.Flow.FlowControl(MQTTControl.GetInstance(), flowEngine);
 
                     handler = PendingBox.Show(Application.Current.MainWindow, "TTL:" + "0", "流程运行", true);
 

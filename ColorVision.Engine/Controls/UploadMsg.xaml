@@ -7,14 +7,57 @@
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:IUploadMsg}"
         Title="UploadMsg" Height="450" Width="800" Initialized="Window_Initialized">
+    <Window.Resources>
+        <local:ColorConverter x:Key="ColorConverter"/>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <TextBlock Text="{Binding Msg}"  Margin="5" FontSize="18" HorizontalAlignment="Center"/>
-        <ListView Grid.Row="1" ItemsSource="{Binding UploadList}" Background="Transparent">
-
+        <TextBlock Grid.Row="1" Text="{Binding Msg}"  Margin="5" FontSize="17" HorizontalAlignment="Center"/>
+        <ListView Grid.Row="0" ItemsSource="{Binding UploadList}" Background="Transparent" Padding="0">
+            <ListView.Resources >
+                <ContextMenu x:Key="ContextMenuItem">
+                </ContextMenu>
+            </ListView.Resources>
+            <ListView.ItemContainerStyle>
+                <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
+                    <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                </Style>
+            </ListView.ItemContainerStyle>
+            <ListView.View >
+                <GridView >
+                    <GridView.ColumnHeaderContainerStyle>
+                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                            <Setter Property="Visibility" Value="Visible"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                        </Style>
+                    </GridView.ColumnHeaderContainerStyle>
+                    <GridViewColumn  Header="文件" Width="400">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate DataType="{x:Type local:FileUploadInfo}">
+                                <TextBlock Text="{Binding FileName}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="文件大小" Width="300">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate DataType="{x:Type local:FileUploadInfo}">
+                                <TextBlock Text="{Binding FileSize}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                    <GridViewColumn  Header="结果" Width="100">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate DataType="{x:Type local:FileUploadInfo}">
+                                <TextBlock Text="{Binding UploadStatus}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
         </ListView>
     </Grid>
 </Window>

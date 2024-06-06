@@ -1,7 +1,7 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Draw;
 using ColorVision.Net;
-using ColorVision.Services.Devices.Algorithm.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Dao;
 using ColorVision.Common.Utilities;
 using log4net;
 using MQTTMessageLib.Algorithm;
@@ -22,7 +22,7 @@ using ColorVision.UI.Sorts;
 using CVCommCore.CVAlgorithm;
 using ColorVision.UI.Views;
 
-namespace ColorVision.Services.Devices.Algorithm.Views
+namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑

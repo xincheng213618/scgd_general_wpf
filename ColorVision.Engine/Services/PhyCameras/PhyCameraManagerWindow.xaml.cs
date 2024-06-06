@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 
-namespace ColorVision.Services.PhyCameras
+namespace ColorVision.Engine.Services.PhyCameras
 {
     public sealed class NameStringConverter : IValueConverter
     {

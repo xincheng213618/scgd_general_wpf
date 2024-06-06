@@ -1,12 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Dao;
-using ColorVision.Services.PhyCameras.Templates;
-using ColorVision.Services.Types;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.PhyCameras.Templates;
+using ColorVision.Engine.Services.Types;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Windows;
 
-namespace ColorVision.Services.Core
+namespace ColorVision.Engine.Services.Core
 {
     public class ConfigGroup :ViewModelBase
     {

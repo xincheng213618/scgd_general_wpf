@@ -3,7 +3,7 @@ using System;
 using System.Windows;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Terminal
+namespace ColorVision.Engine.Services.Terminal
 {
     /// <summary>
     /// EditTerminal.xaml 的交互逻辑

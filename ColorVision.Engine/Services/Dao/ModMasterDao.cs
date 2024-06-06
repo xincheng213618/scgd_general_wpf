@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 
-namespace ColorVision.Services.Dao
+namespace ColorVision.Engine.Services.Dao
 {
     public partial class ModMasterType
     {
@@ -23,7 +23,6 @@ namespace ColorVision.Services.Dao
         public const string BuildPOI = "BuildPOI";
         public const string SpectrumResource = "SpectrumResource";
         public const string CameraExposure = "camera_exp_time";
-        public const string SensorHeYuan = "Sensor.HeYuan";
 
     }
 

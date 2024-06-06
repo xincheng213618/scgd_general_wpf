@@ -1,11 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Util.Interfaces;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Terminal;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Terminal;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.Camera
+namespace ColorVision.Engine.Services.Devices.Camera
 {
     public class TerminalCamera : TerminalService
     {

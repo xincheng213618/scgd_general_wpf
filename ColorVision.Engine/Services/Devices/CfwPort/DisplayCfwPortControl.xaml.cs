@@ -6,7 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Devices.CfwPort
+namespace ColorVision.Engine.Services.Devices.CfwPort
 {
     /// <summary>
     /// DisplaySMUControl.xaml 的交互逻辑

@@ -1,7 +1,7 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using System.Data;
 
-namespace ColorVision.Services.Devices.Algorithm.Dao
+namespace ColorVision.Engine.Services.Devices.Algorithm.Dao
 {
     public class POIPointResultModel : PKModel
     {

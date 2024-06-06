@@ -6,7 +6,7 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.Validate;
 using ColorVision.Net;
-using ColorVision.Services.Dao;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Util.Draw.Rectangle;
 using cvColorVision;
 using cvColorVision.Util;
@@ -30,7 +30,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
-namespace ColorVision.Services.Templates.POI
+namespace ColorVision.Engine.Services.Templates.POI
 {
     public partial class WindowFocusPoint : Window
     {

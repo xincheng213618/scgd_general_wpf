@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace ColorVision.Services.RC
+namespace ColorVision.Engine.Services.RC
 {
     public delegate void UseRcServicelHandler(bool IsUseRcServicel);
 

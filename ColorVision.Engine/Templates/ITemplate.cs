@@ -3,7 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI.Extension;
 using ColorVision.Engine.MySql;
-using ColorVision.Services.Dao;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.UserSpace;
 using Newtonsoft.Json;
 using System;
@@ -15,6 +15,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.Engine.Services.SysDictionary;
 
 namespace ColorVision.Engine.Templates
 {
@@ -182,19 +183,22 @@ namespace ColorVision.Engine.Templates
 
             foreach (var index in SaveIndex)
             {
-                var item = TemplateParams[index];
-                var modMasterModel = ModMasterDao.Instance.GetById(item.Value.Id);
-
-                if (modMasterModel?.Pcode != null)
+                if(index >-1 && index < TemplateParams.Count)
                 {
-                    modMasterModel.Name = item.Value.Name;
-                    var modMasterDao = new ModMasterDao(modMasterModel.Pcode);
-                    modMasterDao.Save(modMasterModel);
-                }
+                    var item = TemplateParams[index];
+                    var modMasterModel = ModMasterDao.Instance.GetById(item.Value.Id);
 
-                var details = new List<ModDetailModel>();
-                item.Value.GetDetail(details);
-                ModDetailDao.Instance.UpdateByPid(item.Value.Id, details);
+                    if (modMasterModel?.Pcode != null)
+                    {
+                        modMasterModel.Name = item.Value.Name;
+                        var modMasterDao = new ModMasterDao(modMasterModel.Pcode);
+                        modMasterDao.Save(modMasterModel);
+                    }
+
+                    var details = new List<ModDetailModel>();
+                    item.Value.GetDetail(details);
+                    ModDetailDao.Instance.UpdateByPid(item.Value.Id, details);
+                }
             }
         }
 

@@ -1,16 +1,16 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Util.Interfaces;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Calibration.Views;
-using ColorVision.Services.PhyCameras;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Calibration.Views;
+using ColorVision.Engine.Services.PhyCameras;
 using log4net;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.Calibration
+namespace ColorVision.Engine.Services.Devices.Calibration
 {
     public class DeviceCalibration : DeviceService<ConfigCalibration>
     {

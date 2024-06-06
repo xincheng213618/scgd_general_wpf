@@ -7,7 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Devices.Motor
+namespace ColorVision.Engine.Services.Devices.Motor
 {
     /// <summary>
     /// DisplaySMUControl.xaml 的交互逻辑

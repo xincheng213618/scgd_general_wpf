@@ -1,11 +1,11 @@
 ﻿#pragma warning disable CS8604,CS8629
 using ColorVision.UI.Sorts;
 using ColorVision.Common.MVVM;
-using ColorVision.Services.Dao;
+using ColorVision.Engine.Services.Dao;
 using MQTTMessageLib.Camera;
 using System;
 
-namespace ColorVision.Services.Devices.Calibration.Views
+namespace ColorVision.Engine.Services.Devices.Calibration.Views
 {
     public delegate void ImgCurSelectionChanged1(ViewResultCalibration data);
 

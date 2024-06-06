@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
 
-namespace ColorVision.Services.RC
+namespace ColorVision.Engine.Services.RC
 {
 
     public class RCServiceConfig : ViewModelBase,IConfig

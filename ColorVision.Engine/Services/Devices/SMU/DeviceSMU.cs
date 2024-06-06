@@ -1,9 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera.Views;
-using ColorVision.Services.Devices.SMU.Configs;
-using ColorVision.Services.Devices.SMU.Views;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Camera.Views;
+using ColorVision.Engine.Services.Devices.SMU.Configs;
+using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Themes;
 using ColorVision.Common.Utilities;
 using System.Windows;
@@ -11,7 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using ColorVision.Util.Interfaces;
 
-namespace ColorVision.Services.Devices.SMU
+namespace ColorVision.Engine.Services.Devices.SMU
 {
     public class DeviceSMU : DeviceService<ConfigSMU>
     {

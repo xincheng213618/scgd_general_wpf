@@ -2,7 +2,7 @@
 using System;
 using System.Data;
 
-namespace ColorVision.Services.Dao
+namespace ColorVision.Engine.Services.Dao
 {
     public class SysDeviceModel : PKModel
     {

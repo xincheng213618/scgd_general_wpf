@@ -2,11 +2,11 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
-using ColorVision.Services.Core;
-using ColorVision.Services.Devices;
-using ColorVision.Services.Msg;
-using ColorVision.Services.Terminal;
-using ColorVision.Services.Types;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Services.Terminal;
+using ColorVision.Engine.Services.Types;
 using CVCommCore;
 using log4net;
 using MQTTMessageLib;
@@ -24,7 +24,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.Services.RC
+namespace ColorVision.Engine.Services.RC
 {
     public class RCServiceStatusChangedEvent
     {

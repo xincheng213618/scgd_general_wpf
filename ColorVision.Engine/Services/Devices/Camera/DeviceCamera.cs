@@ -1,18 +1,18 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Util.Interfaces;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera.Configs;
-using ColorVision.Services.Devices.Camera.Views;
-using ColorVision.Services.Msg;
-using ColorVision.Services.PhyCameras;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Devices.Camera.Views;
+using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Services.PhyCameras;
 using log4net;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.Camera
+namespace ColorVision.Engine.Services.Devices.Camera
 {
     public class DeviceCamera : DeviceService<ConfigCamera>
     {

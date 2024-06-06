@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.Extension;
-using ColorVision.Services.Core;
+using ColorVision.Engine.Services.Core;
 using CVCommCore;
 using System;
 using System.Collections.Generic;
@@ -7,7 +7,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 
-namespace ColorVision.Services.Devices
+namespace ColorVision.Engine.Services.Devices
 {
     public class MQTTDeviceService<T> : MQTTServiceBase where T : BaseConfig
     {

@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 
-namespace ColorVision.Services.ShowPage.Dao
+namespace ColorVision.Engine.Services.ShowPage.Dao
 {
     public class ArchivedDetailModel : PKModel
     {

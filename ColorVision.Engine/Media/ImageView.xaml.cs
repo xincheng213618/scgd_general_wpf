@@ -5,7 +5,7 @@ using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
 using ColorVision.Engine;
 using ColorVision.Net;
-using ColorVision.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.UI.Views;
 using ColorVision.Util.Draw.Special;
 using cvColorVision;

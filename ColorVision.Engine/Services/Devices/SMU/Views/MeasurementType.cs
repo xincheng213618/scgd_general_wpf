@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel;
 
-namespace ColorVision.Services.Devices.SMU.Views
+namespace ColorVision.Engine.Services.Devices.SMU.Views
 {
     public enum MeasurementType
     {

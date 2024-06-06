@@ -3,7 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using System.Windows;
 
-namespace ColorVision.Services.RC
+namespace ColorVision.Engine.Services.RC
 {
     public class RCWizardStep : IWizardStep
     {

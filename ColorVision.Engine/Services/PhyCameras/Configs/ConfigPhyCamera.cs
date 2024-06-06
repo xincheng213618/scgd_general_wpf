@@ -1,11 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.PhyCameras.Configs;
-using ColorVision.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Devices.Camera.Configs;
 using cvColorVision;
 using Newtonsoft.Json;
 using System;
 
-namespace ColorVision.Services.PhyCameras.Configs
+namespace ColorVision.Engine.Services.PhyCameras.Configs
 {
     /// <summary>
     /// 相机配置

@@ -2,7 +2,7 @@
 using cvColorVision;
 using System.Collections.Generic;
 
-namespace ColorVision.Services.PhyCameras.Templates
+namespace ColorVision.Engine.Services.PhyCameras.Templates
 {
     public class ZipCalibrationGroup : ViewModelBase
     {

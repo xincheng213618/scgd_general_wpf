@@ -1,7 +1,7 @@
-﻿using ColorVision.Services.Devices.Camera.Configs;
-using ColorVision.Services.Core;
+﻿using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Core;
 
-namespace ColorVision.Services.Devices.Algorithm
+namespace ColorVision.Engine.Services.Devices.Algorithm
 {
     public class ConfigAlgorithm : DeviceServiceConfig, IServiceConfig
     {

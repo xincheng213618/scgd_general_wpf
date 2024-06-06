@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.MQTT;
-using ColorVision.Services.Msg;
-using ColorVision.Services.RC;
+using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Services.RC;
 using CVCommCore;
 using log4net;
 using MQTTMessageLib;
@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
 
-namespace ColorVision.Services.Core
+namespace ColorVision.Engine.Services.Core
 {
     public class MQTTServiceBase : ViewModelBase, IHeartbeat, IServiceConfig, IDisposable
     {
@@ -137,7 +137,7 @@ namespace ColorVision.Services.Core
         {
             TimeSpan sp = DateTime.Now - LastAliveTime;
             //这里其实有问题,但是返回信号并不标准，只能按照这种写法
-            long overTime = HeartbeatTime + HeartbeatTime / 2;
+            long overTime = HeartbeatTime + HeartbeatTime / 2 +1 ;
             if (sp > TimeSpan.FromMilliseconds(overTime))
             {
                 DisConnected?.Invoke(sender, new EventArgs());

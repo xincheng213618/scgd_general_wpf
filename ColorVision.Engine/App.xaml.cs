@@ -1,6 +1,6 @@
 ﻿using ColorVision.Engine.MQTT;
 using ColorVision.Engine.MySql;
-using ColorVision.Services;
+using ColorVision.Engine.Services;
 using ColorVision.Themes;
 using ColorVision.UI.Languages;
 using ColorVision.UI;
@@ -9,7 +9,7 @@ using System.Data;
 using System.Threading.Tasks;
 using System.Threading;
 using System.Windows;
-using ColorVision.Services.RC;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 
 namespace ColorVision.Engine
@@ -34,9 +34,6 @@ namespace ColorVision.Engine
             Task.Run(() => MQTTControl.GetInstance().Connect());
             ServiceManager.GetInstance().GenDeviceDisplayControl();
             TemplateControl.GetInstance();
-
-
-
         }
     }
 

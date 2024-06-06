@@ -1,5 +1,5 @@
 ﻿#pragma warning disable CA1708,CS8604
-using ColorVision.Services.Devices.Algorithm.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Dao;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
 using System;
@@ -10,7 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace ColorVision.Services.Devices.Algorithm.Views
+namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
     public class PoiResultCIExyuvData : PoiResultData
     {

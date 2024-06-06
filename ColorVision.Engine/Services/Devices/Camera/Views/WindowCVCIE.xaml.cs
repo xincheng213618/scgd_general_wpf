@@ -1,4 +1,4 @@
-﻿using ColorVision.Services.Devices.Algorithm.Views;
+﻿using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.Generic;
@@ -15,7 +15,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace ColorVision.Services.Devices.Camera.Views
+namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
     /// <summary>
     /// WindowCVCIE.xaml 的交互逻辑

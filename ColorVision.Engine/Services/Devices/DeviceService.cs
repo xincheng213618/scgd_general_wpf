@@ -3,10 +3,10 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI.Extension;
 using ColorVision.Util.Interfaces;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.RC;
-using ColorVision.Services.Types;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
 using ColorVision.UI.Views;
 using Newtonsoft.Json;
@@ -16,7 +16,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Services.Devices
+namespace ColorVision.Engine.Services.Devices
 {
 
     public class DeviceService : BaseResourceObject, IDisposable, ITreeViewItem,IIcon

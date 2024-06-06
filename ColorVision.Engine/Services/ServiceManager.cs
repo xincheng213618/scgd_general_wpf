@@ -1,24 +1,25 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.DAO;
-using ColorVision.Services.Devices;
-using ColorVision.Services.Devices.Algorithm;
-using ColorVision.Services.Devices.Calibration;
-using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.Devices.CfwPort;
-using ColorVision.Services.Devices.FileServer;
-using ColorVision.Services.Devices.Motor;
-using ColorVision.Services.Devices.PG;
-using ColorVision.Services.Devices.Sensor;
-using ColorVision.Services.Devices.SMU;
-using ColorVision.Services.Devices.Spectrum;
-using ColorVision.Services.Flow;
-using ColorVision.Services.PhyCameras;
-using ColorVision.Services.Terminal;
-using ColorVision.Services.Types;
+using ColorVision.Engine.Services.SysDictionary;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.DAO;
+using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Engine.Services.Devices.Calibration;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.CfwPort;
+using ColorVision.Engine.Services.Devices.FileServer;
+using ColorVision.Engine.Services.Devices.Motor;
+using ColorVision.Engine.Services.Devices.PG;
+using ColorVision.Engine.Services.Devices.Sensor;
+using ColorVision.Engine.Services.Devices.SMU;
+using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.Flow;
+using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.Terminal;
+using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
 using ColorVision.UserSpace;
 using FlowEngineLib;
@@ -30,7 +31,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.Services
+namespace ColorVision.Engine.Services
 {
 
     public class ServiceInitializer : IInitializer

@@ -7,7 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Devices.PG
+namespace ColorVision.Engine.Services.Devices.PG
 {
     /// <summary>
     /// DisplayPGControl.xaml 的交互逻辑

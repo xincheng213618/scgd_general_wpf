@@ -4,15 +4,15 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Net;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Export;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Export;
 using ColorVision.UI.Sorts;
 using MQTTMessageLib.Camera;
 using System;
 using System.IO;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.Camera.Views
+namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
     public delegate void ImgCurSelectionChanged(ViewResultCamera data);
 

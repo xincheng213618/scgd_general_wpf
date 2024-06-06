@@ -1,6 +1,6 @@
 ﻿using ColorVision.UI.Views;
 
-namespace ColorVision.Services.Flow
+namespace ColorVision.Engine.Services.Flow
 {
     public interface IFlowView:IView
     {

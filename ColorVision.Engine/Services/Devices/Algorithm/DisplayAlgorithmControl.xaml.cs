@@ -4,13 +4,13 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Net;
-using ColorVision.Services.Devices.Algorithm.Dao;
-using ColorVision.Services.Devices.Algorithm.Templates;
-using ColorVision.Services.Devices.Algorithm.Views;
-using ColorVision.Services.Devices.Calibration;
-using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.Msg;
-using ColorVision.Services.Templates;
+using ColorVision.Engine.Services.Devices.Algorithm.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.Devices.Calibration;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Services.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
@@ -26,7 +26,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Devices.Algorithm
+namespace ColorVision.Engine.Services.Devices.Algorithm
 {
     /// <summary>
     /// DisplayAlgorithmControl.xaml 的交互逻辑
@@ -602,13 +602,11 @@ namespace ColorVision.Services.Devices.Algorithm
             }
         }
 
-        TemplateControl TemplateControl { get; set; }
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
             if (sender is Control button)
             {
-                TemplateControl= TemplateControl.GetInstance();
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
                     MessageBox.Show(Application.Current.MainWindow, "数据库连接失败，请先连接数据库在操作", "ColorVision");

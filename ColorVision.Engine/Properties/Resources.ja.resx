@@ -129,9 +129,6 @@
   <data name="WorkflowEngine_F" xml:space="preserve">
     <value>プロセスエンジン(F)</value>
   </data>
-  <data name="Wizard" xml:space="preserve">
-    <value>ウィザード</value>
-  </data>
   <data name="WindowSingle" xml:space="preserve">
     <value>独立したウィンドウ</value>
   </data>
@@ -159,15 +156,6 @@
   <data name="Upload" xml:space="preserve">
     <value>アップロード</value>
   </data>
-  <data name="Upgrade" xml:space="preserve">
-    <value>アップグレード</value>
-  </data>
-  <data name="UpdateSpeed" xml:space="preserve">
-    <value>更新速度</value>
-  </data>
-  <data name="Update" xml:space="preserve">
-    <value>更新する</value>
-  </data>
   <data name="Unsubscribe" xml:space="preserve">
     <value>購読を解除する</value>
   </data>
@@ -188,21 +176,6 @@
   </data>
   <data name="TimeLeft" xml:space="preserve">
     <value>残り時間：</value>
-  </data>
-  <data name="ThemeUseSystem" xml:space="preserve">
-    <value>システムのテーマを使用する</value>
-  </data>
-  <data name="ThemePink" xml:space="preserve">
-    <value>ピンク</value>
-  </data>
-  <data name="ThemeLight" xml:space="preserve">
-    <value>ライトテーマ</value>
-  </data>
-  <data name="ThemeDark" xml:space="preserve">
-    <value>ダークカラー</value>
-  </data>
-  <data name="Theme" xml:space="preserve">
-    <value>テーマ</value>
   </data>
   <data name="TesConnection" xml:space="preserve">
     <value>テスト接続</value>
@@ -240,17 +213,11 @@
   <data name="StartTime" xml:space="preserve">
     <value>開始時間</value>
   </data>
-  <data name="StartRecoverUILayout" xml:space="preserve">
-    <value>回復インターフェイスのレイアウトを開始します</value>
-  </data>
   <data name="StartingService" xml:space="preserve">
     <value>サービス開始</value>
   </data>
   <data name="SpectrometerLog" xml:space="preserve">
     <value>分光計のログ</value>
-  </data>
-  <data name="SoftwareVersion" xml:space="preserve">
-    <value>ソフトウェアバージョン</value>
   </data>
   <data name="Size" xml:space="preserve">
     <value>サイズ</value>
@@ -269,12 +236,6 @@
   </data>
   <data name="Shape" xml:space="preserve">
     <value>形</value>
-  </data>
-  <data name="SetupWizard" xml:space="preserve">
-    <value>構成ウィザード</value>
-  </data>
-  <data name="Settings" xml:space="preserve">
-    <value>設定</value>
   </data>
   <data name="ServiceName" xml:space="preserve">
     <value>サービス名</value>
@@ -315,12 +276,6 @@
   <data name="Save" xml:space="preserve">
     <value>保存</value>
   </data>
-  <data name="RunAsAdmin" xml:space="preserve">
-    <value>管理者として実行</value>
-  </data>
-  <data name="Rollback" xml:space="preserve">
-    <value>戻る</value>
-  </data>
   <data name="Result" xml:space="preserve">
     <value>結果</value>
   </data>
@@ -354,15 +309,6 @@
   <data name="Property" xml:space="preserve">
     <value>属性</value>
   </data>
-  <data name="ProjectSettings" xml:space="preserve">
-    <value>プロジェクト設定</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>プロジェクト名</value>
-  </data>
-  <data name="Project" xml:space="preserve">
-    <value>プロジェクト</value>
-  </data>
   <data name="Position" xml:space="preserve">
     <value>位置</value>
   </data>
@@ -375,9 +321,6 @@
   <data name="PhysicalCameraManager" xml:space="preserve">
     <value>物理的なカメラの管理</value>
   </data>
-  <data name="PerformanceTest" xml:space="preserve">
-    <value>性能試験</value>
-  </data>
   <data name="Password" xml:space="preserve">
     <value>パスワード</value>
   </data>
@@ -386,12 +329,6 @@
   </data>
   <data name="OutputView" xml:space="preserve">
     <value>出力ビュー</value>
-  </data>
-  <data name="OpenSolution" xml:space="preserve">
-    <value>プロジェクトを開く</value>
-  </data>
-  <data name="OpenLocalProjectOrFile" xml:space="preserve">
-    <value>ローカルプロジェクトまたはファイルを開きます</value>
   </data>
   <data name="OpenItem" xml:space="preserve">
     <value>プロジェクトを開く</value>
@@ -402,20 +339,8 @@
   <data name="OK" xml:space="preserve">
     <value>OK</value>
   </data>
-  <data name="NotRunAsAdmin" xml:space="preserve">
-    <value>非管理者として実行する</value>
-  </data>
   <data name="NoRelatedItemsFound" xml:space="preserve">
     <value>関連商品は見つかりませんでした</value>
-  </data>
-  <data name="NewVersionFound" xml:space="preserve">
-    <value>新しいバージョンが見つかりました</value>
-  </data>
-  <data name="NewSolution" xml:space="preserve">
-    <value>新築</value>
-  </data>
-  <data name="NewProjectFormat" xml:space="preserve">
-    <value>新しいプロジェクト形式</value>
   </data>
   <data name="New" xml:space="preserve">
     <value>新しい</value>
@@ -456,12 +381,6 @@
   <data name="MessageRetention" xml:space="preserve">
     <value>メッセージの保持</value>
   </data>
-  <data name="MenuViewStatusBar" xml:space="preserve">
-    <value>ステータスバー</value>
-  </data>
-  <data name="MenuViewSidebar" xml:space="preserve">
-    <value>サイドバー</value>
-  </data>
   <data name="MenuView" xml:space="preserve">
     <value>表示 (_V)</value>
   </data>
@@ -495,7 +414,7 @@
   <data name="MenuService" xml:space="preserve">
     <value>管理者サービス構成(_S)</value>
   </data>
-  <data name="MenuSenSorHeYuan" xml:space="preserve">
+  <data name="MenuSensor" xml:space="preserve">
     <value>汎用センサーテンプレート設定(S)</value>
   </data>
   <data name="MenuRename" xml:space="preserve">
@@ -531,12 +450,6 @@
   <data name="MenuLedCheck" xml:space="preserve">
     <value>ランプ球検出テンプレート設定(L)</value>
   </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>言語(_L)</value>
-  </data>
-  <data name="MenuHelp" xml:space="preserve">
-    <value>ヘルプ (_H)</value>
-  </data>
   <data name="MenuGhost" xml:space="preserve">
     <value>ゴーストテンプレート設定(G)</value>
   </data>
@@ -548,12 +461,6 @@
   </data>
   <data name="MenuFlow" xml:space="preserve">
     <value>プロセス(_L)</value>
-  </data>
-  <data name="MenuFile" xml:space="preserve">
-    <value>ファイル (_F)</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
-    <value>終了する (_X)</value>
   </data>
   <data name="MenuEdit" xml:space="preserve">
     <value>編集する (_E)</value>
@@ -585,23 +492,11 @@
   <data name="MenuAlgorithm" xml:space="preserve">
     <value>アルゴリズム(A)</value>
   </data>
-  <data name="MenuAbout" xml:space="preserve">
-    <value>について (_A)</value>
-  </data>
-  <data name="Maximize" xml:space="preserve">
-    <value>最大化</value>
-  </data>
   <data name="Manager" xml:space="preserve">
     <value>管理</value>
   </data>
   <data name="Male" xml:space="preserve">
     <value>男性</value>
-  </data>
-  <data name="LogLevel" xml:space="preserve">
-    <value>ログレベル</value>
-  </data>
-  <data name="Log" xml:space="preserve">
-    <value>ログ</value>
   </data>
   <data name="Local" xml:space="preserve">
     <value>地元</value>
@@ -620,15 +515,6 @@
   </data>
   <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
     <value>ソフトウェアの起動時にローカルサービスを開きます</value>
-  </data>
-  <data name="LanguageResartSign" xml:space="preserve">
-    <value>新しい言語設定を使用するためには、再起動が必要です</value>
-  </data>
-  <data name="Language" xml:space="preserve">
-    <value>言語</value>
-  </data>
-  <data name="InstallCertificate" xml:space="preserve">
-    <value>証明書のインストール</value>
   </data>
   <data name="Inquire" xml:space="preserve">
     <value>お問い合わせ</value>
@@ -651,9 +537,6 @@
   <data name="ImageFile" xml:space="preserve">
     <value>画像ファイル</value>
   </data>
-  <data name="HotKeys" xml:space="preserve">
-    <value>ショートカットキー</value>
-  </data>
   <data name="Host" xml:space="preserve">
     <value>ホスト</value>
   </data>
@@ -662,12 +545,6 @@
   </data>
   <data name="GhostShadow" xml:space="preserve">
     <value>おばけ</value>
-  </data>
-  <data name="GeneralSettings" xml:space="preserve">
-    <value>一般設定</value>
-  </data>
-  <data name="General" xml:space="preserve">
-    <value>ユニバーサル</value>
   </data>
   <data name="Gain" xml:space="preserve">
     <value>得</value>
@@ -711,9 +588,6 @@
   <data name="Export" xml:space="preserve">
     <value>輸出</value>
   </data>
-  <data name="ExperimentalFeature" xml:space="preserve">
-    <value>実験的な機能</value>
-  </data>
   <data name="ExecutionProcess" xml:space="preserve">
     <value>実装プロセス</value>
   </data>
@@ -740,9 +614,6 @@
   </data>
   <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
     <value>CIE画像データ領域</value>
-  </data>
-  <data name="DisableHardwareAcceleration" xml:space="preserve">
-    <value>ハードウェアアクセラレーションを無効にする</value>
   </data>
   <data name="DeviceName" xml:space="preserve">
     <value>装置名</value>
@@ -782,12 +653,6 @@
   </data>
   <data name="CreateTime" xml:space="preserve">
     <value>時間を計る</value>
-  </data>
-  <data name="CreateProject" xml:space="preserve">
-    <value>プロジェクトの作成</value>
-  </data>
-  <data name="CreateNewProjectOrFile" xml:space="preserve">
-    <value>新しいプロジェクトまたはファイルを作成する</value>
   </data>
   <data name="CreateNewConfigurationFile" xml:space="preserve">
     <value>新しい設定ファイルを作成する</value>
@@ -837,12 +702,6 @@
   <data name="Clear" xml:space="preserve">
     <value>クリア</value>
   </data>
-  <data name="CheckUpdatesOnStartup" xml:space="preserve">
-    <value>ソフトウェアの起動時にアップデートを検出する</value>
-  </data>
-  <data name="CheckForUpdates" xml:space="preserve">
-    <value>アップデートを確認</value>
-  </data>
   <data name="Chart" xml:space="preserve">
     <value>チャート</value>
   </data>
@@ -876,15 +735,6 @@
   <data name="AutoExposure" xml:space="preserve">
     <value>自動露出</value>
   </data>
-  <data name="ApplyWindowLayout" xml:space="preserve">
-    <value>ウィンドウレイアウトを適用する</value>
-  </data>
-  <data name="Apply" xml:space="preserve">
-    <value>応用</value>
-  </data>
-  <data name="ApplicationExit" xml:space="preserve">
-    <value>プログラムは終了します</value>
-  </data>
   <data name="Alias" xml:space="preserve">
     <value>エイリアス</value>
   </data>
@@ -917,5 +767,20 @@
   </data>
   <data name="Choice" xml:space="preserve">
     <value>選ぶ</value>
+  </data>
+  <data name="IsDefaultOpenService" xml:space="preserve">
+    <value>デフォルトオープンサービス</value>
+  </data>
+  <data name="IsRetorePlayControls" xml:space="preserve">
+    <value>再生コントロールを復元するかどうか</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>設定</value>
+  </data>
+  <data name="MenuFile" xml:space="preserve">
+    <value>ファイル (_F)</value>
+  </data>
+  <data name="MenuSensorHeYuan" xml:space="preserve">
+    <value>汎用センサーテンプレート設定(S)</value>
   </data>
 </root>

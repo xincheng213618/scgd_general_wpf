@@ -3,13 +3,13 @@ using System.Collections.ObjectModel;
 using System.Drawing;
 using ColorVision.UI.Sorts;
 using ColorVision.Common.MVVM;
-using ColorVision.Services.Devices.Spectrum.Dao;
+using ColorVision.Engine.Services.Devices.Spectrum.Dao;
 using Newtonsoft.Json;
 using ScottPlot;
 using ScottPlot.Plottable;
 using static cvColorVision.GCSDLL;
 
-namespace ColorVision.Services.Devices.Spectrum.Views
+namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 {
 
     public class ViewResultSpectrum : ViewModelBase,ISortable

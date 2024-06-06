@@ -1,13 +1,13 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Services.Devices;
-using ColorVision.Services.RC;
-using ColorVision.Services.Terminal;
+using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Services.Terminal;
 using ColorVision.UI.Menus;
 using System;
 using System.Windows;
 
-namespace ColorVision.Services
+namespace ColorVision.Engine.Services
 {
     public class WindowServiceMenuItem : IMenuItem
     {

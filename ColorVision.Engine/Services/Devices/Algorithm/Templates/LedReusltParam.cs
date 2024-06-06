@@ -1,14 +1,14 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Templates;
-using ColorVision.Services.Dao;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.Algorithm.Templates
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates
 {
 
     public class LedReusltParamMenuItem : IMenuItem

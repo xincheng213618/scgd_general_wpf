@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using OpenH264Lib;
 
-namespace ColorVision.Services.Devices.Camera.Video
+namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
     public class CameraVideoControl1
     {

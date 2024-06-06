@@ -1,15 +1,15 @@
-﻿using ColorVision.Services.Dao;
-using ColorVision.Services.Core;
+﻿using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Core;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.Common.Utilities;
-using ColorVision.Services.Types;
-using ColorVision.Services.PhyCameras.Templates;
+using ColorVision.Engine.Services.Types;
+using ColorVision.Engine.Services.PhyCameras.Templates;
 
-namespace ColorVision.Services.PhyCameras.Templates
+namespace ColorVision.Engine.Services.PhyCameras.Templates
 {
     /// <summary>
     /// CalibrationEdit.xaml 的交互逻辑

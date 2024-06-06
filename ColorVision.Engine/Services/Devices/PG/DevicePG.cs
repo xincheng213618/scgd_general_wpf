@@ -1,11 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Common.Utilities;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.PG
+namespace ColorVision.Engine.Services.Devices.PG
 {
     public class DevicePG : DeviceService<ConfigPG>
     {

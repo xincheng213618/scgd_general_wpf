@@ -1,9 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.RC;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices;
-using ColorVision.Services.Types;
+using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.Types;
 using ColorVision.Common.Utilities;
 using Newtonsoft.Json;
 using System.Collections.Generic;
@@ -13,7 +13,7 @@ using System.Windows.Media;
 using ColorVision.Util.Interfaces;
 using ColorVision.UI;
 
-namespace ColorVision.Services.Terminal
+namespace ColorVision.Engine.Services.Terminal
 {
     public class TerminalServiceBase : BaseResourceObject, ITreeViewItem
     {

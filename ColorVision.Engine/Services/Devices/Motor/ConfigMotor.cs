@@ -1,8 +1,8 @@
-﻿using ColorVision.Services.Devices.Camera.Configs;
+﻿using ColorVision.Engine.Services.Devices.Camera.Configs;
 using cvColorVision;
 using Newtonsoft.Json;
 
-namespace ColorVision.Services.Devices.Motor
+namespace ColorVision.Engine.Services.Devices.Motor
 {
     public class ConfigMotor: DeviceServiceConfig
     {

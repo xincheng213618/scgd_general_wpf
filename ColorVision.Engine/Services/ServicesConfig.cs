@@ -3,7 +3,7 @@ using ColorVision.UI;
 using ColorVision.UI.Configs;
 using System.Collections.Generic;
 
-namespace ColorVision.Services
+namespace ColorVision.Engine.Services
 {
     public class ServicesConfigProvider : IConfigSettingProvider
     {
@@ -13,8 +13,8 @@ namespace ColorVision.Services
             {
                 new ConfigSettingMetadata
                 {
-                    Name = "IsDefaultOpenService",
-                    Description =  "IsDefaultOpenService",
+                    Name =   ColorVision.Engine.Properties.Resources.IsDefaultOpenService,
+                    Description =  ColorVision.Engine.Properties.Resources.IsDefaultOpenService,
                     Order = 15,
                     Type = ConfigSettingType.Bool,
                     BindingName =nameof(ServicesConfig.IsDefaultOpenService),
@@ -22,8 +22,8 @@ namespace ColorVision.Services
                 },
                 new ConfigSettingMetadata
                 {
-                    Name = "IsRetorePlayControls",
-                    Description =  "IsRetorePlayControls",
+                    Name = ColorVision.Engine.Properties.Resources.IsRetorePlayControls,
+                    Description = ColorVision.Engine.Properties.Resources.IsRetorePlayControls,
                     Order = 16,
                     Type = ConfigSettingType.Bool,
                     BindingName =nameof(ServicesConfig.IsRetorePlayControls),

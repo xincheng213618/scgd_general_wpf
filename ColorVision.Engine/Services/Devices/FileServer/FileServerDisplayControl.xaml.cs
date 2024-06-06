@@ -17,7 +17,7 @@ using System.Windows.Input;
 
 
 
-namespace ColorVision.Services.Devices.FileServer
+namespace ColorVision.Engine.Services.Devices.FileServer
 {
     /// <summary>
     /// ImageDisplayControl.xaml 的交互逻辑

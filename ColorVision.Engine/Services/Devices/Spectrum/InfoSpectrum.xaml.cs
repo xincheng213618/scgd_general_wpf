@@ -1,10 +1,10 @@
-﻿using ColorVision.Services.Devices.Spectrum.Configs;
+﻿using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 
-namespace ColorVision.Services.Devices.Spectrum
+namespace ColorVision.Engine.Services.Devices.Spectrum
 {
     /// <summary>
     /// InfoSpectrum.xaml 的交互逻辑

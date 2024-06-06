@@ -2,7 +2,7 @@
 using MQTTMessageLib.Algorithm;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Services.Devices.Algorithm.Views
+namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
 
     

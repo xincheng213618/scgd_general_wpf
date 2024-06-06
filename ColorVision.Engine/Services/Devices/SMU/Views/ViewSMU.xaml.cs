@@ -1,4 +1,4 @@
-﻿using ColorVision.Services.Devices.SMU.Dao;
+﻿using ColorVision.Engine.Services.Devices.SMU.Dao;
 using ColorVision.Common.Utilities;
 using ScottPlot;
 using ScottPlot.Plottable;
@@ -13,7 +13,7 @@ using System.Windows.Input;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 
-namespace ColorVision.Services.Devices.SMU.Views
+namespace ColorVision.Engine.Services.Devices.SMU.Views
 {
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑

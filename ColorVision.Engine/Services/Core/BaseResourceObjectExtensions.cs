@@ -1,10 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices;
-using ColorVision.Services.Terminal;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.Terminal;
 using Newtonsoft.Json;
 
-namespace ColorVision.Services.Core
+namespace ColorVision.Engine.Services.Core
 {
     public static class BaseResourceObjectExtensions
     {
