@@ -31,7 +31,7 @@
         </Grid>
 
         <Grid Grid.Row="1" >
-            <hc:SearchBar hc:InfoElement.Placeholder="{x:Static properties:Resources.SearchProjectFiles}" hc:InfoElement.ShowClearButton="True" Style="{StaticResource SearchBarPlus}" Tag="22" IsRealTime="True"   />
+            <hc:SearchBar x:Name="SearchBar1"   TextChanged="SearchBar1_TextChanged" hc:InfoElement.Placeholder="{x:Static properties:Resources.SearchProjectFiles}" hc:InfoElement.ShowClearButton="True" Style="{StaticResource SearchBarPlus}" IsRealTime="True"   />
         </Grid>
 
 

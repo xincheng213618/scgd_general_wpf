@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Solution.V;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -137,8 +138,42 @@ namespace ColorVision.Solution
                 SelectedTreeViewItem = null;
             }
         }
+        private readonly char[] Chars = new[] { ' ' };
+        private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            string text = SearchBar1.Text;
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                SolutionTreeView.ItemsSource = SolutionManager.GetInstance().SolutionExplorers;
+            }
+            else
+            {
+                var keywords = text.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
 
+                var filteredResults = SolutionManager.GetInstance().SolutionExplorers[0].VisualChildren.
+                    SelectMany(explorer => GetAllVisualChildren(explorer.VisualChildren))
+                    .OfType<VObject>()
+                    .Where(template => keywords.All(keyword =>
+                        template.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase) 
+                        ))
+                    .ToList();
 
+                // 更新 ListView 的数据源
+                SolutionTreeView.ItemsSource = filteredResults;
+            }
+        }
+        private IEnumerable<VObject> GetAllVisualChildren(IEnumerable<VObject> visualChildren)
+        {
+            foreach (var child in visualChildren)
+            {
+                yield return child;
+
+                foreach (var grandChild in GetAllVisualChildren(child.VisualChildren))
+                {
+                    yield return grandChild;
+                }
+            }
+        }
     }
 
 
