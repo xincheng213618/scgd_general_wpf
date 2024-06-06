@@ -97,19 +97,14 @@ namespace ColorVision.Solution
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            var dialog = new System.Windows.Forms.FolderBrowserDialog();
-            dialog.Description = "请选择文件夹";
-            dialog.ShowNewFolderButton = true; // 允许用户创建新文件夹
-
-            // 显示对话框
-            System.Windows.Forms.DialogResult result = dialog.ShowDialog();
-
-            // 处理对话框返回的结果
-            if (result == System.Windows.Forms.DialogResult.OK)
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.RestoreDirectory = true;
+            openFileDialog.Filter = "ColorVision Solution (*.cvsln)|*.cvsln";
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                //SolutionManager.GetInstance().OpenSolution(FullName);
+                SolutionManager.GetInstance().OpenSolution(openFileDialog.FileName);
+                Close();
             }
-            Close();
         }
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)
