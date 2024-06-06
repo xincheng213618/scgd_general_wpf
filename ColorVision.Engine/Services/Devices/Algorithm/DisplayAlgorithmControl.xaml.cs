@@ -89,7 +89,7 @@ namespace ColorVision.Services.Devices.Algorithm
         {
             switch (data.ResultType)
             {
-                case MQTTMessageLib.Algorithm.AlgorithmResultType.POI_XY_UV:
+                case MQTTMessageLib.Algorithm.AlgorithmResultType.POI_XYZ:
                 case MQTTMessageLib.Algorithm.AlgorithmResultType.POI_Y:
                     doOpen(data.FilePath, FileExtType.CIE);
                     break;

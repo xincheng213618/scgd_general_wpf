@@ -95,7 +95,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
                 switch (result.ResultType)
                 {   
-                    case AlgorithmResultType.POI_XY_UV:
+                    case AlgorithmResultType.POI_XYZ:
                         PoiResultCIExyuvData.SaveCsv(result.PoiResultCIExyuvDatas, dialog.FileName);
                         ImageUtil.SaveImageSourceToFile(ImageView.ImageShow.Source, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
                         return;
@@ -204,7 +204,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                         listViewSide.Visibility = Visibility.Visible;
 
                         break;
-                    case AlgorithmResultType.POI_XY_UV:
+                    case AlgorithmResultType.POI_XYZ:
                         OnCurSelectionChanged?.Invoke(result);
                         if (result.PoiResultCIExyuvDatas == null)
                         {
@@ -700,7 +700,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
                 {   
                     case AlgorithmResultType.POI:
                         break;
-                    case AlgorithmResultType.POI_XY_UV:
+                    case AlgorithmResultType.POI_XYZ:
                         PoiResultCIExyuvData.SaveCsv(result.PoiResultCIExyuvDatas,dialog.FileName);
                         break;
                     case AlgorithmResultType.POI_Y:
@@ -733,7 +733,7 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             {
                 if (listView1.Items[listView1.SelectedIndex] is AlgorithmResult result)
                 {
-                    if (result.ResultType == AlgorithmResultType.POI_XY_UV)
+                    if (result.ResultType == AlgorithmResultType.POI_XYZ)
                     {
                         if (result.PoiResultCIExyuvDatas.Count != 0)
                         {
