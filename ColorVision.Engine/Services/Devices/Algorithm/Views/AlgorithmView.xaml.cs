@@ -204,7 +204,35 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         listViewSide.Visibility = Visibility.Visible;
                         break;
                     case AlgorithmResultType.LEDStripDetection:
+                        OnCurSelectionChanged?.Invoke(result);
+                        if (result.PoiResultCIExyuvDatas == null)
+                        {
+                            result.PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
+                            List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                            foreach (var item in POIPointResultModels)
+                            {
+                                PoiResultCIExyuvData poiResultCIExyuvData = new(item);
+                                result.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                            };
+                        }
 
+                        cieBdHeader = new List<string> { "POIPoint.Id", "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "POIPointResultModel.ValidateResult" };
+                        cieHeader = new List<string> { "Id", ColorVision.Engine.Properties.Resources.Name, ColorVision.Engine.Properties.Resources.Position, ColorVision.Engine.Properties.Resources.Size, ColorVision.Engine.Properties.Resources.Shape, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "Validate" };
+
+                        if (listViewSide.View is GridView gridViewPOI_XY_UV)
+                        {
+                            LeftGridViewColumnVisibilitys.Clear();
+                            gridViewPOI_XY_UV.Columns.Clear();
+                            for (int i = 0; i < cieHeader.Count; i++)
+                                gridViewPOI_XY_UV.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
+                        }
+
+                        listViewSide.ItemsSource = result.PoiResultCIExyuvDatas;
+
+                        foreach (var item in result.PoiResultCIExyuvDatas)
+                            DrawPoiPoint.Add(item.Point);
+                        ImageView.AddPOIPoint(DrawPoiPoint);
+                        listViewSide.Visibility = Visibility.Visible;
 
                         break;
                     case AlgorithmResultType.POI_XYZ:
