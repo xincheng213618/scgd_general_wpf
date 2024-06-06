@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Common.MVVM;
+using System.Collections.Generic;
 
 namespace ColorVision.Solution.V
 {
@@ -26,6 +27,19 @@ namespace ColorVision.Solution.V
                 return null;
 
             return This.Parent.GetAncestor<T>();
+        }
+
+        public static IEnumerable<VObject> GetAllVisualChildren(this IEnumerable<VObject> visualChildren)
+        {
+            foreach (var child in visualChildren)
+            {
+                yield return child;
+
+                foreach (var grandChild in GetAllVisualChildren(child.VisualChildren))
+                {
+                    yield return grandChild;
+                }
+            }
         }
     }
 

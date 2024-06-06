@@ -27,6 +27,8 @@ namespace ColorVision.Solution
         {
             this.DataContext = SolutionManager;
             SolutionTreeView.ItemsSource = SolutionManager.SolutionExplorers;
+            SolutionManager.SolutionExplorers[0].VisualChildrenEventHandler += (s, e) => SearchBar1TextChanged();
+
             IniCommand();
             Window window = Application.Current.MainWindow;
             if (window != null)
@@ -139,7 +141,8 @@ namespace ColorVision.Solution
             }
         }
         private readonly char[] Chars = new[] { ' ' };
-        private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
+
+        public void SearchBar1TextChanged()
         {
             string text = SearchBar1.Text;
             if (string.IsNullOrWhiteSpace(text))
@@ -149,12 +152,11 @@ namespace ColorVision.Solution
             else
             {
                 var keywords = text.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
-
-                var filteredResults = SolutionManager.GetInstance().SolutionExplorers[0].VisualChildren.
-                    SelectMany(explorer => GetAllVisualChildren(explorer.VisualChildren))
+                var filteredResults = SolutionManager.GetInstance().SolutionExplorers.
+                    SelectMany(explorer => explorer.VisualChildren.GetAllVisualChildren())
                     .OfType<VObject>()
                     .Where(template => keywords.All(keyword =>
-                        template.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase) 
+                        template.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)
                         ))
                     .ToList();
 
@@ -162,18 +164,12 @@ namespace ColorVision.Solution
                 SolutionTreeView.ItemsSource = filteredResults;
             }
         }
-        private IEnumerable<VObject> GetAllVisualChildren(IEnumerable<VObject> visualChildren)
-        {
-            foreach (var child in visualChildren)
-            {
-                yield return child;
 
-                foreach (var grandChild in GetAllVisualChildren(child.VisualChildren))
-                {
-                    yield return grandChild;
-                }
-            }
+        private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            SearchBar1TextChanged();
         }
+
     }
 
 

@@ -60,13 +60,14 @@ namespace ColorVision.Solution.V
                 FileSystemWatcher.Created += (s, e) =>
                 {
                     var parentDirectory = Directory.GetParent(e.FullPath)?.FullName;
-                    foreach (var item in VisualChildren)
+                    foreach (var item in VisualChildren.SelectMany(explorer => explorer.VisualChildren.GetAllVisualChildren()))
                     {
                         if (item is VFolder vFile && vFile.DirectoryInfo.FullName == parentDirectory)
                         {
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 CreateFile(item, new FileInfo(e.FullPath));
+                                VisualChildrenEventHandler?.Invoke(this, new EventArgs());
                             });
                         }
                     }
@@ -76,8 +77,10 @@ namespace ColorVision.Solution.V
                 FileSystemWatcher.Renamed += (s, e) => { };
                 FileSystemWatcher.EnableRaisingEvents = true;
             }
-
         }
+
+        public EventHandler VisualChildrenEventHandler { get; set; }
+
         public string SolutionCachePath
         {
             get
