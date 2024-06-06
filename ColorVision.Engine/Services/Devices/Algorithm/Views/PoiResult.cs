@@ -29,7 +29,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 string result = "";
                 switch (_ResultType)
                 {
-                    case AlgorithmResultType.POI_XY_UV:
+                    case AlgorithmResultType.POI_XYZ:
                         result = "色度";
                         break;
                     case AlgorithmResultType.POI_Y:
