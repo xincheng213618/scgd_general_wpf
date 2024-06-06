@@ -67,13 +67,17 @@ namespace ColorVision.Solution.V
                             Application.Current.Dispatcher.Invoke(() =>
                             {
                                 CreateFile(item, new FileInfo(e.FullPath));
-                                VisualChildrenEventHandler?.Invoke(this, new EventArgs());
                             });
                         }
                     }
                 };
                 FileSystemWatcher.Deleted += (s, e) => { };
-                FileSystemWatcher.Changed += (s, e) => { };
+                FileSystemWatcher.Changed += (s, e) => {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        VisualChildrenEventHandler?.Invoke(this, new EventArgs());
+                    });
+                };
                 FileSystemWatcher.Renamed += (s, e) => { };
                 FileSystemWatcher.EnableRaisingEvents = true;
             }
