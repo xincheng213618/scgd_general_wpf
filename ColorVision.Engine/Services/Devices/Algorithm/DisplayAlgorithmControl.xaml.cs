@@ -741,11 +741,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 MessageBox.Show(Application.Current.MainWindow, "请先选择灯带检测模板", "ColorVision");
                 return;
             }
-            if (ComboxPoiTemplate1.SelectedIndex == -1)
-            {
-                MessageBox.Show(Application.Current.MainWindow, "请先选择关注点模板", "ColorVision");
-                return;
-            }
 
             string sn = string.Empty;
             string imgFileName = ImageFile.Text;
@@ -754,11 +749,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
             {
                 var pm = LEDStripDetectionParam.Params[ComboxLEDStripDetectionTemplate.SelectedIndex].Value;
-                var poi_pm = PoiParam.Params[ComboxPoiTemplate1.SelectedIndex].Value;
                 TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
                 MsgRecord ss = null;
-                if (imageDevice != null) ss = Service.LEDStripDetection(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, ImageFile.Text, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate1.Text);
-                else ss = Service.LEDStripDetection(string.Empty, string.Empty, ImageFile.Text, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate1.Text);
+                if (imageDevice != null) ss = Service.LEDStripDetection(imageDevice.Value.DeviceCode, imageDevice.Value.DeviceType, ImageFile.Text, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn);
+                else ss = Service.LEDStripDetection(string.Empty, string.Empty, ImageFile.Text, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn);
                 ServicesHelper.SendCommand(ss, "正在计算灯带检测");
             }
         }

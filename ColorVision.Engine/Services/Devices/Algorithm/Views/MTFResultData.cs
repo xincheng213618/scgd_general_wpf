@@ -26,7 +26,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             Point = new POIPoint(detail.PoiId??-1, -1, detail.PoiName, (POIPointTypes)detail.PoiType, (int)detail.PoiX, (int)detail.PoiY, (int)detail.PoiWidth, (int)detail.PoiHeight);
             var temp = JsonConvert.DeserializeObject<MQTTMessageLib.Algorithm.MTFResultData>(detail.Value);
             Articulation = temp.Articulation;
-
         }
     }
 }

@@ -26,7 +26,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public ObservableCollection<DistortionResultData> DistortionData { get; set; }
         public ObservableCollection<LedResultData> LedResultDatas { get; set; }
 
-
         public AlgorithmResult(AlgResultMasterModel item) : this(item.Id, item.BatchCode, item.ImgFile, item.TName, item.CreateDate, item.ImgFileType, item.ResultCode, item.Result, item.TotalTime)
         {
         }

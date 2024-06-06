@@ -137,7 +137,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         {
             if (result != null)
             {
-                AlgorithmResult algorithmResult = new(result);
+                AlgorithmResult algorithmResult = new AlgorithmResult(result);
                 AlgResults.AddUnique(algorithmResult);
                 RefreshResultListView();
             }
