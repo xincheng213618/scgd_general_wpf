@@ -1,4 +1,5 @@
-﻿using System.Windows.Controls;
+﻿using System.IO;
+using System.Windows.Controls;
 using System.Windows.Media;
 using ColorVision.Util.Properties;
 
@@ -8,11 +9,14 @@ namespace ColorVision.Solution.V.Folders
     {
         public IFolder Folder { get; set; }
 
+        public DirectoryInfo DirectoryInfo { get; set; }
+
         public VFolder(IFolder folder)
         {
             Folder = folder;
             Name = folder.Name;
             ToolTip = folder.ToolTip;
+            DirectoryInfo = folder.DirectoryInfo;
 
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Open, Command = OpenCommand });

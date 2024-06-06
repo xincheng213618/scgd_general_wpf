@@ -4,10 +4,12 @@ using ColorVision.Solution.V.Folders;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using Wpf.Ui.Appearance;
 
 namespace ColorVision.Solution.V
 {
@@ -20,6 +22,8 @@ namespace ColorVision.Solution.V
 
         public static SolutionSetting Setting => SolutionSetting.Instance;
 
+        FileSystemWatcher FileSystemWatcher { get; set; }
+
         public SolutionExplorer(string FullPath)
         {
             if (File.Exists(FullPath) && FullPath.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
@@ -27,7 +31,7 @@ namespace ColorVision.Solution.V
                 FileInfo fileInfo = new(FullPath);
                 if (fileInfo !=null)
                 {
-                    DirectoryInfo = fileInfo.Directory ??new DirectoryInfo(FullPath);
+                    DirectoryInfo = fileInfo.Directory ?? new DirectoryInfo(FullPath);
                     Name = Path.GetFileNameWithoutExtension(FullPath);
                     if (DirectoryInfo != null)
                     {
@@ -43,11 +47,35 @@ namespace ColorVision.Solution.V
                 DirectoryInfo rootDirectory = DirectoryInfo.Root;
                 DriveInfo = new DriveInfo(rootDirectory.FullName);
             }
-            GeneralRelayCommand();
+
+            GeneraFileTypes();
             GeneralContextMenu();
             GeneralCVSln();
             IsExpanded = true;
             DriveMonitor();
+
+            if (DirectoryInfo !=null && DirectoryInfo.Exists)
+            {
+                FileSystemWatcher = new FileSystemWatcher(DirectoryInfo.FullName) {IncludeSubdirectories =true ,NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.LastWrite };
+                FileSystemWatcher.Created += (s, e) =>
+                {
+                    var parentDirectory = Directory.GetParent(e.FullPath)?.FullName;
+                    foreach (var item in VisualChildren)
+                    {
+                        if (item is VFolder vFile && vFile.DirectoryInfo.FullName == parentDirectory)
+                        {
+                            Application.Current.Dispatcher.Invoke(() =>
+                            {
+                                CreateFile(item, new FileInfo(e.FullPath));
+                            });
+                        }
+                    }
+                };
+                FileSystemWatcher.Deleted += (s, e) => { };
+                FileSystemWatcher.Changed += (s, e) => { };
+                FileSystemWatcher.Renamed += (s, e) => { };
+                FileSystemWatcher.EnableRaisingEvents = true;
+            }
 
         }
         public string SolutionCachePath
@@ -77,12 +105,12 @@ namespace ColorVision.Solution.V
                 bool IsMonitor = true;
                 while (IsMonitor)
                 {
-                    await Task.Delay(100000);
+                    await Task.Delay(100);
                     if (Setting.IsLackWarning)
                     {
                         if (DriveInfo.IsReady)
                         {
-                            if (DriveInfo.AvailableFreeSpace < 1024 * 1024 * 1024)
+                            if (DriveInfo.AvailableFreeSpace < 1024 * 1024 * 1024 )
                             {
 
                                 Setting.IsMemoryLackWarning = false;
@@ -98,13 +126,7 @@ namespace ColorVision.Solution.V
             });
         }
 
-
-
         public DriveInfo DriveInfo { get; set; }
-
-
-
-
 
         public void Refresh()
         {
@@ -112,21 +134,12 @@ namespace ColorVision.Solution.V
             GeneralCVSln();
         }
 
-        public void GeneralRelayCommand()
-        {
-            OpenExplorer = new RelayCommand(a => 
-            System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName));
-
-            ClearCacheCommand = new RelayCommand(a =>
-            {
-                DirectoryInfo.Delete(true);
-                VisualChildren.Clear();
-                ///这里之后追加服务的清理
-            });
-        }
 
         public void GeneralContextMenu()
         {
+            OpenExplorer = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName), a => DirectoryInfo.Exists);
+            ClearCacheCommand = new RelayCommand(a => { DirectoryInfo.Delete(true); VisualChildren.Clear(); });
+
             ContextMenu = new ContextMenu();
             MenuItem menuItem = new() { Header = "打开工程文件夹", Command = OpenExplorer };
             ContextMenu.Items.Add(menuItem);
@@ -140,32 +153,11 @@ namespace ColorVision.Solution.V
 
         public void GeneralCVSln()
         {
-            foreach (var item in DirectoryInfo.GetDirectories())
-            { 
-                if ((item.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
-                {
-                    continue;
-                }
+            GeneralChild(this, DirectoryInfo);
+        }
 
-                BaseFolder folder = new(item);
-                var vFolder = new VFolder(folder);
-                AddChild(vFolder);
-                GeneralChild(vFolder, item);
-            }
-        }
-        private static Regex WildcardToRegex(string pattern)
+        public void GeneraFileTypes()
         {
-            return new Regex("^" + Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$", RegexOptions.IgnoreCase);
-        }
-        public void GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
-        {
-            foreach (var item in directoryInfo.GetDirectories())
-            {
-                BaseFolder folder = new(item);
-                var vFolder = new VFolder(folder);
-                vObject.AddChild(vFolder);
-                GeneralChild(vFolder, item);
-            }
             FileTypes = new Dictionary<string, Type>();
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
@@ -180,40 +172,74 @@ namespace ColorVision.Solution.V
                     }
                 }
             }
+        }
+
+        private static Regex WildcardToRegex(string pattern)
+        {
+            return new Regex("^" + Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$", RegexOptions.IgnoreCase);
+        }
+
+        public void CreateFile(VObject vObject ,FileInfo fileInfo)
+        {
+            if (fileInfo.Extension.Contains("cvsln")) return;
+
+            string extension = fileInfo.Extension;
+            if (fileInfo.Extension.Contains("lnk"))
+            {
+                string targetPath = Common.NativeMethods.ShortcutCreator.GetShortcutTargetFile(fileInfo.FullName);
+                extension = Path.GetExtension(targetPath);
+                fileInfo = new FileInfo(targetPath);
+            }
+            List<Type> matchingTypes = new List<Type>();
+            if (FileTypes.TryGetValue(extension, out Type specificTypes))
+            {
+                matchingTypes.Add(specificTypes);
+            }
+            foreach (var key in FileTypes.Keys)
+            {
+                if (key.Contains(extension))
+                    matchingTypes.Add(FileTypes[key]);
+            }
+            foreach (var key in FileTypes.Keys)
+            {
+                var subKeys = key.Split('|');
+                foreach (var subKey in subKeys)
+                {
+                    if (WildcardToRegex(subKey).IsMatch(extension))
+                    {
+                        matchingTypes.Add(FileTypes[key]);
+                        break;
+                    }
+                }
+            }
+            if (matchingTypes.Count > 0)
+            {
+                if (Activator.CreateInstance(matchingTypes[0], fileInfo) is IFile file)
+                {
+                    VFile vFile = new VFile(file);
+                    vObject.AddChild(vFile);
+                }
+            }
+
+        }
+
+        public void GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
+        {
+            foreach (var item in directoryInfo.GetDirectories())
+            {
+                if ((item.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
+                {
+                    continue;
+                }
+                BaseFolder folder = new(item);
+                var vFolder = new VFolder(folder);
+                vObject.AddChild(vFolder);
+                GeneralChild(vFolder, item);
+            }
+
             foreach (var item in directoryInfo.GetFiles())
             {
-                string extension = Path.GetExtension(item.FullName);
-                List<Type> matchingTypes = new List<Type>();
-                if (FileTypes.TryGetValue(extension, out Type specificTypes))
-                {
-                    matchingTypes.Add(specificTypes);
-                }
-                foreach (var key in FileTypes.Keys)
-                {
-                    if (key.Contains(extension))
-                        matchingTypes.Add(FileTypes[key]);
-                }
-                foreach (var key in FileTypes.Keys)
-                {
-                    var subKeys = key.Split('|');
-                    foreach (var subKey in subKeys)
-                    {
-                        if (WildcardToRegex(subKey).IsMatch(extension))
-                        {
-                            matchingTypes.Add(FileTypes[key]);
-                            break;
-                        }
-                    }
-                }
-                if (matchingTypes.Count > 0)
-                {
-                    if (Activator.CreateInstance(matchingTypes[0], item) is IFile file)
-                    {
-                        VFile vFile = new VFile(file);
-                        vObject.AddChild(vFile);
-                    }
-                }
-
+                CreateFile(vObject, item);
             }
         }
 

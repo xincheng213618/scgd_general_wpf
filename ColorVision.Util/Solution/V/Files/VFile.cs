@@ -2,21 +2,22 @@
 using ColorVision.Common.NativeMethods;
 using System.Windows.Controls;
 using ColorVision.Util.Properties;
+using System.IO;
 
 namespace ColorVision.Solution.V.Files
 {
     public class VFile : VObject
     {
-        public IFile File { get; set; }
+        public IFile FileInfos { get; set; }
 
         public VFile(IFile file)
         {
-            File = file;
+            FileInfos = file;
             Name = file.Name;
             ToolTip = file.ToolTip;
             Icon = file.Icon;
 
-            AttributesCommand = new RelayCommand(a => FileProperties.ShowFileProperties(File.FullName), a => true);
+            AttributesCommand = new RelayCommand(a => FileProperties.ShowFileProperties(FileInfos.FullName), a => true);
 
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Open, Command = OpenCommand });
@@ -35,7 +36,7 @@ namespace ColorVision.Solution.V.Files
         {
             if (this is VFile vFile)
             {
-                if (vFile.File is IFile file)
+                if (vFile.FileInfos is IFile file)
                 {
                     file.Open();
                 }
@@ -46,7 +47,7 @@ namespace ColorVision.Solution.V.Files
         {
             if (this is VFile vFile)
             {
-                if (vFile.File is IFile file)
+                if (vFile.FileInfos is IFile file)
                 {
                     file.Copy();
                 }
@@ -57,7 +58,7 @@ namespace ColorVision.Solution.V.Files
         {
             if (this is VFile vFile)
             {
-                if (vFile.File is IFile file)
+                if (vFile.FileInfos is IFile file)
                 {
                     file.ReName();
                 }
@@ -68,9 +69,9 @@ namespace ColorVision.Solution.V.Files
         {
             if (this is VFile vFile)
             {
-                if (vFile.File is IFile file)
+                if (vFile.FileInfos is IFile file)
                 {
-                    file.Delete();
+                    File.Delete(file.FullName);
                 }
             }
             Parent.RemoveChild(this);
