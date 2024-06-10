@@ -19,7 +19,7 @@ namespace ColorVision.Solution
     {
         string Name { get; set; }
 
-        UserControl UserControl { get; }
+        Control UserControl { get; }
 
         void Open();
         void Close();

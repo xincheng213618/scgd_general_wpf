@@ -22,7 +22,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports
 
         public string Name { get; set; }
 
-        public UserControl UserControl => ImageView;
+        public Control UserControl => ImageView;
 
         public void Close()
         {
