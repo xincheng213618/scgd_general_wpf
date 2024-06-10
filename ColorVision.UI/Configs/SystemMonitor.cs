@@ -2,16 +2,16 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
-namespace ColorVision.UI
+namespace ColorVision.UI.Configs
 {
-    public class SystemMonitorSetting: ViewModelBase,IConfig
+    public class SystemMonitorSetting : ViewModelBase, IConfig
     {
         public int UpdateSpeed { get => _UpdateSpeed; set { _UpdateSpeed = value; NotifyPropertyChanged(); } }
         private int _UpdateSpeed = 1000;
 
         public string DefaultTimeFormat { get => _DefaultTimeFormat; set { _DefaultTimeFormat = value; NotifyPropertyChanged(); } }
         private string _DefaultTimeFormat = "yyyy/MM/dd HH:mm:ss";
-        
+
         public bool IsShowTime { get => _ShowTime; set { _ShowTime = value; NotifyPropertyChanged(); } }
         private bool _ShowTime;
 
@@ -46,7 +46,7 @@ namespace ColorVision.UI
                     timer?.Dispose();
                     timer = new Timer(TimeRun, null, 0, value);
                 }
-            }    
+            }
         }
 
         public SystemMonitorSetting Config { get; set; }
@@ -55,7 +55,7 @@ namespace ColorVision.UI
         public SystemMonitor()
         {
             Config = ConfigHandler.GetInstance().GetRequiredService<SystemMonitorSetting>();
-            Task.Run(() => 
+            Task.Run(() =>
             {
                 try
                 {

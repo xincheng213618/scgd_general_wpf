@@ -4,6 +4,7 @@
 using ColorVision.Common.NativeMethods;
 using ColorVision.UI;
 using log4net;
+using log4net.Config;
 using System;
 using System.CodeDom.Compiler;
 using System.Diagnostics;
@@ -11,6 +12,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+[assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
 namespace ColorVision
 {
     /// <summary>
@@ -18,6 +20,7 @@ namespace ColorVision
     /// </summary>
     public partial class App
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(App));
         private static Mutex mutex;
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]

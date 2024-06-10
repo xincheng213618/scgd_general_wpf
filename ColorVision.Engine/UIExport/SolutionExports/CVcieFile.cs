@@ -27,7 +27,6 @@ namespace ColorVision.Engine.UIExport.SolutionExports
         public void Close()
         {
             ImageView.ToolBarTop.ClearImage();
-            ImageView = null;
         }
 
         public void Open()

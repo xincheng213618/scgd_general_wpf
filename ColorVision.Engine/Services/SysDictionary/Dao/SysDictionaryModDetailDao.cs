@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Services.SysDictionary
         public long AddressCode { get => _AddressCode; set { _AddressCode = value; NotifyPropertyChanged(); } }
         private long _AddressCode;
         public string? Symbol { get => _Symbol; set { _Symbol = value; NotifyPropertyChanged(); } }
-        private string _Symbol;
+        private string? _Symbol;
         public string? Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string? _Name;
         public string? DefaultValue { get => _DefaultValue; set { _DefaultValue = value; NotifyPropertyChanged(); } }

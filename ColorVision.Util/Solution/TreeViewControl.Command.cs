@@ -1,34 +1,9 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Solution.V;
-using ColorVision.UI.Menus;
-using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
-using System.Runtime.Serialization;
+﻿using ColorVision.Solution.V;
 using System.Windows;
 using System.Windows.Input;
-using YamlDotNet.Serialization;
 
 namespace ColorVision.Solution
 {
-    public class ExportEventWindow : IMenuItem
-    {
-        public string? OwnerGuid => null;
-        public string? GuidId => "Edit";
-
-        public int Order => 1000;
-
-        public Visibility Visibility => Visibility.Visible;
-
-        public string? Header => "Edit";
-
-        public string? InputGestureText => null;
-
-        public object? Icon => null;
-
-        public RelayCommand Command => null;
-
-    }
-
     public partial class TreeViewControl
     {
         private void IniCommand()
