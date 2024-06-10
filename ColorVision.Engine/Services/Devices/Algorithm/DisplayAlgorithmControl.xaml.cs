@@ -1,16 +1,15 @@
 ﻿#pragma warning disable CS8604,CS0168,CS8629,CA1822,CS8602
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
-using ColorVision.Net;
 using ColorVision.Engine.Services.Devices.Algorithm.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Msg;
-using ColorVision.Engine.Services.Templates;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.POI;
+using ColorVision.Net;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
@@ -21,12 +20,10 @@ using Newtonsoft.Json;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Linq;
-using NPOI.SS.Formula.Functions;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
@@ -234,27 +231,25 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             UpdateCB_SourceImageFiles();
             Service.MsgReturnReceived += Service_OnAlgorithmEvent;
         }
-
-        public class ImageDevice : ParamBase
-        {
-            public string DeviceCode { get; set; }
-            public string DeviceType { get; set; }
-        }
-
-
-        public event RoutedEventHandler Selected;
+       public event RoutedEventHandler Selected;
         public event RoutedEventHandler Unselected;
         public event EventHandler SelectChanged;
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
+        private bool IsTemplateSelected(ComboBox comboBox, string errorMessage)
+        {
+            if (comboBox.SelectedIndex == -1)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), errorMessage, "ColorVision");
+                return false;
+            }
+            return true;
+        }
+
         private void PoiClick(object sender, RoutedEventArgs e)
         {
-            if (ComboxPoiTemplate.SelectedIndex ==-1)
-            {
-                MessageBox.Show(Application.Current.MainWindow, "请先选择关注点模板", "ColorVision");
-                return;
-            }
+            if (!IsTemplateSelected(ComboxPoiTemplate, "请先选择关注点模板")) return;
             string sn = null;
             string imgFileName = CB_CIEImageFiles.Text;
             bool? isSN = BatchSelect.IsChecked;
@@ -294,16 +289,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private void MTF_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxMTFTemplate.SelectedIndex==-1)
-            {
-                MessageBox.Show(Application.Current.MainWindow, "请先选择MTF模板", "ColorVision");
-                return;
-            }
-            if (ComboxPoiTemplate2.SelectedIndex == -1)
-            {
-                MessageBox.Show(Application.Current.MainWindow, "请先选择关注点模板", "ColorVision");
-                return;
-            }
+            if (!IsTemplateSelected(ComboxMTFTemplate, "请先选择MTF模板")) return;
+            if (!IsTemplateSelected(ComboxPoiTemplate2, "请先选择关注点模板")) return;
             string sn = string.Empty;
             string imgFileName = ImageFile.Text;
             FileExtType fileExtType = FileExtType.Tif;
@@ -326,12 +313,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private void SFR_Clik(object sender, RoutedEventArgs e)
         {
-            if (ComboxSFRTemplate.SelectedIndex == -1)
-            {
-                MessageBox.Show(Application.Current.MainWindow, "请先选择SFR模板", "ColorVision");
-                return;
-            }
-
+            if (!IsTemplateSelected(ComboxSFRTemplate, "请先选择SFR模板")) return;
             string sn = string.Empty;
             string imgFileName = ImageFile.Text;
             FileExtType fileExtType = FileExtType.Tif;
@@ -355,11 +337,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private void BuildPoi_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxBuildPoiTemplate.SelectedIndex == -1)
-            {
-                MessageBox.Show(Application.Current.MainWindow, "请先选择BuildPoi模板", "ColorVision");
-                return;
-            }
+            if (!IsTemplateSelected(ComboxBuildPoiTemplate, "请先选择BuildPoi模板")) return;
 
             string sn = string.Empty;
             string imgFileName = ImageFile.Text;
@@ -414,11 +392,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private void Ghost_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxGhostTemplate.SelectedIndex == -1)
-            {
-                MessageBox.Show(Application.Current.MainWindow, "请先选择Ghost模板", "ColorVision");
-                return;
-            }
+            if (!IsTemplateSelected(ComboxGhostTemplate, "请先选择Ghost模板"))  return;
             string sn = string.Empty;
             string imgFileName = ImageFile.Text;
             FileExtType fileExtType = FileExtType.Tif;
@@ -441,11 +415,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private void Distortion_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxDistortionTemplate.SelectedIndex == -1)
-            {
-                MessageBox.Show(Application.Current.MainWindow, "请先选择Distortion模板", "ColorVision");
-                return;
-            }
+            if (!IsTemplateSelected(ComboxDistortionTemplate, "请先选择Distortion模板")) return;
             string sn = string.Empty;
             string imgFileName = ImageFile.Text;
             FileExtType fileExtType = FileExtType.Tif;
@@ -461,8 +431,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-
-                TemplateModel<ImageDevice> imageDevice = (TemplateModel<ImageDevice>)CB_SourceImageFiles.SelectedItem;
                 MsgRecord msg = Service.Distortion(code, type, imgFileName, fileExtType, pm.Id, ComboxDistortionTemplate.Text, sn);
                 ServicesHelper.SendCommand(msg, "Distortion");
             }
@@ -503,11 +471,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private void FOV_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxFOVTemplate.SelectedIndex == -1)
-            {
-                MessageBox.Show(Application.Current.MainWindow, "请先选择FOV模板", "ColorVision");
-                return;
-            }
+            if (!IsTemplateSelected(ComboxFOVTemplate, "请先选择FOV模板"))  return;
 
             string sn = string.Empty;
             string imgFileName = ImageFile.Text;
@@ -662,11 +626,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private void FocusPoints_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxFocusPointsTemplate.SelectedIndex == -1)
-            {
-                MessageBox.Show(Application.Current.MainWindow, "请先选择FocusPoints模板", "ColorVision");
-                return;
-            }
+            if (!IsTemplateSelected(ComboxFocusPointsTemplate, "请先选择FocusPoints模板")) return;
 
             string sn = string.Empty;
             string imgFileName = ImageFile.Text;
@@ -690,17 +650,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private void LedCheck_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxLedCheckTemplate.SelectedIndex == -1)
-            {
-                MessageBox.Show(Application.Current.MainWindow, "请先选择灯珠检测模板", "ColorVision");
-                return;
-            }
-
-            if (ComboxPoiTemplate1.SelectedIndex == -1)
-            {
-                MessageBox.Show(Application.Current.MainWindow, "请先选择关注点模板", "ColorVision");
-                return;
-            }
+            if (!IsTemplateSelected(ComboxLedCheckTemplate, "请先选择灯珠检测模板")) return;
+            if (!IsTemplateSelected(ComboxPoiTemplate1, "请先选择关注点模板")) return;
 
             string sn = string.Empty;
             string imgFileName = ImageFile.Text;
@@ -752,11 +703,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private void LEDStripDetection_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxLEDStripDetectionTemplate.SelectedIndex == -1)
-            {
-                MessageBox.Show(Application.Current.MainWindow, "请先选择灯带检测模板", "ColorVision");
-                return;
-            }
+            if (!IsTemplateSelected(ComboxLEDStripDetectionTemplate, "请先选择灯带检测模板"))  return;
 
             string sn = string.Empty;
             string imgFileName = ImageFile.Text;
