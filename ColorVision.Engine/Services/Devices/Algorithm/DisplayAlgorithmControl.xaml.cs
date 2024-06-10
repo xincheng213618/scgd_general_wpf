@@ -250,52 +250,31 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private void PoiClick(object sender, RoutedEventArgs e)
         {
             if (!IsTemplateSelected(ComboxPoiTemplate, "请先选择关注点模板")) return;
-            string sn = null;
-            string imgFileName = CB_CIEImageFiles.Text;
-            bool? isSN = BatchSelect.IsChecked;
-            if (isSN.HasValue && isSN.Value) {
-                if (string.IsNullOrWhiteSpace(BatchCode.Text))
-                {
-                    MessageBox.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
-                    return;
-                }
-                sn = BatchCode.Text;
-                imgFileName = "";
-            }
-            else
-            {
-                if (string.IsNullOrWhiteSpace(imgFileName))
-                {
-                    MessageBox.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
-                    return;
-                }
-            }
 
-            string type = string.Empty;
-            string code = string.Empty;
-            if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
+            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
-                type = deviceService.ServiceTypes.ToString();
-                code = deviceService.Code;
+                string type = string.Empty;
+                string code = string.Empty;
+                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
+                {
+                    type = deviceService.ServiceTypes.ToString();
+                    code = deviceService.Code;
+                }
+                var pm = PoiParam.Params[ComboxPoiTemplate.SelectedIndex].Value;
+                Service.POI(code, type, imgFileName, pm.Id, ComboxPoiTemplate.Text, sn);
+                handler = PendingBox.Show(Application.Current.MainWindow, "", "计算关注点", true);
+                handler.Cancelling += delegate
+                {
+                    handler?.Close();
+                };
             }
-            var pm = PoiParam.Params[ComboxPoiTemplate.SelectedIndex].Value;
-            Service.POI(code, type, imgFileName, pm.Id, ComboxPoiTemplate.Text, sn);
-            handler = PendingBox.Show(Application.Current.MainWindow, "", "计算关注点", true);
-            handler.Cancelling += delegate
-            {
-                handler?.Close();
-            };
         }
 
         private void MTF_Click(object sender, RoutedEventArgs e)
         {
             if (!IsTemplateSelected(ComboxMTFTemplate, "请先选择MTF模板")) return;
             if (!IsTemplateSelected(ComboxPoiTemplate2, "请先选择关注点模板")) return;
-            string sn = string.Empty;
-            string imgFileName = ImageFile.Text;
-            FileExtType fileExtType = FileExtType.Tif;
-
-            if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
+            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
                 string type = string.Empty;
                 string code = string.Empty;
@@ -314,11 +293,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private void SFR_Clik(object sender, RoutedEventArgs e)
         {
             if (!IsTemplateSelected(ComboxSFRTemplate, "请先选择SFR模板")) return;
-            string sn = string.Empty;
-            string imgFileName = ImageFile.Text;
-            FileExtType fileExtType = FileExtType.Tif;
-
-            if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
+            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
                 string type = string.Empty;
                 string code = string.Empty;
@@ -339,11 +314,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         {
             if (!IsTemplateSelected(ComboxBuildPoiTemplate, "请先选择BuildPoi模板")) return;
 
-            string sn = string.Empty;
-            string imgFileName = ImageFile.Text;
-            FileExtType fileExtType = FileExtType.Tif;
-
-            if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
+            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
                 var pm = BuildPOIParam.BuildPOIParams[ComboxBuildPoiTemplate.SelectedIndex].Value;
                 var Params = new Dictionary<string, object>();
@@ -393,11 +364,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private void Ghost_Click(object sender, RoutedEventArgs e)
         {
             if (!IsTemplateSelected(ComboxGhostTemplate, "请先选择Ghost模板"))  return;
-            string sn = string.Empty;
-            string imgFileName = ImageFile.Text;
-            FileExtType fileExtType = FileExtType.Tif;
-
-            if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
+            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
                 var pm = GhostParam.GhostParams[ComboxGhostTemplate.SelectedIndex].Value;
 
@@ -416,11 +383,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private void Distortion_Click(object sender, RoutedEventArgs e)
         {
             if (!IsTemplateSelected(ComboxDistortionTemplate, "请先选择Distortion模板")) return;
-            string sn = string.Empty;
-            string imgFileName = ImageFile.Text;
-            FileExtType fileExtType = FileExtType.Tif;
-
-            if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
+            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
                 var pm = DistortionParam.DistortionParams[ComboxDistortionTemplate.SelectedIndex].Value;
 
@@ -436,11 +399,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             }
         }
 
-        private bool GetAlgSN(ref string sn, ref string imgFileName,ref FileExtType fileExtType)
+        private bool GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)
         {
             bool? isSN = AlgBatchSelect.IsChecked;
             bool? isRaw = AlgRawSelect.IsChecked;
-            if (isSN.HasValue && isSN.Value)
+            sn = string.Empty;
+            fileExtType = FileExtType.Tif;
+            imgFileName = string.Empty;
+            if (isSN == true)
             {
                 if (string.IsNullOrWhiteSpace(AlgBatchCode.Text))
                 {
@@ -448,18 +414,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     return false;
                 }
                 sn = AlgBatchCode.Text;
-                imgFileName = string.Empty;
             }
-            else if (isRaw.HasValue && isRaw.Value) {
+            else if (isRaw == true)
+            {
                 imgFileName = CB_RawImageFiles.Text;
                 fileExtType = FileExtType.Raw;
-                sn = string.Empty;
             }
             else
             {
                 imgFileName = ImageFile.Text;
-                fileExtType = FileExtType.Tif;
-                sn = string.Empty;
             }
             if (string.IsNullOrWhiteSpace(imgFileName))
             {
@@ -473,11 +436,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         {
             if (!IsTemplateSelected(ComboxFOVTemplate, "请先选择FOV模板"))  return;
 
-            string sn = string.Empty;
-            string imgFileName = ImageFile.Text;
-            FileExtType fileExtType = FileExtType.Tif;
-
-            if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
+            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
                 var pm = FOVParam.FOVParams[ComboxFOVTemplate.SelectedIndex].Value;
                 string type = string.Empty;
@@ -628,11 +587,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         {
             if (!IsTemplateSelected(ComboxFocusPointsTemplate, "请先选择FocusPoints模板")) return;
 
-            string sn = string.Empty;
-            string imgFileName = ImageFile.Text;
-            FileExtType fileExtType = FileExtType.Tif;
-
-            if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
+            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
                 var pm = FocusPointsParam.FocusPointsParams[ComboxFocusPointsTemplate.SelectedIndex].Value;
 
@@ -653,11 +608,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             if (!IsTemplateSelected(ComboxLedCheckTemplate, "请先选择灯珠检测模板")) return;
             if (!IsTemplateSelected(ComboxPoiTemplate1, "请先选择关注点模板")) return;
 
-            string sn = string.Empty;
-            string imgFileName = ImageFile.Text;
-            FileExtType fileExtType = FileExtType.Tif;
-
-            if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
+            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
                 var pm = LedCheckParam.LedCheckParams[ComboxLedCheckTemplate.SelectedIndex].Value;
                 var poi_pm = PoiParam.Params[ComboxPoiTemplate1.SelectedIndex].Value;
@@ -704,12 +655,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private void LEDStripDetection_Click(object sender, RoutedEventArgs e)
         {
             if (!IsTemplateSelected(ComboxLEDStripDetectionTemplate, "请先选择灯带检测模板"))  return;
-
-            string sn = string.Empty;
-            string imgFileName = ImageFile.Text;
-            FileExtType fileExtType = FileExtType.Tif;
-
-            if (GetAlgSN(ref sn, ref imgFileName, ref fileExtType))
+            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
             {
                 var pm = LEDStripDetectionParam.Params[ComboxLEDStripDetectionTemplate.SelectedIndex].Value;
 
