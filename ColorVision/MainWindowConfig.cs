@@ -13,7 +13,7 @@ using System.Windows.Input;
 namespace ColorVision
 {
 
-    public class MainWindowConfig : ViewModelBase, IConfig, IConfigSettingProvider
+    public class MainWindowConfig : ViewModelBase, IConfig, IConfigSettingProvider,IMenuItemProvider
     {
         public static MainWindowConfig Instance => ConfigHandler.GetInstance().GetRequiredService<MainWindowConfig>();
 
@@ -70,6 +70,14 @@ namespace ColorVision
                                 BindingName = nameof(MainWindowConfig.IsRestoreWindow),
                                 Source = MainWindowConfig.Instance
                             }
+            };
+        }
+
+        public IEnumerable<MenuItemMetadata> GetMenuItems()
+        {
+            return new List<MenuItemMetadata>
+            {
+
             };
         }
     }

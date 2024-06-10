@@ -84,6 +84,14 @@ namespace ColorVision.UI.Menus
                         iMenuItems.Add(iMenuItem);
                     }
                 }
+
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IMenuItemProvider).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is IMenuItemProvider itemProvider)
+                    {
+                        iMenuItems.AddRange(itemProvider.GetMenuItems());
+                    }
+                }
             }
 
             foreach (var keyValuePair in menuItems)
