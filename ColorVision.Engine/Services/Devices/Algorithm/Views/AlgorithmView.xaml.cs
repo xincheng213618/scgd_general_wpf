@@ -21,6 +21,8 @@ using System.Windows.Media;
 using ColorVision.UI.Sorts;
 using CVCommCore.CVAlgorithm;
 using ColorVision.UI.Views;
+using ColorVision.Solution;
+using MQTTMessageLib.FileServer;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
@@ -32,12 +34,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         private static readonly ILog logg = LogManager.GetLogger(typeof(AlgorithmView));
         public View View { get; set; }
 
-        public event CurSelectionChanged OnCurSelectionChanged;
         public AlgorithmView()
         {
             InitializeComponent();
         }
 
+        private NetFileUtil netFileUtil;
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             TextBox TextBox1 = new() { Width = 10, Background = Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = Brushes.Transparent };
@@ -58,7 +60,22 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
             if (listView1.View is GridView gridView)
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+
+            netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.FullPath + "\\Cache");
+            netFileUtil.handler += NetFileUtil_handler;
         }
+
+        private void NetFileUtil_handler(object sender, NetFileEvent arg)
+        {
+            if (arg.Code == 0 && arg.FileData.data != null)
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    OpenImage(arg.FileData);
+                });
+            }
+        }
+
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
         private void ContextMenu_Opened(object sender, RoutedEventArgs e)
@@ -166,11 +183,30 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 List<POIPoint> DrawPoiPoint = new();
                 List<string> cieBdHeader = new();
                 List<string> cieHeader = new();
+
+
+                switch (result.ResultType)
+                {
+                    case AlgorithmResultType.POI_XYZ:
+                    case MQTTMessageLib.Algorithm.AlgorithmResultType.POI_Y:
+                        netFileUtil.OpenLocalFile(result.FilePath, FileExtType.CIE);
+                        break;
+                    case MQTTMessageLib.Algorithm.AlgorithmResultType.SFR:
+                    case MQTTMessageLib.Algorithm.AlgorithmResultType.MTF:
+                    case MQTTMessageLib.Algorithm.AlgorithmResultType.FOV:
+                    case MQTTMessageLib.Algorithm.AlgorithmResultType.Distortion:
+                        netFileUtil.OpenLocalFile(result.FilePath, FileExtType.Src);
+                        break;
+                    case MQTTMessageLib.Algorithm.AlgorithmResultType.Ghost:
+                        netFileUtil.OpenLocalFile(result.FilePath, FileExtType.Tif);
+                        break;
+                    default:
+                        break;
+                }
+
                 switch (result.ResultType)
                 {
                     case AlgorithmResultType.POI:
-                        OnCurSelectionChanged?.Invoke(result);
-
                         if (result.PoiResultDatas == null)
                         {
                             result.PoiResultDatas = new ObservableCollection<PoiResultData>();
@@ -201,7 +237,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         listViewSide.Visibility = Visibility.Visible;
                         break;
                     case AlgorithmResultType.LEDStripDetection:
-                        OnCurSelectionChanged?.Invoke(result);
                         if (result.PoiResultCIExyuvDatas == null)
                         {
                             result.PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
@@ -233,7 +268,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                         break;
                     case AlgorithmResultType.POI_XYZ:
-                        OnCurSelectionChanged?.Invoke(result);
                         if (result.PoiResultCIExyuvDatas == null)
                         {
                             result.PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
@@ -264,8 +298,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         listViewSide.Visibility = Visibility.Visible;
                         break;
                     case AlgorithmResultType.POI_Y:
-                        OnCurSelectionChanged?.Invoke(result);
-
                         if (result.PoiResultCIEYDatas == null)
                         {
                             result.PoiResultCIEYDatas = new ObservableCollection<PoiResultCIEYData>();
@@ -596,10 +628,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
-        private void listView2_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-
-        }
 
         private void GridSplitter_DragCompleted1(object sender, DragCompletedEventArgs e)
         {

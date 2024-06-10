@@ -52,7 +52,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             netFileUtil = new NetFileUtil();
             netFileUtil.handler += NetFileUtil_handler;
-            View.OnCurSelectionChanged += View_OnCurSelectionChanged;
             PreviewMouseDown += UserControl_PreviewMouseDown;
         }
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
@@ -79,27 +78,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             handler?.Close();
         }
 
-        private void View_OnCurSelectionChanged(AlgorithmResult data)
-        {
-            switch (data.ResultType)
-            {
-                case MQTTMessageLib.Algorithm.AlgorithmResultType.POI_XYZ:
-                case MQTTMessageLib.Algorithm.AlgorithmResultType.POI_Y:
-                    netFileUtil.OpenLocalFile(data.FilePath, FileExtType.CIE);
-                    break;
-                case MQTTMessageLib.Algorithm.AlgorithmResultType.SFR:
-                case MQTTMessageLib.Algorithm.AlgorithmResultType.MTF:
-                case MQTTMessageLib.Algorithm.AlgorithmResultType.FOV:
-                case MQTTMessageLib.Algorithm.AlgorithmResultType.Distortion:
-                    netFileUtil.OpenLocalFile(data.FilePath, FileExtType.Src);
-                    break;
-                case MQTTMessageLib.Algorithm.AlgorithmResultType.Ghost:
-                    netFileUtil.OpenLocalFile(data.FilePath, FileExtType.Tif);
-                    break;
-                default:
-                    break;
-            }
-        }
 
         private void Service_OnAlgorithmEvent(MsgReturn arg)
         {

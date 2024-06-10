@@ -37,11 +37,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public static ViewCameraConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ViewCameraConfig>();
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-
-
     }
-
-
 
 
     /// <summary>
