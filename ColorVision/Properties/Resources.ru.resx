@@ -348,4 +348,7 @@
   <data name="Rollback" xml:space="preserve">
     <value>возвращаться</value>
   </data>
+  <data name="MenuPaste" xml:space="preserve">
+    <value>Вставить(_P)</value>
+  </data>
 </root>

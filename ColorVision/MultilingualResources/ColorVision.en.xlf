@@ -171,6 +171,10 @@
           <source>选项(_O)</source>
           <target state="new">_Options</target>
         </trans-unit>
+        <trans-unit id="MenuPaste" translate="yes" xml:space="preserve">
+          <source>粘贴(_P)</source>
+          <target state="new">_Paste</target>
+        </trans-unit>
         <trans-unit id="MenuRename" translate="yes" xml:space="preserve">
           <source>重命名(_M)</source>
           <target state="new">Rena_me</target>

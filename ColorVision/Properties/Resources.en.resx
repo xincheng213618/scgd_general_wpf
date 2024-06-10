@@ -348,4 +348,7 @@
   <data name="Rollback" xml:space="preserve">
     <value>Rollback</value>
   </data>
+  <data name="MenuPaste" xml:space="preserve">
+    <value>_Paste</value>
+  </data>
 </root>

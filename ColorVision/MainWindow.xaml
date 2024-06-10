@@ -8,6 +8,7 @@
         xmlns:properties="clr-namespace:ColorVision.Properties"
         xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util" 
         xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
+        xmlns:input ="clr-namespace:System.Windows.Input;assembly=netstandard"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance Type=local:MainWindowConfig}"
         Title="ColorVision" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
@@ -21,6 +22,14 @@
             <Grid>
                 <Menu x:Name="Menu1">
                     <MenuItem x:Name="MenuFile" Header="{x:Static properties:Resources.MenuFile}"/>
+                    <MenuItem x:Name="MenuEdit" Header="{x:Static properties:Resources.MenuEdit}">
+                        <MenuItem Header="{x:Static properties:Resources.MenuUndo}" Command="ApplicationCommands.Redo" />
+                        <MenuItem Header="{x:Static properties:Resources.MenuCopy}" Command="ApplicationCommands.Copy" />
+                        <MenuItem Header="{x:Static properties:Resources.MenuCut}" Command="ApplicationCommands.Cut" />
+                        <MenuItem Header="{x:Static properties:Resources.MenuDelete}" Command="ApplicationCommands.Delete" />
+                        <MenuItem Header="{x:Static properties:Resources.MenuPaste}" Command="ApplicationCommands.Paste" />
+
+                    </MenuItem>
                     <MenuItem x:Name="MenuTemplate" Header="{x:Static properties:Resources.MenuTemplate}"/>
                     <MenuItem x:Name="MenuTool" Header="{x:Static properties:Resources.MenuTool}"/>
                     <MenuItem x:Name="MenuView"  Header="{ x:Static properties:Resources.MenuView}"/> 

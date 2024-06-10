@@ -348,4 +348,7 @@
   <data name="Rollback" xml:space="preserve">
     <value>돌아가다</value>
   </data>
+  <data name="MenuPaste" xml:space="preserve">
+    <value>페이스트(_P)</value>
+  </data>
 </root>

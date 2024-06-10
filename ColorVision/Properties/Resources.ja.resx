@@ -348,4 +348,7 @@
   <data name="Rollback" xml:space="preserve">
     <value>戻る</value>
   </data>
+  <data name="MenuPaste" xml:space="preserve">
+    <value>ペースト(_P)</value>
+  </data>
 </root>

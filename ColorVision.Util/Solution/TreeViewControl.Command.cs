@@ -1,14 +1,36 @@
-﻿using ColorVision.Solution.V;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Solution.V;
+using ColorVision.UI.Menus;
+using System.Windows;
 using System.Windows.Input;
 
 namespace ColorVision.Solution
 {
+    public class ExportEventWindow : IMenuItem
+    {
+        public string? OwnerGuid => null;
+        public string? GuidId => "Edit";
+
+        public int Order => 1000;
+
+        public Visibility Visibility => Visibility.Visible;
+
+        public string? Header => "Edit";
+
+        public string? InputGestureText => null;
+
+        public object? Icon => null;
+
+        public RelayCommand Command => null;
+
+    }
+
     public partial class TreeViewControl
     {
         private void IniCommand()
         {
             ApplicationCommands.Delete.InputGestures.Add(new KeyGesture(Key.Delete, ModifierKeys.None, "Del"));
-            CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ExecutedCommand, (s,e) => { if (e.Parameter is VObject baseObject) e.CanExecute = false; }));
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ExecutedCommand, CanExecuteCommand));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Cut, ExecutedCommand, CanExecuteCommand));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, ExecutedCommand, CanExecuteCommand));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, ExecutedCommand, CanExecuteCommand));
@@ -26,15 +48,15 @@ namespace ColorVision.Solution
                 }
                 else if (e.Command == ApplicationCommands.Copy)
                 {
-                    e.CanExecute = baseObject.CanCopy;
+                    e.CanExecute = true;
                 }
                 else if (e.Command == ApplicationCommands.Cut)
                 {
-                    e.CanExecute = false;
+                    e.CanExecute = true;
                 }
                 else if (e.Command == ApplicationCommands.Paste)
                 {
-                    e.CanExecute = false;
+                    e.CanExecute = true;
                 }
                 else if (e.Command == ApplicationCommands.Delete)
                 {
