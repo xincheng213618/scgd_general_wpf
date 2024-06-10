@@ -1,5 +1,7 @@
 ﻿using ColorVision.UI.Views;
 using System;
+using System.ComponentModel;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
@@ -46,7 +48,20 @@ namespace ColorVision.Solution.Searches
 
             SolutionManager.GetInstance().OpenFile += (s, e) =>
             {
-                LayoutDocument layoutDocument = new LayoutDocument() { ContentId = Guid.NewGuid().ToString(), Content = e, Title = e.ToolTip.ToString() };
+                LayoutDocument layoutDocument = new LayoutDocument() { ContentId = Guid.NewGuid().ToString(), Content = e.UserControl, Title = e.Name };
+                layoutDocument.Closing += async (s, e1) =>
+                {
+                    e1.Cancel = true; // 取消默认的关闭行为
+                    e.Close();
+                    // 延时100毫秒
+                    await Task.Delay(10);
+
+                    // 释放资源
+                    layoutDocument.Content = null;
+
+                    // 从父容器中移除
+                    LayoutDocumentPane.Children.Remove(layoutDocument);
+                };
                 LayoutDocumentPane.Children.Add(layoutDocument);
                 LayoutDocumentPane.SelectedContentIndex = LayoutDocumentPane.IndexOf(layoutDocument) ;
             };

@@ -15,6 +15,27 @@ using ColorVision.Solution;
 
 namespace ColorVision.Engine.UIExport.SolutionExports
 {
+
+    public class CVCIEFileOpen : IFileControl
+    {
+        public ImageView ImageView { get; set; } = new ImageView();
+
+        public string Name { get; set; }
+
+        public UserControl UserControl => ImageView;
+
+        public void Close()
+        {
+            ImageView.ToolBarTop.ClearImage();
+            ImageView = null;
+        }
+
+        public void Open()
+        {
+            
+        }
+    }
+
     public class CVcieFile : ViewModelBase, IFile
     {
         public FileInfo FileInfo { get; set; }
@@ -48,23 +69,12 @@ namespace ColorVision.Engine.UIExport.SolutionExports
         {
             if (File.Exists(FileInfo.FullName))
             {
-                ImageView imageView = new() { ToolTip = Name };
+                CVCIEFileOpen fileControl = new CVCIEFileOpen() { Name = Name };
 
                 CVFileUtil.ReadCVRaw(FileInfo.FullName, out CVCIEFile fileInfo);
 
-
-                imageView.OpenImage(new NetFileUtil().OpenLocalCVFile(FileInfo.FullName));
-                SolutionManager.GetInstance().OpenFileWindow(imageView);
-
-                //Window window = new() { Title = Resources.QuickPreview, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-                //window.Content = imageView;
-                //imageView.OpenImage(new NetFileUtil().OpenLocalCVFile(FileInfo.FullName));
-
-                //window.Show();
-                //window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
-                //{
-                //    imageView.ToolBarTop.ClearImage();
-                //}));
+                fileControl.ImageView.OpenImage(new NetFileUtil().OpenLocalCVFile(FileInfo.FullName));
+                SolutionManager.GetInstance().OpenFileWindow(fileControl);
             }
             else
             {

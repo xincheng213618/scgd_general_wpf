@@ -58,20 +58,9 @@ namespace ColorVision.Engine.UIExport.SolutionExports
 
         public void Open()
         {
-            ImageView imageView = new ImageView() { ToolTip =Name };
-            SolutionManager.GetInstance().OpenFileWindow(imageView);
-            _ = RunAsync(imageView);
-
-            //Window window = new() { };
-            //window.Content = imageView;
-            //_ = RunAsync(imageView);
-            //window.Show();
-        }
-        public async Task<Task> RunAsync(ImageView imageView)
-        {
-            await Task.Delay(100);
-            imageView.OpenImage(FileInfo.FullName);
-            return Task.CompletedTask;
+            CVCIEFileOpen fileControl = new CVCIEFileOpen() { Name = Name };
+            fileControl.ImageView.OpenImage(FileInfo.FullName);
+            SolutionManager.GetInstance().OpenFileWindow(fileControl);
         }
 
 

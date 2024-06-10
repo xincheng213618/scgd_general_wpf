@@ -251,12 +251,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         cieBdHeader = new List<string> { "POIPoint.Id", "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "POIPointResultModel.ValidateResult" };
                         cieHeader = new List<string> { "Id", ColorVision.Engine.Properties.Resources.Name, ColorVision.Engine.Properties.Resources.Position, ColorVision.Engine.Properties.Resources.Size, ColorVision.Engine.Properties.Resources.Shape, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "Validate" };
 
-                        if (listViewSide.View is GridView gridViewPOI_XY_UV)
+                        if (listViewSide.View is GridView gridViewPOI_XY_UV1)
                         {
                             LeftGridViewColumnVisibilitys.Clear();
-                            gridViewPOI_XY_UV.Columns.Clear();
+                            gridViewPOI_XY_UV1.Columns.Clear();
                             for (int i = 0; i < cieHeader.Count; i++)
-                                gridViewPOI_XY_UV.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
+                                gridViewPOI_XY_UV1.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
                         }
 
                         listViewSide.ItemsSource = result.PoiResultCIExyuvDatas;

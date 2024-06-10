@@ -14,6 +14,19 @@ using System.Windows.Controls;
 
 namespace ColorVision.Solution
 {
+
+    public interface IFileControl
+    {
+        string Name { get; set; }
+
+        UserControl UserControl { get; }
+
+        void Open();
+        void Close();
+    }
+
+
+
     /// <summary>
     /// 工程模块控制中心
     /// </summary>
@@ -87,10 +100,10 @@ namespace ColorVision.Solution
         }
 
 
-        public event EventHandler<UserControl> OpenFile;
+        public event EventHandler<IFileControl> OpenFile;
 
 
-        public void OpenFileWindow(UserControl userControl)
+        public void OpenFileWindow(IFileControl userControl)
         {
             OpenFile?.Invoke(this, userControl);
         }
