@@ -26,7 +26,7 @@ namespace ColorVision.Engine.Services.Devices
         public virtual string SubscribeTopic { get; set; }
         public virtual bool IsAlive { get; set; }
         public virtual DateTime LastAliveTime { get; set; }
-
+        public ServiceTypes ServiceTypes => (ServiceTypes)SysResourceModel.Type;
         public virtual int HeartbeatTime { get; set; }
 
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
@@ -107,7 +107,6 @@ namespace ColorVision.Engine.Services.Devices
         public override string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; NotifyPropertyChanged(); } }
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set{ SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
-        public ServiceTypes ServiceTypes => (ServiceTypes)SysResourceModel.Type;
 
         public DeviceService(SysDeviceModel sysResourceModel) : base()
         {

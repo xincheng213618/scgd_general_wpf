@@ -44,10 +44,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             Grid.SetColumn(TextBox1, 0);
             Grid.SetRow(TextBox1, 0);
             MainGrid.Children.Insert(0, TextBox1);
-            MouseDown += (s, e) =>
-            {
-                TextBox1.Focus();
-            };
+            MouseDown += (s, e) => TextBox1.Focus();
 
             View = new View();
 
