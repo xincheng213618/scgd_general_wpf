@@ -9,6 +9,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Common.MVVM;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 
 namespace ColorVision.Solution.V
 {
@@ -43,6 +44,7 @@ namespace ColorVision.Solution.V
         }
     }
 
+    [DataContract]
     public class VObject : INotifyPropertyChanged
     {
         public VObject Parent { get; set; }

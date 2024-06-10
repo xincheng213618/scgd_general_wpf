@@ -3,6 +3,9 @@ using ColorVision.Common.NativeMethods;
 using System.Windows.Controls;
 using ColorVision.Util.Properties;
 using System.IO;
+using System.Windows;
+using System.Windows.Input;
+using System.Windows.Forms.VisualStyles;
 
 namespace ColorVision.Solution.V.Files
 {
@@ -21,6 +24,9 @@ namespace ColorVision.Solution.V.Files
 
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Open, Command = OpenCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "Copy", Command = ApplicationCommands.Copy,CommandParameter = this });
+            ContextMenu.Items.Add(new MenuItem() { Header = "Paste", Command = ApplicationCommands.Paste, CommandParameter = this });
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Property, Command = AttributesCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = DeleteCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Property, Command = AttributesCommand });
             if (file.ContextMenu != null)

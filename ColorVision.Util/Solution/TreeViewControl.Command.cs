@@ -1,8 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Solution.V;
 using ColorVision.UI.Menus;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+using System.Runtime.Serialization;
 using System.Windows;
 using System.Windows.Input;
+using YamlDotNet.Serialization;
 
 namespace ColorVision.Solution
 {
@@ -29,7 +33,6 @@ namespace ColorVision.Solution
     {
         private void IniCommand()
         {
-            ApplicationCommands.Delete.InputGestures.Add(new KeyGesture(Key.Delete, ModifierKeys.None, "Del"));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ExecutedCommand, CanExecuteCommand));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Cut, ExecutedCommand, CanExecuteCommand));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, ExecutedCommand, CanExecuteCommand));
@@ -83,7 +86,7 @@ namespace ColorVision.Solution
                 }
                 else if (e.Command == ApplicationCommands.Paste)
                 {
-                    e.CanExecute = false;
+                    e.CanExecute = Clipboard.ContainsData("VObjectFormat");
                 }
                 else if (e.Command == ApplicationCommands.Delete)
                 {
@@ -103,6 +106,19 @@ namespace ColorVision.Solution
         {
             if (e.Command == ApplicationCommands.Copy)
             {
+                if (e.Parameter is VObject baseObject)
+                {
+                    DataContractSerializer serializer = new DataContractSerializer(typeof(VObject));
+
+                    using (MemoryStream memoryStream = new MemoryStream())
+                    {
+                        serializer.WriteObject(memoryStream, baseObject);
+                        byte[] objectData = memoryStream.ToArray();
+
+                        // 将字节数组放入剪贴板
+                        Clipboard.SetData("VObjectFormat", objectData);
+                    }
+                }
                 //this.DoCopy();
             }
             else if (e.Command == ApplicationCommands.Cut)
@@ -111,7 +127,15 @@ namespace ColorVision.Solution
             }
             else if (e.Command == ApplicationCommands.Paste)
             {
-                //this.DoPaste();
+                if (Clipboard.ContainsData("VObjectFormat"))
+                {
+                    byte[] objectData = (byte[])Clipboard.GetData("VObjectFormat");
+                    using (MemoryStream memoryStream = new MemoryStream(objectData))
+                    {
+                        DataContractSerializer serializer = new DataContractSerializer(typeof(VObject));
+                        VObject baseObject = (VObject)serializer.ReadObject(memoryStream);
+                    }
+                }
             }
             else if (e.Command == ApplicationCommands.Delete)
             {
