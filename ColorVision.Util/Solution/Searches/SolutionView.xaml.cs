@@ -76,7 +76,7 @@ namespace ColorVision.Solution.Searches
                         e1.Cancel = true; // 取消默认的关闭行为
                         e.Close();
                         // 延时100毫秒
-                        await Task.Delay(10);
+                        await Task.Delay(30);
 
                         // 释放资源
                         layoutDocument.Content = null;
