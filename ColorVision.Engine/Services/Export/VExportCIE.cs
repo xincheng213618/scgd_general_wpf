@@ -1,17 +1,45 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Net;
 using ColorVision.RecentFile;
+using CVImageChannelLib;
 using MQTTMessageLib.FileServer;
 using OpenCvSharp;
 using System;
 using System.Collections.ObjectModel;
 using System.Drawing.Imaging;
+using System.Globalization;
 using System.IO;
 
 namespace ColorVision.Engine.Services.Export
 {
     public class VExportCIE : ViewModelBase
     {
+
+        public static void SaveTo(VExportCIE export, Mat src, string fileName)
+        {
+            fileName = fileName + export.ExportImageFormat.ToString().ToLower(CultureInfo.CurrentCulture);
+            if (export.ExportImageFormat == ImageFormat.Tiff)
+            {
+                src.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.TiffCompression, 1));
+            }
+            else if(export.ExportImageFormat == ImageFormat.Bmp)
+            {
+                src.SaveImage(fileName);
+            }
+            else if (export.ExportImageFormat == ImageFormat.Png)
+            {
+                src.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.PngCompression, 3));
+            }
+            else if (export.ExportImageFormat == ImageFormat.Jpeg)
+            {
+                src.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.JpegQuality, 95));
+            }
+            else
+            {
+                src.SaveImage(fileName +"tiff");
+            }
+        }
+
         public static int SaveToTif(VExportCIE export)
         {
             string FileName = export.FilePath;
@@ -30,7 +58,7 @@ namespace ColorVision.Engine.Services.Export
                     {
                         CVFileUtil.ReadCIEFileData(FileName, ref cvcie, index);
                         src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
-                        src.SaveImage(SavePath + "\\" + Name + "Src.tif");
+                        SaveTo(export, src,SavePath + "\\" + Name + "Src.");
                     }
                     break;
                 case FileExtType.Src:
@@ -38,7 +66,7 @@ namespace ColorVision.Engine.Services.Export
                     {
                         CVFileUtil.ReadCIEFileData(FileName, ref cvcie, index);
                         src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
-                        src.SaveImage(SavePath + "\\" + Name + "Src.tif");
+                        SaveTo(export, src, SavePath + "\\" + Name + "Src.");
                     }
                     break;
                 case FileExtType.CIE:
@@ -51,14 +79,7 @@ namespace ColorVision.Engine.Services.Export
                             if (CVFileUtil.Read(cvcie.srcFileName, out CVCIEFile cvraw))
                             {
                                 src = new Mat(cvraw.cols, cvraw.rows, MatType.MakeType(cvraw.Depth, cvraw.channels), cvraw.data);
-                                if (export.ExportImageFormat == ImageFormat.Tiff)
-                                {
-                                    src.SaveImage(SavePath + "\\" + Name + "_Src.tif", new ImageEncodingParam(ImwriteFlags.TiffCompression, 100));
-                                }
-                                else
-                                {
-                                    src.SaveImage(SavePath + "\\" + Name + "_Src.tif");
-                                }
+                                SaveTo(export, src, SavePath + "\\" + Name + "_Src.");
                             }
                         }
                     }
@@ -69,7 +90,7 @@ namespace ColorVision.Engine.Services.Export
                             if (export.IsExportChannelY)
                             {
                                 src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(MatType.CV_32F, 1), cvcie.data);
-                                src.SaveImage(SavePath + "\\" + Name + "_Y.tif");
+                                SaveTo(export, src, SavePath + "\\" + Name + "_Y.");
                             }
                         }
                         else if (cvcie.channels == 3)
@@ -81,21 +102,22 @@ namespace ColorVision.Engine.Services.Export
                                 byte[] data = new byte[len];
                                 Buffer.BlockCopy(cvcie.data, 0 * len, data, 0, len);
                                 src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(MatType.CV_32F, 1), data);
-                                src.SaveImage(SavePath + "\\" + Name + $"_X.tif");
+                                SaveTo(export, src, SavePath + "\\" + Name + "_X.");
                             }
                             if (export.IsExportChannelY)
                             {
                                 byte[] data = new byte[len];
                                 Buffer.BlockCopy(cvcie.data, 1 * len, data, 0, len);
                                 src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(MatType.CV_32F, 1), data);
-                                src.SaveImage(SavePath + "\\" + Name + $"_Y.tif");
+                                SaveTo(export, src, SavePath + "\\" + Name + "_Y.");
+
                             }
                             if (export.IsExportChannelZ)
                             {
                                 byte[] data = new byte[len];
                                 Buffer.BlockCopy(cvcie.data, 2 * len, data, 0, len);
                                 src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(MatType.CV_32F, 1), data);
-                                src.SaveImage(SavePath + "\\" + Name + $"_Z.tif");
+                                SaveTo(export, src, SavePath + "\\" + Name + "_Z.");
                             }
                         }
                     }
