@@ -261,4 +261,19 @@
   <data name="SelectProjectSaveLocation" xml:space="preserve">
     <value>Выберите, где сохранить проект</value>
   </data>
+  <data name="MenuCopyFullPath" xml:space="preserve">
+    <value>Скопировать полный путь (U)</value>
+  </data>
+  <data name="MenuOpenContainingFolder" xml:space="preserve">
+    <value>Откройте папку (O)</value>
+  </data>
+  <data name="MenuOpenFileInExplorer" xml:space="preserve">
+    <value>Откройте папку в файловом менеджере (X)</value>
+  </data>
+  <data name="MenuCut" xml:space="preserve">
+    <value>Вырезать(Т)</value>
+  </data>
+  <data name="MenuCopy" xml:space="preserve">
+    <value>Копировать (С)</value>
+  </data>
 </root>

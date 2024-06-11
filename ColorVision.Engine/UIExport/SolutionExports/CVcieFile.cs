@@ -33,7 +33,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports
         }
     }
 
-    public class CVcieFile : ViewModelBase, IFile,IContextMenuProvider
+    public class CVcieFile : ViewModelBase, IFileMeta,IContextMenuProvider
     {
         public FileInfo FileInfo { get; set; }
 

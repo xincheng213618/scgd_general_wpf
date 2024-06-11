@@ -8,41 +8,10 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Common.MVVM;
-using System.Collections.Generic;
 using System.Runtime.Serialization;
 
 namespace ColorVision.Solution.V
 {
-
-    public static class VObjectExtensions
-    {
-        /// <summary>
-        /// 得到指定数据类型的祖先节点。
-        /// </summary>
-        public static T? GetAncestor<T>(this VObject This) where T : VObject
-        {
-            if (This is T t)
-                return t;
-
-            if (This.Parent == null)
-                return null;
-
-            return This.Parent.GetAncestor<T>();
-        }
-
-        public static IEnumerable<VObject> GetAllVisualChildren(this IEnumerable<VObject> visualChildren)
-        {
-            foreach (var child in visualChildren)
-            {
-                yield return child;
-
-                foreach (var grandChild in GetAllVisualChildren(child.VisualChildren))
-                {
-                    yield return grandChild;
-                }
-            }
-        }
-    }
 
     [DataContract]
     public class VObject : INotifyPropertyChanged
@@ -50,8 +19,6 @@ namespace ColorVision.Solution.V
         public VObject Parent { get; set; }
 
         public virtual ObservableCollection<VObject> VisualChildren { get; set; }
-        public virtual ObservableCollection<VObject> VisualChildrenHidden { get; set; }
-
         public event EventHandler AddChildEventHandler;
 
         public virtual void AddChild(VObject vObject)
@@ -59,18 +26,13 @@ namespace ColorVision.Solution.V
             if (vObject == null) return;
             vObject.Parent = this;
             AddChildEventHandler?.Invoke(this, new EventArgs());
-
-            if (vObject.Visibility == Visibility.Visible)
-                VisualChildren.SortedAdd(vObject);
-            else
-                VisualChildrenHidden.SortedAdd(vObject);
+            VisualChildren.SortedAdd(vObject);
 
         }
         public event EventHandler RemoveChildEventHandler;
         public virtual void RemoveChild(VObject vObject)
         {
             this.VisualChildren.Remove(vObject);
-            this.VisualChildrenHidden.Remove(vObject);
             RemoveChildEventHandler?.Invoke(this, new EventArgs());
         }
 
@@ -94,11 +56,8 @@ namespace ColorVision.Solution.V
 
         public RelayCommand AddChildren { get; set; }
         public RelayCommand RemoveChildren { get; set; }
-
         public RelayCommand DeleteCommand { get; set; }
-
         public RelayCommand OpenCommand { get; set; }
-
         public RelayCommand AttributesCommand { get; set; }
 
         public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
@@ -113,49 +72,15 @@ namespace ColorVision.Solution.V
         public VObject()
         {
             VisualChildren = new ObservableCollection<VObject>() { };
-            VisualChildrenHidden = new ObservableCollection<VObject>() { };
             DeleteCommand = new RelayCommand((s) => Delete(), (s) => { return Parent != null && CanDelete; });
             OpenCommand = new RelayCommand((s) => Open(), (s) => { return Parent != null; });
-        }
-
-
-        private Visibility _Visibility = Visibility.Visible;
-
-        public virtual Visibility Visibility
-        {
-            get => _Visibility;
-            set
-            {
-                if (value != _Visibility)
-                {
-                    _Visibility = value;
-                    if (Parent is VObject objects)
-                    {
-                        if (_Visibility == Visibility.Visible)
-                        {
-                            objects.VisualChildrenHidden.Remove(this);
-                            objects.VisualChildren.SortedAdd(this);
-                        }
-                        else
-                        {
-                            objects.VisualChildren.Remove(this);
-                            objects.VisualChildrenHidden.SortedAdd(this);
-                        }
-                    }
-                    NotifyPropertyChanged();
-                }
-            }
         }
 
         public virtual void Delete()
         {
             if (Parent == null)
                 return;
-
-            if (MessageBox.Show("即将删除文件", "Grid", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
-            {
-                Parent.RemoveChild(this);
-            };
+            Parent.RemoveChild(this);
         }
 
 

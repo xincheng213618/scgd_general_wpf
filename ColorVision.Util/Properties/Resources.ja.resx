@@ -261,4 +261,19 @@
   <data name="SelectProjectSaveLocation" xml:space="preserve">
     <value>プロジェクトを保存する場所を選択します</value>
   </data>
+  <data name="MenuCopyFullPath" xml:space="preserve">
+    <value>フルパスをコピー(U)</value>
+  </data>
+  <data name="MenuOpenContainingFolder" xml:space="preserve">
+    <value>フォルダを開く(O)</value>
+  </data>
+  <data name="MenuOpenFileInExplorer" xml:space="preserve">
+    <value>ファイルマネージャーでフォルダーを開きます（X）</value>
+  </data>
+  <data name="MenuCut" xml:space="preserve">
+    <value>カット(T)</value>
+  </data>
+  <data name="MenuCopy" xml:space="preserve">
+    <value>コピー(C)</value>
+  </data>
 </root>

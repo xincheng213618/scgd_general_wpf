@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace ColorVision.Solution.V.Files
 {
-    public interface IFile
+    public interface IFileMeta
     {
         string Name { get; set; }
 
@@ -23,8 +23,6 @@ namespace ColorVision.Solution.V.Files
         string Extension { get; }
 
         void Open();
-        void Copy();
-        void ReName();
         void Delete();
     }
 

@@ -17,7 +17,7 @@ namespace ColorVision.Solution.V
     public class SolutionExplorer: VObject
     {
         public DirectoryInfo DirectoryInfo { get; set; }
-        public RelayCommand OpenExplorer { get; set; }
+        public RelayCommand OpenFileInExplorerCommand { get; set; }
         public RelayCommand ClearCacheCommand { get; set; }
 
         public static SolutionSetting Setting => SolutionSetting.Instance;
@@ -85,26 +85,6 @@ namespace ColorVision.Solution.V
 
         public EventHandler VisualChildrenEventHandler { get; set; }
 
-        public string SolutionCachePath
-        {
-            get
-            {
-                // Define the name of the cache folder
-                string cacheFolderName = ".SolutionCache";
-                // Create the full path for the cache folder
-                string cacheFolderPath = Path.Combine(DirectoryInfo.FullName, cacheFolderName);
-
-                // Create the cache folder if it doesn't exist
-                if (!Directory.Exists(cacheFolderPath))
-                {
-                    Directory.CreateDirectory(cacheFolderPath);
-                    // Set the folder attributes to hidden
-                    File.SetAttributes(cacheFolderPath, FileAttributes.Hidden);
-                }
-                return cacheFolderPath;
-            }
-        }
-
         public void DriveMonitor()
         {
             Task.Run(async () =>
@@ -135,20 +115,13 @@ namespace ColorVision.Solution.V
 
         public DriveInfo DriveInfo { get; set; }
 
-        public void Refresh()
-        {
-            VisualChildren.Clear();
-            GeneralCVSln();
-        }
-
-
         public void GeneralContextMenu()
         {
-            OpenExplorer = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName), a => DirectoryInfo.Exists);
+            OpenFileInExplorerCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             ClearCacheCommand = new RelayCommand(a => { DirectoryInfo.Delete(true); VisualChildren.Clear(); });
 
             ContextMenu = new ContextMenu();
-            MenuItem menuItem = new() { Header = "打开工程文件夹", Command = OpenExplorer };
+            MenuItem menuItem = new() { Header = "打开工程文件夹", Command = OpenFileInExplorerCommand };
             ContextMenu.Items.Add(menuItem);
             MenuItem menuItem2 = new() { Header = "清除缓存", Command = ClearCacheCommand };
             ContextMenu.Items.Add(menuItem2);
@@ -170,9 +143,9 @@ namespace ColorVision.Solution.V
             {
                 foreach (var type in assembly.GetTypes())
                 {
-                    if (typeof(IFile).IsAssignableFrom(type) && !type.IsInterface)
+                    if (typeof(IFileMeta).IsAssignableFrom(type) && !type.IsInterface)
                     {
-                        if (Activator.CreateInstance(type) is IFile page)
+                        if (Activator.CreateInstance(type) is IFileMeta page)
                         {
                             FileTypes.Add(page.Extension, type);
                         }
@@ -221,7 +194,7 @@ namespace ColorVision.Solution.V
             }
             if (matchingTypes.Count > 0)
             {
-                if (Activator.CreateInstance(matchingTypes[0], fileInfo) is IFile file)
+                if (Activator.CreateInstance(matchingTypes[0], fileInfo) is IFileMeta file)
                 {
                     VFile vFile = new VFile(file);
                     vObject.AddChild(vFile);

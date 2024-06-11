@@ -57,7 +57,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports
         }
     }
 
-    public class TextFile : ViewModelBase, IFile
+    public class TextFile : ViewModelBase, IFileMeta
     {
         public TextFile() { }
         public FileInfo FileInfo { get; set; }
@@ -139,7 +139,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports
     }
 
 
-    public class ImageFile : ViewModelBase, IFile
+    public class ImageFile : ViewModelBase, IFileMeta
     {
         public ImageFile() { }
         public FileInfo FileInfo { get; set; }

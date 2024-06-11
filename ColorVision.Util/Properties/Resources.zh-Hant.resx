@@ -261,4 +261,19 @@
   <data name="SelectProjectSaveLocation" xml:space="preserve">
     <value>選擇項目保存位置</value>
   </data>
+  <data name="MenuCopyFullPath" xml:space="preserve">
+    <value>複製完整路徑(U)</value>
+  </data>
+  <data name="MenuOpenContainingFolder" xml:space="preserve">
+    <value>打開所在的資料夾(O)</value>
+  </data>
+  <data name="MenuOpenFileInExplorer" xml:space="preserve">
+    <value>在檔案總管中開啟資料夾(X)</value>
+  </data>
+  <data name="MenuCut" xml:space="preserve">
+    <value>剪切(T)</value>
+  </data>
+  <data name="MenuCopy" xml:space="preserve">
+    <value>複製(C)</value>
+  </data>
 </root>

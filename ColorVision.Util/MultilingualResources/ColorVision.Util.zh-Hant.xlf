@@ -63,6 +63,18 @@
           <source>最大化</source>
           <target state="new">最大化</target>
         </trans-unit>
+        <trans-unit id="MenuCopy" translate="yes" xml:space="preserve">
+          <source>复制(_C)</source>
+          <target state="new">複製(C)</target>
+        </trans-unit>
+        <trans-unit id="MenuCopyFullPath" translate="yes" xml:space="preserve">
+          <source>复制完整路径(_U)</source>
+          <target state="new">複製完整路徑(U)</target>
+        </trans-unit>
+        <trans-unit id="MenuCut" translate="yes" xml:space="preserve">
+          <source>剪切(_T)</source>
+          <target state="new">剪切(T)</target>
+        </trans-unit>
         <trans-unit id="MenuLanguage" translate="yes" xml:space="preserve">
           <source>语言(_L)</source>
           <target state="new">語言(_L）</target>
@@ -74,6 +86,14 @@
         <trans-unit id="MenuOpen" translate="yes" xml:space="preserve">
           <source>打开(_O)</source>
           <target state="new">打开(_O)</target>
+        </trans-unit>
+        <trans-unit id="MenuOpenContainingFolder" translate="yes" xml:space="preserve">
+          <source>打开所在的文件夹(_O)</source>
+          <target state="new">打開所在的資料夾(O)</target>
+        </trans-unit>
+        <trans-unit id="MenuOpenFileInExplorer" translate="yes" xml:space="preserve">
+          <source>在文件管理器中打开文件夹(_X)</source>
+          <target state="new">在檔案總管中開啟資料夾(X)</target>
         </trans-unit>
         <trans-unit id="MenuTheme" translate="yes" xml:space="preserve">
           <source>主题(_H)</source>
