@@ -95,7 +95,7 @@ namespace ColorVision.Solution.Searches
             };
         }
 
-        private static LayoutDocument FindDocumentById(object parent, string contentId)
+        private static LayoutDocument? FindDocumentById(object parent, string contentId)
         {
             if (parent is ILayoutContainer container)
             {
@@ -117,7 +117,7 @@ namespace ColorVision.Solution.Searches
             }
             return null;
         }
-        private static ILayoutContainer FindParentContainer(object parent, LayoutDocument targetDocument)
+        private static ILayoutContainer? FindParentContainer(object parent, LayoutDocument targetDocument)
         {
             if (parent is ILayoutContainer container)
             {
