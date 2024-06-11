@@ -33,7 +33,6 @@ namespace ColorVision.Engine.Services.Core
         public CalibrationResource(SysResourceModel sysResourceModel) : base(sysResourceModel) 
         {
             CalibrationResources.Add(this);
-
             //Config = BaseResourceObjectExtensions.TryDeserializeConfig<CalibrationFileConfig>(sysResourceModel.Value);
         }
 

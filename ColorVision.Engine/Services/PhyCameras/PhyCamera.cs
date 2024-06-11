@@ -336,7 +336,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             await Task.Delay(10);
             if (File.Exists(UploadFilePath))
             {
-                string path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\ColorVision\\Cacahe";
+                string path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) + "\\ColorVision\\Cache";
                 if (Directory.Exists(path))
                     Directory.Delete(path, true);
                 Directory.CreateDirectory(path);
@@ -351,256 +351,266 @@ namespace ColorVision.Engine.Services.PhyCameras
                     return;
                 }
 
-                string Cameracfg = path + "\\Camera.cfg";
-
-                string Calibrationcfg = path + "\\Calibration.cfg";
-
-                Dictionary<string, List<ZipCalibrationItem>> AllCalFiles = JsonConvert.DeserializeObject<Dictionary<string, List<ZipCalibrationItem>>>(File.ReadAllText(Calibrationcfg, Encoding.GetEncoding("gbk")));
-
-                Dictionary<string, CalibrationResource> keyValuePairs2 = new();
-
-                if (AllCalFiles != null)
+                try
                 {
-                    foreach (var item in AllCalFiles)
+                    string Cameracfg = path + "\\Camera.cfg";
+                    string Calibrationcfg = path + "\\Calibration.cfg";
+
+                    Dictionary<string, List<ZipCalibrationItem>> AllCalFiles = JsonConvert.DeserializeObject<Dictionary<string, List<ZipCalibrationItem>>>(File.ReadAllText(Calibrationcfg, Encoding.GetEncoding("gbk")));
+
+                    Dictionary<string, CalibrationResource> keyValuePairs2 = new();
+
+                    if (AllCalFiles != null)
                     {
-                        foreach (var item1 in item.Value)
+                        foreach (var item in AllCalFiles)
                         {
-                            Application.Current.Dispatcher.Invoke(() =>
+                            foreach (var item1 in item.Value)
                             {
-                                UploadList.Add(new FileUploadInfo() { FileName = item1.Title });
-                            });
-                        }
-                    }
-
-                    foreach (var item in AllCalFiles)
-                    {
-                        foreach (var item1 in item.Value)
-                        {
-                            MsgRecord msgRecord = null;
-                            string FilePath = string.Empty;
-                            switch (item1.CalibrationType)
-                            {
-                                case CalibrationType.DarkNoise:
-                                    FilePath = path + "\\Calibration\\" + "DarkNoise\\" + item1.FileName;
-                                    break;
-                                case CalibrationType.DefectWPoint:
-                                    FilePath = path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName;
-                                    break;
-                                case CalibrationType.DefectBPoint:
-                                    FilePath = path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName;
-                                    break;
-                                case CalibrationType.DefectPoint:
-                                    FilePath = path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName;
-                                    break;
-                                case CalibrationType.DSNU:
-                                    FilePath = path + "\\Calibration\\" + "DSNU\\" + item1.FileName;
-                                    break;
-                                case CalibrationType.Uniformity:
-                                    FilePath = path + "\\Calibration\\" + "Uniformity\\" + item1.FileName;
-                                    break;
-                                case CalibrationType.Luminance:
-                                    FilePath = path + "\\Calibration\\" + "Luminance\\" + item1.FileName;
-                                    break;
-                                case CalibrationType.LumOneColor:
-                                    FilePath = path + "\\Calibration\\" + "LumOneColor\\" + item1.FileName;
-                                    break;
-                                case CalibrationType.LumFourColor:
-                                    FilePath = path + "\\Calibration\\" + "LumFourColor\\" + item1.FileName;
-                                    break;
-                                case CalibrationType.LumMultiColor:
-                                    FilePath = path + "\\Calibration\\" + "LumMultiColor\\" + item1.FileName;
-                                    break;
-                                case CalibrationType.LumColor:
-                                    break;
-                                case CalibrationType.Distortion:
-                                    FilePath = path + "\\Calibration\\" + "Distortion\\" + item1.FileName;
-                                    break;
-                                case CalibrationType.ColorShift:
-                                    FilePath = path + "\\Calibration\\" + "ColorShift\\" + item1.FileName;
-                                    break;
-                                case CalibrationType.Empty_Num:
-                                    break;
-                                default:
-                                    break;
-                            }
-                            FileUploadInfo uploadMeta = UploadList.First(a => a.FileName == item1.Title);
-                            uploadMeta.FilePath = FilePath;
-                            uploadMeta.FileSize = MemorySize.MemorySizeText(MemorySize.FileSize(FilePath));
-                            uploadMeta.UploadStatus = UploadStatus.CheckingMD5;
-                            await Task.Delay(1);
-                            string md5 = Tool.CalculateMD5(FilePath);
-                            if (string.IsNullOrWhiteSpace(md5))
-                                continue;
-
-                            bool isExist = false;
-
-                            foreach (var item2 in VisualChildren)
-                            {
-                                if (item2 is CalibrationResource CalibrationResource)
+                                Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    if (CalibrationResource.SysResourceModel.Code != null && CalibrationResource.SysResourceModel.Code.Contains(md5) )
+                                    UploadList.Add(new FileUploadInfo() { FileName = item1.Title });
+                                });
+                            }
+                        }
+
+                        foreach (var item in AllCalFiles)
+                        {
+                            foreach (var item1 in item.Value)
+                            {
+                                MsgRecord msgRecord = null;
+                                string FilePath = string.Empty;
+                                switch (item1.CalibrationType)
+                                {
+                                    case CalibrationType.DarkNoise:
+                                        FilePath = path + "\\Calibration\\" + "DarkNoise\\" + item1.FileName;
+                                        break;
+                                    case CalibrationType.DefectWPoint:
+                                        FilePath = path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName;
+                                        break;
+                                    case CalibrationType.DefectBPoint:
+                                        FilePath = path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName;
+                                        break;
+                                    case CalibrationType.DefectPoint:
+                                        FilePath = path + "\\Calibration\\" + "DefectPoint\\" + item1.FileName;
+                                        break;
+                                    case CalibrationType.DSNU:
+                                        FilePath = path + "\\Calibration\\" + "DSNU\\" + item1.FileName;
+                                        break;
+                                    case CalibrationType.Uniformity:
+                                        FilePath = path + "\\Calibration\\" + "Uniformity\\" + item1.FileName;
+                                        break;
+                                    case CalibrationType.Luminance:
+                                        FilePath = path + "\\Calibration\\" + "Luminance\\" + item1.FileName;
+                                        break;
+                                    case CalibrationType.LumOneColor:
+                                        FilePath = path + "\\Calibration\\" + "LumOneColor\\" + item1.FileName;
+                                        break;
+                                    case CalibrationType.LumFourColor:
+                                        FilePath = path + "\\Calibration\\" + "LumFourColor\\" + item1.FileName;
+                                        break;
+                                    case CalibrationType.LumMultiColor:
+                                        FilePath = path + "\\Calibration\\" + "LumMultiColor\\" + item1.FileName;
+                                        break;
+                                    case CalibrationType.LumColor:
+                                        break;
+                                    case CalibrationType.Distortion:
+                                        FilePath = path + "\\Calibration\\" + "Distortion\\" + item1.FileName;
+                                        break;
+                                    case CalibrationType.ColorShift:
+                                        FilePath = path + "\\Calibration\\" + "ColorShift\\" + item1.FileName;
+                                        break;
+                                    case CalibrationType.Empty_Num:
+                                        break;
+                                    default:
+                                        break;
+                                }
+                                FileUploadInfo uploadMeta = UploadList.First(a => a.FileName == item1.Title);
+                                uploadMeta.FilePath = FilePath;
+                                uploadMeta.FileSize = MemorySize.MemorySizeText(MemorySize.FileSize(FilePath));
+                                uploadMeta.UploadStatus = UploadStatus.CheckingMD5;
+                                await Task.Delay(1);
+                                string md5 = Tool.CalculateMD5(FilePath);
+                                if (string.IsNullOrWhiteSpace(md5))
+                                    continue;
+
+                                bool isExist = false;
+
+                                foreach (var item2 in VisualChildren)
+                                {
+                                    if (item2 is CalibrationResource CalibrationResource)
                                     {
-                                        keyValuePairs2.TryAdd(item1.Title, CalibrationResource);
-                                        isExist = true;
-                                        continue;
+                                        if (CalibrationResource.SysResourceModel.Code != null && CalibrationResource.SysResourceModel.Code.Contains(md5))
+                                        {
+                                            keyValuePairs2.TryAdd(item1.Title, CalibrationResource);
+                                            isExist = true;
+                                            continue;
+                                        }
                                     }
                                 }
-                            }
-                            if (isExist)
-                            {
-                                uploadMeta.UploadStatus = UploadStatus.Completed;
-                                await Task.Delay(10);
-                                continue;
-                            }
-                            uploadMeta.UploadStatus = UploadStatus.Uploading;
-                            Msg = "正在上传校正文件：" + item1.Title + " 请稍后...";
-                            await Task.Delay(10);
-                            switch (item1.CalibrationType)
-                            {
-                                case CalibrationType.DarkNoise:
-                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name,item1.Title, FilePath, (int)ServiceTypes.DarkNoise);
-                                    break;
-                                case CalibrationType.DefectWPoint:
-                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name,item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
-                                    break;
-                                case CalibrationType.DefectBPoint:
-                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name,item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
-                                    break;
-                                case CalibrationType.DefectPoint:
-                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name,item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
-                                    break;
-                                case CalibrationType.DSNU:
-                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name,item1.Title, FilePath, (int)ServiceTypes.DSNU);
-                                    break;
-                                case CalibrationType.Uniformity:
-                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name,item1.Title, FilePath, (int)ServiceTypes.Uniformity);
-                                    break;
-                                case CalibrationType.Luminance:
-                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name,item1.Title, FilePath, (int)ServiceTypes.Luminance);
-                                    break;
-                                case CalibrationType.LumOneColor:
-                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name,item1.Title, FilePath, (int)ServiceTypes.LumOneColor);
-                                    break;
-                                case CalibrationType.LumFourColor:
-                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name,item1.Title, FilePath, (int)ServiceTypes.LumFourColor);
-                                    break;
-                                case CalibrationType.LumMultiColor:
-                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name,item1.Title, FilePath, (int)ServiceTypes.LumMultiColor);
-                                    break;
-                                case CalibrationType.LumColor:
-                                    break;
-                                case CalibrationType.Distortion:
-                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name,item1.Title, FilePath, (int)ServiceTypes.Distortion);
-                                    break;
-                                case CalibrationType.ColorShift:
-                                    msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name,item1.Title, FilePath, (int)ServiceTypes.ColorShift);
-                                    break;
-                                case CalibrationType.Empty_Num:
-                                    break;
-                                default:
-                                    break;
-                            }
-
-                            if (msgRecord != null && msgRecord.MsgRecordState == MsgRecordState.Success)
-                            {
-                                uploadMeta.UploadStatus = UploadStatus.Completed;
-                                string FileName = msgRecord.MsgReturn.Data.FileName;
-
-                                SysResourceModel sysResourceModel = new();
-                                sysResourceModel.Name = item1.Title;
-                                sysResourceModel.Code = Id + md5;
-                                sysResourceModel.Type = (int)item1.CalibrationType.ToResouceType();
-                                sysResourceModel.Pid = SysResourceModel.Id;
-                                sysResourceModel.Value = Path.GetFileName(FileName);
-                                sysResourceModel.CreateDate = DateTime.Now;
-                                sysResourceModel.Remark = item1.ToJsonN(new JsonSerializerSettings());
-                                int ret = SysResourceDao.Instance.Save(sysResourceModel);
-                                if (sysResourceModel != null)
+                                if (isExist)
                                 {
-                                    CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
-                                    Application.Current.Dispatcher.Invoke(() =>
-                                    {
-                                        AddChild(calibrationResource);
-                                    });
-                                    keyValuePairs2.TryAdd(item1.Title, calibrationResource);
+                                    uploadMeta.UploadStatus = UploadStatus.Completed;
+                                    await Task.Delay(10);
+                                    continue;
                                 }
-                            }
-                            else
-                            {
-                                uploadMeta.UploadStatus = UploadStatus.Failed;
-                            }
+                                uploadMeta.UploadStatus = UploadStatus.Uploading;
+                                Msg = "正在上传校正文件：" + item1.Title + " 请稍后...";
+                                await Task.Delay(10);
+                                switch (item1.CalibrationType)
+                                {
+                                    case CalibrationType.DarkNoise:
+                                        msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.DarkNoise);
+                                        break;
+                                    case CalibrationType.DefectWPoint:
+                                        msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
+                                        break;
+                                    case CalibrationType.DefectBPoint:
+                                        msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
+                                        break;
+                                    case CalibrationType.DefectPoint:
+                                        msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
+                                        break;
+                                    case CalibrationType.DSNU:
+                                        msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.DSNU);
+                                        break;
+                                    case CalibrationType.Uniformity:
+                                        msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.Uniformity);
+                                        break;
+                                    case CalibrationType.Luminance:
+                                        msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.Luminance);
+                                        break;
+                                    case CalibrationType.LumOneColor:
+                                        msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.LumOneColor);
+                                        break;
+                                    case CalibrationType.LumFourColor:
+                                        msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.LumFourColor);
+                                        break;
+                                    case CalibrationType.LumMultiColor:
+                                        msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.LumMultiColor);
+                                        break;
+                                    case CalibrationType.LumColor:
+                                        break;
+                                    case CalibrationType.Distortion:
+                                        msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.Distortion);
+                                        break;
+                                    case CalibrationType.ColorShift:
+                                        msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.ColorShift);
+                                        break;
+                                    case CalibrationType.Empty_Num:
+                                        break;
+                                    default:
+                                        break;
+                                }
 
+                                if (msgRecord != null && msgRecord.MsgRecordState == MsgRecordState.Success)
+                                {
+                                    uploadMeta.UploadStatus = UploadStatus.Completed;
+                                    string FileName = msgRecord.MsgReturn.Data.FileName;
+
+                                    SysResourceModel sysResourceModel = new();
+                                    sysResourceModel.Name = item1.Title;
+                                    sysResourceModel.Code = Id + md5;
+                                    sysResourceModel.Type = (int)item1.CalibrationType.ToResouceType();
+                                    sysResourceModel.Pid = SysResourceModel.Id;
+                                    sysResourceModel.Value = Path.GetFileName(FileName);
+                                    sysResourceModel.CreateDate = DateTime.Now;
+                                    sysResourceModel.Remark = item1.ToJsonN(new JsonSerializerSettings());
+                                    int ret = SysResourceDao.Instance.Save(sysResourceModel);
+                                    if (sysResourceModel != null)
+                                    {
+                                        CalibrationResource calibrationResource = CalibrationResource.EnsureInstance(sysResourceModel);
+                                        Application.Current.Dispatcher.Invoke(() =>
+                                        {
+                                            AddChild(calibrationResource);
+                                        });
+                                        keyValuePairs2.TryAdd(item1.Title, calibrationResource);
+                                    }
+                                }
+                                else
+                                {
+                                    uploadMeta.UploadStatus = UploadStatus.Failed;
+                                }
+
+                            }
                         }
+
                     }
 
-                }
 
-
-                string CalibrationFile = path + "\\" + "Calibration";
-                DirectoryInfo directoryInfo = new(CalibrationFile);
-                foreach (var item2 in directoryInfo.GetFiles())
-                {
-                    try
+                    string CalibrationFile = path + "\\" + "Calibration";
+                    DirectoryInfo directoryInfo = new(CalibrationFile);
+                    foreach (var item2 in directoryInfo.GetFiles())
                     {
-                        ZipCalibrationGroup zipCalibrationGroup;
                         try
                         {
-                            zipCalibrationGroup = new ZipCalibrationGroup();
-                            zipCalibrationGroup.List = JsonConvert.DeserializeObject<List<ZipCalibrationItem>>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk"))) ?? new List<ZipCalibrationItem>();
+                            ZipCalibrationGroup zipCalibrationGroup;
+                            try
+                            {
+                                zipCalibrationGroup = new ZipCalibrationGroup();
+                                zipCalibrationGroup.List = JsonConvert.DeserializeObject<List<ZipCalibrationItem>>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk"))) ?? new List<ZipCalibrationItem>();
+                            }
+                            catch (Exception ex)
+                            {
+                                log.Warn(ex);
+                                zipCalibrationGroup = JsonConvert.DeserializeObject<ZipCalibrationGroup>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
+                            }
+
+                            if (zipCalibrationGroup != null)
+                            {
+                                string filePath = Path.GetFileNameWithoutExtension(item2.FullName);
+
+                                bool IsExist = false;
+                                foreach (var item in VisualChildren)
+                                {
+                                    if (item is GroupResource groupResource1 && groupResource1.Name == filePath)
+                                    {
+                                        log.Info($"{filePath} Exit");
+                                        IsExist = true;
+                                        break;
+                                    }
+                                }
+                                if (IsExist)
+                                {
+                                    continue;
+                                }
+                                GroupResource groupResource = GroupResource.AddGroupResource(this, filePath);
+                                if (groupResource != null)
+                                {
+                                    foreach (var item1 in zipCalibrationGroup.List)
+                                    {
+                                        if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
+                                        {
+                                            SysResourceDao.Instance.ADDGroup(groupResource.SysResourceModel.Id, colorVisionVCalibratioItems.SysResourceModel.Id);
+                                            Application.Current.Dispatcher.Invoke(() =>
+                                            {
+                                                groupResource.AddChild(colorVisionVCalibratioItems);
+                                            });
+                                        }
+                                    }
+                                    groupResource.SetCalibrationResource();
+                                }
+                            }
                         }
                         catch (Exception ex)
                         {
-                            log.Warn(ex);
-                            zipCalibrationGroup = JsonConvert.DeserializeObject<ZipCalibrationGroup>(File.ReadAllText(item2.FullName, Encoding.GetEncoding("gbk")));
-                        }
-
-                        if (zipCalibrationGroup != null)
-                        {
-                            string filePath = Path.GetFileNameWithoutExtension(item2.FullName);
-
-                            bool IsExist = false;
-                            foreach (var item in VisualChildren)
+                            Application.Current.Dispatcher.Invoke(() =>
                             {
-                                if (item is GroupResource groupResource1 && groupResource1.Name == filePath)
-                                {
-                                    log.Info($"{filePath} Exit");
-                                    IsExist = true;
-                                    break;
-                                }
-                            }
-                            if (IsExist)
-                            {
-                                continue;
-                            }
-                            GroupResource groupResource = GroupResource.AddGroupResource(this, filePath);
-                            if (groupResource != null)
-                            {
-                                foreach (var item1 in zipCalibrationGroup.List)
-                                {
-                                    if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
-                                    {
-                                        SysResourceDao.Instance.ADDGroup(groupResource.SysResourceModel.Id, colorVisionVCalibratioItems.SysResourceModel.Id);
-                                        Application.Current.Dispatcher.Invoke(() =>
-                                        {
-                                            groupResource.AddChild(colorVisionVCalibratioItems);
-                                        });
-                                    }
-                                }
-                                groupResource.SetCalibrationResource();
-                            }
+                                MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
+                            });
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), ex.Message, "ColorVision");
-                        });
-                    }
+                    Msg = "上传结束";
+                    await Task.Delay(100);
+                    Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
                 }
-                Msg = "上传结束";
-                await Task.Delay(100);
-                Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
+                catch(Exception ex)
+                {
+                    log.Error(ex);
+                    Msg = "找不到配置文件";
+                    await Task.Delay(200);
+                    Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
+                    return;
+                }
             }
         }
 

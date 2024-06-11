@@ -25,7 +25,7 @@ namespace ColorVision.Solution
                 if (e.Command == ApplicationCommands.SelectAll)
                 {
                     e.CanExecute = false;
-                }
+                }   
                 else if (e.Command == ApplicationCommands.Copy)
                 {
                     e.CanExecute = true;
@@ -74,7 +74,6 @@ namespace ColorVision.Solution
                     e.CanExecute = baseObject1.CanReName;
                 }
             }
-
         }
 
 
