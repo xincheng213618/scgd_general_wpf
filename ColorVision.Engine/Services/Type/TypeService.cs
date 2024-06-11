@@ -60,7 +60,6 @@ namespace ColorVision.Engine.Services.Types
         public RelayCommand CreateCommand { get; set; }
         public TypeService() : base()
         {
-
             OpenCreateWindowCommand = new RelayCommand(a =>
             {
                 CreateType createType = new(this);
@@ -68,6 +67,9 @@ namespace ColorVision.Engine.Services.Types
                 createType.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 createType.ShowDialog();
             });
+
+            ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Create ,Command = OpenCreateWindowCommand });
         }
 
 

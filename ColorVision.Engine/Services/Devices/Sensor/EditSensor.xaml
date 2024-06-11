@@ -42,14 +42,14 @@
 
                     <GroupBox Header="配置信息" Margin="0,5">
                         <StackPanel Margin="5">
+                            <DockPanel Margin="0,2" >
+                                <TextBlock Text="类别型号" Width="120"/>
+                                <hc:ComboBox x:Name="ComboBoxSensor" AutoComplete ="True" hc:InfoElement.ShowClearButton="True" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding Category}"/>
+                            </DockPanel>
                             <DockPanel Margin="0,10" >
                                 <TextBlock Text="通讯方式" Width="120"/>
                                 <RadioButton x:Name="IsComm" Content="串口" IsChecked="{Binding IsNet,Converter={StaticResource Boolean2BooleanReConverter}}"/>
                                 <RadioButton x:Name="IsNet" Content="TCP/IP" IsChecked="{Binding  IsNet}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2" >
-                                <TextBlock Text="类别型号" Width="120"/>
-                                <ComboBox x:Name="ComboBoxSensor" DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding Category}"/>
                             </DockPanel>
                             <StackPanel Visibility="{Binding IsNet, Converter={StaticResource bool2VisibilityConverter}}">
                                 <DockPanel Margin="0,2" >

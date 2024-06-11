@@ -109,9 +109,9 @@ namespace ColorVision.Engine.Services.Terminal
             }
 
             ContextMenu = new ContextMenu();
-            MenuItem menuItem = new() { Header = ColorVision.Engine.Properties.Resources.Delete };
-            menuItem.Click += (s, e) => Delete();
-            ContextMenu.Items.Add(menuItem);
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Create, Command = OpenCreateWindowCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuEdit, Command = EditCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuDelete, Command = DeleteCommand });
         }
 
         public override void Delete()
