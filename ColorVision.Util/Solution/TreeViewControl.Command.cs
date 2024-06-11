@@ -40,6 +40,8 @@ namespace ColorVision.Solution
                 }
                 else if (e.Command == ApplicationCommands.Delete)
                 {
+
+
                     e.CanExecute = baseObject.CanDelete;
                 }
                 else if (e.Command == Commands.ReName)

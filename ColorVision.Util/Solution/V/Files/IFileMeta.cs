@@ -23,7 +23,6 @@ namespace ColorVision.Solution.V.Files
         string Extension { get; }
 
         void Open();
-        void Delete();
     }
 
 

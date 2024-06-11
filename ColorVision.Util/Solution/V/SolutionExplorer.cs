@@ -71,7 +71,12 @@ namespace ColorVision.Solution.V
                         }
                     }
                 };
-                FileSystemWatcher.Deleted += (s, e) => { };
+                FileSystemWatcher.Deleted += (s, e) => {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        VisualChildrenEventHandler?.Invoke(this, new EventArgs());
+                    });
+                };
                 FileSystemWatcher.Changed += (s, e) => {
                     Application.Current.Dispatcher.Invoke(() =>
                     {

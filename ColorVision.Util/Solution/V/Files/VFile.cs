@@ -41,6 +41,8 @@ namespace ColorVision.Solution.V.Files
             ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Util.Properties.Resources.MenuCut, Command = ApplicationCommands.Cut, CommandParameter = this });
             ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Util.Properties.Resources.MenuCopy, Command = ApplicationCommands.Copy,CommandParameter = this });
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = DeleteCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = "ReName", Command = Commands.ReName ,CommandParameter =this });
+
             ContextMenu.Items.Add(new Separator());
             if (fileMeta is IContextMenuProvider menuItemProvider)
             {
@@ -97,66 +99,15 @@ namespace ColorVision.Solution.V.Files
         }
 
 
-        private void OpenFolder(object parameter)
-        {
-            if (!string.IsNullOrEmpty(FileInfo.FullName) && File.Exists(FileInfo.FullName))
-            {
-                string folderPath = Path.GetDirectoryName(FileInfo.FullName);
-                if (folderPath != null)
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = folderPath,
-                        UseShellExecute = true,
-                        Verb = "open"
-                    });
-                }
-            }
-            else
-            {
-                MessageBox.Show("File path is invalid or the file does not exist.");
-            }
-        }
-
         public override void Open()
         {
-            if (this is VFile vFile)
-            {
-                if (vFile.FileMeta is IFileMeta file)
-                {
-                    file.Open();
-                }
-            }
+            FileMeta.Open();
         }
 
         public override void Delete()
         {
-            if (this is VFile vFile)
-            {
-                if (vFile.FileMeta is IFileMeta file)
-                {
-                    File.Delete(file.FullName);
-                }
-            }
+            File.Delete(FileInfo.FullName);
             Parent.RemoveChild(this);
         }
-
-        public override bool CanReName { get => _CanReName; set { _CanReName = value; NotifyPropertyChanged(); } }
-        private bool _CanReName = true;
-
-        public override bool CanDelete { get => _CanDelete; set { _CanDelete = value; NotifyPropertyChanged(); } }
-        private bool _CanDelete = true;
-
-        public override bool CanAdd { get => _CanAdd; set { _CanAdd = value; NotifyPropertyChanged(); } }
-        private bool _CanAdd = true;
-
-        public override bool CanCopy { get => _CanCopy; set { _CanCopy = value; NotifyPropertyChanged(); } }
-        private bool _CanCopy = true;
-
-        public override bool CanPaste { get => _CanPaste; set { _CanPaste = value; NotifyPropertyChanged(); } }
-        private bool _CanPaste = true;
-
-        public override bool CanCut { get => _CanCut; set { _CanCut = value; NotifyPropertyChanged(); } }
-        private bool _CanCut = true;
     }
 }
