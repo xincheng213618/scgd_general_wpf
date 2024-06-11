@@ -20,6 +20,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports
     public class TextFileOpen : IFileControl
     {
         public string Name { get; set; }
+        public ImageSource IconSource { get; set; }
 
         public Control UserControl => richTextBox;
 
@@ -119,6 +120,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports
 
         public string Name { get; set; }
 
+        public ImageSource IconSource { get; set; }
         public Control UserControl => ImageView;
 
         public string FullName { get; set; }
@@ -182,7 +184,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports
 
         public void Open()
         {
-            ImageFileOpen fileControl = new ImageFileOpen() { Name = Name ,FullName = FileInfo.FullName};
+            ImageFileOpen fileControl = new ImageFileOpen() { Name = Name ,FullName = FileInfo.FullName, IconSource = Icon};
             SolutionManager.GetInstance().OpenFileWindow(fileControl);
         }
 

@@ -11,6 +11,7 @@ using System.IO;
 using System.Windows;
 using YamlDotNet.Core;
 using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision.Solution
 {
@@ -21,6 +22,8 @@ namespace ColorVision.Solution
         public string GuidId { get; }
 
         Control UserControl { get; }
+
+        ImageSource IconSource { get; }
 
         void Open();
         void Close();

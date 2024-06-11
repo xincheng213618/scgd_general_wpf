@@ -125,7 +125,6 @@ namespace ColorVision.Solution
                 LastSelectedTreeViewItem = item;
 
 
-
                 if (SolutionManager.SolutionExplorers.Count != 1 && item.DataContext is SolutionExplorer solutionExplorer)
                 {
 

@@ -69,7 +69,7 @@ namespace ColorVision.Solution.Searches
                 }
                 else
                 {
-                    LayoutDocument layoutDocument = new LayoutDocument() { ContentId = e.GuidId.ToString(), Content = e.UserControl, Title = e.Name };
+                    LayoutDocument layoutDocument = new LayoutDocument() { IconSource =e.IconSource, ContentId = e.GuidId.ToString(), Content = e.UserControl, Title = e.Name };
                     e.Open();
                     layoutDocument.Closing += async (s, e1) =>
                     {
@@ -93,6 +93,27 @@ namespace ColorVision.Solution.Searches
                 }
 
             };
+        }
+
+        public void SelectContentId(string ContentId)
+        {
+            var existingDocument = FindDocumentById(_layoutRoot, ContentId);
+
+            if (existingDocument != null)
+            {
+                if (existingDocument.Parent is LayoutDocumentPane layoutDocumentPane)
+                {
+                    layoutDocumentPane.SelectedContentIndex = layoutDocumentPane.IndexOf(existingDocument); ;
+                }
+                else if (existingDocument.Parent is LayoutFloatingWindow layoutFloatingWindow)
+                {
+                    var window = Window.GetWindow(layoutFloatingWindow);
+                    if (window != null)
+                    {
+                        window.Activate();
+                    }
+                }
+            }
         }
 
         private static LayoutDocument? FindDocumentById(object parent, string contentId)

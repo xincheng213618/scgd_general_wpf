@@ -58,7 +58,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports
         {
             if (File.Exists(FileInfo.FullName))
             {
-                CVCIEFileOpen fileControl = new CVCIEFileOpen() { Name = Name ,FullName =FileInfo.FullName };
+                CVCIEFileOpen fileControl = new CVCIEFileOpen() { Name = Name ,FullName =FileInfo.FullName , IconSource  =Icon};
                 SolutionManager.GetInstance().OpenFileWindow(fileControl);
             }
             else

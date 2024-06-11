@@ -15,16 +15,20 @@
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
         </Style>
         <DataTemplate x:Key="DocumentHeaderTemplate">
-            <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding Title}" Foreground="{DynamicResource GlobalTextBrush}" Margin="5,0"/>
+            <StackPanel Orientation="Horizontal">
+                <Image Source="{Binding IconSource}" Height="18" Margin="0,0,5,0" />
+                <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding Title}" Foreground="{DynamicResource GlobalTextBrush}" Margin="0,0,5,0" />
+            </StackPanel>
         </DataTemplate>
+        <Style x:Key="DocumentContextMenu" TargetType="ContextMenu"  BasedOn="{StaticResource  ContextMenu.Small}"/>
     </UserControl.Resources>
     <Grid>
-        <xcad:DockingManager BorderThickness="0" DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}"  Background="Transparent" Theme="{Binding ElementName=_themeCombo, Path=SelectedItem.Tag}">
+        <xcad:DockingManager BorderThickness="0" DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}" Background="Transparent" Theme="{Binding ElementName=_themeCombo, Path=SelectedItem.Tag}">
             <xcad:LayoutRoot x:Name="_layoutRoot">
                 <xcad:LayoutPanel Orientation="Horizontal" >
                     <xcad:LayoutDocumentPaneGroup>
                         <xcad:LayoutDocumentPane x:Name="LayoutDocumentPane">
-                            <xcad:LayoutDocument ContentId="查询" Title="  查询   " CanClose="False" >
+                            <xcad:LayoutDocument ContentId="SolutionPage" Title="  查询   " CanClose="False" >
                                 <Grid Background="{DynamicResource GlobalBackground}">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto"/>
@@ -63,7 +67,6 @@
                                                 </ComboBoxItem>
                                             </ComboBox>
                                         </StackPanel>
-
                                     </Grid>
                                     <Frame x:Name="MainFrame" Grid.Row="1" Style="{StaticResource FrameBaseStyle}" BorderThickness="0" NavigationUIVisibility="Hidden"/>
                                 </Grid>
