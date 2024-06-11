@@ -5,10 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Util.Controls"
         mc:Ignorable="d"
-        d:DataContext="{d:DesignInstance local:IUploadMsg}"
         Title="UploadMsg" Height="450" Width="800" Initialized="Window_Initialized">
     <Window.Resources>
-        <local:ColorConverter x:Key="ColorConverter"/>
     </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
