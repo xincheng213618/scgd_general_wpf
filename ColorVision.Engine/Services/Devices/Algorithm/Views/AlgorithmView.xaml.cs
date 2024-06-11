@@ -195,9 +195,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     case MQTTMessageLib.Algorithm.AlgorithmResultType.MTF:
                     case MQTTMessageLib.Algorithm.AlgorithmResultType.FOV:
                     case MQTTMessageLib.Algorithm.AlgorithmResultType.Distortion:
-                        netFileUtil.OpenLocalFile(result.FilePath, FileExtType.Src);
                         break;
                     case MQTTMessageLib.Algorithm.AlgorithmResultType.Ghost:
+                        netFileUtil.OpenLocalFile(result.FilePath, FileExtType.Tif);
+                        break;
+
+                    case AlgorithmResultType.LEDStripDetection:
                         netFileUtil.OpenLocalFile(result.FilePath, FileExtType.Tif);
                         break;
                     default:
@@ -211,9 +214,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         {
                             result.PoiResultDatas = new ObservableCollection<PoiResultData>();
                             List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                            int id = 0;
+
                             foreach (var item in POIPointResultModels)
                             {
-                                PoiResultData poiResult = new(item);
+                                PoiResultData poiResult = new(item) { Id = id++ };
                                 result.PoiResultDatas.Add(poiResult);
                             };
                         }
@@ -237,44 +242,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         listViewSide.Visibility = Visibility.Visible;
                         break;
                     case AlgorithmResultType.LEDStripDetection:
-                        if (result.PoiResultCIExyuvDatas == null)
-                        {
-                            result.PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
-                            List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
-                            foreach (var item in POIPointResultModels)
-                            {
-                                PoiResultCIExyuvData poiResultCIExyuvData = new(item);
-                                result.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
-                            };
-                        }
-
-                        cieBdHeader = new List<string> { "POIPoint.Id", "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "POIPointResultModel.ValidateResult" };
-                        cieHeader = new List<string> { "Id", ColorVision.Engine.Properties.Resources.Name, ColorVision.Engine.Properties.Resources.Position, ColorVision.Engine.Properties.Resources.Size, ColorVision.Engine.Properties.Resources.Shape, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "Validate" };
-
-                        if (listViewSide.View is GridView gridViewPOI_XY_UV)
-                        {
-                            LeftGridViewColumnVisibilitys.Clear();
-                            gridViewPOI_XY_UV.Columns.Clear();
-                            for (int i = 0; i < cieHeader.Count; i++)
-                                gridViewPOI_XY_UV.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
-                        }
-
-                        listViewSide.ItemsSource = result.PoiResultCIExyuvDatas;
-
-                        foreach (var item in result.PoiResultCIExyuvDatas)
-                            DrawPoiPoint.Add(item.Point);
-                        ImageView.AddPOIPoint(DrawPoiPoint);
-                        listViewSide.Visibility = Visibility.Visible;
-
-                        break;
                     case AlgorithmResultType.POI_XYZ:
                         if (result.PoiResultCIExyuvDatas == null)
                         {
                             result.PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
                             List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                            int id = 0;
                             foreach (var item in POIPointResultModels)
                             {
-                                PoiResultCIExyuvData poiResultCIExyuvData = new(item);
+                                PoiResultCIExyuvData poiResultCIExyuvData = new(item) { Id = id++ };
                                 result.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                             };
                         }
