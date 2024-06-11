@@ -5,6 +5,7 @@ using MQTTMessageLib.FileServer;
 using OpenCvSharp;
 using System;
 using System.Collections.ObjectModel;
+using System.Drawing.Imaging;
 using System.IO;
 
 namespace ColorVision.Engine.Services.Export
@@ -30,9 +31,6 @@ namespace ColorVision.Engine.Services.Export
                         CVFileUtil.ReadCIEFileData(FileName, ref cvcie, index);
                         src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
                         src.SaveImage(SavePath + "\\" + Name + "Src.tif");
-
-
-
                     }
                     break;
                 case FileExtType.Src:
@@ -53,7 +51,14 @@ namespace ColorVision.Engine.Services.Export
                             if (CVFileUtil.Read(cvcie.srcFileName, out CVCIEFile cvraw))
                             {
                                 src = new Mat(cvraw.cols, cvraw.rows, MatType.MakeType(cvraw.Depth, cvraw.channels), cvraw.data);
-                                src.SaveImage(SavePath + "\\" + Name + "_Src.tif");
+                                if (export.ExportImageFormat == ImageFormat.Tiff)
+                                {
+                                    src.SaveImage(SavePath + "\\" + Name + "_Src.tif", new ImageEncodingParam(ImwriteFlags.TiffCompression, 100));
+                                }
+                                else
+                                {
+                                    src.SaveImage(SavePath + "\\" + Name + "_Src.tif");
+                                }
                             }
                         }
                     }
@@ -148,7 +153,7 @@ namespace ColorVision.Engine.Services.Export
         public int Gain { get => _CVCIEFile.gain; }
         public float[] Exp { get => _CVCIEFile.exp; }
 
-
+        public ImageFormat ExportImageFormat { get; set; } = ImageFormat.Tiff;
 
         public CVCIEFile CVCIEFile { get => _CVCIEFile; }
         private CVCIEFile _CVCIEFile;

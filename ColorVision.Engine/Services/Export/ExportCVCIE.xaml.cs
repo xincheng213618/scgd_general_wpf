@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Net;
 using System;
+using System.Collections.Generic;
+using System.Drawing.Imaging;
 using System.Threading;
 using System.Windows;
 
@@ -31,7 +33,14 @@ namespace ColorVision.Engine.Services.Export
                 return;
             }
             DataContext = VExportCIE;
-
+            var imageFormats = new Dictionary<string, ImageFormat>
+            {
+                { "TIFF Image (*.tiff)", ImageFormat.Tiff },
+                { "Bitmap Image (*.bmp)", ImageFormat.Bmp },
+                { "PNG Image (*.png)", ImageFormat.Png },
+                { "JPEG Image (*.jpg;*.jpeg)", ImageFormat.Jpeg },
+            };
+            ExportImageFormatComboBox.ItemsSource = imageFormats;
         }
         private void Save_Click(object sender, RoutedEventArgs e)
         {

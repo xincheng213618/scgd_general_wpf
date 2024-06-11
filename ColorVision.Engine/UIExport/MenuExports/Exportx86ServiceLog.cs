@@ -17,7 +17,7 @@ namespace ColorVision.Engine.UIExport.MenuExports
         public int Order => 1;
         public Visibility Visibility => Visibility.Visible;
 
-        public string? Header => Resources.CameraLog;
+        public string? Header => Resources.x86ServiceLog;
 
         public string? InputGestureText { get; }
 

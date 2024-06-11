@@ -1,6 +1,8 @@
 ﻿using System.Windows.Media;
 using System.Windows.Controls;
 using System.IO;
+using ColorVision.UI.Menus;
+using System.Collections.Generic;
 
 namespace ColorVision.Solution.V.Files
 {
@@ -13,10 +15,10 @@ namespace ColorVision.Solution.V.Files
         public FileInfo FileInfo {get;set;}
 
         string ToolTip { get; set; }
+
         ImageSource Icon { get; set; }
 
         string FileSize { get; set; }
-        ContextMenu ContextMenu { get; set; }
 
         string Extension { get; }
 

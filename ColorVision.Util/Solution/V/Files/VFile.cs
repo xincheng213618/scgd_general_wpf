@@ -6,6 +6,11 @@ using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Forms.VisualStyles;
+using ColorVision.UI.Menus;
+using System.Collections.Generic;
+using System.Linq;
+using System;
+using System.Windows.Controls.Primitives;
 
 namespace ColorVision.Solution.V.Files
 {
@@ -28,14 +33,56 @@ namespace ColorVision.Solution.V.Files
             ContextMenu.Items.Add(new MenuItem() { Header = "Paste", Command = ApplicationCommands.Paste, CommandParameter = this });
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Property, Command = AttributesCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = DeleteCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Property, Command = AttributesCommand });
-            if (file.ContextMenu != null)
+            ContextMenu.Items.Add(new Separator());
+            if (file is IContextMenuProvider menuItemProvider)
             {
-                foreach (MenuItem item in file.ContextMenu.Items)
+                var iMenuItems = new List<MenuItemMetadata>();
+                iMenuItems.AddRange(menuItemProvider.GetMenuItems());
+                iMenuItems = iMenuItems.OrderBy(item => item.Order).ToList();
+
+                void CreateMenu(ItemsControl parentMenuItem, string OwnerGuid)
                 {
-                    ContextMenu.Items.Add(item);
+                    var iMenuItems1 = iMenuItems.FindAll(a => a.OwnerGuid == OwnerGuid).OrderBy(a => a.Order).ToList();
+                    for (int i = 0; i < iMenuItems1.Count; i++)
+                    {
+                        var iMenuItem = iMenuItems1[i];
+                        string GuidId = iMenuItem.GuidId ?? Guid.NewGuid().ToString();
+                        MenuItem menuItem;
+                        if (iMenuItem is IMenuItemMeta menuItemMeta)
+                        {
+                            menuItem = menuItemMeta.MenuItem;
+                        }
+                        else
+                        {
+                            menuItem = new MenuItem
+                            {
+                                Header = iMenuItem.Header,
+                                Icon = iMenuItem.Icon,
+                                InputGestureText = iMenuItem.InputGestureText,
+                                Command = iMenuItem.Command,
+                                Tag = iMenuItem,
+                                Visibility = iMenuItem.Visibility,
+                            };
+                        }
+
+                        CreateMenu(menuItem, GuidId);
+                        if (i > 0 && iMenuItem.Order - iMenuItems1[i - 1].Order > 4 && iMenuItem.Visibility == System.Windows.Visibility.Visible)
+                        {
+                            parentMenuItem.Items.Add(new Separator());
+                        }
+                        parentMenuItem.Items.Add(menuItem);
+                    }
+                    foreach (var item in iMenuItems1)
+                    {
+                        iMenuItems.Remove(item);
+                    }
                 }
+
+                CreateMenu(ContextMenu, null);
             }
+            
+            ContextMenu.Items.Add(new Separator());
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Property, Command = AttributesCommand });
         }
 
         public override void Open()

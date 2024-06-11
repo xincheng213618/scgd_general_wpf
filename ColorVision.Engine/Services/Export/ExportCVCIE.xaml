@@ -8,7 +8,7 @@
         xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:VExportCIE}"
-        Title="{x:Static properties:Resources.Export}" Background="{StaticResource BackgroundBrush}" Height="300" Width="400" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.Export}" Background="{StaticResource BackgroundBrush}" Height="400" Width="400" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -26,6 +26,11 @@
                 <hc:ComboBox  Margin="0,0,0,0"    IsEditable="True" SelectedIndex="0" Text="{Binding SavePath}"  hc:InfoElement.Title="{x:Static properties:Resources.SelectProjectSaveLocation}"
                               hc:InfoElement.Necessary="True"  hc:InfoElement.Symbol="*" 
                               ItemsSource="{Binding RecentImageSaveList}"/>
+            </DockPanel>
+            <DockPanel  Margin="0,3">
+                <hc:ComboBox x:Name="ExportImageFormatComboBox" IsEditable="True" SelectedIndex="0"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding ExportImageFormat}"  hc:InfoElement.Title="类型"
+                              hc:InfoElement.Necessary="True"  hc:InfoElement.Symbol="*" 
+                              />
             </DockPanel>
             <DockPanel>
                 <TextBlock Text="图像信息：" Width="80"/>

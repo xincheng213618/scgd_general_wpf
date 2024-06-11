@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 namespace ColorVision.Solution
 {
 
+
     /// <summary>
     /// 解决方案配置
     /// </summary>
