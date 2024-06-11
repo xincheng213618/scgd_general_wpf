@@ -18,6 +18,7 @@ namespace ColorVision.Solution
     public interface IFileControl
     {
         string Name { get; set; }
+        public string GuidId { get; }
 
         Control UserControl { get; }
 

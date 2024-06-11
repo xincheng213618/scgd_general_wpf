@@ -1,6 +1,7 @@
 ﻿using ColorVision.UI.Views;
 using System;
 using System.ComponentModel;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -48,23 +49,95 @@ namespace ColorVision.Solution.Searches
 
             SolutionManager.GetInstance().OpenFile += (s, e) =>
             {
-                LayoutDocument layoutDocument = new LayoutDocument() { ContentId = Guid.NewGuid().ToString(), Content = e.UserControl, Title = e.Name };
-                layoutDocument.Closing += async (s, e1) =>
+                var existingDocument = FindDocumentById(_layoutRoot, e.GuidId.ToString());
+
+                if (existingDocument !=null)
                 {
-                    e1.Cancel = true; // 取消默认的关闭行为
-                    e.Close();
-                    // 延时100毫秒
-                    await Task.Delay(10);
+                    if (existingDocument.Parent is LayoutDocumentPane layoutDocumentPane)
+                    {
+                        layoutDocumentPane.SelectedContentIndex = layoutDocumentPane.IndexOf(existingDocument); ;
+                    }
+                    else if (existingDocument.Parent is LayoutFloatingWindow layoutFloatingWindow)
+                    {
+                        var window = Window.GetWindow(layoutFloatingWindow);
+                        if (window!=null)
+                        {
+                            window.Activate();
+                        }
+                    }
 
-                    // 释放资源
-                    layoutDocument.Content = null;
+                }
+                else
+                {
+                    LayoutDocument layoutDocument = new LayoutDocument() { ContentId = e.GuidId.ToString(), Content = e.UserControl, Title = e.Name };
+                    e.Open();
+                    layoutDocument.Closing += async (s, e1) =>
+                    {
+                        e1.Cancel = true; // 取消默认的关闭行为
+                        e.Close();
+                        // 延时100毫秒
+                        await Task.Delay(10);
 
-                    // 从父容器中移除
-                    LayoutDocumentPane.Children.Remove(layoutDocument);
-                };
-                LayoutDocumentPane.Children.Add(layoutDocument);
-                LayoutDocumentPane.SelectedContentIndex = LayoutDocumentPane.IndexOf(layoutDocument) ;
+                        // 释放资源
+                        layoutDocument.Content = null;
+
+                        // 从父容器中移除
+                        if (layoutDocument.Parent is ILayoutContainer parentPane)
+                        {
+                            parentPane.RemoveChild(layoutDocument);
+                        }
+
+                    };
+                    LayoutDocumentPane.Children.Add(layoutDocument);
+                    LayoutDocumentPane.SelectedContentIndex = LayoutDocumentPane.IndexOf(layoutDocument);
+                }
+
             };
+        }
+
+        private static LayoutDocument FindDocumentById(object parent, string contentId)
+        {
+            if (parent is ILayoutContainer container)
+            {
+                foreach (var child in container.Children)
+                {
+                    if (child is LayoutDocument document && document.ContentId == contentId)
+                    {
+                        return document;
+                    }
+                    else
+                    {
+                        var found = FindDocumentById(child, contentId);
+                        if (found != null)
+                        {
+                            return found;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+        private static ILayoutContainer FindParentContainer(object parent, LayoutDocument targetDocument)
+        {
+            if (parent is ILayoutContainer container)
+            {
+                foreach (var child in container.Children)
+                {
+                    if (child == targetDocument)
+                    {
+                        return container;
+                    }
+                    else
+                    {
+                        var found = FindParentContainer(child, targetDocument);
+                        if (found != null)
+                        {
+                            return found;
+                        }
+                    }
+                }
+            }
+            return null;
         }
 
         private void View_ViewIndexChangedEvent(int oindex, int index)

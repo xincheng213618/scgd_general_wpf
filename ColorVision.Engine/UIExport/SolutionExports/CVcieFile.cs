@@ -16,22 +16,11 @@ using ColorVision.Solution;
 namespace ColorVision.Engine.UIExport.SolutionExports
 {
 
-    public class CVCIEFileOpen : IFileControl
+    public class CVCIEFileOpen : ImageFileOpen
     {
-        public ImageView ImageView { get; set; } = new ImageView();
-
-        public string Name { get; set; }
-
-        public Control UserControl => ImageView;
-
-        public void Close()
+        public override void Open()
         {
-            ImageView.ToolBarTop.ClearImage();
-        }
-
-        public void Open()
-        {
-            
+            ImageView.OpenImage(new NetFileUtil().OpenLocalCVFile(FullName));
         }
     }
 
@@ -68,11 +57,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports
         {
             if (File.Exists(FileInfo.FullName))
             {
-                CVCIEFileOpen fileControl = new CVCIEFileOpen() { Name = Name };
-
-                CVFileUtil.ReadCVRaw(FileInfo.FullName, out CVCIEFile fileInfo);
-
-                fileControl.ImageView.OpenImage(new NetFileUtil().OpenLocalCVFile(FileInfo.FullName));
+                CVCIEFileOpen fileControl = new CVCIEFileOpen() { Name = Name ,FullName =FileInfo.FullName };
                 SolutionManager.GetInstance().OpenFileWindow(fileControl);
             }
             else

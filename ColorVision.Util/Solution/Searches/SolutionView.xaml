@@ -21,7 +21,7 @@
     <Grid>
         <xcad:DockingManager BorderThickness="0" DocumentHeaderTemplate="{StaticResource DocumentHeaderTemplate}"  Background="Transparent" Theme="{Binding ElementName=_themeCombo, Path=SelectedItem.Tag}">
             <xcad:LayoutRoot x:Name="_layoutRoot">
-                <xcad:LayoutPanel Orientation="Horizontal">
+                <xcad:LayoutPanel Orientation="Horizontal" >
                     <xcad:LayoutDocumentPaneGroup>
                         <xcad:LayoutDocumentPane x:Name="LayoutDocumentPane">
                             <xcad:LayoutDocument ContentId="查询" Title="  查询   " CanClose="False" >

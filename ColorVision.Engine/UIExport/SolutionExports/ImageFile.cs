@@ -12,6 +12,8 @@ using System.Windows.Media;
 using ColorVision.Solution;
 using System.Drawing;
 using System.Windows.Documents;
+using ColorVision.Common.Utilities;
+using ColorVision.Net;
 
 namespace ColorVision.Engine.UIExport.SolutionExports
 {
@@ -19,16 +21,38 @@ namespace ColorVision.Engine.UIExport.SolutionExports
     {
         public string Name { get; set; }
 
-        public Control UserControl { get; set; }
+        public Control UserControl => richTextBox;
+
+        public string GuidId => Tool.GetMD5(FullName);
+
+        public string FullName { get; set; }
 
         public void Close()
         {
-            UserControl = null;
+
         }
+        private RichTextBox richTextBox = new RichTextBox();
 
         public void Open()
         {
-
+            const int bufferSize = 1024; // 每次读取的字节数，可以根据需要调整
+            if (File.Exists(FullName))
+            {
+                TextRange textRange = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd);
+                using (FileStream fileStream = new FileStream(FullName, FileMode.Open, FileAccess.Read))
+                {
+                    using (StreamReader reader = new StreamReader(fileStream))
+                    {
+                        char[] buffer = new char[bufferSize];
+                        int charsRead;
+                        while ((charsRead = reader.Read(buffer, 0, bufferSize)) > 0)
+                        {
+                            string text = new string(buffer, 0, charsRead);
+                            richTextBox.AppendText(text);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -76,26 +100,8 @@ namespace ColorVision.Engine.UIExport.SolutionExports
 
         public void Open()
         {
-            RichTextBox richTextBox = new RichTextBox();
-            const int bufferSize = 1024; // 每次读取的字节数，可以根据需要调整
-            if (File.Exists(FileInfo.FullName))
-            {
-                TextRange textRange = new TextRange(richTextBox.Document.ContentStart, richTextBox.Document.ContentEnd);
-                using (FileStream fileStream = new FileStream(FileInfo.FullName, FileMode.Open, FileAccess.Read))
-                {
-                    using (StreamReader reader = new StreamReader(fileStream))
-                    {
-                        char[] buffer = new char[bufferSize];
-                        int charsRead;
-                        while ((charsRead = reader.Read(buffer, 0, bufferSize)) > 0)
-                        {
-                            string text = new string(buffer, 0, charsRead);
-                            richTextBox.AppendText(text);
-                        }
-                    }
-                }
-            }
-            TextFileOpen textFileOpen = new TextFileOpen() { Name = FileInfo.Name, UserControl = richTextBox };
+
+            TextFileOpen textFileOpen = new TextFileOpen() { Name = FileInfo.Name,FullName = FileInfo.FullName };
             SolutionManager.GetInstance().OpenFileWindow(textFileOpen);
         }
 
@@ -106,6 +112,30 @@ namespace ColorVision.Engine.UIExport.SolutionExports
         }
 
     }
+
+    public class ImageFileOpen : IFileControl
+    {
+        public ImageView ImageView { get; set; } = new ImageView();
+
+        public string Name { get; set; }
+
+        public Control UserControl => ImageView;
+
+        public string FullName { get; set; }
+
+        public string GuidId => Tool.GetMD5(FullName);
+
+        public void Close()
+        {
+            ImageView.ToolBarTop.ClearImage();
+        }
+
+        public virtual void Open()
+        {
+            ImageView.OpenImage(FullName);
+        }
+    }
+
 
     public class ImageFile : ViewModelBase, IFile
     {
@@ -152,8 +182,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports
 
         public void Open()
         {
-            CVCIEFileOpen fileControl = new CVCIEFileOpen() { Name = Name };
-            fileControl.ImageView.OpenImage(FileInfo.FullName);
+            ImageFileOpen fileControl = new ImageFileOpen() { Name = Name ,FullName = FileInfo.FullName};
             SolutionManager.GetInstance().OpenFileWindow(fileControl);
         }
 
