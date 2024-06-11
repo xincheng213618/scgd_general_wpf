@@ -5,6 +5,7 @@ using CVCommCore;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
@@ -40,8 +41,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             POIPointResultModel = pOIPointResultModel;
             if (pOIPointResultModel.ValidateResult !=null)
                 ValidateSingles = JsonConvert.DeserializeObject<ObservableCollection<ValidateRuleResult>>(pOIPointResultModel.ValidateResult);
-            Point = new POIPoint(pOIPointResultModel.PoiId??-1, -1, pOIPointResultModel.PoiName, (POIPointTypes)pOIPointResultModel.PoiType, (int)pOIPointResultModel.PoiX, (int)pOIPointResultModel.PoiY, (int)pOIPointResultModel.PoiWidth, (int)pOIPointResultModel.PoiHeight);
+            Point = new POIPoint(pOIPointResultModel.PoiId??-1, -1, pOIPointResultModel.PoiName, (POIPointTypes)pOIPointResultModel.PoiType, (int)pOIPointResultModel.PoiX, (int)pOIPointResultModel.PoiY, pOIPointResultModel.PoiWidth ??0, pOIPointResultModel.PoiHeight ??0);
         }
+        public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
+        private int _Id;
+
 
         public POIPoint Point { get { return POIPoint; } set { POIPoint = value; NotifyPropertyChanged(); } }
 
