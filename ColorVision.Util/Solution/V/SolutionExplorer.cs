@@ -50,7 +50,6 @@ namespace ColorVision.Solution.V
 
             GeneraFileTypes();
             GeneralContextMenu();
-            GeneralCVSln();
             IsExpanded = true;
             DriveMonitor();
 
@@ -86,6 +85,20 @@ namespace ColorVision.Solution.V
                 FileSystemWatcher.Renamed += (s, e) => { };
                 FileSystemWatcher.EnableRaisingEvents = true;
             }
+
+
+            Task.Run(async () =>
+            {
+                await Task.Delay(30);
+                if(DirectoryInfo!=null && DirectoryInfo.Exists)
+                {
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        GeneralChild(this, DirectoryInfo);
+                    });
+                }
+            });
+
         }
 
         public EventHandler VisualChildrenEventHandler { get; set; }
@@ -134,12 +147,6 @@ namespace ColorVision.Solution.V
 
 
         public Dictionary<string, Type> FileTypes { get; set; }
-
-
-        public void GeneralCVSln()
-        {
-            GeneralChild(this, DirectoryInfo);
-        }
 
         public void GeneraFileTypes()
         {
@@ -211,9 +218,11 @@ namespace ColorVision.Solution.V
             }
 
         }
+        
 
-        public void GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
+        public async void GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
         {
+            await Task.Delay(100);
             foreach (var item in directoryInfo.GetDirectories())
             {
                 if ((item.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
