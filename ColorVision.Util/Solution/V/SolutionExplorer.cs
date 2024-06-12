@@ -199,17 +199,14 @@ namespace ColorVision.Solution.V
             }
             if (matchingTypes.Count > 0)
             {
-                Task.Run(() =>
+                if (Activator.CreateInstance(matchingTypes[0], fileInfo) is IFileMeta file)
                 {
-                    if (Activator.CreateInstance(matchingTypes[0], fileInfo) is IFileMeta file)
+                    Application.Current.Dispatcher.Invoke(() =>
                     {
-                        Application.Current.Dispatcher.Invoke(() =>
-                        {
-                            VFile vFile = new VFile(file);
-                            vObject.AddChild(vFile);
-                        });
-                    }
-                });
+                        VFile vFile = new VFile(file);
+                        vObject.AddChild(vFile);
+                    });
+                }
 
             }
 

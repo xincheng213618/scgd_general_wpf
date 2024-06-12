@@ -44,9 +44,9 @@ namespace ColorVision.Solution
         public async Task InitializeAsync()
         {
             _messageUpdater.UpdateMessage("正在加载工程目录");
-            Task.Run(async () =>
+            await Task.Delay(30);
+            Task.Run(() =>
             {
-                await Task.Delay(10);
                 Application.Current.Dispatcher.Invoke(() => SolutionManager.GetInstance());
             });
             await Task.Delay(30);
