@@ -446,7 +446,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                             break;
                         case RiPointTypes.Rect:
                             DrawingVisualRectangleWord Rectangle = new();
-                            Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
+                            Rectangle.Attribute.Rect = new Rect(item.PixX - 2/ item.PixWidth, item.PixY - 2 / item.PixHeight, item.PixWidth, item.PixHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
                             Rectangle.Attribute.ID = item.Id;
@@ -1118,8 +1118,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                         Id = rectangle.Tag1 ??-1,
                         Name = rectangle.Name,
                         PointType = RiPointTypes.Rect,
-                        PixX = rectangle.Rect.X,
-                        PixY = rectangle.Rect.Y,
+                        PixX = rectangle.Rect.X + 2/rectangle.Rect.Width,
+                        PixY = rectangle.Rect.Y + 2/ rectangle.Rect.Height,
                         PixWidth = rectangle.Rect.Width,
                         PixHeight = rectangle.Rect.Height,
                         Tag = rectangle.Tag,

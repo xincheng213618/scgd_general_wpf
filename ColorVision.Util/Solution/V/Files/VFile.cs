@@ -1,18 +1,13 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
-using System.Windows.Controls;
-using ColorVision.Util.Properties;
-using System.IO;
-using System.Windows;
-using System.Windows.Input;
-using System.Windows.Forms.VisualStyles;
 using ColorVision.UI.Menus;
-using System.Collections.Generic;
-using System.Linq;
+using ColorVision.Util.Properties;
 using System;
-using System.Windows.Controls.Primitives;
-using System.Diagnostics;
-using ColorVision.UI.Extension;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.Solution.V.Files
 {
