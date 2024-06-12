@@ -2,7 +2,7 @@
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Services.PhyCameras.Templates
+namespace ColorVision.Engine.Services.PhyCameras.Group
 {
     /// <summary>
     /// WindowFourColorCalibration.xaml 的交互逻辑

@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public string? GuidId => "PhyCamerManager";
 
-        public int Order => 9;
+        public int Order => 0;
 
         public string? Header => ColorVision.Engine.Properties.Resources.MenuPhyCameraManager;
 

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.UIExport.SolutionExports.Export;
 using ColorVision.Net;
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,7 @@ using System.Drawing.Imaging;
 using System.Threading;
 using System.Windows;
 
-namespace ColorVision.Engine.Services.Export
+namespace ColorVision.Engine.UIExport.SolutionExports.Export
 {
 
 

@@ -1,14 +1,14 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.PhyCameras.Templates;
 using ColorVision.Engine.Services.Types;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Windows;
 
-namespace ColorVision.Engine.Services.Core
+namespace ColorVision.Engine.Services.PhyCameras.Group
 {
-    public class ConfigGroup :ViewModelBase
+    public class ConfigGroup : ViewModelBase
     {
         public int Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
         private int _Gain;
@@ -32,10 +32,10 @@ namespace ColorVision.Engine.Services.Core
         private double _GetImgMode;
 
         public double ImgBpp { get => _ImgBpp; set { _ImgBpp = value; NotifyPropertyChanged(); } }
-        private double _ImgBpp; 
+        private double _ImgBpp;
     }
 
-    public class GroupResource: BaseFileResource
+    public class GroupResource : BaseFileResource
     {
         public static void LoadgroupResource(GroupResource groupResource)
         {
@@ -62,9 +62,9 @@ namespace ColorVision.Engine.Services.Core
             groupResource.SetCalibrationResource();
         }
 
-        public static GroupResource? AddGroupResource(ICalibrationService<BaseResourceObject> deviceService , string Name)
+        public static GroupResource? AddGroupResource(ICalibrationService<BaseResourceObject> deviceService, string Name)
         {
-            SysResourceModel sysResourceModel = new() { Name = Name , Type = (int)ServiceTypes.Group };
+            SysResourceModel sysResourceModel = new() { Name = Name, Type = (int)ServiceTypes.Group };
             sysResourceModel.Pid = deviceService.SysResourceModel.Id;
             sysResourceModel.TenantId = deviceService.SysResourceModel.TenantId;
 
@@ -86,7 +86,7 @@ namespace ColorVision.Engine.Services.Core
         public ConfigGroup Config { get; set; }
 
 
-        public GroupResource(SysResourceModel sysResourceModel):base(sysResourceModel)
+        public GroupResource(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             SysResourceModel = sysResourceModel;
             Name = sysResourceModel.Name ?? sysResourceModel.Id.ToString();
@@ -171,7 +171,7 @@ namespace ColorVision.Engine.Services.Core
         }
 
 
-        public CalibrationResource DarkNoise { get => _DarkNoise;set { _DarkNoise = value;  NotifyPropertyChanged(); } }
+        public CalibrationResource DarkNoise { get => _DarkNoise; set { _DarkNoise = value; NotifyPropertyChanged(); } }
         private CalibrationResource _DarkNoise;
         public CalibrationResource DefectPoint { get => _DefectPoint; set { _DefectPoint = value; NotifyPropertyChanged(); } }
         private CalibrationResource _DefectPoint;

@@ -1,5 +1,5 @@
 ﻿using ColorVision.Engine.Services.Msg;
-using ColorVision.Engine.Services.PhyCameras.Templates;
+using ColorVision.Engine.Services.PhyCameras.Group;
 using CVCommCore;
 using CVCommCore.CVImage;
 using MQTTMessageLib;

@@ -31,6 +31,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Diagnostics;
+using ColorVision.Engine.Services.PhyCameras.Group;
 
 namespace ColorVision.Engine.Services
 {

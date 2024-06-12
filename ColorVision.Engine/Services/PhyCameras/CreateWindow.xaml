@@ -128,15 +128,15 @@
                         <DockPanel Margin="0,2">
                             <Button Content=".." DockPanel.Dock="Right" VerticalAlignment="Bottom" Height="30" Width="30" Click="FileBasePath_Click"/>
                             <TextBlock Text="数据目录:" Width="120"/>
-                            <TextBox Text="{Binding FileServerCfg.FileBasePath}"/>
+                            <TextBox Text="{Binding  CreateConfig.FileServerCfg.FileBasePath}"/>
                         </DockPanel>
                         <DockPanel Margin="0,2">
                             <TextBlock Text="端口地址:" Width="120"/>
-                            <TextBox Text="{Binding FileServerCfg.Endpoint}"/>
+                            <TextBox Text="{Binding CreateConfig.FileServerCfg.Endpoint}"/>
                         </DockPanel>
                         <DockPanel Margin="0,2">
                             <TextBlock Text="端口范围:" Width="120"/>
-                            <TextBox Text="{Binding FileServerCfg.PortRange}" />
+                            <TextBox Text="{Binding CreateConfig.FileServerCfg.PortRange}" />
                         </DockPanel>
                     </StackPanel>
                 </GroupBox>

@@ -1,12 +1,13 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
-namespace ColorVision.Engine.Services.Core
+namespace ColorVision.Engine.Services.PhyCameras.Group
 {
-    public class CalibrationFileConfig :ViewModelBase
+    public class CalibrationFileConfig : ViewModelBase
     {
         public double Aperturein { get; set; }
         public double ExpTime { get; set; }
@@ -30,7 +31,7 @@ namespace ColorVision.Engine.Services.Core
         }
 
         public CalibrationFileConfig Config { get; set; }
-        public CalibrationResource(SysResourceModel sysResourceModel) : base(sysResourceModel) 
+        public CalibrationResource(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             CalibrationResources.Add(this);
             //Config = BaseResourceObjectExtensions.TryDeserializeConfig<CalibrationFileConfig>(sysResourceModel.Value);

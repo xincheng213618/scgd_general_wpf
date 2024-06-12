@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Net;
 using ColorVision.RecentFile;
-using CVImageChannelLib;
 using MQTTMessageLib.FileServer;
 using OpenCvSharp;
 using System;
@@ -10,7 +9,7 @@ using System.Drawing.Imaging;
 using System.Globalization;
 using System.IO;
 
-namespace ColorVision.Engine.Services.Export
+namespace ColorVision.Engine.UIExport.SolutionExports.Export
 {
     public class VExportCIE : ViewModelBase
     {
@@ -22,7 +21,7 @@ namespace ColorVision.Engine.Services.Export
             {
                 src.SaveImage(fileName, new ImageEncodingParam(ImwriteFlags.TiffCompression, 1));
             }
-            else if(export.ExportImageFormat == ImageFormat.Bmp)
+            else if (export.ExportImageFormat == ImageFormat.Bmp)
             {
                 src.SaveImage(fileName);
             }
@@ -36,7 +35,7 @@ namespace ColorVision.Engine.Services.Export
             }
             else
             {
-                src.SaveImage(fileName +"tiff");
+                src.SaveImage(fileName + "tiff");
             }
         }
 
@@ -58,7 +57,7 @@ namespace ColorVision.Engine.Services.Export
                     {
                         CVFileUtil.ReadCIEFileData(FileName, ref cvcie, index);
                         src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
-                        SaveTo(export, src,SavePath + "\\" + Name + "Src.");
+                        SaveTo(export, src, SavePath + "\\" + Name + "Src.");
                     }
                     break;
                 case FileExtType.Src:

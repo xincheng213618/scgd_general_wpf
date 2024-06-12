@@ -6,6 +6,7 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Dao;
+using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.Types;
 using cvColorVision;
 using Newtonsoft.Json;

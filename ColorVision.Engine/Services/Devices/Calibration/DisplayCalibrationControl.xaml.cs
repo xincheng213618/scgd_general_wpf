@@ -1,11 +1,10 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
-using ColorVision.Engine.Templates;
 using ColorVision.Engine.Services.Devices.Calibration.Views;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Services.PhyCameras;
-using ColorVision.Engine.Services.PhyCameras.Templates;
-using ColorVision.Engine.Services.Templates;
+using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Engine.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;

@@ -9,6 +9,7 @@ namespace ColorVision.Engine.Services.Core
     {
         public RelayCommand DeleteCommand { get; set; }
         public RelayCommand SaveCommand { get; set; }
+
         public ObservableCollection<BaseResourceObject> VisualChildren { get; set; }
         public BaseResourceObject()
         {

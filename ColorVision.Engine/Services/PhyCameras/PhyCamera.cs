@@ -2,13 +2,12 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Dao;
-using ColorVision.Engine.Services.PhyCameras.Templates;
+using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Templates;
@@ -79,7 +78,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             ResourceManagerCommand = new RelayCommand(a =>
             {
-                ResourceManager resourceManager = new(this) { Owner = WindowHelpers.GetActiveWindow() };
+                ResourceManagerWindow resourceManager = new ResourceManagerWindow(this) { Owner = WindowHelpers.GetActiveWindow() };
                 resourceManager.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 resourceManager.ShowDialog();
             });

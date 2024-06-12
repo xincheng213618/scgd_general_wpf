@@ -1,7 +1,7 @@
 ﻿using ColorVision.Engine.Services.Types;
 using cvColorVision;
 
-namespace ColorVision.Engine.Services.PhyCameras.Templates
+namespace ColorVision.Engine.Services.PhyCameras.Group
 {
 
     public static class Extensions

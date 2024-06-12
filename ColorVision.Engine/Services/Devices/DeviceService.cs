@@ -1,14 +1,15 @@
 ﻿#pragma warning disable CS8604,CS8631
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI.Extension;
-using ColorVision.Util.Interfaces;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
+using ColorVision.UI.Extension;
 using ColorVision.UI.Views;
+using ColorVision.Util.Interfaces;
 using Newtonsoft.Json;
 using System;
 using System.IO;
@@ -140,7 +141,7 @@ namespace ColorVision.Engine.Services.Devices
 
             ResourceManagerCommand = new RelayCommand(a => 
             {
-                ResourceManager resourceManager = new(this) { Owner = WindowHelpers.GetActiveWindow() };
+                ResourceManagerWindow resourceManager = new(this) { Owner = WindowHelpers.GetActiveWindow() };
                 resourceManager.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 resourceManager.ShowDialog();
             });

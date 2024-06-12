@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Engine.Services"
         xmlns:type="clr-namespace:ColorVision.Engine.Services.Types"
         xmlns:devices="clr-namespace:ColorVision.Engine.Services.Devices"
-        xmlns:core ="clr-namespace:ColorVision.Engine.Services.Core"
+        xmlns:core ="clr-namespace:ColorVision.Engine.Services.PhyCameras.Group"
         xmlns:terminal ="clr-namespace:ColorVision.Engine.Services.Terminal"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"

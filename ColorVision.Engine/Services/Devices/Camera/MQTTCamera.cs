@@ -2,7 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Msg;
-using ColorVision.Engine.Services.PhyCameras.Templates;
+using ColorVision.Engine.Services.PhyCameras.Group;
 using cvColorVision;
 using CVCommCore;
 using CVCommCore.CVImage;

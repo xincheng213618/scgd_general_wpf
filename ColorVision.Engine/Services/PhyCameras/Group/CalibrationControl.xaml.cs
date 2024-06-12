@@ -1,10 +1,11 @@
 ﻿using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.PhyCameras.Group;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Services.PhyCameras.Templates
+namespace ColorVision.Engine.Services.PhyCameras.Group
 {
     sealed class TempCache
     {
