@@ -142,5 +142,21 @@ namespace ColorVision.Engine.Services.PhyCameras
             PhyCameraManager.LoadPhyCamera();
             Close();
         }
+
+        private void FileBasePath_Click(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Forms.FolderBrowserDialog dialog = new();
+            dialog.UseDescriptionForTitle = true;
+            dialog.Description = "为相机路径选择位置";
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                if (string.IsNullOrEmpty(dialog.SelectedPath))
+                {
+                    MessageBox.Show("文件夹路径不能为空", "提示");
+                    return;
+                }
+                CreateConfig.FileServerCfg.FileBasePath = dialog.SelectedPath;
+            }
+        }
     }
 }
