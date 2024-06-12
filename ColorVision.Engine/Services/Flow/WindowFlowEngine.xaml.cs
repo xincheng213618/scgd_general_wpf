@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services.Templates;
@@ -194,15 +195,19 @@ namespace ColorVision.Engine.Services.Flow
                 STNodeEditorMain.LoadCanvas(Convert.FromBase64String(flowParam.DataBase64));
             }
             svrName = "";
-            
-
-            flowControl = new FlowControl(MQTTControl.GetInstance(), nodeStart.NodeName);
-            flowControl.FlowCompleted += (s, e) =>
+            if (nodeStart != null)
             {
-                ButtonFlowOpen.Content = "开始流程";
-                ButtonFlowPause.IsEnabled = false;
-                ButtonFlowPause.Visibility = Visibility.Collapsed;
-            };
+                flowControl = new FlowControl(MQTTControl.GetInstance(), nodeStart.NodeName);
+                flowControl.FlowCompleted += (s, e) =>
+                {
+                    ButtonFlowOpen.Content = "开始流程";
+                    ButtonFlowPause.IsEnabled = false;
+                    ButtonFlowPause.Visibility = Visibility.Collapsed;
+                };
+            }
+            else
+            {
+            }
             OperateGrid.Visibility = Visibility.Visible;
             Title = "流程编辑器 - " + new FileInfo(flowParam.Name).Name;
         }
