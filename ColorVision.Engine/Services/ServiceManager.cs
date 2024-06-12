@@ -30,6 +30,7 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Diagnostics;
 
 namespace ColorVision.Engine.Services
 {
@@ -50,12 +51,10 @@ namespace ColorVision.Engine.Services
             if (MySqlControl.GetInstance().IsConnect)
             {
                 _messageUpdater.UpdateMessage("正在加载服务");
-                await Task.Delay(10);
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     ServiceManager ServiceManager = ServiceManager.GetInstance();
                 });
-
                 if (!ServicesConfig.Instance.IsDefaultOpenService)
                 {
                     _messageUpdater.UpdateMessage("初始化服务");
@@ -76,7 +75,6 @@ namespace ColorVision.Engine.Services
                     });
                 }
                 _messageUpdater.UpdateMessage("服务初始化完成");
-                await Task.Delay(10);
             }
             else
             {
@@ -106,9 +104,9 @@ namespace ColorVision.Engine.Services
         {
             svrDevices = new Dictionary<string, List<MQTTServiceBase>>();
             ServiceTokens = new List<MQTTServiceInfo>();
-            MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadServices();
             if (MySqlControl.GetInstance().IsConnect)
                 LoadServices();
+            MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadServices();
         }
 
         public void GenControl(ObservableCollection<DeviceService> MQTTDevices)

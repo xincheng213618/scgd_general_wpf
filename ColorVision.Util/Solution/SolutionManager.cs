@@ -12,6 +12,7 @@ using System.Windows;
 using YamlDotNet.Core;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Threading.Tasks;
 
 namespace ColorVision.Solution
 {
@@ -29,6 +30,28 @@ namespace ColorVision.Solution
         void Close();
     }
 
+    public class SolutionManagerInitializer : IInitializer
+    {
+        private readonly IMessageUpdater _messageUpdater;
+
+        public SolutionManagerInitializer(IMessageUpdater messageUpdater)
+        {
+            _messageUpdater = messageUpdater;
+        }
+
+        public int Order => 1;
+
+        public async Task InitializeAsync()
+        {
+            _messageUpdater.UpdateMessage("正在加载工程目录");
+            Task.Run(async () =>
+            {
+                await Task.Delay(10);
+                Application.Current.Dispatcher.Invoke(() => SolutionManager.GetInstance());
+            });
+            await Task.Delay(30);
+        }
+    }
 
 
     /// <summary>
