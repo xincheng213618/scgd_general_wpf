@@ -222,7 +222,6 @@ namespace ColorVision.Solution.V
 
         public async void GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
         {
-            await Task.Delay(100);
             foreach (var item in directoryInfo.GetDirectories())
             {
                 if ((item.Attributes & FileAttributes.Hidden) == FileAttributes.Hidden)
@@ -232,11 +231,13 @@ namespace ColorVision.Solution.V
                 BaseFolder folder = new(item);
                 var vFolder = new VFolder(folder);
                 vObject.AddChild(vFolder);
+                await Task.Delay(100);
                 GeneralChild(vFolder, item);
             }
 
             foreach (var item in directoryInfo.GetFiles())
             {
+                await Task.Delay(30);
                 CreateFile(vObject, item);
             }
         }
