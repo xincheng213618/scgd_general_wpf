@@ -26,7 +26,7 @@ namespace ColorVision.Engine.Templates
         private static async void Init()
         {
             if (!MySqlControl.GetInstance().IsConnect) return;
-            await Task.Delay(100);
+            await Task.Delay(10);
             foreach (var type in Assembly.GetExecutingAssembly().GetTypes().Where(t => typeof(IITemplateLoad).IsAssignableFrom(t) && !t.IsAbstract))
             {
                 if (Activator.CreateInstance(type) is IITemplateLoad iITemplateLoad)

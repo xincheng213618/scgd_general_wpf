@@ -28,8 +28,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports
     {
         public override void Open()
         {
-            CVFileUtil.ReadCVRaw(FullName, out CVCIEFile fileInfo);
-            ImageView.OpenImage(fileInfo);
+            ImageView.OpenImage(FullName);
         }
     }
 
