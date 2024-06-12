@@ -96,6 +96,7 @@ namespace ColorVision
             Stopwatch stopwatch = new Stopwatch();
             foreach (var initializer in _IComponentInitializers)
             {
+                await Task.Delay(100);
                 stopwatch.Start();
                 await initializer.InitializeAsync();
                 stopwatch.Stop();
