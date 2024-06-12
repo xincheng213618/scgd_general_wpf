@@ -33,7 +33,7 @@ namespace ColorVision.Engine.MySql.ORM
             {
                 Model2Row(item, row);
                 int ret = Save(dataTable);
-                item.Id = dataTable.Rows[0].Field<int>(PKField);    
+                item.Id = dataTable.Rows[0].Field<int>(PKField);
                 return ret;
             }
             catch (Exception ex)
@@ -158,16 +158,9 @@ namespace ColorVision.Engine.MySql.ORM
             }
         }
 
-        public int DeleteAllByPid(int pid, bool IsLogicDel = true)
-        {
-            string sql = IsLogicDel ? $"UPDATE {TableName} SET is_delete = 1 WHERE pid = @pid" : $"DELETE FROM {TableName} WHERE pid = @pid";
-            return ExecuteNonQuery(sql, new Dictionary<string, object> { { "pid", pid } });
-        }
+        public int DeleteAllByPid(int pid, bool IsLogicDel = true) => DeleteAllByParam(new Dictionary<string, object>() { { "pid", pid } }, IsLogicDel);
 
-        public int DeleteById(int id, bool IsLogicDel = true)
-        {
-            string sql = IsLogicDel ? $"UPDATE {TableName} SET is_delete = 1 WHERE id = @id" : $"DELETE FROM {TableName} WHERE id = @id";
-            return ExecuteNonQuery(sql, new Dictionary<string, object> { { "id", id } });
-        }
+        public int DeleteById(int id, bool IsLogicDel = true) => DeleteAllByParam(new Dictionary<string, object>() { { "id", id } }, IsLogicDel);
+
     }
 }

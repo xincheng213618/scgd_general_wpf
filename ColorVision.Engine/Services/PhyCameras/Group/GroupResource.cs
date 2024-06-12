@@ -2,12 +2,16 @@
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Types;
+using ColorVision.UI;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.PhyCameras.Group
 {
+
     public class ConfigGroup : ViewModelBase
     {
         public int Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
@@ -35,7 +39,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         private double _ImgBpp;
     }
 
-    public class GroupResource : BaseFileResource
+    public class GroupResource : BaseFileResource, IEditable
     {
         public static void LoadgroupResource(GroupResource groupResource)
         {
@@ -85,13 +89,27 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         public ConfigGroup Config { get; set; }
 
+        public virtual bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
+        private bool _IsEditMode;
 
+        public RelayCommand ReNameCommand { get; set; }
+        public ContextMenu ContextMenu { get; set; }
         public GroupResource(SysResourceModel sysResourceModel) : base(sysResourceModel)
         {
             SysResourceModel = sysResourceModel;
             Name = sysResourceModel.Name ?? sysResourceModel.Id.ToString();
-
+            ReNameCommand = new RelayCommand(a => IsEditMode = true);
             Config = BaseResourceObjectExtensions.TryDeserializeConfig<ConfigGroup>(SysResourceModel.Value);
+            ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
+            ContextMenu.Items.Add( new MenuItem() { Header = ColorVision.Engine.Properties.Resources.Delete, Command = ApplicationCommands.Delete });
+            ContextMenu.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = true));
+        }
+
+        public override void Delete()
+        {
+            this.Parent?.RemoveChild(this);
+            SysResourceDao.Instance.DeleteById(this.Id);
         }
 
         public override void Save()

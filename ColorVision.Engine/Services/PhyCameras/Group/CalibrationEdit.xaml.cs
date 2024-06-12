@@ -2,6 +2,7 @@
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Types;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
@@ -137,13 +138,33 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         private void Button_Delete_Click(object sender, RoutedEventArgs e)
         {
-            if (ListView1.SelectedIndex > -1)
+            if (ListView1.SelectedItems.Count > 0)
             {
-                GroupResource groupResource = groupResources[ListView1.SelectedIndex];
-                SysResourceDao.Instance.DeleteById(groupResource.SysResourceModel.Id, false);
-                groupResources.Remove(groupResource);
-                CalibrationService.VisualChildren.Remove(groupResource);
+                // Create a list to hold the items to be removed
+                List<GroupResource> itemsToRemove = new List<GroupResource>();
+
+                foreach (var selectedItem in ListView1.SelectedItems)
+                {
+                    GroupResource groupResource = selectedItem as GroupResource;
+                    if (groupResource != null)
+                    {
+                        SysResourceDao.Instance.DeleteById(groupResource.SysResourceModel.Id, false);
+                        itemsToRemove.Add(groupResource);
+                    }
+                }
+
+                // Remove the items from the original list and the visual children
+                foreach (var item in itemsToRemove)
+                {
+                    groupResources.Remove(item);
+                    CalibrationService.VisualChildren.Remove(item);
+                }
+
                 MessageBox.Show("删除成功");
+            }
+            else
+            {
+                MessageBox.Show("请选择要删除的项");
             }
         }
 
@@ -152,6 +173,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             foreach (var item in groupResources)
             {
                 item.Save();
+            }
+        }
+
+        private void TextBox_LostFocus(object sender, RoutedEventArgs e)
+        {
+            if (sender is TextBox textBox && textBox.Tag is GroupResource groupResource)
+            {
+                groupResource.IsEditMode = false;
             }
         }
     }

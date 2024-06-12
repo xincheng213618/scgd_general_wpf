@@ -66,6 +66,7 @@
                                 <Button Content="校正模板设置" Margin="5" Height="100" Width="180" Tag="Calibration"  Click="MenuItem_Template" />
                                 <Button Content="校正模板管理" Margin="5" Height="100" Width="180" Command="{Binding CalibrationEditCommand}"/>
                                 <Button Content="资源组管理" Margin="5" Height="100" Width="180" Command="{Binding ResourceManagerCommand}"/>
+                                <Button Content="重置" Margin="5" Height="100" Width="180" Command="{Binding ResetCommand}"/>
                             </UniformGrid>
                             <StackPanel  HorizontalAlignment="Right" VerticalAlignment="Bottom">
                                 <TextBlock  Text="{Binding SysResourceModel.Code}" />

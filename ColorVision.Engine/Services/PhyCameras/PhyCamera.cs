@@ -46,6 +46,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public RelayCommand UploadLincenseCommand { get; set; }
         public RelayCommand RefreshLincenseCommand { get; set; }
+        public RelayCommand ResetCommand { get; set; }
 
         public RelayCommand EditCommand { get; set; }
 
@@ -87,6 +88,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             CalibrationParam.LoadResourceParams(CalibrationParams, SysResourceModel.Id, ModMasterType.Calibration);
 
+            ResetCommand = new RelayCommand(a => Reset(), r => true);
+
             CalibrationEditCommand = new RelayCommand(a =>
             {
                 CalibrationEdit CalibrationEdit = new(this);
@@ -98,6 +101,23 @@ namespace ColorVision.Engine.Services.PhyCameras
             RefreshLincense();
 
             QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
+        }
+
+        public void Reset()
+        {
+            if (MessageBox.Show(Application.Current.GetActiveWindow(),"是否清除数据库相关项","ColorVision",MessageBoxButton.YesNoCancel) == MessageBoxResult.Yes)
+            {
+                CalibrationParams.Clear();
+                Task.Run(() =>
+                {
+                    SysResourceDao.Instance.DeleteAllByPid(Id ,false);
+                    foreach (var item in ModMasterDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "res_pid", Id } }))
+                    {
+                        ModDetailDao.Instance.DeleteAllByPid(item.Id, false);
+                    }
+                    ModMasterDao.Instance.DeleteAllByParam(new Dictionary<string, object>() { { "res_pid", Id } }, false);
+                });
+            }
         }
 
         public DeviceCamera? DeviceCamera { get; set; }
@@ -308,6 +328,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public void UploadCalibration(object sender)
         {
+            MQTTFileUpload.GetInstance().LoadPhysicalCamera(Config.CameraID);
             UploadList.Clear();
             UploadWindow uploadwindow = new("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
             uploadwindow.OnUpload += (s, e) =>

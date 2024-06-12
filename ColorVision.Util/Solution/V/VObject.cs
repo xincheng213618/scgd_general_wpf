@@ -56,7 +56,6 @@ namespace ColorVision.Solution.V
 
         public RelayCommand AddChildren { get; set; }
         public RelayCommand RemoveChildren { get; set; }
-        public RelayCommand DeleteCommand { get; set; }
         public RelayCommand OpenCommand { get; set; }
         public RelayCommand AttributesCommand { get; set; }
 
@@ -72,7 +71,6 @@ namespace ColorVision.Solution.V
         public VObject()
         {
             VisualChildren = new ObservableCollection<VObject>() { };
-            DeleteCommand = new RelayCommand((s) => Delete(), (s) => { return Parent != null && CanDelete; });
             OpenCommand = new RelayCommand((s) => Open(), (s) => { return Parent != null; });
         }
 

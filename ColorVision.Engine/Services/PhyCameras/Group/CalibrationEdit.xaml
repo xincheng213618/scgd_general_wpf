@@ -6,7 +6,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras.Group"
         mc:Ignorable="d"
-        Title="资源组管理"  Background="{DynamicResource GlobalBackground}" Closed="Window_Closed" Height="450" Width="1200" Initialized="Window_Initialized" >
+        Title="资源组管理"  Background="{DynamicResource GlobalBackground}" Closed="Window_Closed" Height="500" Width="1200" Initialized="Window_Initialized" >
     <Window.Resources>
         <Style  TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}"/>
         <Style TargetType="hc:ComboBox" BasedOn="{StaticResource ComboBox.Small}">
@@ -21,14 +21,19 @@
         </Grid.ColumnDefinitions>
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <DockPanel>
-                <Button Content="添加"  Click="Button_Add_Click"/>
+            <StackPanel Orientation="Horizontal" Grid.Row="1" Margin="0,5" >
+                <Button Content="添加"  Click="Button_Add_Click" Margin="0,0,5,0" />
                 <Button Content="删除"  Click="Button_Delete_Click"/>
-            </DockPanel>
-            <ListView  x:Name="ListView1" Grid.Row="1" Background="Transparent"  BorderThickness="0" Style="{DynamicResource ListView.Small}"   ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionChanged="ListView1_SelectionChanged">
+            </StackPanel>
+            <ListView  x:Name="ListView1" Grid.Row="0" Style="{DynamicResource ListView.Small}"   ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectionChanged="ListView1_SelectionChanged">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
+                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
                 <ListView.View>
                     <GridView>
                         <GridViewColumn Header="序号">
@@ -41,7 +46,10 @@
                         <GridViewColumn Header="名称">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate DataType="{x:Type local:GroupResource}">
-                                    <TextBox  Text="{Binding Name}" Tag="{Binding .}"  Width="100"/>
+                                    <Grid>
+                                        <TextBlock Text="{Binding Name}" Width="100" Visibility="{Binding IsEditMode ,Converter={StaticResource bool2VisibilityConverter1}}" />
+                                        <TextBox  Text="{Binding Name}" LostFocus="TextBox_LostFocus" Tag="{Binding .}"  Width="100" Visibility="{Binding IsEditMode ,Converter={StaticResource bool2VisibilityConverter}}"/>
+                                    </Grid>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
@@ -50,7 +58,7 @@
             </ListView>
         </Grid>
         <StackPanel x:Name="StackPanelCab" Grid.Column="1" d:DataContext="{d:DesignInstance local:GroupResource}">
-            <Border  BorderThickness="1" BorderBrush="{DynamicResource  BorderBrush}" CornerRadius="5" Margin="5">
+            <Border  BorderThickness="1" BorderBrush="{DynamicResource  BorderBrush}" CornerRadius="5" Margin="5,0">
                 <StackPanel Margin="5">
                     <DockPanel  Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="曝光"  Width="80" />

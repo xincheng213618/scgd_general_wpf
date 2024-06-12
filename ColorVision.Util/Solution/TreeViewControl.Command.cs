@@ -1,4 +1,5 @@
 ﻿using ColorVision.Solution.V;
+using ColorVision.Solution.V.Files;
 using System.IO;
 using System.Runtime.Serialization;
 using System.Windows;
@@ -128,7 +129,11 @@ namespace ColorVision.Solution
                 {
                     if (SelectedTreeViewItem != null)
                     {
-                        if (SelectedTreeViewItem.DataContext is VObject baseObject)
+                        if (SelectedTreeViewItem.DataContext is VFile vFile)
+                        {
+                            vFile.Delete();
+                        }
+                        else if (SelectedTreeViewItem.DataContext is VObject baseObject)
                         {
                             baseObject.Parent?.RemoveChild(baseObject);
                         }

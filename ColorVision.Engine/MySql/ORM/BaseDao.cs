@@ -3,9 +3,11 @@ using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 
 namespace ColorVision.Engine.MySql.ORM
 {
+
     /// <summary>
     /// 因为项目中本身包含Service,所以这里取消Service层的设置，直接从Dao层
     /// </summary>
@@ -127,6 +129,25 @@ namespace ColorVision.Engine.MySql.ORM
             {
                 e.Row[_PKField] = e.Command.LastInsertedId;
             }
+        }
+
+
+        public int DeleteAllByParam(Dictionary<string, object> param, bool IsLogicDel = true)
+        {
+            if (param == null || param.Count == 0)
+            {
+                throw new ArgumentException("Parameter dictionary cannot be null or empty", nameof(param));
+            }
+
+            // Build the WHERE clause from the parameters
+            var whereClauses = param.Select(kvp => $"{kvp.Key} = @{kvp.Key}");
+            string whereClause = string.Join(" AND ", whereClauses);
+
+            string sql = IsLogicDel
+                ? $"UPDATE {TableName} SET is_delete = 1 WHERE {whereClause}"
+                : $"DELETE FROM {TableName} WHERE {whereClause}";
+
+            return ExecuteNonQuery(sql, param);
         }
     }
 }
