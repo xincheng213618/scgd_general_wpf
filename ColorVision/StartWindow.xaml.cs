@@ -106,6 +106,7 @@ namespace ColorVision
                 });
                 stopwatch.Reset();
             }
+            await Task.Delay(100);
             Application.Current.Dispatcher.Invoke(() =>
             {
                 try

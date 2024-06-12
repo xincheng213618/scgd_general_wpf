@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (listView1.View is GridView gridView)
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
 
-            netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.FullPath + "\\Cache");
+            netFileUtil = new NetFileUtil();
             netFileUtil.handler += NetFileUtil_handler;
         }
 

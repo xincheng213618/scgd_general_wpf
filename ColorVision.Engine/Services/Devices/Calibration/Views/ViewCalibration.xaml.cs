@@ -66,7 +66,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             ComboBoxLayers.ItemsSource = from e1 in Enum.GetValues(typeof(ImageLayer)).Cast<ImageLayer>()
                                          select new KeyValuePair<string, ImageLayer>(e1.ToString(), e1);
 
-            netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.FullPath + "\\Cache");
+            netFileUtil = new NetFileUtil();
             netFileUtil.handler += NetFileUtil_handler;
             DeviceService.MsgReturnReceived += DeviceService_OnMessageRecved;
         }
