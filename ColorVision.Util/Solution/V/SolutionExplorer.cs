@@ -231,12 +231,7 @@ namespace ColorVision.Solution.V
                 BaseFolder folder = new(item);
                 var vFolder = new VFolder(folder);
                 vObject.AddChild(vFolder);
-                i++;
-                if (i == 5)
-                {
-                    await Task.Delay(100);
-                    i = 0;
-                }
+                await Task.Delay(100);
                 GeneralChild(vFolder, item);
             }
 
@@ -245,7 +240,7 @@ namespace ColorVision.Solution.V
                 i++;
                 if (i == 5)
                 {
-                    await Task.Delay(100);
+                    await Task.Delay(200);
                     i = 0;
                 }
                 CreateFile(vObject, item);
