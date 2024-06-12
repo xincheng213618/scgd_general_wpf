@@ -50,23 +50,33 @@ namespace ColorVision.Engine.Services
             if (MySqlControl.GetInstance().IsConnect)
             {
                 _messageUpdater.UpdateMessage("正在加载服务");
-                await Task.Delay(1);
+                await Task.Delay(10);
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     ServiceManager ServiceManager = ServiceManager.GetInstance();
-                    if (!ServicesConfig.Instance.IsDefaultOpenService)
-                    {
-                        _messageUpdater.UpdateMessage("初始化服务");
-                        ServiceManager.GenDeviceDisplayControl();
-                        new WindowDevices() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                    }
-                    else
-                    {
-                        _messageUpdater.UpdateMessage("自动配置服务中");
-                        ServiceManager.GenDeviceDisplayControl();
-                    }
                 });
 
+                if (!ServicesConfig.Instance.IsDefaultOpenService)
+                {
+                    _messageUpdater.UpdateMessage("初始化服务");
+                    await Task.Delay(10);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        ServiceManager.GetInstance().GenDeviceDisplayControl();
+                        new WindowDevices() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                    });
+                }
+                else
+                {
+                    _messageUpdater.UpdateMessage("自动配置服务中");
+                    await Task.Delay(10);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        ServiceManager.GetInstance().GenDeviceDisplayControl();
+                    });
+                }
+                _messageUpdater.UpdateMessage("服务初始化完成");
+                await Task.Delay(10);
             }
             else
             {
