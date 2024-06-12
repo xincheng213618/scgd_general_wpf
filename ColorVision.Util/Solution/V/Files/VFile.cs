@@ -89,7 +89,7 @@ namespace ColorVision.Solution.V.Files
                 }
 
                 CreateMenu(ContextMenu, null);
-            }
+            }  
 
             ContextMenu.Items.Add(new Separator());
             ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Util.Properties.Resources.MenuCopyFullPath, Command = CopyFullPathCommand });

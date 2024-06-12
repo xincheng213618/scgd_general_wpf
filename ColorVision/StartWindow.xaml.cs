@@ -1,5 +1,8 @@
-﻿using ColorVision.Themes;
+﻿using ColorVision.Engine.Services.Core;
+using ColorVision.Themes;
 using ColorVision.UI;
+using log4net;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -21,6 +24,7 @@ namespace ColorVision
     /// </summary>
     public partial class StartWindow : Window, IMessageUpdater
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(StartWindow));
         public StartWindow()
         {
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
@@ -89,10 +93,18 @@ namespace ColorVision
 
         private async Task InitializedOver()
         {
-            //检测服务连接情况，需要在界面启动之后，否则会出现问题。因为界面启动之后才会初始化MQTTControl和MySqlControl，所以代码上问题不大
+            Stopwatch stopwatch = new Stopwatch();
             foreach (var initializer in _IComponentInitializers)
             {
+                stopwatch.Start();
                 await initializer.InitializeAsync();
+                stopwatch.Stop();
+                log.Info($"Initializer {initializer.GetType().Name} took {stopwatch.ElapsedMilliseconds} ms.");
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    TextBoxMsg.Text += $"  took {stopwatch.ElapsedMilliseconds} ms.";
+                });
+                stopwatch.Reset();
             }
             Application.Current.Dispatcher.Invoke(() =>
             {

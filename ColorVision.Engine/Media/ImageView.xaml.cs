@@ -982,7 +982,73 @@ namespace ColorVision.Engine.Media
             };
             windowCIE.Show();
         }
+        private void HistogramButton_Click(object sender, RoutedEventArgs e)
+        {
+            RenderHistogram();
+        }
+        private void DrawHistogram(int[] histogram, Color color, DrawingContext drawingContext, double width, double height)
+        {
+            double max = histogram.Max();
+            double scale = height / max;
+
+            Pen pen = new Pen(new SolidColorBrush(color), 1);
+
+            for (int i = 0; i < histogram.Length; i++)
+            {
+                double x = i * (width / 256);
+                double y = height - (histogram[i] * scale);
+                drawingContext.DrawLine(pen, new Point(x, height), new Point(x, y));
+            }
+        }
 
 
+        private void RenderHistogram()
+        {
+            if (ImageShow.Source is not BitmapSource bitmapSource)
+                return;
+
+            int width = bitmapSource.PixelWidth;
+            int height = bitmapSource.PixelHeight;
+            int stride = width * ((bitmapSource.Format.BitsPerPixel + 7) / 8);
+            byte[] pixelData = new byte[height * stride];
+            bitmapSource.CopyPixels(pixelData, stride, 0);
+
+            int[] redHistogram = new int[256];
+            int[] greenHistogram = new int[256];
+            int[] blueHistogram = new int[256];
+
+            for (int i = 0; i < pixelData.Length; i += 4) // Assuming a 32bpp image
+            {
+                byte blue = pixelData[i];
+                byte green = pixelData[i + 1];
+                byte red = pixelData[i + 2];
+
+                redHistogram[red]++;
+                greenHistogram[green]++;
+                blueHistogram[blue]++;
+            }
+
+            DrawingVisual drawingVisual = new DrawingVisual();
+            using (DrawingContext drawingContext = drawingVisual.RenderOpen())
+            {
+                double width1 = 256; // Width of the histogram
+                double height1 = 100; // Height of the histogram
+
+                // Draw each color channel histogram
+                DrawHistogram(redHistogram, Colors.Red, drawingContext, width1, height1);
+                DrawHistogram(greenHistogram, Colors.Green, drawingContext, width1, height1);
+                DrawHistogram(blueHistogram, Colors.Blue, drawingContext, width1, height1);
+            }
+
+            RenderTargetBitmap bmp = new RenderTargetBitmap(256, 100, 96, 96, PixelFormats.Pbgra32);
+            bmp.Render(drawingVisual);
+
+            Image image = new Image() { Margin = new Thickness(5) };
+
+            image.Source = bmp; // histogramImage is an Image control in your XAML
+            Window window = new Window() { Width = 256, Height = 170 };
+            window.Content = image;
+            window.Show();
+        }
     }
 }
