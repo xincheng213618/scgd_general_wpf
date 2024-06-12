@@ -778,7 +778,7 @@ namespace ColorVision.Engine.Media
         public void AddRect(Rect rect)
         {
             DrawingVisualRectangleWord Rectangle = new();
-            Rectangle.Attribute.Rect = new Rect(rect.X, rect.Y, rect.Width, rect.Height);
+            Rectangle.Attribute.Rect = new Rect(rect.X -rect.Width /2, rect.Y - 2 / rect.Height, rect.Width, rect.Height);
             Rectangle.Attribute.Brush = Brushes.Transparent;
             Rectangle.Attribute.Pen = new Pen(Brushes.Red, rect.Width / 30.0);
             Rectangle.Render();
