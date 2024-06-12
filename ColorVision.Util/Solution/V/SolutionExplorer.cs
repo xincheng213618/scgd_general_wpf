@@ -218,8 +218,8 @@ namespace ColorVision.Solution.V
             }
 
         }
-        
 
+        int i = 0;
         public async void GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
         {
             foreach (var item in directoryInfo.GetDirectories())
@@ -231,13 +231,23 @@ namespace ColorVision.Solution.V
                 BaseFolder folder = new(item);
                 var vFolder = new VFolder(folder);
                 vObject.AddChild(vFolder);
-                await Task.Delay(100);
+                i++;
+                if (i == 5)
+                {
+                    await Task.Delay(100);
+                    i = 0;
+                }
                 GeneralChild(vFolder, item);
             }
 
             foreach (var item in directoryInfo.GetFiles())
             {
-                await Task.Delay(30);
+                i++;
+                if (i == 5)
+                {
+                    await Task.Delay(100);
+                    i = 0;
+                }
                 CreateFile(vObject, item);
             }
         }
