@@ -224,7 +224,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void UpdateConfig_Click(object sender, RoutedEventArgs e)
         {
             UpdateConfig();
-
         }
     }
 }

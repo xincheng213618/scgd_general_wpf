@@ -641,6 +641,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             base.Save();
             SaveConfig();
+            MQTTFileUpload.GetInstance().LoadPhysicalCamera(Config.CameraID);
         }
 
     }
