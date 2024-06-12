@@ -246,9 +246,11 @@ namespace ColorVision.Engine.Templates
 
         public override void Delete(int index)
         {
-            if (index >= 0 && index < TemplateParams.Count)
+            int selectedCount = TemplateParams.Count(item => item.IsSelected);
+            if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
+
+            void DeleteSingle(int id)
             {
-                int id = TemplateParams[index].Value.Id;
                 List<ModDetailModel> de = ModDetailDao.Instance.GetAllByPid(id);
                 int ret = ModMasterDao.Instance.DeleteById(id);
                 ModDetailDao.Instance.DeleteAllByPid(id);
@@ -264,6 +266,19 @@ namespace ColorVision.Engine.Templates
                     VSysResourceDao.Instance.DeleteInCodes(codes);
                 }
                 TemplateParams.RemoveAt(index);
+            }
+
+            if (selectedCount <= 1)
+            {
+                int id = TemplateParams[index].Value.Id;
+                DeleteSingle(id);
+            }
+            else
+            {
+                foreach (var item in TemplateParams.Where(item => item.IsSelected == true).ToList())
+                {
+                    DeleteSingle(item.Id);
+                }
             }
         }
 
