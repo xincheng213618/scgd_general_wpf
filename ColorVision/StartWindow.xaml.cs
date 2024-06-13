@@ -98,6 +98,10 @@ namespace ColorVision
             {
                 await Task.Delay(100);
                 stopwatch.Start();
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    TextBoxMsg.Text += Environment.NewLine + $"{Properties.Resources.Initializer} {initializer.GetType().Name}";
+                });
                 await initializer.InitializeAsync();
                 stopwatch.Stop();
                 log.Info($"Initializer {initializer.GetType().Name} took {stopwatch.ElapsedMilliseconds} ms.");

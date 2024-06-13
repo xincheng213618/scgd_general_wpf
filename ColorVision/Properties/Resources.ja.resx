@@ -351,4 +351,7 @@
   <data name="MenuPaste" xml:space="preserve">
     <value>ペースト(_P)</value>
   </data>
+  <data name="Initializer" xml:space="preserve">
+    <value>初期化モジュール</value>
+  </data>
 </root>

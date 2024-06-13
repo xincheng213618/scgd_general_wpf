@@ -1,4 +1,5 @@
 ﻿
+using Microsoft.VisualBasic;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -17,6 +18,16 @@ namespace ColorVision.Common.Utilities
 
     public static partial class Tool
     {
+        public static readonly Version OSVersion = Environment.OSVersion.Version;
+        public static readonly bool IsWin11 = OSVersion >= new Version(10, 0, 21996);
+        public static readonly bool IsWin10 = OSVersion >= new Version(10, 0) && OSVersion < new Version(10, 0, 21996);
+        public static readonly bool IsWin81 = OSVersion >= new Version(6, 3) && OSVersion < new Version(10, 0);
+        public static readonly bool IsWin8 = OSVersion >= new Version(6, 2) && OSVersion < new Version(6, 3);
+        public static readonly bool IsWin7 = OSVersion >= new Version(6, 1) && OSVersion < new Version(6, 2);
+        public static readonly bool IsWinVista = OSVersion >= new Version(6, 0) && OSVersion < new Version(6, 1);
+        public static readonly bool IsWinXP = OSVersion >= new Version(5, 1) && OSVersion < new Version(6, 0);
+        public static readonly bool IsWinXP64 = OSVersion == new Version(5, 2); // Windows XP 64-bit Edition
+
         public static string SanitizeFileName(string fileName)
         {
             // 定义非法字符

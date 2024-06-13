@@ -351,4 +351,7 @@
   <data name="MenuPaste" xml:space="preserve">
     <value>Вставить(_P)</value>
   </data>
+  <data name="Initializer" xml:space="preserve">
+    <value>Модуль инициализации</value>
+  </data>
 </root>

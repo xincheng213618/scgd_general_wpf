@@ -351,4 +351,7 @@
   <data name="MenuPaste" xml:space="preserve">
     <value>粘贴(_P)</value>
   </data>
+  <data name="Initializer" xml:space="preserve">
+    <value>初始化模块</value>
+  </data>
 </root>

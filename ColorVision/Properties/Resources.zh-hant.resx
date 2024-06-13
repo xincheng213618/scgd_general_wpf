@@ -351,4 +351,7 @@
   <data name="MenuPaste" xml:space="preserve">
     <value>粘貼(P)</value>
   </data>
+  <data name="Initializer" xml:space="preserve">
+    <value>初始化模組</value>
+  </data>
 </root>

@@ -351,4 +351,7 @@
   <data name="MenuPaste" xml:space="preserve">
     <value>페이스트(_P)</value>
   </data>
+  <data name="Initializer" xml:space="preserve">
+    <value>초기화 모듈</value>
+  </data>
 </root>

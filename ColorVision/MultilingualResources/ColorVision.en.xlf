@@ -95,6 +95,10 @@
           <source>通用设置</source>
           <target state="new">General settings</target>
         </trans-unit>
+        <trans-unit id="Initializer" translate="yes" xml:space="preserve">
+          <source>初始化模块</source>
+          <target state="new">Initialization module</target>
+        </trans-unit>
         <trans-unit id="InstallCertificate" translate="yes" xml:space="preserve">
           <source>安装证书</source>
           <target state="new">Install Certificate</target>

@@ -351,4 +351,7 @@
   <data name="MenuPaste" xml:space="preserve">
     <value>_Paste</value>
   </data>
+  <data name="Initializer" xml:space="preserve">
+    <value>Initialization module</value>
+  </data>
 </root>

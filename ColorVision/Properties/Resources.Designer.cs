@@ -268,6 +268,15 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 初始化模块 的本地化字符串。
+        /// </summary>
+        public static string Initializer {
+            get {
+                return ResourceManager.GetString("Initializer", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 安装证书 的本地化字符串。
         /// </summary>
         public static string InstallCertificate {

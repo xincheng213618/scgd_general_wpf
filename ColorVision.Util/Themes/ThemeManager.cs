@@ -276,6 +276,7 @@ namespace ColorVision.Themes
                     // Set caption color to pink
                     attribute = 0xFFC0CB;
                     _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_CAPTION_COLOR, ref attribute, attributeSize);
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_BORDER_COLOR, ref attribute, attributeSize);
                     break;
 
                 case Theme.Light:
@@ -297,6 +298,7 @@ namespace ColorVision.Themes
             uint attribute = 0xFFFFFFFF; // White color
             uint attributeSize = (uint)Marshal.SizeOf(typeof(uint));
             _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_CAPTION_COLOR, ref attribute, attributeSize);
+            _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_BORDER_COLOR, ref attribute, attributeSize);
         }
 
         [DllImport("dwmapi.dll")]
@@ -310,11 +312,17 @@ namespace ColorVision.Themes
         [Flags]
         public enum DWMWINDOWATTRIBUTE : uint
         {
+            //沉浸式暗模式20H1
             DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19,
+            //沉浸式暗模式
             DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
+            ///Might require Windows SDK 10.0.22000.0 (aka first Windows 11 SDK)
+            //设置窗口边框颜色
+            DWMWA_BORDER_COLOR = 34,
+            //设置窗口标题栏颜色。
             DWMWA_CAPTION_COLOR = 35,
+            //设置窗口标题栏文本颜色。
             DWMWA_TEXT_COLOR = 36,
-            DWMWA_BORDER_COLOR = 37,
         }
 #pragma warning restore CA1707
 
