@@ -82,7 +82,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             await Task.Delay(10);
 
             string md5 = Tool.CalculateMD5(UploadFilePath);
-            var msgRecord = await MQTTFileUpload.GetInstance().UploadCalibrationFileAsync(Code, UploadFileName, UploadFilePath, 201);
+            var msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(Code, UploadFileName, UploadFilePath, 201);
             SysResourceModel sysResourceModel = new();
             sysResourceModel.Name = UploadFileName;
             sysResourceModel.Code = md5;

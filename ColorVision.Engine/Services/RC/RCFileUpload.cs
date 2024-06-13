@@ -10,26 +10,20 @@ using System.Threading.Tasks;
 
 namespace ColorVision.Engine.Services.RC
 {
-    public class MQTTFileUpload: MQTTServiceBase
+    public class RCFileUpload: MQTTServiceBase
     {
-        private static MQTTFileUpload _instance;
+        private static RCFileUpload _instance;
         private static readonly object _locker = new();
-        public static MQTTFileUpload GetInstance() { lock (_locker) { return _instance ??= new MQTTFileUpload(); } }
+        public static RCFileUpload GetInstance() { lock (_locker) { return _instance ??= new RCFileUpload(); } }
 
-
-        public MQTTFileUpload()
-        {
-
-        }
-
-        public void LoadPhysicalCamera(string cameraID)
+        public MsgRecord LoadPhysicalCamera(string cameraID)
         {
             MsgSend msg = new()
             {
                 DeviceCode = cameraID,
                 EventName = "PhysicalCamera_Load",
             };
-            PublishAsyncClient(msg);
+            return PublishAsyncClient(msg); 
         }
 
         public async Task<MsgRecord> UploadCalibrationFileAsync(string cameraID,string name, string fileName, int fileType, int timeout = 50000)

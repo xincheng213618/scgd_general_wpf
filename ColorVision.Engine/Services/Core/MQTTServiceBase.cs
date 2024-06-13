@@ -35,17 +35,15 @@ namespace ColorVision.Engine.Services.Core
             MQTTControl.ApplicationMessageReceivedAsync += Processing;
             var timer = new Timer
             {
-                Interval = TimeSpan.FromSeconds(1).TotalMilliseconds,
+                Interval = TimeSpan.FromMilliseconds(30).TotalMilliseconds,
                 AutoReset = true,
             };
             timer.Elapsed += Timer_Elapsed;
             timer.Start();
         }
 
-        public void SubscribeCache()
-        {
-            MQTTControl.SubscribeCache(SubscribeTopic);
-        }
+        public void SubscribeCache() => MQTTControl.SubscribeCache(SubscribeTopic);
+
 
         private Task Processing(MqttApplicationMessageReceivedEventArgs arg)
         {
@@ -137,7 +135,7 @@ namespace ColorVision.Engine.Services.Core
         {
             TimeSpan sp = DateTime.Now - LastAliveTime;
             //这里其实有问题,但是返回信号并不标准，只能按照这种写法
-            long overTime = HeartbeatTime + HeartbeatTime / 2 +1 ;
+            long overTime = HeartbeatTime + HeartbeatTime / 2  +1;
             if (sp > TimeSpan.FromMilliseconds(overTime))
             {
                 DisConnected?.Invoke(sender, new EventArgs());
@@ -152,18 +150,15 @@ namespace ColorVision.Engine.Services.Core
         public virtual string SubscribeTopic { get; set; }
         public virtual string SendTopic { get; set; }
         public virtual string DeviceCode { get; set; }
-        public string SnID { get; set; }
         public string ServiceName { get; set; }
         public virtual string ServiceToken { get; set; }
 
         public virtual int HeartbeatTime { get => _HeartbeatTime; set { _HeartbeatTime = value; NotifyPropertyChanged(); } }
         private int _HeartbeatTime = 2000;
 
-        public virtual DateTime LastAliveTime { get => _LastAliveTime; set { _LastAliveTime = value; NotifyPropertyChanged(); } }
-        private DateTime _LastAliveTime = DateTime.MinValue;
+        public virtual DateTime LastAliveTime { get; set; }
 
-        public virtual bool IsAlive { get => _IsAlive; set { _IsAlive = value; NotifyPropertyChanged(); } }
-        private bool _IsAlive;
+        public virtual bool IsAlive { get; set; }
 
         private  Dictionary<string, Timer> timers = new();
 
