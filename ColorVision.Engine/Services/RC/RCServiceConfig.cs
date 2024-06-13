@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Services.RC
         /// 注册中心名称
         /// </summary>
         public string RCName { get => _RCName; set { _RCName = value; NotifyPropertyChanged(); } }
-        private string _RCName = "app1";
+        private string _RCName = "RC_local";
 
         /// <summary>
         /// AppId App Id
