@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.Devices.Algorithm.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Templates.POI.Validate;
+using ColorVision.Themes;
 using CVCommCore;
 using FlowEngineLib;
 using log4net;
@@ -158,6 +159,7 @@ namespace ColorVision.Projects.ProjectHeyuan
         public ProjectHeyuanWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
 

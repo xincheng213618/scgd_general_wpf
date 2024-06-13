@@ -383,11 +383,10 @@ namespace ColorVision
 
         private void Login_Click(object sender, RoutedEventArgs e)
         {
+            new LoginWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
             if (UserConfig.Instance.UserName != null)
             {
                 var user = UserConfig.Instance;
-                MessageBox.Show(user.PerMissionMode.ToString() + ":" + user.UserName + " 已经登录", "ColorVision");
-
             }
             else
             {

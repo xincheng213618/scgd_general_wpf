@@ -1,4 +1,5 @@
-﻿using System.Collections.ObjectModel;
+﻿using ColorVision.Themes;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
@@ -14,6 +15,7 @@ namespace EventVWR
         public EventWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
         public ObservableCollection<EventLogEntry> logEntries { get; set; } = new ObservableCollection<EventLogEntry>();
         private void Window_Initialized(object sender, EventArgs e)

@@ -15,7 +15,7 @@
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
         </Style>-->
         <DataTemplate x:Key="DocumentHeaderTemplate">
-            <StackPanel Orientation="Horizontal">
+            <StackPanel Orientation="Horizontal" Background="{DynamicResource GlobalBackground}">
                 <Image Source="{Binding IconSource}" Height="18" Margin="0,0,5,0" />
                 <TextBlock TextTrimming="CharacterEllipsis" Text="{Binding Title}" Foreground="{DynamicResource GlobalTextBrush}" Margin="0,0,5,0" />
             </StackPanel>

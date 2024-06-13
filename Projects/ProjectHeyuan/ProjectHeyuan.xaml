@@ -8,7 +8,7 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:HYMesManager}"
-        Title="ProjectHeiyuan" Height="720" Width="1280" Initialized="Window_Initialized">
+        Title="ProjectHeiyuan" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <local:ConnectConverter x:Key="ConnectConverter"/>
         <local:ColorConverter x:Key="ColorConverter"/>

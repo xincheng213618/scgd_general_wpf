@@ -18,6 +18,7 @@
             <Setter Property="BorderThickness" Value="0,0,0,1" />
             <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
             <EventSetter Event="PreviewTextInput" Handler="TextBox_PreviewTextInput"/>
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
         </Style>
         <Style TargetType="{x:Type TextBlock}" BasedOn="{StaticResource TextBlockBaseStyle}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -553,7 +554,7 @@
                     <ToggleButton Command="{Binding MaxCommand}" Margin="1,0" >
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMax}"/>
                     </ToggleButton>
-                    <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
+                    <TextBox   BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
                     <Button Content="属性" Command="{Binding OpenProperty}" />
                     <ToggleButton  IsChecked="{Binding EraseVisual}" Margin="1,0" >
                         <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImageeraser}"/>

@@ -2,6 +2,7 @@
 using ChatGPT.Net.DTO.ChatGPTUnofficial;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Themes;
 using ColorVision.UI.Menus;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -67,6 +68,7 @@ namespace ColorVisonChat
         public ChatGPTWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         public ChatGpt bot { get; set; }

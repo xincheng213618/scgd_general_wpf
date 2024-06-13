@@ -22,7 +22,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public ViewCamera View { get; set; }
         public MQTTCamera DeviceService { get; set; }
-        public MQTTTerminalCamera Service { get; set; }
 
         public RelayCommand UploadCalibrationCommand { get; set; }
 
@@ -125,8 +124,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
         public override void Dispose()
         {
-            Service.Dispose();
-            DeviceService.Dispose();
+            DeviceService?.Dispose();
             base.Dispose();
             GC.SuppressFinalize(this);
         }

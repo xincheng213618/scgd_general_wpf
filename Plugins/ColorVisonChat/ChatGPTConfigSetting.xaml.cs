@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.Themes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,6 +23,7 @@ namespace ColorVisonChat
         public ChatGPTConfigSetting()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

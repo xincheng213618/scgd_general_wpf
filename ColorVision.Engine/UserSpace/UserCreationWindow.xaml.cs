@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using ColorVision.Themes;
+using System.Windows;
 
 namespace ColorVision.UserSpace
 {
@@ -10,6 +11,7 @@ namespace ColorVision.UserSpace
         public UserCreationWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
     }
 }
