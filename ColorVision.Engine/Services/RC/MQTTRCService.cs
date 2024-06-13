@@ -1,23 +1,19 @@
 ﻿#pragma warning disable CS8603
 using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Devices;
-using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
 using CVCommCore;
 using log4net;
 using MQTTMessageLib;
-using MQTTMessageLib.FileServer;
 using MQTTMessageLib.RC;
 using MQTTMessageLib.Util;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -37,96 +33,6 @@ namespace ColorVision.Engine.Services.RC
     }
 
     public delegate void RCServiceStatusChangedHandler(object sender, RCServiceStatusChangedEvent args);
-
-
-
-    public class MQTTFileUpload: MQTTServiceBase
-    {
-        private static MQTTFileUpload _instance;
-        private static readonly object _locker = new();
-        public static MQTTFileUpload GetInstance() { lock (_locker) { return _instance ??= new MQTTFileUpload(); } }
-
-
-        public MQTTFileUpload()
-        {
-
-        }
-
-        public void LoadPhysicalCamera(string cameraID)
-        {
-            MsgSend msg = new()
-            {
-                DeviceCode = cameraID,
-                EventName = "PhysicalCamera_Load",
-            };
-            PublishAsyncClient(msg);
-        }
-
-        public async Task<MsgRecord> UploadCalibrationFileAsync(string cameraID,string name, string fileName, int fileType, int timeout = 50000)
-        {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-
-            TaskCompletionSource<MsgRecord> tcs = new();
-            string md5 = Tool.CalculateMD5(fileName);
-            MsgSend msg = new()
-            {
-                DeviceCode = cameraID,
-                EventName = MQTTFileServerEventEnum.Event_File_Upload,
-                Params = new Dictionary<string, object> { { "Name", name }, { "FileName", fileName }, { "FileExtType", FileExtType.Calibration }, { "MD5", md5 } }
-            };
-
-
-            MsgRecord msgRecord = PublishAsyncClient(msg);
-
-            MsgRecordStateChangedHandler handler = (sender) =>
-            {
-                log.Info($"UploadCalibrationFileAsync:{fileName}  状态{sender}  Operation time: {stopwatch.ElapsedMilliseconds} ms");
-                tcs.TrySetResult(msgRecord);
-            };
-            MsgConfig.Instance.MsgRecords.Add(msgRecord);
-            msgRecord.MsgRecordStateChanged += handler;
-            var timeoutTask = Task.Delay(timeout);
-            try
-            {
-
-                var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
-                if (completedTask == timeoutTask)
-                {
-                    log.Info($"UploadCalibrationFileAsync:{fileName}  超时  Operation time: {stopwatch.ElapsedMilliseconds} ms");
-                    tcs.TrySetException(new TimeoutException("The operation has timed out."));
-                }
-                return await tcs.Task; // 如果超时，这里将会抛出异常
-            }
-            catch (Exception ex)
-            {
-                log.Info($"UploadCalibrationFileAsync:{fileName}  异常 {ex.Message} Operation time: {stopwatch.ElapsedMilliseconds} ms");
-                tcs.TrySetException(ex);
-                return await tcs.Task; // 
-            }
-            finally
-            {
-                msgRecord.MsgRecordStateChanged -= handler;
-            }
-        }
-
-    }
-
-    public class MQTTArchived : MQTTServiceBase
-    {
-        private static MQTTArchived _instance;
-        private static readonly object _locker = new();
-        public static MQTTArchived GetInstance() { lock (_locker) { return _instance ??= new MQTTArchived(); } }
-
-
-        public MQTTArchived()
-        {
-
-        }
-    }
-
-
-
     /// <summary>
     /// 注册服务
     /// </summary>
@@ -139,10 +45,10 @@ namespace ColorVision.Engine.Services.RC
 
         private string NodeName;
         private string NodeType;
-        private string AppId;
-        private string AppSecret;
+        private static string AppId => RCSetting.Instance.Config.AppId;
+        private static string AppSecret => RCSetting.Instance.Config.AppSecret;
+        private static string RCNodeName => RCSetting.Instance.Config.RCName;
         private string DevcieName;
-        private string RCNodeName;
         private string RCRegTopic;
         private string RCHeartbeatTopic;
         private string RCPublicTopic;
@@ -152,11 +58,12 @@ namespace ColorVision.Engine.Services.RC
         private string SysConfigRespTopic;
         private NodeToken? Token;
         private bool TryTestRegist;
-        public ServiceNodeStatus RegStatus { get=> _RegStatus; set { _RegStatus = value; NotifyPropertyChanged();NotifyPropertyChanged(nameof(IsConnect)); } }
+
+
+        public ServiceNodeStatus RegStatus { get=> _RegStatus; set { if (_RegStatus == value) return; _RegStatus = value; NotifyPropertyChanged();NotifyPropertyChanged(nameof(IsConnect)); } }
         private ServiceNodeStatus _RegStatus;
-
-
         public bool IsConnect { get => RegStatus == ServiceNodeStatus.Registered; }
+
 
         public event RCServiceStatusChangedHandler StatusChangedEventHandler;
         public MQTTRCService():base()
@@ -166,11 +73,10 @@ namespace ColorVision.Engine.Services.RC
             DeviceCode = DevcieName = "dev." + NodeType + ".127.0.0.1";
             LoadCfg();
             RegStatus = ServiceNodeStatus.Unregistered;
-            ServiceName = Guid.NewGuid().ToString();
 
-            MQTTControl = MQTTControl.GetInstance();
+            ServiceName = Guid.NewGuid().ToString();
             MQTTControl.ApplicationMessageReceivedAsync += MqttClient_ApplicationMessageReceivedAsync;
-            MQTTControl.MQTTConnectChanged += (object? sender, EventArgs e) =>
+            MQTTControl.MQTTConnectChanged += (s,e) =>
             {
                 logger.InfoFormat("MQTTConnectChanged=>{0}", JsonConvert.SerializeObject(e));
                 Task.Run(() =>
@@ -179,31 +85,23 @@ namespace ColorVision.Engine.Services.RC
                     GetInstance().ReRegist();
                 });
             };
-
             int heartbeatTime = 2 * 1000;
             System.Timers.Timer hbTimer = new(heartbeatTime);
             hbTimer.Elapsed += (s, e) => KeepLive(heartbeatTime);
             hbTimer.Enabled = true;
             GC.KeepAlive(hbTimer);
-
         }
 
         public void LoadCfg()
         {
-            RCServiceConfig RcServiceConfig = RCSetting.Instance.RCServiceConfig ;
-            AppId = RcServiceConfig.AppId;
-            AppSecret = RcServiceConfig.AppSecret;
-            RCNodeName = RcServiceConfig.RCName;
-
             SubscribeTopic = MQTTRCServiceTypeConst.BuildNodeTopic(NodeName, RCNodeName);
-
+            SysConfigRespTopic = MQTTRCServiceTypeConst.BuildSysConfigRespTopic(RCNodeName);
             RCRegTopic = MQTTRCServiceTypeConst.BuildRegTopic(RCNodeName);
             RCHeartbeatTopic = MQTTRCServiceTypeConst.BuildHeartbeatTopic(RCNodeName);
             RCPublicTopic = MQTTRCServiceTypeConst.BuildPublicTopic(RCNodeName);
             RCAdminTopic = MQTTRCServiceTypeConst.BuildAdminTopic(RCNodeName);
             ArchivedTopic = MQTTRCServiceTypeConst.BuildArchivedTopic(RCNodeName);
             SysConfigTopic = MQTTRCServiceTypeConst.BuildSysConfigTopic(RCNodeName);
-            SysConfigRespTopic = MQTTRCServiceTypeConst.BuildSysConfigRespTopic(RCNodeName);
 
             MQTTFileUpload.GetInstance().SendTopic = MQTTRCServiceTypeConst.BuildSysConfigTopic(RCNodeName); ;
             MQTTFileUpload.GetInstance().SubscribeTopic = MQTTRCServiceTypeConst.BuildSysConfigRespTopic(RCNodeName);
@@ -264,14 +162,11 @@ namespace ColorVision.Engine.Services.RC
                     }
 
                 }
-                catch
+                catch (Exception ex)
                 {
+                    log.Error(ex);
                     return Task.CompletedTask;
                 }
-            }else if (arg.ApplicationMessage.Topic == SysConfigRespTopic)
-            {
-                string Msg = Encoding.UTF8.GetString(arg.ApplicationMessage.PayloadSegment);
-
             }
             return Task.CompletedTask;
         }
@@ -367,24 +262,7 @@ namespace ColorVision.Engine.Services.RC
         private static TypeService GetTypeService(List<TypeService> svrs, CVServiceType serviceTypes)
         {
             ServiceTypes cvSType = EnumTool.ParseEnum<ServiceTypes>(serviceTypes.ToString());
-            foreach (var serviceKind in svrs)
-            {
-                if(cvSType == serviceKind.ServiceTypes) return serviceKind;
-            }
-
-            return null;
-        }
-
-        private static MQTTNodeService GetNodeService(List<MQTTNodeService> svrs,string codeName)
-        {
-            foreach (var nodeService in svrs)
-            {
-                if (codeName == nodeService.ServiceCode)
-                {
-                    return nodeService;
-                }
-            }
-            return null;
+            return svrs.FirstOrDefault(serviceKind => cvSType == serviceKind.ServiceTypes);
         }
 
         public static void DoUpdateServices(Dictionary<CVServiceType, List<MQTTNodeService>> data)
@@ -398,7 +276,7 @@ namespace ColorVision.Engine.Services.RC
                 {
                     if (baseObject is TerminalService serviceTerminal)
                     {
-                        var nodeService = GetNodeService(itemService.Value, serviceTerminal.Code);
+                        var nodeService = itemService.Value.FirstOrDefault(nodeService => nodeService.ServiceCode == serviceTerminal.Code);
                         if (nodeService == null) { continue; }
                         serviceTerminal.Config.SendTopic = nodeService.UpChannel;
                         serviceTerminal.Config.SubscribeTopic = nodeService.DownChannel;
@@ -437,9 +315,9 @@ namespace ColorVision.Engine.Services.RC
         public async Task <bool> Connect()
         {
             Regist();
-            for (int i = 0; i < 200; i++)
+            for (int i = 0; i < 20; i++)
             {
-                await Task.Delay(1);
+                await Task.Delay(10);
                 if (IsConnect)
                     return true;
             }
@@ -464,10 +342,6 @@ namespace ColorVision.Engine.Services.RC
             }
         }
 
-        public void PublishAsyncClient(string topic, string json)
-        {
-            Task.Run(() => MQTTControl.PublishAsyncClient(topic, json, false));
-        }
 
         public void KeepLive(int heartbeatTime)
         {
@@ -476,56 +350,19 @@ namespace ColorVision.Engine.Services.RC
                 ReRegist();
                 return;
             }
-
             List<DeviceHeartbeat> deviceStatues = new();
             deviceStatues.Add(new DeviceHeartbeat(DevcieName, DeviceStatusType.Opened.ToString()));
             string serviceHeartbeat = JsonConvert.SerializeObject(new MQTTServiceHeartbeat(NodeName, "", "", NodeType, ServiceName, deviceStatues, Token.AccessToken, (int)(heartbeatTime * 1.5f)));
-
             PublishAsyncClient(RCHeartbeatTopic, serviceHeartbeat);
-
             QueryServiceStatus();
         }
 
-        private bool DoRegist(RCServiceConfig cfg)
-        {
-            string RegTopic = MQTTRCServiceTypeConst.BuildRegTopic(cfg.RCName);
-            string appId = cfg.AppId;
-            string appSecret = cfg.AppSecret;
-            RegStatus = ServiceNodeStatus.Unregistered;
-            MQTTNodeServiceRegist reg = new(NodeName, appId, appSecret, SubscribeTopic, NodeType);
-            PublishAsyncClient(RegTopic, JsonConvert.SerializeObject(reg));
-            for (int i = 0; i < 3; i++)
-            {
-                Thread.Sleep(200);
-                if (IsConnect) return true;
-            }
-
-            return false;
-        }
-
-        public void RestartServices()
+        public void RestartServices(string? nodeType = null, string? svrCode =null)
         {
             if (Token != null)
             {
-                MQTTRCServicesRestartRequest reg = new(AppId, NodeName, string.Empty, Token.AccessToken);
-                PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(reg));
-            }
-        }
-
-        public void RestartServices(string nodeType)
-        {
-            if (Token != null)
-            {
-                MQTTRCServicesRestartRequest reg = new(AppId, NodeName, nodeType, Token.AccessToken);
-                PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(reg));
-            }
-        }
-
-        public void RestartServices(string nodeType, string svrCode)
-        {
-            if (Token != null)
-            {
-                MQTTRCServicesRestartRequest reg = new(AppId, NodeName, nodeType, Token.AccessToken, svrCode);
+                nodeType ??= string.Empty;
+                MQTTRCServicesRestartRequest reg = svrCode == null ? new(AppId, NodeName, nodeType, Token.AccessToken) : new(AppId, NodeName, nodeType, Token.AccessToken, svrCode);
                 PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(reg));
             }
         }
@@ -536,38 +373,32 @@ namespace ColorVision.Engine.Services.RC
                 MQTTRCServicesRestartRequest reg = new(AppId, NodeName, nodeType, Token.AccessToken, svrCode, devCode);
                 PublishAsyncClient(RCAdminTopic, JsonConvert.SerializeObject(reg));
             }
-
             Task.Factory.StartNew(() => {
                 Thread.Sleep(2000);
                 QueryServices();
             });
         }
 
-
-
-
         public bool TryRegist(RCServiceConfig cfg)
         {
-            bool isok = false;
-            ServiceNodeStatus curStatus = RegStatus;
             TryTestRegist = true;
-            for (int i = 0; i < 3; i++)
+            string RegTopic = MQTTRCServiceTypeConst.BuildRegTopic(cfg.RCName);
+            string appId = cfg.AppId;
+            string appSecret = cfg.AppSecret;
+            RegStatus = ServiceNodeStatus.Unregistered;
+            MQTTNodeServiceRegist reg = new(NodeName, appId, appSecret, SubscribeTopic, NodeType);
+            PublishAsyncClient(RegTopic, JsonConvert.SerializeObject(reg));
+            for (int i = 0; i < 50; i++)
             {
-                if (DoRegist(cfg))
+                Thread.Sleep(30);
+                if (IsConnect)
                 {
-                    isok = true;
-                    break;
+                    TryTestRegist = false;
+                    return true;
                 }
-                Thread.Sleep(200);
             }
             TryTestRegist = false;
-            RegStatus = curStatus;
-            return isok;
-        }
-
-        public bool IsRegisted()
-        {
-            return RegStatus == ServiceNodeStatus.Registered;
+            return false;
         }
 
         public void Archived(string sn)
@@ -575,5 +406,8 @@ namespace ColorVision.Engine.Services.RC
             MQTTArchivedRequest request = new(sn);
             PublishAsyncClient(ArchivedTopic, JsonConvert.SerializeObject(request));
         }
+
+        public Task PublishAsyncClient(string topic, string json) => MQTTControl.PublishAsyncClient(topic, json, false);
+
     }
 }

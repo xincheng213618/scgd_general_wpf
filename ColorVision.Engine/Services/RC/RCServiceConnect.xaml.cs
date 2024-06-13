@@ -1,5 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Themes;
+using ColorVision.UI;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -10,6 +12,20 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.RC
 {
+    public class RCWizardStep : IWizardStep
+    {
+        public int Order => 3;
+
+        public string Title => "RC配置";
+
+        public string Description => "RC配置";
+
+        public RelayCommand? RelayCommand => new RelayCommand(a =>
+        {
+            new RCServiceConnect() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        });
+    }
+
     /// <summary>
     /// RCServiceConnect.xaml 的交互逻辑
     /// </summary>
@@ -27,7 +43,7 @@ namespace ColorVision.Engine.Services.RC
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            rcServiceConfig = RCSetting.Instance.RCServiceConfig;
+            rcServiceConfig = RCSetting.Instance.Config;
             GridRCService.DataContext = rcServiceConfig;
             rcServiceConfigBackUp = new RCServiceConfig();
             rcServiceConfig.CopyTo(rcServiceConfigBackUp);
@@ -114,7 +130,7 @@ namespace ColorVision.Engine.Services.RC
                 rcServiceConfig = rcServiceConfigs[listView.SelectedIndex];
                 GridRCService.DataContext = rcServiceConfig;
                 PasswordBox1.Password = rcServiceConfig.AppSecret;
-                RCSetting.Instance.RCServiceConfig = rcServiceConfig;
+                RCSetting.Instance.Config = rcServiceConfig;
             }
         }
 

@@ -141,10 +141,10 @@ namespace ColorVision.Projects.ProjectHeyuan
                 if (new FileInfo(_filePath).Length == 0)
                 {
                     // Write header if file is empty
-                    writer.WriteLine("SequenceNumber,Model,ProductID,Date,Time,White_x,White_y,White_lv,White_wl,White_Result,Red_x,Red_y,Red_lv,Red_wl,Red_Result,Orange_x,Orange_y,Orange_lv,Orange_wl,Orange_Result,Blue_x,Blue_y,Blue_lv,Blue_wl,Blue_Result,Final_Result");
+                    writer.WriteLine("SequenceNumber,Model,ProductID,Date,Time,White_x,White_y,White_lv(cd),White_wl(nm),White_Result,Red_x,Red_y,Red_lv(cd),Red_wl(nm),Red_Result,Orange_x,Orange_y,Orange_lv(cd),Orange_wl(nm),Orange_Result,Blue_x,Blue_y,Blue_lv(cd),Blue_wl(nm),Blue_Result,Final_Result");
                 }
 
-                writer.WriteLine($"{record.SequenceNumber},{record.Model},{record.ProductID},{record.Date.ToString("yyyy-MM-dd")},{record.Time},{record.White_x},{record.White_y},{record.White_lv},{record.White_wl},{record.White_Result},{record.Red_x},{record.Red_y},{record.Red_lv},{record.Red_wl},{record.Red_Result},{record.Orange_x},{record.Orange_y},{record.Orange_lv},{record.Orange_wl},{record.Orange_Result},{record.Blue_x},{record.Blue_y},{record.Blue_lv},{record.Blue_wl},{record.Blue_Result},{record.Final_Result}");
+                writer.WriteLine($"{record.SequenceNumber},{record.Model},{record.ProductID},{record.Date.ToString("yyyy-MM-dd-HH-mm-ss")},{record.Time},{record.White_x},{record.White_y},{record.White_lv},{record.White_wl},{record.White_Result},{record.Red_x},{record.Red_y},{record.Red_lv},{record.Red_wl},{record.Red_Result},{record.Orange_x},{record.Orange_y},{record.Orange_lv},{record.Orange_wl},{record.Orange_Result},{record.Blue_x},{record.Blue_y},{record.Blue_lv},{record.Blue_wl},{record.Blue_Result},{record.Final_Result}");
             }
         }
     }
@@ -239,6 +239,15 @@ namespace ColorVision.Projects.ProjectHeyuan
                             Results.Clear();
                             if (PoiResultCIExyuvDatas.Count ==4)
                             {
+                                var record = new DataRecord
+                                {
+                                    Model = HYMesManager.Config.TestName,
+                                    ProductID = HYMesManager.GetInstance().SN,
+                                    Date = DateTime.Now.Date,
+                                    Time = DateTime.Now.TimeOfDay,
+                                };
+
+
                                 List<string> strings = new List<string>() { "White", "Blue", "Red", "Orange" };
                                 for (int i = 0; i < PoiResultCIExyuvDatas.Count; i++)
                                 {
@@ -296,6 +305,27 @@ namespace ColorVision.Projects.ProjectHeyuan
 
                                     Results.Add(result);
                                 }
+                                record.White_x = Results[0].X.Value;
+                                record.White_y = Results[0].Y.Value;
+                                record.White_lv = Results[0].Lv.Value;
+                                record.White_wl = Results[0].Dw.Value;
+                                record.White_Result = Results[0].Result ? "Pass" : "Fail";
+                                record.Blue_x = Results[1].X.Value;
+                                record.Blue_y = Results[1].Y.Value;
+                                record.Blue_lv = Results[1].Lv.Value;
+                                record.Blue_wl = Results[1].Dw.Value;
+                                record.Blue_Result = Results[1].Result ? "Pass" : "Fail";
+                                record.Red_x = Results[2].X.Value;
+                                record.Red_y = Results[2].Y.Value;
+                                record.Red_lv = Results[2].Lv.Value;
+                                record.Red_wl = Results[2].Dw.Value;
+                                record.Red_Result = Results[2].Result ? "Pass" : "Fail";
+                                record.Orange_x = Results[3].X.Value;
+                                record.Orange_y = Results[3].Y.Value;
+                                record.Orange_lv = Results[3].Lv.Value;
+                                record.Orange_wl = Results[3].Dw.Value;
+                                record.Orange_Result = Results[3].Result ? "Pass" : "Fail";
+                                record.Final_Result = IsOK ? "Pass" : "Fail";
                                 if (IsOK)
                                 {
                                     ResultText.Text = "OK";
@@ -315,38 +345,9 @@ namespace ColorVision.Projects.ProjectHeyuan
                                     string FilePath = HYMesManager.Config.DataPath + "\\" + DateTime.Now.ToString("yyyy-MM-dd") + "_" + HYMesManager.Config.DeviceId + "_" + Environment.MachineName + ".csv";
                                     CsvHandler csvHandler = new CsvHandler(FilePath);
 
-                                    var record = new DataRecord
-                                    {
-                                        Model = HYMesManager.Config.TestName,
-                                        ProductID = HYMesManager.GetInstance().SN,
-                                        Date = DateTime.Now.Date,
-                                        Time = DateTime.Now.TimeOfDay,
-                                        White_x = 0.3127,
-                                        White_y = 0.3290,
-                                        White_lv = 100.0,
-                                        White_wl = 550.0,
-                                        White_Result = "Pass",
-                                        Red_x = 0.6400,
-                                        Red_y = 0.3300,
-                                        Red_lv = 50.0,
-                                        Red_wl = 620.0,
-                                        Red_Result = "Pass",
-                                        Orange_x = 0.5800,
-                                        Orange_y = 0.4100,
-                                        Orange_lv = 40.0,
-                                        Orange_wl = 600.0,
-                                        Orange_Result = "Pass",
-                                        Blue_x = 0.1500,
-                                        Blue_y = 0.0600,
-                                        Blue_lv = 30.0,
-                                        Blue_wl = 470.0,
-                                        Blue_Result = "Pass",
-                                        Final_Result = "Pass"
-                                    };
-                                    csvHandler.SaveRecord(record);
+                                   csvHandler.SaveRecord(record);
                                     // 清空产品编号
                                     TextBoxSn.Text = string.Empty;
-
                                     // 将焦点移动到产品编号输入框
                                     TextBoxSn.Focus();
                                 }

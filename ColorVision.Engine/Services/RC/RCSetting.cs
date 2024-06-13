@@ -9,8 +9,6 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.RC
 {
-    public delegate void UseRcServicelHandler(bool IsUseRcServicel);
-
     public class RCSettingProvider : IConfigSettingProvider,IStatusBarIconProvider
     {
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
@@ -52,7 +50,7 @@ namespace ColorVision.Engine.Services.RC
                     Name = "RC",
                     Description = "RC",
                     Order =3,
-                    BindingName = "RCServiceControl.IsConnect",
+                    BindingName = "MQTTRCService.IsConnect",
                     VisibilityBindingName =nameof(RCSetting.IsUseRCService),
                     ButtonStyleName ="ButtonDrawingImageRCService",
                     Source = RCSetting.Instance,
@@ -67,9 +65,9 @@ namespace ColorVision.Engine.Services.RC
     {
         public static RCSetting Instance => ConfigHandler.GetInstance().GetRequiredService<RCSetting>();
 
-        public static RCServiceControl RCServiceControl => RCServiceControl.GetInstance();
+        public static MQTTRCService MQTTRCService => MQTTRCService.GetInstance();
 
-        public RCServiceConfig RCServiceConfig { get; set; } = new RCServiceConfig();
+        public RCServiceConfig Config { get; set; } = new RCServiceConfig();
         public bool IsUseRCService { get => _IsUseRCService; set { _IsUseRCService = value; NotifyPropertyChanged(); } }
         private bool _IsUseRCService = true;
 
@@ -79,12 +77,12 @@ namespace ColorVision.Engine.Services.RC
 
         public void Decrypt()
         {
-            RCServiceConfig.AppSecret = Cryptography.AESDecrypt(RCServiceConfig.AppSecret, ConfigAESKey, ConfigAESVector);
+            Config.AppSecret = Cryptography.AESDecrypt(Config.AppSecret, ConfigAESKey, ConfigAESVector);
         }
 
         public void Encryption()
         {
-            RCServiceConfig.AppSecret = Cryptography.AESEncrypt(RCServiceConfig.AppSecret, ConfigAESKey, ConfigAESVector);
+            Config.AppSecret = Cryptography.AESEncrypt(Config.AppSecret, ConfigAESKey, ConfigAESVector);
         }
     }
 }

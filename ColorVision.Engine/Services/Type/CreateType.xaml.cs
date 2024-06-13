@@ -50,8 +50,8 @@ namespace ColorVision.Engine.Services.Types
 
             TerminalServiceConfig terminalServiceConfig = new() { HeartbeatTime = 5000 };
 
-            terminalServiceConfig.SendTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/CMD/{RCSetting.Instance.RCServiceConfig.RCName}";
-            terminalServiceConfig.SubscribeTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/STATUS/{RCSetting.Instance.RCServiceConfig.RCName}";
+            terminalServiceConfig.SendTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/CMD/{RCSetting.Instance.Config.RCName}";
+            terminalServiceConfig.SubscribeTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/STATUS/{RCSetting.Instance.Config.RCName}";
 
             sysResource.Value = JsonConvert.SerializeObject(terminalServiceConfig);
 

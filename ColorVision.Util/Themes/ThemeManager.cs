@@ -42,7 +42,7 @@ namespace ColorVision.Themes
 
                 ThemeManager.Current.CurrentThemeChanged += (theme) =>
                 {
-                    window.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision.Util;component/Assets/Image/{(theme == Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
+                    window.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision.Util;component/Assets/Image/{(theme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));
                     ThemeManager.SetWindowTitleBarColor(hwnd, theme);
                 };
                 if (ThemeManager.Current.CurrentTheme == Theme.Dark)

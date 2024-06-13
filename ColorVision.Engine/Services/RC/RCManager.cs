@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.MQTT;
 using ColorVision.UI;
 using System;
 using System.Diagnostics;
@@ -19,7 +20,6 @@ namespace ColorVision.Engine.Services.RC
         private bool _IsOpenCVWinSMS = true;
 
     }
-
 
 
     public class RCManager

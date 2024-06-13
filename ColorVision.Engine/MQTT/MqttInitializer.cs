@@ -26,16 +26,6 @@ namespace ColorVision.Engine.MQTT
                 _messageUpdater.UpdateMessage($"MQTT服务器连接{(MQTTControl.GetInstance().IsConnect ? Engine.Properties.Resources.Success : Engine.Properties.Resources.Failure)}");
                 if (!isConnect)
                 {
-                    _messageUpdater.UpdateMessage("检测是否本地服务");
-                    if (!RCManager.GetInstance().IsLocalServiceRunning())
-                    {
-                        if (RCManagerConfig.Instance.IsOpenCVWinSMS)
-                        {
-                            _messageUpdater.UpdateMessage("打开本地服务管理");
-                            RCManager.GetInstance().OpenCVWinSMS();
-                        }
-                    }
-                    RCManager.GetInstance();
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         MQTTConnect mQTTConnect = new() { Owner = Application.Current.GetActiveWindow() };
