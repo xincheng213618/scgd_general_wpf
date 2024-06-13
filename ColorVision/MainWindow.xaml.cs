@@ -186,13 +186,13 @@ namespace ColorVision
         public static async Task CheckVersion()
         {
             await Task.Delay(500);
-            if (System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() != SoftwareSetting.Instance.Version)
+            if (Assembly.GetExecutingAssembly().GetName().Version > MainWindowConfig.Instance.LastOpenVersion)
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     try
                     {
-                        string? currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString();
+                        string? currentVersion = Assembly.GetExecutingAssembly().GetName()?.Version?.ToString();
                         string changelogPath = "CHANGELOG.md";
 
                         // 读取CHANGELOG.md文件的所有内容
@@ -221,7 +221,7 @@ namespace ColorVision
                         log.Error(ex.Message);
                     }
                 });
-                SoftwareSetting.Instance.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString();
+                MainWindowConfig.Instance.LastOpenVersion = Assembly.GetExecutingAssembly().GetName().Version;
             }
         }
 

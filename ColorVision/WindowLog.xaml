@@ -4,9 +4,30 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
+        xmlns:properties ="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"
-        Title="WindowLog" Height="450" Width="800">
-    <Grid>
-        <TextBox x:Name="logTextBox" BorderThickness="0"  VerticalAlignment="Top" IsReadOnly="True" />
+        d:DataContext="{d:DesignInstance local:MainWindowConfig}"
+        Title="WindowLog" Height="450" Width="800" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Margin="0,0,0,5" Orientation="Horizontal">
+            <TextBlock Text="{x:Static properties:Resources.LogLevel}"  Margin="0,0,5,0"/>
+            <ComboBox Name="cmlog"  Width="100" SelectedValuePath="Key" DisplayMemberPath="Value" SelectedValue="{Binding LogLevel}" SelectionChanged="cmlog_SelectionChanged"/>
+            <Button Content="清除" Click="Clear_Click" Margin="5,0,5,0"/>
+            <ToggleButton  Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="AutoScrollToEnd" IsChecked="{Binding AutoScrollToEnd}" Margin="5,0"/>
+            <ToggleButton  Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="AutoRefresh" IsChecked="{Binding AutoRefresh}" Margin="5,0"/>
+
+        </StackPanel>
+        <TextBox x:Name="logTextBox" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
+
     </Grid>
 </Window>
