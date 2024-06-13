@@ -1,6 +1,6 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:system="clr-namespace:System;assembly=mscorlib">
 
-    <Color x:Key="LightPrimaryColor">#FADCE4</Color>
+    <Color x:Key="LightPrimaryColor">#F5C7B3</Color>
     <Color x:Key="PrimaryColor">#E91E63</Color>
     <!-- 强调色 -->
     <Color x:Key="DarkPrimaryColor">#C2185B</Color>

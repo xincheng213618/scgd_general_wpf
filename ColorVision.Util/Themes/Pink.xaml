@@ -3,7 +3,7 @@
 
     <!-- Global colors -->
     <Color x:Key="GlobalBackgroundColor">#F9BCD3</Color>
-    <Color x:Key="GlobalBroderBrushColor">#F9C1D8</Color>
+    <Color x:Key="GlobalBroderBrushColor">#FAD1DF</Color>
     <Color x:Key="GlobalTextColor">Black</Color>
 
     <!-- Icon colors -->
