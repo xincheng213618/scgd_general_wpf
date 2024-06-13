@@ -7,7 +7,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:controls ="clr-namespace:ColorVision.Themes.Controls"
         mc:Ignorable="d"
-        Title="上传" Height="300" Width="600" AllowDrop="True" Initialized="Window_Initialized" >
+        Title="上传" Height="300" Width="600" AllowDrop="True" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" >
     <Grid>
         <Image Source="/ColorVision.Util;component/Assets/Image/uploadbg.avif" Stretch="UniformToFill"/>
         <controls:Upload  x:Name="Upload1"  Margin="30"/>

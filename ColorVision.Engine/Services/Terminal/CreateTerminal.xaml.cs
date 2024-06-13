@@ -14,6 +14,7 @@ using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Types;
+using ColorVision.Themes;
 using ColorVision.UserSpace;
 using Newtonsoft.Json;
 using System;
@@ -33,6 +34,7 @@ namespace ColorVision.Engine.Services.Terminal
         {
             TerminalService = terminalService;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

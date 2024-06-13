@@ -4,6 +4,7 @@ using System;
 using System.Windows;
 using System.Windows.Input;
 using ColorVision.UI.Menus;
+using ColorVision.Themes;
 
 namespace ColorVision.Update
 {
@@ -42,6 +43,7 @@ namespace ColorVision.Update
         public WindowUpdate()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

@@ -4,6 +4,7 @@ using System.Windows;
 using System.Threading.Tasks;
 using System;
 using ColorVision.Util.Draw.Special;
+using ColorVision.Themes;
 
 namespace ColorVision.Engine.Media
 {
@@ -69,6 +70,7 @@ namespace ColorVision.Engine.Media
         public WindowCIE()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
         public ToolBarTop ToolBarTop { get; set; }
 

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.Services.Devices;
+using ColorVision.Themes;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -31,6 +32,7 @@ namespace ColorVision.Engine.Services
                 MQTTDevices1.Add(item);
             }
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialied(object sender, EventArgs e)

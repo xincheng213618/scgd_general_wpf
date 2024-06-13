@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras.Group"
         xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="{x:Static properties:Resources.Manager}" Height="450" Width="900" Initialized="Window_Initialized">
+        Title="{x:Static properties:Resources.Manager}" Height="450" Width="900" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>

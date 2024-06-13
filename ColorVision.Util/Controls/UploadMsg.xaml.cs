@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.Themes;
+using System;
 using System.Drawing;
 using System.Globalization;
 using System.Windows;
@@ -17,6 +18,7 @@ namespace ColorVision.Util.Controls
         {
             IUploadMsg1 = iUploadMsg;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

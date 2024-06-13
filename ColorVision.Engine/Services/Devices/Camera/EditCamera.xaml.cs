@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Themes;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
@@ -28,6 +29,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             DeviceCamera = mQTTDeviceCamera;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)

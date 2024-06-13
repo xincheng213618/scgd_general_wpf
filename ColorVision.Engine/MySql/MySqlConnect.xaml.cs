@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Themes;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -16,6 +17,7 @@ namespace ColorVision.Engine.MySql
         public MySqlConnect()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         public void NumberValidationTextBox(object sender, KeyEventArgs e)

@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
+using ColorVision.Themes;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using Newtonsoft.Json;
@@ -46,6 +47,7 @@ namespace ColorVision.Engine.Services.Msg
         public MsgList()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

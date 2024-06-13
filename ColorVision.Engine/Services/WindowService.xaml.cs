@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
+using ColorVision.Themes;
 using ColorVision.UI.Menus;
 using System;
 using System.Windows;
@@ -36,6 +37,7 @@ namespace ColorVision.Engine.Services
         public WindowService()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
         private void Window_Initialized(object sender, EventArgs e)
         {

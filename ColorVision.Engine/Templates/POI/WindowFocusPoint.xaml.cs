@@ -29,6 +29,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using ColorVision.Themes;
 
 namespace ColorVision.Engine.Services.Templates.POI
 {
@@ -42,6 +43,7 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             PoiParam = poiParam;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();

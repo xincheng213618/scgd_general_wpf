@@ -13,6 +13,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Common.MVVM;
+using ColorVision.Themes;
 
 
 namespace ColorVision.Engine.Services.Devices.PG
@@ -30,6 +31,7 @@ namespace ColorVision.Engine.Services.Devices.PG
         {
             Device = devicePG;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)

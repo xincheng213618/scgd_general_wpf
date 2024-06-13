@@ -13,8 +13,10 @@ using ColorVision.UI.Views;
 using ColorVision.Update;
 using ColorVision.UserSpace;
 using log4net;
+using Microsoft.DwayneNeed.Win32.User32;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
+using ScottPlot.Palettes;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -22,6 +24,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -29,6 +32,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
+using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision
@@ -53,6 +57,7 @@ namespace ColorVision
             SizeChanged += (s, e) => MainWindowConfig.SetConfig(this);
             var IsAdministrator = Tool.IsAdministrator();
             Title += $"- {(IsAdministrator ? Properties.Resources.RunAsAdmin : Properties.Resources.NotRunAsAdmin)}";
+            this.ApplyCaption();   
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -68,6 +73,7 @@ namespace ColorVision
                 };
                 if (ThemeManager.Current.SystemTheme == Theme.Dark)
                     Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
+
             }
 
             if (WindowConfig.IsExist)

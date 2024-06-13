@@ -986,7 +986,7 @@ namespace ColorVision.Engine.Media
         {
             RenderHistogram();
         }
-        private void DrawHistogram(int[] histogram, Color color, DrawingContext drawingContext, double width, double height)
+        private static void DrawHistogram(int[] histogram, Color color, DrawingContext drawingContext, double width, double height)
         {
             double max = histogram.Max();
             double scale = height / max;

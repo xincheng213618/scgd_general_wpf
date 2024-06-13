@@ -1,6 +1,7 @@
 ﻿using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Types;
+using ColorVision.Themes;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -20,6 +21,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         {
             CalibrationService = calibrationService;
             InitializeComponent();
+            this.ApplyCaption();
         }
         public ObservableCollection<GroupResource> groupResources { get; set; } = new ObservableCollection<GroupResource>();
 

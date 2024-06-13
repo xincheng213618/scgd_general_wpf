@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CA1707
 using ColorVision.Common.MVVM;
+using ColorVision.Themes;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -38,6 +39,8 @@ namespace ColorVision.Engine.Media
             MaxData = maxdata;
             MinMax = (maxdata - MinMax) / 255;
             InitializeComponent();
+            this.ApplyCaption();
+
         }
 
         public ColormapTypes ColormapTypes { get; set; } = ColormapTypes.COLORMAP_JET;

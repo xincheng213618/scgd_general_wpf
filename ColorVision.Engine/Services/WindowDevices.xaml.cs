@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Terminal;
+using ColorVision.Themes;
 using ColorVision.UI.Menus;
 using ColorVision.UserSpace;
 using System;
@@ -41,6 +42,7 @@ namespace ColorVision.Engine.Services
         public WindowDevices()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         public ObservableCollection<DeviceService> MQTTDevices { get; set; }

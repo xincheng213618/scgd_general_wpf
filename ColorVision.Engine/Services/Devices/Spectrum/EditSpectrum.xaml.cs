@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.Themes;
 using cvColorVision;
 using SkiaSharp;
 using System;
@@ -28,6 +29,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         {
             Device = deviceSpectrum;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Themes;
 using System;
 using System.Windows;
 using System.Windows.Input;
@@ -17,6 +18,7 @@ namespace ColorVision.Engine.Services.Terminal
         {
             TerminalService = terminalService;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

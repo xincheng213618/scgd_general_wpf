@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.SysDictionary;
+using ColorVision.Themes;
 using System;
 using System.Collections.Generic;
 using System.Windows;
@@ -21,6 +22,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
         {
             Device = device;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)

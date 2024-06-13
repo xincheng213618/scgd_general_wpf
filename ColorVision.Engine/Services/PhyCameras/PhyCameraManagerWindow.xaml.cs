@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.Themes;
+using System;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
@@ -30,6 +31,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         public PhyCameraManagerWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

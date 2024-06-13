@@ -9,6 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.Themes;
 
 namespace ColorVision.Engine.Templates
 {
@@ -27,6 +28,7 @@ namespace ColorVision.Engine.Templates
             DefaultIndex = defaultIndex;
             template.Load();
             InitializeComponent();
+            this.ApplyCaption();
         }
 
 

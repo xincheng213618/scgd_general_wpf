@@ -11,6 +11,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.Themes;
 
 namespace ColorVision.Solution
 {
@@ -132,6 +133,7 @@ namespace ColorVision.Solution
             InitializeComponent();
             NewCreateViewMode = new NewCreateViewMode();
             DataContext = NewCreateViewMode;
+            this.ApplyCaption();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

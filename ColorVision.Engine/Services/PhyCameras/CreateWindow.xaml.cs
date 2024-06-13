@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Services.RC;
+using ColorVision.Themes;
 using ColorVision.UserSpace;
 using cvColorVision;
 using CVCommCore;
@@ -27,6 +28,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             PhyCameraManager = phyCameraManager;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

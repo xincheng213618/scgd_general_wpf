@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.Utilities;
+using ColorVision.Themes;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -24,6 +25,7 @@ namespace ColorVision.Engine.Services.SysDictionary
         {
             DicModParam = dicModParam;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
 

@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Themes;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using log4net;
@@ -66,7 +67,7 @@ namespace ColorVision
 
             // 配置并激活log4net
             log4net.Config.BasicConfigurator.Configure(hierarchy);
-
+            this.ApplyCaption();
         }
     }
     public class TextBoxAppender : AppenderSkeleton

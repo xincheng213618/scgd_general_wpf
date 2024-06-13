@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.Themes;
+using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -17,6 +18,7 @@ namespace ColorVision.Update
         public ChangelogWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
         string? CHANGELOG { get; set; }
         private void Window_Initialized(object sender, System.EventArgs e)

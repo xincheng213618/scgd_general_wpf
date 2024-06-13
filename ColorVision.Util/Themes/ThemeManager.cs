@@ -1,10 +1,11 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media.Imaging;
 using Wpf.Ui.Appearance;
 
 namespace ColorVision.Themes
@@ -31,6 +32,29 @@ namespace ColorVision.Themes
         /// 强制更新主题，即使主题一致也会更新
         /// </summary>
         public static void ForceApplyTheme(this Application app, Theme theme) => ThemeManager.Current.ApplyThemeChanged(app, theme);
+
+        public static void ApplyCaption(this Window window)
+        {
+            RoutedEventHandler routedEventHandler = null;
+            routedEventHandler = (s, e) =>
+            {
+                IntPtr hwnd = new WindowInteropHelper(window).Handle;
+
+                ThemeManager.Current.CurrentThemeChanged += (theme) =>
+                {
+                    window.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision.Util;component/Assets/Image/{(theme == Theme.Light ? "ColorVision.ico" : "ColorVision1.ico")}"));
+                    ThemeManager.SetWindowTitleBarColor(hwnd, theme);
+                };
+                if (ThemeManager.Current.CurrentTheme == Theme.Dark)
+                    window.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision.Util;component/Assets/Image/ColorVision1.ico"));
+
+                ThemeManager.SetWindowTitleBarColor(hwnd, ThemeManager.Current.CurrentUITheme);
+
+                // 移除 Loaded 事件处理程序
+                window.Loaded -= routedEventHandler;
+            };
+            window.Loaded += routedEventHandler;
+        }
     }
 
     public delegate void ThemeChangedHandler(Theme newtheme);
@@ -225,5 +249,74 @@ namespace ColorVision.Themes
         public event ThemeChangedHandler? SystemThemeChanged;
 
         public event ThemeChangedHandler? AppsThemeChanged;
+
+        public static void SetWindowTitleBarColor(IntPtr hwnd, Theme theme)
+        {
+            uint attribute;
+            uint attributeSize = (uint)Marshal.SizeOf(typeof(uint));
+
+            switch (theme)
+            {
+                case Theme.Dark:
+                    // Reset caption color to system default
+                    ResetCaptionColor(hwnd);
+
+                    // Enable dark mode
+                    attribute = 1;
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ref attribute, attributeSize);
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, ref attribute, attributeSize);
+                    break;
+
+                case Theme.Pink:
+                    // Disable dark mode
+                    attribute = 0;
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ref attribute, attributeSize);
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, ref attribute, attributeSize);
+
+                    // Set caption color to pink
+                    attribute = 0xFFC0CB;
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_CAPTION_COLOR, ref attribute, attributeSize);
+                    break;
+
+                case Theme.Light:
+                case Theme.UseSystem:
+                default:
+                    // Reset caption color to system default
+                    ResetCaptionColor(hwnd);
+
+                    // Disable dark mode
+                    attribute = 0;
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ref attribute, attributeSize);
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, ref attribute, attributeSize);
+                    break;
+            }
+        }
+
+        private static void ResetCaptionColor(IntPtr hwnd)
+        {
+            uint attribute = 0xFFFFFFFF; // White color
+            uint attributeSize = (uint)Marshal.SizeOf(typeof(uint));
+            _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_CAPTION_COLOR, ref attribute, attributeSize);
+        }
+
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, DWMWINDOWATTRIBUTE attribute, ref uint pvAttribute, uint cbAttribute);
+
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, DWMWINDOWATTRIBUTE attribute, IntPtr pvAttribute, uint cbAttribute);
+
+
+#pragma warning disable CA1707
+        [Flags]
+        public enum DWMWINDOWATTRIBUTE : uint
+        {
+            DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19,
+            DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
+            DWMWA_CAPTION_COLOR = 35,
+            DWMWA_TEXT_COLOR = 36,
+            DWMWA_BORDER_COLOR = 37,
+        }
+#pragma warning restore CA1707
+
     }
 }

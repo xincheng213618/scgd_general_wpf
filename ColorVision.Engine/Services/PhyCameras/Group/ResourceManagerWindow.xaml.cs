@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.Services.Core;
+using ColorVision.Themes;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -13,6 +14,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         {
             DeviceService = deviceService;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

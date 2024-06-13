@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ColorVision.Themes;
+using System;
 using System.Windows;
 using System.Windows.Input;
 
@@ -14,9 +15,10 @@ namespace ColorVision.Util.Controls
         {
             this.Filter = Filter;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
-       
+
 
         private void Window_Initialized(object sender, EventArgs e)
         {

@@ -4,6 +4,7 @@ using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Properties;
 using ColorVision.Engine.Services.Templates;
 using ColorVision.Solution;
+using ColorVision.Themes;
 using ColorVision.UI.Menus;
 using FlowEngineLib.Base;
 using FlowEngineLib.Start;
@@ -51,6 +52,7 @@ namespace ColorVision.Engine.Services.Flow
             //ButtonClear.Visibility = Visibility.Collapsed;
             ButtonOpen.Visibility = Visibility.Collapsed;
             ButtonNew.Visibility = Visibility.Collapsed;
+            this.ApplyCaption();
         }
         FlowParam FlowParam { get; set; }
         public WindowFlowEngine(FlowParam flowParam) : this()

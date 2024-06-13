@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Themes;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -21,6 +22,7 @@ namespace ColorVision.Engine.Services.RC
         public RCServiceConnect()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

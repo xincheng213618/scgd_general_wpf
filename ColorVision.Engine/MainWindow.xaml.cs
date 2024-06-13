@@ -1,4 +1,5 @@
-﻿using ColorVision.UI.Menus;
+﻿using ColorVision.Themes;
+using ColorVision.UI.Menus;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -20,6 +21,7 @@ namespace ColorVision.Engine
         public MainWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e)

@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Themes;
 using System;
 using System.Windows;
 using System.Windows.Input;
@@ -21,6 +22,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         {
             DeviceCalibration = deviceCalibration;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)

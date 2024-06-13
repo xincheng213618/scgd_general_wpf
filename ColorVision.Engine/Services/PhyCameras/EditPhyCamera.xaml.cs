@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Solution;
+using ColorVision.Themes;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
@@ -27,6 +28,7 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             PhyCamera = phyCamera;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)

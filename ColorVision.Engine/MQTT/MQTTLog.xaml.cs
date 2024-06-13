@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Properties;
+using ColorVision.Themes;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using NPOI.Util.Collections;
@@ -75,6 +76,7 @@ public partial class MQTTLog : Window
             TopicListView.ItemsSource = MQTTControl.SubscribeTopic;
             DataContext = MQTTSetting.Instance;
             Title += $"  {MQTTControl.Config.Host}_{MQTTControl.Config.Port}";
+            this.ApplyCaption();
         }
 
 

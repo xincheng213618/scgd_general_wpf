@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
+using ColorVision.Themes;
 using ColorVision.UserSpace;
 using Newtonsoft.Json;
 using System;
@@ -22,6 +23,7 @@ namespace ColorVision.Engine.Services.Types
         {
             TypeService = typeService;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

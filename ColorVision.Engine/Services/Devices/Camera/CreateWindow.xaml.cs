@@ -2,6 +2,7 @@
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Themes;
 using ColorVision.UserSpace;
 using cvColorVision;
 using Newtonsoft.Json;
@@ -24,6 +25,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             TerminalService = terminalCamera;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
