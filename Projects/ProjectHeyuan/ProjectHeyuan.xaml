@@ -198,7 +198,7 @@
                 </Grid.ColumnDefinitions>
 
                 <Border Grid.Column="0" Margin="15" BorderBrush="Black" BorderThickness="1">
-                    <TextBlock x:Name="ResultText" Text="OK" FontSize="40" Foreground="Blue" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="ResultText" Text="PASS" FontSize="40" Foreground="Blue" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
                 <Grid  Grid.Column="1">
                     <Button  Content="开始" Height="40" Width="100" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="15" Click="Button_Click"/>

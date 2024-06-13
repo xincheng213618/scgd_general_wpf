@@ -274,7 +274,21 @@ namespace ColorVision.Themes
                     _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, ref attribute, attributeSize);
 
                     // Set caption color to pink
-                    attribute = 0xFFC0CB;
+                    ///颜色值的字节顺序被调整了
+                    // 原始颜色值: #E8A6C1
+                    // 1. 分解为 RGB 分量:
+                    //    红色 (Red) = E8
+                    //    绿色 (Green) = A6
+                    //    蓝色 (Blue) = C1
+                    // 2. 调整字节顺序:
+                    //    蓝色 (Blue) = C1
+                    //    绿色 (Green) = A6
+                    //    红色 (Red) = E8
+                    // 3. 重新组合为新的十六进制表示:
+                    //    新的颜色值 = 0xFFC1A6E8
+
+                    // 设置标题栏颜色为 #E8A6C1
+                    attribute = 0xC1A6E8;
                     _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_CAPTION_COLOR, ref attribute, attributeSize);
                     _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_BORDER_COLOR, ref attribute, attributeSize);
                     break;

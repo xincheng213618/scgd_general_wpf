@@ -328,7 +328,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                                 record.Final_Result = IsOK ? "Pass" : "Fail";
                                 if (IsOK)
                                 {
-                                    ResultText.Text = "OK";
+                                    ResultText.Text = "PASS";
                                     ResultText.Foreground = Brushes.Blue;
                                     HYMesManager.GetInstance().UploadMes(Results);
                                 }
@@ -342,7 +342,7 @@ namespace ColorVision.Projects.ProjectHeyuan
 
                                 if (Directory.Exists(HYMesManager.Config.DataPath))
                                 {
-                                    string FilePath = HYMesManager.Config.DataPath + "\\" + DateTime.Now.ToString("yyyy-MM-dd") + "_" + HYMesManager.Config.DeviceId + "_" + Environment.MachineName + ".csv";
+                                    string FilePath = HYMesManager.Config.DataPath + "\\" + DateTime.Now.ToString("yyyy-MM-dd") + "_" + HYMesManager.Config.TestName + "_" + Environment.MachineName + ".csv";
                                     CsvHandler csvHandler = new CsvHandler(FilePath);
 
                                    csvHandler.SaveRecord(record);
