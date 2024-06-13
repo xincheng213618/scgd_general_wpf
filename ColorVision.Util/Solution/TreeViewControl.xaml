@@ -36,7 +36,7 @@
 
 
         <Border BorderThickness="0" Grid.Row="2" CornerRadius="4"  Padding="0" >
-            <TreeView  	x:Name="SolutionTreeView"  BorderThickness="0">
+            <TreeView  	x:Name="SolutionTreeView"  BorderThickness="0" Background="{DynamicResource GlobalBackground}">
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="{x:Type TreeViewItem}"  BasedOn="{StaticResource TreeViewItemBaseStyle }">
                         <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>

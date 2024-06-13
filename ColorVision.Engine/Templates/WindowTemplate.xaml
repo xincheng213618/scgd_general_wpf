@@ -41,7 +41,7 @@
 
             </Grid>
 
-            <ListView Grid.Row="1" x:Name="ListView1"  BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="0" Margin="2"  PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">
+            <ListView Grid.Row="1" x:Name="ListView1" Style="{StaticResource ListView.Small}" BorderThickness="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled" Padding="0" Margin="2"  PreviewMouseDoubleClick="ListView1_PreviewMouseDoubleClick" SelectionChanged="ListView1_SelectionChanged">
                 <ListView.Resources>
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened"/>
                     <ContextMenu x:Key="ContextMenuItem">
@@ -97,7 +97,7 @@
             <TextBlock Grid.Row="1"  x:Name="SearchNoneText" Visibility="Collapsed" VerticalAlignment="Top" FontSize="16" Margin="20,80,0,0" Text="{x:Static properties:Resources.NoRelatedItemsFound}" />
 
         </Grid>
-        <GridSplitter  Width="2"/>
+        <GridSplitter HorizontalAlignment="Right"  Visibility="{Binding ElementName=GridProperty, Path=Visibility}" Width="2"/>
 
         <Grid Grid.Row="0" Grid.Column="1"  Grid.RowSpan="2"  x:Name="GridProperty" >
             <!--<hc:PropertyGrid x:Name="PropertyGrid1"   hc:TipElement.Visibility="Visible"  />-->

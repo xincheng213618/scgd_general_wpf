@@ -123,7 +123,7 @@ namespace ColorVision.Themes
 
         public static List<string> ResourceDictionaryPink { get; set; } = new List<string>()
         {
-            "/HandyControl;component/Themes/basic/colors/colorsviolet.xaml",
+            "/ColorVision.Util;component/Themes/HPink.xaml",
             "/HandyControl;component/Themes/Theme.xaml",
             "/ColorVision.Util;component/Themes/White.xaml",
             "/ColorVision.Util;component/Themes/Pink.xaml",
