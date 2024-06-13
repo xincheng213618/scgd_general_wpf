@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Templates;
 using ColorVision.Themes;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
@@ -10,12 +11,15 @@ using log4net.Layout;
 using log4net.Repository.Hierarchy;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision
 {
@@ -77,6 +81,7 @@ namespace ColorVision
             log4net.Config.BasicConfigurator.Configure(hierarchy);
             cmlog.DataContext = MainWindowConfig.Instance;
             cmlog.ItemsSource = MainWindowConfig.GetAllLevels().Select(level => new KeyValuePair<Level, string>(level, level.Name));
+            SearchBar1Brush = SearchBar1.BorderBrush;
         }
         private static string GetLogFilePath()
         {
@@ -128,6 +133,50 @@ namespace ColorVision
         {
             logTextBox.Text = string.Empty;
             LoadLogHistory();
+        }
+
+        private readonly char[] Chars = new[] { ' ' };
+        private static readonly string[] RegexSpecialChars = { ".", "*", "+", "?", "^", "$", "(", ")", "[", "]", "{", "}", "|", "\\" };
+        private Brush SearchBar1Brush;
+        private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var searchText = SearchBar1.Text.ToLower(CultureInfo.CurrentCulture);
+            if (!string.IsNullOrEmpty(searchText))
+            {
+                var containsRegexSpecialChars = RegexSpecialChars.Any(searchText.Contains);
+
+                var keywords = searchText.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
+
+                logTextBox.Visibility = Visibility.Collapsed;
+                logTextBoxSerch.Visibility = Visibility.Visible;
+                var logLines = logTextBox.Text.Split(new[] { Environment.NewLine }, System.StringSplitOptions.None);
+                if (containsRegexSpecialChars)
+                {
+                    // 使用正则表达式搜索
+                    try
+                    {
+                        var regex = new Regex(searchText, RegexOptions.IgnoreCase);
+                        var filteredLines = logLines.Where(line => regex.IsMatch(line)).ToArray();
+                        logTextBoxSerch.Text = string.Join(Environment.NewLine, filteredLines);
+                    }
+                    catch (RegexParseException)
+                    {
+                        SearchBar1.BorderBrush = Brushes.Red;
+                        return;
+                    }
+                }
+                else
+                {
+                    var filteredLines = logLines.Where(line => keywords.All(keyword => line.Contains(keyword, StringComparison.OrdinalIgnoreCase))).ToArray();
+                    logTextBoxSerch.Text = string.Join(Environment.NewLine, filteredLines);
+                }
+                SearchBar1.BorderBrush = SearchBar1Brush;
+            }
+            else
+            {
+                logTextBoxSerch.Visibility = Visibility.Collapsed;
+                logTextBox.Visibility = Visibility.Visible;
+            }
         }
     }
     public class TextBoxAppender : AppenderSkeleton
