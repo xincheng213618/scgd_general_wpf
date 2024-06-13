@@ -189,15 +189,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             ComboxLEDStripDetectionTemplate.SelectedIndex = 0;
 
             this.AddViewConfig(View, ComboxView);
+            this.ApplyChangedSelectedColor(DisPlayBorder);
 
-
-            void UpdateDisPlayBorder()
-            {
-                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
-            }
-            UpdateDisPlayBorder();
-            SelectChanged += (s, e) => UpdateDisPlayBorder();
-            ThemeManager.Current.CurrentUIThemeChanged += (s) => UpdateDisPlayBorder();
 
             void UpdateCB_SourceImageFiles()
             {

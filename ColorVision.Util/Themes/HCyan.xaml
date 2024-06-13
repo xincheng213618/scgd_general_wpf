@@ -1,9 +1,9 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:system="clr-namespace:System;assembly=mscorlib">
 
-    <Color x:Key="LightPrimaryColor">#FADCE4</Color>
-    <Color x:Key="PrimaryColor">#E91E63</Color>
+    <Color x:Key="LightPrimaryColor">#D1E8EB</Color>
+    <Color x:Key="PrimaryColor">#00ACC1</Color>
     <!-- 强调色 -->
-    <Color x:Key="DarkPrimaryColor">#C2185B</Color>
+    <Color x:Key="DarkPrimaryColor">#00796B</Color>
     <!-- 深强调色 -->
     <Color x:Key="LightDangerColor">#FFF6F7</Color>
     <Color x:Key="DangerColor">#DB3340</Color>
@@ -24,21 +24,22 @@
     <Color x:Key="TextIconColor">White</Color>
     <Color x:Key="BorderColor">#E0E0E0</Color>
     <Color x:Key="SecondaryBorderColor">#757575</Color>
-    <Color x:Key="BackgroundColor">#F9BCD3</Color>
+    <Color x:Key="BackgroundColor">#CAE0E4</Color>
     <!-- 主背景色 -->
-    <Color x:Key="RegionColor">#FADCE4</Color>
+    <Color x:Key="RegionColor">#D1E8EB</Color>
     <!-- 次要背景色 -->
-    <Color x:Key="SecondaryRegionColor">#FADCE4</Color>
+    <Color x:Key="SecondaryRegionColor">#D1E8EB</Color>
     <!-- 次要背景色 -->
     <Color x:Key="ThirdlyRegionColor">White</Color>
-    <Color x:Key="TitleColor">#E91E63</Color>
+    <Color x:Key="TitleColor">#00ACC1</Color>
     <!-- 强调色 -->
-    <Color x:Key="SecondaryTitleColor">#C2185B</Color>
+    <Color x:Key="SecondaryTitleColor">#00796B</Color>
     <!-- 深强调色 -->
     <Color x:Key="DefaultColor">White</Color>
     <Color x:Key="DarkDefaultColor">#F5F5F5</Color>
-    <Color x:Key="AccentColor">#F8491E</Color>
-    <Color x:Key="DarkAccentColor">#F8491E</Color>
+    <Color x:Key="AccentColor">#00796B</Color>
+    <Color x:Key="DarkAccentColor">#00796B</Color>
     <Color x:Key="DarkMaskColor">#20000000</Color>
     <Color x:Key="DarkOpacityColor">#40000000</Color>
+    <system1:UInt32 x:Key="BlurGradientValue" xmlns:system1="clr-namespace:System;assembly=System.Private.CoreLib">0x99FFFFFF</system1:UInt32>
 </ResourceDictionary>

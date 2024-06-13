@@ -19,9 +19,11 @@ namespace ColorVision.Themes
         [Description("ThemeDark")]
         Dark,
         [Description("ThemePink")]
-        Pink
+        Pink,
+        [Description("ThemeCyan")] // 添加青色主题
+        Cyan
     };
-
+     
     public static class ThemeManagerExtensions
     {
         /// <summary>
@@ -133,6 +135,18 @@ namespace ColorVision.Themes
             "/ColorVision.Util;component/Themes/Icons.xaml",
             "/ColorVision.Util;component/Themes/Window/BaseWindow.xaml"
         };
+        public static List<string> ResourceDictionaryCyan { get; set; } = new List<string>()
+        {
+            "/ColorVision.Util;component/Themes/HCyan.xaml",
+            "/HandyControl;component/Themes/Theme.xaml",
+            "/ColorVision.Util;component/Themes/White.xaml",
+            "/ColorVision.Util;component/Themes/Cyan.xaml",
+            "/ColorVision.Util;component/Themes/Base.xaml",
+            "/ColorVision.Util;component/Themes/Menu.xaml",
+            "/ColorVision.Util;component/Themes/GroupBox.xaml" ,
+            "/ColorVision.Util;component/Themes/Icons.xaml",
+            "/ColorVision.Util;component/Themes/Window/BaseWindow.xaml"
+        };
 
         private void ApplyActTheme(Application app, Theme theme)
         {
@@ -175,6 +189,18 @@ namespace ColorVision.Themes
                     app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
 
                     foreach (var item in ResourceDictionaryPink)
+                    {
+                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
+                        app.Resources.MergedDictionaries.Add(dictionary);
+                    }
+                    break;
+                case Theme.Cyan:
+                    var Cyan1 = new Wpf.Ui.Markup.ThemesDictionary();
+                    Cyan1.Theme = ThemeType.Light;
+                    app.Resources.MergedDictionaries.Add(Cyan1);
+                    app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
+
+                    foreach (var item in ResourceDictionaryCyan)
                     {
                         ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
                         app.Resources.MergedDictionaries.Add(dictionary);
@@ -291,6 +317,19 @@ namespace ColorVision.Themes
                     attribute = 0xC1A6E8;
                     _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_CAPTION_COLOR, ref attribute, attributeSize);
                     _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_BORDER_COLOR, ref attribute, attributeSize);
+                    break;
+
+                case Theme.Cyan:
+                    // Disable dark mode
+                    attribute = 0;
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ref attribute, attributeSize);
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, ref attribute, attributeSize);
+
+                    // 设置标题栏颜色为 #00796B
+                    attribute = 0x6B7900;
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_CAPTION_COLOR, ref attribute, attributeSize);
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_BORDER_COLOR, ref attribute, attributeSize);
+
                     break;
 
                 case Theme.Light:

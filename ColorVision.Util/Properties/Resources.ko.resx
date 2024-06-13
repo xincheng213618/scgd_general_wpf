@@ -276,4 +276,7 @@
   <data name="MenuCopy" xml:space="preserve">
     <value>복사(C)</value>
   </data>
+  <data name="ThemeCyan" xml:space="preserve">
+    <value>청록색</value>
+  </data>
 </root>

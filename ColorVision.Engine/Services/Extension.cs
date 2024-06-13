@@ -1,11 +1,43 @@
-﻿using System.Windows.Controls;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Themes;
+using ColorVision.UI;
+using ColorVision.UI.Views;
+using System;
+using System.Collections.Generic;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 
-namespace ColorVision.UI.Views
+namespace ColorVision.Engine.Services
 {
-
-
-    public static class ViewExtension
+    public static class Extension
     {
+        public static void ApplyChangedSelectedColor(this IDisPlayControl disPlayControl,Border border)
+        {
+            void UpdateDisPlayBorder()
+            {
+                if (disPlayControl.IsSelected)
+                {
+                    border.BorderBrush = ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme switch
+                    {
+                        Theme.Light => "#5649B0",
+                        Theme.Dark => "#A79CF1",
+                        Theme.Pink => "#F06292", // 粉色主题选中颜色
+                        Theme.Cyan => "#00BCD4", // 青色主题选中颜色
+                        _ => "#A79CF1" // 默认颜色
+                    });
+                }
+                else
+                {
+                    Brush brush = Application.Current.FindResource("GlobalBorderBrush1") as Brush;
+                    border.BorderBrush = brush;
+                }
+            }
+            disPlayControl.SelectChanged += (s, e) => UpdateDisPlayBorder();
+            ThemeManager.Current.CurrentUIThemeChanged += (s) => UpdateDisPlayBorder();
+            UpdateDisPlayBorder();
+        }
+
         public static void AddViewConfig(this UserControl userControl, IView view, ComboBox comboBox)
         {
             if (view is not Control control) throw new NotImplementedException();

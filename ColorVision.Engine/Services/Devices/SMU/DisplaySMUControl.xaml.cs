@@ -62,14 +62,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
             this.AddViewConfig(View, ComboxView);
 
             PreviewMouseDown += UserControl_PreviewMouseDown;
-            SelectChanged += (s, e) =>
-            {
-                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
-            };
-            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-            {
-                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
-            };
+            this.ApplyChangedSelectedColor(DisPlayBorder);
         }
 
         public event RoutedEventHandler Selected;

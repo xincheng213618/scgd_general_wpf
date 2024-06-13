@@ -50,7 +50,7 @@ namespace ColorVision
             }
 
             mutex = new Mutex(true, "ElectronicNeedleTherapySystem", out bool ret);
-            if (!ret)
+            if (!ret && !Debugger.IsAttached)
             {
                 IntPtr hWnd = CheckAppRunning.Check("ColorVision");
                 if (hWnd != IntPtr.Zero)

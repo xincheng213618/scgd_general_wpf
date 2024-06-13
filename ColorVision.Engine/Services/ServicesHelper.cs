@@ -13,6 +13,7 @@ using System.Windows.Threading;
 
 namespace ColorVision.Engine.Services
 {
+
     internal static partial class ServicesHelper
     {
 

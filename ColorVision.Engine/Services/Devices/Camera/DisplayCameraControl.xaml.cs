@@ -171,13 +171,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 }
 
             };
-            void UpdateDisPlayBorder()
-            {
-                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
-            }
-            UpdateDisPlayBorder();
-            SelectChanged += (s, e) => UpdateDisPlayBorder();
-            ThemeManager.Current.CurrentUIThemeChanged += (s) => UpdateDisPlayBorder();
+            this.ApplyChangedSelectedColor(DisPlayBorder);
+
         }
 
         public event RoutedEventHandler Selected;

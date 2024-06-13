@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Templates;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
-using ColorVision.Engine.Services.Templates;
+using ColorVision.Engine.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
 using CVCommCore;
@@ -11,6 +10,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices.Sensor
 {
@@ -38,14 +38,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
             ComboxSensorTemplate.ItemsSource = SensorHeYuan.SensorHeYuans;
             ComboBoxType.ItemsSource = Enum.GetValues(typeof(SensorCmdType));
 
-            SelectChanged += (s, e) =>
-            {
-                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
-            };
-            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-            {
-                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
-            };
+            this.ApplyChangedSelectedColor(DisPlayBorder);
 
             Device.DeviceService.DeviceStatusChanged += (e) =>
             {
