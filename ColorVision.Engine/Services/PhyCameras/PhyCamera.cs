@@ -108,6 +108,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (MessageBox.Show(Application.Current.GetActiveWindow(),"是否清除数据库相关项","ColorVision",MessageBoxButton.YesNoCancel) == MessageBoxResult.Yes)
             {
                 CalibrationParams.Clear();
+                this.VisualChildren.Clear();
                 Task.Run(() =>
                 {
                     SysResourceDao.Instance.DeleteAllByPid(Id ,false);
