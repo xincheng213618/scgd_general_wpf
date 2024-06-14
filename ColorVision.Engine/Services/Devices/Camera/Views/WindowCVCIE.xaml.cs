@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Themes;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.Generic;
@@ -27,6 +28,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             PoiResultCIExyuvDatas = poiResultCIExyuvDatas;
             InitializeComponent();
+            this.ApplyCaption();
         }
         public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
