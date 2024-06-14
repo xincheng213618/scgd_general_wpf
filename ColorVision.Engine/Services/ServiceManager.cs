@@ -375,30 +375,6 @@ namespace ColorVision.Engine.Services
 
             GroupResources.Clear();
 
-            foreach (var phycamrea in PhyCameraManager.GetInstance().PhyCameras)
-            {
-                List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetResourceItems(phycamrea.SysResourceModel.Id, UserConfig.TenantId);
-                foreach (var sysResourceModel in sysResourceModels)
-                {
-                    if (sysResourceModel.Type == (int)ServiceTypes.Group)
-                    {
-                        GroupResource groupResource = new(sysResourceModel);
-                        phycamrea.AddChild(groupResource);
-                        GroupResources.Add(groupResource);
-                    }
-                    else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
-                    {
-                        CalibrationResource calibrationResource = new(sysResourceModel);
-                        phycamrea.AddChild(calibrationResource);
-                    }
-                    else
-                    {
-                        BaseFileResource calibrationResource = new(sysResourceModel);
-                        phycamrea.AddChild(calibrationResource);
-                    }
-                }
-            }
-
             foreach (var deviceService in DeviceServices)
             {
                 List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetResourceItems(deviceService.SysResourceModel.Id, UserConfig.TenantId);
