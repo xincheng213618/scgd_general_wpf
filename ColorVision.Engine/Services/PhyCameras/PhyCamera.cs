@@ -593,22 +593,25 @@ namespace ColorVision.Engine.Services.PhyCameras
                                 {
                                     continue;
                                 }
-                                GroupResource groupResource = GroupResource.AddGroupResource(this, filePath);
-                                if (groupResource != null)
+                                Application.Current.Dispatcher.Invoke(() =>
                                 {
-                                    foreach (var item1 in zipCalibrationGroup.List)
+                                    GroupResource groupResource = GroupResource.AddGroupResource(this, filePath);
+                                    if (groupResource != null)
                                     {
-                                        if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
+                                        foreach (var item1 in zipCalibrationGroup.List)
                                         {
-                                            SysResourceDao.Instance.ADDGroup(groupResource.SysResourceModel.Id, colorVisionVCalibratioItems.SysResourceModel.Id);
-                                            Application.Current.Dispatcher.Invoke(() =>
+                                            if (keyValuePairs2.TryGetValue(item1.Title, out var colorVisionVCalibratioItems))
                                             {
+                                                SysResourceDao.Instance.ADDGroup(groupResource.SysResourceModel.Id, colorVisionVCalibratioItems.SysResourceModel.Id);
                                                 groupResource.AddChild(colorVisionVCalibratioItems);
-                                            });
+                                            }
                                         }
+                                        groupResource.SetCalibrationResource();
                                     }
-                                    groupResource.SetCalibrationResource();
-                                }
+
+                                });
+
+
                             }
                         }
                         catch (Exception ex)
