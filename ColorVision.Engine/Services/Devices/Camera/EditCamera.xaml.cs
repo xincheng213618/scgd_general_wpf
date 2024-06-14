@@ -213,14 +213,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
         public void UpdateConfig()
         {
-            var phyCamera = PhyCameraManager.GetInstance().PhyCameras[CameraPhyID.SelectedIndex];
-            EditConfig.Channel = phyCamera.Config.Channel;
-            EditConfig.CameraCfg.CopyFrom(phyCamera.Config.CameraCfg);
-            EditConfig.CFW.CopyFrom(phyCamera.Config.CFW);
-            EditConfig.CameraID = phyCamera.Config.CameraID;
-            EditConfig.CameraType = phyCamera.Config.CameraType;
-            EditConfig.TakeImageMode = phyCamera.Config.TakeImageMode;
-            EditConfig.ImageBpp = phyCamera.Config.ImageBpp;
+            if (CameraPhyID.SelectedIndex > -1)
+            {
+                var phyCamera = PhyCameraManager.GetInstance().PhyCameras[CameraPhyID.SelectedIndex];
+                EditConfig.Channel = phyCamera.Config.Channel;
+                EditConfig.CameraCfg.CopyFrom(phyCamera.Config.CameraCfg);
+                EditConfig.CFW.CopyFrom(phyCamera.Config.CFW);
+                EditConfig.CameraID = phyCamera.Config.CameraID;
+                EditConfig.CameraType = phyCamera.Config.CameraType;
+                EditConfig.TakeImageMode = phyCamera.Config.TakeImageMode;
+                EditConfig.ImageBpp = phyCamera.Config.ImageBpp;
+            }
         }
 
         private void UpdateConfig_Click(object sender, RoutedEventArgs e)

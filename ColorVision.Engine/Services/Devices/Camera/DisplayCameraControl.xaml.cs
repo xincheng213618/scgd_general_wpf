@@ -116,6 +116,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     SetVisibility(ButtonClose, Visibility.Collapsed);
                     SetVisibility(StackPanelImage, Visibility.Collapsed);
                     SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
                 }
                 // Default state
                 SetVisibility(StackPanelOpen, Visibility.Visible);
@@ -124,14 +125,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 switch (status)
                 {
                     case DeviceStatusType.Unauthorized:
+                        SetVisibility(StackPanelOpen, Visibility.Collapsed);
                         SetVisibility(ButtonUnauthorized, Visibility.Visible);
                         break;
-
+                    case DeviceStatusType.Unknown:
+                        SetVisibility(StackPanelOpen, Visibility.Collapsed);
+                        SetVisibility(TextBlockUnknow, Visibility.Visible);
+                        break;
                     case DeviceStatusType.OffLine:
                         SetVisibility(StackPanelOpen, Visibility.Collapsed);
                         SetVisibility(ButtonOffline, Visibility.Visible);
                         break;
-                    case DeviceStatusType.Unknown:
                     case DeviceStatusType.UnInit:
                         SetVisibility(StackPanelOpen, Visibility.Collapsed);
                         SetVisibility(ButtonInit, Visibility.Visible);

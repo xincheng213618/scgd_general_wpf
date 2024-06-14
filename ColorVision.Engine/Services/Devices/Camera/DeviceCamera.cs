@@ -94,6 +94,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             if (PhyCamera != null)
             {
                 PhyCamera.SetDeviceCamera(this);
+                NotifyPropertyChanged(nameof(PhyCamera));
             }
             base.Save();
         }

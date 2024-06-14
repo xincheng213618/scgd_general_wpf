@@ -83,6 +83,7 @@
         </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}">
             <StackPanel Margin="3">
+                <TextBlock x:Name="TextBlockUnknow" Text="未知状态，请检查是否配置正确"/>
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="相机未注册" Command="{Binding PhyCamera.UploadLincenseCommand}"/>
                 <Button x:Name="ButtonInit" Margin="0,0,0,3" Content="请先配置相机ID" Click="CameraInit_Click"/>
                 <Button x:Name="ButtonOffline" Margin="0,0,0,3" Visibility="Collapsed" Content="设备离线" Foreground="White" Background="Red" Click="CameraOffline_Click"/>

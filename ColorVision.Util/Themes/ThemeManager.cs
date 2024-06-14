@@ -37,7 +37,7 @@ namespace ColorVision.Themes
 
         public static void ApplyCaption(this Window window)
         {
-            RoutedEventHandler routedEventHandler = null;
+            RoutedEventHandler routedEventHandler = null;  
             routedEventHandler = (s, e) =>
             {
                 IntPtr hwnd = new WindowInteropHelper(window).Handle;
