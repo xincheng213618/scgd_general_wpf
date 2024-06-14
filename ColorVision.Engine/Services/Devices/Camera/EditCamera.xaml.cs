@@ -6,6 +6,7 @@ using ColorVision.Themes;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -40,6 +41,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 e.Handled = true;
             }
         }
+        public ObservableCollection<PhyCamera> PhyCameras { get; set; } = new ObservableCollection<PhyCamera>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {

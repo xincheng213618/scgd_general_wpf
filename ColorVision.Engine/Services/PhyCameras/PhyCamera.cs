@@ -214,7 +214,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             openFileDialog.RestoreDirectory = true;
             openFileDialog.Multiselect = true; // 允许多选
             openFileDialog.Filter = "All files (*.*)|*.zip;*.lic"; // 可以设置特定的文件类型过滤器
-            openFileDialog.Title = "请选择许可证文件";
+            openFileDialog.Title = "请选择许可证文件 " + SysResourceModel.Code;
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
@@ -281,6 +281,10 @@ namespace ColorVision.Engine.Services.PhyCameras
                     }
                 }
             }
+
+
+            DeviceCalibration?.RestartRCService();
+            DeviceCamera?.RestartRCService();
         }
         #endregion
 

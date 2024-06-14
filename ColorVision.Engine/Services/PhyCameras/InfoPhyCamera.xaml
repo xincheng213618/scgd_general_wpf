@@ -62,7 +62,7 @@
                                     </Grid>
                                 </Border>
 
-                                <Button Content="上传校正文件" Margin="5" Height="100" Width="180" Style="{StaticResource ButtonDefault}" Command="{Binding UploadCalibrationCommand}" />
+                                <Button Content="上传校正文件" Margin="5" Height="100" Width="180" Command="{Binding UploadCalibrationCommand}" />
                                 <Button Content="校正模板设置" Margin="5" Height="100" Width="180" Tag="Calibration"  Click="MenuItem_Template" />
                                 <Button Content="校正模板管理" Margin="5" Height="100" Width="180" Command="{Binding CalibrationEditCommand}"/>
                                 <Button Content="资源组管理" Margin="5" Height="100" Width="180" Command="{Binding ResourceManagerCommand}"/>
