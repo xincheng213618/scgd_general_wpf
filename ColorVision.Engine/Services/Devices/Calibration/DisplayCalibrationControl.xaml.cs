@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
+using ColorVision.Net;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
@@ -67,6 +68,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         private void Service_OnCalibrationEvent(MsgReturn arg)
         {
+
+
             switch (arg.EventName)
             {
                 case MQTTFileServerEventEnum.Event_File_List_All:
@@ -96,6 +99,16 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                             break;
                         default:
                             break;
+                    }
+                    break;
+                case MQTTFileServerEventEnum.Event_File_Download:
+                    DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                    if (pm_dl != null)
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            View.ImageView.OpenImage(pm_dl.FileName);
+                        });
                     }
                     break;
             }

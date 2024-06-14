@@ -298,6 +298,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                             }
                         };
                         ServicesHelper.SendCommand(button, msg);
+                        View.ImageView.ImageShow.Source = null;
                         CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
                         CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
                     }
