@@ -315,7 +315,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (View.ImageView.ImageShow.Source is WriteableBitmap bitmap)
             {
-                if(bitmap.Width!= bmp.Width)
+                if(bitmap.Width!= bmp.Width || bitmap.Height !=bmp.Height || ImageUtil.CoverFormat(bmp) != bitmap.Format)
                 {
                     WriteableBitmap writeableBitmap = ImageUtil.BitmapToWriteableBitmap(bmp);
                     View.ImageView.ImageShow.Source = writeableBitmap;
