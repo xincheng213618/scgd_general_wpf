@@ -115,20 +115,23 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     SetVisibility(ButtonOffline, Visibility.Collapsed);
                     SetVisibility(ButtonClose, Visibility.Collapsed);
                     SetVisibility(StackPanelImage, Visibility.Collapsed);
+                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
                 }
-
                 // Default state
                 SetVisibility(StackPanelOpen, Visibility.Visible);
                 HideAllButtons();
 
                 switch (status)
                 {
+                    case DeviceStatusType.Unauthorized:
+                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                        break;
+
                     case DeviceStatusType.OffLine:
                         SetVisibility(StackPanelOpen, Visibility.Collapsed);
                         SetVisibility(ButtonOffline, Visibility.Visible);
                         break;
                     case DeviceStatusType.Unknown:
-                    case DeviceStatusType.Unauthorized:
                     case DeviceStatusType.UnInit:
                         SetVisibility(StackPanelOpen, Visibility.Collapsed);
                         SetVisibility(ButtonInit, Visibility.Visible);
