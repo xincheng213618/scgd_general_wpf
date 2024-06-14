@@ -77,7 +77,11 @@ namespace ColorVision.Engine.Services.RC
 
         public void Decrypt()
         {
-            Config.AppSecret = Cryptography.AESDecrypt(Config.AppSecret, ConfigAESKey, ConfigAESVector);
+            ///如果是初始值直接跳过
+            if (Config.AppSecret != "123456")
+            {
+                Config.AppSecret = Cryptography.AESDecrypt(Config.AppSecret, ConfigAESKey, ConfigAESVector);
+            }
         }
 
         public void Encryption()

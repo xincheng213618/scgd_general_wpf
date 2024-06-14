@@ -1,5 +1,4 @@
-﻿
-using Microsoft.VisualBasic;
+﻿using Microsoft.VisualBasic;
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
@@ -7,11 +6,14 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.IO.Compression;
+using System.Net.NetworkInformation;
+using System.Net;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
 using System.Windows.Forms;
+using System.Net.Sockets;
 
 namespace ColorVision.Common.Utilities
 {
@@ -27,6 +29,99 @@ namespace ColorVision.Common.Utilities
         public static readonly bool IsWinVista = OSVersion >= new Version(6, 0) && OSVersion < new Version(6, 1);
         public static readonly bool IsWinXP = OSVersion >= new Version(5, 1) && OSVersion < new Version(6, 0);
         public static readonly bool IsWinXP64 = OSVersion == new Version(5, 2); // Windows XP 64-bit Edition
+
+        /// <summary>
+        /// 获取系统hosts
+        /// </summary>
+        /// <returns></returns>
+        public static Dictionary<string, string> GetSystemHosts()
+        {
+            var systemHosts = new Dictionary<string, string>();
+            var hostFilePath = @"C:\Windows\System32\drivers\etc\hosts";
+
+            try
+            {
+                if (File.Exists(hostFilePath))
+                {
+                    using (var reader = new StreamReader(hostFilePath))
+                    {
+                        string line;
+                        while ((line = reader.ReadLine()) != null)
+                        {
+                            line = line.Trim();
+                            if (string.IsNullOrEmpty(line) || line.StartsWith("#",StringComparison.CurrentCulture))
+                            {
+                                continue;
+                            }
+
+#pragma warning disable CA1861 // 不要将常量数组作为参数
+                            var hostParts = line.Split(new [] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+#pragma warning restore CA1861 // 不要将常量数组作为参数
+                            if (hostParts.Length >= 2)
+                            {
+                                var ipAddress = hostParts[0];
+                                var hostName = hostParts[1];
+
+                                systemHosts.TryAdd(hostName, ipAddress);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log the exception or handle it as needed
+                Console.WriteLine($"Error reading hosts file: {ex.Message}");
+            }
+
+            return systemHosts;
+        }
+
+
+        public static bool PortInUse(int port)
+        {
+            bool inUse = false;
+            try
+            {
+                IPGlobalProperties ipProperties = IPGlobalProperties.GetIPGlobalProperties();
+                IPEndPoint[] ipEndPoints = ipProperties.GetActiveTcpListeners();
+
+                var lstIpEndPoints = new List<IPEndPoint>(IPGlobalProperties.GetIPGlobalProperties().GetActiveTcpListeners());
+
+                foreach (IPEndPoint endPoint in ipEndPoints)
+                {
+                    if (endPoint.Port == port)
+                    {
+                        inUse = true;
+                        break;
+                    }
+                }
+            }
+            catch 
+            {
+            }
+            return inUse;
+        }
+
+        public static int GetFreePort(int defaultPort = 9090)
+        {
+            try
+            {
+                if (!PortInUse(defaultPort))
+                {
+                    return defaultPort;
+                }
+                TcpListener l = new(IPAddress.Loopback, 0);
+                l.Start();
+                int port = ((IPEndPoint)l.LocalEndpoint).Port;
+                l.Stop();
+                return port;
+            }
+            catch
+            {
+            }
+            return 59090;
+        }
 
         public static string SanitizeFileName(string fileName)
         {
