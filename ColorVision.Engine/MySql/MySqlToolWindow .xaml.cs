@@ -1,10 +1,9 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.MQTT;
 using ColorVision.Themes;
-using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
+using MySql.Data.MySqlClient;
+using System;
 using System.Windows;
-using System.Windows.Input;
 
 namespace ColorVision.Engine.MySql
 {
@@ -37,6 +36,27 @@ namespace ColorVision.Engine.MySql
         private void Window_Initialized(object sender, System.EventArgs e)
         {
 
+        }
+        public int ExecuteNonQuery(string sql)
+        {
+            int count = -1;
+            try
+            {
+                MySqlCommand command = new(sql, MySqlControl.MySqlConnection);
+                count = command.ExecuteNonQuery();
+                SqlResultText.Text += $"SQL执行成功。\n受影响的行数: {count}\n执行的SQL语句: {sql}";
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
+            return count;
+        }
+
+        private void Button_Click(object sender, RoutedEventArgs e)
+        {
+            string Sql = MySqlText.Text;
+            ExecuteNonQuery(Sql);
         }
     }
 }
