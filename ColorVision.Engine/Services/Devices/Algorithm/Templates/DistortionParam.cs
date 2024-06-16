@@ -9,29 +9,17 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
+using ColorVision.Engine.Templates.POI;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates
 {
-    public class ExportDistortionParam : IMenuItem
+    public class ExportDistortionParam : ExportTemplateBase
     {
-        public string? OwnerGuid => "TemplateAlgorithm";
-
-        public string? GuidId => "DistortionParam";
-        public int Order => 3;
-        public string? Header => ColorVision.Engine.Properties.Resources.MenuDistortion;
-        public Visibility Visibility => Visibility.Visible;
-        public string? InputGestureText { get; }
-
-        public object? Icon { get; }
-
-        public RelayCommand Command => new(a => {
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
-                return;
-            }
-            new WindowTemplate(new TemplateDistortionParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        });
+        public override string OwnerGuid => "TemplateAlgorithm";
+        public override string GuidId => "DistortionParam";
+        public override string Header => Properties.Resources.MenuDistortion;
+        public override int Order => 3;
+        public override ITemplate Template => new TemplateDistortionParam();
     }
 
 

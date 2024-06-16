@@ -1,8 +1,5 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Engine.MQTT;
+﻿using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Properties;
-using ColorVision.Engine.Services.Templates;
 using ColorVision.Solution;
 using ColorVision.Themes;
 using ColorVision.UI.Menus;
@@ -18,26 +15,18 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Flow
 {
-
-    public class ExportFlowEngin : IMenuItem
+    public class ExportFlowEngine : MenuItemBase
     {
-        public string? OwnerGuid => "Tool";
+        public override string OwnerGuid => "Tool";
+        public override string GuidId => "FlowEngine";
+        public override string Header => Resources.WorkflowEngine_F;
+        public override int Order => 3;
 
-        public string? GuidId => "FlowEngin";
-
-        public int Order => 3;
-
-        public string? Header => Resources.WorkflowEngine_F;
-        public Visibility Visibility => Visibility.Visible;
-        public string? InputGestureText => null;
-
-        public object? Icon => null;
-        public RelayCommand Command => new(A =>
+        public override void Execute()
         {
             new WindowFlowEngine() { WindowStartupLocation = WindowStartupLocation.CenterScreen }.ShowDialog();
-        });
+        }
     }
-
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml

@@ -23,31 +23,19 @@ using System.Windows.Media;
 
 namespace ColorVision
 {
-    public class WindowLogExport : IHotKey, IMenuItem
+    public class WindowLogExport : MenuItemBase, IHotKey
     {
+        public override string OwnerGuid => "Help";
+        public override string GuidId => "WindowLog";
+        public override int Order => 10005;
+        public override string Header => Properties.Resources.Log;
+        public override string InputGestureText => "Ctrl + F2";
         public HotKeys HotKeys => new(Properties.Resources.Log, new Hotkey(Key.F2, ModifierKeys.Control), Execute);
-
-        public string? OwnerGuid => "Help";
-
-        public string? GuidId => "WindowLog";
-
-        public int Order => 10005;
-
-        public string? Header => ColorVision.Properties.Resources.Log;
-
-        public string? InputGestureText => "Ctrl + F2";
-
-        public object? Icon => null;
-
-        public RelayCommand Command => new(A => Execute());
-
-        private void Execute()
+        public override void Execute()
         {
             new WindowLog() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
-        public Visibility Visibility => Visibility.Visible;
     }
-
 
     /// <summary>
     /// WindowLog.xaml 的交互逻辑

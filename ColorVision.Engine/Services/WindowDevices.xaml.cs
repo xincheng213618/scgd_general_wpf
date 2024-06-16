@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
@@ -13,26 +14,18 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services
 {
-    public class WindowDevicesMenuItem : IMenuItem
+    public class ExportWindowDevices : MenuItemBase
     {
-        public string? OwnerGuid => "Tool";
+        public override string OwnerGuid => "Tool";
+        public override string GuidId => "WindowDevices";
+        public override string Header => Properties.Resources.MenuDevice;
+        public override int Order => 3;
 
-        public string? GuidId { get; set; } = "WindowDevices";
-        public int Order => 3;
-        public string? Header => ColorVision.Engine.Properties.Resources.MenuDevice;
-        public Visibility Visibility => Visibility.Visible;
-        public string? InputGestureText { get; set; }
-
-        public object? Icon { get; set; }
-
-        public RelayCommand Command => new(a =>
+        public override void Execute()
         {
             new WindowDevices() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        });
-
+        }
     }
-
-
 
     /// <summary>
     /// WindowService.xaml 的交互逻辑

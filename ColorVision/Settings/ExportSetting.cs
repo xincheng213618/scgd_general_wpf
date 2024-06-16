@@ -1,35 +1,23 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI.HotKey;
 using ColorVision.Properties;
+using ColorVision.UI.HotKey;
+using ColorVision.UI.Menus;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.UI.Menus;
 
 namespace ColorVision.Settings
 {
-    public class ExportSetting : IHotKey,IMenuItem
+    public class ExportMenuOptions : MenuItemBase, IHotKey
     {
-        public HotKeys HotKeys => new(Properties.Resources.MenuOptions, new Hotkey(Key.I, ModifierKeys.Control), Execute);
-        private void Execute()
+        public override string OwnerGuid => "Tool";
+        public override string GuidId => "MenuOptions";
+        public override string Header => Resources.MenuOptions;
+        public override int Order => 100000;
+        public override object? Icon
         {
-            new SettingWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-        public string? OwnerGuid => "Tool";
-
-        public string? GuidId => "MenuOptions";
-        public Visibility Visibility => Visibility.Visible;
-
-        public int Order => 100000;
-
-        public string? Header => Resources.MenuOptions;
-
-        public string? InputGestureText => "Ctrl + I";
-
-        public object? Icon { 
             get
             {
                 TextBlock text = new()
@@ -42,6 +30,11 @@ namespace ColorVision.Settings
                 return text;
             }
         }
-        public RelayCommand Command => new(A => Execute());
+        public override string? InputGestureText => "Ctrl + I";
+        public HotKeys HotKeys => new(Resources.MenuOptions, new Hotkey(Key.I, ModifierKeys.Control), Execute);
+        public override void Execute()
+        {
+            new SettingWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
     }
 }

@@ -15,6 +15,14 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates.POI
 {
+    public class ExportPOI : ExportTemplateBase
+    {
+        public override string GuidId => "PoiParam";
+        public override string Header => Properties.Resources.MenuPoi;
+        public override int Order => 1;
+        public override ITemplate Template { get; } = new TemplatePOI();
+    }
+
     public class TemplatePOI : ITemplate<PoiParam>, IITemplateLoad
     {
         public TemplatePOI()

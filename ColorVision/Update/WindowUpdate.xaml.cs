@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Input;
 using ColorVision.UI.Menus;
 using ColorVision.Themes;
+using ColorVision.Common.Utilities;
 
 namespace ColorVision.Update
 {

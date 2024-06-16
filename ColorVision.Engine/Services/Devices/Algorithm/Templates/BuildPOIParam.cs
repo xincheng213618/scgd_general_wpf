@@ -4,7 +4,6 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -12,44 +11,15 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates
 {
-    public class ExportTemplateAlgorithm : IMenuItem
+
+    public class ExportBuildPOI : ExportTemplateBase
     {
-        public string? OwnerGuid => "Template";
+        public override string OwnerGuid => "TemplateAlgorithm";
+        public override string GuidId => "BuildPOI";
+        public override string Header => Properties.Resources.MenuBuildPOI;
+        public override int Order => 0;
 
-        public string? GuidId => "TemplateAlgorithm";
-        public int Order => 2;
-        public Visibility Visibility => Visibility.Visible;
-        public string? Header => ColorVision.Engine.Properties.Resources.MenuAlgorithm;
-
-        public string? InputGestureText { get; }
-
-        public object? Icon { get; }
-
-        public RelayCommand Command {get; }
-    }
-
-
-    public class ExportBuildPOI : IMenuItem
-    {
-        public string? OwnerGuid => "TemplateAlgorithm";
-
-        public string? GuidId => "BuildPOI";
-        public int Order => 0;
-        public Visibility Visibility => Visibility.Visible;
-        public string? Header => ColorVision.Engine.Properties.Resources.MenuBuildPOI;
-
-        public string? InputGestureText { get; }
-
-        public object? Icon { get; }
-
-        public RelayCommand Command => new(a => {
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
-                return;
-            }
-            new WindowTemplate(new TemplateBuildPOIParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        }); 
+        public override ITemplate Template => new TemplateBuildPOIParam();
     }
 
     public class TemplateBuildPOIParam : ITemplate<BuildPOIParam>, IITemplateLoad

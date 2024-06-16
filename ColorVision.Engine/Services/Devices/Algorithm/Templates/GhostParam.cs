@@ -10,31 +10,17 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
+using ColorVision.Engine.Templates.POI;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates
 {
-    public class ExportGhostParam : IMenuItem
+    public class ExportGhostParam : ExportTemplateBase
     {
-        public string? OwnerGuid => "TemplateAlgorithm";
-
-        public string? GuidId => "GhostParam";
-        public int Order => 3;
-        public Visibility Visibility => Visibility.Visible;
-
-        public string? Header => ColorVision.Engine.Properties.Resources.MenuGhost;
-
-        public string? InputGestureText { get; }
-
-        public object? Icon { get; }
-
-        public RelayCommand Command => new(a => {
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
-                return;
-            }
-            new WindowTemplate(new TemplateGhostParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        });
+        public override string OwnerGuid => "TemplateAlgorithm";
+        public override string GuidId => "GhostParam";
+        public override string Header => Properties.Resources.MenuGhost;
+        public override int Order => 3;
+        public override ITemplate Template => new TemplateGhostParam();
     }
 
     public class TemplateGhostParam : ITemplate<GhostParam>, IITemplateLoad

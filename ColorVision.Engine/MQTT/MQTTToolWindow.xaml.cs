@@ -14,72 +14,38 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.MQTT
 {
-    public class ExportMQTTLox : IHotKey, IMenuItem
+    public class ExportMQTTTool : MenuItemBase,IHotKey
     {
-        public string? OwnerGuid => "Help";
-
-        public string? GuidId => "MQTTLog";
-
-        public int Order => 1;
-        public Visibility Visibility => Visibility.Visible;
-
-        public string? Header => Resources.MQTTLog;
-
-        public string? InputGestureText { get; }
-
-        public object? Icon { get; }
-
-        public RelayCommand Command => new(A => Execute());
+        public override string OwnerGuid => "Help";
+        public override string GuidId => "MQTTLog";
+        public override string Header => Resources.MQTTLog;
+        public override int Order => 1;
 
         public HotKeys HotKeys => new(Resources.MQTTLog, new Hotkey(Key.Q, ModifierKeys.Control), Execute);
 
-        private void Execute()
+        public override void Execute()
         {
-            new MQTTLog() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new MQTTToolWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
     }
 
-
-    public class ExportServiceLog : IMenuItem
+    public partial class MQTTToolWindow : Window
     {
 
-        public string? OwnerGuid => "Help";
-
-        public string? GuidId => "ServiceLog";
-
-        public int Order => 1;
-        public Visibility Visibility => Visibility.Visible;
-
-        public string? Header => Resources.ServiceLog;
-
-        public string? InputGestureText { get; }
-
-        public object? Icon { get; }
-
-        public RelayCommand Command => new(A => Execute());
-
-        private static void Execute()
-        {
-        }
-    }
-
-
-public partial class MQTTLog : Window
-    {
-
-        MQTTControl MQTTControl { get; set; }
-        public MQTTLog()
+        public static MQTTControl MQTTControl => MQTTControl.GetInstance();
+        public MQTTToolWindow()
         {
             InitializeComponent();
-            MQTTControl = MQTTControl.GetInstance();
+            this.ApplyCaption();
+        }
+        private void Window_Initialized(object sender, EventArgs e)
+        {
+            Title += $"  {MQTTControl.Config.Host}_{MQTTControl.Config.Port}";
             MQTTControl.MQTTMsgChanged += ShowLog;
             TopicListView.ItemsSource = MQTTControl.SubscribeTopic;
             DataContext = MQTTSetting.Instance;
-            Title += $"  {MQTTControl.Config.Host}_{MQTTControl.Config.Port}";
-            this.ApplyCaption();
+            this.Closed += (s,e) => MQTTControl.MQTTMsgChanged -= ShowLog;
         }
-
-
 
 
         private void ShowLog(MQMsg resultData_MQTT)
@@ -132,6 +98,7 @@ public partial class MQTTLog : Window
             }));
         }
 
+
         private void Close_Click(object sender, RoutedEventArgs e)
         {
             MQTTControl.DisconnectAsyncClient();
@@ -159,5 +126,7 @@ public partial class MQTTLog : Window
                 TextBoxSubscribe1.Text = MQTTControl.SubscribeTopic[listView.SelectedIndex];
             }
         }
+
+
     }
 }

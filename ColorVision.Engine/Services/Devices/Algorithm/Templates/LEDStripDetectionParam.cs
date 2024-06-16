@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
@@ -15,28 +16,14 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates
 {
-
-    public class ExportLEDStripDetectionParam : IMenuItem
+    public class ExportLEDStripDetectionParam : ExportTemplateBase
     {
-        public string? OwnerGuid => "TemplateAlgorithm";
-        public Visibility Visibility => Visibility.Visible;
-
-        public string? GuidId => "LEDStripDetection";
-        public int Order => 2;
-        public string? Header => "灯带检测模板设置";
-        public string? InputGestureText { get; }
-        public object? Icon { get; }
-
-        public RelayCommand Command => new(a => {
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
-                return;
-            }
-            new WindowTemplate(new TemplateLEDStripDetectionParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        });
+        public override string OwnerGuid => "TemplateAlgorithm";
+        public override string GuidId => "LEDStripDetection";
+        public override string Header => "灯带检测模板设置";
+        public override int Order => 2;
+        public override ITemplate Template => new TemplateLEDStripDetectionParam();
     }
-
 
     public class TemplateLEDStripDetectionParam : ITemplate<LEDStripDetectionParam>, IITemplateLoad
     {

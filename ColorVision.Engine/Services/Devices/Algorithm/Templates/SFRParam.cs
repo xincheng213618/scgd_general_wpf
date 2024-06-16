@@ -10,32 +10,19 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
+using ColorVision.Engine.Templates.POI;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates
 {
-
-    public class ExportSFRParam : IMenuItem
+    public class ExportSFRParam : ExportTemplateBase
     {
-        public string? OwnerGuid => "TemplateAlgorithm";
-
-        public string? GuidId => "SFRParam";
-        public int Order => 2;
-        public string? Header => ColorVision.Engine.Properties.Resources.MenuSFR;
-        public Visibility Visibility => Visibility.Visible;
-
-        public string? InputGestureText { get; }
-
-        public object? Icon { get; }
-
-        public RelayCommand Command => new(a => {
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), ColorVision.Engine.Properties.Resources.DatabaseConnectionFailed, "ColorVision");
-                return;
-            }
-            new WindowTemplate(new TemplateSFRParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        });
+        public override string OwnerGuid => "TemplateAlgorithm";
+        public override string GuidId => "SFRParam";
+        public override string Header => Properties.Resources.MenuSFR;
+        public override int Order => 2;
+        public override ITemplate Template => new TemplateSFRParam();
     }
+
     public class TemplateSFRParam : ITemplate<SFRParam>,IITemplateLoad
     {
         public TemplateSFRParam()

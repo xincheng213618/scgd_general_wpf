@@ -1,4 +1,6 @@
-﻿using ColorVision.Themes;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Themes;
+using ColorVision.UI.Menus;
 using System;
 using System.Globalization;
 using System.Windows;
@@ -20,6 +22,19 @@ namespace ColorVision.Engine.Services.PhyCameras
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         {
             throw new NotSupportedException("Converting from a string to a memory size is not supported.");
+        }
+    }
+
+    public class ExportPhyCamerManager : MenuItemBase
+    {
+        public override string OwnerGuid => "Tool";
+        public override string GuidId => "PhyCamerManager";
+        public override string Header => Properties.Resources.MenuPhyCameraManager;
+        public override int Order => 0;
+
+        public override void Execute()
+        {
+            new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterScreen }.ShowDialog();
         }
     }
 

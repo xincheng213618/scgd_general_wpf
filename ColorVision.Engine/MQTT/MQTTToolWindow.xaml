@@ -1,4 +1,4 @@
-﻿<Window x:Class="ColorVision.Engine.MQTT.MQTTLog"
+﻿<Window x:Class="ColorVision.Engine.MQTT.MQTTToolWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
         d:DataContext="{d:DesignInstance local:MQTTSetting}"
-        Title="{x:Static properties:Resources.MQTTLog}" Height="550" Width="800" Background="{StaticResource GlobalBackground}" >
+        Title="{x:Static properties:Resources.MQTTLog}" Height="550" Width="800" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>

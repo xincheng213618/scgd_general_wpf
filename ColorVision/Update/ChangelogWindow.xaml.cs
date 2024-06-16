@@ -1,4 +1,7 @@
-﻿using ColorVision.Themes;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Properties;
+using ColorVision.Themes;
+using ColorVision.UI.Menus;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
@@ -8,6 +11,18 @@ using System.Windows;
 
 namespace ColorVision.Update
 {
+    public class ExportMenuChangeLog : MenuItemBase
+    {
+        public override string OwnerGuid => "Help";
+        public override string GuidId => "ChangeLog";
+        public override string Header => Resources.ChangeLog;
+        public override int Order => 10001;
+
+        public override void Execute()
+        {
+            new ChangelogWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+    }
 
     /// <summary>
     /// ChangelogWindow.xaml 的交互逻辑

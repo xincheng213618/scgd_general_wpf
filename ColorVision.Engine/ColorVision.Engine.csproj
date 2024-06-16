@@ -199,7 +199,7 @@
     <Page Update="MQTT\MQTTConnect.xaml">
       <SubType>Designer</SubType>
     </Page>
-    <Page Update="MQTT\MQTTLog.xaml">
+    <Page Update="MQTT\MQTTToolWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Update="Services\PhyCameras\CreateWindow.xaml">

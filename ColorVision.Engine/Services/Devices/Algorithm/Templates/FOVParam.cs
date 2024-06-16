@@ -10,30 +10,17 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
+using ColorVision.Engine.Templates.POI;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates
 {
-    public class ExportFOV : IMenuItem
+    public class ExportFOV : ExportTemplateBase
     {
-        public string? OwnerGuid => "TemplateAlgorithm";
-
-        public string? GuidId => "FOV";
-        public int Order => 5;
-        public Visibility Visibility => Visibility.Visible;
-        public string? Header => ColorVision.Engine.Properties.Resources.MenuFOV;
-
-        public string? InputGestureText { get; }
-
-        public object? Icon { get; }
-
-        public RelayCommand Command => new(a => {
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
-                return;
-            }
-            new WindowTemplate(new TemplateFOVParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        });
+        public override string OwnerGuid => "TemplateAlgorithm";
+        public override string GuidId => "FOV";
+        public override string Header => Properties.Resources.MenuFocusPoints;
+        public override int Order => 5;
+        public override ITemplate Template => new TemplateFocusPointsParam();
     }
 
     public class TemplateFOVParam : ITemplate<FOVParam>, IITemplateLoad
