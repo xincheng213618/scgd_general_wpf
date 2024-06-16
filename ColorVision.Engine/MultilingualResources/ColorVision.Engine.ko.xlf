@@ -569,11 +569,11 @@
         </trans-unit>
         <trans-unit id="MysqlConnection" translate="yes" xml:space="preserve">
           <source>Mysql连接</source>
-          <target state="new">MySQL 연결</target>
+          <target state="new">MySql 연결</target>
         </trans-unit>
         <trans-unit id="MysqlConnectionConfiguration" translate="yes" xml:space="preserve">
           <source>Mysql连接配置</source>
-          <target state="new">MySQL 연결 구성</target>
+          <target state="new">MySql 연결 구성</target>
         </trans-unit>
         <trans-unit id="Name" translate="yes" xml:space="preserve">
           <source>名称</source>

@@ -349,10 +349,10 @@
     <value>Имя</value>
   </data>
   <data name="MysqlConnectionConfiguration" xml:space="preserve">
-    <value>Конфигурация соединения MySQL</value>
+    <value>Конфигурация соединения MySql</value>
   </data>
   <data name="MysqlConnection" xml:space="preserve">
-    <value>MySQL-соединение</value>
+    <value>MySql-соединение</value>
   </data>
   <data name="MyLicense_R" xml:space="preserve">
     <value>Моя лицензия(R)</value>

@@ -51,7 +51,7 @@ namespace ColorVision.UserSpace.Dao
             catch (MySqlException ex)
             {
                 // Handle exception
-                Console.WriteLine("MySQL error: " + ex.Message);
+                Console.WriteLine("MySql error: " + ex.Message);
                 return false;
             }
         }

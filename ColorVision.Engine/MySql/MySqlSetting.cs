@@ -69,7 +69,7 @@ namespace ColorVision.Engine.MySql
 
 
         /// <summary>
-        /// MySQL配置
+        /// MySql配置
         /// </summary>
         public MySqlConfig MySqlConfig { get; set; } = new MySqlConfig();
         public ObservableCollection<MySqlConfig> MySqlConfigs { get; set; } = new ObservableCollection<MySqlConfig>();

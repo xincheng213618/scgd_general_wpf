@@ -349,10 +349,10 @@
     <value>이름</value>
   </data>
   <data name="MysqlConnectionConfiguration" xml:space="preserve">
-    <value>MySQL 연결 구성</value>
+    <value>MySql 연결 구성</value>
   </data>
   <data name="MysqlConnection" xml:space="preserve">
-    <value>MySQL 연결</value>
+    <value>MySql 연결</value>
   </data>
   <data name="MyLicense_R" xml:space="preserve">
     <value>내 라이센스(R)</value>

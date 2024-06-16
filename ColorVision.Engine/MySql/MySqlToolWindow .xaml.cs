@@ -8,27 +8,27 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.MySql
 {
-    public class ExportMySQLTool : MenuItemBase
+    public class ExportMySqlTool : MenuItemBase
     {
         public override string OwnerGuid => "Help";
-        public override string GuidId => "MySQLTool";
-        public override string Header => "MySQLTool";
+        public override string GuidId => "MySqlTool";
+        public override string Header => "MySqlTool";
         public override int Order => 2;
 
         public override void Execute()
         {
-            new MySQLToolWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
+            new MySqlToolWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();
         }
     }
 
 
     /// <summary>
-    /// MySQLToolWindow.xaml 的交互逻辑
+    /// MySqlToolWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class MySQLToolWindow : Window
+    public partial class MySqlToolWindow : Window
     {
         public static MySqlControl MySqlControl => MySqlControl.GetInstance();
-        public MySQLToolWindow()
+        public MySqlToolWindow()
         {
             InitializeComponent();
             this.ApplyCaption();
