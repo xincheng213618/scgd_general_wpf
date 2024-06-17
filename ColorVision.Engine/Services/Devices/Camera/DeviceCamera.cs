@@ -11,6 +11,7 @@ using log4net;
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.UserSpace;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -40,10 +41,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             EditCommand = new RelayCommand(a =>
             {
-                EditCamera window = new(this);
-                window.Owner = Application.Current.GetActiveWindow();
-                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ShowDialog();
+                PermissionChecker.ExecuteWithPermissionCheck(EditCameraAction, UserConfig.Instance.PerMissionMode);
             });
 
             OpenCalibrationParamsCommand = new RelayCommand(a =>
@@ -61,7 +59,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
             OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger());
         }
 
-
+        [RequiresPermission(PerMissionMode.Administrator)]
+        private void EditCameraAction()
+        {
+            EditCamera window = new(this);
+            window.Owner = Application.Current.GetActiveWindow();
+            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            window.ShowDialog();
+        }
 
 
         public RelayCommand OpenPhyCameraMangerCommand { get; set; }

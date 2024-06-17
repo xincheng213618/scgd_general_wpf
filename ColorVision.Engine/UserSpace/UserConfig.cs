@@ -1,9 +1,49 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
+using System;
 using System.ComponentModel;
+using System.Reflection;
+using System.Windows;
 
 namespace ColorVision.UserSpace
 {
+    [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
+    public class RequiresPermissionAttribute : Attribute
+    {
+        public PerMissionMode RequiredPermission { get; }
+
+        public RequiresPermissionAttribute(PerMissionMode requiredPermission)
+        {
+            RequiredPermission = requiredPermission;
+        }
+    }
+    public static class PermissionChecker
+    {
+        public static void ExecuteWithPermissionCheck(Action action, PerMissionMode currentPermission)
+        {
+            var methodInfo = action.Method;
+            var attribute = methodInfo.GetCustomAttribute<RequiresPermissionAttribute>();
+
+            if (attribute != null)
+            {
+                if (currentPermission == attribute.RequiredPermission)
+                {
+                    action();
+                }
+                else
+                {
+                    MessageBox.Show("You do not have the required permission to execute this action.");
+                }
+            }
+            else
+            {
+                action();
+            }
+        }
+    }
+
+
+
     public class UserConfig : ViewModelBase, IConfig
     {
         public static UserConfig Instance => ConfigHandler.GetInstance().GetRequiredService<UserConfig>();
