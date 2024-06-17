@@ -18,6 +18,7 @@ namespace ColorVision.UI.Authorization
             var attribute = action.Method.GetCustomAttribute<RequiresPermissionAttribute>();
             return attribute == null || Authorization.Instance.PermissionMode <= attribute.RequiredPermission;
         }
+        public static bool Check(PermissionMode permissionMode) =>  Authorization.Instance.PermissionMode <= permissionMode;
 
         public static void ExecuteWithPermissionCheck(Action action, PermissionMode currentPermission)
         {

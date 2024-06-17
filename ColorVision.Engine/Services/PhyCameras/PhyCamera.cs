@@ -14,6 +14,7 @@ using ColorVision.Engine.Templates;
 using ColorVision.Handler;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
+using ColorVision.UI.Authorization;
 using ColorVision.UI.Extension;
 using ColorVision.Util.Controls;
 using ColorVision.Util.Interfaces;
@@ -67,14 +68,14 @@ namespace ColorVision.Engine.Services.PhyCameras
             this.SetIconResource("DrawingImageCamera");
 
             Config = BaseResourceObjectExtensions.TryDeserializeConfig<ConfigPhyCamera>(SysResourceModel.Value);
-            DeleteCommand = new RelayCommand(a => Delete());
+            DeleteCommand = new RelayCommand(a => Delete(), a => AccessControl.Check(PermissionMode.Administrator));
             EditCommand = new RelayCommand(a =>
             {
                 EditPhyCamera window = new(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
-            });
+            },a => AccessControl.Check(PermissionMode.Administrator));
             ContentInit();
 
             ResourceManagerCommand = new RelayCommand(a =>
@@ -88,7 +89,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             CalibrationParam.LoadResourceParams(CalibrationParams, SysResourceModel.Id, ModMasterType.Calibration);
 
-            ResetCommand = new RelayCommand(a => Reset(), r => true);
+            ResetCommand = new RelayCommand(a => Reset(), a => AccessControl.Check(PermissionMode.Administrator));
 
             CalibrationEditCommand = new RelayCommand(a =>
             {

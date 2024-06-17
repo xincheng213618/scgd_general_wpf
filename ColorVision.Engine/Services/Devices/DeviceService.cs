@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
+using ColorVision.UI.Authorization;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Views;
 using ColorVision.Util.Interfaces;
@@ -135,8 +136,8 @@ namespace ColorVision.Engine.Services.Devices
                 MessageBoxResult result = MessageBox.Show(WindowHelpers.GetActiveWindow(), "确定要重置吗？", "ColorVision", MessageBoxButton.OKCancel);
                 if (result == MessageBoxResult.OK)
                     Config = new T();
-            });
-            DeleteCommand = new RelayCommand(a => Delete());
+            }, a => AccessControl.Check(PermissionMode.Administrator));
+            DeleteCommand = new RelayCommand(a => Delete(), a => AccessControl.Check(PermissionMode.Administrator));
             EditCommand = new RelayCommand(a => { });
 
             ResourceManagerCommand = new RelayCommand(a => 

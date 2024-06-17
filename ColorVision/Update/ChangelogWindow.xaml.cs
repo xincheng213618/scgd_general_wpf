@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Properties;
 using ColorVision.Themes;
+using ColorVision.UI.Authorization;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.ObjectModel;
@@ -18,6 +19,7 @@ namespace ColorVision.Update
         public override string Header => Resources.ChangeLog;
         public override int Order => 10001;
 
+        [RequiresPermissionAttribute(PermissionMode.Administrator)]
         public override void Execute()
         {
             new ChangelogWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
