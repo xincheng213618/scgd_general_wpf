@@ -10,16 +10,37 @@ namespace ColorVision.UserSpace
     [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
     public class RequiresPermissionAttribute : Attribute
     {
-        public PerMissionMode RequiredPermission { get; }
+        public PermissionMode RequiredPermission { get; }
 
-        public RequiresPermissionAttribute(PerMissionMode requiredPermission)
+        public RequiresPermissionAttribute(PermissionMode requiredPermission)
         {
             RequiredPermission = requiredPermission;
         }
     }
     public static class PermissionChecker
     {
-        public static void ExecuteWithPermissionCheck(Action action, PerMissionMode currentPermission)
+        public static bool Check(Action action)
+        {
+            var methodInfo = action.Method;
+            var attribute = methodInfo.GetCustomAttribute<RequiresPermissionAttribute>();
+            if (attribute != null)   
+            {
+                if (UserConfig.Instance.PerMissionMode == attribute.RequiredPermission)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        public static void ExecuteWithPermissionCheck(Action action, PermissionMode currentPermission)
         {
             var methodInfo = action.Method;
             var attribute = methodInfo.GetCustomAttribute<RequiresPermissionAttribute>();
@@ -59,8 +80,8 @@ namespace ColorVision.UserSpace
         private string _UserPwd = string.Empty;
 
 
-        public PerMissionMode PerMissionMode { get => _PerMissionMode; set { _PerMissionMode = value; NotifyPropertyChanged(); } }
-        private PerMissionMode _PerMissionMode;
+        public PermissionMode PerMissionMode { get => _PerMissionMode; set { _PerMissionMode = value; NotifyPropertyChanged(); } }
+        private PermissionMode _PerMissionMode;
 
         public string UserName { get => _UserName; set { _UserName = value; NotifyPropertyChanged(); } }
         private string _UserName = string.Empty;
@@ -107,10 +128,12 @@ namespace ColorVision.UserSpace
         Female,
     }
 
-    public enum PerMissionMode  
+    public enum PermissionMode
     {
         Administrator,
-        User
+        PowerUser,
+        User,
+        Guest
     }
 }
 

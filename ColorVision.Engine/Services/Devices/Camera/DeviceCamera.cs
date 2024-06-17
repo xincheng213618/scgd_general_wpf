@@ -43,6 +43,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 PermissionChecker.ExecuteWithPermissionCheck(EditCameraAction, UserConfig.Instance.PerMissionMode);
             });
+            EditCommand = new RelayCommand(a => EditCameraAction() ,b=> PermissionChecker.Check(EditCameraAction));
 
             OpenCalibrationParamsCommand = new RelayCommand(a =>
             {
@@ -59,7 +60,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger());
         }
 
-        [RequiresPermission(PerMissionMode.Administrator)]
+        [RequiresPermission(PermissionMode.Administrator)]
         private void EditCameraAction()
         {
             EditCamera window = new(this);
