@@ -4,6 +4,7 @@ using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
+using ColorVision.UI.Authorization;
 using ColorVision.UI.Menus;
 using ColorVision.UserSpace;
 using System;
@@ -21,6 +22,7 @@ namespace ColorVision.Engine.Services
         public override string Header => Properties.Resources.MenuDevice;
         public override int Order => 3;
 
+        [RequiresPermission(PermissionMode.Guest)]
         public override void Execute()
         {
             new WindowDevices() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();

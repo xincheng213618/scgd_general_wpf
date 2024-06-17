@@ -12,6 +12,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.UserSpace;
+using ColorVision.UI.Authorization;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -39,17 +40,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             View.View.Title = $"相机视图 - {Config.Code}";
             this.SetIconResource("DrawingImageCamera", View.View);
 
-            EditCommand = new RelayCommand(a =>
-            {
-                PermissionChecker.ExecuteWithPermissionCheck(EditCameraAction, UserConfig.Instance.PerMissionMode);
-            });
-            EditCommand = new RelayCommand(a => EditCameraAction() ,b=> PermissionChecker.Check(EditCameraAction));
+            EditCommand = new RelayCommand(a => EditCameraAction() ,b => AccessControl.Check(EditCameraAction));
 
             OpenCalibrationParamsCommand = new RelayCommand(a =>
             {
-
             });
-
             FetchLatestTemperatureCommand =  new RelayCommand(a => FetchLatestTemperature(a));
 
 

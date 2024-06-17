@@ -1,70 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
-using System;
+using ColorVision.UI.Authorization;
 using System.ComponentModel;
-using System.Reflection;
-using System.Windows;
 
 namespace ColorVision.UserSpace
 {
-    [AttributeUsage(AttributeTargets.Method, Inherited = true, AllowMultiple = false)]
-    public class RequiresPermissionAttribute : Attribute
-    {
-        public PermissionMode RequiredPermission { get; }
-
-        public RequiresPermissionAttribute(PermissionMode requiredPermission)
-        {
-            RequiredPermission = requiredPermission;
-        }
-    }
-    public static class PermissionChecker
-    {
-        public static bool Check(Action action)
-        {
-            var methodInfo = action.Method;
-            var attribute = methodInfo.GetCustomAttribute<RequiresPermissionAttribute>();
-            if (attribute != null)   
-            {
-                if (UserConfig.Instance.PerMissionMode == attribute.RequiredPermission)
-                {
-                    return true;
-                }
-                else
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                return true;
-            }
-        }
-
-        public static void ExecuteWithPermissionCheck(Action action, PermissionMode currentPermission)
-        {
-            var methodInfo = action.Method;
-            var attribute = methodInfo.GetCustomAttribute<RequiresPermissionAttribute>();
-
-            if (attribute != null)
-            {
-                if (currentPermission == attribute.RequiredPermission)
-                {
-                    action();
-                }
-                else
-                {
-                    MessageBox.Show("You do not have the required permission to execute this action.");
-                }
-            }
-            else
-            {
-                action();
-            }
-        }
-    }
-
-
-
     public class UserConfig : ViewModelBase, IConfig
     {
         public static UserConfig Instance => ConfigHandler.GetInstance().GetRequiredService<UserConfig>();
@@ -78,7 +18,6 @@ namespace ColorVision.UserSpace
         /// </summary>
         public string UserPwd { get => _UserPwd; set { _UserPwd = value; NotifyPropertyChanged(); } }
         private string _UserPwd = string.Empty;
-
 
         public PermissionMode PerMissionMode { get => _PerMissionMode; set { _PerMissionMode = value; NotifyPropertyChanged(); } }
         private PermissionMode _PerMissionMode;
@@ -128,12 +67,6 @@ namespace ColorVision.UserSpace
         Female,
     }
 
-    public enum PermissionMode
-    {
-        Administrator,
-        PowerUser,
-        User,
-        Guest
-    }
+
 }
 

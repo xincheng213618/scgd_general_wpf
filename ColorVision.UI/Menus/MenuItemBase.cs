@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.UI.Authorization;
 using ColorVision.UI.Properties;
 using System.Windows;
 
@@ -15,7 +16,7 @@ namespace ColorVision.UI.Menus
         public virtual Visibility Visibility => Visibility.Visible;
         public virtual string? InputGestureText { get; }
         public virtual object? Icon { get; }
-        public virtual RelayCommand Command => new(A => Execute());
+        public virtual RelayCommand Command => new(A => Execute(), b => AccessControl.Check(Execute));
         public virtual void Execute()
         {
         }

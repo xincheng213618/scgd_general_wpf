@@ -4,7 +4,9 @@ using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
+using ColorVision.UI.Authorization;
 using ColorVision.UI.Menus;
+using ColorVision.UserSpace;
 using System;
 using System.Windows;
 
@@ -17,6 +19,7 @@ namespace ColorVision.Engine.Services
         public override string Header => Properties.Resources.MenuService;
         public override int Order => 3;
 
+        [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
         {
             new WindowService() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
