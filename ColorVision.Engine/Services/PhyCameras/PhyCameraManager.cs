@@ -167,7 +167,11 @@ namespace ColorVision.Engine.Services.PhyCameras
             else
             {
                 sysDictionaryModel.Value = JsonConvert.SerializeObject(CreateDefaultConfig());
-                SysResourceDao.Instance.Save(sysDictionaryModel);
+                int ret= SysResourceDao.Instance.Save(sysDictionaryModel);
+                if (ret != -1 && sysDictionaryModel.Code != null)
+                {
+                    RCFileUpload.GetInstance().CreatePhysicalCameraFloder(sysDictionaryModel.Code);
+                }
             }
         }
 
