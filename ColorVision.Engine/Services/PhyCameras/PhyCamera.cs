@@ -484,42 +484,42 @@ namespace ColorVision.Engine.Services.PhyCameras
                                 switch (item1.CalibrationType)
                                 {
                                     case CalibrationType.DarkNoise:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.DarkNoise);
+                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.DarkNoise);
                                         break;
                                     case CalibrationType.DefectWPoint:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
+                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
                                         break;
                                     case CalibrationType.DefectBPoint:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
+                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
                                         break;
                                     case CalibrationType.DefectPoint:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
+                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.DefectPoint);
                                         break;
                                     case CalibrationType.DSNU:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.DSNU);
+                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.DSNU);
                                         break;
                                     case CalibrationType.Uniformity:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.Uniformity);
+                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.Uniformity);
                                         break;
                                     case CalibrationType.Luminance:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.Luminance);
+                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.Luminance);
                                         break;
                                     case CalibrationType.LumOneColor:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.LumOneColor);
+                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.LumOneColor);
                                         break;
                                     case CalibrationType.LumFourColor:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.LumFourColor);
+                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.LumFourColor);
                                         break;
                                     case CalibrationType.LumMultiColor:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.LumMultiColor);
+                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.LumMultiColor);
                                         break;
                                     case CalibrationType.LumColor:
                                         break;
                                     case CalibrationType.Distortion:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.Distortion);
+                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.Distortion);
                                         break;
                                     case CalibrationType.ColorShift:
-                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(Name, item1.Title, FilePath, (int)ServiceTypes.ColorShift);
+                                        msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(SysResourceModel.Code ?? Name, item1.Title, FilePath, (int)ServiceTypes.ColorShift);
                                         break;
                                     case CalibrationType.Empty_Num:
                                         break;
