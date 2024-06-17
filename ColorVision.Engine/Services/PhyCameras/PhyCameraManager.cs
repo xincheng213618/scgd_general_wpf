@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using cvColorVision;
 using Newtonsoft.Json;
@@ -157,6 +158,10 @@ namespace ColorVision.Engine.Services.PhyCameras
                 };
 
                 int ret = SysResourceDao.Instance.Save(sysDictionaryModel);
+                if(ret != -1 && sysDictionaryModel.Code !=null)
+                {
+                    RCFileUpload.GetInstance().CreatePhysicalCameraFloder(sysDictionaryModel.Code);
+                }
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{licenseModel.MacAddress} {(ret == -1 ? "添加物理相机失败" : "添加物理相机成功")}", "ColorVision");
             }
             else

@@ -65,6 +65,8 @@
     <!-- Context Menu -->
     <SolidColorBrush x:Key="toplevelmenuheaderhoverborder" Color="Transparent" />
     <SolidColorBrush x:Key="toplevelmenuheaderhover" Color="#FADCE4"/>
+
+
     <!-- 次要背景色 -->
     <SolidColorBrush x:Key="menuitemglyphpanelborderbrush" Color="#FADCE4"/>
     <!-- 次要背景色 -->
@@ -74,7 +76,10 @@
     <!-- 浅粉色 -->
     <SolidColorBrush x:Key="MenuItemDisabledGlyphPanelBackground" Color="#FADCE4"/>
     <!-- 次要背景色 -->
-
+    <SolidColorBrush x:Key="SubMenuBrushKey"   Color="#EAB1C7"/>
+    <SolidColorBrush x:Key="SubMenuBorderBrushKey"   Color="Transparent"/>
+    
+    
     <SolidColorBrush x:Key="MenuItemDisabledGlyphFill" Color="#E91E63"/>
     <!-- 深粉色 -->
     <SolidColorBrush x:Key="environmentcommandbar"  Color="#F8BBD0"/>

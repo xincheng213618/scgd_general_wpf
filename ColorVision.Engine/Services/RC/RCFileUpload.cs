@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Services.RC
         private static readonly object _locker = new();
         public static RCFileUpload GetInstance() { lock (_locker) { return _instance ??= new RCFileUpload(); } }
 
-        public MsgRecord LoadPhysicalCamera(string cameraID)
+        public MsgRecord CreatePhysicalCameraFloder(string cameraID)
         {
             MsgSend msg = new()
             {

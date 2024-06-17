@@ -333,7 +333,6 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public void UploadCalibration(object sender)
         {
-            RCFileUpload.GetInstance().LoadPhysicalCamera(Config.CameraID);
             UploadList.Clear();
             UploadWindow uploadwindow = new("校正文件(*.zip, *.cvcal)|*.zip;*.cvcal") { WindowStartupLocation = WindowStartupLocation.CenterScreen };
             uploadwindow.OnUpload += (s, e) =>
@@ -669,7 +668,6 @@ namespace ColorVision.Engine.Services.PhyCameras
         {
             base.Save();
             SaveConfig();
-            RCFileUpload.GetInstance().LoadPhysicalCamera(Config.CameraID);
         }
 
     }
