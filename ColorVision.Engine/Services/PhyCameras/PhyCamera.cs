@@ -14,7 +14,7 @@ using ColorVision.Engine.Templates;
 using ColorVision.Handler;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using ColorVision.UI.Authorization;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
 using ColorVision.Util.Controls;
 using ColorVision.Util.Interfaces;

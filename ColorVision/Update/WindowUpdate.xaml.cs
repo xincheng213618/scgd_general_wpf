@@ -6,7 +6,7 @@ using System.Windows.Input;
 using ColorVision.UI.Menus;
 using ColorVision.Themes;
 using ColorVision.Common.Utilities;
-using ColorVision.UI.Authorization;
+using ColorVision.UI.Authorizations;
 
 namespace ColorVision.Update
 {

@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Properties;
 using ColorVision.Themes;
-using ColorVision.UI.Authorization;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.ObjectModel;

@@ -4,7 +4,7 @@ using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
-using ColorVision.UI.Authorization;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using ColorVision.UserSpace;
 using System;

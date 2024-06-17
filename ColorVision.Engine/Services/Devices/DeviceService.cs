@@ -7,7 +7,7 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
-using ColorVision.UI.Authorization;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
 using ColorVision.UI.Views;
 using ColorVision.Util.Interfaces;

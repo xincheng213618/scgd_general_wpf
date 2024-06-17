@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
-using ColorVision.UI.Authorization;
+using ColorVision.UI.Authorizations;
 using System.ComponentModel;
 
 namespace ColorVision.UserSpace

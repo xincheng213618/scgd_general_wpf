@@ -1,5 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Authorization;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Properties;
 using System.Windows;
 

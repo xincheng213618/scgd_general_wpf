@@ -2,7 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI;
-using ColorVision.UI.Authorization;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System.Windows;
 

@@ -12,7 +12,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using ColorVision.UserSpace;
-using ColorVision.UI.Authorization;
+using ColorVision.UI.Authorizations;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {

@@ -2,13 +2,21 @@
 using System.Reflection;
 using System.Windows;
 
-namespace ColorVision.UI.Authorization
+namespace ColorVision.UI.Authorizations
 {
     public class Authorization : IConfig
     {
         public static Authorization Instance => ConfigHandler.GetInstance().GetRequiredService<Authorization>();
 
-        public PermissionMode PermissionMode { get; set; } = PermissionMode.Administrator;
+        public PermissionMode PermissionMode { get => _PermissionMode; set { _PermissionMode = value; OnPermissionModeChanged();  } }
+        private PermissionMode _PermissionMode = PermissionMode.Administrator;
+
+        public event EventHandler PermissionModeChanged;
+
+        protected virtual void OnPermissionModeChanged()
+        {
+            PermissionModeChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     public static class AccessControl

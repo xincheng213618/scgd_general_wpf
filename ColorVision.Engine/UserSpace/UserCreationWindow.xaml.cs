@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Engine.Services;
 using ColorVision.Themes;
-using ColorVision.UI.Authorization;
+using ColorVision.UI.Authorizations;
 using cvColorVision;
 using System;
 using System.Collections.Generic;

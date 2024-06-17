@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.UI.Menus
@@ -61,6 +62,14 @@ namespace ColorVision.UI.Menus
                             Tag = iMenuItem,
                             Visibility = iMenuItem.Visibility,
                         };
+                        if (iMenuItem.Command != null)
+                        {
+                            menuItem.Visibility = iMenuItem.Visibility == Visibility.Visible ? iMenuItem.Command.CanExecute(null) ? Visibility.Visible : Visibility.Collapsed : Visibility.Collapsed;
+                            Authorizations.Authorization.Instance.PermissionModeChanged += (s, e) =>
+                            {
+                                menuItem.Visibility = iMenuItem.Visibility == Visibility.Visible ? iMenuItem.Command.CanExecute(null) ? Visibility.Visible : Visibility.Collapsed : Visibility.Collapsed;
+                            };
+                        }
                     }
 
                     CreateMenu(menuItem, GuidId);

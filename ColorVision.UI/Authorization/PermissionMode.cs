@@ -1,4 +1,4 @@
-﻿namespace ColorVision.UI.Authorization
+﻿namespace ColorVision.UI.Authorizations
 {
     public enum PermissionMode
     {
