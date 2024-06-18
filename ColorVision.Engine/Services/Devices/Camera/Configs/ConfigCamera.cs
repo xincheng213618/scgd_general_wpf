@@ -91,9 +91,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
 
         public MotorConfig MotorConfig { get; set; } = new MotorConfig();
           
-        public ExpTimeCfg ExpTimeCfg { get; set; } = new ExpTimeCfg();
+        public PhyExpTimeCfg ExpTimeCfg { get; set; } = new PhyExpTimeCfg();
 
-        public CameraCfg CameraCfg { get; set; } = new CameraCfg();
+        public PhyCameraCfg CameraCfg { get; set; } = new PhyCameraCfg();
 
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 

@@ -13,7 +13,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         SYSTEM = 4,
     };
 
-    public class CameraCfg : ViewModelBase
+    public class PhyCameraCfg : ViewModelBase
     {
         /// <summary>
         /// 不参与计算的区域，左

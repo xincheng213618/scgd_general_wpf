@@ -3,7 +3,7 @@ using ColorVision.Common.MVVM;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Configs
 {
-    public class ExpTimeCfg : ViewModelBase
+    public class PhyExpTimeCfg : ViewModelBase
     {
 
         [JsonProperty("autoExpFlag")]
