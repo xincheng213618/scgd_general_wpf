@@ -207,7 +207,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 WindowTemplate windowTemplate;
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
-                    MessageBox.Show(ColorVision.Engine.Properties.Resources.DatabaseConnectionFailed, "ColorVision");
+                    MessageBox.Show(Properties.Resources.DatabaseConnectionFailed, "ColorVision");
                     return;
                 }
                 switch (control.Tag?.ToString() ?? string.Empty)

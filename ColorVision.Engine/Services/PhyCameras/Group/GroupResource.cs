@@ -101,8 +101,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             ReNameCommand = new RelayCommand(a => IsEditMode = true);
             Config = BaseResourceObjectExtensions.TryDeserializeConfig<ConfigGroup>(SysResourceModel.Value);
             ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Engine.Properties.Resources.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
-            ContextMenu.Items.Add( new MenuItem() { Header = ColorVision.Engine.Properties.Resources.Delete, Command = ApplicationCommands.Delete });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
+            ContextMenu.Items.Add( new MenuItem() { Header = Properties.Resources.Delete, Command = ApplicationCommands.Delete });
             ContextMenu.CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, (s, e) => Delete(), (s, e) => e.CanExecute = true));
         }
 

@@ -17,7 +17,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
         public string? GuidId => "Sensor";
         public int Order => 21;
-        public string? Header => ColorVision.Engine.Properties.Resources.MenuSensor;
+        public string? Header => Properties.Resources.MenuSensor;
 
         public string? InputGestureText { get; }
 

@@ -18,8 +18,8 @@ namespace ColorVision.Engine.MySql
             return new List<ConfigSettingMetadata> {
                             new ConfigSettingMetadata
                             {
-                                Name = ColorVision.Engine.Properties.Resources.EnableDatabase,
-                                Description = ColorVision.Engine.Properties.Resources.EnableDatabase,
+                                Name = Properties.Resources.EnableDatabase,
+                                Description = Properties.Resources.EnableDatabase,
                                 Order =1,
                                 Type = ConfigSettingType.Bool,
                                 BindingName = nameof(MySqlSetting.IsUseMySql),
@@ -38,8 +38,8 @@ namespace ColorVision.Engine.MySql
             {
                 new StatusBarIconMetadata()
                 {
-                    Name = ColorVision.Engine.Properties.Resources.EnableDatabase,
-                    Description = ColorVision.Engine.Properties.Resources.EnableDatabase,
+                    Name = Properties.Resources.EnableDatabase,
+                    Description = Properties.Resources.EnableDatabase,
                     Order =0,
                     BindingName = "MySqlControl.IsConnect",
                     VisibilityBindingName = nameof(MySqlSetting.IsUseMySql),

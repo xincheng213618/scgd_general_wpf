@@ -20,7 +20,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
         public string? GuidId => "SMUParam";
         public int Order => 12;
-        public string? Header => ColorVision.Engine.Properties.Resources.MenuSUM;
+        public string? Header => Properties.Resources.MenuSUM;
 
         public string? InputGestureText => null;
 

@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Services.Flow
 
         public string? GuidId => "FlowParam";
         public int Order => 0;
-        public string? Header => Engine.Properties.Resources.MenuFlow;
+        public string? Header => Properties.Resources.MenuFlow;
 
         public string? InputGestureText { get; }
         public Visibility Visibility => Visibility.Visible;
@@ -111,7 +111,7 @@ namespace ColorVision.Engine.Services.Flow
                 sfd.FileName = Tool.SanitizeFileName(TemplateParams[index].Key);
                 if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                 byte[] fileBytes = Convert.FromBase64String(TemplateParams[index].Value.DataBase64);
-                System.IO.File.WriteAllBytes(sfd.FileName, fileBytes);
+                File.WriteAllBytes(sfd.FileName, fileBytes);
             }
             else
             {
@@ -133,7 +133,7 @@ namespace ColorVision.Engine.Services.Flow
                     {
                         string filePath = Path.Combine(tempDirectory, $"{Tool.SanitizeFileName(kvp.Key)}.stn");
                         byte[] fileBytes = Convert.FromBase64String(TemplateParams[index].Value.DataBase64);
-                        System.IO.File.WriteAllBytes(filePath, fileBytes);
+                        File.WriteAllBytes(filePath, fileBytes);
                     }
 
                     // 创建压缩文件
@@ -170,12 +170,12 @@ namespace ColorVision.Engine.Services.Flow
             ofd.Title = "导入流程";
             ofd.RestoreDirectory = true;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
-            if (TemplateParams.Any(a => a.Key.Equals(System.IO.Path.GetFileNameWithoutExtension(ofd.FileName), StringComparison.OrdinalIgnoreCase)))
+            if (TemplateParams.Any(a => a.Key.Equals(Path.GetFileNameWithoutExtension(ofd.FileName), StringComparison.OrdinalIgnoreCase)))
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "流程名称已存在", "ColorVision");
                 return false;
             }
-            byte[] fileBytes = System.IO.File.ReadAllBytes(ofd.FileName);
+            byte[] fileBytes = File.ReadAllBytes(ofd.FileName);
             string base64 = Convert.ToBase64String(fileBytes);
             if (FlowParam.AddFlowParam(Path.GetFileNameWithoutExtension(ofd.FileName)) is FlowParam param)
             {

@@ -304,7 +304,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                             default:
                                 break;
                         }
-                        if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
+                        if (string.IsNullOrEmpty(localName) || !File.Exists(localName))
                         {
                             ImageView.FilePath = localName;
                             MsgRecord msgRecord = DeviceService.DownloadFile(data.FilePath, fileExt);
@@ -411,22 +411,22 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                     if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
                     {
                         string Name = item.ColumnName.ToString();
-                        if (Name == ColorVision.Engine.Properties.Resources.SerialNumber1)
+                        if (Name == Properties.Resources.SerialNumber1)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCameras.SortByID(item.IsSortD);
                         }
-                        else if (Name == ColorVision.Engine.Properties.Resources.CreateTime)
+                        else if (Name == Properties.Resources.CreateTime)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCameras.SortByCreateTime(item.IsSortD);
                         }
-                        else if (Name == ColorVision.Engine.Properties.Resources.BatchNumber)
+                        else if (Name == Properties.Resources.BatchNumber)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCameras.SortByBatch(item.IsSortD);
                         }
-                        else if (Name == ColorVision.Engine.Properties.Resources.File)
+                        else if (Name == Properties.Resources.File)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCameras.SortByFilePath(item.IsSortD);

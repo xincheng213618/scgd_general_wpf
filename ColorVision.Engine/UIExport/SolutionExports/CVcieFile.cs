@@ -84,7 +84,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                string selectedExt = System.IO.Path.GetExtension(dialog.FileName).ToLower(CultureInfo.CurrentCulture);
+                string selectedExt = Path.GetExtension(dialog.FileName).ToLower(CultureInfo.CurrentCulture);
                 switch (selectedExt)
                 {
                     case ".bmp":

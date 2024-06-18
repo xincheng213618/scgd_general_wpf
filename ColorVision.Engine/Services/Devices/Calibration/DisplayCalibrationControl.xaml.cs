@@ -196,7 +196,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 WindowTemplate windowTemplate;
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
-                    MessageBox.Show(Application.Current.MainWindow, Engine.Properties.Resources.DatabaseConnectionFailed, "ColorVision");
+                    MessageBox.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
                     return;
                 }
                 switch (button.Tag?.ToString() ?? string.Empty)
@@ -208,7 +208,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                         windowTemplate.ShowDialog();
                         break;
                     default:
-                        HandyControl.Controls.Growl.Info(Engine.Properties.Resources.UnderDevelopment);
+                        HandyControl.Controls.Growl.Info(Properties.Resources.UnderDevelopment);
                         break;
                 }
             }

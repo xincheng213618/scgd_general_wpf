@@ -13,8 +13,8 @@ namespace ColorVision.Engine.Services
             {
                 new ConfigSettingMetadata
                 {
-                    Name =   ColorVision.Engine.Properties.Resources.IsDefaultOpenService,
-                    Description =  ColorVision.Engine.Properties.Resources.IsDefaultOpenService,
+                    Name =   Properties.Resources.IsDefaultOpenService,
+                    Description =  Properties.Resources.IsDefaultOpenService,
                     Order = 15,
                     Type = ConfigSettingType.Bool,
                     BindingName =nameof(ServicesConfig.IsDefaultOpenService),
@@ -22,8 +22,8 @@ namespace ColorVision.Engine.Services
                 },
                 new ConfigSettingMetadata
                 {
-                    Name = ColorVision.Engine.Properties.Resources.IsRetorePlayControls,
-                    Description = ColorVision.Engine.Properties.Resources.IsRetorePlayControls,
+                    Name = Properties.Resources.IsRetorePlayControls,
+                    Description = Properties.Resources.IsRetorePlayControls,
                     Order = 16,
                     Type = ConfigSettingType.Bool,
                     BindingName =nameof(ServicesConfig.IsRetorePlayControls),

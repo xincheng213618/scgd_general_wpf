@@ -293,7 +293,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                             default:
                                 break;
                         }
-                        if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
+                        if (string.IsNullOrEmpty(localName) || !File.Exists(localName))
                         {
                             DeviceService.Open(data.FilePath, fileExt);
                         }
@@ -391,22 +391,22 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                     if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
                     {
                         string Name = item.ColumnName.ToString();
-                        if (Name == ColorVision.Engine.Properties.Resources.SerialNumber1)
+                        if (Name == Properties.Resources.SerialNumber1)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCalibrations.SortByID(item.IsSortD);
                         }
-                        else if (Name == Engine.Properties.Resources.Duration)
+                        else if (Name == Properties.Resources.Duration)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCalibrations.SortByCreateTime(item.IsSortD);
                         }
-                        else if (Name == ColorVision.Engine.Properties.Resources.BatchNumber)
+                        else if (Name == Properties.Resources.BatchNumber)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCalibrations.SortByBatch(item.IsSortD);
                         }
-                        else if (Name == ColorVision.Engine.Properties.Resources.File)
+                        else if (Name == Properties.Resources.File)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCalibrations.SortByFilePath(item.IsSortD);

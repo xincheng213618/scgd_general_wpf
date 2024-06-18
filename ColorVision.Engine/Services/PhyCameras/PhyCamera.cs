@@ -655,8 +655,8 @@ namespace ColorVision.Engine.Services.PhyCameras
         public void ContentInit()
         {
             ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Engine.Properties.Resources.Edit, Command = EditCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Engine.Properties.Resources.Delete, Command = DeleteCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Edit, Command = EditCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = DeleteCommand });
 
         }
 

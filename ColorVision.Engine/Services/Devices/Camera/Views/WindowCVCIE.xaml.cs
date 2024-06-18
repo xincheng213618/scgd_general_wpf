@@ -35,7 +35,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         private void listViewSide_Initialized(object sender, EventArgs e)
         {
             var cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "POIPointResultModel.ValidateResult" };
-            var cieHeader = new List<string> { ColorVision.Engine.Properties.Resources.Name, ColorVision.Engine.Properties.Resources.Position, ColorVision.Engine.Properties.Resources.Size, ColorVision.Engine.Properties.Resources.Shape, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "Validate" };
+            var cieHeader = new List<string> { Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "Validate" };
 
             if (listViewSide.View is GridView gridViewPOI_XY_UV)
             {

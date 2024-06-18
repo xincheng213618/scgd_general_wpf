@@ -188,15 +188,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 switch (result.ResultType)
                 {
                     case AlgorithmResultType.POI_XYZ:
-                    case MQTTMessageLib.Algorithm.AlgorithmResultType.POI_Y:
+                    case AlgorithmResultType.POI_Y:
                         netFileUtil.OpenLocalFile(result.FilePath, FileExtType.CIE);
                         break;
-                    case MQTTMessageLib.Algorithm.AlgorithmResultType.SFR:
-                    case MQTTMessageLib.Algorithm.AlgorithmResultType.MTF:
-                    case MQTTMessageLib.Algorithm.AlgorithmResultType.FOV:
-                    case MQTTMessageLib.Algorithm.AlgorithmResultType.Distortion:
+                    case AlgorithmResultType.SFR:
+                    case AlgorithmResultType.MTF:
+                    case AlgorithmResultType.FOV:
+                    case AlgorithmResultType.Distortion:
                         break;
-                    case MQTTMessageLib.Algorithm.AlgorithmResultType.Ghost:
+                    case AlgorithmResultType.Ghost:
                         netFileUtil.OpenLocalFile(result.FilePath, FileExtType.Tif);
                         break;
 
@@ -253,11 +253,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                 result.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                             };
                         }
-                        cieHeader = new List<string> { "Id", ColorVision.Engine.Properties.Resources.Name, ColorVision.Engine.Properties.Resources.Position,ColorVision.Engine.Properties.Resources.Shape, ColorVision.Engine.Properties.Resources.Size, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "Validate" };
+                        cieHeader = new List<string> { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Shape, Properties.Resources.Size, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "Validate" };
 
                         if (result.ResultType == AlgorithmResultType.LEDStripDetection)
                         {
-                            cieHeader = new List<string> { "Id", ColorVision.Engine.Properties.Resources.Name, ColorVision.Engine.Properties.Resources.Position, ColorVision.Engine.Properties.Resources.Shape };
+                            cieHeader = new List<string> { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Shape };
                         }
 
                         cieBdHeader = new List<string> { "Id", "Name", "PixelPos", "Shapes", "PixelSize", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "POIPointResultModel.ValidateResult" };

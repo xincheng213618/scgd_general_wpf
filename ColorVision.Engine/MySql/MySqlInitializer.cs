@@ -23,7 +23,7 @@ namespace ColorVision.Engine.MySql
 
                 bool isConnect = await MySqlControl.GetInstance().Connect();
 
-                _messageUpdater.UpdateMessage($"MySql数据库连接{(MySqlControl.GetInstance().IsConnect ? Engine.Properties.Resources.Success : Engine.Properties.Resources.Failure)}");
+                _messageUpdater.UpdateMessage($"MySql数据库连接{(MySqlControl.GetInstance().IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}");
                 if (!isConnect)
                 {
                     Application.Current.Dispatcher.Invoke(() =>

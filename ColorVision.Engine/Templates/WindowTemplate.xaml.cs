@@ -290,15 +290,15 @@ namespace ColorVision.Engine.Templates
 
                         if (itemType != null)
                         {
-                            if (columnName == Engine.Properties.Resources.SerialNumber1 && typeof(ISortID).IsAssignableFrom(itemType))
+                            if (columnName == Properties.Resources.SerialNumber1 && typeof(ISortID).IsAssignableFrom(itemType))
                             {
                                 SortableExtension.InvokeSortMethod("SortByID", itemType, collection, item.IsSortD);
                             }
-                            else if (columnName == Engine.Properties.Resources.Name && typeof(ISortKey).IsAssignableFrom(itemType))
+                            else if (columnName == Properties.Resources.Name && typeof(ISortKey).IsAssignableFrom(itemType))
                             {
                                 SortableExtension.InvokeSortMethod("SortByKey", itemType, collection, item.IsSortD);
                             }
-                            else if (columnName == Engine.Properties.Resources.Choice)
+                            else if (columnName == Properties.Resources.Choice)
                             {
                                 foreach (var modebase in ITemplate.ItemsSource.OfType<TemplateModelBase>())
                                 {

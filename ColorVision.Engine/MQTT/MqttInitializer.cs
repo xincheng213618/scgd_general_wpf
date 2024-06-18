@@ -23,7 +23,7 @@ namespace ColorVision.Engine.MQTT
                 _messageUpdater.UpdateMessage("正在检测MQTT服务器连接情况");
 
                 bool isConnect = await MQTTControl.GetInstance().Connect();
-                _messageUpdater.UpdateMessage($"MQTT服务器连接{(MQTTControl.GetInstance().IsConnect ? Engine.Properties.Resources.Success : Engine.Properties.Resources.Failure)}");
+                _messageUpdater.UpdateMessage($"MQTT服务器连接{(MQTTControl.GetInstance().IsConnect ? Properties.Resources.Success : Properties.Resources.Failure)}");
                 if (!isConnect)
                 {
                     Application.Current.Dispatcher.Invoke(() =>

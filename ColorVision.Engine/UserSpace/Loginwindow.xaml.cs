@@ -16,7 +16,7 @@ namespace ColorVision.UserSpace
 
         public int Order => 3;
 
-        public string? Header =>ColorVision.Engine.Properties.Resources.MenuLogin;
+        public string? Header => Engine.Properties.Resources.MenuLogin;
 
         public string? InputGestureText => null;
 
