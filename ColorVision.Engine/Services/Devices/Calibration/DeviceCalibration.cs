@@ -9,6 +9,7 @@ using log4net;
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.UI.Authorizations;
 
 namespace ColorVision.Engine.Services.Devices.Calibration
 {
@@ -36,9 +37,18 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
             });
-
+            OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger(),a => AccessControl.Check(OpenPhyCameraManger));
             DisplayLazy = new Lazy<DisplayCalibrationControl>(() => new DisplayCalibrationControl(this));
         }
+
+        public RelayCommand OpenPhyCameraMangerCommand { get; set; }
+
+        [RequiresPermission(PermissionMode.Administrator)]
+        public void OpenPhyCameraManger()
+        {
+            new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow() }.Show();
+        }
+
         public override void Save()
         {
             base.Save();

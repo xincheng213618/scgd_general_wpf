@@ -8,15 +8,18 @@ using System.Text.Unicode;
 
 namespace ColorVision.Common.MVVM
 {
+    [Obsolete("No ReUse")]
     public static class Extensions
     {
         private static JsonSerializerOptions jsonSerializerOptions = new() { Encoder = JavaScriptEncoder.Create(UnicodeRanges.All) };
-
+        
+        [Obsolete("No Use")]
         public static string ToJson(this ViewModelBase viewModelBase, JsonSerializerOptions? options = null)
         {
             return JsonSerializer.Serialize(viewModelBase, options ?? jsonSerializerOptions);
         }
 
+        [Obsolete("No Use")]
         public static bool ToJsonFile(this ViewModelBase viewModelBase, string filePath, JsonSerializerOptions? options = null)
         {
             try

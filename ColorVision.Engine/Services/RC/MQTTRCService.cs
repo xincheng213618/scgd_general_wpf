@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
+using ColorVision.UI.Extension;
 using CVCommCore;
 using log4net;
 using MQTTMessageLib;
@@ -209,7 +210,7 @@ namespace ColorVision.Engine.Services.RC
 
                                                     if (serviceBase.DeviceStatus == DeviceStatusType.Unknown)
                                                     {
-                                                        log.Debug(serviceBase.ToJson());
+                                                        log.Debug(serviceBase.ToJsonN());
                                                     }
                                                 }
 

@@ -3,6 +3,8 @@ using cvColorVision;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using System;
 using ColorVision.Engine.Services.PhyCameras.Configs;
+using ColorVision.Engine.Services.PhyCameras;
+using System.Linq;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Configs
 {
@@ -11,8 +13,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
     /// </summary>
     public class ConfigCamera : DeviceServiceConfig
     {
-        public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged(); } }
+        public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(CameraCode)); } }
         private string _CameraID;
+        public string? CameraCode => PhyCameraManager.GetInstance().PhyCameras.First(a => a.Name == CameraID).SysResourceModel.Code;
 
         public CameraType CameraType { get => _CameraType; set { _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
         private CameraType _CameraType;
