@@ -5,6 +5,7 @@ using System;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras;
 using System.Linq;
+using ColorVision.Engine.Services.Configs;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Configs
 {

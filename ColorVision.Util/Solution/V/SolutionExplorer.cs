@@ -219,7 +219,7 @@ namespace ColorVision.Solution.V
 
         }
 
-        int i = 0;
+        int i;
         public async void GeneralChild(VObject vObject,DirectoryInfo directoryInfo)
         {
             foreach (var item in directoryInfo.GetDirectories())

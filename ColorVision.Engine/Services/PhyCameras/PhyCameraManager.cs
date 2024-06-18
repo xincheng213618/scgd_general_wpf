@@ -204,9 +204,9 @@ namespace ColorVision.Engine.Services.PhyCameras
                     // 如果备份字典中存在该 PhyCamera 的 Id
                     if (phyCameraBackup.TryGetValue(item.Id, out var existingPhyCamera))
                     {
-                        existingPhyCamera.Name = item.Name;
+                        existingPhyCamera.Name = item.Name ?? string.Empty;
                         existingPhyCamera.SysResourceModel = item;
-                        existingPhyCamera.Config.CameraID = item.Name;
+                        existingPhyCamera.Config.CameraID = item.Name ?? string.Empty;
                     }
                     else
                     {

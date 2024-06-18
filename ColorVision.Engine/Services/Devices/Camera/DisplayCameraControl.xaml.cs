@@ -288,6 +288,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     string host = Device.Config.VideoConfig.Host;
                     int port = Tool.GetFreePort(Device.Config.VideoConfig.Port);
                     port = CameraVideoControl.Open(host, port);
+                    CameraVideoControl.IsEnableResize = Device.Config.VideoConfig.IsEnableResize;
                     if (port > 0)
                     {
                         MsgRecord msg = DService.OpenVideo(host, port);

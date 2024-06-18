@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using System;
 
-namespace ColorVision.Engine.Services.Devices.Camera.Configs
+namespace ColorVision.Engine.Services.Configs
 {
     public class FileServerCfg : ViewModelBase
     {

@@ -44,7 +44,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         public RelayCommand OpenPhyCameraMangerCommand { get; set; }
 
         [RequiresPermission(PermissionMode.Administrator)]
-        public void OpenPhyCameraManger()
+        public static void OpenPhyCameraManger()
         {
             new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow() }.Show();
         }

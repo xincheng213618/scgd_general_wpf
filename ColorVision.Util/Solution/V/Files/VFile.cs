@@ -47,7 +47,7 @@ namespace ColorVision.Solution.V.Files
                 iMenuItems.AddRange(menuItemProvider.GetMenuItems());
                 iMenuItems = iMenuItems.OrderBy(item => item.Order).ToList();
 
-                void CreateMenu(ItemsControl parentMenuItem, string OwnerGuid)
+                void CreateMenu(ItemsControl parentMenuItem, string? OwnerGuid)
                 {
                     var iMenuItems1 = iMenuItems.FindAll(a => a.OwnerGuid == OwnerGuid).OrderBy(a => a.Order).ToList();
                     for (int i = 0; i < iMenuItems1.Count; i++)

@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Services.Devices.Camera.Configs;
+﻿using ColorVision.Engine.Services.Configs;
 using ColorVision.Engine.Services.PhyCameras;
 using Newtonsoft.Json;
 using System.Linq;
