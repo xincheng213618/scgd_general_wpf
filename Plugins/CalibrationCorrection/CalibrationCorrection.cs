@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System;
 using System.Diagnostics;
@@ -17,24 +18,18 @@ namespace SerialPlugin
         private string _CalibToolsPath = string.Empty;
     }
 
-    public class CalibrationCorrection : IMenuItem
+    public class CalibrationCorrection : MenuItemBase
     {
-        public string? OwnerGuid => "Tool";
+        public override string OwnerGuid => "Tool";
 
-        public string? GuidId => "CalibrationCorrection";
+        public override string GuidId => "CalibrationCorrection";
 
-        public int Order => 6;
+        public override int Order => 6;
 
-        public string? Header => "CalibrationCorrection";
+        public override string Header => "CalibrationCorrection";
 
-        public string? InputGestureText => null;
-
-        public object? Icon => null;
-
-        public RelayCommand Command => new(A => Execute());
-        public Visibility Visibility => Visibility.Visible;
-
-        private static void Execute()
+        [RequiresPermission(PermissionMode.User)]
+        public override void Execute()
         {
             if (!File.Exists(CalibrationConfig.Instance.CalibToolsPath))
             {
