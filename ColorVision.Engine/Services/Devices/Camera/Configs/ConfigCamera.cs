@@ -15,7 +15,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
     {
         public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(CameraCode)); } }
         private string _CameraID;
-        public string? CameraCode => PhyCameraManager.GetInstance().PhyCameras.First(a => a.Name == CameraID).SysResourceModel.Code;
+
+        [JsonIgnore]
+        public string? CameraCode => PhyCameraManager.GetInstance().PhyCameras.First(a => a.Name == CameraID)?.SysResourceModel?.Code;
 
         public CameraType CameraType { get => _CameraType; set { _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
         private CameraType _CameraType;

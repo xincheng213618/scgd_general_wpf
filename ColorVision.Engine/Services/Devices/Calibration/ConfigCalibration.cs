@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.PhyCameras;
+using Newtonsoft.Json;
 using System.Linq;
 
 namespace ColorVision.Engine.Services.Devices.Calibration
@@ -9,6 +10,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(CameraCode)); } }
         private string _CameraID;
 
+        [JsonIgnore]
         public string? CameraCode => PhyCameraManager.GetInstance().PhyCameras.First(a => a.Name == CameraID).SysResourceModel.Code;
 
         public double ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; NotifyPropertyChanged(); } }
