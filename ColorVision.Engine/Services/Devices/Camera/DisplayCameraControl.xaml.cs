@@ -227,8 +227,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     if (param.Id != -1)
                     {
                         if (Device.PhyCamera != null && Device.PhyCamera.DeviceCalibration == null)
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "使用校正模板需要先配置校正服务","ColorVision");
-                        
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), "使用校正模板需要先配置校正服务", "ColorVision");
+                            return;
+                        }
                     }
 
 
