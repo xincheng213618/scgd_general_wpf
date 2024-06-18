@@ -14,6 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "解决方案项", "解决�
 		copydll.bat = copydll.bat
 		Directory.Build.props = Directory.Build.props
 		README.md = README.md
+		docs\软件许可协议.md = docs\软件许可协议.md
 	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cvColorVision", "cvColorVision\cvColorVision.csproj", "{B0FCEFDD-8C2F-4CF4-BAA6-95CDB73A1694}"
@@ -52,11 +53,11 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVisonChat", "Plugins\C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EventVWR", "Plugins\EventVWR\EventVWR.csproj", "{BE96962C-AB64-4FCB-9A2B-41FAD26BCF61}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.Engine", "ColorVision.Engine\ColorVision.Engine.csproj", "{3F4FEDF0-1585-4E4C-AB01-F75449DA70CD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Engine", "ColorVision.Engine\ColorVision.Engine.csproj", "{3F4FEDF0-1585-4E4C-AB01-F75449DA70CD}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Projects", "Projects", "{7D74447C-5191-4C1D-BEB2-B537366B980D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectHeyuan", "Projects\ProjectHeyuan\ProjectHeyuan.csproj", "{CC562826-7B20-4FFB-B2D9-3E568389480E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectHeyuan", "Projects\ProjectHeyuan\ProjectHeyuan.csproj", "{CC562826-7B20-4FFB-B2D9-3E568389480E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -376,10 +377,10 @@ Global
 		{CC562826-7B20-4FFB-B2D9-3E568389480E} = {7D74447C-5191-4C1D-BEB2-B537366B980D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
-		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
-		RESX_NeutralResourcesLanguage = zh-Hans
-		RESX_PrefixTranslations = False
 		RESX_EnableXlifSync = True
+		RESX_PrefixTranslations = False
+		RESX_NeutralResourcesLanguage = zh-Hans
+		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
 	EndGlobalSection
 EndGlobal

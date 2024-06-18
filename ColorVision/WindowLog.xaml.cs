@@ -64,10 +64,11 @@ namespace ColorVision
             // 将Appender添加到Logger中
             hierarchy.Root.AddAppender(textBoxAppender);
 
-            LoadLogHistory();
+            if (MainWindowConfig.Instance.ReadHistory)
+                LoadLogHistory();
             // 配置并激活log4net
             log4net.Config.BasicConfigurator.Configure(hierarchy);
-            cmlog.DataContext = MainWindowConfig.Instance;
+            this.DataContext = MainWindowConfig.Instance;
             cmlog.ItemsSource = MainWindowConfig.GetAllLevels().Select(level => new KeyValuePair<Level, string>(level, level.Name));
             SearchBar1Brush = SearchBar1.BorderBrush;
         }
@@ -90,7 +91,14 @@ namespace ColorVision
                         string line;
                         while ((line = reader.ReadLine()) != null)
                         {
-                            logTextBox.AppendText(line + Environment.NewLine);
+                            if (MainWindowConfig.Instance.LogReserve)
+                            {
+                                logTextBox.Text = line + Environment.NewLine + logTextBox.Text;
+                            }
+                            else
+                            {
+                                logTextBox.AppendText(line + Environment.NewLine);
+                            }
                         }
                     }
                 }
@@ -181,9 +189,16 @@ namespace ColorVision
             var renderedMessage = RenderLoggingEvent(loggingEvent);
             Application.Current.Dispatcher.Invoke(() =>
             {
-                _textBox.AppendText(renderedMessage);
-                if (MainWindowConfig.Instance.AutoScrollToEnd)
-                    _textBox.ScrollToEnd();
+                if (MainWindowConfig.Instance.LogReserve)
+                {
+                    _textBox.Text = renderedMessage + _textBox.Text;
+                }
+                else
+                {
+                    _textBox.AppendText(renderedMessage);
+                    if (MainWindowConfig.Instance.AutoScrollToEnd)
+                        _textBox.ScrollToEnd();
+                }
             });
         }
     }

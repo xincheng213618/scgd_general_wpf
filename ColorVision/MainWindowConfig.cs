@@ -97,7 +97,12 @@ namespace ColorVision
         private bool _AutoScrollToEnd = true;
 
         public bool AutoRefresh { get => _AutoRefresh; set { _AutoRefresh = value; NotifyPropertyChanged(); } }
-        private bool _AutoRefresh;
+        private bool _AutoRefresh = true;
+        public bool ReadHistory { get => _ReadHistory; set { _ReadHistory = value; NotifyPropertyChanged(); } }
+        private bool _ReadHistory;
+
+        public bool LogReserve { get => _LogReserve; set { _LogReserve = value; NotifyPropertyChanged(); } }
+        private bool _LogReserve;
 
         public string LogLevelName
         {
