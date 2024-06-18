@@ -54,7 +54,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public string PixelSize { get { return string.Format("{0},{1}", POIPoint.Width, POIPoint.Height); } }
 
-        public string Shapes { get { return string.Format("{0}", POIPoint.PointType == 0 ? "圆形" : "矩形"); } }
+        public string Shapes => POIPoint.PointType switch
+        {
+            POIPointTypes.None => "None",
+            POIPointTypes.SolidPoint => "点",
+            POIPointTypes.Rect => "矩形",
+            POIPointTypes.Mask => "多边形",
+            POIPointTypes.Circle or _ => "圆形 ",
+        };
 
         protected POIPoint POIPoint { get; set; }
     }

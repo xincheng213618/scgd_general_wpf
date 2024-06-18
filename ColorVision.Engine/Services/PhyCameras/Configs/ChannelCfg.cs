@@ -15,19 +15,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         private ImageChannelType _Chtype;
 
         [JsonProperty("title")]
-        public string ChannelTypeString
+        public string ChannelTypeString => Chtype switch
         {
-            get
-            {
-                return Chtype switch
-                {
-                    ImageChannelType.Gray_X => "Channel_R",
-                    ImageChannelType.Gray_Y => "Channel_G",
-                    ImageChannelType.Gray_Z => "Channel_B",
-                    _ => Chtype.ToString(),
-                };
-            }
-            set { }
-        }
+            ImageChannelType.Gray_X => "Channel_R",
+            ImageChannelType.Gray_Y => "Channel_G",
+            ImageChannelType.Gray_Z => "Channel_B",
+            _ => Chtype.ToString(),
+        };
     }
 }
