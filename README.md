@@ -1,5 +1,9 @@
 # scgd_general_wpf
 
+## 项目简介
+
+ColrVision Inc 开发的一款 Windows WPF 应用程序，旨在提供先进的色彩管理和光电技术解决方案。
+
 ## 🖥️ 支持
 
 **运行环境** NET 6.0 , VS2022 , Win11 
@@ -179,7 +183,40 @@ Baidu  AppID：20180402000142443
 
 
 
+### 用户手册
 
+详细的用户手册请参阅 [用户手册](docs/UserManual.md)。
+
+## 贡献指南
+
+我们欢迎任何形式的贡献，包括但不限于：
+
+- 提交 bug 报告和功能请求
+- 提交代码改进和新功能
+- 改进文档
+
+### 如何贡献
+
+1. Fork 此仓库。
+2. 创建一个新的分支 (`git checkout -b feature/your-feature`)。
+3. 提交您的更改 (`git commit -am 'Add some feature'`)。
+4. 推送到分支 (`git push origin feature/your-feature`)。
+5. 创建一个新的 Pull Request。
+
+## 许可证
+
+本项目采用 [MIT 许可证](LICENSE) 进行许可。详细信息请参阅 [LICENSE](docs/LICENSE.rtf) 文件。
+
+## 联系方式
+
+如有任何问题或建议，请通过以下方式联系我们：
+
+- 电子邮件: support@colrvision.com
+- 公司网站: [ColrVision Inc](https://www.colrvision.com)
+
+---
+
+**视彩（上海）光电技术有限公司**
 
 
 
