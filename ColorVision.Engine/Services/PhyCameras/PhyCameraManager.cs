@@ -192,19 +192,34 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public void LoadPhyCamera()
         {
-            PhyCameras.Clear();
+            var phyCameraBackup = PhyCameras.ToDictionary(pc => pc.Id, pc => pc);
+                
             var list = SysResourceDao.Instance.GetAllType((int)ServiceTypes.PhyCamera);
             foreach (var item in list)
             {
                 if (!string.IsNullOrWhiteSpace(item.Value))
                 {
-                    PhyCameras.Add(new PhyCamera(item));
+                    // 创建新的 PhyCamera 对象
+
+                    // 如果备份字典中存在该 PhyCamera 的 Id
+                    if (phyCameraBackup.TryGetValue(item.Id, out var existingPhyCamera))
+                    {
+                        existingPhyCamera.Name = item.Name;
+                        existingPhyCamera.SysResourceModel = item;
+                        existingPhyCamera.Config.CameraID = item.Code;
+                    }
+                    else
+                    {
+                        var newPhyCamera = new PhyCamera(item);
+                        LoadPhyCameraResources(newPhyCamera);
+                        // 添加新的 PhyCamera 对象到集合中
+                        PhyCameras.Add(newPhyCamera);
+                    }
                 }
             }
 
             foreach (var phyCamera in PhyCameras)
             {
-                LoadPhyCameraResources(phyCamera);
             }
             Loaded?.Invoke(this, EventArgs.Empty);
         }

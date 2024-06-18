@@ -51,6 +51,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+
+            PhyCameraManager.GetInstance().LoadPhyCamera();
             this.DataContext = PhyCameraManager.GetInstance();
             ServicesHelper.SelectAndFocusFirstNode(TreeView1);
             PhyCameraManager.GetInstance().Loaded +=(s,e) => ServicesHelper.SelectAndFocusFirstNode(TreeView1);

@@ -253,7 +253,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                 result.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                             };
                         }
-                        cieHeader = new List<string> { "Id", ColorVision.Engine.Properties.Resources.Name, ColorVision.Engine.Properties.Resources.Position,, ColorVision.Engine.Properties.Resources.Shape, ColorVision.Engine.Properties.Resources.Size, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "Validate" };
+                        cieHeader = new List<string> { "Id", ColorVision.Engine.Properties.Resources.Name, ColorVision.Engine.Properties.Resources.Position,ColorVision.Engine.Properties.Resources.Shape, ColorVision.Engine.Properties.Resources.Size, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "Validate" };
 
                         if (result.ResultType == AlgorithmResultType.LEDStripDetection)
                         {
