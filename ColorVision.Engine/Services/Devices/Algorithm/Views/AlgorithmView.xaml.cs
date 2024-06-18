@@ -215,7 +215,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             result.PoiResultDatas = new ObservableCollection<PoiResultData>();
                             List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
                             int id = 0;
-
                             foreach (var item in POIPointResultModels)
                             {
                                 PoiResultData poiResult = new(item) { Id = id++ };
@@ -254,14 +253,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                 result.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
                             };
                         }
-                        cieHeader = new List<string> { "Id", ColorVision.Engine.Properties.Resources.Name, ColorVision.Engine.Properties.Resources.Position, ColorVision.Engine.Properties.Resources.Size, ColorVision.Engine.Properties.Resources.Shape, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "Validate" };
+                        cieHeader = new List<string> { "Id", ColorVision.Engine.Properties.Resources.Name, ColorVision.Engine.Properties.Resources.Position,, ColorVision.Engine.Properties.Resources.Shape, ColorVision.Engine.Properties.Resources.Size, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "Validate" };
 
                         if (result.ResultType == AlgorithmResultType.LEDStripDetection)
                         {
-                            cieHeader = new List<string> { "Id", ColorVision.Engine.Properties.Resources.Name, ColorVision.Engine.Properties.Resources.Position, ColorVision.Engine.Properties.Resources.Size, ColorVision.Engine.Properties.Resources.Shape };
+                            cieHeader = new List<string> { "Id", ColorVision.Engine.Properties.Resources.Name, ColorVision.Engine.Properties.Resources.Position, ColorVision.Engine.Properties.Resources.Shape };
                         }
 
-                        cieBdHeader = new List<string> { "POIPoint.Id", "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "POIPointResultModel.ValidateResult" };
+                        cieBdHeader = new List<string> { "Id", "Name", "PixelPos", "Shapes", "PixelSize", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "POIPointResultModel.ValidateResult" };
 
                         if (listViewSide.View is GridView gridViewPOI_XY_UV1)
                         {
