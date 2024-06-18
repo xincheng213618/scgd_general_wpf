@@ -206,7 +206,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     {
                         existingPhyCamera.Name = item.Name;
                         existingPhyCamera.SysResourceModel = item;
-                        existingPhyCamera.Config.CameraID = item.Code;
+                        existingPhyCamera.Config.CameraID = item.Name;
                     }
                     else
                     {
