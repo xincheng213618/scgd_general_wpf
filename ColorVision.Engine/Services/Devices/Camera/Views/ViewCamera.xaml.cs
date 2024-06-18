@@ -13,6 +13,7 @@ using ColorVision.Net;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
+using CVCommCore.CVAlgorithm;
 using CVCommCore.CVImage;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
@@ -559,7 +560,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
                 foreach (var item in poiParams.PoiPoints)
                 {
-                    var sss = ImageView.GetCVCIE((int)item.PixX, (int)item.PixY, (int)item.PixWidth, (int)item.PixWidth);
+                    POIPoint pOIPoint = new POIPoint() { Id =item.Id, Name = item.Name, PixelX = (int)item.PixX, PixelY = (int)item.PixY ,PointType = (POIPointTypes)item.PointType , Height = (int)item.PixHeight ,Width = (int)item.PixWidth };
+                    var sss = ImageView.GetCVCIE(pOIPoint);
                     PoiResultCIExyuvDatas.Add(sss);
                 }
                 WindowCVCIE windowCIE = new WindowCVCIE(PoiResultCIExyuvDatas) { Owner = Application.Current.GetActiveWindow() };
