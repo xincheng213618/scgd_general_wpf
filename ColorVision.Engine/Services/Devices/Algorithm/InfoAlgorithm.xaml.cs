@@ -13,18 +13,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         public DeviceAlgorithm Device { get; set; }
         public MQTTAlgorithm DService { get => Device.MQTTService; }
 
-        public bool IsCanEdit { get; set; }
-
-        public InfoAlgorithm(DeviceAlgorithm device, bool isCanEdit = true)
+        public InfoAlgorithm(DeviceAlgorithm device)
         {
             Device = device;
-            IsCanEdit = isCanEdit;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             DataContext = Device;
         }
         private void ServiceCache_Click(object sender, RoutedEventArgs e)

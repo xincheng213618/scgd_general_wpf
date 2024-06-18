@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
-            });
+            }, a => AccessControl.Check(PermissionMode.Administrator));
             OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger(),a => AccessControl.Check(OpenPhyCameraManger));
             DisplayLazy = new Lazy<DisplayCalibrationControl>(() => new DisplayCalibrationControl(this));
         }
@@ -58,7 +58,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         public override UserControl GetDeviceControl() => new InfoCalibration(this);
 
-        public override UserControl GetDeviceInfo() => new InfoCalibration(this,false);
+        public override UserControl GetDeviceInfo() => new InfoCalibration(this);
 
         readonly Lazy<DisplayCalibrationControl> DisplayLazy;
 

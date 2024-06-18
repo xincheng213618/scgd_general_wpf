@@ -7,6 +7,7 @@ using ColorVision.Themes;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ColorVision.UI.Authorizations;
 
 namespace ColorVision.Engine.Services.Devices.Motor
 {
@@ -25,11 +26,11 @@ namespace ColorVision.Engine.Services.Devices.Motor
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
-            });
+            }, a => AccessControl.Check(PermissionMode.Administrator));
         }
 
         public override UserControl GetDeviceControl() => new InfoMotor(this);
-        public override UserControl GetDeviceInfo() => new InfoMotor(this, false);
+        public override UserControl GetDeviceInfo() => new InfoMotor(this);
 
         public override UserControl GetDisplayControl() => new DisplayMotorControl(this);
 

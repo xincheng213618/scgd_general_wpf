@@ -57,9 +57,9 @@
                             </TextBlock>
                         </Button>
 
-                        <Grid x:Name="ButtonEdit" Width="25"  Margin="0,0,10,0">
+                        <Grid Visibility="{Binding ElementName=ButtonEdit,Path=IsEnabled,Converter={StaticResource bool2VisibilityConverter}}" Width="25"  Margin="0,0,10,0">
                             <Image Source="{StaticResource  DrawingImageEdit}" Width="17" Margin="0" />
-                            <Button Background="Transparent" BorderThickness="0" Command="{Binding EditCommand}"/>
+                            <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding EditCommand}"/>
                         </Grid>
                         <Grid x:Name="ButtonCopy" Width="25" Margin="0,0,0,0">
                             <TextBlock  Text="&#xF413;"  FontFamily="Segoe MDL2 Assets" FontSize="20" HorizontalAlignment="Center"/>

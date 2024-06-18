@@ -16,18 +16,14 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
         public MQTTSensor Service { get => DeviceSensor.DeviceService; }
 
-        public bool IsCanEdit { get; set; }
-        public InfoSensor(DeviceSensor deviceSensor, bool isCanEdit = true)
+        public InfoSensor(DeviceSensor deviceSensor)
         {
             DeviceSensor = deviceSensor;
-            IsCanEdit = isCanEdit;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
-
             DataContext = DeviceSensor;
         }
 

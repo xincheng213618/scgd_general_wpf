@@ -2,6 +2,7 @@
 using ColorVision.Engine.Properties;
 using ColorVision.Solution;
 using ColorVision.Themes;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using FlowEngineLib.Base;
 using FlowEngineLib.Start;
@@ -22,6 +23,7 @@ namespace ColorVision.Engine.Services.Flow
         public override string Header => Resources.WorkflowEngine_F;
         public override int Order => 3;
 
+        [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
         {
             new WindowFlowEngine() { WindowStartupLocation = WindowStartupLocation.CenterScreen }.ShowDialog();

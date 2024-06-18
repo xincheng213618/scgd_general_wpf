@@ -10,6 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using ColorVision.Util.Interfaces;
+using ColorVision.UI.Authorizations;
 
 namespace ColorVision.Engine.Services.Devices.SMU
 {
@@ -34,12 +35,12 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
-            });
+            }, a => AccessControl.Check(PermissionMode.Administrator));
 
 
         }
         public override UserControl GetDeviceControl() => new InfoSMU(this);
-        public override UserControl GetDeviceInfo() => new InfoSMU(this, false);
+        public override UserControl GetDeviceInfo() => new InfoSMU(this);
         public override UserControl GetDisplayControl() => new DisplaySMUControl(this);
 
         public override MQTTServiceBase? GetMQTTService()

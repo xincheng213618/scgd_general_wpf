@@ -1,17 +1,18 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.RC;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
-using ColorVision.Common.Utilities;
+using ColorVision.UI;
+using ColorVision.UI.Authorizations;
+using ColorVision.Util.Interfaces;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using ColorVision.Util.Interfaces;
-using ColorVision.UI;
 
 namespace ColorVision.Engine.Services.Terminal
 {
@@ -64,7 +65,7 @@ namespace ColorVision.Engine.Services.Terminal
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
-            });
+            }, a => AccessControl.Check(PermissionMode.Administrator));
 
             OpenCreateWindowCommand = new RelayCommand(a =>
             {
@@ -72,7 +73,7 @@ namespace ColorVision.Engine.Services.Terminal
                 createTerminal.Owner = Application.Current.GetActiveWindow();
                 createTerminal.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 createTerminal.ShowDialog();
-            });
+            }, a => AccessControl.Check(PermissionMode.Administrator));
 
             switch (ServiceType)
             {

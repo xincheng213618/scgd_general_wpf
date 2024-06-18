@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Properties;
 using ColorVision.Themes;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using NPOI.Util.Collections;
@@ -23,6 +24,7 @@ namespace ColorVision.Engine.MQTT
 
         public HotKeys HotKeys => new(Resources.MQTTLog, new Hotkey(Key.Q, ModifierKeys.Control), Execute);
 
+        [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
         {
             new MQTTToolWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();

@@ -13,21 +13,15 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         public DeviceCalibration Device { get; set; }
 
         public MQTTCalibration DService { get => Device.DeviceService; }
-        public ServiceManager ServiceControl { get; set; }
-
-        public bool IsCanEdit { get; set; }
-
-        public InfoCalibration(DeviceCalibration deviceCalibration, bool isCanEdit = true)
+        public InfoCalibration(DeviceCalibration deviceCalibration)
         {
             Device = deviceCalibration;
-            IsCanEdit = isCanEdit;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
-            if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
         }
 
 

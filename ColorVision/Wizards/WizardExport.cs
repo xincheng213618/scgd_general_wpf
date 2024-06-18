@@ -1,28 +1,21 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Properties;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace ColorVision.Wizards
 {
-    public class WizardExport :IMenuItem
+    public class WizardExport :MenuItemBase
     {
-        public string? OwnerGuid => "Help";
-        public string? GuidId => "Wizard";
-        public int Order => 10000;
-        public string? Header => Resources.Wizard;
-
-        public string? InputGestureText => null;
-
-        public object? Icon => null;
-
-        public RelayCommand Command => new(A => Execute());
-
-        private static void Execute()
+        public override string OwnerGuid => "Help";
+        public override string GuidId => "Wizard";
+        public override int Order => 10000;
+        public override string Header => Resources.Wizard;
+        [RequiresPermission(PermissionMode.Administrator)]
+        public override void Execute()
         {
             new WizardWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-        public Visibility Visibility => Visibility.Visible;
     }
 }

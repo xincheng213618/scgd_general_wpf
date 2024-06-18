@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Themes;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using Newtonsoft.Json;
@@ -14,15 +15,14 @@ using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Msg
 {
-    public class ExportMsgList : MenuItemBase, IHotKey
+    public class ExportMsgList : MenuItemBase
     {
         public override string OwnerGuid => "Help";
         public override string GuidId => "MsgList";
         public override string Header => "MQTTMsg";
-        public override string? InputGestureText => "Ctrl + M";
         public override int Order => 2;
 
-        public HotKeys HotKeys => new HotKeys(Properties.Resources.MsgList, new Hotkey(Key.M, ModifierKeys.Control), Execute);
+        [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
         {
             new MsgList() { Owner = Application.Current.GetActiveWindow() }.Show();

@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Themes;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using MySql.Data.MySqlClient;
 using System;
@@ -14,6 +15,7 @@ namespace ColorVision.Engine.MySql
         public override string Header => "MySqlTool";
         public override int Order => 2;
 
+        [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
         {
             new MySqlToolWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.Show();

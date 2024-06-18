@@ -4,6 +4,7 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Common.Utilities;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.UI.Authorizations;
 
 namespace ColorVision.Engine.Services.Devices.PG
 {
@@ -21,11 +22,11 @@ namespace ColorVision.Engine.Services.Devices.PG
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
-            });
+            }, a => AccessControl.Check(PermissionMode.Administrator));
         }
 
         public override UserControl GetDeviceControl() => new InfoPG(this);
-        public override UserControl GetDeviceInfo() => new InfoPG(this, false);
+        public override UserControl GetDeviceInfo() => new InfoPG(this);
 
         public override UserControl GetDisplayControl() => new DisplayPG(this);
         public override MQTTServiceBase? GetMQTTService()

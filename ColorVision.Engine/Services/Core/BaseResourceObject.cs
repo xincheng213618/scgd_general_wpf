@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
+using ColorVision.UI.Authorizations;
 using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Core
@@ -15,7 +16,7 @@ namespace ColorVision.Engine.Services.Core
         {
             VisualChildren = new ObservableCollection<BaseResourceObject>();
             SaveCommand = new RelayCommand(a => Save());
-            DeleteCommand = new RelayCommand(a => Delete());
+            DeleteCommand = new RelayCommand(a => Delete(), a => AccessControl.Check(PermissionMode.Administrator));
         }
         public BaseResourceObject Parent
         {

@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
+using ColorVision.UI.Authorizations;
 using ColorVision.Util.Controls;
 using ColorVision.Util.Interfaces;
 using System;
@@ -42,7 +43,8 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
-            });
+            }, a => AccessControl.Check(PermissionMode.Administrator));
+
             DisplayLazy = new Lazy<DisplaySpectrumControl>(() => new DisplaySpectrumControl(this));
 
             ResourceManagerCommand = new RelayCommand(a =>
@@ -101,7 +103,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
 
         public override UserControl GetDeviceControl() => new InfoSpectrum(this);
-        public override UserControl GetDeviceInfo() => new InfoSpectrum(this, false);
+        public override UserControl GetDeviceInfo() => new InfoSpectrum(this);
 
         readonly Lazy<DisplaySpectrumControl> DisplayLazy;
         public override UserControl GetDisplayControl() => DisplayLazy.Value;

@@ -12,18 +12,14 @@ namespace ColorVision.Engine.Services.Devices.FileServer
     {
         public DeviceFileServer DeviceFileServer { get; set; }
         public MQTTFileServer DService { get => DeviceFileServer.MQTTFileServer; }
-
-        public bool IsCanEdit { get; set; }
-        public InfoFileServer(DeviceFileServer device, bool isCanEdit = true)
+        public InfoFileServer(DeviceFileServer device)
         {
             DeviceFileServer = device;
-            IsCanEdit = isCanEdit;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             DataContext = DeviceFileServer;
         }
     }

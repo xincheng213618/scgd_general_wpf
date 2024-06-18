@@ -11,22 +11,15 @@ namespace ColorVision.Engine.Services.Devices.PG
     public partial class InfoPG : UserControl
     {
         public DevicePG DevicePG { get; set; }
-        public bool IsCanEdit { get; set; }
-        public InfoPG(DevicePG devicePG, bool isCanEdit = true)
+        public InfoPG(DevicePG devicePG)
         {
             DevicePG = devicePG;
-            IsCanEdit = isCanEdit;
             InitializeComponent();
-
-
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             DataContext = DevicePG;
         }
-
-
     }
 }
