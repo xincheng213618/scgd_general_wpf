@@ -46,6 +46,7 @@ namespace cvColorVision
             saveCsv_SFR("Result", pdfrequency, pdomainSamplingData);
             return true;
         }
+
         private static void saveCsv_SFR(string path, float[] pdfrequency, float[] pdomainSamplingData)
         {
             if (!Directory.Exists(path))

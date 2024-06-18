@@ -224,6 +224,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
                 {
+                    if (param.Id != -1)
+                    {
+                        if (Device.PhyCamera != null && Device.PhyCamera.DeviceCalibration == null)
+                            MessageBox.Show(Application.Current.GetActiveWindow(), "使用校正模板需要先配置校正服务","ColorVision");
+                        
+                    }
+
+
                     double[] expTime = null;
                     if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
                     else expTime = new double[] { Device.Config.ExpTime };
