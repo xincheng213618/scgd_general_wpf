@@ -93,7 +93,7 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             CalibrationEditCommand = new RelayCommand(a =>
             {
-                CalibrationEdit CalibrationEdit = new(this);
+                CalibrationEdit CalibrationEdit = new CalibrationEdit(this);
                 CalibrationEdit.Show();
             });
 

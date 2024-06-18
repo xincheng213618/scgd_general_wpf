@@ -174,7 +174,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
                 CalibrationControl = new CalibrationControl(device);
             }
 
-            Code = ModMasterType.Calibration;
             Title = "校正参数设置";
             Device = device;
             IsUserControl = true;
@@ -197,8 +196,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         public override void Load()
         {
-            base.Load();
-            CalibrationParam.LoadResourceParams(TemplateParams, Device.SysResourceModel.Id, Code);
+            CalibrationParam.LoadResourceParams(TemplateParams, Device.SysResourceModel.Id, ModMasterType.Calibration);
         }
         public override void Create(string templateName)
         {

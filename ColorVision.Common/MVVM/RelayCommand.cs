@@ -23,6 +23,7 @@ namespace ColorVision.Common.MVVM
             this.execute = execute ?? throw new ArgumentNullException(nameof(execute));
             this.canExecute = canExecute;
         }
+
         public bool CanExecute(object? parameter) => canExecute is null || canExecute(parameter);
 
         public event EventHandler? CanExecuteChanged

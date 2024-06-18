@@ -64,8 +64,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             window.ShowDialog();
         }
 
-
         public RelayCommand OpenPhyCameraMangerCommand { get; set; }
+
+        [RequiresPermission(PermissionMode.Administrator)]
         public void OpenPhyCameraManger()
         {
             DeviceService.GetAllCameraID();
