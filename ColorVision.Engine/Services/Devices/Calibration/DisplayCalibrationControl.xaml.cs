@@ -66,14 +66,14 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
-        private void Service_OnCalibrationEvent(MsgReturn arg)
+        private void Service_OnCalibrationEvent(MsgReturn msg)
         {
+            if (msg.DeviceCode !=  Device.Code) return;
 
-
-            switch (arg.EventName)
+            switch (msg.EventName)
             {
                 case MQTTFileServerEventEnum.Event_File_List_All:
-                    DeviceListAllFilesParam data = JsonConvert.DeserializeObject<DeviceListAllFilesParam>(JsonConvert.SerializeObject(arg.Data));
+                    DeviceListAllFilesParam data = JsonConvert.DeserializeObject<DeviceListAllFilesParam>(JsonConvert.SerializeObject(msg.Data));
                     switch (data.FileExtType)
                     {
                         case FileExtType.Raw:
@@ -102,7 +102,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                     }
                     break;
                 case MQTTFileServerEventEnum.Event_File_Download:
-                    DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
+                    DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(msg.Data));
                     if (pm_dl != null)
                     {
                         Application.Current.Dispatcher.Invoke(() =>

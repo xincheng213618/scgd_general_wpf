@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -78,6 +79,11 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetYRectEx", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int CM_GetYRectEx(IntPtr handle, int[] pX, int[] pY, float[] pdY, int nLen, string szFileName, int nRw, int nRh);
 
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetxyuvCCTWaveCircle", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int CM_GetxyuvCCTWaveCircle(IntPtr handle, int pX, int pY, ref float x, ref float y, ref float u, ref float v, ref float CCT, ref float Wave, double nRadius = 3);
+
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetxyuvCCTWave", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int CM_GetxyuvCCTWave(IntPtr handle, int pX, int pY, ref float x, ref float y, ref float u, ref float v, ref float CCT, ref float Wave);
         #endregion
     }
 }
