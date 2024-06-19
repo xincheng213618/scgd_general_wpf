@@ -80,6 +80,7 @@
                         <TextBlock Text="{x:Static properties:Resources.FocusPoint}" MinWidth="40"/>
                         <ComboBox x:Name="ComboxPOITemplate" Width="130" Style="{StaticResource ComboBox.Small}" HorizontalAlignment="Left"  SelectionChanged="ComboxPOITemplate_SelectionChanged" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
                         <Button Content="{x:Static properties:Resources.Calculate}"  Click="CalculPOI_Click"/>
+                        <Button Content="MTF"  Click="CalculMTF_Click"/>
                     </StackPanel>
                 </ToolBar>
             </ToolBarTray>

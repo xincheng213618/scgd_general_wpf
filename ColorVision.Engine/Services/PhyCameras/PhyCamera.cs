@@ -613,10 +613,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                                         }
                                         groupResource.SetCalibrationResource();
                                     }
-
                                 });
-
-
                             }
                         }
                         catch (Exception ex)
@@ -628,7 +625,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                         }
                     }
                     Msg = "上传结束";
-                    await Task.Delay(100);
+                    await Task.Delay(500);
                     Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
                 }
                 catch(Exception ex)

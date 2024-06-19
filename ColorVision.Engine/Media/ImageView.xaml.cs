@@ -25,6 +25,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -697,8 +698,10 @@ namespace ColorVision.Engine.Media
                 int index = CVFileUtil.ReadCIEFileHeader(FilePath, out cVCIEFile);
                 CVFileUtil.ReadCIEFileData(FilePath, ref cVCIEFile, index);
 
+                ConvertXYZhandle = new WindowInteropHelper(Application.Current.GetActiveWindow()).Handle;
                 int result = ConvertXYZ.CM_InitXYZ(ConvertXYZhandle);
                 logger.Debug($"CM_InitXYZ :{result}");
+
                 result = ConvertXYZ.CM_SetBufferXYZ(ConvertXYZhandle, (uint)cVCIEFile.cols, (uint)cVCIEFile.rows, (uint)cVCIEFile.bpp, (uint)cVCIEFile.channels, cVCIEFile.data);
                 logger.Debug($"CM_SetBufferXYZ :{result}");
 
@@ -909,7 +912,7 @@ namespace ColorVision.Engine.Media
         }
         public bool IsCVCIE { get; set; }
 
-        private IntPtr ConvertXYZhandle = IntPtr.Zero;
+        public IntPtr ConvertXYZhandle { get; set; } = IntPtr.Zero;
 
         public void ShowCVCIE(object sender, ImageInfo imageInfo)
         {
@@ -923,37 +926,7 @@ namespace ColorVision.Engine.Media
             ToolBarTop.MouseMagnifier.DrawImageCVCIE(imageInfo, dXVal, dYVal, dZVal, dx, dy, du, dv);
         }
 
-        public PoiResultCIExyuvData GetCVCIE(POIPoint pOIPoint)
-        {
-            int x = 0;int y = 0; int rect = 0; int rect2 = 0;
 
-            PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData();
-            poiResultCIExyuvData.Point = pOIPoint;
-            float dXVal = 0;
-            float dYVal = 0;
-            float dZVal = 0;
-            float dx = 0;
-            float dy = 0;
-            float du = 0;
-            float dv = 0;
-
-            _ = pOIPoint.PointType switch
-            {
-                POIPointTypes.SolidPoint => ConvertXYZ.CM_GetXYZxyuvCircle(ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1),
-                POIPointTypes.Rect => ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2),
-                POIPointTypes.None or POIPointTypes.Circle or POIPointTypes.Mask or _ => ConvertXYZ.CM_GetXYZxyuvCircle(ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1),
-            };
-            poiResultCIExyuvData.u = du;
-            poiResultCIExyuvData.v = dv;
-            poiResultCIExyuvData.x = dx;
-            poiResultCIExyuvData.y = dy;
-            poiResultCIExyuvData.X = dXVal;
-            poiResultCIExyuvData.Y = dYVal;
-            poiResultCIExyuvData.Z = dZVal;
-            return poiResultCIExyuvData;
-
-
-        }
         private void ButtonCIE1931_Click(object sender, RoutedEventArgs e)
         {
             bool old = ToolBarTop.ShowImageInfo;

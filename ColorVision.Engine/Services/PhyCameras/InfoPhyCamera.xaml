@@ -53,7 +53,7 @@
                         <Grid Margin="5">
                             <UniformGrid Margin="5" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
                                 <Button Content="修改配置" Margin="5" Height="100" Width="180" Command="{Binding EditCommand}"/>
-                                <Border Height="100" Width="180"  BorderBrush="{StaticResource SecondaryRegionBrush}" BorderThickness="1.5" CornerRadius="5">
+                                <Border Height="100" Width="180" BorderBrush="{StaticResource SecondaryRegionBrush}" BorderThickness="1.5" CornerRadius="5">
                                     <Grid Margin="15" >
                                         <TextBlock VerticalAlignment="Top" HorizontalAlignment="Center" Text="{Binding CameraLicenseModel.Model}"/>
                                         <TextBlock Text="修改许可证" HorizontalAlignment="Center"/>
