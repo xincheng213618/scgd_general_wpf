@@ -13,6 +13,7 @@ using ColorVision.Net;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
+using cvColorVision;
 using CVCommCore.CVAlgorithm;
 using CVCommCore.CVImage;
 using MQTTMessageLib.Camera;
@@ -547,26 +548,80 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void CalculPOI_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxPOITemplate.SelectedValue is PoiParam poiParams)
+            if (ImageView.ConvertXYZhandle ==IntPtr.Zero)
             {
-                if (poiParams.Id == -1)
-                {
-                    ImageView.ImageShow.Clear();
-                    return;
-                }
-                PoiParam.LoadPoiDetailFromDB(poiParams);
-
-                ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
-
-                foreach (var item in poiParams.PoiPoints)
-                {
-                    POIPoint pOIPoint = new POIPoint() { Id =item.Id, Name = item.Name, PixelX = (int)item.PixX, PixelY = (int)item.PixY ,PointType = (POIPointTypes)item.PointType , Height = (int)item.PixHeight ,Width = (int)item.PixWidth };
-                    var sss = ImageView.GetCVCIE(pOIPoint);
-                    PoiResultCIExyuvDatas.Add(sss);
-                }
-                WindowCVCIE windowCIE = new WindowCVCIE(PoiResultCIExyuvDatas) { Owner = Application.Current.GetActiveWindow() };
-                windowCIE.Show();
+                MessageBox.Show("仅对CVCIE图像支持");
+                return;
             }
+            if (ComboxPOITemplate.SelectedValue is not PoiParam poiParams)
+            {
+                MessageBox.Show("需要配置关注点");
+                return;
+            }
+
+            if (poiParams.Id == -1)
+            {
+                ImageView.ImageShow.Clear();
+                return;
+            }
+            PoiParam.LoadPoiDetailFromDB(poiParams);
+
+            ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
+
+            foreach (var item in poiParams.PoiPoints)
+            {
+                POIPoint pOIPoint = new POIPoint() { Id = item.Id, Name = item.Name, PixelX = (int)item.PixX, PixelY = (int)item.PixY, PointType = (POIPointTypes)item.PointType, Height = (int)item.PixHeight, Width = (int)item.PixWidth };
+                var sss = GetCVCIE(ImageView.ConvertXYZhandle, pOIPoint);
+                PoiResultCIExyuvDatas.Add(sss);
+            }
+            WindowCVCIE windowCIE = new WindowCVCIE(PoiResultCIExyuvDatas) { Owner = Application.Current.GetActiveWindow() };
+            windowCIE.Show();
+        }
+
+        public static PoiResultCIExyuvData GetCVCIE(IntPtr ConvertXYZhandle, POIPoint pOIPoint)
+        {
+            int x = 0; int y = 0; int rect = 0; int rect2 = 0;
+
+            PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData();
+            poiResultCIExyuvData.Point = pOIPoint;
+            float dXVal = 0;
+            float dYVal = 0;
+            float dZVal = 0;
+            float dx = 0;
+            float dy = 0;
+            float du = 0;
+            float dv = 0;
+
+            _ = pOIPoint.PointType switch
+            {
+                POIPointTypes.SolidPoint => ConvertXYZ.CM_GetXYZxyuvCircle(ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1),
+                POIPointTypes.Rect => ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2),
+                POIPointTypes.None or POIPointTypes.Circle or POIPointTypes.Mask or _ => ConvertXYZ.CM_GetXYZxyuvCircle(ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect),
+            };
+            poiResultCIExyuvData.u = du;
+            poiResultCIExyuvData.v = dv;
+            poiResultCIExyuvData.x = dx;
+            poiResultCIExyuvData.y = dy;
+            poiResultCIExyuvData.X = dXVal;
+            poiResultCIExyuvData.Y = dYVal;
+            poiResultCIExyuvData.Z = dZVal;
+            return poiResultCIExyuvData;
+        }
+
+        private void CalculMTF_Click(object sender, RoutedEventArgs e)
+        {
+            if (ImageView.ConvertXYZhandle == IntPtr.Zero)
+            {
+                MessageBox.Show("仅对CVCIE图像支持");
+                return;
+            }
+            if (ComboxPOITemplate.SelectedValue is not PoiParam poiParams)
+            {
+                MessageBox.Show("需要配置关注点");
+                return;
+            }
+
+
 
 
         }
