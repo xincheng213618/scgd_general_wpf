@@ -81,6 +81,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private void Service_OnAlgorithmEvent(MsgReturn arg)
         {
+
             switch (arg.EventName)
             {
                 case MQTTFileServerEventEnum.Event_File_List_All:
@@ -372,35 +373,56 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private bool GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)
         {
-            bool? isSN = AlgBatchSelect.IsChecked;
-            bool? isRaw = AlgRawSelect.IsChecked;
             sn = string.Empty;
             fileExtType = FileExtType.Tif;
             imgFileName = string.Empty;
-            if (isSN == true)
+
+            if (POITabItem.IsSelected)
             {
-                if (string.IsNullOrWhiteSpace(AlgBatchCode.Text))
+                if (BatchSelect.IsChecked ==true)
                 {
-                    MessageBox.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
-                    return false;
+                    sn = BatchCode.Text;
+                    return true;
                 }
-                sn = AlgBatchCode.Text;
-            }
-            else if (isRaw == true)
-            {
-                imgFileName = CB_RawImageFiles.Text;
-                fileExtType = FileExtType.Raw;
+                else
+                {
+                    imgFileName = CB_CIEImageFiles.Text;
+                    fileExtType = FileExtType.CIE;
+                    return true;
+                }
             }
             else
             {
-                imgFileName = ImageFile.Text;
+                bool? isSN = AlgBatchSelect.IsChecked;
+                bool? isRaw = AlgRawSelect.IsChecked;
+
+                if (isSN == true)
+                {
+                    if (string.IsNullOrWhiteSpace(AlgBatchCode.Text))
+                    {
+                        MessageBox.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
+                        return false;
+                    }
+                    sn = AlgBatchCode.Text;
+                }
+                else if (isRaw == true)
+                {
+                    imgFileName = CB_RawImageFiles.Text;
+                    fileExtType = FileExtType.Raw;
+                }
+                else
+                {
+                    imgFileName = ImageFile.Text;
+                }
+                if (string.IsNullOrWhiteSpace(imgFileName))
+                {
+                    MessageBox.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
+                    return false;
+                }
+                return true;
             }
-            if (string.IsNullOrWhiteSpace(imgFileName))
-            {
-                MessageBox.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
-                return false;
-            }
-            return true;
+
+
         }
 
         private void FOV_Click(object sender, RoutedEventArgs e)

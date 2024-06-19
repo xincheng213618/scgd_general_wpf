@@ -16,6 +16,7 @@ using ColorVision.UI.Views;
 using cvColorVision;
 using CVCommCore.CVAlgorithm;
 using CVCommCore.CVImage;
+using log4net;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
@@ -46,6 +47,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
     /// </summary>
     public partial class ViewCamera : UserControl, IView
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(App));
+
+
         public View View { get; set; }
         public ObservableCollection<ViewResultCamera> ViewResultCameras { get; set; } = new ObservableCollection<ViewResultCamera>();
         public MQTTCamera DeviceService{ get; set; }
@@ -567,7 +571,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             PoiParam.LoadPoiDetailFromDB(poiParams);
 
             ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
-
+            int result = ConvertXYZ.CM_SetFilter(ImageView.ConvertXYZhandle, poiParams.DatumArea.Filter.Enable , poiParams.DatumArea.Filter.Threshold);
+            log.Info($"CM_SetFilter: {result}");
             foreach (var item in poiParams.PoiPoints)
             {
                 POIPoint pOIPoint = new POIPoint() { Id = item.Id, Name = item.Name, PixelX = (int)item.PixX, PixelY = (int)item.PixY, PointType = (POIPointTypes)item.PointType, Height = (int)item.PixHeight, Width = (int)item.PixWidth };
@@ -581,7 +586,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public static PoiResultCIExyuvData GetCVCIE(IntPtr ConvertXYZhandle, POIPoint pOIPoint)
         {
             int x = pOIPoint.PixelX; int y = pOIPoint.PixelY; int rect = pOIPoint.Width; int rect2 = pOIPoint.Height;
-
             PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData();
             poiResultCIExyuvData.Point = pOIPoint;
             float dXVal = 0;
