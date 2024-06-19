@@ -50,7 +50,7 @@ namespace ColorVision.Engine.Media
 
         public ColorMap()
         {
-            StreamResourceInfo stream = Application.GetResourceStream(new Uri($"/ColorVision;component/Assets/Image/pictureBox1.Image.png", UriKind.Relative));
+            StreamResourceInfo stream = Application.GetResourceStream(new Uri($"/ColorVision.Engine;component/Assets/Image/pictureBox1.Image.png", UriKind.Relative));
 
             byte[] bytes = StreamToBytes(stream.Stream);
 
