@@ -25,6 +25,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -697,8 +698,10 @@ namespace ColorVision.Engine.Media
                 int index = CVFileUtil.ReadCIEFileHeader(FilePath, out cVCIEFile);
                 CVFileUtil.ReadCIEFileData(FilePath, ref cVCIEFile, index);
 
+                ConvertXYZhandle = new WindowInteropHelper(Application.Current.GetActiveWindow()).Handle;
                 int result = ConvertXYZ.CM_InitXYZ(ConvertXYZhandle);
                 logger.Debug($"CM_InitXYZ :{result}");
+
                 result = ConvertXYZ.CM_SetBufferXYZ(ConvertXYZhandle, (uint)cVCIEFile.cols, (uint)cVCIEFile.rows, (uint)cVCIEFile.bpp, (uint)cVCIEFile.channels, cVCIEFile.data);
                 logger.Debug($"CM_SetBufferXYZ :{result}");
 

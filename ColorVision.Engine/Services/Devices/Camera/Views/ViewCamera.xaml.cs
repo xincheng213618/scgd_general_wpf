@@ -580,7 +580,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         public static PoiResultCIExyuvData GetCVCIE(IntPtr ConvertXYZhandle, POIPoint pOIPoint)
         {
-            int x = 0; int y = 0; int rect = 0; int rect2 = 0;
+            int x = pOIPoint.PixelX; int y = pOIPoint.PixelY; int rect = pOIPoint.Width; int rect2 = pOIPoint.Height;
 
             PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData();
             poiResultCIExyuvData.Point = pOIPoint;
@@ -591,12 +591,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             float dy = 0;
             float du = 0;
             float dv = 0;
+            float CCT = 0;
+            float Wave = 0;
 
             _ = pOIPoint.PointType switch
             {
                 POIPointTypes.SolidPoint => ConvertXYZ.CM_GetXYZxyuvCircle(ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1),
                 POIPointTypes.Rect => ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2),
-                POIPointTypes.None or POIPointTypes.Circle or POIPointTypes.Mask or _ => ConvertXYZ.CM_GetXYZxyuvCircle(ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect),
+                POIPointTypes.None or POIPointTypes.Circle or POIPointTypes.Mask or _ => ConvertXYZ.CM_GetXYZxyuvCircle(ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv,(int)(rect/2)),
             };
             poiResultCIExyuvData.u = du;
             poiResultCIExyuvData.v = dv;
@@ -605,6 +607,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             poiResultCIExyuvData.X = dXVal;
             poiResultCIExyuvData.Y = dYVal;
             poiResultCIExyuvData.Z = dZVal;
+            poiResultCIExyuvData.CCT = CCT;
+            poiResultCIExyuvData.Wave = Wave;
+
             return poiResultCIExyuvData;
         }
 
