@@ -113,6 +113,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Core.cs" />
+    <Compile Include="CyclingGradient.xaml.cs">
+      <DependentUpon>CyclingGradient.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Utils.cs" />
+    <Compile Include="VideoPlayer.cs" />
     <Compile Include="ViewModelBase.cs" />
     <Compile Include="WindowUpdate.xaml.cs">
       <DependentUpon>WindowUpdate.xaml</DependentUpon>
@@ -122,6 +128,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="AutoUpdater.cs" />
+    <Page Include="CyclingGradient.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="WindowUpdate.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -145,6 +155,7 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
+    <Resource Include="Assets\images\background.webp" />
     <None Include="ColorVision.snk" />
     <None Include="Properties\app.manifest" />
     <None Include="Properties\Settings.settings">
@@ -169,6 +180,17 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="ColorVision1.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="logi_codecs_shared.dll" />
+    <EmbeddedResource Include="logi_installer_shared.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="background-mask.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\images\background-mask.png" />
+    <Resource Include="Assets\images\spinner.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
