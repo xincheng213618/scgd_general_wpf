@@ -6,11 +6,41 @@
         xmlns:local="clr-namespace:ColorVisionSetup"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:AutoUpdater}"
-        Title="ColorVisiionSetup"  Height="120" Width="400" Initialized="Window_Initialized" Closing="Window_Closing">
+        Title="ColorVisiionSetup"  Height="600" Width="800" Background="Black" Initialized="Window_Initialized" Closing="Window_Closing">
+    <Window.Resources>
+        <LinearGradientBrush x:Key="BackgroundGradient" StartPoint="0,0" EndPoint="0,1.0">
+            <GradientStop Color="Black" Offset="0.0" />
+            <GradientStop Color="Black" Offset="0.85" />
+            <GradientStop Color="#04090c" Offset="1.0" />
+        </LinearGradientBrush>
+        <VisualBrush x:Key="VideoBackgroundBrush" Stretch="Uniform">
+            <VisualBrush.Visual>
+                <Grid>
+                    <local:VideoPlayer PlaybackSpeed="0.75" Stretch="Uniform" Source="Assets/images/background.webp" Opacity="1.0" />
+                </Grid>
+            </VisualBrush.Visual>
+        </VisualBrush>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+    </Window.Resources>
     <Grid>
-        <StackPanel>
+        <Grid>
+            <local:CyclingGradient Color1="#004679" Color2="#05714c" Color3="#6f35c0" />
+            <local:CyclingGradient Color1="#59d0ff" Color2="#57ffd3" Color3="#f0a3ff" Margin="0,35,0,85" OpacityMask="{StaticResource VideoBackgroundBrush}" />
+            <Rectangle Fill="{StaticResource BackgroundGradient}" Stretch="Fill">
+                <UIElement.OpacityMask>
+                    <ImageBrush ImageSource="Assets/images/background-mask.png" Stretch="UniformToFill" />
+                </UIElement.OpacityMask>
+            </Rectangle>
+        </Grid>
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+            <TextBlock Text="ColorVision"  FontSize="40" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="White" />
+            <TextBlock Text="版本 2024.6"  FontSize="14" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="White" />
+        </StackPanel>
+        <StackPanel  VerticalAlignment="Bottom">
             <Grid>
-                <ProgressBar Height="15"  Foreground="#B41515" Maximum="100" Minimum="0" Value="{Binding ProgressValue}" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
+                <ProgressBar Height="15"  Foreground="#00A9E0" Background="#003343" Maximum="100" Minimum="0" Value="{Binding ProgressValue}" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
                 <TextBlock Text="{Binding LatestVersion}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             </Grid>
             <DockPanel Margin="5">
