@@ -230,61 +230,6 @@
                         </StackPanel>
                     </GroupBox>
 
-
-                    <GroupBox Header="滤色轮配置" Margin="0,5" Visibility="{Binding IsChannelThree,Converter={StaticResource bool2VisibilityConverter}}">
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="启用串口发送:" Width="120"/>
-                                <ui:ToggleSwitch IsChecked="{Binding CFW.IsCOM}"/>
-                            </DockPanel>
-                            <StackPanel  Visibility="{Binding CFW.IsCOM,Converter={StaticResource bool2VisibilityConverter}}" >
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="串口:" Width="120"/>
-                                    <hc:ComboBox  x:Name="TextSerial1" IsEditable="True" Text="{Binding CFW.SzComName}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="波特率:" Width="120"/>
-                                    <hc:ComboBox  x:Name="TextBaudRate1" IsEditable="True" Text="{Binding CFW.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
-                                </DockPanel>
-                            </StackPanel>
-
-                            <UniformGrid Columns="3" Rows="1">
-                                <UniformGrid Columns="1" Rows="2" Margin="2">
-                                    <DockPanel Margin="0,2">
-                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[0].Cfwport}" Minimum="0"/>
-                                        <TextBlock Text="cfwport"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <ComboBox x:Name="chType1" DockPanel.Dock="Right" Width="110" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding CFW.ChannelCfgs[0].Chtype}"   SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
-                                        <TextBlock Text="chType"/>
-                                    </DockPanel>
-                                </UniformGrid>
-                                <UniformGrid Columns="1" Rows="2" Margin="2">
-                                    <DockPanel Margin="0,2">
-                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[1].Cfwport}" Minimum="0"/>
-                                        <TextBlock Text="cfwport"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <ComboBox x:Name="chType2" DockPanel.Dock="Right" Width="110" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding CFW.ChannelCfgs[1].Chtype}"  SelectedValuePath="Key"  DisplayMemberPath="Value"/>
-                                        <TextBlock Text="chType"/>
-                                    </DockPanel>
-                                </UniformGrid>
-                                <UniformGrid Columns="1" Rows="2" Margin="2">
-                                    <DockPanel Margin="0,2">
-                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[2].Cfwport}" Minimum="0"/>
-                                        <TextBlock Text="cfwport"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <ComboBox x:Name="chType3" DockPanel.Dock="Right" Width="110" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding CFW.ChannelCfgs[2].Chtype}"   SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
-                                        <TextBlock Text="chType"/>
-                                    </DockPanel>
-                                </UniformGrid>
-                            </UniformGrid>
-                        </StackPanel>
-
-                    </GroupBox>
-
-
                     <GroupBox Header="自动聚焦" Margin="0,5" >
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">

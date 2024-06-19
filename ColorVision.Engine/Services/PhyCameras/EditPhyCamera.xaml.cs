@@ -130,6 +130,26 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            if (EditConfig.CFW.CFWNum > 1)
+            {
+                EditConfig.CFW.ChannelCfgs[3].Chtype = EditConfig.CFW.ChannelCfgs[0].Chtype;
+                EditConfig.CFW.ChannelCfgs[4].Chtype = EditConfig.CFW.ChannelCfgs[1].Chtype;
+                EditConfig.CFW.ChannelCfgs[5].Chtype = EditConfig.CFW.ChannelCfgs[2].Chtype;
+            }
+            if (EditConfig.CFW.CFWNum > 2)
+            {
+                EditConfig.CFW.ChannelCfgs[6].Chtype = EditConfig.CFW.ChannelCfgs[0].Chtype;
+                EditConfig.CFW.ChannelCfgs[7].Chtype = EditConfig.CFW.ChannelCfgs[1].Chtype;
+                EditConfig.CFW.ChannelCfgs[8].Chtype = EditConfig.CFW.ChannelCfgs[2].Chtype;
+            }
+            if (EditConfig.CFW.CFWNum ==1)
+                EditConfig.CFW.ChannelCfgs = EditConfig.CFW.ChannelCfgs.GetRange(0, 3);
+            if (EditConfig.CFW.CFWNum == 2)
+                EditConfig.CFW.ChannelCfgs = EditConfig.CFW.ChannelCfgs.GetRange(0, 6);
+            if (EditConfig.CFW.CFWNum == 3)
+                EditConfig.CFW.ChannelCfgs = EditConfig.CFW.ChannelCfgs.GetRange(0, 9);
+
+
             EditConfig.CopyTo(PhyCamera.Config);
             Close();
         }
