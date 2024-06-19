@@ -23,34 +23,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
                 NotifyPropertyChanged(nameof(IsCFWNum1)); 
                 NotifyPropertyChanged(nameof(IsCFWNum2));
                 NotifyPropertyChanged(nameof(IsCFWNum3)); 
-                if (value == 2)
-                {
-                    if (ChannelCfgs.Count == 3)
-                    {
-                        ChannelCfgs.Add(new ChannelCfg());
-                        ChannelCfgs.Add(new ChannelCfg());
-                        ChannelCfgs.Add(new ChannelCfg());
-                    }
-
-                }
-                if (value == 3)
-                {
-                    if (ChannelCfgs.Count == 3)
-                    {
-                        ChannelCfgs.Add(new ChannelCfg());
-                        ChannelCfgs.Add(new ChannelCfg());
-                        ChannelCfgs.Add(new ChannelCfg());
-                    }
-                    if (ChannelCfgs.Count == 6)
-                    {
-                        ChannelCfgs.Add(new ChannelCfg());
-                        ChannelCfgs.Add(new ChannelCfg());
-                        ChannelCfgs.Add(new ChannelCfg());
-                        ChannelCfgs.Add(new ChannelCfg());
-                        ChannelCfgs.Add(new ChannelCfg());
-                        ChannelCfgs.Add(new ChannelCfg());
-                    }
-                }
             } }
         private int _CFWNum = 1;
 
@@ -65,7 +37,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; NotifyPropertyChanged(); } }
         private int _BaudRate = 115200;
 
-        public List<ChannelCfg> ChannelCfgs { get; set; } = new List<ChannelCfg>{
+        public List<ChannelCfg> ChannelCfgs { get => _ChannelCfgs; set { _ChannelCfgs = value; NotifyPropertyChanged(); } }
+        private List<ChannelCfg> _ChannelCfgs = new List<ChannelCfg>{
             new() { Cfwport =0,Chtype =ImageChannelType.Gray_Y }, new() {Cfwport =1,Chtype =ImageChannelType.Gray_X }, new(){ Cfwport =2,Chtype =ImageChannelType.Gray_Z}
         };
     }

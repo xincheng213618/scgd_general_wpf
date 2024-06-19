@@ -2,7 +2,6 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.PhyCameras.Configs;
-using ColorVision.Solution;
 using ColorVision.Themes;
 using cvColorVision;
 using System;
@@ -126,6 +125,11 @@ namespace ColorVision.Engine.Services.PhyCameras
                 { ImageChannelType.Gray_Y, chType2 },
                 { ImageChannelType.Gray_Z, chType3 }
             };
+
+            while (EditConfig.CFW.ChannelCfgs.Count< 9)
+            {
+                EditConfig.CFW.ChannelCfgs.Add(new Services.PhyCameras.Configs.ChannelCfg());
+            }
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
