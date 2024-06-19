@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         private string _CameraID;
 
         [JsonIgnore]
-        public string? CameraCode => PhyCameraManager.GetInstance().PhyCameras.First(a => a.Name == CameraID).SysResourceModel.Code;
+        public string? CameraCode => CameraID ==null ? null: PhyCameraManager.GetInstance().PhyCameras.First(a => a.Name == CameraID).SysResourceModel.Code;
 
         public double ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; NotifyPropertyChanged(); } }
         private double _ExpTimeR = 10;
