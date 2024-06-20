@@ -1,12 +1,50 @@
-﻿using ColorVision.Common.MVVM;
+﻿#pragma warning disable CA1707
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using cvColorVision;
 using Newtonsoft.Json;
 using System;
+using System.ComponentModel;
 
 namespace ColorVision.Engine.Services.PhyCameras.Configs
 {
+    /// <summary>
+    /// 相机模式
+    /// </summary>
+    public enum CameraMode
+    {
+        [Description("CV_MODE")]
+        CV_MODE,
+        [Description("BV_MODE")]
+        BV_MODE,
+        [Description("LV_MODE")]
+        LV_MODE,
+        [Description("LVTOBV_MODE")]
+        LVTOBV_MODE,
+    };
+    /// <summary>
+    /// 相机型号
+    /// </summary>
+    public enum CameraModel
+    {
+        [Description("QHY_USB")]
+        QHY_USB,
+        [Description("HK_USB")]
+        HK_USB,
+        [Description("HK_CARD")]
+        HK_CARD,
+        [Description("MIL_CL_CARD")]
+        MIL_CL_CARD,
+        [Description("MIL_CXP_CARD")]
+        MIL_CXP_CARD,
+        [Description("NN_USB")]
+        NN_USB,
+        [Description("TOUP_USB")]
+        TOUP_USB
+    };
+
+
     /// <summary>
     /// 相机配置
     /// </summary>
@@ -19,6 +57,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         public CameraType CameraType { get => _CameraType; set { _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
         private cvColorVision.CameraType _CameraType;
+
+        public CameraMode CameraMode { get => _CameraMode; set { _CameraMode = value; NotifyPropertyChanged(); } }
+        private CameraMode _CameraMode;
+
+        public CameraModel CameraModel { get => _CameraModel; set { _CameraModel = value; NotifyPropertyChanged(); } }
+        private CameraModel _CameraModel;
+
 
         public TakeImageMode TakeImageMode { get => _TakeImageMode; set { _TakeImageMode = value; NotifyPropertyChanged(); } }
         private cvColorVision.TakeImageMode _TakeImageMode;

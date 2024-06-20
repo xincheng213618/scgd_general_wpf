@@ -35,7 +35,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates
         }
     }
 
-
     public class DataLoadParam : ParamBase
     {
         public static ObservableCollection<TemplateModel<DataLoadParam>> Params { get; set; } = new ObservableCollection<TemplateModel<DataLoadParam>>();

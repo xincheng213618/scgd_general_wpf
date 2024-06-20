@@ -54,6 +54,14 @@
                                 <hc:ComboBox x:Name="ComboxCameraType"  SelectedValue="{Binding CameraType}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
                             </DockPanel>
                             <DockPanel Margin="0,2">
+                                <TextBlock Text="相机型号" Width="120"/>
+                                <hc:ComboBox x:Name="ComboxCameraModel"  SelectedValue="{Binding CameraModel}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock Text="相机模式" Width="120"/>
+                                <hc:ComboBox x:Name="ComboxCameraMode"  SelectedValue="{Binding CameraMode}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
                                 <TextBlock Text="默认取图模式" Width="120"/>
                                 <ComboBox  x:Name="ComboxCameraTakeImageMode"  SelectedValue="{Binding TakeImageMode}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  />
                             </DockPanel>

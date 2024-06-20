@@ -2,6 +2,7 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Themes;
 using cvColorVision;
 using System;
@@ -50,6 +51,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
             CameraPhyID.DisplayMemberPath = "Name";
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
+
+            ComboxCameraModel.ItemsSource = from e1 in Enum.GetValues(typeof(CameraModel)).Cast<CameraModel>()
+                                            select new KeyValuePair<CameraModel, string>(e1, e1.ToDescription());
+
+            ComboxCameraMode.ItemsSource = from e1 in Enum.GetValues(typeof(CameraMode)).Cast<CameraMode>()
+                                           select new KeyValuePair<CameraMode, string>(e1, e1.ToDescription());
 
             ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues(typeof(TakeImageMode)).Cast<TakeImageMode>()
                                                     select new KeyValuePair<TakeImageMode, string>(e1, e1.ToDescription());
@@ -176,6 +183,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 EditConfig.CFW.CopyFrom(phyCamera.Config.CFW);
                 EditConfig.CameraID = phyCamera.Config.CameraID;
                 EditConfig.CameraType = phyCamera.Config.CameraType;
+                EditConfig.CameraMode = phyCamera.Config.CameraMode;
+                EditConfig.CameraModel = phyCamera.Config.CameraModel;
+
                 EditConfig.TakeImageMode = phyCamera.Config.TakeImageMode;
                 EditConfig.ImageBpp = phyCamera.Config.ImageBpp;
             }

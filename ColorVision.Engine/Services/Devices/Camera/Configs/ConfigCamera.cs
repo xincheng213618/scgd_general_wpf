@@ -22,6 +22,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
 
         public CameraType CameraType { get => _CameraType; set { _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
         private CameraType _CameraType;
+        public CameraMode CameraMode { get => _CameraMode; set { _CameraMode = value; NotifyPropertyChanged(); } }
+        private CameraMode _CameraMode;
+
+        public CameraModel CameraModel { get => _CameraModel; set { _CameraModel = value; NotifyPropertyChanged(); } }
+        private CameraModel _CameraModel;
 
         public TakeImageMode TakeImageMode { get => _TakeImageMode; set { _TakeImageMode = value; NotifyPropertyChanged(); } }
         private TakeImageMode _TakeImageMode;

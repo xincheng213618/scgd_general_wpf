@@ -49,6 +49,12 @@ namespace ColorVision.Engine.Services.PhyCameras
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
 
+            ComboxCameraModel.ItemsSource = from e1 in Enum.GetValues(typeof(CameraModel)).Cast<CameraModel>()
+                                            select new KeyValuePair<CameraModel, string>(e1, e1.ToDescription());
+
+            ComboxCameraMode.ItemsSource = from e1 in Enum.GetValues(typeof(CameraMode)).Cast<CameraMode>()
+                                           select new KeyValuePair<CameraMode, string>(e1, e1.ToDescription());
+
             ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues(typeof(TakeImageMode)).Cast<TakeImageMode>()
                                                     select new KeyValuePair<TakeImageMode, string>(e1, e1.ToDescription());
 
