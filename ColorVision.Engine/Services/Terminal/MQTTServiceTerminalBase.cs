@@ -1,9 +1,9 @@
 ﻿using ColorVision.Engine.MQTT;
-using ColorVision.Services.Core;
+using ColorVision.Engine.Services.Core;
 using System;
 using System.Threading.Tasks;
 
-namespace ColorVision.Services.Terminal
+namespace ColorVision.Engine.Services.Terminal
 {
     public class MQTTServiceTerminalBase : MQTTServiceBase
     {

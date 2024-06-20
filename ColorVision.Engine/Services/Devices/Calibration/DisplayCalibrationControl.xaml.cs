@@ -1,11 +1,11 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
+using ColorVision.Engine.Services.Devices.Calibration.Views;
+using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
-using ColorVision.Services.Devices.Calibration.Views;
-using ColorVision.Services.Msg;
-using ColorVision.Services.PhyCameras;
-using ColorVision.Services.PhyCameras.Templates;
-using ColorVision.Services.Templates;
+using ColorVision.Net;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
@@ -16,7 +16,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Devices.Calibration
+namespace ColorVision.Engine.Services.Devices.Calibration
 {
 
 
@@ -57,14 +57,7 @@ namespace ColorVision.Services.Devices.Calibration
             };
             
             this.AddViewConfig(View, ComboxView);
-            SelectChanged += (s, e) =>
-            {
-                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
-            };
-            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-            {
-                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
-            };
+            this.ApplyChangedSelectedColor(DisPlayBorder);
         }
 
         public event RoutedEventHandler Selected;
@@ -73,12 +66,14 @@ namespace ColorVision.Services.Devices.Calibration
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
-        private void Service_OnCalibrationEvent(MsgReturn arg)
+        private void Service_OnCalibrationEvent(MsgReturn msg)
         {
-            switch (arg.EventName)
+            if (msg.DeviceCode !=  Device.Code) return;
+
+            switch (msg.EventName)
             {
                 case MQTTFileServerEventEnum.Event_File_List_All:
-                    DeviceListAllFilesParam data = JsonConvert.DeserializeObject<DeviceListAllFilesParam>(JsonConvert.SerializeObject(arg.Data));
+                    DeviceListAllFilesParam data = JsonConvert.DeserializeObject<DeviceListAllFilesParam>(JsonConvert.SerializeObject(msg.Data));
                     switch (data.FileExtType)
                     {
                         case FileExtType.Raw:
@@ -104,6 +99,16 @@ namespace ColorVision.Services.Devices.Calibration
                             break;
                         default:
                             break;
+                    }
+                    break;
+                case MQTTFileServerEventEnum.Event_File_Download:
+                    DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(msg.Data));
+                    if (pm_dl != null)
+                    {
+                        Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            View.ImageView.OpenImage(pm_dl.FileName);
+                        });
                     }
                     break;
             }
@@ -188,11 +193,10 @@ namespace ColorVision.Services.Devices.Calibration
             }
             if (sender is Button button)
             {
-                TemplateControl = TemplateControl.GetInstance();
                 WindowTemplate windowTemplate;
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
-                    MessageBox.Show(Application.Current.MainWindow, Engine.Properties.Resources.DatabaseConnectionFailed, "ColorVision");
+                    MessageBox.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
                     return;
                 }
                 switch (button.Tag?.ToString() ?? string.Empty)
@@ -204,7 +208,7 @@ namespace ColorVision.Services.Devices.Calibration
                         windowTemplate.ShowDialog();
                         break;
                     default:
-                        HandyControl.Controls.Growl.Info(Engine.Properties.Resources.UnderDevelopment);
+                        HandyControl.Controls.Growl.Info(Properties.Resources.UnderDevelopment);
                         break;
                 }
             }

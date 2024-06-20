@@ -1,22 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Devices.Algorithm.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Dao;
 
-namespace ColorVision.Services.Devices.Algorithm.Views
+namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
     public class GhostResultData : ViewModelBase
     {
-        public GhostResultData(int rows, int cols, string ghostPixelNum, string ghostPixels, string ledPixelNum, string ledPixels, string ledCenters, string ledBlobGray, string ghostAvrGray)
-        {
-            Rows = rows;
-            Cols = cols;
-            GhostPixelNum = ghostPixelNum;
-            GhostPixels = ghostPixels;
-            LedPixelNum = ledPixelNum;
-            LedPixels = ledPixels;
-            LedCenters = ledCenters;
-            LedBlobGray = ledBlobGray;
-            GhostAvrGray = ghostAvrGray;
-        }
         public GhostResultData(AlgResultGhostModel algResultGhostModel)
         {
             Rows = algResultGhostModel.Rows;

@@ -1,0 +1,65 @@
+﻿<Window x:Class="ColorVision.Engine.UIExport.SolutionExports.Export.ExportCVCIE"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:hc ="https://handyorg.github.io/handycontrol"
+        xmlns:local="clr-namespace:ColorVision.Engine.UIExport.SolutionExports.Export"
+        xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:VExportCIE}"
+        Title="{x:Static properties:Resources.Export}" Background="{StaticResource BackgroundBrush}" Height="400" Width="400" Initialized="Window_Initialized">
+    <Grid Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <StackPanel>
+            <DockPanel  Margin="0,3">
+                <hc:ComboBox  Margin="0,0,0,0"    IsEditable="True" SelectedIndex="0" Text="{Binding Name}"  hc:InfoElement.Title="{x:Static properties:Resources.Name}"
+                              hc:InfoElement.Necessary="True"  hc:InfoElement.Symbol="*" 
+                              />
+            </DockPanel>
+            <DockPanel  Margin="0,3">
+                <Button Content="..." Height="30" DockPanel.Dock="Right" VerticalAlignment="Bottom" Margin="2,0,0,0" Click="Save_Click"/>
+                <hc:ComboBox  Margin="0,0,0,0"    IsEditable="True" SelectedIndex="0" Text="{Binding SavePath}"  hc:InfoElement.Title="{x:Static properties:Resources.SelectProjectSaveLocation}"
+                              hc:InfoElement.Necessary="True"  hc:InfoElement.Symbol="*" 
+                              ItemsSource="{Binding RecentImageSaveList}"/>
+            </DockPanel>
+            <DockPanel  Margin="0,3">
+                <hc:ComboBox x:Name="ExportImageFormatComboBox" IsEditable="True" SelectedIndex="0"  DisplayMemberPath="Key" SelectedValuePath="Value" SelectedValue="{Binding ExportImageFormat}"  hc:InfoElement.Title="类型"
+                              hc:InfoElement.Necessary="True"  hc:InfoElement.Symbol="*" 
+                              />
+            </DockPanel>
+            <DockPanel>
+                <TextBlock Text="图像信息：" Width="80"/>
+                <TextBlock Text="{Binding Rows}"/>
+                <TextBlock Text="x"/>
+                <TextBlock Text="{Binding Cols}"/>
+            </DockPanel>
+            <DockPanel>
+                <TextBlock Text="通道：" Width="80"/>
+                <TextBlock Text="{Binding Channels}"/>
+            </DockPanel>
+
+
+
+            <UniformGrid  Columns="4" Margin="0,10" Visibility="{Binding IsCanExportSrc ,Converter={StaticResource bool2VisibilityConverter}}">
+                <CheckBox Margin="2" Content="原图" IsChecked="{Binding IsExportSrc}"/>
+                <CheckBox Margin="2" Content="R通道" IsChecked="{Binding IsExportChannelR}" Visibility="{Binding IsChannelOne ,Converter={StaticResource bool2VisibilityConverter}}"/>
+                <CheckBox Margin="2" Content="G通道" IsChecked="{Binding IsExportChannelG}" Visibility="{Binding IsChannelOne ,Converter={StaticResource bool2VisibilityConverter}}"/>
+                <CheckBox Margin="2" Content="B通道" IsChecked="{Binding IsExportChannelB}" Visibility="{Binding IsChannelOne ,Converter={StaticResource bool2VisibilityConverter}}"/>
+            </UniformGrid>
+            <UniformGrid Columns="4" Visibility="{Binding IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}">
+                <CheckBox Margin="2" Content="X通道" IsChecked="{Binding IsExportChannelX}"/>
+                <CheckBox Margin="2" Content="Y通道" IsChecked="{Binding IsExportChannelY}"/>
+                <CheckBox Margin="2" Content="Z通道" IsChecked="{Binding IsExportChannelZ}"/>
+            </UniformGrid>
+
+        </StackPanel>
+        <Border Grid.Row="2" Height="30">
+            <Button  Content="{x:Static properties:Resources.Export}" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click" />
+        </Border>
+    </Grid>
+</Window>

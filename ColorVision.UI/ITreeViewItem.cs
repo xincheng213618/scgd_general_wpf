@@ -9,5 +9,10 @@ namespace ColorVision.UI
 
         public ContextMenu ContextMenu { get; set; }
     }
+
+    public interface IEditable
+    {
+        bool IsEditMode { get; set; }
+    }
 }
 

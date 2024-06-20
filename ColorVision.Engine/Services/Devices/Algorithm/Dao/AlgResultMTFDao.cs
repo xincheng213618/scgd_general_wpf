@@ -4,7 +4,7 @@ using Panuon.WPF.UI;
 using System.Collections.ObjectModel;
 using System.Data;
 
-namespace ColorVision.Services.Devices.Algorithm.Dao
+namespace ColorVision.Engine.Services.Devices.Algorithm.Dao
 {
     public class AlgResultMTFModel : PKModel
     {

@@ -9,7 +9,7 @@ using System.Windows;
 
 namespace ColorVision.Solution.V.Files
 {
-    public class CommonFile : ViewModelBase, IFile
+    public class CommonFile : ViewModelBase, IFileMeta
     {
         public CommonFile() { }
         public FileInfo FileInfo { get; set; }

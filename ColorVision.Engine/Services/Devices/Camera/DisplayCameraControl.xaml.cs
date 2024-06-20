@@ -1,26 +1,24 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
+using ColorVision.Engine.Services.Devices.Camera.Video;
+using ColorVision.Engine.Services.Devices.Camera.Views;
+using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Scheduler;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera.Video;
-using ColorVision.Services.Devices.Camera.Views;
-using ColorVision.Services.Msg;
-using ColorVision.Services.PhyCameras;
-using ColorVision.Services.PhyCameras.Templates;
-using ColorVision.Services.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
 using cvColorVision;
 using CVCommCore;
+using FlowEngineLib;
 using log4net;
+using log4net.Util;
 using MQTTMessageLib.Camera;
-using Mysqlx.Crud;
 using Newtonsoft.Json;
 using Quartz;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -30,7 +28,7 @@ using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
-namespace ColorVision.Services.Devices.Camera
+namespace ColorVision.Engine.Services.Devices.Camera
 {
     public class CameraCaptureJob : IJob
     {
@@ -68,8 +66,6 @@ namespace ColorVision.Services.Devices.Camera
         public ViewCamera View { get; set; }
         public string DisPlayName => Device.Config.Name;
 
-        public LocalVideoConfig VideoConfig { get; set; }
-
         public DisplayCameraControl(DeviceCamera device)
         {
             Device = device;
@@ -79,7 +75,6 @@ namespace ColorVision.Services.Devices.Camera
             _timer.Interval = TimeSpan.FromMilliseconds(500);
             _timer.Tick += Timer_Tick; 
             PreviewMouseDown += UserControl_PreviewMouseDown;
-            VideoConfig = LocalVideoConfig.Instance;
         }
 
         private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
@@ -119,20 +114,27 @@ namespace ColorVision.Services.Devices.Camera
                     SetVisibility(ButtonOffline, Visibility.Collapsed);
                     SetVisibility(ButtonClose, Visibility.Collapsed);
                     SetVisibility(StackPanelImage, Visibility.Collapsed);
+                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
                 }
-
                 // Default state
                 SetVisibility(StackPanelOpen, Visibility.Visible);
                 HideAllButtons();
 
                 switch (status)
                 {
+                    case DeviceStatusType.Unauthorized:
+                        SetVisibility(StackPanelOpen, Visibility.Collapsed);
+                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Unknown:
+                        SetVisibility(StackPanelOpen, Visibility.Collapsed);
+                        SetVisibility(TextBlockUnknow, Visibility.Visible);
+                        break;
                     case DeviceStatusType.OffLine:
                         SetVisibility(StackPanelOpen, Visibility.Collapsed);
                         SetVisibility(ButtonOffline, Visibility.Visible);
                         break;
-                    case DeviceStatusType.Unknown:
-                    case DeviceStatusType.Unauthorized:
                     case DeviceStatusType.UnInit:
                         SetVisibility(StackPanelOpen, Visibility.Collapsed);
                         SetVisibility(ButtonInit, Visibility.Visible);
@@ -175,13 +177,8 @@ namespace ColorVision.Services.Devices.Camera
                 }
 
             };
-            void UpdateDisPlayBorder()
-            {
-                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
-            }
-            UpdateDisPlayBorder();
-            SelectChanged += (s, e) => UpdateDisPlayBorder();
-            ThemeManager.Current.CurrentUIThemeChanged += (s) => UpdateDisPlayBorder();
+            this.ApplyChangedSelectedColor(DisPlayBorder);
+
         }
 
         public event RoutedEventHandler Selected;
@@ -226,6 +223,16 @@ namespace ColorVision.Services.Devices.Camera
             {
                 if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
                 {
+                    if (param.Id != -1)
+                    {
+                        if (Device.PhyCamera != null && Device.PhyCamera.CameraLicenseModel?.DevCaliId == null)
+                        {
+                            MessageBox.Show(Application.Current.GetActiveWindow(), "使用校正模板需要先配置校正服务", "ColorVision");
+                            return;
+                        }
+                    }
+
+
                     double[] expTime = null;
                     if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
                     else expTime = new double[] { Device.Config.ExpTime };
@@ -278,10 +285,10 @@ namespace ColorVision.Services.Devices.Camera
                 if (!DService.IsVideoOpen)
                 {
                     DService.CurrentTakeImageMode = TakeImageMode.Live;
-                    string host = VideoConfig.Host;
-                    int port = VideoConfig.Port;
-                    //bool IsLocal = (host == "127.0.0.1");
+                    string host = Device.Config.VideoConfig.Host;
+                    int port = Tool.GetFreePort(Device.Config.VideoConfig.Port);
                     port = CameraVideoControl.Open(host, port);
+                    CameraVideoControl.IsEnableResize = Device.Config.VideoConfig.IsEnableResize;
                     if (port > 0)
                     {
                         MsgRecord msg = DService.OpenVideo(host, port);
@@ -300,13 +307,14 @@ namespace ColorVision.Services.Devices.Camera
                             }
                         };
                         ServicesHelper.SendCommand(button, msg);
+                        View.ImageView.ImageShow.Source = null;
                         CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
                         CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
                     }
                     else
                     {
                         MessageBox.Show("视频模式下，本地端口打开失败");
-                        logger.ErrorFormat("Local socket open failed.{0}:{1}", host, VideoConfig.Port);
+                        logger.Debug($"Local socket open failed.{host}:{port}");
                     }
                 }
             }
@@ -340,26 +348,11 @@ namespace ColorVision.Services.Devices.Camera
             ServicesHelper.SendCommandEx(sender, DService.AutoFocus);
         }
 
-        private void SetChannel()
-        {
-            MsgSend msg = new()
-            {
-                EventName = "SetParam",
-                Params = new Dictionary<string, object>() { { "Func",new List<ParamFunction> (){
-                    new() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 0 }, { "nPort", DService.Config.CFW.ChannelCfgs[0].Cfwport },{ "eImgChlType", (int)DService.Config.CFW.ChannelCfgs[0].Chtype } } },
-                    new() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 1 }, { "nPort", DService.Config.CFW.ChannelCfgs[1].Cfwport },{ "eImgChlType", (int)DService.Config.CFW.ChannelCfgs[1].Chtype } } },
-                    new() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", 2 }, { "nPort", DService.Config.CFW.ChannelCfgs[2].Cfwport },{ "eImgChlType", (int)DService.Config.CFW.ChannelCfgs[2].Chtype } } },
-                } } }
-            };
-            DService.PublishAsyncClient(msg);
-        }
 
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
             ToggleButton0.IsChecked = !ToggleButton0.IsChecked;
         }
-
-        TemplateControl TemplateControl { get; set; }
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
@@ -368,16 +361,14 @@ namespace ColorVision.Services.Devices.Camera
                 MessageBox.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
                 return;
             }
-
-                WindowTemplate windowTemplate;
-                if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-                {
-                    MessageBox.Show(Application.Current.MainWindow, Engine.Properties.Resources.DatabaseConnectionFailed, "ColorVision");
-                    return;
-                }
-                var ITemplate = new TemplateCalibrationParam(Device.PhyCamera) ;
-                windowTemplate = new WindowTemplate(ITemplate, ComboxCalibrationTemplate.SelectedIndex-1) { Owner = Application.Current.GetActiveWindow() };
-                windowTemplate.ShowDialog();
+            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
+            {
+                MessageBox.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
+                return;
+            }
+            var ITemplate = new TemplateCalibrationParam(Device.PhyCamera);
+            var windowTemplate = new WindowTemplate(ITemplate, ComboxCalibrationTemplate.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
+            windowTemplate.ShowDialog();
         }
 
         private void Move_Click(object sender, RoutedEventArgs e)
@@ -448,13 +439,6 @@ namespace ColorVision.Services.Devices.Camera
             }
         }
 
-
-
-
-        private void SliderexpTime_MouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-
-        }
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)

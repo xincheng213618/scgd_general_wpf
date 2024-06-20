@@ -2,23 +2,22 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Templates;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.Sensor.Templates
+namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
     public class ExportSensorHeYuan : IMenuItem
     {
-        public string OwnerGuid => "Template";
+        public string OwnerGuid => "Sensor";
 
         public string? GuidId => "SensorHeYuan";
         public int Order => 21;
-        public string? Header => ColorVision.Engine.Properties.Resources.MenuSenSorHeYuan;
+        public string? Header => Properties.Resources.MenuSensorHeYuan;
 
         public string? InputGestureText { get; }
 
@@ -35,12 +34,13 @@ namespace ColorVision.Services.Devices.Sensor.Templates
         });
     }
 
+
     public class TemplateSensorHeYuan : ITemplate<SensorHeYuan>, IITemplateLoad
     {
         public TemplateSensorHeYuan()
         {
             Title = "SensorHeYuan设置";
-            Code = ModMasterType.SensorHeYuan;
+            Code = "Sensor.HeYuan";
             TemplateParams = SensorHeYuan.SensorHeYuans;
         }
     }
@@ -49,9 +49,9 @@ namespace ColorVision.Services.Devices.Sensor.Templates
     {
         public static ObservableCollection<TemplateModel<SensorHeYuan>> SensorHeYuans { get; set; } = new ObservableCollection<TemplateModel<SensorHeYuan>>();
 
-
         public SensorHeYuan() : base()
         {
+
         }
 
         public SensorHeYuan(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
@@ -98,5 +98,6 @@ namespace ColorVision.Services.Devices.Sensor.Templates
         [Category("SensorHeYuan"), Description("下电")]
         public string? PowerOff { get => GetValue(_PowerOff); set { SetProperty(ref _PowerOff, value); } }
         private string? _PowerOff = "5A 05 07 02 31 FF 98,5A 06 08 03 31 FF 00 9B";
+
     }
 }

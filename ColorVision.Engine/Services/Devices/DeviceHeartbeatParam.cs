@@ -1,6 +1,6 @@
 ﻿using CVCommCore;
 
-namespace ColorVision.Services.Devices
+namespace ColorVision.Engine.Services.Devices
 {
     public class DeviceHeartbeatParam
     {

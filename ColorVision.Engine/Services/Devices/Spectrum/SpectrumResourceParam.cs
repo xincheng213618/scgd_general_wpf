@@ -1,14 +1,14 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
-using ColorVision.Services.Dao;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.UserSpace;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.Spectrum
+namespace ColorVision.Engine.Services.Devices.Spectrum
 {
     public class TemplateSpectrumResourceParam : ITemplate<SpectrumResourceParam>
     {

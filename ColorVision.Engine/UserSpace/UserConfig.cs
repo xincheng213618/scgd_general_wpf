@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
+using ColorVision.UI.Authorizations;
 using System.ComponentModel;
 
 namespace ColorVision.UserSpace
@@ -18,9 +19,8 @@ namespace ColorVision.UserSpace
         public string UserPwd { get => _UserPwd; set { _UserPwd = value; NotifyPropertyChanged(); } }
         private string _UserPwd = string.Empty;
 
-
-        public PerMissionMode PerMissionMode { get => _PerMissionMode; set { _PerMissionMode = value; NotifyPropertyChanged(); } }
-        private PerMissionMode _PerMissionMode;
+        public PermissionMode PerMissionMode { get => _PerMissionMode; set { _PerMissionMode = value; NotifyPropertyChanged(); } }
+        private PermissionMode _PerMissionMode;
 
         public string UserName { get => _UserName; set { _UserName = value; NotifyPropertyChanged(); } }
         private string _UserName = string.Empty;
@@ -67,10 +67,6 @@ namespace ColorVision.UserSpace
         Female,
     }
 
-    public enum PerMissionMode  
-    {
-        Administrator,
-        User
-    }
+
 }
 

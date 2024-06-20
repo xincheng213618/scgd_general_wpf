@@ -3,8 +3,8 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates.POI.Dao;
 using ColorVision.Engine.Templates.POI.Validate;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Templates.POI;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Templates.POI;
 using ColorVision.UI.Sorts;
 using ColorVision.UserSpace;
 using Newtonsoft.Json;
@@ -15,6 +15,14 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates.POI
 {
+    public class ExportPOI : ExportTemplateBase
+    {
+        public override string GuidId => "PoiParam";
+        public override string Header => Properties.Resources.MenuPoi;
+        public override int Order => 1;
+        public override ITemplate Template { get; } = new TemplatePOI();
+    }
+
     public class TemplatePOI : ITemplate<PoiParam>, IITemplateLoad
     {
         public TemplatePOI()

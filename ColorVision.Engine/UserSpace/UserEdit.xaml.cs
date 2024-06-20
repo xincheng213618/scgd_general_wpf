@@ -2,6 +2,7 @@
 using System;
 using ColorVision.Common.MVVM;
 using System.Windows;
+using ColorVision.Themes;
 
 namespace ColorVision.UserSpace
 {
@@ -18,6 +19,7 @@ namespace ColorVision.UserSpace
             UserConfig = userConfig;
             UserConfigCopy = new UserConfig();
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

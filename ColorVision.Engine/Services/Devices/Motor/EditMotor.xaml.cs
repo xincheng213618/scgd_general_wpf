@@ -1,10 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Themes;
 using System;
 using System.Windows;
 using System.Windows.Input;
 
 
-namespace ColorVision.Services.Devices.Motor
+namespace ColorVision.Engine.Services.Devices.Motor
 {
     /// <summary>
     /// EditMotor.xaml 的交互逻辑
@@ -19,6 +20,7 @@ namespace ColorVision.Services.Devices.Motor
         {
             Device = device;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)

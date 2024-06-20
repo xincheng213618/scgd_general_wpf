@@ -1,12 +1,13 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Media;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Common.Utilities;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.UI.Authorizations;
 
-namespace ColorVision.Services.Devices.FileServer
+namespace ColorVision.Engine.Services.Devices.FileServer
 {
     public class DeviceFileServer : DeviceService<ConfigFileServer>
     {
@@ -22,15 +23,15 @@ namespace ColorVision.Services.Devices.FileServer
 
             EditCommand = new RelayCommand(a =>
             {
-                EditFileServer window = new(this);
+                EditFileServer window = new EditFileServer(this);
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
-            });
+            },a => AccessControl.Check(PermissionMode.Administrator));
         }
 
         public override UserControl GetDeviceControl() => new InfoFileServer(this);
-        public override UserControl GetDeviceInfo() => new InfoFileServer(this,false);
+        public override UserControl GetDeviceInfo() => new InfoFileServer(this);
 
         public override UserControl GetDisplayControl() =>new FileServerDisplayControl(this);
 

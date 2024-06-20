@@ -7,15 +7,15 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:resx="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
-        Title="ColorVision" Height="500" Background="#ECEFFF" Width="400" Initialized="Window_Initialized">
-    <Grid x:Name="MainGrid">
+        Title="ColorVision" Height="500"  Width="400" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+    <Grid x:Name="MainGrid" Background="#11ECEFFF">
         <Grid.RowDefinitions>
             <RowDefinition Height="61*"/>
             <RowDefinition Height="36*"/>
         </Grid.RowDefinitions>
         <StackPanel Margin="10,10,10,10" Grid.RowSpan="2">
             <Image Source="/ColorVision.Engine;component/Assets/Image/ColorVision.png"  Stretch="Uniform" Height="80" Margin="10"/>
-            <Border Background="{DynamicResource GlobalBackground}" Margin="20,10" Height="250" CornerRadius="10">
+            <Border Background="{DynamicResource GlobalBorderBrush}" Margin="20,10" Height="250" CornerRadius="10">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -26,10 +26,10 @@
                     </Border>
                     <StackPanel Margin="30,20" Grid.Row="1">
                         <DockPanel Margin="5">
-                            <hc:TextBox x:Name="Account1"  Background="{DynamicResource GlobalBorderBrush}"  ToolTip="{x:Static resx:Resources.Account}"  VerticalAlignment="Center" Text="{Binding Name}" hc:InfoElement.Placeholder="{x:Static resx:Resources.FillAccount}"  BorderThickness="0,0,0,1"   />
+                            <hc:TextBox x:Name="Account1"   ToolTip="{x:Static resx:Resources.Account}"  VerticalAlignment="Center" Text="{Binding Name}" hc:InfoElement.Placeholder="{x:Static resx:Resources.FillAccount}"  BorderThickness="0,0,0,1"   />
                         </DockPanel>
                         <DockPanel Margin="5">
-                            <hc:PasswordBox x:Name="PasswordBox1" Background="{DynamicResource GlobalBorderBrush}"  ToolTip="{x:Static resx:Resources.Password}"  VerticalAlignment="Center"  hc:InfoElement.Placeholder="{x:Static resx:Resources.FillPassword}"  BorderThickness="0,0,0,1"  hc:ShowEyeButton="True" />
+                            <hc:PasswordBox x:Name="PasswordBox1"  ToolTip="{x:Static resx:Resources.Password}"  VerticalAlignment="Center"  hc:InfoElement.Placeholder="{x:Static resx:Resources.FillPassword}"  BorderThickness="0,0,0,1"  hc:ShowEyeButton="True" />
                         </DockPanel>
                         <Button Content="{x:Static resx:Resources.Sign_in}" Foreground="White" FontSize="15" BorderThickness="0"  Padding="6" Margin="0,15"  Click="Button_Click">
                             <Button.Background>

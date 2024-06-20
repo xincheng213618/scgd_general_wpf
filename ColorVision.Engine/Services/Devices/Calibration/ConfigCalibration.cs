@@ -1,9 +1,29 @@
-﻿using ColorVision.Services.Devices.Camera.Configs;
+﻿using ColorVision.Engine.Services.Configs;
+using ColorVision.Engine.Services.PhyCameras;
+using Newtonsoft.Json;
+using System.Linq;
 
-namespace ColorVision.Services.Devices.Calibration
+namespace ColorVision.Engine.Services.Devices.Calibration
 {
     public class ConfigCalibration: DeviceServiceConfig
     {
+        public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(CameraCode)); } }
+        private string _CameraID;
+
+        [JsonIgnore]
+        public string? CameraCode
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(CameraID)) return null;
+                var PhyCamera = PhyCameraManager.GetInstance().PhyCameras.First(a => a.Name == CameraID);
+                if (PhyCamera != null)
+                    return PhyCamera.SysResourceModel.Code;
+                return null;
+
+            }
+        }
+
         public double ExpTimeR { get => _ExpTimeR; set { _ExpTimeR = value; NotifyPropertyChanged(); } }
         private double _ExpTimeR = 10;
 
@@ -12,9 +32,6 @@ namespace ColorVision.Services.Devices.Calibration
 
         public double ExpTimeB { get => _ExpTimeB; set { _ExpTimeB = value; NotifyPropertyChanged(); } }
         private double _ExpTimeB = 10;
-
-        public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged(); } }
-        private string _CameraID;
 
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
     }

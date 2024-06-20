@@ -1,5 +1,5 @@
-﻿using ColorVision.Services.Devices.Spectrum.Configs;
-using ColorVision.Services.Devices.Spectrum.Views;
+﻿using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.Engine.Services.Devices.Spectrum.Views;
 using ColorVision.UI.Views;
 using System;
 using System.Collections.Generic;
@@ -8,7 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using static cvColorVision.GCSDLL;
 
-namespace ColorVision.Services.Devices.Spectrum
+namespace ColorVision.Engine.Services.Devices.Spectrum
 {
     /// <summary>
     /// DisplaySpectrumControl.xaml 的交互逻辑
@@ -26,8 +26,8 @@ namespace ColorVision.Services.Devices.Spectrum
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
             {
                 List<KeyValuePair<string, int>> KeyValues = new();
-                KeyValues.Add(new KeyValuePair<string, int>(Engine.Properties.Resources.WindowSingle, -2));
-                KeyValues.Add(new KeyValuePair<string, int>(Engine.Properties.Resources.WindowHidden, -1));
+                KeyValues.Add(new KeyValuePair<string, int>(Properties.Resources.WindowSingle, -2));
+                KeyValues.Add(new KeyValuePair<string, int>(Properties.Resources.WindowHidden, -1));
                 for (int i = 0; i < e; i++)
                 {
                     KeyValues.Add(new KeyValuePair<string, int>((i + 1).ToString(), i));

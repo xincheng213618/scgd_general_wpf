@@ -74,7 +74,7 @@ namespace ColorVision.Update
 
         public AutoUpdater()
         {
-            UpdateCommand = new RelayCommand((e) =>  CheckAndUpdate(false));
+            UpdateCommand = new RelayCommand( async (e) => await CheckAndUpdate(false));
         }
 
         public RelayCommand UpdateCommand { get; set; }
@@ -110,6 +110,7 @@ namespace ColorVision.Update
         }
 
         public static Version? CurrentVersion { get => Assembly.GetExecutingAssembly().GetName().Version; }
+
         public static bool IsUpdateAvailable(string Version)
         {
             return true;
@@ -156,7 +157,7 @@ namespace ColorVision.Update
                 // 获取服务器版本
                 LatestVersion = await GetLatestVersionNumber(UpdateUrl);
 
-                if (LatestVersion > CurrentVersion)
+                if (LatestVersion > Assembly.GetExecutingAssembly().GetName().Version)
                 {
                     string CHANGELOG = await GetChangeLog(CHANGELOGUrl);
                     string versionPattern = $"## \\[{LatestVersion}\\].*?\\n(.*?)(?=\\n## |$)";

@@ -1,24 +1,21 @@
 ﻿using ColorVision.Common.MVVM;
 
-namespace ColorVision.Services.Devices.Camera.Video
+namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
     public class CameraVideoConfig : ViewModelBase
     {
-        /// <summary>
-        /// 连接名称
-        /// </summary>
-        public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
-        private string _Name;
-
         /// <summary>
         /// IP地址
         /// </summary>
         public string Host { get => _Host; set { _Host = value; NotifyPropertyChanged(); } }
         private string _Host = "127.0.0.1";
 
+        public bool IsEnableResize { get => _IsEnableResize; set { _IsEnableResize = value; NotifyPropertyChanged(); } }
+        private bool _IsEnableResize;
 
         public float ResizeRatio { get => _ResizeRatio; set { _ResizeRatio = value; NotifyPropertyChanged(); } }
         private float _ResizeRatio;
+
         /// <summary>
         /// 端口地址
         /// </summary>

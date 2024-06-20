@@ -2,19 +2,21 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
+using ColorVision.Engine.Media;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Media;
+using ColorVision.Engine.UIExport.SolutionExports.Export;
 using ColorVision.Net;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Algorithm.Views;
-using ColorVision.Services.Export;
-using ColorVision.Services.Msg;
-using ColorVision.Solution;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
+using cvColorVision;
+using CVCommCore.CVAlgorithm;
 using CVCommCore.CVImage;
+using log4net;
 using MQTTMessageLib.Camera;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
@@ -30,18 +32,14 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ColorVision.Services.Devices.Camera.Views
+namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
     public class ViewCameraConfig : IConfig
     {
         public static ViewCameraConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ViewCameraConfig>();
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-
-
     }
-
-
 
 
     /// <summary>
@@ -49,6 +47,9 @@ namespace ColorVision.Services.Devices.Camera.Views
     /// </summary>
     public partial class ViewCamera : UserControl, IView
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(App));
+
+
         public View View { get; set; }
         public ObservableCollection<ViewResultCamera> ViewResultCameras { get; set; } = new ObservableCollection<ViewResultCamera>();
         public MQTTCamera DeviceService{ get; set; }
@@ -96,11 +97,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
 
-
-            ComboBoxLayers.ItemsSource  =from e1 in Enum.GetValues(typeof(ImageLayer)).Cast<ImageLayer>()
-                                         select new KeyValuePair<string, ImageLayer>(e1.ToString(), e1);
-
-            netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.FullPath + "\\Cache");
+            netFileUtil = new NetFileUtil();
             netFileUtil.handler += NetFileUtil_handler;
             DeviceService.MsgReturnReceived += DeviceService_OnMessageRecved;
         }
@@ -309,7 +306,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                             default:
                                 break;
                         }
-                        if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
+                        if (string.IsNullOrEmpty(localName) || !File.Exists(localName))
                         {
                             ImageView.FilePath = localName;
                             MsgRecord msgRecord = DeviceService.DownloadFile(data.FilePath, fileExt);
@@ -322,6 +319,8 @@ namespace ColorVision.Services.Devices.Camera.Views
                         }
                     }
                 }
+
+                ComboBoxLayers.Text = "Src";
             }
         }
 
@@ -416,22 +415,22 @@ namespace ColorVision.Services.Devices.Camera.Views
                     if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
                     {
                         string Name = item.ColumnName.ToString();
-                        if (Name == ColorVision.Engine.Properties.Resources.SerialNumber1)
+                        if (Name == Properties.Resources.SerialNumber1)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCameras.SortByID(item.IsSortD);
                         }
-                        else if (Name == ColorVision.Engine.Properties.Resources.CreateTime)
+                        else if (Name == Properties.Resources.CreateTime)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCameras.SortByCreateTime(item.IsSortD);
                         }
-                        else if (Name == ColorVision.Engine.Properties.Resources.BatchNumber)
+                        else if (Name == Properties.Resources.BatchNumber)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCameras.SortByBatch(item.IsSortD);
                         }
-                        else if (Name == ColorVision.Engine.Properties.Resources.File)
+                        else if (Name == Properties.Resources.File)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCameras.SortByFilePath(item.IsSortD);
@@ -444,38 +443,25 @@ namespace ColorVision.Services.Devices.Camera.Views
 
         private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-           if (sender is ComboBox comboBox && comboBox.SelectedValue is ImageLayer imageLayer)
+           if (sender is ComboBox comboBox )
             {
                 if (listView1.SelectedIndex > -1)
                 {
                     var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-                    switch (imageLayer)
-                    {
-                        case ImageLayer.Src:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.SRC);
-                            break;
-                        case ImageLayer.R:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_R);
-                            break;
-                        case ImageLayer.G:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_G);
-                            break;
-                        case ImageLayer.B:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_B);
-                            break;
-                        case ImageLayer.X:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_X);
-                            break;
-                        case ImageLayer.Y:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Y);
-                            break;
-                        case ImageLayer.Z:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Z);
-                            break;
-                        default:
-                            break;
-                    }
-
+                    if (comboBox.Text == "Src")
+                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.SRC);
+                    if (comboBox.Text == "R")
+                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_R);
+                    if (comboBox.Text == "G")
+                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_G);
+                    if (comboBox.Text == "B")
+                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_B);
+                    if (comboBox.Text == "X")
+                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_X);
+                    if (comboBox.Text == "Y")
+                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Y);
+                    if (comboBox.Text == "Z")
+                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Z);
                 }
                 else
                 {
@@ -551,25 +537,87 @@ namespace ColorVision.Services.Devices.Camera.Views
 
         private void CalculPOI_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxPOITemplate.SelectedValue is PoiParam poiParams)
+            if (!ImageView.IsCVCIE)
             {
-                if (poiParams.Id == -1)
-                {
-                    ImageView.ImageShow.Clear();
-                    return;
-                }
-                PoiParam.LoadPoiDetailFromDB(poiParams);
-
-                ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
-
-                foreach (var item in poiParams.PoiPoints)
-                {
-                    var sss = ImageView.GetCVCIE((int)item.PixX, (int)item.PixY, (int)item.PixWidth, (int)item.PixWidth);
-                    PoiResultCIExyuvDatas.Add(sss);
-                }
-                WindowCVCIE windowCIE = new WindowCVCIE(PoiResultCIExyuvDatas) { Owner = Application.Current.GetActiveWindow() };
-                windowCIE.Show();
+                MessageBox.Show("仅对CVCIE图像支持");
+                return;
             }
+            if (ComboxPOITemplate.SelectedValue is not PoiParam poiParams)
+            {
+                MessageBox.Show("需要配置关注点");
+                return;
+            }
+
+            if (poiParams.Id == -1)
+            {
+                ImageView.ImageShow.Clear();
+                return;
+            }
+            PoiParam.LoadPoiDetailFromDB(poiParams);
+
+            ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
+            int result = ConvertXYZ.CM_SetFilter(ConvertXYZ.Handle, poiParams.DatumArea.Filter.Enable , poiParams.DatumArea.Filter.Threshold);
+            log.Info($"CM_SetFilter: {result}");
+            result = ConvertXYZ.CM_SetFilterNoArea(ConvertXYZ.Handle, poiParams.DatumArea.Filter.NoAreaEnable, poiParams.DatumArea.Filter.Threshold);
+            result = ConvertXYZ.CM_SetFilterXYZ(ConvertXYZ.Handle, poiParams.DatumArea.Filter.XYZEnable, (int)poiParams.DatumArea.Filter.XYZType, poiParams.DatumArea.Filter.Threshold);
+
+            foreach (var item in poiParams.PoiPoints)
+            {
+                POIPoint pOIPoint = new POIPoint() { Id = item.Id, Name = item.Name, PixelX = (int)item.PixX, PixelY = (int)item.PixY, PointType = (POIPointTypes)item.PointType, Height = (int)item.PixHeight, Width = (int)item.PixWidth };
+                var sss = GetCVCIE(pOIPoint);
+                PoiResultCIExyuvDatas.Add(sss);
+            }
+            WindowCVCIE windowCIE = new WindowCVCIE(PoiResultCIExyuvDatas) { Owner = Application.Current.GetActiveWindow() };
+            windowCIE.Show();
+        }
+
+        public static PoiResultCIExyuvData GetCVCIE(POIPoint pOIPoint)
+        {
+            int x = pOIPoint.PixelX; int y = pOIPoint.PixelY; int rect = pOIPoint.Width; int rect2 = pOIPoint.Height;
+            PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData();
+            poiResultCIExyuvData.Point = pOIPoint;
+            float dXVal = 0;
+            float dYVal = 0;
+            float dZVal = 0;
+            float dx = 0;
+            float dy = 0;
+            float du = 0;
+            float dv = 0;
+            float CCT = 0;
+            float Wave = 0;
+
+            _ = pOIPoint.PointType switch
+            {
+                POIPointTypes.SolidPoint => ConvertXYZ.CM_GetXYZxyuvCircle(ConvertXYZ.Handle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1),
+                POIPointTypes.Rect => ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZ.Handle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2),
+                POIPointTypes.None or POIPointTypes.Circle or POIPointTypes.Mask or _ => ConvertXYZ.CM_GetXYZxyuvCircle(ConvertXYZ.Handle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv,(int)(rect/2)),
+            };
+            poiResultCIExyuvData.u = du;
+            poiResultCIExyuvData.v = dv;
+            poiResultCIExyuvData.x = dx;
+            poiResultCIExyuvData.y = dy;
+            poiResultCIExyuvData.X = dXVal;
+            poiResultCIExyuvData.Y = dYVal;
+            poiResultCIExyuvData.Z = dZVal;
+            poiResultCIExyuvData.CCT = CCT;
+            poiResultCIExyuvData.Wave = Wave;
+            return poiResultCIExyuvData;
+        }
+
+        private void CalculMTF_Click(object sender, RoutedEventArgs e)
+        {
+            if (!ImageView.IsCVCIE)
+            {
+                MessageBox.Show("仅对CVCIE图像支持");
+                return;
+            }
+            if (ComboxPOITemplate.SelectedValue is not PoiParam poiParams)
+            {
+                MessageBox.Show("需要配置关注点");
+                return;
+            }
+
+
 
 
         }

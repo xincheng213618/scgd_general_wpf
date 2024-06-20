@@ -1,7 +1,7 @@
 ﻿using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace ColorVision.Services.OnlineLicensing
+namespace ColorVision.Engine.Services.OnlineLicensing
 {
     public class LicenseManager
     {

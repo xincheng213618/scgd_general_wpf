@@ -1,4 +1,8 @@
 ﻿using ColorVision.Solution.V;
+using ColorVision.Solution.V.Files;
+using System.IO;
+using System.Runtime.Serialization;
+using System.Windows;
 using System.Windows.Input;
 
 namespace ColorVision.Solution
@@ -7,8 +11,7 @@ namespace ColorVision.Solution
     {
         private void IniCommand()
         {
-            ApplicationCommands.Delete.InputGestures.Add(new KeyGesture(Key.Delete, ModifierKeys.None, "Del"));
-            CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ExecutedCommand, (s,e) => { if (e.Parameter is VObject baseObject) e.CanExecute = false; }));
+            CommandBindings.Add(new CommandBinding(ApplicationCommands.Copy, ExecutedCommand, CanExecuteCommand));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Cut, ExecutedCommand, CanExecuteCommand));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Paste, ExecutedCommand, CanExecuteCommand));
             CommandBindings.Add(new CommandBinding(ApplicationCommands.Delete, ExecutedCommand, CanExecuteCommand));
@@ -23,21 +26,23 @@ namespace ColorVision.Solution
                 if (e.Command == ApplicationCommands.SelectAll)
                 {
                     e.CanExecute = false;
-                }
+                }   
                 else if (e.Command == ApplicationCommands.Copy)
                 {
-                    e.CanExecute = baseObject.CanCopy;
+                    e.CanExecute = true;
                 }
                 else if (e.Command == ApplicationCommands.Cut)
                 {
-                    e.CanExecute = false;
+                    e.CanExecute = true;
                 }
                 else if (e.Command == ApplicationCommands.Paste)
                 {
-                    e.CanExecute = false;
+                    e.CanExecute = true;
                 }
                 else if (e.Command == ApplicationCommands.Delete)
                 {
+
+
                     e.CanExecute = baseObject.CanDelete;
                 }
                 else if (e.Command == Commands.ReName)
@@ -61,7 +66,7 @@ namespace ColorVision.Solution
                 }
                 else if (e.Command == ApplicationCommands.Paste)
                 {
-                    e.CanExecute = false;
+                    e.CanExecute = Clipboard.ContainsData("VObjectFormat");
                 }
                 else if (e.Command == ApplicationCommands.Delete)
                 {
@@ -72,7 +77,6 @@ namespace ColorVision.Solution
                     e.CanExecute = baseObject1.CanReName;
                 }
             }
-
         }
 
 
@@ -81,6 +85,19 @@ namespace ColorVision.Solution
         {
             if (e.Command == ApplicationCommands.Copy)
             {
+                if (e.Parameter is VObject baseObject)
+                {
+                    DataContractSerializer serializer = new DataContractSerializer(typeof(VObject));
+
+                    using (MemoryStream memoryStream = new MemoryStream())
+                    {
+                        serializer.WriteObject(memoryStream, baseObject);
+                        byte[] objectData = memoryStream.ToArray();
+
+                        // 将字节数组放入剪贴板
+                        Clipboard.SetData("VObjectFormat", objectData);
+                    }
+                }
                 //this.DoCopy();
             }
             else if (e.Command == ApplicationCommands.Cut)
@@ -89,7 +106,15 @@ namespace ColorVision.Solution
             }
             else if (e.Command == ApplicationCommands.Paste)
             {
-                //this.DoPaste();
+                if (Clipboard.ContainsData("VObjectFormat"))
+                {
+                    byte[] objectData = (byte[])Clipboard.GetData("VObjectFormat");
+                    using (MemoryStream memoryStream = new MemoryStream(objectData))
+                    {
+                        DataContractSerializer serializer = new DataContractSerializer(typeof(VObject));
+                        VObject baseObject = (VObject)serializer.ReadObject(memoryStream);
+                    }
+                }
             }
             else if (e.Command == ApplicationCommands.Delete)
             {
@@ -104,7 +129,11 @@ namespace ColorVision.Solution
                 {
                     if (SelectedTreeViewItem != null)
                     {
-                        if (SelectedTreeViewItem.DataContext is VObject baseObject)
+                        if (SelectedTreeViewItem.DataContext is VFile vFile)
+                        {
+                            vFile.Delete();
+                        }
+                        else if (SelectedTreeViewItem.DataContext is VObject baseObject)
                         {
                             baseObject.Parent?.RemoveChild(baseObject);
                         }

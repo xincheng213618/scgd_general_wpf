@@ -1,8 +1,9 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
-using ColorVision.Services.Devices.Calibration;
-using ColorVision.Services.Devices.Spectrum;
-using ColorVision.Services.Devices.Spectrum.Configs;
+using ColorVision.Engine.Services.Devices.Calibration;
+using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.Themes;
 using cvColorVision;
 using SkiaSharp;
 using System;
@@ -15,7 +16,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 
 
-namespace ColorVision.Services.Devices.Spectrum
+namespace ColorVision.Engine.Services.Devices.Spectrum
 {
     /// <summary>
     /// EditSpectrum.xaml 的交互逻辑
@@ -28,6 +29,7 @@ namespace ColorVision.Services.Devices.Spectrum
         {
             Device = deviceSpectrum;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)

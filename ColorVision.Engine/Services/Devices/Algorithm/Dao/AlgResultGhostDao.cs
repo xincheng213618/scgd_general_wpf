@@ -2,7 +2,7 @@
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 
-namespace ColorVision.Services.Devices.Algorithm.Dao
+namespace ColorVision.Engine.Services.Devices.Algorithm.Dao
 {
     public class AlgResultGhostModel : PKModel
     {

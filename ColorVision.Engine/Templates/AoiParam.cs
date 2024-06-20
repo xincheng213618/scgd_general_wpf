@@ -1,8 +1,9 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Templates;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Templates.POI;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -11,28 +12,15 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates
 {
-    public class ExportAOI : IMenuItem
+    public class ExportAOI : ExportTemplateBase
     {
-        public string OwnerGuid => "Template";
-
-        public string? GuidId => "CameraExposureParam";
-        public int Order => 23;
-        public string? Header => "AOIParam";
-
-        public string? InputGestureText { get; }
-        public Visibility Visibility => Visibility.Collapsed;
-        public object? Icon { get; }
-
-        public RelayCommand Command => new(a =>
-        {
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), Properties.Resources.DatabaseConnectionFailed, "ColorVision");
-                return;
-            }
-            new WindowTemplate(new TemplateAOIParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        });
+        public override string GuidId => "AOIParam";
+        public override string Header => "AOIParam";
+        public override int Order => 1;
+        public override Visibility Visibility => Visibility.Collapsed;
+        public override ITemplate Template { get; } = new TemplateAOIParam();
     }
+
     public class TemplateAOIParam : ITemplate<AOIParam>, IITemplateLoad
     {
         public TemplateAOIParam()

@@ -129,9 +129,6 @@
   <data name="WorkflowEngine_F" xml:space="preserve">
     <value>Механизм процесса(F)</value>
   </data>
-  <data name="Wizard" xml:space="preserve">
-    <value>волшебник</value>
-  </data>
   <data name="WindowSingle" xml:space="preserve">
     <value>независимое окно</value>
   </data>
@@ -159,15 +156,6 @@
   <data name="Upload" xml:space="preserve">
     <value>загрузить</value>
   </data>
-  <data name="Upgrade" xml:space="preserve">
-    <value>обновление</value>
-  </data>
-  <data name="UpdateSpeed" xml:space="preserve">
-    <value>Обновить скорость</value>
-  </data>
-  <data name="Update" xml:space="preserve">
-    <value>возобновлять</value>
-  </data>
   <data name="Unsubscribe" xml:space="preserve">
     <value>Отписаться</value>
   </data>
@@ -188,21 +176,6 @@
   </data>
   <data name="TimeLeft" xml:space="preserve">
     <value>оставшееся время:</value>
-  </data>
-  <data name="ThemeUseSystem" xml:space="preserve">
-    <value>Следуйте системе</value>
-  </data>
-  <data name="ThemePink" xml:space="preserve">
-    <value>розовый</value>
-  </data>
-  <data name="ThemeLight" xml:space="preserve">
-    <value>светлый цвет</value>
-  </data>
-  <data name="ThemeDark" xml:space="preserve">
-    <value>Темный</value>
-  </data>
-  <data name="Theme" xml:space="preserve">
-    <value>тема</value>
   </data>
   <data name="TesConnection" xml:space="preserve">
     <value>тестовое соединение</value>
@@ -240,17 +213,11 @@
   <data name="StartTime" xml:space="preserve">
     <value>Время начала</value>
   </data>
-  <data name="StartRecoverUILayout" xml:space="preserve">
-    <value>Макет интерфейса запуска восстановления</value>
-  </data>
   <data name="StartingService" xml:space="preserve">
     <value>Запуск службы</value>
   </data>
   <data name="SpectrometerLog" xml:space="preserve">
     <value>Журнал спектрометра</value>
-  </data>
-  <data name="SoftwareVersion" xml:space="preserve">
-    <value>Версия ПО</value>
   </data>
   <data name="Size" xml:space="preserve">
     <value>размер</value>
@@ -269,12 +236,6 @@
   </data>
   <data name="Shape" xml:space="preserve">
     <value>форма</value>
-  </data>
-  <data name="SetupWizard" xml:space="preserve">
-    <value>Мастер настройки</value>
-  </data>
-  <data name="Settings" xml:space="preserve">
-    <value>Настройки</value>
   </data>
   <data name="ServiceName" xml:space="preserve">
     <value>наименование услуги</value>
@@ -315,12 +276,6 @@
   <data name="Save" xml:space="preserve">
     <value>сохранять</value>
   </data>
-  <data name="RunAsAdmin" xml:space="preserve">
-    <value>Запустить от имени администратора</value>
-  </data>
-  <data name="Rollback" xml:space="preserve">
-    <value>возвращаться</value>
-  </data>
   <data name="Result" xml:space="preserve">
     <value>результат</value>
   </data>
@@ -354,15 +309,6 @@
   <data name="Property" xml:space="preserve">
     <value>Атрибуты</value>
   </data>
-  <data name="ProjectSettings" xml:space="preserve">
-    <value>Настройки проекта</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>название проекта</value>
-  </data>
-  <data name="Project" xml:space="preserve">
-    <value>проект</value>
-  </data>
   <data name="Position" xml:space="preserve">
     <value>Расположение</value>
   </data>
@@ -375,9 +321,6 @@
   <data name="PhysicalCameraManager" xml:space="preserve">
     <value>Физическое управление камерой</value>
   </data>
-  <data name="PerformanceTest" xml:space="preserve">
-    <value>Тестирование производительности</value>
-  </data>
   <data name="Password" xml:space="preserve">
     <value>Пароль</value>
   </data>
@@ -386,12 +329,6 @@
   </data>
   <data name="OutputView" xml:space="preserve">
     <value>Выходной вид</value>
-  </data>
-  <data name="OpenSolution" xml:space="preserve">
-    <value>Открыть проект</value>
-  </data>
-  <data name="OpenLocalProjectOrFile" xml:space="preserve">
-    <value>Откройте локальный проект или файл</value>
   </data>
   <data name="OpenItem" xml:space="preserve">
     <value>Открыть проект</value>
@@ -402,20 +339,8 @@
   <data name="OK" xml:space="preserve">
     <value>Конечно</value>
   </data>
-  <data name="NotRunAsAdmin" xml:space="preserve">
-    <value>Запуск от имени администратора</value>
-  </data>
   <data name="NoRelatedItemsFound" xml:space="preserve">
     <value>Похожие товары не найдены</value>
-  </data>
-  <data name="NewVersionFound" xml:space="preserve">
-    <value>найдена новая версия</value>
-  </data>
-  <data name="NewSolution" xml:space="preserve">
-    <value>Новое строительство</value>
-  </data>
-  <data name="NewProjectFormat" xml:space="preserve">
-    <value>Новый формат проекта</value>
   </data>
   <data name="New" xml:space="preserve">
     <value>Новый</value>
@@ -424,10 +349,10 @@
     <value>Имя</value>
   </data>
   <data name="MysqlConnectionConfiguration" xml:space="preserve">
-    <value>Конфигурация соединения MySQL</value>
+    <value>Конфигурация соединения MySql</value>
   </data>
   <data name="MysqlConnection" xml:space="preserve">
-    <value>MySQL-соединение</value>
+    <value>MySql-соединение</value>
   </data>
   <data name="MyLicense_R" xml:space="preserve">
     <value>Моя лицензия(R)</value>
@@ -455,12 +380,6 @@
   </data>
   <data name="MessageRetention" xml:space="preserve">
     <value>сохранение сообщений</value>
-  </data>
-  <data name="MenuViewStatusBar" xml:space="preserve">
-    <value>Статус бар</value>
-  </data>
-  <data name="MenuViewSidebar" xml:space="preserve">
-    <value>Боковая панель</value>
   </data>
   <data name="MenuView" xml:space="preserve">
     <value>Посмотреть(В)</value>
@@ -495,7 +414,7 @@
   <data name="MenuService" xml:space="preserve">
     <value>Конфигурация службы администратора(_S)</value>
   </data>
-  <data name="MenuSenSorHeYuan" xml:space="preserve">
+  <data name="MenuSensor" xml:space="preserve">
     <value>Общие настройки шаблона датчика(S)</value>
   </data>
   <data name="MenuRename" xml:space="preserve">
@@ -531,12 +450,6 @@
   <data name="MenuLedCheck" xml:space="preserve">
     <value>ия шариков лампы (L)</value>
   </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>Язык(Л)</value>
-  </data>
-  <data name="MenuHelp" xml:space="preserve">
-    <value>помощь</value>
-  </data>
   <data name="MenuGhost" xml:space="preserve">
     <value>Настройки шаблона призрака (G)</value>
   </data>
@@ -548,12 +461,6 @@
   </data>
   <data name="MenuFlow" xml:space="preserve">
     <value>Процесс(Ф)</value>
-  </data>
-  <data name="MenuFile" xml:space="preserve">
-    <value>Файл(Ф)</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
-    <value>Выход(Х)</value>
   </data>
   <data name="MenuEdit" xml:space="preserve">
     <value>Изменить (Е)</value>
@@ -585,23 +492,11 @@
   <data name="MenuAlgorithm" xml:space="preserve">
     <value>Алгоритм(А)</value>
   </data>
-  <data name="MenuAbout" xml:space="preserve">
-    <value>Об</value>
-  </data>
-  <data name="Maximize" xml:space="preserve">
-    <value>максимизировать</value>
-  </data>
   <data name="Manager" xml:space="preserve">
     <value>управлять</value>
   </data>
   <data name="Male" xml:space="preserve">
     <value>Мужчина</value>
-  </data>
-  <data name="LogLevel" xml:space="preserve">
-    <value>Уровень журнала</value>
-  </data>
-  <data name="Log" xml:space="preserve">
-    <value>бревно</value>
   </data>
   <data name="Local" xml:space="preserve">
     <value>местный</value>
@@ -620,15 +515,6 @@
   </data>
   <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
     <value>Откройте локальную службу при запуске программного обеспечения</value>
-  </data>
-  <data name="LanguageResartSign" xml:space="preserve">
-    <value>Необходимо перезагрузить компьютер, чтобы использовать новые языковые настройки</value>
-  </data>
-  <data name="Language" xml:space="preserve">
-    <value>язык пользовательского интерфейса</value>
-  </data>
-  <data name="InstallCertificate" xml:space="preserve">
-    <value>Установить сертификат</value>
   </data>
   <data name="Inquire" xml:space="preserve">
     <value>Запросить</value>
@@ -651,9 +537,6 @@
   <data name="ImageFile" xml:space="preserve">
     <value>Файлы изображений</value>
   </data>
-  <data name="HotKeys" xml:space="preserve">
-    <value>быстрая клавиша</value>
-  </data>
   <data name="Host" xml:space="preserve">
     <value>Хозяин</value>
   </data>
@@ -662,12 +545,6 @@
   </data>
   <data name="GhostShadow" xml:space="preserve">
     <value>призрак</value>
-  </data>
-  <data name="GeneralSettings" xml:space="preserve">
-    <value>Общие настройки</value>
-  </data>
-  <data name="General" xml:space="preserve">
-    <value>Универсальный</value>
   </data>
   <data name="Gain" xml:space="preserve">
     <value>Прирост</value>
@@ -711,9 +588,6 @@
   <data name="Export" xml:space="preserve">
     <value>Экспорт</value>
   </data>
-  <data name="ExperimentalFeature" xml:space="preserve">
-    <value>Экспериментальные возможности</value>
-  </data>
   <data name="ExecutionProcess" xml:space="preserve">
     <value>Процесс</value>
   </data>
@@ -740,9 +614,6 @@
   </data>
   <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
     <value>Область данных изображения CIE</value>
-  </data>
-  <data name="DisableHardwareAcceleration" xml:space="preserve">
-    <value>Отключить аппаратное ускорение</value>
   </data>
   <data name="DeviceName" xml:space="preserve">
     <value>Имя устройства</value>
@@ -782,12 +653,6 @@
   </data>
   <data name="CreateTime" xml:space="preserve">
     <value>измерять время</value>
-  </data>
-  <data name="CreateProject" xml:space="preserve">
-    <value>Создать проект</value>
-  </data>
-  <data name="CreateNewProjectOrFile" xml:space="preserve">
-    <value>Создать новый проект или файл</value>
   </data>
   <data name="CreateNewConfigurationFile" xml:space="preserve">
     <value>Создать новый файл конфигурации</value>
@@ -837,12 +702,6 @@
   <data name="Clear" xml:space="preserve">
     <value>Прозрачный</value>
   </data>
-  <data name="CheckUpdatesOnStartup" xml:space="preserve">
-    <value>Обнаружение обновлений при запуске программного обеспечения</value>
-  </data>
-  <data name="CheckForUpdates" xml:space="preserve">
-    <value>Проверьте наличие обновлений</value>
-  </data>
   <data name="Chart" xml:space="preserve">
     <value>диаграмма</value>
   </data>
@@ -876,15 +735,6 @@
   <data name="AutoExposure" xml:space="preserve">
     <value>Автоматическая экспозиция</value>
   </data>
-  <data name="ApplyWindowLayout" xml:space="preserve">
-    <value>Применить макет окна</value>
-  </data>
-  <data name="Apply" xml:space="preserve">
-    <value>приложение</value>
-  </data>
-  <data name="ApplicationExit" xml:space="preserve">
-    <value>Программа закрывается</value>
-  </data>
   <data name="Alias" xml:space="preserve">
     <value>Псевдоним</value>
   </data>
@@ -917,5 +767,20 @@
   </data>
   <data name="Choice" xml:space="preserve">
     <value>выбирать</value>
+  </data>
+  <data name="IsDefaultOpenService" xml:space="preserve">
+    <value>Исдефолтопенсервице</value>
+  </data>
+  <data name="IsRetorePlayControls" xml:space="preserve">
+    <value>Исретореплейконтролс</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>Настройки</value>
+  </data>
+  <data name="MenuFile" xml:space="preserve">
+    <value>Файл(Ф)</value>
+  </data>
+  <data name="MenuSensorHeYuan" xml:space="preserve">
+    <value>Общие настройки шаблона датчика(S)</value>
   </data>
 </root>

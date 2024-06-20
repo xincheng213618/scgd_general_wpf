@@ -1,8 +1,8 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.MQTT;
+﻿using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Properties;
-using ColorVision.Services.Templates;
 using ColorVision.Solution;
+using ColorVision.Themes;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using FlowEngineLib.Base;
 using FlowEngineLib.Start;
@@ -14,28 +14,21 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Flow
+namespace ColorVision.Engine.Services.Flow
 {
-
-    public class ExportFlowEngin : IMenuItem
+    public class ExportFlowEngine : MenuItemBase
     {
-        public string? OwnerGuid => "Tool";
+        public override string OwnerGuid => "Tool";
+        public override string GuidId => "FlowEngine";
+        public override string Header => Resources.WorkflowEngine_F;
+        public override int Order => 3;
 
-        public string? GuidId => "FlowEngin";
-
-        public int Order => 3;
-
-        public string? Header => Resources.WorkflowEngine_F;
-        public Visibility Visibility => Visibility.Visible;
-        public string? InputGestureText => null;
-
-        public object? Icon => null;
-        public RelayCommand Command => new(A =>
+        [RequiresPermission(PermissionMode.Administrator)]
+        public override void Execute()
         {
             new WindowFlowEngine() { WindowStartupLocation = WindowStartupLocation.CenterScreen }.ShowDialog();
-        });
+        }
     }
-
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -50,6 +43,7 @@ namespace ColorVision.Services.Flow
             //ButtonClear.Visibility = Visibility.Collapsed;
             ButtonOpen.Visibility = Visibility.Collapsed;
             ButtonNew.Visibility = Visibility.Collapsed;
+            this.ApplyCaption();
         }
         FlowParam FlowParam { get; set; }
         public WindowFlowEngine(FlowParam flowParam) : this()
@@ -194,15 +188,19 @@ namespace ColorVision.Services.Flow
                 STNodeEditorMain.LoadCanvas(Convert.FromBase64String(flowParam.DataBase64));
             }
             svrName = "";
-            
-
-            flowControl = new FlowControl(MQTTControl.GetInstance(), nodeStart.NodeName);
-            flowControl.FlowCompleted += (s, e) =>
+            if (nodeStart != null)
             {
-                ButtonFlowOpen.Content = "开始流程";
-                ButtonFlowPause.IsEnabled = false;
-                ButtonFlowPause.Visibility = Visibility.Collapsed;
-            };
+                flowControl = new FlowControl(MQTTControl.GetInstance(), nodeStart.NodeName);
+                flowControl.FlowCompleted += (s, e) =>
+                {
+                    ButtonFlowOpen.Content = "开始流程";
+                    ButtonFlowPause.IsEnabled = false;
+                    ButtonFlowPause.Visibility = Visibility.Collapsed;
+                };
+            }
+            else
+            {
+            }
             OperateGrid.Visibility = Visibility.Visible;
             Title = "流程编辑器 - " + new FileInfo(flowParam.Name).Name;
         }

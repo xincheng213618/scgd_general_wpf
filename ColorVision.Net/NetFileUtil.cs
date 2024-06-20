@@ -1,5 +1,6 @@
 #pragma warning disable CS8601,CA1822
-using MQTTMessageLib.Camera;
+using CVCommCore.CVImage;
+using log4net;
 using MQTTMessageLib.FileServer;
 using NetMQ;
 using NetMQ.Sockets;
@@ -8,13 +9,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using log4net;
-using System.Linq;
-using System.Windows.Navigation;
-using System.Windows.Markup;
-using OpenCvSharp;
-using System.Drawing.Imaging;
-using CVCommCore.CVImage;
 
 namespace ColorVision.Net
 {

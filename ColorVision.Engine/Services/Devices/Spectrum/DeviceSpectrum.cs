@@ -1,22 +1,23 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Controls;
-using ColorVision.Util.Interfaces;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Spectrum.Configs;
-using ColorVision.Services.Devices.Spectrum.Views;
-using ColorVision.Services.Templates;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.Engine.Services.Devices.Spectrum.Views;
+using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
+using ColorVision.UI.Authorizations;
+using ColorVision.Util.Controls;
+using ColorVision.Util.Interfaces;
 using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.Engine.Templates;
 
-namespace ColorVision.Services.Devices.Spectrum
+namespace ColorVision.Engine.Services.Devices.Spectrum
 {
     public class DeviceSpectrum : DeviceService<ConfigSpectrum>, IUploadMsg
     {
@@ -42,7 +43,8 @@ namespace ColorVision.Services.Devices.Spectrum
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
-            });
+            }, a => AccessControl.Check(PermissionMode.Administrator));
+
             DisplayLazy = new Lazy<DisplaySpectrumControl>(() => new DisplaySpectrumControl(this));
 
             ResourceManagerCommand = new RelayCommand(a =>
@@ -56,7 +58,7 @@ namespace ColorVision.Services.Devices.Spectrum
             });
         }
         public string Msg { get => _Msg; set { _Msg = value; Application.Current.Dispatcher.Invoke(() => NotifyPropertyChanged()); } }
-        public ObservableCollection<string> UploadList { get; set; }
+        public ObservableCollection<FileUploadInfo> UploadList { get; set; }
         private string _Msg;
         public event EventHandler UploadClosed;
 
@@ -82,7 +84,7 @@ namespace ColorVision.Services.Devices.Spectrum
             await Task.Delay(10);
 
             string md5 = Tool.CalculateMD5(UploadFilePath);
-            var msgRecord = await DeviceService.UploadFileAsync(UploadFileName, UploadFilePath,201);
+            var msgRecord = await RCFileUpload.GetInstance().UploadCalibrationFileAsync(Code, UploadFileName, UploadFilePath, 201);
             SysResourceModel sysResourceModel = new();
             sysResourceModel.Name = UploadFileName;
             sysResourceModel.Code = md5;
@@ -101,7 +103,7 @@ namespace ColorVision.Services.Devices.Spectrum
 
 
         public override UserControl GetDeviceControl() => new InfoSpectrum(this);
-        public override UserControl GetDeviceInfo() => new InfoSpectrum(this, false);
+        public override UserControl GetDeviceInfo() => new InfoSpectrum(this);
 
         readonly Lazy<DisplaySpectrumControl> DisplayLazy;
         public override UserControl GetDisplayControl() => DisplayLazy.Value;

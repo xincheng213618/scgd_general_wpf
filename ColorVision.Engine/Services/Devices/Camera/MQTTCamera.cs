@@ -1,11 +1,8 @@
 ﻿#pragma warning disable CS8602,CA1707
-
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.PhyCameras.Configs;
-using ColorVision.UI.Extension;
-using ColorVision.Services.Devices.Camera.Configs;
-using ColorVision.Services.Msg;
-using ColorVision.Services.PhyCameras.Templates;
+using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Services.PhyCameras.Group;
 using cvColorVision;
 using CVCommCore;
 using CVCommCore.CVImage;
@@ -16,7 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.Camera
+namespace ColorVision.Engine.Services.Devices.Camera
 {
 
     public class MQTTCamera : MQTTDeviceService<ConfigCamera>
@@ -37,17 +34,8 @@ namespace ColorVision.Services.Devices.Camera
 
         private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
         {
-            switch (msg.EventName)
-            {
-                case "CM_GetAllSnID":
-                    return;
-            }
             //信息在这里添加一次过滤，让信息只能在对应的相机上显示,同时如果ID为空的话，就默认是服务端的信息，不进行过滤，这里后续在进行优化
-            if (Config.Code!=null && msg.DeviceCode != Config.Code)
-            {
-                return;
-            }
-
+            if (Config.Code != null && msg.DeviceCode != Config.Code) return;
             if (msg.Code == 0)
             {
                 switch (msg.EventName)
@@ -164,70 +152,6 @@ namespace ColorVision.Services.Devices.Camera
 
         public CameraType CurrentCameraType { get; set; }
 
-        public MsgRecord Init()
-        {
-            MsgSend msg = new()
-            {
-                EventName = "Init",
-            };
-            var Params = new Dictionary<string, object>() { { "CameraType", (int)Config.CameraType }, { "SnID", Config.Id }, { "CodeID", Config.Code }, { "szCfgName", "" } };
-            msg.Params = Params;
-
-            ///如果配置电机，则传入电机的参数
-            if (Config.IsHaveMotor)
-            {
-                var AutoFocus = new Dictionary<string, object>
-                {
-                    { "eFOCUS_COMMUN", Config.MotorConfig.eFOCUSCOMMUN },
-                    { "szComName", Config.MotorConfig.SzComName },
-                    { "BaudRate", Config.MotorConfig.BaudRate }
-                };
-                Params.Add("AutoFocus", AutoFocus);
-            }
-
-            if (Config.CFW.IsCOM)
-            {
-                var CFWPORT = new Dictionary<string, object>
-                {
-                    { "szComName", Config.CFW.SzComName },
-                    { "BaudRate", Config.CFW.BaudRate }
-                };
-                Params.Add("CFWPORT", CFWPORT);
-            }
-
-            ///这里设置1s超时，如果超时则认为初始化失败
-            return PublishAsyncClient(msg,1000);
-        }
-
-        public MsgRecord SetCfg(CameraConfigType configType)
-        {
-            MsgSend msg = new() { EventName = "SetCfg" };
-
-            var Params = new Dictionary<string,object>();
-            Params.Add("ConfigType", configType);
-            switch (configType)
-            {   
-                case CameraConfigType.Camera:
-                    Params.Add("jsonCfg", Config.CameraCfg.ToJsonN());
-                    break;
-                case CameraConfigType.ExpTime:
-                    Params.Add("jsonCfg", Config.ExpTimeCfg.ToJsonN());
-                    break;
-                case CameraConfigType.Calibration:
-                    Params.Add("jsonCfg", Config.ExpTimeCfg);
-                    break;
-                case CameraConfigType.Channels:
-                    Params.Add("jsonCfg", Config.CFW.ChannelCfgs.ToJsonN());
-                    break;
-                case CameraConfigType.SYSTEM:
-                    Params.Add("jsonCfg", Config.ExpTimeCfg);
-                    break;
-                default:
-                    break;
-            }
-            msg.Params = Params;
-            return PublishAsyncClient(msg);
-        }
 
         public MsgRecord CfwPortSetPort(int nIndex, int nPort, int eImgChlType)
         {
@@ -237,44 +161,6 @@ namespace ColorVision.Services.Devices.Camera
                 Params = new Dictionary<string, object>() { { "Func",new List<ParamFunction> (){
                     new() { Name = "CM_SetCfwport", Params = new Dictionary<string, object>() { { "nIndex", nIndex }, { "nPort", nPort },{ "eImgChlType" , eImgChlType } }  } } } }
             };
-            return PublishAsyncClient(msg);
-        }
-        public MsgRecord Calibration(CalibrationParam item)
-        {
-            Dictionary<string, object> Params = new();
-            MsgSend msg = new()
-            {
-                EventName = "Calibration",
-                Params = Params
-            };
-
-            if (item.Color.Luminance.IsSelected)
-            {
-                Params.Add("CalibType", "Luminance");
-                Params.Add("CalibTypeFileName", item.Color.Luminance.FilePath);
-            }
-
-            if (item.Color.LumOneColor.IsSelected)
-            {
-                Params.Add("CalibType", "LumOneColor");
-                Params.Add("CalibTypeFileName", item.Color.LumOneColor.FilePath);
-            }
-            if (item.Color.LumFourColor.IsSelected)
-            {
-                Params.Add("CalibType", "LumFourColor");
-                Params.Add("CalibTypeFileName", item.Color.LumFourColor.FilePath);
-            }
-            if (item.Color.LumMultiColor.IsSelected)
-            {
-                Params.Add("CalibType", "LumMultiColor");
-                Params.Add("CalibTypeFileName", item.Color.LumMultiColor.FilePath);
-            }
-
-            List<Dictionary<string, object>> List = new()
-            {
-                item.Normal.ToDictionary(),
-            };
-            Params.Add("List", List);
             return PublishAsyncClient(msg);
         }
         private bool _IsVideoOpen ;
@@ -418,16 +304,6 @@ namespace ColorVision.Services.Devices.Camera
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord SetLicense(string md5, string FileData)
-        {
-            MsgSend msg = new()
-            {
-                EventName = "SaveLicense",
-                Params = new Dictionary<string, object>() { { "FileName", md5 }, { "FileData", FileData }, { "eType", 0 }}
-            };
-
-            return PublishAsyncClient(msg); 
-        }
 
         public MsgRecord Close()
         {

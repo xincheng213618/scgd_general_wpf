@@ -1,12 +1,14 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.PhyCameras.Configs;
-using ColorVision.Services.PhyCameras.Dao;
-using ColorVision.Services.Types;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.PhyCameras.Configs;
+using ColorVision.Engine.Services.PhyCameras.Dao;
+using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Services.Types;
 using cvColorVision;
 using Newtonsoft.Json;
 using System;
@@ -18,7 +20,7 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 
-namespace ColorVision.Services.PhyCameras
+namespace ColorVision.Engine.Services.PhyCameras
 {
     public class PhyCameraManager
     {
@@ -156,12 +158,20 @@ namespace ColorVision.Services.PhyCameras
                 };
 
                 int ret = SysResourceDao.Instance.Save(sysDictionaryModel);
+                if(ret != -1 && sysDictionaryModel.Code !=null)
+                {
+                    RCFileUpload.GetInstance().CreatePhysicalCameraFloder(sysDictionaryModel.Code);
+                }
                 MessageBox.Show(WindowHelpers.GetActiveWindow(), $"{licenseModel.MacAddress} {(ret == -1 ? "添加物理相机失败" : "添加物理相机成功")}", "ColorVision");
             }
             else
             {
                 sysDictionaryModel.Value = JsonConvert.SerializeObject(CreateDefaultConfig());
-                SysResourceDao.Instance.Save(sysDictionaryModel);
+                int ret= SysResourceDao.Instance.Save(sysDictionaryModel);
+                if (ret != -1 && sysDictionaryModel.Code != null)
+                {
+                    RCFileUpload.GetInstance().CreatePhysicalCameraFloder(sysDictionaryModel.Code);
+                }
             }
         }
 
@@ -182,20 +192,32 @@ namespace ColorVision.Services.PhyCameras
 
         public void LoadPhyCamera()
         {
-            PhyCameras.Clear();
+            var phyCameraBackup = PhyCameras.ToDictionary(pc => pc.Id, pc => pc);
+                
             var list = SysResourceDao.Instance.GetAllType((int)ServiceTypes.PhyCamera);
             foreach (var item in list)
             {
                 if (!string.IsNullOrWhiteSpace(item.Value))
                 {
-                    PhyCameras.Add(new PhyCamera(item));
+                    // 创建新的 PhyCamera 对象
+
+                    // 如果备份字典中存在该 PhyCamera 的 Id
+                    if (phyCameraBackup.TryGetValue(item.Id, out var existingPhyCamera))
+                    {
+                        existingPhyCamera.Name = item.Name ?? string.Empty;
+                        existingPhyCamera.SysResourceModel = item;
+                        existingPhyCamera.Config.CameraID = item.Name ?? string.Empty;
+                    }
+                    else
+                    {
+                        var newPhyCamera = new PhyCamera(item);
+                        LoadPhyCameraResources(newPhyCamera);
+                        // 添加新的 PhyCamera 对象到集合中
+                        PhyCameras.Add(newPhyCamera);
+                    }
                 }
             }
 
-            foreach (var phyCamera in PhyCameras)
-            {
-                LoadPhyCameraResources(phyCamera);
-            }
             Loaded?.Invoke(this, EventArgs.Empty);
         }
 

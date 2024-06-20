@@ -1,4 +1,5 @@
-﻿using ColorVision.Services.Devices;
+﻿using ColorVision.Engine.Services.Devices;
+using ColorVision.Themes;
 using System;
 using System.Collections.ObjectModel;
 using System.Threading.Tasks;
@@ -7,7 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Input;
 
-namespace ColorVision.Services
+namespace ColorVision.Engine.Services
 {
     /// <summary>
     /// Window1.xaml 的交互逻辑
@@ -31,6 +32,7 @@ namespace ColorVision.Services
                 MQTTDevices1.Add(item);
             }
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialied(object sender, EventArgs e)

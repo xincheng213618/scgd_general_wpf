@@ -1,5 +1,5 @@
-﻿using ColorVision.Services.Msg;
-using ColorVision.Services.PhyCameras.Templates;
+﻿using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Services.PhyCameras.Group;
 using CVCommCore;
 using CVCommCore.CVImage;
 using MQTTMessageLib;
@@ -9,7 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.Calibration
+namespace ColorVision.Engine.Services.Devices.Calibration
 {
     public class MQTTCalibration : MQTTDeviceService<ConfigCalibration>
     {

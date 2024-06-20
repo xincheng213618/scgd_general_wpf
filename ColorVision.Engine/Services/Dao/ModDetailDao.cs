@@ -1,11 +1,13 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using System.Data;
 
-namespace ColorVision.Services.Dao
+namespace ColorVision.Engine.Services.Dao
 {
-    public class ModDetailModel : PKModel
+    public class ModDetailModel : ViewModelBase,IPKModel
     {
+        public int Id { get; set; }
         public ModDetailModel() : this(-1, -1, null) { }
         public ModDetailModel(int sysPid, int pid, string? val)
         {
@@ -50,7 +52,6 @@ namespace ColorVision.Services.Dao
                 IsEnable = item.Field<bool>("is_enable"),
                 IsDelete = item.Field<bool>("is_delete"),
             };
-
             return model;
         }
 

@@ -3,7 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI.Extension;
 using ColorVision.Engine.MySql;
-using ColorVision.Services.Dao;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.UserSpace;
 using Newtonsoft.Json;
 using System;
@@ -15,6 +15,7 @@ using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.Engine.Services.SysDictionary;
 
 namespace ColorVision.Engine.Templates
 {
@@ -56,9 +57,12 @@ namespace ColorVision.Engine.Templates
         {
             throw new NotImplementedException();
         }
-
-
         public virtual object GetValue(int index)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual object GetParamValue(int index)
         {
             throw new NotImplementedException();
         }
@@ -132,7 +136,8 @@ namespace ColorVision.Engine.Templates
         public override object GetValue() => TemplateParams;
 
         public override bool ExitsTemplateName(string templateName) => TemplateParams.Any(a => a.Key.Equals(templateName, StringComparison.OrdinalIgnoreCase));
-        public override object GetValue(int index) => TemplateParams[index].Value;
+        public override object GetParamValue(int index) => TemplateParams[index].Value;
+        public override object GetValue(int index) => TemplateParams[index];
 
         public override IEnumerable ItemsSource { get => TemplateParams; }
 
@@ -163,14 +168,9 @@ namespace ColorVision.Engine.Templates
 
         public override string NewCreateFileName(string FileName)
         {
-            List<string> Names = new();
-            foreach (var item in TemplateParams)
-            {
-                Names.Add(item.Key);
-            }
             for (int i = 1; i < 9999; i++)
             {
-                if (!Names.Contains($"{FileName}{i}"))
+                if (!ExitsTemplateName($"{FileName}{i}"))
                     return $"{FileName}{i}";
             }
             return FileName;
@@ -182,19 +182,22 @@ namespace ColorVision.Engine.Templates
 
             foreach (var index in SaveIndex)
             {
-                var item = TemplateParams[index];
-                var modMasterModel = ModMasterDao.Instance.GetById(item.Value.Id);
-
-                if (modMasterModel?.Pcode != null)
+                if(index >-1 && index < TemplateParams.Count)
                 {
-                    modMasterModel.Name = item.Value.Name;
-                    var modMasterDao = new ModMasterDao(modMasterModel.Pcode);
-                    modMasterDao.Save(modMasterModel);
-                }
+                    var item = TemplateParams[index];
+                    var modMasterModel = ModMasterDao.Instance.GetById(item.Value.Id);
 
-                var details = new List<ModDetailModel>();
-                item.Value.GetDetail(details);
-                ModDetailDao.Instance.UpdateByPid(item.Value.Id, details);
+                    if (modMasterModel?.Pcode != null)
+                    {
+                        modMasterModel.Name = item.Value.Name;
+                        var modMasterDao = new ModMasterDao(modMasterModel.Pcode);
+                        modMasterDao.Save(modMasterModel);
+                    }
+
+                    var details = new List<ModDetailModel>();
+                    item.Value.GetDetail(details);
+                    ModDetailDao.Instance.UpdateByPid(item.Value.Id, details);
+                }
             }
         }
 
@@ -238,9 +241,11 @@ namespace ColorVision.Engine.Templates
 
         public override void Delete(int index)
         {
-            if (index >= 0 && index < TemplateParams.Count)
+            int selectedCount = TemplateParams.Count(item => item.IsSelected);
+            if (selectedCount == 1) index = TemplateParams.IndexOf(TemplateParams.First(item => item.IsSelected));
+
+            void DeleteSingle(int id)
             {
-                int id = TemplateParams[index].Value.Id;
                 List<ModDetailModel> de = ModDetailDao.Instance.GetAllByPid(id);
                 int ret = ModMasterDao.Instance.DeleteById(id);
                 ModDetailDao.Instance.DeleteAllByPid(id);
@@ -256,6 +261,19 @@ namespace ColorVision.Engine.Templates
                     VSysResourceDao.Instance.DeleteInCodes(codes);
                 }
                 TemplateParams.RemoveAt(index);
+            }
+
+            if (selectedCount <= 1)
+            {
+                int id = TemplateParams[index].Value.Id;
+                DeleteSingle(id);
+            }
+            else
+            {
+                foreach (var item in TemplateParams.Where(item => item.IsSelected == true).ToList())
+                {
+                    DeleteSingle(item.Id);
+                }
             }
         }
 

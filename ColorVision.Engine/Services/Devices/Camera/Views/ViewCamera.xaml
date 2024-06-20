@@ -1,9 +1,9 @@
-﻿<UserControl  x:Class="ColorVision.Services.Devices.Camera.Views.ViewCamera"
+﻿<UserControl  x:Class="ColorVision.Engine.Services.Devices.Camera.Views.ViewCamera"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             xmlns:local="clr-namespace:ColorVision.Services.Devices.Camera.Views"
+             xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.Camera.Views"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              xmlns:cv="clr-namespace:ColorVision.Engine.Media"
              xmlns:sys="clr-namespace:System;assembly=mscorlib"
@@ -74,12 +74,20 @@
                 <ToolBar Band="0" BandIndex="1" >
                     <StackPanel Orientation="Horizontal" Margin="5,0">
                         <TextBlock Text="{x:Static properties:Resources.Layers}" MinWidth="40"/>
-                        <ComboBox x:Name="ComboBoxLayers" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" SelectionChanged="ComboBoxLayers_SelectionChanged"/>
+                        <ComboBox x:Name="ComboBoxLayers" Style="{StaticResource ComboBox.Small}" SelectionChanged="ComboBoxLayers_SelectionChanged">
+                            <ComboBoxItem Content="Src"  />
+                            <ComboBoxItem Content="R" />
+                            <ComboBoxItem Content="G" />
+                            <ComboBoxItem Content="B" />
+                            <ComboBoxItem Content="X"  Visibility="{Binding ElementName=ImageView,Path=IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}" />
+                            <ComboBoxItem Content="Y" Visibility="{Binding ElementName=ImageView,Path=IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}"  />
+                            <ComboBoxItem Content="Z"  Visibility="{Binding ElementName=ImageView,Path=IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}" />
+                        </ComboBox>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="5,0">
                         <TextBlock Text="{x:Static properties:Resources.FocusPoint}" MinWidth="40"/>
                         <ComboBox x:Name="ComboxPOITemplate" Width="130" Style="{StaticResource ComboBox.Small}" HorizontalAlignment="Left"  SelectionChanged="ComboxPOITemplate_SelectionChanged" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
-                        <Button Content="{x:Static properties:Resources.Calculate}"  Click="CalculPOI_Click"/>
+                        <Button Content="{x:Static properties:Resources.Calculate}" Visibility="{Binding ElementName=ImageView,Path=IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}"  Click="CalculPOI_Click"/>
                     </StackPanel>
                 </ToolBar>
             </ToolBarTray>

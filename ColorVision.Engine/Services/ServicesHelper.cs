@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.Utilities;
-using ColorVision.Services.Msg;
+using ColorVision.Engine.Services.Msg;
 using Panuon.WPF.UI;
 using System;
 using System.Globalization;
@@ -11,14 +11,15 @@ using System.Windows.Input;
 using System.Windows.Threading;
 
 
-namespace ColorVision.Services
+namespace ColorVision.Engine.Services
 {
+
     internal static partial class ServicesHelper
     {
 
         public static async void SelectAndFocusFirstNode(TreeView treeView)
         {
-            await Task.Delay(1);
+            await Task.Delay(30);
             if (treeView.Items.Count > 0)
             {
                 if (treeView.SelectedItem == null && treeView.ItemContainerGenerator.ContainerFromIndex(0) is TreeViewItem firstNode)
@@ -75,7 +76,7 @@ namespace ColorVision.Services
         {
             if (sender is Button button)
             {
-                if (button.Content.ToString() == (Engine.Properties.Resources.ResourceManager.GetString(MsgRecordState.Sended.ToDescription(), CultureInfo.CurrentUICulture) ?? ""))
+                if (button.Content.ToString() == (Properties.Resources.ResourceManager.GetString(MsgRecordState.Sended.ToDescription(), CultureInfo.CurrentUICulture) ?? ""))
                 {
                     MessageBox.Show(Application.Current.GetActiveWindow(), "已经发送,请耐心等待","ColorVison");
                     return null;
@@ -92,12 +93,12 @@ namespace ColorVision.Services
         public static void SendCommand(Button button, MsgRecord msgRecord, bool Reserve = true)
         {
             var temp = button.Content;
-            button.Content = Engine.Properties.Resources.ResourceManager.GetString(msgRecord.MsgRecordState.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
+            button.Content = Properties.Resources.ResourceManager.GetString(msgRecord.MsgRecordState.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
 
             MsgRecordStateChangedHandler msgRecordStateChangedHandler = null;
             msgRecordStateChangedHandler = async (e) =>
             {
-                button.Content = Engine.Properties.Resources.ResourceManager.GetString(e.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
+                button.Content = Properties.Resources.ResourceManager.GetString(e.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
                 await Task.Delay(100);
                 if (e != MsgRecordState.Sended)
                 {

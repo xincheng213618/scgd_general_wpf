@@ -10,9 +10,49 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
 using YamlDotNet.Core;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Threading.Tasks;
 
 namespace ColorVision.Solution
 {
+
+    public interface IFileControl
+    {
+        string Name { get; set; }
+        public string GuidId { get; }
+
+        Control UserControl { get; }
+
+        ImageSource IconSource { get; }
+
+        void Open();
+        void Close();
+    }
+
+    public class SolutionManagerInitializer : IInitializer
+    {
+        private readonly IMessageUpdater _messageUpdater;
+
+        public SolutionManagerInitializer(IMessageUpdater messageUpdater)
+        {
+            _messageUpdater = messageUpdater;
+        }
+
+        public int Order => 1;
+
+        public async Task InitializeAsync()
+        {
+            await Task.Delay(30);
+            _= Task.Run(() =>
+            {
+                Application.Current.Dispatcher.Invoke(() => SolutionManager.GetInstance());
+            });
+            await Task.Delay(30);
+        }
+    }
+
+
     /// <summary>
     /// 工程模块控制中心
     /// </summary>
@@ -86,6 +126,13 @@ namespace ColorVision.Solution
         }
 
 
+        public event EventHandler<IFileControl> OpenFile;
+
+
+        public void OpenFileWindow(IFileControl userControl)
+        {
+            OpenFile?.Invoke(this, userControl);
+        }
 
 
         private void SolutionManager_SolutionLoaded(object? sender, EventArgs e)

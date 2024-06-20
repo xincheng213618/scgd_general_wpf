@@ -6,7 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Devices.CfwPort
+namespace ColorVision.Engine.Services.Devices.CfwPort
 {
     /// <summary>
     /// DisplaySMUControl.xaml 的交互逻辑
@@ -30,14 +30,7 @@ namespace ColorVision.Services.Devices.CfwPort
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
-            SelectChanged += (s, e) =>
-            {
-                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
-            };
-            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-            {
-                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
-            };
+            this.ApplyChangedSelectedColor(DisPlayBorder);
         }
 
         public event RoutedEventHandler Selected;

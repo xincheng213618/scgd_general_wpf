@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.Utilities;
+using ColorVision.Themes;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -20,6 +21,7 @@ namespace ColorVision.Scheduler
         public CreateTask()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -73,6 +75,11 @@ namespace ColorVision.Scheduler
                 comboBox.ItemsSource = from e1 in Enum.GetValues(typeof(JobRepeatMode)).Cast<JobRepeatMode>()
                                        select new KeyValuePair<string,JobRepeatMode>(e1.ToDescription(), e1);
             }
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            PlatformHelper.Open("https://cron.qqe2.com/");
         }
     }
 }

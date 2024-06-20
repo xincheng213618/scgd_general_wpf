@@ -14,11 +14,6 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Menu x:Name="Menu1">
-            <MenuItem x:Name="MenuFile" Header="{x:Static properties:Resources.MenuFile}"/>
-            <MenuItem x:Name="MenuTemplate" Header="{x:Static properties:Resources.MenuTemplate}"/>
-            <MenuItem x:Name="MenuTool" Header="{x:Static properties:Resources.MenuTool}"/>
-            <MenuItem x:Name="MenuView"  Header="{ x:Static properties:Resources.MenuView}"/>
-            <MenuItem x:Name="MenuHelp" Header="{x:Static properties:Resources.MenuHelp}"/>
 
         </Menu>
     </Grid>

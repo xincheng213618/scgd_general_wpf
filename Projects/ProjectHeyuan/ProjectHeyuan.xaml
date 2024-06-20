@@ -8,7 +8,7 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:HYMesManager}"
-        Title="ProjectHeiyuan" Height="720" Width="1280" Initialized="Window_Initialized">
+        Title="ProjectHeiyuan" Height="720" Width="1280" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Window.Resources>
         <local:ConnectConverter x:Key="ConnectConverter"/>
         <local:ColorConverter x:Key="ColorConverter"/>
@@ -198,7 +198,7 @@
                 </Grid.ColumnDefinitions>
 
                 <Border Grid.Column="0" Margin="15" BorderBrush="Black" BorderThickness="1">
-                    <TextBlock x:Name="ResultText" Text="OK" FontSize="40" Foreground="Blue" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="ResultText" Text="PASS" FontSize="40" Foreground="Blue" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                 </Border>
                 <Grid  Grid.Column="1">
                     <Button  Content="开始" Height="40" Width="100" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="15" Click="Button_Click"/>
@@ -216,16 +216,16 @@
 
                     <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="产品编号" Width="100"/>
-                        <TextBox DockPanel.Dock="Right"  Text="{Binding SN}"  Width="200" HorizontalAlignment="Left" />
+                        <TextBox x:Name="TextBoxSn" DockPanel.Dock="Right"  Text="{Binding SN}"  Width="200" HorizontalAlignment="Left" />
                         <Button Content="上传产品编号" Click="UploadSN"  Margin="5,0"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,2">
+                        <TextBlock Text="型號名稱" Width="100"/>
+                        <TextBox DockPanel.Dock="Right"   Text="{Binding Config.TestName}" Width="200" HorizontalAlignment="Left"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="设备序号" Width="100"/>
                         <TextBox DockPanel.Dock="Right"  Text="{Binding Config.DeviceId}" Width="200" HorizontalAlignment="Left"/>
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,2">
-                        <TextBlock Text="产品测试名称" Width="100"/>
-                        <TextBox DockPanel.Dock="Right"   Text="{Binding Config.TestName}" Width="200" HorizontalAlignment="Left"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,2">
                         <TextBlock Text="数据存储路径" Width="100"/>

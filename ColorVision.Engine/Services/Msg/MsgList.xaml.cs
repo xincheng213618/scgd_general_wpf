@@ -1,6 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
+using ColorVision.Themes;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using Newtonsoft.Json;
@@ -11,28 +13,20 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Msg
+namespace ColorVision.Engine.Services.Msg
 {
-    public class HotKeyMsgList : IHotKey, IMenuItem
+    public class ExportMsgList : MenuItemBase
     {
-        public HotKeys HotKeys => new(Engine.Properties.Resources.MsgList, new Hotkey(Key.M, ModifierKeys.Control), Execute);
-        private void Execute()
+        public override string OwnerGuid => "Help";
+        public override string GuidId => "MsgList";
+        public override string Header => "MQTTMsg";
+        public override int Order => 2;
+
+        [RequiresPermission(PermissionMode.Administrator)]
+        public override void Execute()
         {
             new MsgList() { Owner = Application.Current.GetActiveWindow() }.Show();
         }
-
-        public string? OwnerGuid => "Help";
-
-        public string? GuidId => "MsgList";
-        public int Order => 2;
-        public string? Header => "MQTTMsg";
-
-        public string? InputGestureText { get; } = "Ctrl + M";
-
-        public object? Icon { get; }
-
-        public RelayCommand Command => new(a => Execute());
-        public Visibility Visibility => Visibility.Visible;
     }
 
     /// <summary>
@@ -46,6 +40,7 @@ namespace ColorVision.Services.Msg
         public MsgList()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

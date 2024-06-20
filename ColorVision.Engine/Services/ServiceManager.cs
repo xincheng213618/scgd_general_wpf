@@ -1,24 +1,25 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.DAO;
-using ColorVision.Services.Devices;
-using ColorVision.Services.Devices.Algorithm;
-using ColorVision.Services.Devices.Calibration;
-using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.Devices.CfwPort;
-using ColorVision.Services.Devices.FileServer;
-using ColorVision.Services.Devices.Motor;
-using ColorVision.Services.Devices.PG;
-using ColorVision.Services.Devices.Sensor;
-using ColorVision.Services.Devices.SMU;
-using ColorVision.Services.Devices.Spectrum;
-using ColorVision.Services.Flow;
-using ColorVision.Services.PhyCameras;
-using ColorVision.Services.Terminal;
-using ColorVision.Services.Types;
+using ColorVision.Engine.Services.SysDictionary;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.DAO;
+using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Engine.Services.Devices.Calibration;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.CfwPort;
+using ColorVision.Engine.Services.Devices.FileServer;
+using ColorVision.Engine.Services.Devices.Motor;
+using ColorVision.Engine.Services.Devices.PG;
+using ColorVision.Engine.Services.Devices.Sensor;
+using ColorVision.Engine.Services.Devices.SMU;
+using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.Flow;
+using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.Terminal;
+using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
 using ColorVision.UserSpace;
 using FlowEngineLib;
@@ -29,8 +30,10 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Diagnostics;
+using ColorVision.Engine.Services.PhyCameras.Group;
 
-namespace ColorVision.Services
+namespace ColorVision.Engine.Services
 {
 
     public class ServiceInitializer : IInitializer
@@ -49,23 +52,30 @@ namespace ColorVision.Services
             if (MySqlControl.GetInstance().IsConnect)
             {
                 _messageUpdater.UpdateMessage("正在加载服务");
-                await Task.Delay(1);
                 Application.Current.Dispatcher.Invoke(() =>
                 {
                     ServiceManager ServiceManager = ServiceManager.GetInstance();
-                    if (!ServicesConfig.Instance.IsDefaultOpenService)
-                    {
-                        _messageUpdater.UpdateMessage("初始化服务");
-                        ServiceManager.GenDeviceDisplayControl();
-                        new WindowDevices() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-                    }
-                    else
-                    {
-                        _messageUpdater.UpdateMessage("自动配置服务中");
-                        ServiceManager.GenDeviceDisplayControl();
-                    }
                 });
-
+                if (!ServicesConfig.Instance.IsDefaultOpenService)
+                {
+                    _messageUpdater.UpdateMessage("初始化服务");
+                    await Task.Delay(10);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        ServiceManager.GetInstance().GenDeviceDisplayControl();
+                        new WindowDevices() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                    });
+                }
+                else
+                {
+                    _messageUpdater.UpdateMessage("自动配置服务中");
+                    await Task.Delay(10);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        ServiceManager.GetInstance().GenDeviceDisplayControl();
+                    });
+                }
+                _messageUpdater.UpdateMessage("服务初始化完成");
             }
             else
             {
@@ -95,9 +105,9 @@ namespace ColorVision.Services
         {
             svrDevices = new Dictionary<string, List<MQTTServiceBase>>();
             ServiceTokens = new List<MQTTServiceInfo>();
-            MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadServices();
             if (MySqlControl.GetInstance().IsConnect)
                 LoadServices();
+            MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadServices();
         }
 
         public void GenControl(ObservableCollection<DeviceService> MQTTDevices)
@@ -365,29 +375,6 @@ namespace ColorVision.Services
 
             GroupResources.Clear();
 
-            foreach (var phycamrea in PhyCameraManager.GetInstance().PhyCameras)
-            {
-                List<SysResourceModel> sysResourceModels = SysResourceDao.Instance.GetResourceItems(phycamrea.SysResourceModel.Id, UserConfig.TenantId);
-                foreach (var sysResourceModel in sysResourceModels)
-                {
-                    if (sysResourceModel.Type == (int)ServiceTypes.Group)
-                    {
-                        GroupResource groupResource = new(sysResourceModel);
-                        phycamrea.AddChild(groupResource);
-                        GroupResources.Add(groupResource);
-                    }
-                    else if (30 <= sysResourceModel.Type && sysResourceModel.Type <= 40)
-                    {
-                        CalibrationResource calibrationResource = new(sysResourceModel);
-                        phycamrea.AddChild(calibrationResource);
-                    }
-                    else
-                    {
-                        BaseFileResource calibrationResource = new(sysResourceModel);
-                        phycamrea.AddChild(calibrationResource);
-                    }
-                }
-            }
 
             foreach (var deviceService in DeviceServices)
             {

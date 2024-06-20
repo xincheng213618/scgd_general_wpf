@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 
-namespace ColorVision.Services.Devices.SMU.Dao
+namespace ColorVision.Engine.Services.Devices.SMU.Dao
 {
     public class SmuScanModel : PKModel
     {

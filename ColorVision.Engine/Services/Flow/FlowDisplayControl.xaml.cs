@@ -2,7 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Templates;
-using ColorVision.Services.DAO;
+using ColorVision.Engine.Services.DAO;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
@@ -21,7 +21,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 
 
-namespace ColorVision.Services.Flow
+namespace ColorVision.Engine.Services.Flow
 {
     public class FlowDisplayControlConfig : ViewModelBase,IConfig
     {
@@ -123,12 +123,12 @@ namespace ColorVision.Services.Flow
             DataContext = flowControl;
             PreviewMouseDown += UserControl_PreviewMouseDown;
 
-            menuItem = new MenuItem() { Header = ColorVision.Engine.Properties.Resources.MenuFlow };
-            MenuItem menuItem1 = new() { Header = ColorVision.Engine.Properties.Resources.ExecutionProcess };
+            menuItem = new MenuItem() { Header = Properties.Resources.MenuFlow };
+            MenuItem menuItem1 = new() { Header = Properties.Resources.ExecutionProcess };
             menuItem1.Click +=(s,e)=> Button_FlowRun_Click(s, e);
             menuItem.Items.Add(menuItem1);
 
-            MenuItem menuItem2 = new() { Header = ColorVision.Engine.Properties.Resources.StopProcess };
+            MenuItem menuItem2 = new() { Header = Properties.Resources.StopProcess };
             menuItem2.Click += (s, e) => Button_FlowStop_Click(s, e);
             menuItem.Items.Add(menuItem2);
 
@@ -140,14 +140,7 @@ namespace ColorVision.Services.Flow
             {
                 MenuManager.GetInstance().RemoveMenuItem(menuItem);
             };
-            SelectChanged += (s, e) =>
-            {
-                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
-            };
-            ThemeManager.Current.CurrentUIThemeChanged += (s) =>
-            {
-                DisPlayBorder.BorderBrush = IsSelected ? ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#5649B0" : "#A79CF1") : ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme == Theme.Light ? "#EAEAEA" : "#151515");
-            };
+            this.ApplyChangedSelectedColor(DisPlayBorder);
         }
 
         public event RoutedEventHandler Selected;

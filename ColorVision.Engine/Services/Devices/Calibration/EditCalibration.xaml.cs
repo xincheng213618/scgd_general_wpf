@@ -1,11 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Themes;
 using System;
 using System.Windows;
 using System.Windows.Input;
 
 
-namespace ColorVision.Services.Devices.Calibration
+namespace ColorVision.Engine.Services.Devices.Calibration
 {
     /// <summary>
     /// EditCalibration.xaml 的交互逻辑
@@ -21,6 +22,7 @@ namespace ColorVision.Services.Devices.Calibration
         {
             DeviceCalibration = deviceCalibration;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)

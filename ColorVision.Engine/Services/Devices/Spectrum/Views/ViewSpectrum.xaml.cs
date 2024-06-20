@@ -1,8 +1,8 @@
-﻿using ColorVision.Services.DAO;
-using ColorVision.Services.Devices.SMU.Dao;
-using ColorVision.Services.Devices.Spectrum.Configs;
-using ColorVision.Services.Devices.Spectrum.Dao;
-using ColorVision.Services.Templates;
+﻿using ColorVision.Engine.Services.DAO;
+using ColorVision.Engine.Services.Devices.SMU.Dao;
+using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.Engine.Services.Devices.Spectrum.Dao;
+using ColorVision.Engine.Services.Templates;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
@@ -21,7 +21,7 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using static cvColorVision.GCSDLL;
 
-namespace ColorVision.Services.Devices.Spectrum.Views
+namespace ColorVision.Engine.Services.Devices.Spectrum.Views
 {
     public class ViewSpectrumConfig :IConfig
     {

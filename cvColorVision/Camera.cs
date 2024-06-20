@@ -4,13 +4,6 @@ using System.ComponentModel;
 
 namespace cvColorVision
 {
-    public enum CameraModeType
-    {
-        LV,
-        BV,
-        CV,
-        Other
-    }
     public enum CameraType
     {
         [Description("CV_Q")]
@@ -33,25 +26,20 @@ namespace cvColorVision
         LV_MIL_CL,
         [Description("CV_MIL_CL")]
         CV_MIL_CL,
+        [Description("BV_MIL_CXP")]
+        BV_MIL_CXP,
+        [Description("BV_HK_CARD")]
+        BV_HK_CARD,
+        [Description("LV_HK_CARD")]
+        LV_HK_CARD,
+        [Description("CV_HK_CARD")]
+        CV_HK_CARD,
+        [Description("CV_HK_USB")]
+        CV_HK_USB,
         [Description("MIL_CXP_VIDEO")]
         MIL_CXP_VIDEO,
         [Description("CameraType_Total")]
         CameraType_Total,
     };
-
-    public static class CameraExtensions
-    {
-        public static CameraModeType GetCameraModeType(this CameraType cameraType)
-        {
-            return cameraType switch
-            {
-                CameraType.CV_Q => CameraModeType.CV,
-                CameraType.LV_Q or CameraType.MIL_CXP or CameraType.LV_H or CameraType.HK_CXP or CameraType.LV_MIL_CL or CameraType.MIL_CXP_VIDEO => CameraModeType.LV,
-                CameraType.BV_Q or CameraType.MIL_CL or CameraType.BV_H => CameraModeType.BV,
-                _ => CameraModeType.Other,
-            };
-        }
-    }
-
 
 }

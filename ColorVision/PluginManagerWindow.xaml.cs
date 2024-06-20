@@ -1,29 +1,25 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using System.Windows;
 
 namespace ColorVision
 {
-    public class PluginManagerExport : IMenuItem
+    public class PluginManagerExport : MenuItemBase
     {
-        public string? OwnerGuid => "Help";
-        public string? GuidId => "Wizard";
-        public int Order => 10000;
-        public string? Header => "PluginManager";
+        public override string OwnerGuid => "Help";
+        public override string GuidId => "Wizard";
+        public override int Order => 10000;
+        public override string Header => "PluginManager";
 
-        public string? InputGestureText => null;
-
-        public object? Icon => null;
-
-        public RelayCommand Command => new RelayCommand(A => Execute());
-
-        private static void Execute()
+        [RequiresPermission(PermissionMode.Administrator)]
+        public override void Execute()
         {
             new PluginManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
-        public Visibility Visibility => Visibility.Visible;
     }
 
     /// <summary>
@@ -34,6 +30,7 @@ namespace ColorVision
         public PluginManagerWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

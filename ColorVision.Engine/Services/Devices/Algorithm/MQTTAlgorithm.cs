@@ -1,4 +1,4 @@
-﻿using ColorVision.Services.Msg;
+﻿using ColorVision.Engine.Services.Msg;
 using CVCommCore;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib;
@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.Algorithm
+namespace ColorVision.Engine.Services.Devices.Algorithm
 {
     public class MQTTAlgorithm : MQTTDeviceService<ConfigAlgorithm>
     {
@@ -307,13 +307,34 @@ namespace ColorVision.Services.Devices.Algorithm
 
             MsgSend msg = new()
             {
-                EventName = MQTTAlgorithmEventEnum.Event_LedCheck_GetData,
+                EventName = MQTTAlgorithmEventEnum.Event_LED_Check_GetData,
                 SerialNumber = sn,
                 Params = Params
             };
 
             return PublishAsyncClient(msg, 60000);
         }
+
+        public MsgRecord LEDStripDetection(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
+        {
+            string sn = null;
+            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
+            else sn = serialNumber;
+
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
+
+            MsgSend msg = new()
+            {
+                EventName = MQTTAlgorithmEventEnum.Event_LED_StripDetection,
+                SerialNumber = sn,
+                Params = Params
+            };
+
+            return PublishAsyncClient(msg, 60000);
+        }
+
+
 
 
         public MsgRecord Close()

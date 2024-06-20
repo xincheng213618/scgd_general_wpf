@@ -1,14 +1,15 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Util.Interfaces;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.UI.Authorizations;
 
-namespace ColorVision.Services.Devices.Algorithm
+namespace ColorVision.Engine.Services.Devices.Algorithm
 {
     public class DeviceAlgorithm : DeviceService<ConfigAlgorithm>
     {
@@ -31,14 +32,14 @@ namespace ColorVision.Services.Devices.Algorithm
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
-            });
+            }, a => AccessControl.Check(PermissionMode.Administrator));
         }
 
         readonly Lazy<DisplayAlgorithmControl> DisplayAlgorithmControlLazy;
         public DisplayAlgorithmControl DisplayAlgorithmControl { get; set; }
 
         public override UserControl GetDeviceControl() => new InfoAlgorithm(this);
-        public override UserControl GetDeviceInfo() => new InfoAlgorithm(this, false);
+        public override UserControl GetDeviceInfo() => new InfoAlgorithm(this);
 
         public override UserControl GetDisplayControl() => DisplayAlgorithmControlLazy.Value;
 

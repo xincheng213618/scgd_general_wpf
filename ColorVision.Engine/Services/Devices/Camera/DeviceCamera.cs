@@ -1,18 +1,20 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Util.Interfaces;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera.Configs;
-using ColorVision.Services.Devices.Camera.Views;
-using ColorVision.Services.Msg;
-using ColorVision.Services.PhyCameras;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Devices.Camera.Views;
+using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Services.PhyCameras;
 using log4net;
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.UserSpace;
+using ColorVision.UI.Authorizations;
 
-namespace ColorVision.Services.Devices.Camera
+namespace ColorVision.Engine.Services.Devices.Camera
 {
     public class DeviceCamera : DeviceService<ConfigCamera>
     {
@@ -22,7 +24,6 @@ namespace ColorVision.Services.Devices.Camera
 
         public ViewCamera View { get; set; }
         public MQTTCamera DeviceService { get; set; }
-        public MQTTTerminalCamera Service { get; set; }
 
         public RelayCommand UploadCalibrationCommand { get; set; }
 
@@ -39,19 +40,11 @@ namespace ColorVision.Services.Devices.Camera
             View.View.Title = $"相机视图 - {Config.Code}";
             this.SetIconResource("DrawingImageCamera", View.View);
 
-            EditCommand = new RelayCommand(a =>
-            {
-                EditCamera window = new(this);
-                window.Owner = Application.Current.GetActiveWindow();
-                window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
-                window.ShowDialog();
-            });
+            EditCommand = new RelayCommand(a => EditCameraAction() ,b => AccessControl.Check(EditCameraAction));
 
             OpenCalibrationParamsCommand = new RelayCommand(a =>
             {
-
             });
-
             FetchLatestTemperatureCommand =  new RelayCommand(a => FetchLatestTemperature(a));
 
 
@@ -62,10 +55,18 @@ namespace ColorVision.Services.Devices.Camera
             OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger());
         }
 
-
-
+        [RequiresPermission(PermissionMode.Administrator)]
+        private void EditCameraAction()
+        {
+            EditCamera window = new(this);
+            window.Owner = Application.Current.GetActiveWindow();
+            window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+            window.ShowDialog();
+        }
 
         public RelayCommand OpenPhyCameraMangerCommand { get; set; }
+
+        [RequiresPermission(PermissionMode.Administrator)]
         public void OpenPhyCameraManger()
         {
             DeviceService.GetAllCameraID();
@@ -95,6 +96,7 @@ namespace ColorVision.Services.Devices.Camera
             if (PhyCamera != null)
             {
                 PhyCamera.SetDeviceCamera(this);
+                NotifyPropertyChanged(nameof(PhyCamera));
             }
             base.Save();
         }
@@ -113,7 +115,7 @@ namespace ColorVision.Services.Devices.Camera
         }
 
         public override UserControl GetDeviceControl() => new InfoCamera(this);
-        public override UserControl GetDeviceInfo() => new InfoCamera(this, false);
+        public override UserControl GetDeviceInfo() => new InfoCamera(this);
         
         public Lazy<DisplayCameraControl> DisplayCameraControlLazy { get; set; }
 
@@ -125,8 +127,7 @@ namespace ColorVision.Services.Devices.Camera
         }
         public override void Dispose()
         {
-            Service.Dispose();
-            DeviceService.Dispose();
+            DeviceService?.Dispose();
             base.Dispose();
             GC.SuppressFinalize(this);
         }

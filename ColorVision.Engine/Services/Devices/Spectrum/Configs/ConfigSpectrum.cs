@@ -1,9 +1,7 @@
-﻿using ColorVision.Services.Devices.Camera.Configs;
-using ColorVision.Services.Core;
-using CVCommCore;
-using Newtonsoft.Json;
+﻿using ColorVision.Engine.Services.Configs;
+using ColorVision.Engine.Services.Core;
 
-namespace ColorVision.Services.Devices.Spectrum.Configs
+namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 {
 
     public class ConfigSpectrum : DeviceServiceConfig, IServiceConfig
@@ -28,35 +26,5 @@ namespace ColorVision.Services.Devices.Spectrum.Configs
 
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 
-        [JsonIgnore]
-        public string BtnDeviceStatus
-        {
-            get
-            {
-                string text = DeviceStatus.ToString();
-                switch (DeviceStatus)
-                {
-                    case DeviceStatusType.Unknown:
-                        break;
-                    case DeviceStatusType.Closed:
-                        text = "打开";
-                        break;
-                    case DeviceStatusType.Closing:
-                        break;
-                    case DeviceStatusType.Opened:
-                        text = "关闭";
-                        break;
-                    case DeviceStatusType.Opening:
-                        break;
-                    case DeviceStatusType.Busy:
-                        break;
-                    case DeviceStatusType.Free:
-                        break;
-                    default:
-                        break;
-                }
-                return text;
-            }
-        }
     }
 }

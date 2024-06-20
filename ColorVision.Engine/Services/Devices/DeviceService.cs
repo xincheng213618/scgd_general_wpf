@@ -1,14 +1,16 @@
 ﻿#pragma warning disable CS8604,CS8631
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.UI.Extension;
-using ColorVision.Util.Interfaces;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.RC;
-using ColorVision.Services.Types;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
+using ColorVision.UI.Authorizations;
+using ColorVision.UI.Extension;
 using ColorVision.UI.Views;
+using ColorVision.Util.Interfaces;
 using Newtonsoft.Json;
 using System;
 using System.IO;
@@ -16,7 +18,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Services.Devices
+namespace ColorVision.Engine.Services.Devices
 {
 
     public class DeviceService : BaseResourceObject, IDisposable, ITreeViewItem,IIcon
@@ -26,7 +28,7 @@ namespace ColorVision.Services.Devices
         public virtual string SubscribeTopic { get; set; }
         public virtual bool IsAlive { get; set; }
         public virtual DateTime LastAliveTime { get; set; }
-
+        public ServiceTypes ServiceTypes => (ServiceTypes)SysResourceModel.Type;
         public virtual int HeartbeatTime { get; set; }
 
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
@@ -107,7 +109,6 @@ namespace ColorVision.Services.Devices
         public override string Code { get => SysResourceModel.Code ?? string.Empty; set { SysResourceModel.Code = value; NotifyPropertyChanged(); } }
         public override string Name { get => SysResourceModel.Name ?? string.Empty; set{ SysResourceModel.Name = value; NotifyPropertyChanged(); } }
 
-        public ServiceTypes ServiceTypes => (ServiceTypes)SysResourceModel.Type;
 
         public DeviceService(SysDeviceModel sysResourceModel) : base()
         {
@@ -135,13 +136,13 @@ namespace ColorVision.Services.Devices
                 MessageBoxResult result = MessageBox.Show(WindowHelpers.GetActiveWindow(), "确定要重置吗？", "ColorVision", MessageBoxButton.OKCancel);
                 if (result == MessageBoxResult.OK)
                     Config = new T();
-            });
-            DeleteCommand = new RelayCommand(a => Delete());
+            }, a => AccessControl.Check(PermissionMode.Administrator));
+            DeleteCommand = new RelayCommand(a => Delete(), a => AccessControl.Check(PermissionMode.Administrator));
             EditCommand = new RelayCommand(a => { });
 
             ResourceManagerCommand = new RelayCommand(a => 
             {
-                ResourceManager resourceManager = new(this) { Owner = WindowHelpers.GetActiveWindow() };
+                ResourceManagerWindow resourceManager = new(this) { Owner = WindowHelpers.GetActiveWindow() };
                 resourceManager.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 resourceManager.ShowDialog();
             });
@@ -166,7 +167,7 @@ namespace ColorVision.Services.Devices
 
             PropertyCommand = new RelayCommand((e) =>
             {
-                Window window = new() { Width = 700, Height = 400, Icon = Icon,Title = Engine.Properties.Resources.Property };
+                Window window = new() { Width = 700, Height = 400, Icon = Icon,Title = Properties.Resources.Property };
                 window.Content = GetDeviceInfo();
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
@@ -174,10 +175,10 @@ namespace ColorVision.Services.Devices
             });
             RefreshCommand = new RelayCommand(a => RestartRCService());
 
-            ContextMenu.Items.Add(new MenuItem() { Header = Engine.Properties.Resources.Delete, Command = DeleteCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Engine.Properties.Resources.Export, Command = ExportCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Engine.Properties.Resources.Import, Command = ImportCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Engine.Properties.Resources.Property, Command = PropertyCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = DeleteCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Export, Command = ExportCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Import, Command = ImportCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Property, Command = PropertyCommand });
 
 
             Config = BaseResourceObjectExtensions.TryDeserializeConfig<T>(SysResourceModel.Value);

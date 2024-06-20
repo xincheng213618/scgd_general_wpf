@@ -388,6 +388,8 @@ namespace ColorVision.Engine.MySql.ORM
             CreateColumns(d_info);
             return d_info;
         }
+
+
         public int DeleteAll(int tenantId)
         {
             string sql = IsLogicDel ? $"UPDATE {TableName} SET is_delete = 1 WHERE tenant_id = @tenant_id" : $"DELETE FROM {TableName} WHERE tenant_id = @tenant_id";

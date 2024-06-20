@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using Newtonsoft.Json;
 
-namespace ColorVision.Services.Flow
+namespace ColorVision.Engine.Services.Flow
 {
     public class FlowControlData : ViewModelBase
     {

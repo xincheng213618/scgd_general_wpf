@@ -1,19 +1,20 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices;
-using ColorVision.Services.Devices.Algorithm;
-using ColorVision.Services.Devices.Calibration;
-using ColorVision.Services.Devices.CfwPort;
-using ColorVision.Services.Devices.FileServer;
-using ColorVision.Services.Devices.Motor;
-using ColorVision.Services.Devices.PG;
-using ColorVision.Services.Devices.Sensor;
-using ColorVision.Services.Devices.SMU;
-using ColorVision.Services.Devices.SMU.Configs;
-using ColorVision.Services.Devices.Spectrum;
-using ColorVision.Services.Devices.Spectrum.Configs;
-using ColorVision.Services.Types;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.Devices.Algorithm;
+using ColorVision.Engine.Services.Devices.Calibration;
+using ColorVision.Engine.Services.Devices.CfwPort;
+using ColorVision.Engine.Services.Devices.FileServer;
+using ColorVision.Engine.Services.Devices.Motor;
+using ColorVision.Engine.Services.Devices.PG;
+using ColorVision.Engine.Services.Devices.Sensor;
+using ColorVision.Engine.Services.Devices.SMU;
+using ColorVision.Engine.Services.Devices.SMU.Configs;
+using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.Engine.Services.Types;
+using ColorVision.Themes;
 using ColorVision.UserSpace;
 using Newtonsoft.Json;
 using System;
@@ -21,7 +22,7 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Terminal
+namespace ColorVision.Engine.Services.Terminal
 {
     /// <summary>
     /// EditTerminal.xaml 的交互逻辑
@@ -33,6 +34,7 @@ namespace ColorVision.Services.Terminal
         {
             TerminalService = terminalService;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

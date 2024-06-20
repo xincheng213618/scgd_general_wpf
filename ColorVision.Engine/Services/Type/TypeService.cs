@@ -1,13 +1,13 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Terminal;
+using ColorVision.Engine.Services.SysDictionary;
+using ColorVision.Engine.Services.Terminal;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Types
+namespace ColorVision.Engine.Services.Types
 {
     public enum ServiceTypes
     {
@@ -60,7 +60,6 @@ namespace ColorVision.Services.Types
         public RelayCommand CreateCommand { get; set; }
         public TypeService() : base()
         {
-
             OpenCreateWindowCommand = new RelayCommand(a =>
             {
                 CreateType createType = new(this);
@@ -68,6 +67,9 @@ namespace ColorVision.Services.Types
                 createType.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 createType.ShowDialog();
             });
+
+            ContextMenu = new ContextMenu();
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Create ,Command = OpenCreateWindowCommand });
         }
 
 

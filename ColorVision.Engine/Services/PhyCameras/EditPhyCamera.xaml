@@ -1,16 +1,16 @@
-﻿<Window x:Class="ColorVision.Services.PhyCameras.EditPhyCamera"
+﻿<Window x:Class="ColorVision.Engine.Services.PhyCameras.EditPhyCamera"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-             xmlns:local="clr-namespace:ColorVision.Services.PhyCameras"
-             xmlns:config="clr-namespace:ColorVision.Services.PhyCameras.Configs"
+             xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras"
+             xmlns:config="clr-namespace:ColorVision.Engine.Services.PhyCameras.Configs"
              xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         d:DataContext="{d:DesignInstance local:PhyCamera}"
              mc:Ignorable="d" 
-             Title="{x:Static properties:Resources.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="400" Initialized="UserControl_Initialized">
+             Title="{x:Static properties:Resources.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="600" Initialized="UserControl_Initialized">
     <Window.Resources>
         <Style TargetType="TextBox" BasedOn="{StaticResource TextBoxBaseBaseStyle}">
             <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
@@ -33,6 +33,14 @@
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="相机类型" Width="120"/>
                                 <hc:ComboBox x:Name="ComboxCameraType"  SelectedValue="{Binding CameraType}" SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,10,0"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock Text="相机型号" Width="120"/>
+                                <hc:ComboBox x:Name="ComboxCameraModel"  SelectedValue="{Binding CameraModel}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock Text="相机模式" Width="120"/>
+                                <hc:ComboBox x:Name="ComboxCameraMode"  SelectedValue="{Binding CameraMode}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="默认取图模式" Width="120"/>
@@ -228,41 +236,85 @@
                                     <hc:ComboBox  x:Name="TextBaudRate1" IsEditable="True" Text="{Binding CFW.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                                 </DockPanel>
                             </StackPanel>
-
+                            <DockPanel>
+                                <TextBlock Text="滤色轮数量:" Width="120"/>
+                                <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.CFWNum}" Minimum="0"/>
+                            </DockPanel>
                             <UniformGrid Columns="3" Rows="1">
-                                <UniformGrid Columns="1" Rows="2" Margin="2">
-                                    <DockPanel Margin="0,2">
-                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[0].Cfwport}" Minimum="0"/>
-                                        <TextBlock Text="cfwport"/>
-                                    </DockPanel>
+                                <StackPanel Margin="0,2">
                                     <DockPanel Margin="0,2">
                                         <ComboBox x:Name="chType1" DockPanel.Dock="Right" Width="110" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding CFW.ChannelCfgs[0].Chtype}"   SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
                                         <TextBlock Text="chType"/>
                                     </DockPanel>
-                                </UniformGrid>
-                                <UniformGrid Columns="1" Rows="2" Margin="2">
                                     <DockPanel Margin="0,2">
-                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[1].Cfwport}" Minimum="0"/>
-                                        <TextBlock Text="cfwport"/>
+                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[0].Cfwport}" Minimum="0"/>
+                                        <TextBlock Text="cfwport0"/>
                                     </DockPanel>
+                                    <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum2,Converter={StaticResource bool2VisibilityConverter}}">
+                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[3].Cfwport}" Minimum="0"/>
+                                        <TextBlock Text="cfwport3"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum3,Converter={StaticResource bool2VisibilityConverter}}">
+                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[6].Cfwport}" Minimum="0"/>
+                                        <TextBlock Text="cfwport6"/>
+                                    </DockPanel>
+                                </StackPanel>
+                                <StackPanel  Margin="2">
                                     <DockPanel Margin="0,2">
                                         <ComboBox x:Name="chType2" DockPanel.Dock="Right" Width="110" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding CFW.ChannelCfgs[1].Chtype}"  SelectedValuePath="Key"  DisplayMemberPath="Value"/>
                                         <TextBlock Text="chType"/>
                                     </DockPanel>
-                                </UniformGrid>
-                                <UniformGrid Columns="1" Rows="2" Margin="2">
                                     <DockPanel Margin="0,2">
-                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[2].Cfwport}" Minimum="0"/>
-                                        <TextBlock Text="cfwport"/>
+                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[1].Cfwport}" Minimum="0"/>
+                                        <TextBlock Text="cfwport1"/>
                                     </DockPanel>
+                                    <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum2,Converter={StaticResource bool2VisibilityConverter}}">
+                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[4].Cfwport}" Minimum="0"/>
+                                        <TextBlock Text="cfwport4"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum3,Converter={StaticResource bool2VisibilityConverter}}">
+                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[7].Cfwport}" Minimum="0"/>
+                                        <TextBlock Text="cfwport7"/>
+                                    </DockPanel>
+                                </StackPanel>
+                                <StackPanel  Margin="2">
                                     <DockPanel Margin="0,2">
                                         <ComboBox x:Name="chType3" DockPanel.Dock="Right" Width="110" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding CFW.ChannelCfgs[2].Chtype}"   SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
                                         <TextBlock Text="chType"/>
                                     </DockPanel>
-                                </UniformGrid>
+                                    <DockPanel Margin="0,2">
+                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[2].Cfwport}" Minimum="0"/>
+                                        <TextBlock Text="cfwport2"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum2,Converter={StaticResource bool2VisibilityConverter}}">
+                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[5].Cfwport}" Minimum="0"/>
+                                        <TextBlock Text="cfwport5"/>
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum3,Converter={StaticResource bool2VisibilityConverter}}">
+                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[8].Cfwport}" Minimum="0"/>
+                                        <TextBlock Text="cfwport8"/>
+                                    </DockPanel>
+                                </StackPanel>
                             </UniformGrid>
                         </StackPanel>
+                    </GroupBox>
 
+                    <GroupBox Header="数据文件服务配置" Margin="0,5">
+                        <StackPanel Margin="5">
+                            <DockPanel Margin="0,2">
+                                <Button Content=".." DockPanel.Dock="Right" VerticalAlignment="Bottom" Height="30" Width="30" Click="FileBasePath_Click"/>
+                                <TextBlock Text="数据目录:" Width="120"/>
+                                <TextBox Text="{Binding FileServerCfg.FileBasePath}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock Text="端口地址:" Width="120"/>
+                                <TextBox Text="{Binding FileServerCfg.Endpoint}"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <TextBlock Text="端口范围:" Width="120"/>
+                                <TextBox Text="{Binding FileServerCfg.PortRange}" />
+                            </DockPanel>
+                        </StackPanel>
                     </GroupBox>
                 </StackPanel>
             </Border>

@@ -14,6 +14,7 @@ namespace ColorVision.Engine.Templates.POI
         Y = 1,
         Z = 2
     }
+
     public enum RiPointTypes
     {
         Circle = 0,

@@ -7,9 +7,9 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-namespace ColorVision.Services.Flow
+namespace ColorVision.Engine.Services.Flow
 {
-    public class FlowFile : ViewModelBase, IFile
+    public class FlowFile : ViewModelBase, IFileMeta
     {
         public FileInfo FileInfo { get; set; }
         public ContextMenu ContextMenu { get; set; }

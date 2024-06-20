@@ -1,14 +1,15 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Util.Interfaces;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Themes;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using ColorVision.UI.Authorizations;
 
-namespace ColorVision.Services.Devices.Motor
+namespace ColorVision.Engine.Services.Devices.Motor
 {
     public class DeviceMotor : DeviceService<ConfigMotor>,IIcon
     {
@@ -25,11 +26,11 @@ namespace ColorVision.Services.Devices.Motor
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
-            });
+            }, a => AccessControl.Check(PermissionMode.Administrator));
         }
 
         public override UserControl GetDeviceControl() => new InfoMotor(this);
-        public override UserControl GetDeviceInfo() => new InfoMotor(this, false);
+        public override UserControl GetDeviceInfo() => new InfoMotor(this);
 
         public override UserControl GetDisplayControl() => new DisplayMotorControl(this);
 

@@ -4,9 +4,40 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision"
+        xmlns:properties ="clr-namespace:ColorVision.Properties"
+        xmlns:hc ="https://handyorg.github.io/handycontrol"
         mc:Ignorable="d"
-        Title="WindowLog" Height="450" Width="800">
-    <Grid>
-        <TextBox x:Name="logTextBox" BorderThickness="0"  VerticalAlignment="Top" IsReadOnly="True" />
+        d:DataContext="{d:DesignInstance local:MainWindowConfig}"
+        Title="WindowLog" Height="450" Width="1000" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+    <Window.Resources>
+        <Style TargetType="{x:Type TextBlock}">
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid Margin="0,0,0,5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <hc:SearchBar x:Name="SearchBar1"  Margin="0,0,5,0" TextChanged="SearchBar1_TextChanged" hc:InfoElement.Placeholder="过滤器支持正则" hc:InfoElement.ShowClearButton="True" Style="{StaticResource SearchBarPlus}" IsRealTime="True"   />
+            <StackPanel Grid.Column="1"  Orientation="Horizontal">
+                <ToggleButton  Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="AutoScrollToEnd" IsChecked="{Binding AutoScrollToEnd}" Margin="5,0"/>
+                <ToggleButton  Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="AutoRefresh" IsChecked="{Binding AutoRefresh}" Margin="5,0"/>
+                <ToggleButton  Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="ReadHistory" IsChecked="{Binding ReadHistory}" Margin="5,0"/>
+                <ToggleButton  Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="LogReserve" IsChecked="{Binding LogReserve}" Margin="5,0"/>
+                <TextBlock Text="{x:Static properties:Resources.LogLevel}"  Margin="0,0,5,0"/>
+                <ComboBox Name="cmlog"  Width="100" SelectedValuePath="Key" DisplayMemberPath="Value" SelectedValue="{Binding LogLevel}" SelectionChanged="cmlog_SelectionChanged"/>
+                <Button Content="清除" Click="Clear_Click" Margin="5,0,0,0"/>
+            </StackPanel>
+        </Grid>
+
+        <TextBox x:Name="logTextBox" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
+        <TextBox x:Name="logTextBoxSerch" Visibility="Collapsed" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
     </Grid>
 </Window>

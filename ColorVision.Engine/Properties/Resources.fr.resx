@@ -129,9 +129,6 @@
   <data name="WorkflowEngine_F" xml:space="preserve">
     <value>Moteur de processus (F)</value>
   </data>
-  <data name="Wizard" xml:space="preserve">
-    <value>magicien</value>
-  </data>
   <data name="WindowSingle" xml:space="preserve">
     <value>fenêtre indépendante</value>
   </data>
@@ -159,15 +156,6 @@
   <data name="Upload" xml:space="preserve">
     <value>télécharger</value>
   </data>
-  <data name="Upgrade" xml:space="preserve">
-    <value>mise à niveau</value>
-  </data>
-  <data name="UpdateSpeed" xml:space="preserve">
-    <value>Vitesse de mise à jour</value>
-  </data>
-  <data name="Update" xml:space="preserve">
-    <value>renouveler</value>
-  </data>
   <data name="Unsubscribe" xml:space="preserve">
     <value>Se désabonner</value>
   </data>
@@ -188,21 +176,6 @@
   </data>
   <data name="TimeLeft" xml:space="preserve">
     <value>temps restant:</value>
-  </data>
-  <data name="ThemeUseSystem" xml:space="preserve">
-    <value>Suivez le système</value>
-  </data>
-  <data name="ThemePink" xml:space="preserve">
-    <value>rose</value>
-  </data>
-  <data name="ThemeLight" xml:space="preserve">
-    <value>couleur claire</value>
-  </data>
-  <data name="ThemeDark" xml:space="preserve">
-    <value>Sombre</value>
-  </data>
-  <data name="Theme" xml:space="preserve">
-    <value>thème</value>
   </data>
   <data name="TesConnection" xml:space="preserve">
     <value>tester la connexion</value>
@@ -240,17 +213,11 @@
   <data name="StartTime" xml:space="preserve">
     <value>Heure de départ</value>
   </data>
-  <data name="StartRecoverUILayout" xml:space="preserve">
-    <value>Démarrer la disposition de l’interface de récupération</value>
-  </data>
   <data name="StartingService" xml:space="preserve">
     <value>Service de démarrage</value>
   </data>
   <data name="SpectrometerLog" xml:space="preserve">
     <value>Journal du spectromètre</value>
-  </data>
-  <data name="SoftwareVersion" xml:space="preserve">
-    <value>Une version de logiciel</value>
   </data>
   <data name="Size" xml:space="preserve">
     <value>taille</value>
@@ -269,12 +236,6 @@
   </data>
   <data name="Shape" xml:space="preserve">
     <value>forme</value>
-  </data>
-  <data name="SetupWizard" xml:space="preserve">
-    <value>Assistant de configuration</value>
-  </data>
-  <data name="Settings" xml:space="preserve">
-    <value>installation</value>
   </data>
   <data name="ServiceName" xml:space="preserve">
     <value>Nom du service</value>
@@ -315,12 +276,6 @@
   <data name="Save" xml:space="preserve">
     <value>sauvegarder</value>
   </data>
-  <data name="RunAsAdmin" xml:space="preserve">
-    <value>Exécuter en tant qu'administrateur</value>
-  </data>
-  <data name="Rollback" xml:space="preserve">
-    <value>retourner</value>
-  </data>
   <data name="Result" xml:space="preserve">
     <value>résultat</value>
   </data>
@@ -354,15 +309,6 @@
   <data name="Property" xml:space="preserve">
     <value>Les attributs</value>
   </data>
-  <data name="ProjectSettings" xml:space="preserve">
-    <value>Paramètres du projet</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>nom du projet</value>
-  </data>
-  <data name="Project" xml:space="preserve">
-    <value>projet</value>
-  </data>
   <data name="Position" xml:space="preserve">
     <value>Emplacement</value>
   </data>
@@ -375,9 +321,6 @@
   <data name="PhysicalCameraManager" xml:space="preserve">
     <value>Gestion des caméras physiques</value>
   </data>
-  <data name="PerformanceTest" xml:space="preserve">
-    <value>Test de performance</value>
-  </data>
   <data name="Password" xml:space="preserve">
     <value>mot de passe</value>
   </data>
@@ -386,12 +329,6 @@
   </data>
   <data name="OutputView" xml:space="preserve">
     <value>Vue de sortie</value>
-  </data>
-  <data name="OpenSolution" xml:space="preserve">
-    <value>Projet ouvert</value>
-  </data>
-  <data name="OpenLocalProjectOrFile" xml:space="preserve">
-    <value>Ouvrir un projet ou un fichier local</value>
   </data>
   <data name="OpenItem" xml:space="preserve">
     <value>Projet ouvert</value>
@@ -402,20 +339,8 @@
   <data name="OK" xml:space="preserve">
     <value>Bien sûr</value>
   </data>
-  <data name="NotRunAsAdmin" xml:space="preserve">
-    <value>Exécuter en tant que non-administrateur</value>
-  </data>
   <data name="NoRelatedItemsFound" xml:space="preserve">
     <value>Aucun élément associé trouvé</value>
-  </data>
-  <data name="NewVersionFound" xml:space="preserve">
-    <value>nouvelle version trouvée</value>
-  </data>
-  <data name="NewSolution" xml:space="preserve">
-    <value>Nouvelle construction</value>
-  </data>
-  <data name="NewProjectFormat" xml:space="preserve">
-    <value>Nouveau format de projet</value>
   </data>
   <data name="New" xml:space="preserve">
     <value>Nouveau</value>
@@ -424,10 +349,10 @@
     <value>nom</value>
   </data>
   <data name="MysqlConnectionConfiguration" xml:space="preserve">
-    <value>Configuration de la connexion MySQL</value>
+    <value>Configuration de la connexion MySql</value>
   </data>
   <data name="MysqlConnection" xml:space="preserve">
-    <value>Connexion MySQL</value>
+    <value>Connexion MySql</value>
   </data>
   <data name="MyLicense_R" xml:space="preserve">
     <value>Ma licence(R)</value>
@@ -455,12 +380,6 @@
   </data>
   <data name="MessageRetention" xml:space="preserve">
     <value>conservation des messages</value>
-  </data>
-  <data name="MenuViewStatusBar" xml:space="preserve">
-    <value>Barre d'état</value>
-  </data>
-  <data name="MenuViewSidebar" xml:space="preserve">
-    <value>Barre latérale</value>
   </data>
   <data name="MenuView" xml:space="preserve">
     <value>Vue(V)</value>
@@ -495,7 +414,7 @@
   <data name="MenuService" xml:space="preserve">
     <value>Configuration(S) du service d'administrateur(_S)</value>
   </data>
-  <data name="MenuSenSorHeYuan" xml:space="preserve">
+  <data name="MenuSensor" xml:space="preserve">
     <value>Paramètres du modèle de capteur générique (S)</value>
   </data>
   <data name="MenuRename" xml:space="preserve">
@@ -531,12 +450,6 @@
   <data name="MenuLedCheck" xml:space="preserve">
     <value>Paramètre du modèle de détection de perles de lampe (L)</value>
   </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>_Langue</value>
-  </data>
-  <data name="MenuHelp" xml:space="preserve">
-    <value>Aide(H)</value>
-  </data>
   <data name="MenuGhost" xml:space="preserve">
     <value>Paramètres du modèle fantôme (G)</value>
   </data>
@@ -548,12 +461,6 @@
   </data>
   <data name="MenuFlow" xml:space="preserve">
     <value>F_low</value>
-  </data>
-  <data name="MenuFile" xml:space="preserve">
-    <value>Fichier(F)</value>
-  </data>
-  <data name="MenuExit" xml:space="preserve">
-    <value>Quitter (X)</value>
   </data>
   <data name="MenuEdit" xml:space="preserve">
     <value>Modifier(E)</value>
@@ -585,23 +492,11 @@
   <data name="MenuAlgorithm" xml:space="preserve">
     <value>Algorithme(A)</value>
   </data>
-  <data name="MenuAbout" xml:space="preserve">
-    <value>À propos de)</value>
-  </data>
-  <data name="Maximize" xml:space="preserve">
-    <value>maximiser</value>
-  </data>
   <data name="Manager" xml:space="preserve">
     <value>gérer</value>
   </data>
   <data name="Male" xml:space="preserve">
     <value>mâle</value>
-  </data>
-  <data name="LogLevel" xml:space="preserve">
-    <value>Niveau de journalisation</value>
-  </data>
-  <data name="Log" xml:space="preserve">
-    <value>enregistrer</value>
   </data>
   <data name="Local" xml:space="preserve">
     <value>locale</value>
@@ -620,15 +515,6 @@
   </data>
   <data name="LaunchSoftwareWithLocalService" xml:space="preserve">
     <value>Ouvrez le service local au démarrage du logiciel</value>
-  </data>
-  <data name="LanguageResartSign" xml:space="preserve">
-    <value>Vous devez redémarrer pour utiliser les nouveaux paramètres de langue</value>
-  </data>
-  <data name="Language" xml:space="preserve">
-    <value>langue de l'interface utilisateur</value>
-  </data>
-  <data name="InstallCertificate" xml:space="preserve">
-    <value>Installer le certificat</value>
   </data>
   <data name="Inquire" xml:space="preserve">
     <value>Renseigner</value>
@@ -651,9 +537,6 @@
   <data name="ImageFile" xml:space="preserve">
     <value>Fichiers images</value>
   </data>
-  <data name="HotKeys" xml:space="preserve">
-    <value>touche de raccourci</value>
-  </data>
   <data name="Host" xml:space="preserve">
     <value>Hôte</value>
   </data>
@@ -662,12 +545,6 @@
   </data>
   <data name="GhostShadow" xml:space="preserve">
     <value>fantôme</value>
-  </data>
-  <data name="GeneralSettings" xml:space="preserve">
-    <value>Réglages généraux</value>
-  </data>
-  <data name="General" xml:space="preserve">
-    <value>Universel</value>
   </data>
   <data name="Gain" xml:space="preserve">
     <value>Gagner</value>
@@ -711,9 +588,6 @@
   <data name="Export" xml:space="preserve">
     <value>Exporter</value>
   </data>
-  <data name="ExperimentalFeature" xml:space="preserve">
-    <value>Fonctionnalités expérimentales</value>
-  </data>
   <data name="ExecutionProcess" xml:space="preserve">
     <value>Processus</value>
   </data>
@@ -740,9 +614,6 @@
   </data>
   <data name="DisplayAlgorithmControl_CIE图像数据区" xml:space="preserve">
     <value>Zone de données d'image CIE</value>
-  </data>
-  <data name="DisableHardwareAcceleration" xml:space="preserve">
-    <value>Désactiver l'accélération matérielle</value>
   </data>
   <data name="DeviceName" xml:space="preserve">
     <value>Nom de l'appareil</value>
@@ -782,12 +653,6 @@
   </data>
   <data name="CreateTime" xml:space="preserve">
     <value>mesurer le temps</value>
-  </data>
-  <data name="CreateProject" xml:space="preserve">
-    <value>Créer un projet</value>
-  </data>
-  <data name="CreateNewProjectOrFile" xml:space="preserve">
-    <value>Créer un nouveau projet ou fichier</value>
   </data>
   <data name="CreateNewConfigurationFile" xml:space="preserve">
     <value>Créer un nouveau fichier de configuration</value>
@@ -837,12 +702,6 @@
   <data name="Clear" xml:space="preserve">
     <value>Clair</value>
   </data>
-  <data name="CheckUpdatesOnStartup" xml:space="preserve">
-    <value>Détecter les mises à jour au démarrage du logiciel</value>
-  </data>
-  <data name="CheckForUpdates" xml:space="preserve">
-    <value>Vérifier les mises à jour</value>
-  </data>
   <data name="Chart" xml:space="preserve">
     <value>graphique</value>
   </data>
@@ -876,15 +735,6 @@
   <data name="AutoExposure" xml:space="preserve">
     <value>Exposition automatique</value>
   </data>
-  <data name="ApplyWindowLayout" xml:space="preserve">
-    <value>Appliquer la disposition des fenêtres</value>
-  </data>
-  <data name="Apply" xml:space="preserve">
-    <value>application</value>
-  </data>
-  <data name="ApplicationExit" xml:space="preserve">
-    <value>Le programme se termine</value>
-  </data>
   <data name="Alias" xml:space="preserve">
     <value>Alias</value>
   </data>
@@ -917,5 +767,20 @@
   </data>
   <data name="Choice" xml:space="preserve">
     <value>choisir</value>
+  </data>
+  <data name="IsDefaultOpenService" xml:space="preserve">
+    <value>EstDefaultOpenService</value>
+  </data>
+  <data name="IsRetorePlayControls" xml:space="preserve">
+    <value>IsRetorePlayControls</value>
+  </data>
+  <data name="Settings" xml:space="preserve">
+    <value>installation</value>
+  </data>
+  <data name="MenuFile" xml:space="preserve">
+    <value>Fichier(F)</value>
+  </data>
+  <data name="MenuSensorHeYuan" xml:space="preserve">
+    <value>Paramètres du modèle de capteur générique (S)</value>
   </data>
 </root>

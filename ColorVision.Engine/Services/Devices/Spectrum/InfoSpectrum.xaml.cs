@@ -1,10 +1,10 @@
-﻿using ColorVision.Services.Devices.Spectrum.Configs;
+﻿using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 
-namespace ColorVision.Services.Devices.Spectrum
+namespace ColorVision.Engine.Services.Devices.Spectrum
 {
     /// <summary>
     /// InfoSpectrum.xaml 的交互逻辑
@@ -17,19 +17,16 @@ namespace ColorVision.Services.Devices.Spectrum
         private bool disposedValue;
         private bool disposedObj;
 
-        public bool IsCanEdit { get; set; }
-        public InfoSpectrum(DeviceSpectrum mqttDeviceSp, bool isCanEdit = true)
+        public InfoSpectrum(DeviceSpectrum mqttDeviceSp)
         {
             disposedObj = false;
             Device = mqttDeviceSp;
             SpectrumService = mqttDeviceSp.DeviceService;
             SpectrumService.AutoParamHandlerEvent += Spectrum_AutoParamHandlerEvent;
-            IsCanEdit = isCanEdit;
             InitializeComponent();
         }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             DataContext = Device;
         }
 

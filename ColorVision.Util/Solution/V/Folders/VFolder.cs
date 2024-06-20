@@ -1,5 +1,7 @@
-﻿using System.Windows.Controls;
+﻿using System.IO;
+using System.Windows.Controls;
 using System.Windows.Media;
+using ColorVision.Common.MVVM;
 using ColorVision.Util.Properties;
 
 namespace ColorVision.Solution.V.Folders
@@ -8,14 +10,25 @@ namespace ColorVision.Solution.V.Folders
     {
         public IFolder Folder { get; set; }
 
+        public DirectoryInfo DirectoryInfo { get; set; }
+
+        public RelayCommand OpenFileInExplorerCommand { get; set; }
+        public RelayCommand CopyFullPathCommand { get; set; }
+
         public VFolder(IFolder folder)
         {
             Folder = folder;
             Name = folder.Name;
             ToolTip = folder.ToolTip;
-
+            DirectoryInfo = folder.DirectoryInfo;
+            OpenFileInExplorerCommand = new RelayCommand(a => System.Diagnostics.Process.Start("explorer.exe", DirectoryInfo.FullName), a => DirectoryInfo.Exists);
+            CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Open, Command = OpenCommand });
+
+            ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Util.Properties.Resources.MenuOpenFileInExplorer, Command = OpenFileInExplorerCommand });
+            ContextMenu.Items.Add(new Separator());
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Property, Command = AttributesCommand });
         }
 
         public override ImageSource Icon {get => Folder.Icon; set { Folder.Icon = value; NotifyPropertyChanged(); } }

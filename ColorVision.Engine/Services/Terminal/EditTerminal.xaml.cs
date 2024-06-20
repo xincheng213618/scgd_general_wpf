@@ -1,9 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Themes;
 using System;
 using System.Windows;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Terminal
+namespace ColorVision.Engine.Services.Terminal
 {
     /// <summary>
     /// EditTerminal.xaml 的交互逻辑
@@ -17,6 +18,7 @@ namespace ColorVision.Services.Terminal
         {
             TerminalService = terminalService;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

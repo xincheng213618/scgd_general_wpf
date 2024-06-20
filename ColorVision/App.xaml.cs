@@ -3,8 +3,6 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Languages;
 using ColorVision.Wizards;
-using log4net;
-using log4net.Config;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,7 +12,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
-[assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
 namespace ColorVision
 {
 
@@ -23,12 +20,10 @@ namespace ColorVision
     /// </summary>
     public partial class App : Application
     {
-        private static readonly ILog log = LogManager.GetLogger(typeof(App));
-
         public App()
         {
-            Startup += (s, e) => Application_Startup(s, e);
-            Exit += new ExitEventHandler(Application_Exit);
+            Startup += Application_Startup;
+            Exit += Application_Exit;
         }
 
         private void Application_Startup(object sender, StartupEventArgs e)

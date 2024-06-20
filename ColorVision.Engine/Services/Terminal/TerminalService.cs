@@ -1,19 +1,20 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.RC;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices;
-using ColorVision.Services.Types;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Services.Types;
+using ColorVision.UI;
+using ColorVision.UI.Authorizations;
+using ColorVision.Util.Interfaces;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using ColorVision.Util.Interfaces;
-using ColorVision.UI;
 
-namespace ColorVision.Services.Terminal
+namespace ColorVision.Engine.Services.Terminal
 {
     public class TerminalServiceBase : BaseResourceObject, ITreeViewItem
     {
@@ -64,7 +65,7 @@ namespace ColorVision.Services.Terminal
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
-            });
+            }, a => AccessControl.Check(PermissionMode.Administrator));
 
             OpenCreateWindowCommand = new RelayCommand(a =>
             {
@@ -72,7 +73,7 @@ namespace ColorVision.Services.Terminal
                 createTerminal.Owner = Application.Current.GetActiveWindow();
                 createTerminal.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 createTerminal.ShowDialog();
-            });
+            }, a => AccessControl.Check(PermissionMode.Administrator));
 
             switch (ServiceType)
             {
@@ -109,9 +110,9 @@ namespace ColorVision.Services.Terminal
             }
 
             ContextMenu = new ContextMenu();
-            MenuItem menuItem = new() { Header = ColorVision.Engine.Properties.Resources.Delete };
-            menuItem.Click += (s, e) => Delete();
-            ContextMenu.Items.Add(menuItem);
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Create, Command = OpenCreateWindowCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuEdit, Command = EditCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuDelete, Command = DeleteCommand });
         }
 
         public override void Delete()

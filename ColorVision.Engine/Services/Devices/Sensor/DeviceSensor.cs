@@ -1,11 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.UI.Authorizations;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.Sensor
+namespace ColorVision.Engine.Services.Devices.Sensor
 {
     public class DeviceSensor : DeviceService<ConfigSensor>
     {
@@ -20,12 +21,12 @@ namespace ColorVision.Services.Devices.Sensor
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
-            });
+            }, a => AccessControl.Check(PermissionMode.Administrator));
         }
 
         public override UserControl GetDeviceControl() => new InfoSensor(this);
-        public override UserControl GetDeviceInfo() => new InfoSensor(this, false);
-        public override UserControl GetDisplayControl() => new DisplaySensorControl(this);
+        public override UserControl GetDeviceInfo() => new InfoSensor(this);
+        public override UserControl GetDisplayControl() => new DisplaySensor(this);
 
         public override MQTTServiceBase? GetMQTTService()
         {

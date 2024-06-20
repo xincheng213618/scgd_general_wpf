@@ -1,9 +1,9 @@
-﻿using ColorVision.Services.Msg;
+﻿using ColorVision.Engine.Services.Msg;
 using CVCommCore;
 using System.Collections.Generic;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.CfwPort
+namespace ColorVision.Engine.Services.Devices.CfwPort
 {
     public class MQTTCfwPort : MQTTDeviceService<ConfigCfwPort>
     {

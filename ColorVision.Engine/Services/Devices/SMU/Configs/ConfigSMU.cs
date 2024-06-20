@@ -1,4 +1,4 @@
-﻿namespace ColorVision.Services.Devices.SMU.Configs
+﻿namespace ColorVision.Engine.Services.Devices.SMU.Configs
 {
     public class ConfigSMU : DeviceServiceConfig
     {

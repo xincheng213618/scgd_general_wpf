@@ -1,6 +1,6 @@
-﻿using ColorVision.Services.Dao;
+﻿using ColorVision.Engine.Services.Dao;
 
-namespace ColorVision.Services.Core
+namespace ColorVision.Engine.Services.Core
 {
     public class BaseFileResource : BaseResource
     {

@@ -1,4 +1,9 @@
-﻿using System;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Properties;
+using ColorVision.Themes;
+using ColorVision.UI.Authorizations;
+using ColorVision.UI.Menus;
+using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Text.RegularExpressions;
@@ -7,6 +12,19 @@ using System.Windows;
 
 namespace ColorVision.Update
 {
+    public class ExportMenuChangeLog : MenuItemBase
+    {
+        public override string OwnerGuid => "Help";
+        public override string GuidId => "ChangeLog";
+        public override string Header => Resources.ChangeLog;
+        public override int Order => 10001;
+
+        [RequiresPermissionAttribute(PermissionMode.Administrator)]
+        public override void Execute()
+        {
+            new ChangelogWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+        }
+    }
 
     /// <summary>
     /// ChangelogWindow.xaml 的交互逻辑
@@ -17,6 +35,7 @@ namespace ColorVision.Update
         public ChangelogWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
         string? CHANGELOG { get; set; }
         private void Window_Initialized(object sender, System.EventArgs e)

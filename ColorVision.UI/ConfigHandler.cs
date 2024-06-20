@@ -24,13 +24,21 @@ namespace ColorVision.UI
         {
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                foreach (var type in assembly.GetTypes().Where(t => typeof(T).IsAssignableFrom(t) && !t.IsAbstract))
+                try
                 {
-                    if (Activator.CreateInstance(type) is T config)
+                    foreach (var type in assembly.GetTypes().Where(t => typeof(T).IsAssignableFrom(t) && !t.IsAbstract))
                     {
-                        Configs[type] = config;
+                        if (Activator.CreateInstance(type) is T config)
+                        {
+                            Configs[type] = config;
+                        }
                     }
                 }
+                catch
+                {
+
+                }
+
             }
         }
 

@@ -3,16 +3,16 @@ using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.UIExport.SolutionExports.Export;
 using ColorVision.Net;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Export;
 using ColorVision.UI.Sorts;
 using MQTTMessageLib.Camera;
 using System;
 using System.IO;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.Camera.Views
+namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
     public delegate void ImgCurSelectionChanged(ViewResultCamera data);
 
@@ -62,7 +62,7 @@ namespace ColorVision.Services.Devices.Camera.Views
                 ImageView imageView = new();
 
                 CVFileUtil.ReadCVRaw(FileUrl, out CVCIEFile fileInfo);
-                Window window = new() { Title = ColorVision.Engine.Properties.Resources.QuickPreview, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                Window window = new() { Title = Properties.Resources.QuickPreview, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 window.Content = imageView;
                 imageView.OpenImage(new NetFileUtil().OpenLocalCVFile(FileUrl));
 

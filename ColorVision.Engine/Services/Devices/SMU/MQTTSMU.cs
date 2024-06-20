@@ -1,6 +1,6 @@
 ﻿using ColorVision.Engine.MQTT;
-using ColorVision.Services.Devices.SMU.Configs;
-using ColorVision.Services.Msg;
+using ColorVision.Engine.Services.Devices.SMU.Configs;
+using ColorVision.Engine.Services.Msg;
 using MQTTMessageLib.SMU;
 using MQTTnet.Client;
 using Newtonsoft.Json;
@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.SMU
+namespace ColorVision.Engine.Services.Devices.SMU
 {
     public class MQTTSMU : MQTTDeviceService<ConfigSMU>
     {

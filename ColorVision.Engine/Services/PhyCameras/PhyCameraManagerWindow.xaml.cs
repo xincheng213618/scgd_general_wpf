@@ -1,9 +1,12 @@
-﻿using System;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Themes;
+using ColorVision.UI.Menus;
+using System;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 
-namespace ColorVision.Services.PhyCameras
+namespace ColorVision.Engine.Services.PhyCameras
 {
     public sealed class NameStringConverter : IValueConverter
     {
@@ -22,6 +25,19 @@ namespace ColorVision.Services.PhyCameras
         }
     }
 
+    public class ExportPhyCamerManager : MenuItemBase
+    {
+        public override string OwnerGuid => "Tool";
+        public override string GuidId => "PhyCamerManager";
+        public override string Header => Properties.Resources.MenuPhyCameraManager;
+        public override int Order => 0;
+
+        public override void Execute()
+        {
+            new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterScreen }.ShowDialog();
+        }
+    }
+
     /// <summary>
     /// PhyCameraManagerWindow.xaml 的交互逻辑
     /// </summary>
@@ -30,13 +46,17 @@ namespace ColorVision.Services.PhyCameras
         public PhyCameraManagerWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+
+            PhyCameraManager.GetInstance().LoadPhyCamera();
             this.DataContext = PhyCameraManager.GetInstance();
             ServicesHelper.SelectAndFocusFirstNode(TreeView1);
             PhyCameraManager.GetInstance().Loaded +=(s,e) => ServicesHelper.SelectAndFocusFirstNode(TreeView1);
+            PhyCameraManager.GetInstance().PhyCameras.CollectionChanged += (s,e)=> ServicesHelper.SelectAndFocusFirstNode(TreeView1);
         }
 
         private void TreeView1_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)

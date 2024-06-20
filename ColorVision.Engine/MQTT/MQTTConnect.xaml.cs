@@ -1,4 +1,4 @@
-﻿using ColorVision.Services.RC;
+﻿using ColorVision.Engine.Services.RC;
 using ColorVision.Common.MVVM;
 using System;
 using System.Collections.ObjectModel;
@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ColorVision.Themes;
 
 namespace ColorVision.Engine.MQTT
 {
@@ -17,6 +18,7 @@ namespace ColorVision.Engine.MQTT
         public MQTTConnect()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         public void NumberValidationTextBox(object sender, KeyEventArgs e)

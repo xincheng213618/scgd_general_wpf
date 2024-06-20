@@ -1,10 +1,11 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.UI;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Interop;
+using System.Windows.Media.Imaging;
 using Wpf.Ui.Appearance;
 
 namespace ColorVision.Themes
@@ -18,9 +19,11 @@ namespace ColorVision.Themes
         [Description("ThemeDark")]
         Dark,
         [Description("ThemePink")]
-        Pink
+        Pink,
+        [Description("ThemeCyan")] // 添加青色主题
+        Cyan
     };
-
+     
     public static class ThemeManagerExtensions
     {
         /// <summary>
@@ -31,6 +34,29 @@ namespace ColorVision.Themes
         /// 强制更新主题，即使主题一致也会更新
         /// </summary>
         public static void ForceApplyTheme(this Application app, Theme theme) => ThemeManager.Current.ApplyThemeChanged(app, theme);
+
+        public static void ApplyCaption(this Window window)
+        {
+            RoutedEventHandler routedEventHandler = null;  
+            routedEventHandler = (s, e) =>
+            {
+                IntPtr hwnd = new WindowInteropHelper(window).Handle;
+
+                ThemeManager.Current.CurrentThemeChanged += (theme) =>
+                {
+                    window.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision.Util;component/Assets/Image/{(theme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));
+                    ThemeManager.SetWindowTitleBarColor(hwnd, theme);
+                };
+                if (ThemeManager.Current.CurrentTheme == Theme.Dark)
+                    window.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision.Util;component/Assets/Image/ColorVision1.ico"));
+
+                ThemeManager.SetWindowTitleBarColor(hwnd, ThemeManager.Current.CurrentUITheme);
+
+                // 移除 Loaded 事件处理程序
+                window.Loaded -= routedEventHandler;
+            };
+            window.Loaded += routedEventHandler;
+        }
     }
 
     public delegate void ThemeChangedHandler(Theme newtheme);
@@ -99,10 +125,22 @@ namespace ColorVision.Themes
 
         public static List<string> ResourceDictionaryPink { get; set; } = new List<string>()
         {
-            "/HandyControl;component/Themes/basic/colors/colorsviolet.xaml",
+            "/ColorVision.Util;component/Themes/HPink.xaml",
             "/HandyControl;component/Themes/Theme.xaml",
             "/ColorVision.Util;component/Themes/White.xaml",
             "/ColorVision.Util;component/Themes/Pink.xaml",
+            "/ColorVision.Util;component/Themes/Base.xaml",
+            "/ColorVision.Util;component/Themes/Menu.xaml",
+            "/ColorVision.Util;component/Themes/GroupBox.xaml" ,
+            "/ColorVision.Util;component/Themes/Icons.xaml",
+            "/ColorVision.Util;component/Themes/Window/BaseWindow.xaml"
+        };
+        public static List<string> ResourceDictionaryCyan { get; set; } = new List<string>()
+        {
+            "/ColorVision.Util;component/Themes/HCyan.xaml",
+            "/HandyControl;component/Themes/Theme.xaml",
+            "/ColorVision.Util;component/Themes/White.xaml",
+            "/ColorVision.Util;component/Themes/Cyan.xaml",
             "/ColorVision.Util;component/Themes/Base.xaml",
             "/ColorVision.Util;component/Themes/Menu.xaml",
             "/ColorVision.Util;component/Themes/GroupBox.xaml" ,
@@ -151,6 +189,18 @@ namespace ColorVision.Themes
                     app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
 
                     foreach (var item in ResourceDictionaryPink)
+                    {
+                        ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
+                        app.Resources.MergedDictionaries.Add(dictionary);
+                    }
+                    break;
+                case Theme.Cyan:
+                    var Cyan1 = new Wpf.Ui.Markup.ThemesDictionary();
+                    Cyan1.Theme = ThemeType.Light;
+                    app.Resources.MergedDictionaries.Add(Cyan1);
+                    app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
+
+                    foreach (var item in ResourceDictionaryCyan)
                     {
                         ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
                         app.Resources.MergedDictionaries.Add(dictionary);
@@ -225,5 +275,112 @@ namespace ColorVision.Themes
         public event ThemeChangedHandler? SystemThemeChanged;
 
         public event ThemeChangedHandler? AppsThemeChanged;
+
+        public static void SetWindowTitleBarColor(IntPtr hwnd, Theme theme)
+        {
+            uint attribute;
+            uint attributeSize = (uint)Marshal.SizeOf(typeof(uint));
+
+            switch (theme)
+            {
+                case Theme.Dark:
+                    // Reset caption color to system default
+                    ResetCaptionColor(hwnd);
+
+                    // Enable dark mode
+                    attribute = 1;
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ref attribute, attributeSize);
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, ref attribute, attributeSize);
+                    break;
+
+                case Theme.Pink:
+                    // Disable dark mode
+                    attribute = 0;
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ref attribute, attributeSize);
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, ref attribute, attributeSize);
+
+                    // Set caption color to pink
+                    ///颜色值的字节顺序被调整了
+                    // 原始颜色值: #E8A6C1
+                    // 1. 分解为 RGB 分量:
+                    //    红色 (Red) = E8
+                    //    绿色 (Green) = A6
+                    //    蓝色 (Blue) = C1
+                    // 2. 调整字节顺序:
+                    //    蓝色 (Blue) = C1
+                    //    绿色 (Green) = A6
+                    //    红色 (Red) = E8
+                    // 3. 重新组合为新的十六进制表示:
+                    //    新的颜色值 = 0xFFC1A6E8
+
+                    // 设置标题栏颜色为 #E8A6C1
+                    attribute = 0xC1A6E8;
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_CAPTION_COLOR, ref attribute, attributeSize);
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_BORDER_COLOR, ref attribute, attributeSize);
+                    break;
+
+                case Theme.Cyan:
+                    // Disable dark mode
+                    attribute = 0;
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ref attribute, attributeSize);
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, ref attribute, attributeSize);
+
+                    // 设置标题栏颜色为 #00796B
+                    attribute = 0x6B7900;
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_CAPTION_COLOR, ref attribute, attributeSize);
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_BORDER_COLOR, ref attribute, attributeSize);
+
+                    break;
+
+                case Theme.Light:
+                case Theme.UseSystem:
+                default:
+                    // Reset caption color to system default
+                    ResetCaptionColor(hwnd);
+
+                    // Disable dark mode
+                    attribute = 0;
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1, ref attribute, attributeSize);
+                    _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_USE_IMMERSIVE_DARK_MODE, ref attribute, attributeSize);
+                    break;
+            }
+        }
+
+        private static void ResetCaptionColor(IntPtr hwnd)
+        {
+            ///DWMWA_COLOR_DEFAULT 
+            uint attribute = 0xFFFFFFFF; 
+            uint attributeSize = (uint)Marshal.SizeOf(typeof(uint));
+            //Specifying DWMWA_COLOR_DEFAULT (value 0xFFFFFFFF) for the color will reset the window back to using the system's default behavior for the caption color.
+            _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_CAPTION_COLOR, ref attribute, attributeSize);
+            //Specifying DWMWA_COLOR_NONE (value 0xFFFFFFFE) for the color will suppress the drawing of the window border. This makes it possible to have a rounded window with no border.
+            _ = DwmSetWindowAttribute(hwnd, DWMWINDOWATTRIBUTE.DWMWA_BORDER_COLOR, ref attribute, attributeSize);
+        }
+
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, DWMWINDOWATTRIBUTE attribute, ref uint pvAttribute, uint cbAttribute);
+
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, DWMWINDOWATTRIBUTE attribute, IntPtr pvAttribute, uint cbAttribute);
+
+
+#pragma warning disable CA1707
+        [Flags]
+        public enum DWMWINDOWATTRIBUTE : uint
+        {
+            //沉浸式暗模式20H1
+            DWMWA_USE_IMMERSIVE_DARK_MODE_BEFORE_20H1 = 19,
+            //沉浸式暗模式
+            DWMWA_USE_IMMERSIVE_DARK_MODE = 20,
+            ///Might require Windows SDK 10.0.22000.0 (aka first Windows 11 SDK)
+            //设置窗口边框颜色
+            DWMWA_BORDER_COLOR = 34,
+            //设置窗口标题栏颜色。
+            DWMWA_CAPTION_COLOR = 35,
+            //设置窗口标题栏文本颜色。
+            DWMWA_TEXT_COLOR = 36,
+        }
+#pragma warning restore CA1707
+
     }
 }

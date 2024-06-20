@@ -1,17 +1,20 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
-using ColorVision.Services.Devices.Camera.Configs;
-using ColorVision.Services.PhyCameras;
+using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras.Configs;
+using ColorVision.Themes;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
 
-namespace ColorVision.Services.Devices.Camera
+namespace ColorVision.Engine.Services.Devices.Camera
 {
     /// <summary>
     /// EditCamera.xaml 的交互逻辑
@@ -28,6 +31,7 @@ namespace ColorVision.Services.Devices.Camera
         {
             DeviceCamera = mQTTDeviceCamera;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -38,6 +42,7 @@ namespace ColorVision.Services.Devices.Camera
                 e.Handled = true;
             }
         }
+        public ObservableCollection<PhyCamera> PhyCameras { get; set; } = new ObservableCollection<PhyCamera>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -46,6 +51,12 @@ namespace ColorVision.Services.Devices.Camera
             CameraPhyID.DisplayMemberPath = "Name";
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
+
+            ComboxCameraModel.ItemsSource = from e1 in Enum.GetValues(typeof(CameraModel)).Cast<CameraModel>()
+                                            select new KeyValuePair<CameraModel, string>(e1, e1.ToDescription());
+
+            ComboxCameraMode.ItemsSource = from e1 in Enum.GetValues(typeof(CameraMode)).Cast<CameraMode>()
+                                           select new KeyValuePair<CameraMode, string>(e1, e1.ToDescription());
 
             ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues(typeof(TakeImageMode)).Cast<TakeImageMode>()
                                                     select new KeyValuePair<TakeImageMode, string>(e1, e1.ToDescription());
@@ -105,60 +116,14 @@ namespace ColorVision.Services.Devices.Camera
 
             };
 
-            var ImageChannelTypeList = new[]{
-                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_X, "Channel_R"),
-                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Y, "Channel_G"),
-                 new KeyValuePair<ImageChannelType, string>(ImageChannelType.Gray_Z, "Channel_B")
-            };
-            chType1.ItemsSource = ImageChannelTypeList;
-            chType2.ItemsSource = ImageChannelTypeList;
-            chType3.ItemsSource = ImageChannelTypeList;
-
-
-            Dictionary<ImageChannelType, ComboBox> keyValuePairs = new() { };
-            keyValuePairs.Add(ImageChannelType.Gray_X, chType1);
-            keyValuePairs.Add(ImageChannelType.Gray_Y, chType2);
-            keyValuePairs.Add(ImageChannelType.Gray_Z, chType3);
-
-
-            chType1.SelectionChanged += (s, e) =>
-            {
-                ComboBox comboBox = keyValuePairs[Service.Config.CFW.ChannelCfgs[0].Chtype];
-                ImageChannelType lasttemp = keyValuePairs.FirstOrDefault(x => x.Value == chType1).Key;
-                comboBox.SelectedValue = lasttemp;
-                keyValuePairs[lasttemp] = comboBox;
-                keyValuePairs[Service.Config.CFW.ChannelCfgs[0].Chtype] = chType1;
-
-
-            };
-            chType2.SelectionChanged += (s, e) =>
-            {
-                ComboBox comboBox = keyValuePairs[Service.Config.CFW.ChannelCfgs[1].Chtype];
-                ImageChannelType lasttemp = keyValuePairs.FirstOrDefault(x => x.Value == chType2).Key;
-                comboBox.SelectedValue = lasttemp;
-
-                keyValuePairs[lasttemp] = comboBox;
-                keyValuePairs[Service.Config.CFW.ChannelCfgs[1].Chtype] = chType2;
-            };
-            chType3.SelectionChanged += (s, e) =>
-            {
-                ComboBox comboBox = keyValuePairs[Service.Config.CFW.ChannelCfgs[2].Chtype];
-                ImageChannelType lasttemp = keyValuePairs.FirstOrDefault(x => x.Value == chType3).Key;
-                comboBox.SelectedValue = lasttemp;
-
-                keyValuePairs[lasttemp] = comboBox;
-                keyValuePairs[Service.Config.CFW.ChannelCfgs[2].Chtype] = chType3;
-            };
-
 
             List<int> BaudRates = new() { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
+            List<string> Serials = new() { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10" };
+
             TextBaudRate.ItemsSource = BaudRates;
-            TextBaudRate1.ItemsSource = BaudRates;
 
 
-            List<string> Serials = new() { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8" };
             TextSerial.ItemsSource = Serials;
-            TextSerial1.ItemsSource = Serials;
 
             ComboxeEvaFunc.ItemsSource = from e1 in Enum.GetValues(typeof(EvaFunc)).Cast<EvaFunc>()
                                          select new KeyValuePair<EvaFunc, string>(e1, e1.ToString());
@@ -210,20 +175,25 @@ namespace ColorVision.Services.Devices.Camera
         }
         public void UpdateConfig()
         {
-            var phyCamera = PhyCameraManager.GetInstance().PhyCameras[CameraPhyID.SelectedIndex];
-            EditConfig.Channel = phyCamera.Config.Channel;
-            EditConfig.CameraCfg.CopyFrom(phyCamera.Config.CameraCfg);
-            EditConfig.CFW.CopyFrom(phyCamera.Config.CFW);
-            EditConfig.CameraID = phyCamera.Config.CameraID;
-            EditConfig.CameraType = phyCamera.Config.CameraType;
-            EditConfig.TakeImageMode = phyCamera.Config.TakeImageMode;
-            EditConfig.ImageBpp = phyCamera.Config.ImageBpp;
+            if (CameraPhyID.SelectedIndex > -1)
+            {
+                var phyCamera = PhyCameraManager.GetInstance().PhyCameras[CameraPhyID.SelectedIndex];
+                EditConfig.Channel = phyCamera.Config.Channel;
+                EditConfig.CameraCfg.CopyFrom(phyCamera.Config.CameraCfg);
+                EditConfig.CFW.CopyFrom(phyCamera.Config.CFW);
+                EditConfig.CameraID = phyCamera.Config.CameraID;
+                EditConfig.CameraType = phyCamera.Config.CameraType;
+                EditConfig.CameraMode = phyCamera.Config.CameraMode;
+                EditConfig.CameraModel = phyCamera.Config.CameraModel;
+
+                EditConfig.TakeImageMode = phyCamera.Config.TakeImageMode;
+                EditConfig.ImageBpp = phyCamera.Config.ImageBpp;
+            }
         }
 
         private void UpdateConfig_Click(object sender, RoutedEventArgs e)
         {
             UpdateConfig();
-
         }
     }
 }

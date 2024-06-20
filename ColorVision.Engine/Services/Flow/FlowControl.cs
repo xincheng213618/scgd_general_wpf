@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
-using ColorVision.Services.Types;
+using ColorVision.Engine.Services.Types;
 using FlowEngineLib;
 using log4net;
 using MQTTMessageLib.Flow;
@@ -12,7 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
-namespace ColorVision.Services.Flow
+namespace ColorVision.Engine.Services.Flow
 {
 
     public class FlowControl  :ViewModelBase

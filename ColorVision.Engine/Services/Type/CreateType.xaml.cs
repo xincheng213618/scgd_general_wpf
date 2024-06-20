@@ -1,16 +1,17 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera;
-using ColorVision.Services.RC;
-using ColorVision.Services.Terminal;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Services.Terminal;
+using ColorVision.Themes;
 using ColorVision.UserSpace;
 using Newtonsoft.Json;
 using System;
 using System.Windows;
 using System.Windows.Input;
 
-namespace ColorVision.Services.Types
+namespace ColorVision.Engine.Services.Types
 {
     /// <summary>
     /// EditTerminal.xaml 的交互逻辑
@@ -22,6 +23,7 @@ namespace ColorVision.Services.Types
         {
             TypeService = typeService;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -48,8 +50,8 @@ namespace ColorVision.Services.Types
 
             TerminalServiceConfig terminalServiceConfig = new() { HeartbeatTime = 5000 };
 
-            terminalServiceConfig.SendTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/CMD/{RCSetting.Instance.RCServiceConfig.RCName}";
-            terminalServiceConfig.SubscribeTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/STATUS/{RCSetting.Instance.RCServiceConfig.RCName}";
+            terminalServiceConfig.SendTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/CMD/{RCSetting.Instance.Config.RCName}";
+            terminalServiceConfig.SubscribeTopic = $"{TypeService.ServiceTypes}/{CreateCode.Text}/STATUS/{RCSetting.Instance.Config.RCName}";
 
             sysResource.Value = JsonConvert.SerializeObject(terminalServiceConfig);
 

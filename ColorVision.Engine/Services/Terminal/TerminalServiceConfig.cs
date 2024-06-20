@@ -1,8 +1,8 @@
-﻿using ColorVision.Services.Devices;
-using ColorVision.Services.Core;
-using ColorVision.Services.Types;
+﻿using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Types;
 
-namespace ColorVision.Services.Terminal
+namespace ColorVision.Engine.Services.Terminal
 {
     public class TerminalServiceConfig : BaseConfig, IServiceConfig, IHeartbeat
     {

@@ -3,7 +3,7 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.Camera
+namespace ColorVision.Engine.Services.Devices.Camera
 {
     /// <summary>
     /// InfoPG.xaml 的交互逻辑
@@ -14,19 +14,15 @@ namespace ColorVision.Services.Devices.Camera
 
         public MQTTCamera DService { get => Device.DeviceService; }
 
-        public bool IsCanEdit { get; set; }
-
-        public InfoCamera(DeviceCamera deviceCamera,bool isCanEdit =true)
+        public InfoCamera(DeviceCamera deviceCamera)
         {
             Device = deviceCamera;
-            IsCanEdit = isCanEdit;
             InitializeComponent();
         }
 
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             DataContext = Device;
         }
 

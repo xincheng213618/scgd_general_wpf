@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
-using ColorVision.Services.Msg;
+using ColorVision.Engine.Services.Msg;
 using CVCommCore;
 
-namespace ColorVision.Services.Devices.Motor
+namespace ColorVision.Engine.Services.Devices.Motor
 {
     public class MQTTMotor : MQTTDeviceService<ConfigMotor>
     {

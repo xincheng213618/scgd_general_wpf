@@ -20,8 +20,8 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <Image Source="/Assets/png/background0.png"/>
-                    <Image Source="/Assets/png/综合查询.png" Margin="30"/>
+                    <Image Source="/ColorVision.Util;component/Assets/Image/background0.png"/>
+                    <Image Source="/ColorVision.Util;component/Assets/Image/综合查询.png" Margin="30"/>
                     <TextBlock Grid.Row="1" Text="综合查询" HorizontalAlignment="Center" FontSize="18"/>
                 </Grid>
             </UserControl>
@@ -31,8 +31,8 @@
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <Image Source="/Assets/png/background0.png"/>
-                    <Image Source="/Assets/png/归档查询.png" Margin="50"/>
+                    <Image Source="/ColorVision.Util;component/Assets/Image/background0.png"/>
+                    <Image Source="/ColorVision.Util;component/Assets/Image/归档查询.png" Margin="50"/>
                     <TextBlock Grid.Row="1" Text="归档查询" HorizontalAlignment="Center" FontSize="18"/>
                 </Grid>
             </UserControl>

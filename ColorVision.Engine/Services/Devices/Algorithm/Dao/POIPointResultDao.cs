@@ -1,7 +1,7 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using System.Data;
 
-namespace ColorVision.Services.Devices.Algorithm.Dao
+namespace ColorVision.Engine.Services.Devices.Algorithm.Dao
 {
     public class POIPointResultModel : PKModel
     {
@@ -35,8 +35,8 @@ namespace ColorVision.Services.Devices.Algorithm.Dao
             Value = item.Field<string>("value"),
             PoiName = item.Field<string>("poi_name"),
             PoiType = item.Field<sbyte>("poi_type"),
-            PoiWidth = item.Field<int>("poi_width"),
-            PoiHeight = item.Field<int>("poi_height"),
+            PoiWidth = item.Field<int?>("poi_width"),
+            PoiHeight = item.Field<int?>("poi_height"),
             PoiX = item.Field<int>("poi_x"),
             PoiY = item.Field<int>("poi_y"),
             ValidateResult = item.Field<string?>("validate_result")

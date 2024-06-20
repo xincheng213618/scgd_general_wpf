@@ -9,22 +9,25 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Compile Remove="Controls\**" />
+    <EmbeddedResource Remove="Controls\**" />
+    <None Remove="Controls\**" />
+    <Page Remove="Controls\**" />
+  </ItemGroup>
+
 	<ItemGroup>
 		<PackageReference Include="DotNetCore.NPOI" Version="1.2.3" />
 		<PackageReference Include="Extended.Wpf.Toolkit" Version="4.6.0" />
 		<PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc2" />
-		<PackageReference Include="log4net" Version="2.0.17" />
 		<PackageReference Include="MahApps.Microsoft.DwayneNeed" Version="1.0.1" />
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1" />
 		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.77" />
 		<PackageReference Include="MQTTnet" Version="4.3.4.1084" />
 		<PackageReference Include="MySql.Data" Version="8.4.0" />
 		<PackageReference Include="MySqlConnector" Version="2.3.7" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="OpenCvSharp4.Extensions" Version="4.9.0.20240103" />
 		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.9.0.20240103" />
 		<PackageReference Include="QRCoder.Xaml" Version="1.5.1" />
-		<PackageReference Include="Quartz" Version="3.9.0" />
 		<PackageReference Include="ScottPlot.WPF" Version="4.1.67" />
 		<PackageReference Include="System.IO.Ports" Version="8.0.0" />
 		<PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.0" />
@@ -92,11 +95,7 @@
     <None Remove="Assets\Image\connect.png" />
     <None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <None Remove="Assets\Image\pictureBox1.Image.png" />
-    <None Remove="Assets\Image\uploadbg.avif" />
-    <None Remove="Assets\png\background0.png" />
     <None Remove="Assets\png\PowerToy.png" />
-    <None Remove="Assets\png\归档查询.png" />
-    <None Remove="Assets\png\综合查询.png" />
   </ItemGroup>
 	
 
@@ -148,13 +147,7 @@
     <Resource Include="Assets\Image\connect.png" />
     <Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <Resource Include="Assets\Image\pictureBox1.Image.png" />
-    <Resource Include="Assets\Image\uploadbg.avif" />
-    <Resource Include="Assets\png\background0.png">
-      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-    </Resource>
     <Resource Include="Assets\png\PowerToy.png" />
-    <Resource Include="Assets\png\归档查询.png" />
-    <Resource Include="Assets\png\综合查询.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -168,10 +161,13 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
-    <Compile Update="Services\Group\ResourceManager.xaml.cs">
+    <Compile Update="Services\PhyCameras\Group\ResourceManagerWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Services\PhyCameras\PhyCameraManagerWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Services\SysDictionary\CreateModeDetail.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Templates\CreateTemplate.xaml.cs">
@@ -203,7 +199,7 @@
     <Page Update="MQTT\MQTTConnect.xaml">
       <SubType>Designer</SubType>
     </Page>
-    <Page Update="MQTT\MQTTLog.xaml">
+    <Page Update="MQTT\MQTTToolWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
     <Page Update="Services\PhyCameras\CreateWindow.xaml">

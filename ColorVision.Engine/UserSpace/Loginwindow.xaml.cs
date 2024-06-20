@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Themes;
 using ColorVision.UI.Menus;
 using ColorVision.UserSpace.Dao;
 using System;
@@ -15,7 +16,7 @@ namespace ColorVision.UserSpace
 
         public int Order => 3;
 
-        public string? Header =>ColorVision.Engine.Properties.Resources.MenuLogin;
+        public string? Header => Engine.Properties.Resources.MenuLogin;
 
         public string? InputGestureText => null;
 
@@ -46,6 +47,7 @@ namespace ColorVision.UserSpace
         public LoginWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

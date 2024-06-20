@@ -196,6 +196,33 @@ namespace ColorVision.Util.Properties {
         }
         
         /// <summary>
+        ///   查找类似 复制(_C) 的本地化字符串。
+        /// </summary>
+        public static string MenuCopy {
+            get {
+                return ResourceManager.GetString("MenuCopy", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 复制完整路径(_U) 的本地化字符串。
+        /// </summary>
+        public static string MenuCopyFullPath {
+            get {
+                return ResourceManager.GetString("MenuCopyFullPath", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 剪切(_T) 的本地化字符串。
+        /// </summary>
+        public static string MenuCut {
+            get {
+                return ResourceManager.GetString("MenuCut", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 语言(_L) 的本地化字符串。
         /// </summary>
         public static string MenuLanguage {
@@ -219,6 +246,24 @@ namespace ColorVision.Util.Properties {
         public static string MenuOpen {
             get {
                 return ResourceManager.GetString("MenuOpen", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 打开所在的文件夹(_O) 的本地化字符串。
+        /// </summary>
+        public static string MenuOpenContainingFolder {
+            get {
+                return ResourceManager.GetString("MenuOpenContainingFolder", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 在文件管理器中打开文件夹(_X) 的本地化字符串。
+        /// </summary>
+        public static string MenuOpenFileInExplorer {
+            get {
+                return ResourceManager.GetString("MenuOpenFileInExplorer", resourceCulture);
             }
         }
         
@@ -444,6 +489,15 @@ namespace ColorVision.Util.Properties {
         public static string Theme {
             get {
                 return ResourceManager.GetString("Theme", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 青色 的本地化字符串。
+        /// </summary>
+        public static string ThemeCyan {
+            get {
+                return ResourceManager.GetString("ThemeCyan", resourceCulture);
             }
         }
         

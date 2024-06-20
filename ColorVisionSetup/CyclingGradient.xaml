@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<UserControl x:Class="ColorVisionSetup.CyclingGradient" 
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:ColorVisionSetup" 
+             xmlns:System="clr-namespace:System;assembly=mscorlib">
+  <Grid>
+    <Rectangle Name="GradientBG" OpacityMask="{Binding Path=OpacityMask, RelativeSource={RelativeSource FindAncestor, AncestorType=local:CyclingGradient}}">
+      <Shape.Fill>
+        <LinearGradientBrush>
+          <GradientStop x:Name="GradientStop1" Offset="0.0" />
+          <GradientStop x:Name="GradientStop2" Offset="0.5" />
+          <GradientStop x:Name="GradientStop3" Offset="0.5" />
+          <GradientStop x:Name="GradientStop4" Offset="1.0" />
+        </LinearGradientBrush>
+      </Shape.Fill>
+      <FrameworkElement.Triggers>
+        <EventTrigger RoutedEvent="Rectangle.Loaded">
+          <BeginStoryboard>
+            <Storyboard Name="storyBoardControl" RepeatBehavior="Forever" />
+          </BeginStoryboard>
+        </EventTrigger>
+      </FrameworkElement.Triggers>
+    </Rectangle>
+  </Grid>
+</UserControl>

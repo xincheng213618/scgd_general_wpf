@@ -1,17 +1,18 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera.Views;
-using ColorVision.Services.Devices.SMU.Configs;
-using ColorVision.Services.Devices.SMU.Views;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Camera.Views;
+using ColorVision.Engine.Services.Devices.SMU.Configs;
+using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Themes;
 using ColorVision.Common.Utilities;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using ColorVision.Util.Interfaces;
+using ColorVision.UI.Authorizations;
 
-namespace ColorVision.Services.Devices.SMU
+namespace ColorVision.Engine.Services.Devices.SMU
 {
     public class DeviceSMU : DeviceService<ConfigSMU>
     {
@@ -34,12 +35,12 @@ namespace ColorVision.Services.Devices.SMU
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
-            });
+            }, a => AccessControl.Check(PermissionMode.Administrator));
 
 
         }
         public override UserControl GetDeviceControl() => new InfoSMU(this);
-        public override UserControl GetDeviceInfo() => new InfoSMU(this, false);
+        public override UserControl GetDeviceInfo() => new InfoSMU(this);
         public override UserControl GetDisplayControl() => new DisplaySMUControl(this);
 
         public override MQTTServiceBase? GetMQTTService()

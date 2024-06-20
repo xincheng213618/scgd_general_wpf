@@ -1,7 +1,9 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Configs;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Themes;
 using ColorVision.UserSpace;
 using cvColorVision;
 using Newtonsoft.Json;
@@ -9,7 +11,7 @@ using System;
 using System.Linq;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.Camera
+namespace ColorVision.Engine.Services.Devices.Camera
 {
     /// <summary>
     /// CreateWindow.xaml 的交互逻辑
@@ -24,6 +26,7 @@ namespace ColorVision.Services.Devices.Camera
         {
             TerminalService = terminalCamera;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -54,8 +57,6 @@ namespace ColorVision.Services.Devices.Camera
 
             DataContext = this;
 
-            var Config = CreateConfig;
-
         }
         SysDeviceModel? saveDevConfigInfo(DeviceServiceConfig deviceConfig, SysResourceModel sysResource)
         {
@@ -73,7 +74,7 @@ namespace ColorVision.Services.Devices.Camera
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            if (!Services.ServicesHelper.IsInvalidPath(CreateCode.Text, ColorVision.Engine.Properties.Resources.Code) || !Services.ServicesHelper.IsInvalidPath(CreateName.Text, ColorVision.Engine.Properties.Resources.Name))
+            if (!ServicesHelper.IsInvalidPath(CreateCode.Text, Properties.Resources.Code) || !ServicesHelper.IsInvalidPath(CreateName.Text, Properties.Resources.Name))
                 return;
 
             var deviceS= ServiceManager.GetInstance().DeviceServices.FirstOrDefault(x => x.Code == CreateCode.Text);

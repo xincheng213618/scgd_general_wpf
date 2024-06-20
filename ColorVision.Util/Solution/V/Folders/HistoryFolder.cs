@@ -2,6 +2,7 @@
 using System.Windows.Controls;
 using ColorVision.Themes;
 using System.Windows;
+using System.IO;
 
 namespace ColorVision.Solution.V.Folders
 {
@@ -10,7 +11,10 @@ namespace ColorVision.Solution.V.Folders
         public string Name { get; set; }
         public string ToolTip { get; set; }
         public ContextMenu ContextMenu { get; set; }
+
+
         public ImageSource Icon { get; set; }
+        public DirectoryInfo DirectoryInfo { get; set; }
 
         public HistoryFolder(string Name)
         {

@@ -5,9 +5,9 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Media;
 using ColorVision.Net;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Camera.Views;
-using ColorVision.Services.Msg;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Camera.Views;
+using ColorVision.Engine.Services.Msg;
 using ColorVision.Solution;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
@@ -30,7 +30,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 
 
-namespace ColorVision.Services.Devices.Calibration.Views
+namespace ColorVision.Engine.Services.Devices.Calibration.Views
 {
     /// <summary>
     /// ViewCamera.xaml 的交互逻辑
@@ -66,7 +66,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
             ComboBoxLayers.ItemsSource = from e1 in Enum.GetValues(typeof(ImageLayer)).Cast<ImageLayer>()
                                          select new KeyValuePair<string, ImageLayer>(e1.ToString(), e1);
 
-            netFileUtil = new NetFileUtil(SolutionManager.GetInstance().CurrentSolution.FullPath + "\\Cache");
+            netFileUtil = new NetFileUtil();
             netFileUtil.handler += NetFileUtil_handler;
             DeviceService.MsgReturnReceived += DeviceService_OnMessageRecved;
         }
@@ -293,7 +293,7 @@ namespace ColorVision.Services.Devices.Calibration.Views
                             default:
                                 break;
                         }
-                        if (string.IsNullOrEmpty(localName) || !System.IO.File.Exists(localName))
+                        if (string.IsNullOrEmpty(localName) || !File.Exists(localName))
                         {
                             DeviceService.Open(data.FilePath, fileExt);
                         }
@@ -391,22 +391,22 @@ namespace ColorVision.Services.Devices.Calibration.Views
                     if (item.ColumnName.ToString() == gridViewColumnHeader.Content.ToString())
                     {
                         string Name = item.ColumnName.ToString();
-                        if (Name == ColorVision.Engine.Properties.Resources.SerialNumber1)
+                        if (Name == Properties.Resources.SerialNumber1)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCalibrations.SortByID(item.IsSortD);
                         }
-                        else if (Name == Engine.Properties.Resources.Duration)
+                        else if (Name == Properties.Resources.Duration)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCalibrations.SortByCreateTime(item.IsSortD);
                         }
-                        else if (Name == ColorVision.Engine.Properties.Resources.BatchNumber)
+                        else if (Name == Properties.Resources.BatchNumber)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCalibrations.SortByBatch(item.IsSortD);
                         }
-                        else if (Name == ColorVision.Engine.Properties.Resources.File)
+                        else if (Name == Properties.Resources.File)
                         {
                             item.IsSortD = !item.IsSortD;
                             ViewResultCalibrations.SortByFilePath(item.IsSortD);

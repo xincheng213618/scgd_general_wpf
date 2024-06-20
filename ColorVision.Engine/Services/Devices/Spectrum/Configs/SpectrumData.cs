@@ -1,6 +1,6 @@
 ﻿using static cvColorVision.GCSDLL;
 
-namespace ColorVision.Services.Devices.Spectrum.Configs
+namespace ColorVision.Engine.Services.Devices.Spectrum.Configs
 {
     public class SpectrumData
     {

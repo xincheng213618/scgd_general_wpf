@@ -13,12 +13,12 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ColorVision.Services.OnlineLicensing
+namespace ColorVision.Engine.Services.OnlineLicensing
 {
 
     public class ExportLincense : IHotKey, IMenuItem
     {
-        public HotKeys HotKeys => new(Engine.Properties.Resources.MyLicense_R, new Hotkey(Key.L, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(Properties.Resources.MyLicense_R, new Hotkey(Key.L, ModifierKeys.Control), Execute);
 
         public string? OwnerGuid => "Help";
 
@@ -26,7 +26,7 @@ namespace ColorVision.Services.OnlineLicensing
 
         public int Order => 10003;
         public Visibility Visibility => Visibility.Visible;
-        public string? Header => Engine.Properties.Resources.MyLicense_R;
+        public string? Header => Properties.Resources.MyLicense_R;
 
         public string? InputGestureText => "Ctrl + L";
 

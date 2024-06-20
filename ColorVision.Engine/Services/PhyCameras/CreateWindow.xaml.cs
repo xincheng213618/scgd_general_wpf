@@ -1,9 +1,10 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.Utilities;
-using ColorVision.Services.Dao;
-using ColorVision.Services.PhyCameras.Configs;
-using ColorVision.Services.PhyCameras.Dao;
-using ColorVision.Services.RC;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.PhyCameras.Configs;
+using ColorVision.Engine.Services.PhyCameras.Dao;
+using ColorVision.Engine.Services.RC;
+using ColorVision.Themes;
 using ColorVision.UserSpace;
 using cvColorVision;
 using CVCommCore;
@@ -13,7 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 
-namespace ColorVision.Services.PhyCameras
+namespace ColorVision.Engine.Services.PhyCameras
 {
     /// <summary>
     /// CreateWindow.xaml 的交互逻辑
@@ -27,6 +28,7 @@ namespace ColorVision.Services.PhyCameras
         {
             PhyCameraManager = phyCameraManager;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -136,11 +138,25 @@ namespace ColorVision.Services.PhyCameras
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(),"不允许创建没有Code的相机", "ColorVision", MessageBoxButton.OK, MessageBoxImage.Error);    
             }
-
-            MQTTFileUpload.GetInstance().LoadPhysicalCamera(CreateConfig.CameraID);
-
+            RCFileUpload.GetInstance().CreatePhysicalCameraFloder(CreateConfig.Code);
             PhyCameraManager.LoadPhyCamera();
             Close();
+        }
+
+        private void FileBasePath_Click(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Forms.FolderBrowserDialog dialog = new();
+            dialog.UseDescriptionForTitle = true;
+            dialog.Description = "为相机路径选择位置";
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                if (string.IsNullOrEmpty(dialog.SelectedPath))
+                {
+                    MessageBox.Show("文件夹路径不能为空", "提示");
+                    return;
+                }
+                CreateConfig.FileServerCfg.FileBasePath = dialog.SelectedPath;
+            }
         }
     }
 }

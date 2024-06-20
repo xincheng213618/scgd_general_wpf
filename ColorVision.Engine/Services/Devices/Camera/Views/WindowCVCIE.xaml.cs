@@ -1,4 +1,5 @@
-﻿using ColorVision.Services.Devices.Algorithm.Views;
+﻿using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Themes;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.Generic;
@@ -15,7 +16,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
-namespace ColorVision.Services.Devices.Camera.Views
+namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
     /// <summary>
     /// WindowCVCIE.xaml 的交互逻辑
@@ -27,13 +28,14 @@ namespace ColorVision.Services.Devices.Camera.Views
         {
             PoiResultCIExyuvDatas = poiResultCIExyuvDatas;
             InitializeComponent();
+            this.ApplyCaption();
         }
         public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
         private void listViewSide_Initialized(object sender, EventArgs e)
         {
             var cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "POIPointResultModel.ValidateResult" };
-            var cieHeader = new List<string> { ColorVision.Engine.Properties.Resources.Name, ColorVision.Engine.Properties.Resources.Position, ColorVision.Engine.Properties.Resources.Size, ColorVision.Engine.Properties.Resources.Shape, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "Validate" };
+            var cieHeader = new List<string> { Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Size, Properties.Resources.Shape, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "Validate" };
 
             if (listViewSide.View is GridView gridViewPOI_XY_UV)
             {

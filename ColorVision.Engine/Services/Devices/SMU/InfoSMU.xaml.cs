@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Services.Devices.SMU
+namespace ColorVision.Engine.Services.Devices.SMU
 {
     /// <summary>
     /// InfoSMU.xaml 的交互逻辑
@@ -13,17 +13,14 @@ namespace ColorVision.Services.Devices.SMU
         public DeviceSMU MQTTDeviceSMU { get; set; }
         public ServiceManager ServiceControl { get; set; }
 
-        public bool IsCanEdit { get; set; }
-        public InfoSMU(DeviceSMU mqttDeviceSMU, bool isCanEdit = true)
+        public InfoSMU(DeviceSMU mqttDeviceSMU)
         {
             MQTTDeviceSMU = mqttDeviceSMU;
-            IsCanEdit = isCanEdit;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            if (!IsCanEdit) ButtonEdit.Visibility = IsCanEdit ? Visibility.Visible : Visibility.Collapsed;
             DataContext = MQTTDeviceSMU;
         }
 

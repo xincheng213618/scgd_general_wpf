@@ -2,8 +2,8 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Templates;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Templates;
 using ColorVision.UI.Menus;
 using cvColorVision;
 using System.Collections.Generic;
@@ -11,7 +11,7 @@ using System.Collections.ObjectModel;
 using System.Text;
 using System.Windows;
 
-namespace ColorVision.Services.Devices.SMU
+namespace ColorVision.Engine.Services.Devices.SMU
 {
 
     public class ExportSMUParam : IMenuItem
@@ -20,7 +20,7 @@ namespace ColorVision.Services.Devices.SMU
 
         public string? GuidId => "SMUParam";
         public int Order => 12;
-        public string? Header => ColorVision.Engine.Properties.Resources.MenuSUM;
+        public string? Header => Properties.Resources.MenuSUM;
 
         public string? InputGestureText => null;
 

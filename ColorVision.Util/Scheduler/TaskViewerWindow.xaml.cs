@@ -1,5 +1,6 @@
 ﻿#pragma warning disable CS8604
 using ColorVision.Common.Utilities;
+using ColorVision.Themes;
 using Quartz;
 using Quartz.Impl;
 using Quartz.Impl.Matchers;
@@ -32,6 +33,7 @@ namespace ColorVision.Scheduler
             {
                 listener.JobExecutedEvent += OnJobExecuted;
             }
+            this.ApplyCaption();
         }
 
         private async void LoadTasks()

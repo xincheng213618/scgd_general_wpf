@@ -1,16 +1,17 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Util.Interfaces;
-using ColorVision.Services.Core;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Devices.Calibration.Views;
-using ColorVision.Services.PhyCameras;
+using ColorVision.Engine.Services.Core;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Devices.Calibration.Views;
+using ColorVision.Engine.Services.PhyCameras;
 using log4net;
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.UI.Authorizations;
 
-namespace ColorVision.Services.Devices.Calibration
+namespace ColorVision.Engine.Services.Devices.Calibration
 {
     public class DeviceCalibration : DeviceService<ConfigCalibration>
     {
@@ -35,10 +36,19 @@ namespace ColorVision.Services.Devices.Calibration
                 window.Owner = Application.Current.GetActiveWindow();
                 window.WindowStartupLocation = WindowStartupLocation.CenterOwner;
                 window.ShowDialog();
-            });
-
+            }, a => AccessControl.Check(PermissionMode.Administrator));
+            OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger(),a => AccessControl.Check(OpenPhyCameraManger));
             DisplayLazy = new Lazy<DisplayCalibrationControl>(() => new DisplayCalibrationControl(this));
         }
+
+        public RelayCommand OpenPhyCameraMangerCommand { get; set; }
+
+        [RequiresPermission(PermissionMode.Administrator)]
+        public static void OpenPhyCameraManger()
+        {
+            new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow() }.Show();
+        }
+
         public override void Save()
         {
             base.Save();
@@ -48,7 +58,7 @@ namespace ColorVision.Services.Devices.Calibration
 
         public override UserControl GetDeviceControl() => new InfoCalibration(this);
 
-        public override UserControl GetDeviceInfo() => new InfoCalibration(this,false);
+        public override UserControl GetDeviceInfo() => new InfoCalibration(this);
 
         readonly Lazy<DisplayCalibrationControl> DisplayLazy;
 

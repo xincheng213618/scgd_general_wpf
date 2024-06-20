@@ -1,7 +1,8 @@
 ﻿using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
-using ColorVision.Services.Dao;
-using ColorVision.Services.PhyCameras.Configs;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.PhyCameras.Configs;
+using ColorVision.Themes;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
@@ -11,7 +12,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 
 
-namespace ColorVision.Services.PhyCameras
+namespace ColorVision.Engine.Services.PhyCameras
 {
     /// <summary>
     /// EditPhyCamera.xaml 的交互逻辑
@@ -26,6 +27,7 @@ namespace ColorVision.Services.PhyCameras
         {
             PhyCamera = phyCamera;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -46,6 +48,12 @@ namespace ColorVision.Services.PhyCameras
 
             ComboxCameraType.ItemsSource = from e1 in Enum.GetValues(typeof(CameraType)).Cast<CameraType>()
                                            select new KeyValuePair<CameraType, string>(e1, e1.ToDescription());
+
+            ComboxCameraModel.ItemsSource = from e1 in Enum.GetValues(typeof(CameraModel)).Cast<CameraModel>()
+                                            select new KeyValuePair<CameraModel, string>(e1, e1.ToDescription());
+
+            ComboxCameraMode.ItemsSource = from e1 in Enum.GetValues(typeof(CameraMode)).Cast<CameraMode>()
+                                           select new KeyValuePair<CameraMode, string>(e1, e1.ToDescription());
 
             ComboxCameraTakeImageMode.ItemsSource = from e1 in Enum.GetValues(typeof(TakeImageMode)).Cast<TakeImageMode>()
                                                     select new KeyValuePair<TakeImageMode, string>(e1, e1.ToDescription());
@@ -123,12 +131,53 @@ namespace ColorVision.Services.PhyCameras
                 { ImageChannelType.Gray_Y, chType2 },
                 { ImageChannelType.Gray_Z, chType3 }
             };
+
+            while (EditConfig.CFW.ChannelCfgs.Count< 9)
+            {
+                EditConfig.CFW.ChannelCfgs.Add(new Services.PhyCameras.Configs.ChannelCfg());
+            }
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            if (EditConfig.CFW.CFWNum > 1)
+            {
+                EditConfig.CFW.ChannelCfgs[3].Chtype = EditConfig.CFW.ChannelCfgs[0].Chtype;
+                EditConfig.CFW.ChannelCfgs[4].Chtype = EditConfig.CFW.ChannelCfgs[1].Chtype;
+                EditConfig.CFW.ChannelCfgs[5].Chtype = EditConfig.CFW.ChannelCfgs[2].Chtype;
+            }
+            if (EditConfig.CFW.CFWNum > 2)
+            {
+                EditConfig.CFW.ChannelCfgs[6].Chtype = EditConfig.CFW.ChannelCfgs[0].Chtype;
+                EditConfig.CFW.ChannelCfgs[7].Chtype = EditConfig.CFW.ChannelCfgs[1].Chtype;
+                EditConfig.CFW.ChannelCfgs[8].Chtype = EditConfig.CFW.ChannelCfgs[2].Chtype;
+            }
+            if (EditConfig.CFW.CFWNum ==1)
+                EditConfig.CFW.ChannelCfgs = EditConfig.CFW.ChannelCfgs.GetRange(0, 3);
+            if (EditConfig.CFW.CFWNum == 2)
+                EditConfig.CFW.ChannelCfgs = EditConfig.CFW.ChannelCfgs.GetRange(0, 6);
+            if (EditConfig.CFW.CFWNum == 3)
+                EditConfig.CFW.ChannelCfgs = EditConfig.CFW.ChannelCfgs.GetRange(0, 9);
+
+
             EditConfig.CopyTo(PhyCamera.Config);
             Close();
+        }
+
+        private void FileBasePath_Click(object sender, RoutedEventArgs e)
+        {
+            System.Windows.Forms.FolderBrowserDialog dialog = new();
+            dialog.UseDescriptionForTitle = true;
+            dialog.Description = "为相机路径选择位置";
+            if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                if (string.IsNullOrEmpty(dialog.SelectedPath))
+                {
+                    MessageBox.Show("文件夹路径不能为空", "提示");
+                    return;
+                }
+                EditConfig.FileServerCfg.FileBasePath = dialog.SelectedPath;
+            }
         }
     }
 }

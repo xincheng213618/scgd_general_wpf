@@ -1,13 +1,14 @@
 ﻿#pragma warning disable CS8629, CS8604
 using ColorVision.Common.MVVM;
-using ColorVision.Services.Devices.Algorithm.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Dao;
 using CVCommCore;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Services.Devices.Algorithm.Views
+namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
     public class PoiResultCIEYData : PoiResultData
     {
@@ -40,8 +41,11 @@ namespace ColorVision.Services.Devices.Algorithm.Views
             POIPointResultModel = pOIPointResultModel;
             if (pOIPointResultModel.ValidateResult !=null)
                 ValidateSingles = JsonConvert.DeserializeObject<ObservableCollection<ValidateRuleResult>>(pOIPointResultModel.ValidateResult);
-            Point = new POIPoint(pOIPointResultModel.PoiId??-1, -1, pOIPointResultModel.PoiName, (POIPointTypes)pOIPointResultModel.PoiType, (int)pOIPointResultModel.PoiX, (int)pOIPointResultModel.PoiY, (int)pOIPointResultModel.PoiWidth, (int)pOIPointResultModel.PoiHeight);
+            Point = new POIPoint(pOIPointResultModel.PoiId??-1, -1, pOIPointResultModel.PoiName, (POIPointTypes)pOIPointResultModel.PoiType, (int)pOIPointResultModel.PoiX, (int)pOIPointResultModel.PoiY, pOIPointResultModel.PoiWidth ??0, pOIPointResultModel.PoiHeight ??0);
         }
+        public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
+        private int _Id;
+
 
         public POIPoint Point { get { return POIPoint; } set { POIPoint = value; NotifyPropertyChanged(); } }
 
@@ -50,7 +54,14 @@ namespace ColorVision.Services.Devices.Algorithm.Views
 
         public string PixelSize { get { return string.Format("{0},{1}", POIPoint.Width, POIPoint.Height); } }
 
-        public string Shapes { get { return string.Format("{0}", POIPoint.PointType == 0 ? "圆形" : "矩形"); } }
+        public string Shapes => POIPoint.PointType switch
+        {
+            POIPointTypes.None => "None",
+            POIPointTypes.SolidPoint => "点",
+            POIPointTypes.Rect => "矩形",
+            POIPointTypes.Mask => "多边形",
+            POIPointTypes.Circle or _ => "圆形 ",
+        };
 
         protected POIPoint POIPoint { get; set; }
     }

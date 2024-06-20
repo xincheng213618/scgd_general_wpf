@@ -1,16 +1,16 @@
-﻿<UserControl x:Class="ColorVision.Services.PhyCameras.InfoPhyCamera"
+﻿<UserControl x:Class="ColorVision.Engine.Services.PhyCameras.InfoPhyCamera"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              mc:Ignorable="d" 
-             xmlns:local="clr-namespace:ColorVision.Services.PhyCameras"
+             xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              xmlns:resx="clr-namespace:ColorVision.Engine.Properties"
-             xmlns:dao ="clr-namespace:ColorVision.Services.PhyCameras.Dao"
+             xmlns:dao ="clr-namespace:ColorVision.Engine.Services.PhyCameras.Dao"
              d:DataContext="{d:DesignInstance local:PhyCamera}"
-             d:DesignHeight="400" d:DesignWidth="600" Initialized="UserControl_Initialized">
+             d:DesignHeight="500" d:DesignWidth="600" Initialized="UserControl_Initialized">
     <UserControl.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -48,13 +48,13 @@
             </Grid>
 
             <Border  Grid.Row="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
-                <TabControl  TabStripPlacement="Left">
+                <TabControl  TabStripPlacement="Top" BorderThickness="0,2,0,0"  BorderBrush="{DynamicResource BorderBrush}" >
                     <TabItem Header="管理">
                         <Grid Margin="5">
                             <UniformGrid Margin="5" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
                                 <Button Content="修改配置" Margin="5" Height="100" Width="180" Command="{Binding EditCommand}"/>
-                                <Border Height="100" Width="180"  BorderBrush="{StaticResource SecondaryRegionBrush}" BorderThickness="1.5" CornerRadius="5">
-                                    <Grid Margin="15" >
+                                <Border Height="100"  Width="180" BorderBrush="{StaticResource SecondaryRegionBrush}" BorderThickness="1.5" CornerRadius="5" Margin="5">
+                                    <Grid Margin="15"   >
                                         <TextBlock VerticalAlignment="Top" HorizontalAlignment="Center" Text="{Binding CameraLicenseModel.Model}"/>
                                         <TextBlock Text="修改许可证" HorizontalAlignment="Center"/>
                                         <TextBlock VerticalAlignment="Bottom" HorizontalAlignment="Center" Text="{Binding CameraLicenseModel.ExpiryDate,StringFormat=yyyy/MM//dd}"/>
@@ -62,10 +62,11 @@
                                     </Grid>
                                 </Border>
 
-                                <Button Content="上传校正文件" Margin="5" Height="100" Width="180" Style="{StaticResource ButtonDefault}" Command="{Binding UploadCalibrationCommand}" />
+                                <Button Content="上传校正文件" Margin="5" Height="100" Width="180" Command="{Binding UploadCalibrationCommand}" />
                                 <Button Content="校正模板设置" Margin="5" Height="100" Width="180" Tag="Calibration"  Click="MenuItem_Template" />
                                 <Button Content="校正模板管理" Margin="5" Height="100" Width="180" Command="{Binding CalibrationEditCommand}"/>
                                 <Button Content="资源组管理" Margin="5" Height="100" Width="180" Command="{Binding ResourceManagerCommand}"/>
+                                <Button Content="重置" Margin="5" Height="100" Width="180" Command="{Binding ResetCommand}"/>
                             </UniformGrid>
                             <StackPanel  HorizontalAlignment="Right" VerticalAlignment="Bottom">
                                 <TextBlock  Text="{Binding SysResourceModel.Code}" />
@@ -185,38 +186,69 @@
                                             <TextBlock Text="波特率"  Width="80"/>
                                             <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.BaudRate}"/>
                                         </DockPanel>
+
+                                        
                                     </StackPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="滤色轮数量"  Width="80"/>
+                                        <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.CFWNum}"/>
+                                    </DockPanel>
                                     <UniformGrid Columns="3" Rows="1">
-                                        <UniformGrid Columns="1" Rows="2" Margin="0,2">
-                                            <DockPanel>
-                                                <TextBlock Text="cfwport"  Width="80"/>
-                                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.ChannelCfgs[0].Cfwport}"/>
-                                            </DockPanel>
+                                        <StackPanel Margin="0,2">
                                             <DockPanel >
                                                 <TextBlock Text="chType" Width="80"/>
                                                 <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.ChannelCfgs[0].ChannelTypeString,Mode=OneWay}"/>
                                             </DockPanel>
-                                        </UniformGrid>
-                                        <UniformGrid Columns="1" Rows="2" Margin="0,2">
                                             <DockPanel>
-                                                <TextBlock Text="cfwport"  Width="80"/>
-                                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.ChannelCfgs[1].Cfwport}"/>
+                                                <TextBlock Text="cfwport0"  Width="80"/>
+                                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.ChannelCfgs[0].Cfwport}"/>
                                             </DockPanel>
+                                            <DockPanel Margin="0,2" Visibility="{Binding Config.CFW.IsCFWNum2,Converter={StaticResource bool2VisibilityConverter}}">
+                                                <TextBlock Text="cfwport3" Width="80"/>
+                                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.ChannelCfgs[3].Cfwport,Mode=OneWay}"/>
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2" Visibility="{Binding Config.CFW.IsCFWNum3,Converter={StaticResource bool2VisibilityConverter}}">
+                                                <TextBlock Text="cfwport6" Width="80"/>
+                                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.ChannelCfgs[6].Cfwport,Mode=OneWay}"/>
+                                            </DockPanel>
+                                        </StackPanel>
+                                        <StackPanel Margin="0,2">
                                             <DockPanel >
                                                 <TextBlock Text="chType" Width="80"/>
                                                 <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.ChannelCfgs[1].ChannelTypeString,Mode=OneWay}"/>
                                             </DockPanel>
-                                        </UniformGrid>
-                                        <UniformGrid Columns="1" Rows="2" Margin="0,2">
                                             <DockPanel>
-                                                <TextBlock Text="cfwport"  Width="80"/>
-                                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.ChannelCfgs[2].Cfwport}"/>
+                                                <TextBlock Text="cfwport1"  Width="80"/>
+                                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.ChannelCfgs[1].Cfwport}"/>
                                             </DockPanel>
+                                            <DockPanel Margin="0,2" Visibility="{Binding Config.CFW.IsCFWNum2,Converter={StaticResource bool2VisibilityConverter}}">
+                                                <TextBlock Text="cfwport4" Width="80"/>
+                                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.ChannelCfgs[4].Cfwport,Mode=OneWay}"/>
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2" Visibility="{Binding Config.CFW.IsCFWNum3,Converter={StaticResource bool2VisibilityConverter}}">
+                                                <TextBlock Text="cfwport7" Width="80"/>
+                                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.ChannelCfgs[7].Cfwport,Mode=OneWay}"/>
+                                            </DockPanel>
+
+                                        </StackPanel>
+                                        <StackPanel Margin="0,2">
                                             <DockPanel >
                                                 <TextBlock Text="chType" Width="80"/>
-                                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.ChannelCfgs[2].ChannelTypeString ,Mode=OneWay}"/>
+                                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.ChannelCfgs[2].ChannelTypeString,Mode=OneWay}"/>
                                             </DockPanel>
-                                        </UniformGrid>
+                                            <DockPanel>
+                                                <TextBlock Text="cfwport2"  Width="80"/>
+                                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.ChannelCfgs[2].Cfwport}"/>
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2" Visibility="{Binding Config.CFW.IsCFWNum2,Converter={StaticResource bool2VisibilityConverter}}">
+                                                <TextBlock Text="cfwport5" Width="80"/>
+                                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.ChannelCfgs[5].Cfwport,Mode=OneWay}"/>
+                                            </DockPanel>
+                                            <DockPanel Margin="0,2" Visibility="{Binding Config.CFW.IsCFWNum3,Converter={StaticResource bool2VisibilityConverter}}">
+                                                <TextBlock Text="cfwport8" Width="80"/>
+                                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CFW.ChannelCfgs[8].Cfwport,Mode=OneWay}"/>
+                                            </DockPanel>
+                                        </StackPanel>
                                     </UniformGrid>
                                 </StackPanel>
                             </GroupBox>

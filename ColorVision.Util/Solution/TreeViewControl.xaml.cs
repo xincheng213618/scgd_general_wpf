@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Solution.V;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -16,27 +17,24 @@ namespace ColorVision.Solution
     /// </summary>
     public partial class TreeViewControl : UserControl
     {
-        public SolutionManager SolutionManager { get; set; }
+        public static SolutionManager SolutionManager => SolutionManager.GetInstance();
         public TreeViewControl()
         {
             InitializeComponent();
         }
-        public ObservableCollection<SolutionExplorer> SolutionExplorers { get => SolutionManager.SolutionExplorers; }
+
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            SolutionManager = SolutionManager.GetInstance();
-            SolutionTreeView.ItemsSource = SolutionExplorers;
-            IniCommand();
+            this.DataContext = SolutionManager;
+            SolutionTreeView.ItemsSource = SolutionManager.SolutionExplorers;
+            SolutionManager.SolutionExplorers[0].VisualChildrenEventHandler += (s, e) => SearchBar1TextChanged();
 
+            IniCommand();
             Window window = Application.Current.MainWindow;
             if (window != null)
                 window.Closing += Window_Closed;
         }
         
-        private void Refresh_Click(object sender, RoutedEventArgs e)
-        {
-            SolutionExplorers[0].Refresh();
-        }
 
         private void TreeViewControl_Drop(object sender, DragEventArgs e)
         {
@@ -127,8 +125,7 @@ namespace ColorVision.Solution
                 LastSelectedTreeViewItem = item;
 
 
-
-                if (SolutionExplorers.Count != 1 && item.DataContext is SolutionExplorer solutionExplorer)
+                if (SolutionManager.SolutionExplorers.Count != 1 && item.DataContext is SolutionExplorer solutionExplorer)
                 {
 
                 }
@@ -142,49 +139,35 @@ namespace ColorVision.Solution
                 SelectedTreeViewItem = null;
             }
         }
+        private readonly char[] Chars = new[] { ' ' };
 
-        private void OpenSolution(object sender, RoutedEventArgs e)
+        public void SearchBar1TextChanged()
         {
-            SolutionManager.OpenSolutionWindow();
+            string text = SearchBar1.Text;
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                SolutionTreeView.ItemsSource = SolutionManager.GetInstance().SolutionExplorers;
+            }
+            else
+            {
+                var keywords = text.Split(Chars, StringSplitOptions.RemoveEmptyEntries);
+                var filteredResults = SolutionManager.GetInstance().SolutionExplorers.
+                    SelectMany(explorer => explorer.VisualChildren.GetAllVisualChildren())
+                    .OfType<VObject>()
+                    .Where(template => keywords.All(keyword =>
+                        template.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                        ))
+                    .ToList();
+
+                // 更新 ListView 的数据源
+                SolutionTreeView.ItemsSource = filteredResults;
+            }
         }
 
-        private void Save_Click(object sender, RoutedEventArgs e)
+        private void SearchBar1_TextChanged(object sender, TextChangedEventArgs e)
         {
-
+            SearchBar1TextChanged();
         }
-
-
-        private void Config_Set_Click(object sender, RoutedEventArgs e)
-        {
-        }
-
-
-        private void SolutionNewCreat(object sender, RoutedEventArgs e)
-        {
-            SolutionManager.NewCreateWindow();
-        }
-
-
-        private void Close_Click(object sender, RoutedEventArgs e)
-        {
-        }
-
-
-        private unsafe void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            HandyControl.Controls.Growl.Info("此功能在测试中");
-        }
-
-        private void Button_Click_4(object sender, RoutedEventArgs e)
-        {
-            HandyControl.Controls.Growl.Info("此功能还在开发中，暂停使用");
-        }
-
-        private void Button_Click_5(object sender, RoutedEventArgs e)
-        {
-            HandyControl.Controls.Growl.Info("此功能在测试中");
-        }
-
 
     }
 

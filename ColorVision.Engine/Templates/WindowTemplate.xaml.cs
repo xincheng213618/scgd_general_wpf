@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Templates;
-using ColorVision.Services.Dao;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.UI.Sorts;
 using System;
 using System.Collections.ObjectModel;
@@ -8,6 +8,8 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
+using ColorVision.Themes;
 
 namespace ColorVision.Engine.Templates
 {
@@ -26,6 +28,7 @@ namespace ColorVision.Engine.Templates
             DefaultIndex = defaultIndex;
             template.Load();
             InitializeComponent();
+            this.ApplyCaption();
         }
 
 
@@ -64,6 +67,23 @@ namespace ColorVision.Engine.Templates
             }
             Closed += WindowTemplate_Closed;
 
+            this.PreviewKeyDown += (s, e) =>
+            {
+                if (e.Key == Key.F2)
+                {
+                    if (ListView1.SelectedIndex >-1 && ITemplate.GetValue(ListView1.SelectedIndex) is TemplateModelBase templateModelBase)
+                    {
+                        templateModelBase.IsEditMode = true;
+                    }
+                }
+                if (e.Key == Key.Enter)
+                {
+                    if (ListView1.SelectedIndex > -1 && ITemplate.GetValue(ListView1.SelectedIndex) is TemplateModelBase templateModelBase)
+                    {
+                        templateModelBase.IsEditMode = false;
+                    }
+                }
+            };
         }
 
 
@@ -74,18 +94,38 @@ namespace ColorVision.Engine.Templates
 
         private void ListView1_PreviewMouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (sender is ListView listView && listView.SelectedIndex > -1)
+            DependencyObject source = (DependencyObject)e.OriginalSource;
+
+            while (source != null && !(source is ListViewItem))
             {
-                ITemplate.PreviewMouseDoubleClick(listView.SelectedIndex);
+                source = VisualTreeHelper.GetParent(source);
             }
+
+            if (source is ListViewItem)
+            {
+                if (sender is ListView listView && listView.SelectedIndex > -1)
+                {
+                    ITemplate.PreviewMouseDoubleClick(listView.SelectedIndex);
+                }
+            }
+
         }
         private MeasureMasterDao measureMaster = new();
         private MeasureDetailDao measureDetail = new();
 
+        private int LastSelectedIndex = -1;
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
+                if (LastSelectedIndex >= 0 && LastSelectedIndex< listView.Items.Count)
+                {
+                    if (ITemplate.GetValue(LastSelectedIndex) is TemplateModelBase templateModelBase)
+                    {
+                        templateModelBase.IsEditMode = false;
+                    }
+                }
+
                 ITemplate.SetSaveIndex(listView.SelectedIndex);
                 if (ITemplate.IsUserControl)
                 {
@@ -93,22 +133,9 @@ namespace ColorVision.Engine.Templates
                 }
                 else
                 {
-                    PropertyGrid1.SelectedObject = ITemplate.GetValue(listView.SelectedIndex);
+                    PropertyGrid1.SelectedObject = ITemplate.GetParamValue(listView.SelectedIndex);
                 }
-
-                //if (UserControl is MeasureParamControl mpc && MeasureParam.Params[listView.SelectedIndex].Value is MeasureParam mp)
-                //{
-                //    mpc.MasterID = mp.Id;
-                //    List<MeasureDetailModel> des = measureDetail.GetAllByPid(mp.Id); 
-                //    mpc.Reload(des);
-                //    mpc.ModTypeConfigs.Clear();
-                //    mpc.ModTypeConfigs.Add(new MParamConfig(-1,"关注点","POI"));
-                //    List<SysModMasterModel> sysModMaster = SysModMasterDao.Instance.GetAllById(UserConfig.Instance.TenantId);
-                //    foreach (SysModMasterModel Model in sysModMaster)
-                //    {
-                //        mpc.ModTypeConfigs.Add(new MParamConfig(Model));
-                //    }
-                //}
+                LastSelectedIndex = listView.SelectedIndex;
             }
         }
 
@@ -138,7 +165,7 @@ namespace ColorVision.Engine.Templates
         {
             if (ListView1.SelectedIndex > -1)
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否删除{ITemplate.Code}模板{ITemplate.GetTemplateName(ListView1.SelectedIndex)},删除后无法恢复!", Application.Current.MainWindow.Title, MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
+                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否删除{ITemplate.Code}模板,删除后无法恢复!", Application.Current.MainWindow.Title, MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
                 {
                     int index = ListView1.SelectedIndex;
                     ITemplate.Delete(ListView1.SelectedIndex);
@@ -172,20 +199,6 @@ namespace ColorVision.Engine.Templates
 
         }
 
-        private void TextBox_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            if (sender is TextBox textBox && textBox.Tag is TemplateModelBase templateModelBase)
-            {
-                if (e.Key == Key.F2)
-                {
-                    templateModelBase.IsEditMode = true;
-                }
-                if (e.Key == Key.Escape || e.Key == Key.Enter)
-                {
-                    templateModelBase.IsEditMode = false;
-                }
-            }
-        }
 
         private void TextBox_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
@@ -196,13 +209,6 @@ namespace ColorVision.Engine.Templates
         }
 
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is Button button && button.Tag is TemplateModelBase templateModelBase)  
-            {
-                templateModelBase.IsEditMode = true;
-            }
-        }
 
         private void Button_Export_Click(object sender, RoutedEventArgs e)
         {
@@ -284,15 +290,15 @@ namespace ColorVision.Engine.Templates
 
                         if (itemType != null)
                         {
-                            if (columnName == Engine.Properties.Resources.SerialNumber1 && typeof(ISortID).IsAssignableFrom(itemType))
+                            if (columnName == Properties.Resources.SerialNumber1 && typeof(ISortID).IsAssignableFrom(itemType))
                             {
                                 SortableExtension.InvokeSortMethod("SortByID", itemType, collection, item.IsSortD);
                             }
-                            else if (columnName == Engine.Properties.Resources.Name && typeof(ISortKey).IsAssignableFrom(itemType))
+                            else if (columnName == Properties.Resources.Name && typeof(ISortKey).IsAssignableFrom(itemType))
                             {
                                 SortableExtension.InvokeSortMethod("SortByKey", itemType, collection, item.IsSortD);
                             }
-                            else if (columnName == Engine.Properties.Resources.Choice)
+                            else if (columnName == Properties.Resources.Choice)
                             {
                                 foreach (var modebase in ITemplate.ItemsSource.OfType<TemplateModelBase>())
                                 {
@@ -304,6 +310,7 @@ namespace ColorVision.Engine.Templates
                     }
                 }
             }
+            e.Handled = true;
         }
 
 

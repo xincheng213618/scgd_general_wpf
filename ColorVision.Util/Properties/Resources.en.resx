@@ -261,4 +261,22 @@
   <data name="SelectProjectSaveLocation" xml:space="preserve">
     <value>Choose where to save the project</value>
   </data>
+  <data name="MenuCopyFullPath" xml:space="preserve">
+    <value>Copy the full path</value>
+  </data>
+  <data name="MenuOpenContainingFolder" xml:space="preserve">
+    <value>Open the folder where it is located (O)</value>
+  </data>
+  <data name="MenuOpenFileInExplorer" xml:space="preserve">
+    <value>Open the folder in the file manager (X)</value>
+  </data>
+  <data name="MenuCut" xml:space="preserve">
+    <value>Cu_t</value>
+  </data>
+  <data name="MenuCopy" xml:space="preserve">
+    <value>_Copy</value>
+  </data>
+  <data name="ThemeCyan" xml:space="preserve">
+    <value>Cyan</value>
+  </data>
 </root>

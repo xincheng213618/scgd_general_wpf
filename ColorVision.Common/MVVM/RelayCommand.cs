@@ -9,32 +9,32 @@ namespace ColorVision.Common.MVVM
     /// </summary>
     public sealed class RelayCommand : ICommand
     {
-        private readonly Action<object> Execute;
-        private readonly Predicate<object> CanExecute;
+        private readonly Action<object> execute;
+        private readonly Predicate<object> canExecute;
 
         //Func<object,bool> =>Predicate<object> ss
         public RelayCommand(Action<object> execute)
         {
-            Execute = execute ?? throw new ArgumentNullException(nameof(execute));
-            CanExecute = a => true;
+            this.execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            canExecute = a => true;
         }
         public RelayCommand(Action<object> execute, Predicate<object> canExecute)
         {
-            Execute = execute ?? throw new ArgumentNullException(nameof(execute));
-            CanExecute = canExecute;
+            this.execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            this.canExecute = canExecute;
         }
 
-        bool ICommand.CanExecute(object? parameter) => CanExecute is null || CanExecute(parameter);
+        public bool CanExecute(object? parameter) => canExecute is null || canExecute(parameter);
 
-        event EventHandler? ICommand.CanExecuteChanged
+        public event EventHandler? CanExecuteChanged
         {
             add { CommandManager.RequerySuggested += value; }
             remove { CommandManager.RequerySuggested -= value; }
         }
 
-        void ICommand.Execute(object? parameter) => Execute(parameter);
+        public void Execute(object? parameter) => execute(parameter);
 
-        public void RaiseExecute(object parameter) => Execute(parameter);
+        public void RaiseExecute(object parameter) => execute(parameter);
     }
 
 

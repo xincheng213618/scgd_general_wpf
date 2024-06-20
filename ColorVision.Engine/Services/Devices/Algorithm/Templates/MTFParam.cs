@@ -4,8 +4,8 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
-using ColorVision.Services.Dao;
-using ColorVision.Services.Templates;
+using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Services.Templates;
 using ColorVision.UI.Menus;
 using cvColorVision;
 using Newtonsoft.Json;
@@ -13,33 +13,18 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
+using ColorVision.Engine.Templates.POI;
 
-namespace ColorVision.Services.Devices.Algorithm.Templates
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates
 {
-
-    public class ExportMTFParam : IMenuItem
+    public class ExportMTFParam : ExportTemplateBase
     {
-        public string? OwnerGuid => "TemplateAlgorithm";
-        public Visibility Visibility => Visibility.Visible;
-
-        public string? GuidId => "MTFParam";
-        public int Order => 2;
-        public string? Header => ColorVision.Engine.Properties.Resources.MenuMTF;
-
-        public string? InputGestureText { get; }
-
-        public object? Icon { get; }
-
-        public RelayCommand Command => new(a => {
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
-                return;
-            }
-            new WindowTemplate(new TemplateMTFParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        });
+        public override string OwnerGuid => "TemplateAlgorithm";
+        public override string GuidId => "MTFParam";
+        public override string Header => Properties.Resources.MenuMTF;
+        public override int Order => 2;
+        public override ITemplate Template => new TemplateMTFParam();
     }
-
 
     public class TemplateMTFParam : ITemplate<MTFParam>, IITemplateLoad
     {

@@ -6,7 +6,7 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.Validate;
 using ColorVision.Net;
-using ColorVision.Services.Dao;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Util.Draw.Rectangle;
 using cvColorVision;
 using cvColorVision.Util;
@@ -29,8 +29,9 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using ColorVision.Themes;
 
-namespace ColorVision.Services.Templates.POI
+namespace ColorVision.Engine.Services.Templates.POI
 {
     public partial class WindowFocusPoint : Window
     {
@@ -42,6 +43,7 @@ namespace ColorVision.Services.Templates.POI
         {
             PoiParam = poiParam;
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
@@ -446,7 +448,7 @@ namespace ColorVision.Services.Templates.POI
                             break;
                         case RiPointTypes.Rect:
                             DrawingVisualRectangleWord Rectangle = new();
-                            Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
+                            Rectangle.Attribute.Rect = new Rect(item.PixX - item.PixWidth /2, item.PixY - item.PixHeight /2, item.PixWidth, item.PixHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
                             Rectangle.Attribute.ID = item.Id;
@@ -1118,8 +1120,8 @@ namespace ColorVision.Services.Templates.POI
                         Id = rectangle.Tag1 ??-1,
                         Name = rectangle.Name,
                         PointType = RiPointTypes.Rect,
-                        PixX = rectangle.Rect.X,
-                        PixY = rectangle.Rect.Y,
+                        PixX = rectangle.Rect.X + rectangle.Rect.Width/2,
+                        PixY = rectangle.Rect.Y + rectangle.Rect.Height/2,
                         PixWidth = rectangle.Rect.Width,
                         PixHeight = rectangle.Rect.Height,
                         Tag = rectangle.Tag,

@@ -1,32 +1,30 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Services.Devices;
-using ColorVision.Services.RC;
-using ColorVision.Services.Terminal;
+using ColorVision.Engine.Services.Devices;
+using ColorVision.Engine.Services.RC;
+using ColorVision.Engine.Services.Terminal;
+using ColorVision.Themes;
+using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
+using ColorVision.UserSpace;
 using System;
 using System.Windows;
 
-namespace ColorVision.Services
+namespace ColorVision.Engine.Services
 {
-    public class WindowServiceMenuItem : IMenuItem
+    public class ExportWindowService : MenuItemBase
     {
-        public string? OwnerGuid => "Tool";
+        public override string OwnerGuid => "Tool";
+        public override string GuidId => "WindowService";
+        public override string Header => Properties.Resources.MenuService;
+        public override int Order => 3;
 
-        public string? GuidId { get; set; } = "WindowService";
-        public int Order => 3;
-        public string? Header => ColorVision.Engine.Properties.Resources.MenuService;
-        public Visibility Visibility => Visibility.Visible;
-        public string? InputGestureText { get; set; }
-
-        public object? Icon { get; set; }
-
-        public RelayCommand Command => new(a =>
+        [RequiresPermission(PermissionMode.Administrator)]
+        public override void Execute()
         {
             new WindowService() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        });
+        }
     }
-
 
     /// <summary>
     /// WindowService.xaml 的交互逻辑
@@ -36,6 +34,7 @@ namespace ColorVision.Services
         public WindowService()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
         private void Window_Initialized(object sender, EventArgs e)
         {

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Themes;
 using ColorVision.UI;
 using System;
 using System.Collections.Generic;
@@ -24,6 +25,7 @@ namespace ColorVision.Wizards
         public WizardWindow()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
         private void Window_Initialized(object sender, System.EventArgs e)
         {

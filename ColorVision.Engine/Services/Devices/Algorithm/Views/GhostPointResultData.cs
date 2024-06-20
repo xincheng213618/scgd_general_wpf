@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using MQTTMessageLib.Algorithm;
 
-namespace ColorVision.Services.Devices.Algorithm.Views
+namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
     public class GhostPointResultData : ViewModelBase
     {

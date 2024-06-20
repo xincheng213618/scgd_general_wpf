@@ -8,7 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 
-namespace ColorVision.Services.PhyCameras.Dao
+namespace ColorVision.Engine.Services.PhyCameras.Dao
 {
     public class ColorVisionLincense
     {

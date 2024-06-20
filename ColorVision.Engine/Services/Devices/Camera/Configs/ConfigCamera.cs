@@ -1,21 +1,44 @@
 ﻿using Newtonsoft.Json;
 using cvColorVision;
-using ColorVision.Services.Devices.Camera.Video;
+using ColorVision.Engine.Services.Devices.Camera.Video;
 using System;
 using ColorVision.Engine.Services.PhyCameras.Configs;
+using ColorVision.Engine.Services.PhyCameras;
+using System.Linq;
+using ColorVision.Engine.Services.Configs;
 
-namespace ColorVision.Services.Devices.Camera.Configs
+namespace ColorVision.Engine.Services.Devices.Camera.Configs
 {
     /// <summary>
     /// 相机配置
     /// </summary>
     public class ConfigCamera : DeviceServiceConfig
     {
-        public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged(); } }
+        public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(CameraCode)); } }
         private string _CameraID;
 
-        public CameraType CameraType { get => _CameraType; set { _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); } }
+        [JsonIgnore]
+       public string? CameraCode
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(CameraID)) return null;
+                var PhyCamera = PhyCameraManager.GetInstance().PhyCameras.First(a => a.Name == CameraID);
+                if (PhyCamera != null)
+                    return PhyCamera.SysResourceModel.Code;
+                return null;
+
+            }
+        }
+
+        public CameraType CameraType { get => _CameraType; set { if (_CameraType == value) return; _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); UpdateCameraModeAndIBM(value); } }
         private CameraType _CameraType;
+
+        public CameraMode CameraMode { get => _CameraMode; set { if (_CameraMode == value) return; _CameraMode = value; NotifyPropertyChanged(); CameraType = GetCameraType(_CameraMode, _CameraModel); } }
+        private CameraMode _CameraMode;
+
+        public CameraModel CameraModel { get => _CameraModel; set { if (_CameraModel == value) return; _CameraModel = value; NotifyPropertyChanged(); CameraType = GetCameraType(_CameraMode, _CameraModel); } }
+        private CameraModel _CameraModel;
 
         public TakeImageMode TakeImageMode { get => _TakeImageMode; set { _TakeImageMode = value; NotifyPropertyChanged(); } }
         private TakeImageMode _TakeImageMode;
@@ -86,14 +109,114 @@ namespace ColorVision.Services.Devices.Camera.Configs
 
         public MotorConfig MotorConfig { get; set; } = new MotorConfig();
           
-        public ExpTimeCfg ExpTimeCfg { get; set; } = new ExpTimeCfg();
+        public PhyExpTimeCfg ExpTimeCfg { get; set; } = new PhyExpTimeCfg();
 
-        public CameraCfg CameraCfg { get; set; } = new CameraCfg();
+        public PhyCameraCfg CameraCfg { get; set; } = new PhyCameraCfg();
 
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 
         public bool IsAutoOpen { get => _IsAutoOpen; set { _IsAutoOpen = value; NotifyPropertyChanged(); } }
         private bool _IsAutoOpen = true;
+
+
+        public static CameraType GetCameraType(CameraMode camMode, CameraModel camModel)
+        {
+            if (camMode == CameraMode.CV_MODE && camModel == CameraModel.QHY_USB)
+                return CameraType.CV_Q;
+            if (camMode == CameraMode.LV_MODE && camModel == CameraModel.QHY_USB)
+                return CameraType.LV_Q;
+            if (camMode == CameraMode.BV_MODE && camModel == CameraModel.QHY_USB)
+                return CameraType.BV_Q;
+            if (camMode == CameraMode.LV_MODE && camModel == CameraModel.MIL_CL_CARD)
+                return CameraType.MIL_CL;
+            if (camMode == CameraMode.LV_MODE && camModel == CameraModel.MIL_CXP_CARD)
+                return CameraType.MIL_CXP;
+            if (camMode == CameraMode.BV_MODE && camModel == CameraModel.HK_USB)
+                return CameraType.BV_H;
+            if (camMode == CameraMode.LV_MODE && camModel == CameraModel.HK_USB)
+                return CameraType.LV_H;
+            if (camMode == CameraMode.LV_MODE && camModel == CameraModel.HK_CARD)
+                return CameraType.HK_CXP;
+            if (camMode == CameraMode.LV_MODE && camModel == CameraModel.MIL_CL_CARD)
+                return CameraType.LV_MIL_CL;
+            if (camMode == CameraMode.CV_MODE && camModel == CameraModel.MIL_CL_CARD)
+                return CameraType.CV_MIL_CL;
+            return CameraType.CameraType_Total; // Default case if no match found
+        }
+
+        public bool UpdateCameraModeAndIBM(CameraType eCamType)
+        {
+            switch (eCamType)
+            {
+                case CameraType.CV_Q:
+                    CameraMode = CameraMode.CV_MODE;
+                    CameraModel = CameraModel.QHY_USB;
+                    break;
+                case CameraType.LV_Q:
+                    CameraMode = CameraMode.LV_MODE;
+                    CameraModel = CameraModel.QHY_USB;
+                    break;
+                case CameraType.BV_Q:
+                    CameraMode = CameraMode.BV_MODE;
+                    CameraModel = CameraModel.QHY_USB;
+                    break;
+                case CameraType.MIL_CL:
+                    CameraMode = CameraMode.LV_MODE;
+                    CameraModel = CameraModel.MIL_CL_CARD;
+                    break;
+                case CameraType.MIL_CXP:
+                    CameraMode = CameraMode.LV_MODE;
+                    CameraModel = CameraModel.MIL_CXP_CARD;
+                    break;
+                case CameraType.BV_H:
+                    CameraMode = CameraMode.BV_MODE;
+                    CameraModel = CameraModel.HK_USB;
+                    break;
+                case CameraType.LV_H:
+                    CameraMode = CameraMode.LV_MODE;
+                    CameraModel = CameraModel.HK_USB;
+                    break;
+                case CameraType.HK_CXP:
+                    CameraMode = CameraMode.LV_MODE;
+                    CameraModel = CameraModel.HK_CARD;
+                    break;
+                case CameraType.LV_MIL_CL:
+                    CameraMode = CameraMode.LV_MODE;
+                    CameraModel = CameraModel.MIL_CL_CARD;
+                    break;
+                case CameraType.CV_MIL_CL:
+                    CameraMode = CameraMode.CV_MODE;
+                    CameraModel = CameraModel.MIL_CL_CARD;
+                    break;
+                case CameraType.BV_MIL_CXP:
+                    CameraMode = CameraMode.BV_MODE;
+                    CameraModel = CameraModel.MIL_CXP_CARD;
+                    break;
+                case CameraType.BV_HK_CARD:
+                    CameraMode = CameraMode.BV_MODE;
+                    CameraModel = CameraModel.QHY_USB;
+                    break;
+                case CameraType.LV_HK_CARD:
+                    CameraMode = CameraMode.LV_MODE;
+                    CameraModel = CameraModel.HK_CARD;
+                    break;
+                case CameraType.CV_HK_CARD:
+                    CameraMode = CameraMode.CV_MODE;
+                    CameraModel = CameraModel.HK_CARD;
+                    break;
+                case CameraType.CV_HK_USB:
+                    CameraMode = CameraMode.CV_MODE;
+                    CameraModel = CameraModel.HK_USB;
+                    break;
+                case CameraType.CameraType_Total:
+                    // Handle CameraType_Total case if needed
+                    break;
+                default:
+                    // Handle default case if needed
+                    break;
+            }
+            return false;
+        }
 
     }
 }

@@ -1,7 +1,7 @@
 ﻿using ColorVision.Engine.MySql.ORM;
 using System.Data;
 
-namespace ColorVision.Services.Dao
+namespace ColorVision.Engine.Services.Dao
 {
     public class MeasureDetailModel : PKModel
     {

@@ -12,7 +12,6 @@
              d:DataContext="{d:DesignInstance u:SystemMonitor}"
              d:DesignHeight="450" d:DesignWidth="800" Initialized="UserControl_Initialized">
     <UserControl.Resources>
-
         <Style x:Key="BorderModuleArea" TargetType="{x:Type Border}">
             <Setter Property="Background" Value="{DynamicResource GlobalBackground}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource GlobalBorderBrush1}"/>
@@ -21,71 +20,77 @@
             <Setter Property="CornerRadius" Value="8"/>
         </Style>
     </UserControl.Resources>
-    <StackPanel>
-        <Border Style="{StaticResource BorderModuleArea}" >
-            <StackPanel Margin="5">
-                <DockPanel Margin="5,2">
-                    <TextBox DockPanel.Dock="Right"   Text="{Binding UpdateSpeed}" HorizontalContentAlignment="Right" HorizontalAlignment="Left" Width="200"/>
-                    <TextBlock Text="{x:Static properties:Resources.UpdateSpeed}" />
-                </DockPanel>
-                <DockPanel Margin="5,2">
-                    <TextBox  DockPanel.Dock="Right"  Text="{Binding Config.DefaultTimeFormat}"  HorizontalContentAlignment="Right" Width="200"/>
-                    <TextBlock Text="日期格式" />
-                </DockPanel>
-                <DockPanel Margin="5">
-                    <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding Config.IsShowTime}"/>
-                    <TextBlock Text="显示时间"/>
-                </DockPanel>
-                <DockPanel Margin="5">
-                    <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding Config.IsShowRAM}"/>
-                    <TextBlock Text="显示RAM"/>
-                </DockPanel>
-            </StackPanel>
-        </Border>
+    <ScrollViewer>
+        <StackPanel>
+            <Border Style="{StaticResource BorderModuleArea}" >
+                <StackPanel Margin="5">
+                    <DockPanel Margin="5,2">
+                        <TextBox DockPanel.Dock="Right"   Text="{Binding UpdateSpeed}" HorizontalContentAlignment="Right" HorizontalAlignment="Left" Width="200"/>
+                        <TextBlock Text="{x:Static properties:Resources.UpdateSpeed}" />
+                    </DockPanel>
+                    <DockPanel Margin="5,2">
+                        <TextBox  DockPanel.Dock="Right"  Text="{Binding Config.DefaultTimeFormat}"  HorizontalContentAlignment="Right" Width="200"/>
+                        <TextBlock Text="日期格式" />
+                    </DockPanel>
+                    <DockPanel Margin="5">
+                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding Config.IsShowTime}"/>
+                        <TextBlock Text="显示时间"/>
+                    </DockPanel>
+                    <DockPanel Margin="5">
+                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding Config.IsShowRAM}"/>
+                        <TextBlock Text="显示RAM"/>
+                    </DockPanel>
+                    <ui:Rating HorizontalAlignment="Left" Value="5" />
+                </StackPanel>
+            </Border>
 
-        <Border  Style="{StaticResource BorderModuleArea}" >
-            <StackPanel>
-                <ListView  Grid.Row="1" Background="{StaticResource TransparentBrush}"  BorderThickness="0" ItemsSource="{Binding DriveInfos}">
-                    <ListView.View>
-                        <GridView>
-                            <GridViewColumn Header="Drive" DisplayMemberBinding="{Binding Name}"  Width="80"  />
-                            <GridViewColumn Header="Type" DisplayMemberBinding="{Binding DriveFormat}"  />
-                            <GridViewColumn Header="Total Size (GB)">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding TotalSize, Converter={StaticResource MemorySizeConverter}}" />
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn Header="Free Space  (GB)">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding AvailableFreeSpace, Converter={StaticResource MemorySizeConverter}}" />
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                        </GridView>
-                    </ListView.View>
-                </ListView>
-            </StackPanel>
-        </Border>
+            <Border  Style="{StaticResource BorderModuleArea}" >
+                <StackPanel>
+                    <ListView  Grid.Row="1" Background="{StaticResource TransparentBrush}"  BorderThickness="0" ItemsSource="{Binding DriveInfos}" Height="200">
+                        <ListView.View>
+                            <GridView>
+                                <GridViewColumn Header="Drive" DisplayMemberBinding="{Binding Name}"  Width="80"  />
+                                <GridViewColumn Header="Type" DisplayMemberBinding="{Binding DriveFormat}"  />
+                                <GridViewColumn Header="Total Size (GB)">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding TotalSize, Converter={StaticResource MemorySizeConverter}}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                                <GridViewColumn Header="Free Space  (GB)">
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding AvailableFreeSpace, Converter={StaticResource MemorySizeConverter}}" />
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                </StackPanel>
+            </Border>
+            
 
 
 
 
 
-        <Border  Style="{StaticResource BorderModuleArea}" >
-            <StackPanel Orientation="Horizontal" Margin="15">
-                <Grid Margin="10,0">
-                    <hc:WaveProgressBar  Value="{Binding RAMPercent}"/>
-                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="RAM"/>
-                </Grid>
-                <Grid  Margin="10,0">
-                    <hc:WaveProgressBar  Value="{Binding RAMThisPercent}"/>
-                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding RAMThis}"/>
-                </Grid>
-                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding Time}"/>
-            </StackPanel>
-        </Border>
-    </StackPanel>
+
+            <Border  Style="{StaticResource BorderModuleArea}" >
+                <StackPanel Orientation="Horizontal" Margin="15">
+                    <Grid Margin="10,0">
+                        <hc:WaveProgressBar  Value="{Binding RAMPercent}"/>
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="RAM"/>
+                    </Grid>
+                    <Grid  Margin="10,0">
+                        <hc:WaveProgressBar  Value="{Binding RAMThisPercent}"/>
+                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding RAMThis}"/>
+                    </Grid>
+                    <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding Time}"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+
+    </ScrollViewer>
 </UserControl>

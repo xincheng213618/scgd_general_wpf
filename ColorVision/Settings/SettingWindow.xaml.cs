@@ -25,16 +25,19 @@ namespace ColorVision.Settings
                 IsBlurEnabled = false;
                 ThemeManager.Current.CurrentUIThemeChanged += (e) =>
                 {
-                    Background = IsBlurEnabled ? Background : e == Theme.Light ? Brushes.White : Brushes.Black;
+                    Background = IsBlurEnabled ? Background : GetThemeBackGround();
                 };
             }
             else
             {
                 IsBlurEnabled = ThemeConfig.Instance.TransparentWindow && IsBlurEnabled;
             }
-            Background = IsBlurEnabled ? Background :ThemeManager.Current.CurrentUITheme == Theme.Light?Brushes.White:Brushes.Black;
+            Background = IsBlurEnabled ? Background : GetThemeBackGround();
 
         }
+
+
+
         private void Window_Initialized(object sender, EventArgs e)
         {
            LoadIConfigSetting();

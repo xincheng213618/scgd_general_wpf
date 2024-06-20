@@ -715,5 +715,12 @@
             </DrawingGroup>
         </DrawingImage.Drawing>
     </DrawingImage>
+    <DrawingImage x:Key="DIHistogram">
+        <DrawingImage.Drawing>
+            <DrawingGroup ClipGeometry="M0,0 V1024 H1024 V0 H0 Z">
+                <GeometryDrawing Brush="{StaticResource IconSolidColorBrush}" Geometry="F1 M1024,1024z M0,0z M176,112A8,8,0,0,1,184,120L184,840 904,840A8,8,0,0,1,912,848L912,904A8,8,0,0,1,904,912L120,912A8,8,0,0,1,112,904L112,120A8,8,0,0,1,120,112L176,112z M358,512A8,8,0,0,1,366,520L366,728A8,8,0,0,1,358,736L294,736A8,8,0,0,1,286,728L286,520A8,8,0,0,1,294,512L358,512z M540,288A8,8,0,0,1,548,296L548,728A8,8,0,0,1,540,736L476,736A8,8,0,0,1,468,728L468,296A8,8,0,0,1,476,288L540,288z M722,400A8,8,0,0,1,730,408L730,728A8,8,0,0,1,722,736L658,736A8,8,0,0,1,650,728L650,408A8,8,0,0,1,658,400L722,400z M904,288A8,8,0,0,1,912,296L912,728A8,8,0,0,1,904,736L840,736A8,8,0,0,1,832,728L832,296A8,8,0,0,1,840,288L904,288z" />
+            </DrawingGroup>
+        </DrawingImage.Drawing>
+    </DrawingImage>
 
 </ResourceDictionary>
