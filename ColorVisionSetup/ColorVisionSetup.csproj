@@ -68,7 +68,7 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>ColorVision.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>$(SolutionDir)ColorVision.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -184,9 +184,6 @@
   <ItemGroup>
     <EmbeddedResource Include="logi_codecs_shared.dll" />
     <EmbeddedResource Include="logi_installer_shared.dll" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="background-mask.png" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="Assets\images\background-mask.png" />

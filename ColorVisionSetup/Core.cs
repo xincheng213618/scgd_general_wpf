@@ -26,33 +26,9 @@ namespace ColorVisionSetup
 
         public const string NativeRuntime_x64 = "vc_redist.x64.exe";
 
-        public const string NativeRuntime_x86 = "vc_redist.x86.exe";
-
         public const string NativeLibrary = "logi_installer_shared.dll";
 
         public const string NativeCodecsLibrary = "logi_codecs_shared.dll";
-
-        public const string GHUBRegistryEntry = "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{521c89be-637f-4274-a840-baaf7460c2b2}";
-
-        public const string GHUBRegistryKey = "DisplayName";
-
-        public const string GHUBProgramPath = "LGHUB";
-
-        public const string GHUBRegistryName = "G HUB Installer";
-
-        public const string LegacyRegistryEntry = "HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Logitech Gaming Software";
-
-        public const string LegacyRegistryKeyMajor = "VersionMajor";
-
-        public const string LegacyRegistryKeyMinor = "VersionMinor";
-
-        public const string Logitech = "Logitech";
-
-        public const string Logicool = "Logicool";
-
-        public const int ValidLegacyVersionMajor = 8;
-
-        public const int ValidLegacyVersionMinor = 98;
 
         public static UNPACK_RESULT unpackResult = UNPACK_RESULT.NOT_PERFORMED_YET;
 

@@ -15,9 +15,12 @@
   </ItemGroup>
 
   <ItemGroup>
+	  <Content Include="..\DLL\scgd_internal_dll\cvCamera.dll">
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
 	  <Content Include="..\DLL\scgd_internal_dll\qhyccd.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
 	  <Content Include="..\DLL\scgd_internal_dll\SCBase.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

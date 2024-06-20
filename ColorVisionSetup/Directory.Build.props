@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup>
+    <Copyright>Copyright (C) 2023 ColorVision Corporation</Copyright>
+    <AssemblyCompany>ColorVision Corp.</AssemblyCompany>
+    <AssemblyCopyright>Copyright (C) 2023 ColorVision Corporation</AssemblyCopyright>
+    <AssemblyProduct>ColorVision</AssemblyProduct>
+	<VersionPrefix>1.0.1.0</VersionPrefix>
+    <Company>ColorVision</Company>
+    <NeutralLanguage>zh-CN</NeutralLanguage>
+  </PropertyGroup>
+</Project>

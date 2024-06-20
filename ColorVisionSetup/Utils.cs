@@ -41,7 +41,7 @@ namespace ColorVisionSetup
 
         public static void DeleteExistingGhubTempDirectories()
         {
-            string[] directories = Directory.GetDirectories(Path.GetTempPath(), "ghub-*");
+            string[] directories = Directory.GetDirectories(Path.GetTempPath(), "ColorVision-*");
             foreach (string text in directories)
             {
                 try
@@ -76,62 +76,6 @@ namespace ColorVisionSetup
             Environment.Exit(0);
         }
 
-
-        public static void OpenExternalHyperlink(object sender, RequestNavigateEventArgs e)
-        {
-            Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri));
-            e.Handled = true;
-        }
-
-        public static string GetBrandName()
-        {
-            string text = "Logitech";
-            ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
-            ServicePointManager.Expect100Continue = true;
-            HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create("https://util.logitech.io/brand");
-            httpWebRequest.ProtocolVersion = HttpVersion.Version10;
-            httpWebRequest.Method = "HEAD";
-            httpWebRequest.Timeout = 5000;
-            try
-            {
-                using (HttpWebResponse httpWebResponse = (HttpWebResponse)httpWebRequest.GetResponse())
-                {
-                    if (httpWebResponse.StatusDescription == "OK")
-                    {
-                        text = "Logicool";
-                    }
-                }
-                Log("Using brand: " + text);
-            }
-            catch (WebException ex)
-            {
-                Log("Brand acquisition status: (" + ex.Message + "), using default: " + text);
-            }
-            return text;
-        }
-
-        public static string WithBrand(string text, string brandName)
-        {
-            return Regex.Replace(text.Replace("Logitech", brandName).Replace("Logitech".ToUpper(), brandName.ToUpper()).Replace("Logicool", brandName)
-                .Replace("Logicool".ToUpper(), brandName.ToUpper()), "\\t|\\n|\\r", "");
-        }
-
-        public static bool IsVCRedistInstalled()
-        {
-            try
-            {
-                RegistryKey registryKey = Registry.LocalMachine.OpenSubKey("SOFTWARE\\Microsoft\\DevDiv\\VC\\Servicing\\14.0\\RuntimeMinimum", writable: false);
-                if (registryKey != null && ((string)registryKey.GetValue("Version")).StartsWith("14"))
-                {
-                    return true;
-                }
-            }
-            catch
-            {
-                return false;
-            }
-            return false;
-        }
     }
 
 }
