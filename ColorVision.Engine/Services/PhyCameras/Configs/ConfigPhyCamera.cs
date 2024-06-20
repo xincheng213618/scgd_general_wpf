@@ -44,8 +44,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         TOUP_USB
     };
 
-
-
     /// <summary>
     /// 相机配置
     /// </summary>
@@ -75,8 +73,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
                 return CameraType.CV_MIL_CL;
             return CameraType.CameraType_Total; // Default case if no match found
         }
-
-
 
         public bool UpdateCameraModeAndIBM(CameraType eCamType)
         {
@@ -149,7 +145,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
                     // Handle default case if needed
                     break;
             }
-
             return false;
         }
 
