@@ -168,14 +168,9 @@ namespace ColorVision.Engine.Templates
 
         public override string NewCreateFileName(string FileName)
         {
-            List<string> Names = new();
-            foreach (var item in TemplateParams)
-            {
-                Names.Add(item.Key);
-            }
             for (int i = 1; i < 9999; i++)
             {
-                if (!Names.Contains($"{FileName}{i}"))
+                if (!ExitsTemplateName($"{FileName}{i}"))
                     return $"{FileName}{i}";
             }
             return FileName;

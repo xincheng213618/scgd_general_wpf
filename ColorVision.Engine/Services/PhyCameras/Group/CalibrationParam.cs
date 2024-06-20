@@ -8,6 +8,7 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates;
 using ColorVision.UserSpace;
 using cvColorVision;
+using NPOI.XWPF.UserModel;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -184,7 +185,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
         public CalibrationControl CalibrationControl { get; set; }
         public override UserControl GetUserControl() => CalibrationControl;
 
-
+        public override bool ExitsTemplateName(string templateName)
+        {
+            ModMasterDao modMasterDao = new ModMasterDao(ModMasterType.Calibration);
+            List<ModMasterModel> smus = modMasterDao.GetAll(UserConfig.Instance.TenantId);
+           return smus.Any(a => a.Name?.Equals(templateName, StringComparison.OrdinalIgnoreCase) ?? false);
+        }
         public override void SetUserControlDataContext(int index)
         {
             if (index < 0 || index >= TemplateParams.Count) return;
