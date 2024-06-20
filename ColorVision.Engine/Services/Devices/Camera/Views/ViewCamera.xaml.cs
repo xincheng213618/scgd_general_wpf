@@ -558,6 +558,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
             int result = ConvertXYZ.CM_SetFilter(ConvertXYZ.Handle, poiParams.DatumArea.Filter.Enable , poiParams.DatumArea.Filter.Threshold);
             log.Info($"CM_SetFilter: {result}");
+            result = ConvertXYZ.CM_SetFilterNoArea(ConvertXYZ.Handle, poiParams.DatumArea.Filter.NoAreaEnable, poiParams.DatumArea.Filter.Threshold);
+            result = ConvertXYZ.CM_SetFilterXYZ(ConvertXYZ.Handle, poiParams.DatumArea.Filter.XYZEnable, (int)poiParams.DatumArea.Filter.XYZType, poiParams.DatumArea.Filter.Threshold);
 
             foreach (var item in poiParams.PoiPoints)
             {

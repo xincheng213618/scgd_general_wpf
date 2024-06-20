@@ -33,7 +33,7 @@ namespace cvColorVision
         public unsafe static extern int CM_SetFilterNoArea(IntPtr handle, bool bEnable, float fthreshold);
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetFilterXYZ", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
-        public unsafe static extern int CM_SetFilterXYZ(IntPtr handle, bool bEnable,bool nType, float fthreshold);
+        public unsafe static extern int CM_SetFilterXYZ(IntPtr handle, bool bEnable,int nType, float fthreshold);
 
 
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_GetXYZxyuvCircle", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
