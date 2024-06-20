@@ -97,10 +97,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
             }
 
-
-            ComboBoxLayers.ItemsSource  =from e1 in Enum.GetValues(typeof(ImageLayer)).Cast<ImageLayer>()
-                                         select new KeyValuePair<string, ImageLayer>(e1.ToString(), e1);
-
             netFileUtil = new NetFileUtil();
             netFileUtil.handler += NetFileUtil_handler;
             DeviceService.MsgReturnReceived += DeviceService_OnMessageRecved;
@@ -323,6 +319,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         }
                     }
                 }
+
+                ComboBoxLayers.Text = "Src";
             }
         }
 
@@ -445,38 +443,25 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-           if (sender is ComboBox comboBox && comboBox.SelectedValue is ImageLayer imageLayer)
+           if (sender is ComboBox comboBox )
             {
                 if (listView1.SelectedIndex > -1)
                 {
                     var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-                    switch (imageLayer)
-                    {
-                        case ImageLayer.Src:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.SRC);
-                            break;
-                        case ImageLayer.R:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_R);
-                            break;
-                        case ImageLayer.G:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_G);
-                            break;
-                        case ImageLayer.B:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_B);
-                            break;
-                        case ImageLayer.X:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_X);
-                            break;
-                        case ImageLayer.Y:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Y);
-                            break;
-                        case ImageLayer.Z:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Z);
-                            break;
-                        default:
-                            break;
-                    }
-
+                    if (comboBox.Text == "Src")
+                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.SRC);
+                    if (comboBox.Text == "R")
+                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_R);
+                    if (comboBox.Text == "G")
+                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_G);
+                    if (comboBox.Text == "B")
+                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_B);
+                    if (comboBox.Text == "X")
+                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_X);
+                    if (comboBox.Text == "Y")
+                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Y);
+                    if (comboBox.Text == "Z")
+                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Z);
                 }
                 else
                 {

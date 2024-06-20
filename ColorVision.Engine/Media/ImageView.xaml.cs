@@ -17,9 +17,11 @@ using SkiaSharp.Views.WPF;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -34,7 +36,7 @@ namespace ColorVision.Engine.Media
     /// <summary>
     /// ImageView.xaml 的交互逻辑
     /// </summary>
-    public partial class ImageView : UserControl, IView,IDisposable
+    public partial class ImageView : UserControl, IView,IDisposable, INotifyPropertyChanged
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(ImageView));
         public ToolBarTop ToolBarTop { get; set; }
@@ -52,6 +54,12 @@ namespace ColorVision.Engine.Media
         {
             GC.SuppressFinalize(this);
         }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        /// <summary>
+        /// 消息通知事件
+        /// </summary>
+        public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
@@ -906,7 +914,8 @@ namespace ColorVision.Engine.Media
             RowDefinitionEnd.Height = new GridLength((170.0 / 255.0) * PseudoSlider.ValueStart);
             DebounceTimer.AddOrResetTimer("RenderPseudo",100, RenderPseudo);
         }
-        public bool IsCVCIE { get; set; }
+        public bool IsCVCIE { get => _IsCVCIE; set { _IsCVCIE = value; NotifyPropertyChanged(); } }
+        private bool _IsCVCIE;
 
         public void ShowCVCIE(object sender, ImageInfo imageInfo)
         {

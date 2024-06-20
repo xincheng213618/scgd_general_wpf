@@ -3,8 +3,6 @@ using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Languages;
 using ColorVision.Wizards;
-using log4net;
-using log4net.Config;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
