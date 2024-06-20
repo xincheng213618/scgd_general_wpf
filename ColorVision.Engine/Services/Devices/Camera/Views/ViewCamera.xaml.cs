@@ -552,7 +552,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void CalculPOI_Click(object sender, RoutedEventArgs e)
         {
-            if (ImageView.ConvertXYZhandle ==IntPtr.Zero)
+            if (!ImageView.IsCVCIE)
             {
                 MessageBox.Show("仅对CVCIE图像支持");
                 return;
@@ -571,19 +571,20 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             PoiParam.LoadPoiDetailFromDB(poiParams);
 
             ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
-            int result = ConvertXYZ.CM_SetFilter(ImageView.ConvertXYZhandle, poiParams.DatumArea.Filter.Enable , poiParams.DatumArea.Filter.Threshold);
+            int result = ConvertXYZ.CM_SetFilter(ConvertXYZ.Handle, poiParams.DatumArea.Filter.Enable , poiParams.DatumArea.Filter.Threshold);
             log.Info($"CM_SetFilter: {result}");
+
             foreach (var item in poiParams.PoiPoints)
             {
                 POIPoint pOIPoint = new POIPoint() { Id = item.Id, Name = item.Name, PixelX = (int)item.PixX, PixelY = (int)item.PixY, PointType = (POIPointTypes)item.PointType, Height = (int)item.PixHeight, Width = (int)item.PixWidth };
-                var sss = GetCVCIE(ImageView.ConvertXYZhandle, pOIPoint);
+                var sss = GetCVCIE(pOIPoint);
                 PoiResultCIExyuvDatas.Add(sss);
             }
             WindowCVCIE windowCIE = new WindowCVCIE(PoiResultCIExyuvDatas) { Owner = Application.Current.GetActiveWindow() };
             windowCIE.Show();
         }
 
-        public static PoiResultCIExyuvData GetCVCIE(IntPtr ConvertXYZhandle, POIPoint pOIPoint)
+        public static PoiResultCIExyuvData GetCVCIE(POIPoint pOIPoint)
         {
             int x = pOIPoint.PixelX; int y = pOIPoint.PixelY; int rect = pOIPoint.Width; int rect2 = pOIPoint.Height;
             PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData();
@@ -600,9 +601,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
             _ = pOIPoint.PointType switch
             {
-                POIPointTypes.SolidPoint => ConvertXYZ.CM_GetXYZxyuvCircle(ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1),
-                POIPointTypes.Rect => ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2),
-                POIPointTypes.None or POIPointTypes.Circle or POIPointTypes.Mask or _ => ConvertXYZ.CM_GetXYZxyuvCircle(ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv,(int)(rect/2)),
+                POIPointTypes.SolidPoint => ConvertXYZ.CM_GetXYZxyuvCircle(ConvertXYZ.Handle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1),
+                POIPointTypes.Rect => ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZ.Handle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2),
+                POIPointTypes.None or POIPointTypes.Circle or POIPointTypes.Mask or _ => ConvertXYZ.CM_GetXYZxyuvCircle(ConvertXYZ.Handle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv,(int)(rect/2)),
             };
             poiResultCIExyuvData.u = du;
             poiResultCIExyuvData.v = dv;
@@ -613,13 +614,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             poiResultCIExyuvData.Z = dZVal;
             poiResultCIExyuvData.CCT = CCT;
             poiResultCIExyuvData.Wave = Wave;
-
             return poiResultCIExyuvData;
         }
 
         private void CalculMTF_Click(object sender, RoutedEventArgs e)
         {
-            if (ImageView.ConvertXYZhandle == IntPtr.Zero)
+            if (!ImageView.IsCVCIE)
             {
                 MessageBox.Show("仅对CVCIE图像支持");
                 return;

@@ -7,6 +7,14 @@ using System.Threading.Tasks;
 
 namespace ColorVision.UI
 {
+    /// <summary>
+    /// 主窗口的加载事件
+    /// </summary>
+    public interface IMainWindowInitialized
+    {
+        void Initialize();
+    }
+
     public interface IMessageUpdater
     {
         void UpdateMessage(string message);

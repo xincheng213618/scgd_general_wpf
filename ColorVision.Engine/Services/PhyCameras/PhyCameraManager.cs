@@ -218,9 +218,6 @@ namespace ColorVision.Engine.Services.PhyCameras
                 }
             }
 
-            foreach (var phyCamera in PhyCameras)
-            {
-            }
             Loaded?.Invoke(this, EventArgs.Empty);
         }
 

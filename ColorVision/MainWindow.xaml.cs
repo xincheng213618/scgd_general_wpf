@@ -1,7 +1,6 @@
 ﻿using ColorVision.Adorners;
 using ColorVision.Common.Utilities;
 using ColorVision.Scheduler;
-using ColorVision.Settings;
 using ColorVision.Solution;
 using ColorVision.Solution.Searches;
 using ColorVision.Themes;
@@ -10,13 +9,10 @@ using ColorVision.UI.Configs;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using ColorVision.UI.Views;
-using ColorVision.Update;
 using ColorVision.UserSpace;
 using log4net;
-using Microsoft.DwayneNeed.Win32.User32;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
-using ScottPlot.Palettes;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -24,15 +20,12 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Data;
-using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision
@@ -44,10 +37,8 @@ namespace ColorVision
     /// 
     public partial class MainWindow : Window
     {
-
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
         public ViewGridManager ViewGridManager { get; set; }
-
         public static MainWindowConfig MainWindowConfig => MainWindowConfig.Instance;
 
         public MainWindow()
@@ -73,7 +64,6 @@ namespace ColorVision
                 };
                 if (ThemeManager.Current.SystemTheme == Theme.Dark)
                     Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
-
             }
 
             if (WindowConfig.IsExist)
@@ -103,30 +93,33 @@ namespace ColorVision
             Closed += (s, e) => { Environment.Exit(-1); };
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
 
-
-            Task.Run(CheckVersion);
-
             Task.Run(CheckCertificate);
-
-
             SolutionTab1.Content = new TreeViewControl();
-
             PluginLoader.LoadPlugins("Plugins");
-
-
             PluginLoader.LoadAssembly<IPlugin>(Assembly.GetExecutingAssembly());
             MenuManager.GetInstance().LoadMenuItemFromAssembly();
             this.LoadHotKeyFromAssembly();
 
-            if (AutoUpdateConfig.Instance.IsAutoUpdate)
-            {
-                Task.Run(CheckUpdate);
-            }
             QuartzSchedulerManager.GetInstance();
 
-
-
             Application.Current.MainWindow = this;
+
+
+            LoadIMainWindowInitialized();
+        }
+
+        public static void LoadIMainWindowInitialized() 
+        {
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IMainWindowInitialized).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is IMainWindowInitialized componentInitialize)
+                    {
+                        componentInitialize.Initialize();
+                    }
+                }
+            }
         }
 
 
@@ -183,60 +176,9 @@ namespace ColorVision
             } 
         }
 
-        public static async Task CheckVersion()
-        {
-            await Task.Delay(500);
-            if (Assembly.GetExecutingAssembly().GetName().Version > MainWindowConfig.Instance.LastOpenVersion)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    try
-                    {
-                        string? currentVersion = Assembly.GetExecutingAssembly().GetName()?.Version?.ToString();
-                        string changelogPath = "CHANGELOG.md";
-
-                        // 读取CHANGELOG.md文件的所有内容
-                        string changelogContent = File.ReadAllText(changelogPath);
-
-                        // 使用正则表达式来匹配当前版本的日志条目
-                        string versionPattern = $"## \\[{currentVersion}\\].*?\\n(.*?)(?=\\n## |$)";
-                        Match match = Regex.Match(changelogContent, versionPattern, RegexOptions.Singleline);
-
-                        if (match.Success)
-                        {
-                            // 如果找到匹配项，提取变更日志
-                            string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
-                            // 显示变更日志
-                            MessageBox.Show(Application.Current.GetActiveWindow(), $"{changeLogForCurrentVersion.ReplaceLineEndings()}", $"{currentVersion} {Properties.Resources.ChangeLog}：");
-                        }
-                        else
-                        {
-                            // 如果未找到匹配项，说明没有为当前版本列出变更日志
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "1.修复了一些已知的BUG", $"{currentVersion} {Properties.Resources.ChangeLog}：");
-                        }
-
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Error(ex.Message);
-                    }
-                });
-                MainWindowConfig.Instance.LastOpenVersion = Assembly.GetExecutingAssembly().GetName().Version;
-            }
-        }
 
 
 
-        public static async Task CheckUpdate()
-        {
-            await Task.Delay(1000);
-            await Application.Current.Dispatcher.InvokeAsync(async () =>
-            {
-                AutoUpdater.DeleteAllCachedUpdateFiles();
-                AutoUpdater autoUpdater = AutoUpdater.GetInstance();
-                await autoUpdater.CheckAndUpdate(false);
-            });
-        }
 
 
         private void StackPanelSPD_Initialized(object sender, EventArgs e)

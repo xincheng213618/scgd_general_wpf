@@ -698,11 +698,7 @@ namespace ColorVision.Engine.Media
                 int index = CVFileUtil.ReadCIEFileHeader(FilePath, out cVCIEFile);
                 CVFileUtil.ReadCIEFileData(FilePath, ref cVCIEFile, index);
 
-                ConvertXYZhandle = new WindowInteropHelper(Application.Current.GetActiveWindow()).Handle;
-                int result = ConvertXYZ.CM_InitXYZ(ConvertXYZhandle);
-                logger.Debug($"CM_InitXYZ :{result}");
-
-                result = ConvertXYZ.CM_SetBufferXYZ(ConvertXYZhandle, (uint)cVCIEFile.cols, (uint)cVCIEFile.rows, (uint)cVCIEFile.bpp, (uint)cVCIEFile.channels, cVCIEFile.data);
+                int result = ConvertXYZ.CM_SetBufferXYZ(ConvertXYZ.Handle, (uint)cVCIEFile.rows, (uint)cVCIEFile.cols, (uint)cVCIEFile.bpp, (uint)cVCIEFile.channels, cVCIEFile.data);
                 logger.Debug($"CM_SetBufferXYZ :{result}");
 
                 ToolBarTop.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
@@ -912,8 +908,6 @@ namespace ColorVision.Engine.Media
         }
         public bool IsCVCIE { get; set; }
 
-        public IntPtr ConvertXYZhandle { get; set; } = IntPtr.Zero;
-
         public void ShowCVCIE(object sender, ImageInfo imageInfo)
         {
             int xx = imageInfo.Y;
@@ -922,7 +916,7 @@ namespace ColorVision.Engine.Media
             float dYVal = 0;
             float dZVal = 0;
             float dx = 0, dy = 0, du = 0, dv = 0;
-            _= ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZhandle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
+            _= ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZ.Handle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
             ToolBarTop.MouseMagnifier.DrawImageCVCIE(imageInfo, dXVal, dYVal, dZVal, dx, dy, du, dv);
         }
 
@@ -946,7 +940,7 @@ namespace ColorVision.Engine.Media
                         float dZVal = 0;
                         float dx =0, dy =0,du = 0,dv = 0;
 
-                        int result = ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZhandle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
+                        int result = ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZ.Handle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
                         logger.Debug($"CM_GetXYZxyuvRect :{result},res");
 
                         windowCIE.ChangeSelect(dx, dy);
