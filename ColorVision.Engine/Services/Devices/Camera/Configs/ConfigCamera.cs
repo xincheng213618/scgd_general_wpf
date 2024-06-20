@@ -18,7 +18,18 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         private string _CameraID;
 
         [JsonIgnore]
-        public string? CameraCode => CameraID == null ? null : PhyCameraManager.GetInstance().PhyCameras.First(a => a.Name == CameraID).SysResourceModel.Code;
+       public string? CameraCode
+        {
+            get
+            {
+                if (string.IsNullOrWhiteSpace(CameraID)) return null;
+                var PhyCamera = PhyCameraManager.GetInstance().PhyCameras.First(a => a.Name == CameraID);
+                if (PhyCamera != null)
+                    return PhyCamera.SysResourceModel.Code;
+                return null;
+
+            }
+        }
 
         public CameraType CameraType { get => _CameraType; set { if (_CameraType == value) return; _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); UpdateCameraModeAndIBM(value); } }
         private CameraType _CameraType;
