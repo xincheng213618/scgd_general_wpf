@@ -101,7 +101,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public double SaturationB { get => _SaturationB; set { _SaturationB = value; NotifyPropertyChanged(); } }
         private double _SaturationB = -1;
 
-        public CFWPORT CFW { get; set; } = new CFWPORT();
+        public CFWPORT CFW { get => _CFW; set { _CFW = value; NotifyPropertyChanged(); } }
+        private CFWPORT _CFW = new CFWPORT();
 
         public MotorConfig MotorConfig { get => _MotorConfig; set { _MotorConfig = value; NotifyPropertyChanged(); } }
         private MotorConfig _MotorConfig = new MotorConfig();

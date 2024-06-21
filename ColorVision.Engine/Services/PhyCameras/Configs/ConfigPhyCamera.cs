@@ -151,7 +151,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public string Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }
         private string _Code;
 
-        public CameraType CameraType { get => _CameraType; set { if (_CameraType == value) return;  _CameraType = value;  NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); UpdateCameraModeAndIBM(value); } }
+        public CameraType CameraType { get => _CameraType; set { if (_CameraType == value) return;  _CameraType = value;  NotifyPropertyChanged(); UpdateCameraModeAndIBM(value); } }
         private CameraType _CameraType;
 
         public CameraMode CameraMode { get => _CameraMode; set { if (_CameraMode == value) return; _CameraMode = value; NotifyPropertyChanged(); CameraType = GetCameraType(_CameraMode, _CameraModel); } }
