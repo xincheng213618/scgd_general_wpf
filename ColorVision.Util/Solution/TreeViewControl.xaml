@@ -36,12 +36,13 @@
 
 
         <Border BorderThickness="0" Grid.Row="2" CornerRadius="4"  Padding="0" >
-            <TreeView  	x:Name="SolutionTreeView"  BorderThickness="0" Background="{DynamicResource GlobalBackground}">
+            <TreeView  	x:Name="SolutionTreeView"  BorderThickness="0" Background="{DynamicResource GlobalBackground}" ScrollViewer.CanContentScroll="False">
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="{x:Type TreeViewItem}"  BasedOn="{StaticResource TreeViewItemBaseStyle }">
                         <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
                         <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
                         <Setter Property="ContextMenu" Value="{Binding ContextMenu}" />
+                        <EventSetter Event="RequestBringIntoView" Handler="TreeViewItem_RequestBringIntoView"/>
                         <Setter Property="local:DoubleClickCommandBehavior.DoubleClickCommand" Value="{Binding OpenCommand}" />
                     </Style>
                 </TreeView.ItemContainerStyle>
