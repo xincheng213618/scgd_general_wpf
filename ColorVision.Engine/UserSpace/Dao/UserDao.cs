@@ -17,7 +17,6 @@ namespace ColorVision.UserSpace.Dao
             MySqlControl = MySqlControl.GetInstance();
         }
 
-
         public void GetAllUser()
         {
             string query = "SELECT * FROM t_scgd_sys_user WHERE 1=1";
@@ -28,17 +27,23 @@ namespace ColorVision.UserSpace.Dao
             {
                 Console.WriteLine(reader.GetString(0));
             }
-
         }
+
+        // 其他属性和方法...
 
         public bool Checklogin(string account, string password)
         {
-            try
+            bool isValidUser = false;
+
+            string query = "SELECT COUNT(1) FROM Users WHERE Account = @Account AND UserPwd = @UserPwd";
+
+            using (var command = new MySqlCommand(query, MySqlConnection))
             {
-                string query = "SELECT pwd FROM t_scgd_sys_user WHERE name = @name";
-                using (var command = new MySqlCommand(query, MySqlConnection))
+                command.Parameters.AddWithValue("@Account", account);
+                command.Parameters.AddWithValue("@UserPwd", password);
+
+                try
                 {
-                    command.Parameters.AddWithValue("@name", account);
                     object result = command.ExecuteScalar();
                     if (result != null)
                     {
@@ -47,13 +52,13 @@ namespace ColorVision.UserSpace.Dao
                     }
                     return false;
                 }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("An error occurred: " + ex.Message);
+                }
             }
-            catch (MySqlException ex)
-            {
-                // Handle exception
-                Console.WriteLine("MySql error: " + ex.Message);
-                return false;
-            }
+
+            return isValidUser;
         }
     }
 }

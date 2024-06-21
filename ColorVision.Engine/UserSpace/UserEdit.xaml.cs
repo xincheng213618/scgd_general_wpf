@@ -3,43 +3,35 @@ using System;
 using ColorVision.Common.MVVM;
 using System.Windows;
 using ColorVision.Themes;
+using ColorVision.Engine.UserSpace;
+using ColorVision.UserSpace;
 
-namespace ColorVision.UserSpace
+namespace ColorVision.Engine.UserSpace
 {
     /// <summary>
     /// UserEdit.xaml 的交互逻辑
     /// </summary>
     public partial class UserEdit : BaseWindow
     {
-        public UserConfig UserConfig { get; set; }
+        public UserManager UserManager { get; set; }
         public UserConfig UserConfigCopy { get; set; }
 
-        public UserEdit(UserConfig userConfig)
+        public UserEdit(UserManager userManager)
         {
-            UserConfig = userConfig;
-            UserConfigCopy = new UserConfig();
+            UserManager = userManager;
             InitializeComponent();
             this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-
+            UserConfigCopy = UserManager.Config.Clone();
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
 
         private void Cancel_Click(object sender, RoutedEventArgs e)
         {
 
-        }
-
-        private void Ok_Click(object sender, RoutedEventArgs e)
-        {
-            UserConfigCopy.CopyTo(UserConfig);
         }
     }
 }

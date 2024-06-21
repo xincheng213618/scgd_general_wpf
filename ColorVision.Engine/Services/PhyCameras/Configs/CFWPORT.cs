@@ -18,6 +18,13 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
                     NotifyPropertyChanged();
                     return;
                 }
+
+                if (value < 1)
+                {
+                    _CFWNum = 1;
+                    NotifyPropertyChanged();
+                    return;
+                }
                 _CFWNum = value; 
                 NotifyPropertyChanged();
                 NotifyPropertyChanged(nameof(IsCFWNum1)); 

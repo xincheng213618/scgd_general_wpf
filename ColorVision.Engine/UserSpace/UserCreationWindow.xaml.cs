@@ -26,9 +26,11 @@ namespace ColorVision.UserSpace
             CmPerMissionMode.ItemsSource = from e1 in Enum.GetValues(typeof(PermissionMode)).Cast<PermissionMode>()
                                            select new KeyValuePair<PermissionMode, string>(e1, e1.ToString());
         }
-        private void Button_Click(object sender, EventArgs e)
+
+        private void Button_Click(object sender, RoutedEventArgs e)
         {
             Authorization.Instance.PermissionMode = UserConfig.Instance.PerMissionMode;
+            this.Close();
         }
     }
 }
