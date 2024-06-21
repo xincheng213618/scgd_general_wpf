@@ -69,7 +69,7 @@
                                 <Button Content="重置" Margin="5" Height="100" Width="180" Command="{Binding ResetCommand}"/>
                             </UniformGrid>
                             <StackPanel  HorizontalAlignment="Right" VerticalAlignment="Bottom">
-                                <TextBlock  Text="{Binding SysResourceModel.Code}" />
+                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding SysResourceModel.Code}"/>
                             </StackPanel>
                         </Grid>
 
