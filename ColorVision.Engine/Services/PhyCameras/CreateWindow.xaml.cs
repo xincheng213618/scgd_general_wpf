@@ -138,6 +138,28 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            if (CreateConfig.CFW.CFWNum > 1)
+            {
+                CreateConfig.CFW.ChannelCfgs[3].Chtype = CreateConfig.CFW.ChannelCfgs[0].Chtype;
+                CreateConfig.CFW.ChannelCfgs[4].Chtype = CreateConfig.CFW.ChannelCfgs[1].Chtype;
+                CreateConfig.CFW.ChannelCfgs[5].Chtype = CreateConfig.CFW.ChannelCfgs[2].Chtype;
+            }
+            if (CreateConfig.CFW.CFWNum > 2)
+            {
+                CreateConfig.CFW.ChannelCfgs[6].Chtype = CreateConfig.CFW.ChannelCfgs[0].Chtype;
+                CreateConfig.CFW.ChannelCfgs[7].Chtype = CreateConfig.CFW.ChannelCfgs[1].Chtype;
+                CreateConfig.CFW.ChannelCfgs[8].Chtype = CreateConfig.CFW.ChannelCfgs[2].Chtype;
+            }
+            if (CreateConfig.CFW.CFWNum == 1)
+                CreateConfig.CFW.ChannelCfgs = CreateConfig.CFW.ChannelCfgs.GetRange(0, 3);
+            if (CreateConfig.CFW.CFWNum == 2)
+                CreateConfig.CFW.ChannelCfgs = CreateConfig.CFW.ChannelCfgs.GetRange(0, 6);
+            if (CreateConfig.CFW.CFWNum == 3)
+                CreateConfig.CFW.ChannelCfgs = CreateConfig.CFW.ChannelCfgs.GetRange(0, 9);
+
+
+
+
             SysResourceModel? sysResourceModel = SysResourceDao.Instance.GetByCode(CreateConfig.Code);
             if (sysResourceModel == null)
                 sysResourceModel = new SysResourceModel(CreateConfig.CameraID, CreateConfig.Code, (int)PhysicalResourceType.PhyCamera, UserConfig.Instance.TenantId);
