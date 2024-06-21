@@ -25,6 +25,7 @@ namespace ColorVision.Solution.V.Folders
             CopyFullPathCommand = new RelayCommand(a => Common.NativeMethods.Clipboard.SetText(DirectoryInfo.FullName), a => DirectoryInfo.Exists);
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Resources.Open, Command = OpenCommand });
+            ContextMenu.Items.Add(new MenuItem() { Header = Resources.Delete, Command = DeleteCommand });
 
             ContextMenu.Items.Add(new MenuItem() { Header = ColorVision.Util.Properties.Resources.MenuOpenFileInExplorer, Command = OpenFileInExplorerCommand });
             ContextMenu.Items.Add(new Separator());
@@ -68,13 +69,8 @@ namespace ColorVision.Solution.V.Folders
 
         public override void Delete()
         {
-            if (this is VFolder vFolder)
-            {
-                if (vFolder.Folder is IFolder folder)
-                {
-                    folder.Delete();
-                }
-            }
+            base.Delete();
+            Folder.Delete();
         }
 
         public override bool CanReName { get => _CanReName; set { _CanReName = value; NotifyPropertyChanged(); } }

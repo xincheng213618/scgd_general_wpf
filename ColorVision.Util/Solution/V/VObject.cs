@@ -57,6 +57,8 @@ namespace ColorVision.Solution.V
         public RelayCommand AddChildren { get; set; }
         public RelayCommand RemoveChildren { get; set; }
         public RelayCommand OpenCommand { get; set; }
+        public RelayCommand DeleteCommand { get; set; }
+
         public RelayCommand AttributesCommand { get; set; }
 
         public bool IsExpanded { get => _IsExpanded; set { _IsExpanded = value; NotifyPropertyChanged(); } }
@@ -72,6 +74,7 @@ namespace ColorVision.Solution.V
         {
             VisualChildren = new ObservableCollection<VObject>() { };
             OpenCommand = new RelayCommand((s) => Open(), (s) => { return Parent != null; });
+            DeleteCommand = new RelayCommand(s =>Delete());
         }
 
         public virtual void Delete()

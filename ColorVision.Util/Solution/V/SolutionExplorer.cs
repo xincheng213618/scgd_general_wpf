@@ -1,8 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Solution.V.Files;
 using ColorVision.Solution.V.Folders;
+using ColorVision.UI.Extension;
+using ColorVision.Util.Solution.V;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -10,28 +14,66 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using Wpf.Ui.Appearance;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace ColorVision.Solution.V
 {
+
+    /// <summary>
+    /// 解决方案配置
+    /// </summary>
+    public class SolutionConfig : ViewModelBase
+    {
+
+        public string FullPath
+        {
+            get => _FullPath;
+            set
+            {
+                _FullPath = value;
+                NotifyPropertyChanged();
+            }
+        }
+        private string _FullPath;
+
+        public ObservableCollection<string> Path { get; set; }
+
+        public bool Istrue
+        {
+            get => _Istrue;
+            set
+            {
+                _Istrue = value;
+                NotifyPropertyChanged();
+            }
+        }
+        private bool _Istrue;
+
+    }
 
     public class SolutionExplorer: VObject
     {
         public DirectoryInfo DirectoryInfo { get; set; }
         public RelayCommand OpenFileInExplorerCommand { get; set; }
         public RelayCommand ClearCacheCommand { get; set; }
+        public RelayCommand SaveCommand { get; set; }
 
         public static SolutionSetting Setting => SolutionSetting.Instance;
 
         FileSystemWatcher FileSystemWatcher { get; set; }
 
+        public SolutionConfig Config { get; set; }
+        
+        public FileInfo ConfigFileInfo { get; set; }
+
         public SolutionExplorer(string FullPath)
         {
             if (File.Exists(FullPath) && FullPath.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
             {
-                FileInfo fileInfo = new(FullPath);
-                if (fileInfo !=null)
+                ConfigFileInfo = new(FullPath);
+                if (ConfigFileInfo != null)
                 {
-                    DirectoryInfo = fileInfo.Directory ?? new DirectoryInfo(FullPath);
+                    DirectoryInfo = ConfigFileInfo.Directory ?? new DirectoryInfo(FullPath);
                     Name = Path.GetFileNameWithoutExtension(FullPath);
                     if (DirectoryInfo != null)
                     {
@@ -39,6 +81,9 @@ namespace ColorVision.Solution.V
                         DriveInfo = new DriveInfo(rootDirectory.FullName);
                     }
                 }
+
+                Config = JsonConvert.DeserializeObject<SolutionConfig>(File.ReadAllText(FullPath));
+                Config?.ToJsonNFile(FullPath);
             }
             else if(Directory.Exists(FullPath))
             {
@@ -99,6 +144,13 @@ namespace ColorVision.Solution.V
                 }
             });
 
+            AppDomain.CurrentDomain.ProcessExit += (s, e) => SaveConfig();
+            SaveCommand = new RelayCommand(a => SaveConfig());
+        }
+
+        public void SaveConfig()
+        {
+            Config?.ToJsonNFile(ConfigFileInfo.FullName);
         }
 
         public EventHandler VisualChildrenEventHandler { get; set; }
@@ -132,6 +184,7 @@ namespace ColorVision.Solution.V
         }
 
         public DriveInfo DriveInfo { get; set; }
+        public RelayCommand EditCommand { get; set; }
 
         public void GeneralContextMenu()
         {
@@ -143,6 +196,8 @@ namespace ColorVision.Solution.V
             ContextMenu.Items.Add(menuItem);
             MenuItem menuItem2 = new() { Header = "清除缓存", Command = ClearCacheCommand };
             ContextMenu.Items.Add(menuItem2);
+            EditCommand = new RelayCommand(a => new EditSolutionConfig(this).ShowDialog());
+            ContextMenu.Items.Add( new MenuItem (){ Header = "编辑", Command = EditCommand });
         }
 
 

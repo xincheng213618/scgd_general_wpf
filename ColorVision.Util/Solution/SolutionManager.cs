@@ -64,8 +64,6 @@ namespace ColorVision.Solution
         private static readonly object _locker = new();
         public static SolutionManager GetInstance() { lock (_locker) { _instance ??= new SolutionManager(); return _instance; } }
 
-        //工程配置文件
-        public SolutionConfig CurrentSolution { get; set; }
         public static SolutionSetting Setting => SolutionSetting.Instance;
         public RecentFileList SolutionHistory { get; set; } = new RecentFileList() { Persister = new RegistryPersister("Software\\ColorVision\\SolutionHistory") };
 
@@ -88,8 +86,6 @@ namespace ColorVision.Solution
         public SolutionManager()
         {
             SolutionExplorers = new ObservableCollection<SolutionExplorer>();
-
-            CurrentSolution = new SolutionConfig();
 
             SolutionLoaded += SolutionManager_SolutionLoaded;
 
@@ -137,10 +133,10 @@ namespace ColorVision.Solution
 
         private void SolutionManager_SolutionLoaded(object? sender, EventArgs e)
         {
-            if (sender is SolutionConfig solutionConfig)
+            if (sender is string solutionConfig)
             {
                 SolutionExplorers.Clear();
-                CurrentSolutionExplorer = new SolutionExplorer(solutionConfig.FullPath);
+                CurrentSolutionExplorer = new SolutionExplorer(solutionConfig);
                 SolutionExplorers.Add(CurrentSolutionExplorer);
             }
         }
@@ -153,10 +149,9 @@ namespace ColorVision.Solution
             if (File.Exists(FullPath)&& FullPath.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
             {
                 FileInfo fileInfo = new(FullPath);
-                CurrentSolution.FullPath = FullPath;
                 SolutionDirectory = fileInfo.Directory;
                 SolutionHistory.InsertFile(FullPath);
-                SolutionLoaded?.Invoke(CurrentSolution, new EventArgs());
+                SolutionLoaded?.Invoke(FullPath, new EventArgs());
                 return true;
             }
             else
@@ -173,7 +168,7 @@ namespace ColorVision.Solution
 
             DirectoryInfo directoryInfo = new DirectoryInfo(SolutionDirectoryPath);
             string slnName = directoryInfo.FullName + "\\" + directoryInfo.Name + ".cvsln";
-            CurrentSolution.ToJsonNFile(slnName);
+            new SolutionConfig().ToJsonNFile(slnName);
 
             SolutionCreated?.Invoke(slnName, new EventArgs());
             OpenSolution(slnName);
@@ -208,12 +203,5 @@ namespace ColorVision.Solution
             newCreatWindow.ShowDialog();
         }
 
-        public void ClearCache()
-        {
-            Directory.Delete(CurrentSolution.FullPath+ "\\Flow",true);
-            Directory.Delete(CurrentSolution.FullPath+ "\\.Cache", true);
-            Tool.CreateDirectoryMax(CurrentSolution.FullPath+ "\\Cache");
-            Tool.CreateDirectoryMax(CurrentSolution.FullPath+ "\\Flow");
-        }
     }
 }

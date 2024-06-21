@@ -1,6 +1,5 @@
 ﻿using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Properties;
-using ColorVision.Solution;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
@@ -151,7 +150,7 @@ namespace ColorVision.Engine.Services.Flow
         {
             System.Windows.Forms.OpenFileDialog ofd = new();
             ofd.Filter = "*.stn|*.stn";
-            ofd.InitialDirectory = SolutionManager.GetInstance().CurrentSolution.FullPath;
+            ofd.RestoreDirectory = true;
             if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
 
             ButtonSave.Visibility = Visibility.Visible;

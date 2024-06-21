@@ -4,6 +4,8 @@ using ColorVision.UI.Extension;
 using System.Windows.Media;
 using System.Windows.Controls;
 using ColorVision.Common.MVVM;
+using System;
+using System.Windows;
 
 namespace ColorVision.Solution.V.Folders
 {
@@ -50,7 +52,15 @@ namespace ColorVision.Solution.V.Folders
 
         public void Delete()
         {
-            throw new System.NotImplementedException();
+            try
+            {
+                DirectoryInfo.Delete(true);
+
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(ex.Message);
+            }
         }
 
         public void Open()
