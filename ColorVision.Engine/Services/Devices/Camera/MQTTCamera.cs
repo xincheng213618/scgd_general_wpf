@@ -279,8 +279,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 EventName = "AutoFocus",
                 Params = Params
             };
-            Params.Add("tAutoFocusCfg", Config.MotorConfig.AutoFocusConfig.ToJsonN());
-            return PublishAsyncClient(msg, Config.MotorConfig.AutoFocusConfig.nTimeout);
+            Params.Add("tAutoFocusCfg", Config.AutoFocusConfig.ToJsonN());
+            return PublishAsyncClient(msg, Config.AutoFocusConfig.nTimeout);
         }
 
         public MsgRecord GetAutoExpTime()

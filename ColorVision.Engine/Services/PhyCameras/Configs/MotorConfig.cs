@@ -6,6 +6,10 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 {
     public class MotorConfig : ViewModelBase
     {
+        public bool IsUseMotor { get => _IsUseMotor; set { _IsUseMotor = value; NotifyPropertyChanged(); } }
+        private bool _IsUseMotor;
+
+
         public FOCUS_COMMUN eFOCUSCOMMUN { get => _eFOCUSCOMMUN; set { _eFOCUSCOMMUN = value; NotifyPropertyChanged(); } }
         private FOCUS_COMMUN _eFOCUSCOMMUN;
 
@@ -14,8 +18,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         public int BaudRate { get => _BaudRate; set { _BaudRate = value; NotifyPropertyChanged(); } }
         private int _BaudRate = 115200;
-
-        public AutoFocusConfig AutoFocusConfig { get; set; } = new AutoFocusConfig();
 
         [JsonIgnore]
         public int Position { get => _Position; set { _Position = value; NotifyPropertyChanged(); } }

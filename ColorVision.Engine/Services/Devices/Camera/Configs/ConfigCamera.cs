@@ -103,11 +103,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
 
         public CFWPORT CFW { get; set; } = new CFWPORT();
 
-        public bool IsHaveMotor { get => _IsHaveMotor; set { _IsHaveMotor = value; NotifyPropertyChanged(); } }
-        private bool _IsHaveMotor;
+        public MotorConfig MotorConfig { get => _MotorConfig; set { _MotorConfig = value; NotifyPropertyChanged(); } }
+        private MotorConfig _MotorConfig = new MotorConfig();
 
-        public MotorConfig MotorConfig { get; set; } = new MotorConfig();
-          
+        public AutoFocusConfig AutoFocusConfig { get; set; } = new AutoFocusConfig();
+
         public PhyExpTimeCfg ExpTimeCfg { get; set; } = new PhyExpTimeCfg();
 
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();

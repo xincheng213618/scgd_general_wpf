@@ -116,44 +116,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             };
 
-
             List<int> BaudRates = new() { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
             List<string> Serials = new() { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10" };
 
-            TextBaudRate.ItemsSource = BaudRates;
-
-
-            TextSerial.ItemsSource = Serials;
 
             ComboxeEvaFunc.ItemsSource = from e1 in Enum.GetValues(typeof(EvaFunc)).Cast<EvaFunc>()
                                          select new KeyValuePair<EvaFunc, string>(e1, e1.ToString());
-
-            ComboxMotorType.ItemsSource = from e1 in Enum.GetValues(typeof(FOCUS_COMMUN)).Cast<FOCUS_COMMUN>()
-                                          select new KeyValuePair<FOCUS_COMMUN, string>(e1, e1.ToString());
-            int index = 0;
-            ComboxMotorType.SelectionChanged += (s, e) =>
-            {
-                if (index++ < 1)
-                    return;
-                switch (DeviceCamera.Config.MotorConfig.eFOCUSCOMMUN)
-                {
-                    case FOCUS_COMMUN.VID_SERIAL:
-                        DeviceCamera.Config.MotorConfig.BaudRate = 115200;
-                        break;
-                    case FOCUS_COMMUN.CANON_SERIAL:
-                        DeviceCamera.Config.MotorConfig.BaudRate = 38400;
-                        break;
-                    case FOCUS_COMMUN.NED_SERIAL:
-                        DeviceCamera.Config.MotorConfig.BaudRate = 115200;
-                        break;
-                    case FOCUS_COMMUN.LONGFOOT_SERIAL:
-                        DeviceCamera.Config.MotorConfig.BaudRate = 115200;
-                        break;
-                    default:
-                        break;
-                }
-            };
-
             EditConfig = DeviceCamera.Config.Clone();
             DataContext = DeviceCamera;
             EditContent.DataContext = EditConfig;
@@ -179,8 +147,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 var phyCamera = PhyCameraManager.GetInstance().PhyCameras[CameraPhyID.SelectedIndex];
                 EditConfig.Channel = phyCamera.Config.Channel;
-                EditConfig.CFW.CopyFrom(phyCamera.Config.CFW);
-                EditConfig.MotorConfig.CopyFrom(phyCamera.Config.MotorConfig);
+                EditConfig.CFW = phyCamera.Config.CFW;
+                EditConfig.MotorConfig = phyCamera.Config.MotorConfig;
 
                 EditConfig.CameraID = phyCamera.Config.CameraID;
                 EditConfig.CameraType = phyCamera.Config.CameraType;

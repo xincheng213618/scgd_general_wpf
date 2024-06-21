@@ -28,7 +28,5 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         public uint nTimeout { get => _nTimeout; set { _nTimeout = value; NotifyPropertyChanged(); } }
         private uint _nTimeout = 30000;
-
-
     }
 }

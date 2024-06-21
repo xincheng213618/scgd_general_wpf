@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Services
 
         public static async void SelectAndFocusFirstNode(TreeView treeView)
         {
-            await Task.Delay(30);
+            await Task.Delay(100);
             if (treeView.Items.Count > 0)
             {
                 if (treeView.SelectedItem == null && treeView.ItemContainerGenerator.ContainerFromIndex(0) is TreeViewItem firstNode)

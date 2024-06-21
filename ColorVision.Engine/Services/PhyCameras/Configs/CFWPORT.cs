@@ -7,6 +7,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 {
     public class CFWPORT : ViewModelBase
     {
+        public bool IsUseCFW { get => _IsUseCFW; set { _IsUseCFW = value; NotifyPropertyChanged(); } }
+        private bool _IsUseCFW;
+
         public bool IsCOM { get => _IsCOM; set { _IsCOM = value; NotifyPropertyChanged(); } }
         private bool _IsCOM;
 
