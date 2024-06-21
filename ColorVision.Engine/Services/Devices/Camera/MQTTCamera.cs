@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.UI.Extension;
 using cvColorVision;
 using CVCommCore;
 using CVCommCore.CVImage;
@@ -278,20 +279,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 EventName = "AutoFocus",
                 Params = Params
             };
-
-            var tAutoFocusCfg = new Dictionary<string, object>(){
-                                { "forwardparam", Config.MotorConfig.AutoFocusConfig.Forwardparam} ,
-                                { "curtailparam", Config.MotorConfig.AutoFocusConfig.Curtailparam},
-                                { "curStep", Config.MotorConfig.AutoFocusConfig.CurStep},
-                                { "stopStep", Config.MotorConfig.AutoFocusConfig.StopStep},
-                                { "minPosition", Config.MotorConfig.AutoFocusConfig.MinPosition},
-                                { "maxPosition", Config.MotorConfig.AutoFocusConfig.MaxPosition},
-                                { "eEvaFunc", Config.MotorConfig.AutoFocusConfig.EvaFunc},
-                                { "dMinValue", Config.MotorConfig.AutoFocusConfig.MinValue},
-                                { "nTimeout",Config.MotorConfig.AutoFocusConfig.nTimeout}
-                            };
-
-            Params.Add("tAutoFocusCfg", tAutoFocusCfg);
+            Params.Add("tAutoFocusCfg", Config.MotorConfig.AutoFocusConfig.ToJsonN());
             return PublishAsyncClient(msg, Config.MotorConfig.AutoFocusConfig.nTimeout);
         }
 

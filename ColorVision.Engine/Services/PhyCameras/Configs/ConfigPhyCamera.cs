@@ -1,7 +1,5 @@
 ﻿#pragma warning disable CA1707
 using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.PhyCameras.Configs;
-using ColorVision.Engine.Services.Devices.Camera.Configs;
 using cvColorVision;
 using Newtonsoft.Json;
 using System;

@@ -3,7 +3,7 @@ using ColorVision.Common.MVVM;
 using System.Windows;
 
 namespace ColorVision.Engine.Services.PhyCameras.Configs
-{ 
+{
     public enum CameraConfigType
     {
         Camera = 0,

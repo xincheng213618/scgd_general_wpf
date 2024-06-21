@@ -1,7 +1,7 @@
 ﻿using cvColorVision;
 using ColorVision.Common.MVVM;
 
-namespace ColorVision.Engine.Services.Devices.Camera.Configs
+namespace ColorVision.Engine.Services.PhyCameras.Configs
 {
     public class AutoFocusConfig : ViewModelBase
     {
