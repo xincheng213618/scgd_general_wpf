@@ -69,14 +69,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 lastPhyCamera = phyCamera;
             }          
             Config.Channel = e.Channel;
-            Config.CFW = e.CFW;
-            Config.MotorConfig = e.MotorConfig;
+            Config.CFW.CopyFrom(e.CFW);
+            Config.MotorConfig.CopyFrom(e.MotorConfig);
             Config.CameraID = e.CameraID;
             Config.CameraType = e.CameraType;
             Config.CameraMode = e.CameraMode;
             Config.CameraModel = e.CameraModel;
             Config.TakeImageMode = e.TakeImageMode;
             Config.ImageBpp = e.ImageBpp;
+            SaveConfig();
         }
 
         [RequiresPermission(PermissionMode.Administrator)]
