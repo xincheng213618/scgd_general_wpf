@@ -82,6 +82,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             msgRecord.MsgSucessed += (e) =>
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(),"GetAllCameraID Sucess");
+                PhyCameraManager.GetInstance().LoadPhyCamera();
             };
         }
 
