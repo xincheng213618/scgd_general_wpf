@@ -186,34 +186,16 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                 if (File.Exists(result.FilePath))
                 {
-                    var FileData = netFileUtil.OpenLocalCVFile(result.FilePath);
-                    OpenImage(FileData);
-                }
-                else
-                {
-                    switch (result.ResultType)
+                    if (CVFileUtil.IsCIEFile(result.FilePath))
                     {
-                        case AlgorithmResultType.POI_XYZ:
-                        case AlgorithmResultType.POI_Y:
-                            netFileUtil.OpenLocalFile(result.FilePath, FileExtType.CIE);
-                            break;
-                        case AlgorithmResultType.SFR:
-                        case AlgorithmResultType.MTF:
-                        case AlgorithmResultType.FOV:
-                        case AlgorithmResultType.Distortion:
-                            break;
-                        case AlgorithmResultType.Ghost:
-                            netFileUtil.OpenLocalFile(result.FilePath, FileExtType.Tif);
-                            break;
-
-                        case AlgorithmResultType.LEDStripDetection:
-                            netFileUtil.OpenLocalFile(result.FilePath, FileExtType.Tif);
-                            break;
-                        default:
-                            break;
+                        var FileData = netFileUtil.OpenLocalCVFile(result.FilePath);
+                        OpenImage(FileData);
+                    }
+                    else
+                    {
+                        ImageView.OpenImage(result.FilePath);
                     }
                 }
-
 
                 switch (result.ResultType)
                 {
