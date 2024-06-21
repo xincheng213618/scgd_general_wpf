@@ -30,7 +30,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
 
             }
         }
-
         public CameraType CameraType { get => _CameraType; set { if (_CameraType == value) return; _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); UpdateCameraModeAndIBM(value); } }
         private CameraType _CameraType;
 
@@ -110,8 +109,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public MotorConfig MotorConfig { get; set; } = new MotorConfig();
           
         public PhyExpTimeCfg ExpTimeCfg { get; set; } = new PhyExpTimeCfg();
-
-        public PhyCameraCfg CameraCfg { get; set; } = new PhyCameraCfg();
 
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 

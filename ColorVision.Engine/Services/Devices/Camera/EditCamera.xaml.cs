@@ -179,13 +179,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 var phyCamera = PhyCameraManager.GetInstance().PhyCameras[CameraPhyID.SelectedIndex];
                 EditConfig.Channel = phyCamera.Config.Channel;
-                EditConfig.CameraCfg.CopyFrom(phyCamera.Config.CameraCfg);
                 EditConfig.CFW.CopyFrom(phyCamera.Config.CFW);
+                EditConfig.MotorConfig.CopyFrom(phyCamera.Config.MotorConfig);
+
                 EditConfig.CameraID = phyCamera.Config.CameraID;
                 EditConfig.CameraType = phyCamera.Config.CameraType;
                 EditConfig.CameraMode = phyCamera.Config.CameraMode;
                 EditConfig.CameraModel = phyCamera.Config.CameraModel;
-
                 EditConfig.TakeImageMode = phyCamera.Config.TakeImageMode;
                 EditConfig.ImageBpp = phyCamera.Config.ImageBpp;
             }

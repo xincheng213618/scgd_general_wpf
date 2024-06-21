@@ -9,7 +9,7 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:CreateWindow}"
-        Title="创建设备" Height="400" Width="400" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+        Title="创建设备" Height="400" Width="570" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
     <Grid Margin="5">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>

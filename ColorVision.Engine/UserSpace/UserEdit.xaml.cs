@@ -1,17 +1,18 @@
-﻿using ColorVision.Themes.Controls;
-using System;
-using ColorVision.Common.MVVM;
-using System.Windows;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
-using ColorVision.Engine.UserSpace;
+using ColorVision.UI.Authorizations;
 using ColorVision.UserSpace;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows;
 
 namespace ColorVision.Engine.UserSpace
 {
     /// <summary>
     /// UserEdit.xaml 的交互逻辑
     /// </summary>
-    public partial class UserEdit : BaseWindow
+    public partial class UserEdit : Window
     {
         public UserManager UserManager { get; set; }
         public UserConfig UserConfigCopy { get; set; }
@@ -25,12 +26,19 @@ namespace ColorVision.Engine.UserSpace
 
         private void Window_Initialized(object sender, EventArgs e)
         {
+            this.Title = $"{Properties.Resources.Edit} {UserManager.Config.Account} 个人资料"; 
             UserConfigCopy = UserManager.Config.Clone();
+            this.DataContext = UserManager;
+            EditContent.DataContext = UserConfigCopy;
+
+            CmPerMissionMode.ItemsSource = from e1 in Enum.GetValues(typeof(PermissionMode)).Cast<PermissionMode>()
+                                           select new KeyValuePair<PermissionMode, string>(e1, e1.ToString());
         }
 
-
-        private void Cancel_Click(object sender, RoutedEventArgs e)
+        private void Save_Click(object sender, RoutedEventArgs e)
         {
+            UserManager.Config.CopyFrom(UserConfigCopy);
+            this.Close();
 
         }
     }

@@ -211,7 +211,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         public double SaturationB { get => _SaturationB; set { _SaturationB = value; NotifyPropertyChanged(); } }
         private double _SaturationB = -1;
-
+        public MotorConfig MotorConfig { get; set; } = new MotorConfig();
         public PhyCameraCfg CameraCfg { get; set; } = new PhyCameraCfg();
         public CFWPORT CFW { get; set; } = new CFWPORT();
         public PhyExpTimeCfg ExpTimeCfg { get; set; } = new PhyExpTimeCfg();
