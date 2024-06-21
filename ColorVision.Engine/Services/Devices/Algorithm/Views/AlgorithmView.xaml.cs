@@ -184,28 +184,36 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 List<string> cieBdHeader = new();
                 List<string> cieHeader = new();
 
-
-                switch (result.ResultType)
+                if (File.Exists(result.FilePath))
                 {
-                    case AlgorithmResultType.POI_XYZ:
-                    case AlgorithmResultType.POI_Y:
-                        netFileUtil.OpenLocalFile(result.FilePath, FileExtType.CIE);
-                        break;
-                    case AlgorithmResultType.SFR:
-                    case AlgorithmResultType.MTF:
-                    case AlgorithmResultType.FOV:
-                    case AlgorithmResultType.Distortion:
-                        break;
-                    case AlgorithmResultType.Ghost:
-                        netFileUtil.OpenLocalFile(result.FilePath, FileExtType.Tif);
-                        break;
-
-                    case AlgorithmResultType.LEDStripDetection:
-                        netFileUtil.OpenLocalFile(result.FilePath, FileExtType.Tif);
-                        break;
-                    default:
-                        break;
+                    var FileData = netFileUtil.OpenLocalCVFile(result.FilePath);
+                    OpenImage(FileData);
                 }
+                else
+                {
+                    switch (result.ResultType)
+                    {
+                        case AlgorithmResultType.POI_XYZ:
+                        case AlgorithmResultType.POI_Y:
+                            netFileUtil.OpenLocalFile(result.FilePath, FileExtType.CIE);
+                            break;
+                        case AlgorithmResultType.SFR:
+                        case AlgorithmResultType.MTF:
+                        case AlgorithmResultType.FOV:
+                        case AlgorithmResultType.Distortion:
+                            break;
+                        case AlgorithmResultType.Ghost:
+                            netFileUtil.OpenLocalFile(result.FilePath, FileExtType.Tif);
+                            break;
+
+                        case AlgorithmResultType.LEDStripDetection:
+                            netFileUtil.OpenLocalFile(result.FilePath, FileExtType.Tif);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
 
                 switch (result.ResultType)
                 {

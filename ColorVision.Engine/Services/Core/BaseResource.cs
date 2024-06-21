@@ -8,7 +8,6 @@ namespace ColorVision.Engine.Services.Core
         {
             FilePath = sysResourceModel.Value;
         }
-
         public string? FilePath { get; set; }
     }
 

@@ -506,51 +506,59 @@ namespace ColorVision.Engine.Media
 
         public void OpenImage(CVCIEFile fileInfo)
         {
-            if (fileInfo.FileExtType == FileExtType.Tif)
+            try
             {
-                var src = OpenCvSharp.Cv2.ImDecode(fileInfo.data, OpenCvSharp.ImreadModes.Unchanged);
-                SetImageSource(src.ToWriteableBitmap());
-            }
-            else if (fileInfo.FileExtType == FileExtType.Raw || fileInfo.FileExtType == FileExtType.Src)
-            {
-                logger.Info("OpenImage .....");
+                if (fileInfo.FileExtType == FileExtType.Tif)
+                {
+                    var src = OpenCvSharp.Cv2.ImDecode(fileInfo.data, OpenCvSharp.ImreadModes.Unchanged);
+                    SetImageSource(src.ToWriteableBitmap());
+                }
+                else if (fileInfo.FileExtType == FileExtType.Raw || fileInfo.FileExtType == FileExtType.Src)
+                {
+                    logger.Info("OpenImage .....");
 
-                OpenCvSharp.Mat src = new(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
-                OpenCvSharp.Mat dst = null;
-                if (fileInfo.bpp == 32)
-                {
-                    OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
-                    dst = new OpenCvSharp.Mat();
-                    src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
+                    OpenCvSharp.Mat src = new(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
+                    OpenCvSharp.Mat dst = null;
+                    if (fileInfo.bpp == 32)
+                    {
+                        OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
+                        dst = new OpenCvSharp.Mat();
+                        src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
+                    }
+                    else
+                    {
+                        dst = src;
+                    }
+                    SetImageSource(dst.ToWriteableBitmap());
+                    dst.Dispose();
+                    src.Dispose();
                 }
-                else
+                else if (fileInfo.FileExtType == FileExtType.CIE)
                 {
-                    dst = src;
-                }
-                SetImageSource(dst.ToWriteableBitmap());
-                dst.Dispose();
-                src.Dispose();
-            }
-            else if (fileInfo.FileExtType == FileExtType.CIE)
-            {
-                logger.Info("OpenImage .....");
+                    logger.Info("OpenImage .....");
 
-                OpenCvSharp.Mat src = new(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
-                OpenCvSharp.Mat dst = null;
-                if (fileInfo.bpp == 32)
-                {
-                    OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
-                    dst = new OpenCvSharp.Mat();
-                    src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
+                    OpenCvSharp.Mat src = new(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
+                    OpenCvSharp.Mat dst = null;
+                    if (fileInfo.bpp == 32)
+                    {
+                        OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
+                        dst = new OpenCvSharp.Mat();
+                        src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
+                    }
+                    else
+                    {
+                        dst = src;
+                    }
+                    var Data = dst.ToWriteableBitmap();
+                    SetImageSource(Data);
+                    dst.Dispose();
+                    src.Dispose();
                 }
-                else
-                {
-                    dst = src;
-                }
-                var Data = dst.ToWriteableBitmap();
-                SetImageSource(Data);
-                dst.Dispose();
-                src.Dispose();
+            }
+            catch(Exception ex)
+            {
+                logger.Error(ex);
+                MessageBox.Show(Application.Current.GetActiveWindow(),$"打开文件失败:{ex.Message} ", "ColorVision");
             }
         }
 

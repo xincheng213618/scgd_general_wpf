@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Extension;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.HotKey;
@@ -16,25 +17,13 @@ using System.Windows.Media;
 namespace ColorVision.Engine.Services.OnlineLicensing
 {
 
-    public class ExportLincense : IHotKey, IMenuItem
+    public class ExportLincense : MenuItemBase
     {
-        public HotKeys HotKeys => new(Properties.Resources.MyLicense_R, new Hotkey(Key.L, ModifierKeys.Control), Execute);
-
-        public string? OwnerGuid => "Help";
-
-        public string? GuidId => "Lincense";
-
-        public int Order => 10003;
-        public Visibility Visibility => Visibility.Visible;
-        public string? Header => Properties.Resources.MyLicense_R;
-
-        public string? InputGestureText => "Ctrl + L";
-
-        public object? Icon { get; set; }
-
-        public RelayCommand Command => new(A => Execute());
-
-        private void Execute()
+        public override string OwnerGuid => "Help";
+        public override string GuidId => "Lincense";
+        public override int Order => 10003;
+        public override string Header => Properties.Resources.MyLicense_R;
+        public override void Execute()
         {
             new LicenseMangerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
@@ -87,15 +76,11 @@ namespace ColorVision.Engine.Services.OnlineLicensing
             }
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
 
-        }
-
-        private void Copy_Click(object sender, RoutedEventArgs e)
+        private async void Copy_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
-                ButtonContentChange(button, "已复制");
+                await button.ChangeButtonContentAsync("已复制",() => Common.NativeMethods.Clipboard.SetText(TextBoxSn.Text));
         }
 
         private async void ButtonContentChange(Button button,string Content)
@@ -109,7 +94,5 @@ namespace ColorVision.Engine.Services.OnlineLicensing
                 button.Content = temp;
             }
         }
-
-
     }
 }
