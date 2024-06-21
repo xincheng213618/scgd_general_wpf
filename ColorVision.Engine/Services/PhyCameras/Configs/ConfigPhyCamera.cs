@@ -165,22 +165,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         public ImageBpp ImageBpp { get => _ImageBpp; set { _ImageBpp = value; NotifyPropertyChanged(); } }
         private ImageBpp _ImageBpp;
-        public ImageChannel Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); NotifyPropertyChanged(nameof(IsChannelThree)); } }
+        public ImageChannel Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); } }
         private ImageChannel _Channel;
-
-        [JsonIgnore]
-        public bool IsExpThree
-        {
-            get => TakeImageMode != TakeImageMode.Live && (CameraType == CameraType.CV_Q || CameraType == CameraType.CV_MIL_CL);
-            set => NotifyPropertyChanged();
-        }
-
-        [JsonIgnore]
-        public bool IsChannelThree
-        {
-            get => Channel == ImageChannel.Three;
-            set => NotifyPropertyChanged();
-        }
 
         public MotorConfig MotorConfig { get; set; } = new MotorConfig();
         public PhyCameraCfg CameraCfg { get; set; } = new PhyCameraCfg();
