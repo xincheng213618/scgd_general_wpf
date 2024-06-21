@@ -97,6 +97,16 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             };
 
+            ComboxCameraModel.ItemsSource = from e1 in Enum.GetValues(typeof(CameraModel)).Cast<CameraModel>()
+                                            select new KeyValuePair<CameraModel, string>(e1, e1.ToDescription());
+
+            ComboxCameraMode.ItemsSource = from e1 in Enum.GetValues(typeof(CameraMode)).Cast<CameraMode>()
+                                           select new KeyValuePair<CameraMode, string>(e1, e1.ToDescription());
+
+            while (Config.CFW.ChannelCfgs.Count < 9)
+            {
+                Config.CFW.ChannelCfgs.Add(new Services.PhyCameras.Configs.ChannelCfg());
+            }
 
             ComboxCameraType.SelectionChanged += (s, e) =>
             {

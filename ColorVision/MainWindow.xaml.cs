@@ -1,5 +1,6 @@
 ﻿using ColorVision.Adorners;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.UserSpace;
 using ColorVision.Scheduler;
 using ColorVision.Solution;
 using ColorVision.Solution.Searches;
@@ -9,7 +10,6 @@ using ColorVision.UI.Configs;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using ColorVision.UI.Views;
-using ColorVision.UserSpace;
 using log4net;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
@@ -325,7 +325,7 @@ namespace ColorVision
 
         private void Login_Click(object sender, RoutedEventArgs e)
         {
-            new UserCreationWindow() { }.ShowDialog();
+            new UserInfoWindow() { }.ShowDialog();
         }
 
         private void StatusBarGrid_Initialized(object sender, EventArgs e)

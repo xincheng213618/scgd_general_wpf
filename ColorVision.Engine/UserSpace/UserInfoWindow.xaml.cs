@@ -8,28 +8,25 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 
-namespace ColorVision.UserSpace
+namespace ColorVision.Engine.UserSpace
 {
     /// <summary>
-    /// UserCreationWindow.xaml 的交互逻辑
+    /// UserInfoWindow.xaml 的交互逻辑
     /// </summary>
-    public partial class UserCreationWindow : Window
+    public partial class UserInfoWindow : Window
     {
-        public UserCreationWindow()
+        public UserInfoWindow()
         {
             InitializeComponent();
             this.ApplyCaption();
         }
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = UserConfig.Instance;
-            CmPerMissionMode.ItemsSource = from e1 in Enum.GetValues(typeof(PermissionMode)).Cast<PermissionMode>()
-                                           select new KeyValuePair<PermissionMode, string>(e1, e1.ToString());
+            this.DataContext = UserManager.GetInstance();
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            Authorization.Instance.PermissionMode = UserConfig.Instance.PerMissionMode;
             this.Close();
         }
     }
