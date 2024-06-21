@@ -122,7 +122,7 @@
                         </StackPanel>
                     </GroupBox>
 
-                    <GroupBox Header="自动曝光参数配置" Margin="0,5">
+                    <GroupBox Header="自动曝光参数" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="自动曝光"  Width="80"/>
@@ -184,7 +184,7 @@
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="电机移动区间上限:" Width="120"/>
-                                    <TextBox Text="{Binding MaxPosition}" />
+                                    <TextBox Text="{Binding AutoFocusConfig.MaxPosition}" />
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="步径摆动范围:" Width="120"/>

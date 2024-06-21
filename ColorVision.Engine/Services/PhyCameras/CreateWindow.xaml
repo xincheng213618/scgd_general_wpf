@@ -178,7 +178,7 @@
                             </StackPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="滤色轮数量:" Width="120"/>
-                                <hc:NumericUpDown Value="{Binding CFW.CFWNum}" Minimum="0"/>
+                                <hc:NumericUpDown Value="{Binding CreateConfig.CFW.CFWNum}" Minimum="0"/>
                             </DockPanel>
                             <UniformGrid Columns="3" Rows="1">
                                 <StackPanel Margin="0,0,5,0">

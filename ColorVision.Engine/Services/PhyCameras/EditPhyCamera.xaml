@@ -131,54 +131,6 @@
                         </StackPanel>
                     </GroupBox>
 
-
-                    <GroupBox Header="默认参数" Margin="0,5">
-                        <StackPanel Margin="5">
-                            <StackPanel Margin="0.2" Visibility="{Binding IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
-                                <DockPanel  >
-                                    <TextBlock  Text="默认曝光(ms)" Width="120" />
-                                    <TextBox DockPanel.Dock="Right" Text="{Binding ExpTime}"   Width="50"/>
-                                    <hc:PreviewSlider x:Name="SliderexpTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="{Binding ExpTime}" Maximum="60000">
-                                        <hc:PreviewSlider.PreviewContent>
-                                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
-                                        </hc:PreviewSlider.PreviewContent>
-                                    </hc:PreviewSlider>
-                                </DockPanel>
-                            </StackPanel>
-                            <StackPanel Margin="0.2" Visibility="{Binding IsExpThree,Converter={StaticResource bool2VisibilityConverter}}">
-                                <DockPanel Margin="0,2">
-                                    <TextBlock  Text="默认R通道曝光(ms)" Width="120"/>
-                                    <TextBox DockPanel.Dock="Right" Text="{Binding ExpTimeR}"  Width="50"/>
-                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeR}" Maximum="60000">
-                                        <hc:PreviewSlider.PreviewContent>
-                                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
-                                        </hc:PreviewSlider.PreviewContent>
-                                    </hc:PreviewSlider>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock  Text="默认G通道曝光(ms)" Width="120" />
-                                    <TextBox DockPanel.Dock="Right" Text="{Binding ExpTimeG}"  Width="50"/>
-                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeG}" Maximum="60000">
-                                        <hc:PreviewSlider.PreviewContent>
-                                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
-                                        </hc:PreviewSlider.PreviewContent>
-                                    </hc:PreviewSlider>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock  Text="默认B通道曝光(ms)" Width="120" />
-                                    <TextBox DockPanel.Dock="Right" Text="{Binding ExpTimeB}"  Width="50"/>
-                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeB}" Maximum="60000">
-                                        <hc:PreviewSlider.PreviewContent>
-                                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
-                                        </hc:PreviewSlider.PreviewContent>
-                                    </hc:PreviewSlider>
-                                </DockPanel>
-                            </StackPanel>
-
-                        </StackPanel>
-                    </GroupBox>
-
-
                     <GroupBox Header="电机" Margin="0,5" >
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
@@ -203,9 +155,7 @@
                     </GroupBox>
 
 
-
-
-                    <GroupBox Header="滤色轮" Margin="0,5" Visibility="{Binding IsChannelThree,Converter={StaticResource bool2VisibilityConverter}}">
+                    <GroupBox Header="滤色轮" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="启用:" Width="120"/>
@@ -288,47 +238,6 @@
                                 </UniformGrid>
                             </StackPanel>
 
-                        </StackPanel>
-                    </GroupBox>
-
-                    <GroupBox Header="自动曝光参数配置" Margin="0,5">
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="自动曝光"  Width="150"/>
-                                <TextBox  Text="{Binding ExpTimeCfg.AutoExpTimeBegin}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="自动同步频率"  Width="150"/>
-                                <TextBox  Text="{Binding ExpTimeCfg.AutoExpSyncFreq}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="autoExpSaturation"  Width="150"/>
-                                <TextBox   Text="{Binding ExpTimeCfg.AutoExpSaturation}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="autoExpSatMaxAD"  Width="150"/>
-                                <TextBox   Text="{Binding ExpTimeCfg.AutoExpSatMaxAD}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="autoExpMaxPecentage"  Width="150"/>
-                                <TextBox   Text="{Binding ExpTimeCfg.AutoExpMaxPecentage}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="autoExpSatDev"  Width="150"/>
-                                <TextBox   Text="{Binding ExpTimeCfg.AutoExpSatDev}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="最大曝光"  Width="150"/>
-                                <TextBox  Text="{Binding ExpTimeCfg.MaxExpTime}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="最小曝光"  Width="150"/>
-                                <TextBox Text="{Binding ExpTimeCfg.MinExpTime}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="burst的阈值"  Width="150"/>
-                                <TextBox  Text="{Binding ExpTimeCfg.BurstThreshold}"/>
-                            </DockPanel>
                         </StackPanel>
                     </GroupBox>
 
