@@ -654,13 +654,16 @@ namespace ColorVision.Engine.Services.PhyCameras
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Edit, Command = EditCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = DeleteCommand });
-
         }
+
+        public event EventHandler<ConfigPhyCamera> ConfigChanged;
 
         public void SaveConfig()
         {
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             SysResourceDao.Instance.Save(SysResourceModel);
+
+            ConfigChanged?.Invoke(this, Config);
         }
         public override void Save()
         {

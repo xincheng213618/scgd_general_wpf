@@ -232,7 +232,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         }
                     }
 
-
                     double[] expTime = null;
                     if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
                     else expTime = new double[] { Device.Config.ExpTime };

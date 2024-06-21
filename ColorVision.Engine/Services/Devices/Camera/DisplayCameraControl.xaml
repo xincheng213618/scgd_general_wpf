@@ -155,7 +155,7 @@
                                 <Button Grid.Column="1" Content="{x:Static properties:Resources.Capture}" FontSize="15" FontWeight="Bold" Click="GetData_Click" HorizontalAlignment="Right" Margin="2,2,0,2"/>
                             </Grid>
                         </StackPanel>
-                        <GroupBox Header="电机操作" Visibility="{Binding Config.IsHaveMotor,Converter={StaticResource bool2VisibilityConverter}}">
+                        <GroupBox Header="电机操作" Visibility="{Binding Config.MotorConfig.IsUseMotor,Converter={StaticResource bool2VisibilityConverter}}">
                             <StackPanel Margin="2">
                                 <Button Content="自动聚焦" Click="AutoFocus_Click" />
                                 <DockPanel Margin="0,2">

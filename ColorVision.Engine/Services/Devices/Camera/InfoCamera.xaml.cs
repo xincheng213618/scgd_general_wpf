@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.PhyCameras;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -20,11 +21,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
             InitializeComponent();
         }
 
-
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
+
         }
+
 
         private void ServiceCache_Click(object sender, RoutedEventArgs e)
         {

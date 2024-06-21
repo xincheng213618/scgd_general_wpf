@@ -131,6 +131,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             DeviceCamera.PhyCamera?.ReleaseDeviceCamera();
             EditConfig.CopyTo(DeviceCamera.Config);
+            if (DeviceCamera.PhyCamera !=null)
+                DeviceCamera.PhyCamera.ConfigChanged += DeviceCamera.PhyCameraConfigChanged;
+
+
             Close();
         }
 

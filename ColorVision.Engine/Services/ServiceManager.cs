@@ -51,9 +51,10 @@ namespace ColorVision.Engine.Services
         {
             if (MySqlControl.GetInstance().IsConnect)
             {
-                _messageUpdater.UpdateMessage("正在加载服务");
+                _messageUpdater.UpdateMessage("正在加载物理相机");
                 Application.Current.Dispatcher.Invoke(() =>
                 {
+                    PhyCameraManager.GetInstance();
                     ServiceManager ServiceManager = ServiceManager.GetInstance();
                 });
                 if (!ServicesConfig.Instance.IsDefaultOpenService)

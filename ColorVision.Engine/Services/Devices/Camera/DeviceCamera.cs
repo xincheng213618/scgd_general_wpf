@@ -13,6 +13,7 @@ using System.Windows;
 using System.Windows.Controls;
 using ColorVision.UserSpace;
 using ColorVision.UI.Authorizations;
+using ColorVision.Engine.Services.Devices.PG;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -53,6 +54,29 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
             OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger());
+
+            if (PhyCamera != null)
+                PhyCamera.ConfigChanged += PhyCameraConfigChanged;
+        }
+
+        private PhyCamera lastPhyCamera;
+
+        public void PhyCameraConfigChanged(object? sender, PhyCameras.Configs.ConfigPhyCamera e)
+        {
+            if (lastPhyCamera !=null && sender is PhyCamera phyCamera && phyCamera != lastPhyCamera)
+            {
+                lastPhyCamera.ConfigChanged -= PhyCameraConfigChanged;
+                lastPhyCamera = phyCamera;
+            }          
+            Config.Channel = e.Channel;
+            Config.CFW = e.CFW;
+            Config.MotorConfig = e.MotorConfig;
+            Config.CameraID = e.CameraID;
+            Config.CameraType = e.CameraType;
+            Config.CameraMode = e.CameraMode;
+            Config.CameraModel = e.CameraModel;
+            Config.TakeImageMode = e.TakeImageMode;
+            Config.ImageBpp = e.ImageBpp;
         }
 
         [RequiresPermission(PermissionMode.Administrator)]
