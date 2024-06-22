@@ -29,8 +29,8 @@
             <StackPanel Grid.Column="1"  Orientation="Horizontal">
                 <ToggleButton  Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="AutoScrollToEnd" IsChecked="{Binding AutoScrollToEnd}" Margin="5,0"/>
                 <ToggleButton  Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="AutoRefresh" IsChecked="{Binding AutoRefresh}" Margin="5,0"/>
-                <ToggleButton  Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="ReadHistory" IsChecked="{Binding ReadHistory}" Margin="5,0"/>
                 <ToggleButton  Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="LogReserve" IsChecked="{Binding LogReserve}" Margin="5,0"/>
+                <ComboBox Name="cmlogLoadState"  Width="100" SelectedValuePath="Key" DisplayMemberPath="Value" SelectedValue="{Binding LogLoadState}" SelectionChanged="cmlogLoadState_SelectionChanged"/>
                 <TextBlock Text="{x:Static properties:Resources.LogLevel}"  Margin="0,0,5,0"/>
                 <ComboBox Name="cmlog"  Width="100" SelectedValuePath="Key" DisplayMemberPath="Value" SelectedValue="{Binding LogLevel}" SelectionChanged="cmlog_SelectionChanged"/>
                 <Button Content="清除" Click="Clear_Click" Margin="5,0,0,0"/>

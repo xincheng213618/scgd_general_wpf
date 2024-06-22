@@ -116,7 +116,14 @@ namespace ColorVision
                 {
                     if (Activator.CreateInstance(type) is IMainWindowInitialized componentInitialize)
                     {
-                        componentInitialize.Initialize();
+                        try
+                        {
+                            componentInitialize.Initialize();
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error(ex);
+                        }
                     }
                 }
             }

@@ -11,6 +11,7 @@ using log4net.Layout;
 using log4net.Repository.Hierarchy;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -37,6 +38,15 @@ namespace ColorVision
         }
     }
 
+
+    public enum LogLoadState
+    {
+        AllToday,
+        SinceStartup,
+        None
+    }
+
+
     /// <summary>
     /// WindowLog.xaml 的交互逻辑
     /// </summary>
@@ -47,7 +57,6 @@ namespace ColorVision
         public WindowLog()
         {
             InitializeComponent();
-
             this.ApplyCaption();
         }
 
@@ -64,13 +73,14 @@ namespace ColorVision
             // 将Appender添加到Logger中
             hierarchy.Root.AddAppender(textBoxAppender);
 
-            if (MainWindowConfig.Instance.ReadHistory)
-                LoadLogHistory();
             // 配置并激活log4net
             log4net.Config.BasicConfigurator.Configure(hierarchy);
             this.DataContext = MainWindowConfig.Instance;
             cmlog.ItemsSource = MainWindowConfig.GetAllLevels().Select(level => new KeyValuePair<Level, string>(level, level.Name));
             SearchBar1Brush = SearchBar1.BorderBrush;
+
+            cmlogLoadState.ItemsSource = Enum.GetValues(typeof(LogLoadState)).Cast<LogLoadState>().Select(state => new KeyValuePair<LogLoadState, string>(state, state.ToString()));
+
         }
         private static string GetLogFilePath()
         {
@@ -78,9 +88,18 @@ namespace ColorVision
             var fileAppender = hierarchy.Root.Appenders.OfType<RollingFileAppender>().FirstOrDefault();
             return fileAppender?.File;
         }
+
+        private void cmlogLoadState_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            LoadLogHistory();
+        }
+
         private void LoadLogHistory()
         {
-            var logFilePath = GetLogFilePath();
+            if (MainWindowConfig.Instance.LogLoadState == LogLoadState.None) return;
+
+
+                var logFilePath = GetLogFilePath();
             if (logFilePath != null && File.Exists(logFilePath))
             {
                 try
@@ -89,15 +108,36 @@ namespace ColorVision
                     using (StreamReader reader = new StreamReader(fileStream, Encoding.Default))
                     {
                         string line;
+                        DateTime today = DateTime.Today;
+                        DateTime startupTime = Process.GetCurrentProcess().StartTime;
+
                         while ((line = reader.ReadLine()) != null)
                         {
+                            if (string.IsNullOrWhiteSpace(line)) continue;
+                            string timestampLine = line;
+                            string logContentLine = reader.ReadLine(); // 读取日志内容行
+
+                            if (DateTime.TryParseExact(timestampLine.Substring(0, 23), "yyyy-MM-dd HH:mm:ss,fff", null, System.Globalization.DateTimeStyles.None, out DateTime logTime))
+                            {
+                                if (MainWindowConfig.Instance.LogLoadState == LogLoadState.AllToday && logTime.Date != today)
+                                {
+                                    continue;
+                                }
+                                else if (MainWindowConfig.Instance.LogLoadState == LogLoadState.SinceStartup && logTime < startupTime)
+                                {
+                                    continue;
+                                }
+                            }
+
+                            string logEntry = timestampLine + Environment.NewLine + logContentLine + Environment.NewLine;
+
                             if (MainWindowConfig.Instance.LogReserve)
                             {
-                                logTextBox.Text = line + Environment.NewLine + logTextBox.Text;
+                                logTextBox.Text = logEntry + logTextBox.Text;
                             }
                             else
                             {
-                                logTextBox.AppendText(line + Environment.NewLine);
+                                logTextBox.AppendText(logEntry);
                             }
                         }
                     }
@@ -108,6 +148,9 @@ namespace ColorVision
                 }
             }
         }
+
+
+
         private void cmlog_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var selectedLevel = (KeyValuePair<Level, string>)cmlog.SelectedItem;
@@ -125,11 +168,6 @@ namespace ColorVision
             logTextBox.Text = string.Empty;
         }
 
-        private void Loadhistory_Click(object sender, RoutedEventArgs e)
-        {
-            logTextBox.Text = string.Empty;
-            LoadLogHistory();
-        }
 
         private readonly char[] Chars = new[] { ' ' };
         private static readonly string[] RegexSpecialChars = { ".", "*", "+", "?", "^", "$", "(", ")", "[", "]", "{", "}", "|", "\\" };
@@ -174,6 +212,8 @@ namespace ColorVision
                 logTextBox.Visibility = Visibility.Visible;
             }
         }
+
+
     }
     public class TextBoxAppender : AppenderSkeleton
     {

@@ -98,8 +98,9 @@ namespace ColorVision
 
         public bool AutoRefresh { get => _AutoRefresh; set { _AutoRefresh = value; NotifyPropertyChanged(); } }
         private bool _AutoRefresh = true;
-        public bool ReadHistory { get => _ReadHistory; set { _ReadHistory = value; NotifyPropertyChanged(); } }
-        private bool _ReadHistory;
+
+        public LogLoadState LogLoadState { get => _LogLoadState; set { _LogLoadState = value; NotifyPropertyChanged(); } }
+        private LogLoadState _LogLoadState = LogLoadState.SinceStartup;
 
         public bool LogReserve { get => _LogReserve; set { _LogReserve = value; NotifyPropertyChanged(); } }
         private bool _LogReserve;
