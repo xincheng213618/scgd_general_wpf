@@ -1,18 +1,13 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.Templates;
+﻿using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Views;
-using ColorVision.Engine.Services.Templates;
-using ColorVision.Themes;
+using ColorVision.Engine.Templates;
 using ColorVision.UI;
-using ColorVision.UI.Views;
 using CVCommCore;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 
 namespace ColorVision.Engine.Services.Devices.SMU
@@ -60,8 +55,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             ComboxVITemplate.SelectedIndex = 0;
 
             this.AddViewConfig(View, ComboxView);
-
-            PreviewMouseDown += UserControl_PreviewMouseDown;
             this.ApplyChangedSelectedColor(DisPlayBorder);
         }
 
@@ -70,17 +63,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
         public event EventHandler SelectChanged;
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
-
-        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (Parent is StackPanel stackPanel)
-            {
-                if (stackPanel.Tag is IDisPlayControl disPlayControl)
-                    disPlayControl.IsSelected = false;
-                stackPanel.Tag = this;
-                IsSelected = true;
-            }
-        }
 
         private void SMUService_ResultHandler(SMUResultData data)
         {

@@ -36,6 +36,18 @@ namespace ColorVision.Engine.Services
             disPlayControl.SelectChanged += (s, e) => UpdateDisPlayBorder();
             ThemeManager.Current.CurrentUIThemeChanged += (s) => UpdateDisPlayBorder();
             UpdateDisPlayBorder();
+
+            if (disPlayControl is UserControl userControl)
+                userControl.PreviewMouseDown += (s, e) =>
+                {
+                    if (userControl.Parent is StackPanel stackPanel)
+                    {
+                        if (stackPanel.Tag is IDisPlayControl lastDisPlayControl)
+                            lastDisPlayControl.IsSelected = false;
+                        stackPanel.Tag = userControl;
+                        disPlayControl.IsSelected = true;
+                    }
+                };
         }
 
         public static void AddViewConfig(this UserControl userControl, IView view, ComboBox comboBox)

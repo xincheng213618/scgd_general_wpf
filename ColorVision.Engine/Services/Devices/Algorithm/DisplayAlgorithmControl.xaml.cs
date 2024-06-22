@@ -10,9 +10,7 @@ using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Net;
-using ColorVision.Themes;
 using ColorVision.UI;
-using ColorVision.UI.Views;
 using CVCommCore.CVAlgorithm;
 using log4net;
 using MQTTMessageLib.FileServer;
@@ -23,7 +21,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
@@ -52,17 +49,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             netFileUtil = new NetFileUtil();
             netFileUtil.handler += NetFileUtil_handler;
-            PreviewMouseDown += UserControl_PreviewMouseDown;
-        }
-        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (Parent is StackPanel stackPanel)
-            {
-                if (stackPanel.Tag is IDisPlayControl disPlayControl)
-                    disPlayControl.IsSelected = false;
-                stackPanel.Tag = this;
-                IsSelected = true;
-            }
         }
 
         private void NetFileUtil_handler(object sender, NetFileEvent arg)

@@ -1,11 +1,8 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Themes;
-using ColorVision.UI;
+﻿using ColorVision.UI;
 using CVCommCore;
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.Motor
 {
@@ -23,8 +20,6 @@ namespace ColorVision.Engine.Services.Devices.Motor
         {
             Device = device;
             InitializeComponent();
-
-            PreviewMouseDown += UserControl_PreviewMouseDown;
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -39,18 +34,6 @@ namespace ColorVision.Engine.Services.Devices.Motor
         public event EventHandler SelectChanged;
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
-
-
-        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (Parent is StackPanel stackPanel)
-            {
-                if (stackPanel.Tag is IDisPlayControl disPlayControl)
-                    disPlayControl.IsSelected = false;
-                stackPanel.Tag = this;
-                IsSelected = true;
-            }
-        }
 
         private void DeviceService_DeviceStatusChanged(DeviceStatusType deviceStatus)
         {

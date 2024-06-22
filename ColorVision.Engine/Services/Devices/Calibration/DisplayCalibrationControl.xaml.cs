@@ -35,7 +35,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             Device = device;
             InitializeComponent();
             DeviceService.MsgReturnReceived += Service_OnCalibrationEvent;
-            PreviewMouseDown += UserControl_PreviewMouseDown;
 
         }
 
@@ -111,17 +110,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                         });
                     }
                     break;
-            }
-        }
-
-        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (Parent is StackPanel stackPanel)
-            {
-                if (stackPanel.Tag is IDisPlayControl disPlayControl)
-                    disPlayControl.IsSelected = false;
-                stackPanel.Tag = this;
-                IsSelected = true;
             }
         }
 

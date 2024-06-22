@@ -1,23 +1,18 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
-using ColorVision.Engine.Templates;
 using ColorVision.Engine.Services.DAO;
-using ColorVision.Themes;
+using ColorVision.Engine.Templates;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
 using ColorVision.UI.Menus;
-using ColorVision.UI.Views;
 using ColorVision.Util.Interfaces;
-using Mysqlx.Crud;
-using NPOI.Util.Collections;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 
 
@@ -121,8 +116,6 @@ namespace ColorVision.Engine.Services.Flow
             };
             FlowTemplate.SelectedIndex = 0;
             DataContext = flowControl;
-            PreviewMouseDown += UserControl_PreviewMouseDown;
-
             menuItem = new MenuItem() { Header = Properties.Resources.MenuFlow };
             MenuItem menuItem1 = new() { Header = Properties.Resources.ExecutionProcess };
             menuItem1.Click +=(s,e)=> Button_FlowRun_Click(s, e);
@@ -148,20 +141,6 @@ namespace ColorVision.Engine.Services.Flow
         public event EventHandler SelectChanged;
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
-
-
-        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (Parent is StackPanel stackPanel)
-            {
-                if (stackPanel.Tag is IDisPlayControl disPlayControl)
-                    disPlayControl.IsSelected = false;
-                stackPanel.Tag = this;
-                IsSelected = true;
-            }
-        }
-
-
 
         private FlowControl flowControl;
 
