@@ -33,7 +33,6 @@
                     <MenuItem x:Name="MenuTool" Header="{x:Static properties:Resources.MenuTool}"/>
                     <MenuItem x:Name="MenuView"  Header="{ x:Static properties:Resources.MenuView}"/> 
                     <MenuItem x:Name="MenuHelp" Header="{x:Static properties:Resources.MenuHelp}">
-                        <MenuItem Header="打开日志文件夹(_F)"  Click="LogF_Click"/>
                         <MenuItem Header="打开配置文件(_S)"  Click="Setting_Click"/>
                         <MenuItem Header="打开配置文件夹(_F)" Click="SettingF_Click"/>
                         <Separator/>

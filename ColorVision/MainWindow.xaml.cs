@@ -305,30 +305,6 @@ namespace ColorVision
             }
         }
 
-        private void LogF_Click(object sender, RoutedEventArgs e)
-        {
-            var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
-            if (fileAppender != null)
-            {
-                Process.Start("explorer.exe", $"{Path.GetDirectoryName(fileAppender.File)}");
-            }
-        }
-
-        private void SettingF_Click(object sender, RoutedEventArgs e)
-        {
-            Process.Start("explorer.exe", $"{Path.GetDirectoryName(ConfigHandler.GetInstance().ConfigFilePath)}");
-        }
-
-
-
-        private void Setting_Click(object sender, RoutedEventArgs e)
-        {
-            string fileName = ConfigHandler.GetInstance().ConfigFilePath;
-            bool result = Tool.HasDefaultProgram(fileName);
-            if (!result)
-                Process.Start(result ? "explorer.exe" : "notepad.exe", fileName);
-        }
-
 
         private void Login_Click(object sender, RoutedEventArgs e)
         {
@@ -419,6 +395,6 @@ namespace ColorVision
             }
 
         }
-   
+
     }
 }
