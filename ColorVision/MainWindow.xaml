@@ -31,12 +31,8 @@
                     </MenuItem>
                     <MenuItem x:Name="MenuTemplate" Header="{x:Static properties:Resources.MenuTemplate}"/>
                     <MenuItem x:Name="MenuTool" Header="{x:Static properties:Resources.MenuTool}"/>
-                    <MenuItem x:Name="MenuView"  Header="{ x:Static properties:Resources.MenuView}"/> 
-                    <MenuItem x:Name="MenuHelp" Header="{x:Static properties:Resources.MenuHelp}">
-                        <MenuItem Header="打开配置文件(_S)"  Click="Setting_Click"/>
-                        <MenuItem Header="打开配置文件夹(_F)" Click="SettingF_Click"/>
-                        <Separator/>
-                    </MenuItem>
+                    <MenuItem x:Name="MenuView"  Header="{ x:Static properties:Resources.MenuView}"/>
+                    <MenuItem x:Name="MenuHelp" Header="{x:Static properties:Resources.MenuHelp}"/>
                 </Menu>
                 <Image Source="{DynamicResource DrawingImageUser}" Width="20" HorizontalAlignment="Right" Margin="0,0,10,0"/>
                 <Button Background="Transparent" BorderThickness="0" Click="Login_Click" Width="20"   HorizontalAlignment="Right" Margin="0,0,10,0"/>

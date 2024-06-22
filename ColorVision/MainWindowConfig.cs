@@ -1,6 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Settings;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
 using ColorVision.UI.HotKey;
@@ -8,10 +7,10 @@ using ColorVision.UI.Menus;
 using log4net;
 using log4net.Core;
 using log4net.Repository.Hierarchy;
-using Mysqlx.Prepare;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
