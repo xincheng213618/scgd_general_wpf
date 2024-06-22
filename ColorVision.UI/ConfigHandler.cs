@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
+using System.Reflection;
 namespace ColorVision.UI
 {
 
@@ -120,36 +121,35 @@ namespace ColorVision.UI
         private static ConfigHandler _instance;
         private static readonly object _locker = new();
         public static ConfigHandler GetInstance() { lock (_locker) { return _instance ??= new ConfigHandler(); } }
-        public string DIFile { get; set; }
-
-        public const string ConfigDIFileName = "ColorVisionConfig.json";
-
+        public string ConfigFilePath { get; set; }
         public ConfigHandler()
         {
+            string AssemblyCompany = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision";
+            string ConfigDIFileName = $"{AssemblyCompany}Config.json";
             if (Directory.Exists("Config"))
             {
-                DIFile = $"Config\\{ConfigDIFileName}";
+                ConfigFilePath = $"Config\\{ConfigDIFileName}";
             }
             else
             {
-                string DirectoryPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\ColorVision\\Config\\";
+                string DirectoryPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\{AssemblyCompany}\\Config\\";
                 if (!Directory.Exists(DirectoryPath))
                     Directory.CreateDirectory(DirectoryPath);
-                DIFile = DirectoryPath + ConfigDIFileName;
+                ConfigFilePath = DirectoryPath + ConfigDIFileName;
             }
 
-            LoadConfigs(DIFile);
+            LoadConfigs(ConfigFilePath);
             System.Windows.Application.Current.SessionEnding += (s, e) =>
             {
-                SaveConfigs(DIFile);
+                SaveConfigs(ConfigFilePath);
             };
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
             {
-                SaveConfigs(DIFile);
+                SaveConfigs(ConfigFilePath);
             };
         }
 
-        public void SaveConfigs() => SaveConfigs(DIFile);
+        public void SaveConfigs() => SaveConfigs(ConfigFilePath);
 
 
         public override void SaveConfigs(string fileName)

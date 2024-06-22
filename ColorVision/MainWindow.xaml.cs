@@ -316,14 +316,14 @@ namespace ColorVision
 
         private void SettingF_Click(object sender, RoutedEventArgs e)
         {
-            Process.Start("explorer.exe", $"{Path.GetDirectoryName(ConfigHandler.GetInstance().DIFile)}");
+            Process.Start("explorer.exe", $"{Path.GetDirectoryName(ConfigHandler.GetInstance().ConfigFilePath)}");
         }
 
 
 
         private void Setting_Click(object sender, RoutedEventArgs e)
         {
-            string fileName = ConfigHandler.GetInstance().DIFile;
+            string fileName = ConfigHandler.GetInstance().ConfigFilePath;
             bool result = Tool.HasDefaultProgram(fileName);
             if (!result)
                 Process.Start(result ? "explorer.exe" : "notepad.exe", fileName);
