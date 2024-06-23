@@ -28,7 +28,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports
                 window.Owner = Application.Current.GetActiveWindow();
             }
             window.Content = imageView;
-            imageView.OpenImage(fileInfo);
+            imageView.OpenImage(fileInfo.ToWriteableBitmap());
 
             window.Show();
             if (Application.Current.MainWindow != window)
@@ -60,7 +60,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports
                 window.Owner = Application.Current.GetActiveWindow();
             }
             window.Content = imageView;
-            imageView.OpenImage(new NetFileUtil().OpenLocalCVFile(filePath, FileExtType.CIE));
+            imageView.OpenImage(new NetFileUtil().OpenLocalCVFile(filePath, FileExtType.CIE).ToWriteableBitmap());
             window.Show();
             if (Application.Current.MainWindow != window)
             {

@@ -1809,7 +1809,7 @@ namespace cvColorVision
 
         /// <summary>
         /// 通过输入的BPP和channels来判断目标图像的mat格式
-        public static int Gettype(int nbpp, int nChanles)
+        public static MatType Gettype(int nbpp, int nChanles)
         {
             return nbpp switch
             {
@@ -1954,7 +1954,7 @@ namespace cvColorVision
                 return false;
             }
             List<Point3f> vecImgxyz = new(0);
-            int ntype = Gettype((int)vImgM[0].iBpp, (int)vImgM[0].iChannels);
+            MatType ntype = Gettype((int)vImgM[0].iBpp, (int)vImgM[0].iChannels);
             if (ntype == -1)
             {
                 //获取图像格式失败
@@ -1962,7 +1962,7 @@ namespace cvColorVision
             }
             for (int i = 0; i < 4; i++)
             {
-                Mat matSrc = new((int)vImgM[i].iHei, (int)vImgM[i].iWid, ntype, vImgM[i].pData);
+                Mat matSrc = Mat.FromPixelData((int)vImgM[i].iHei, (int)vImgM[i].iWid, ntype, vImgM[i].pData);
 
                 Mat src_x;
                 Mat src_y;
@@ -2096,11 +2096,11 @@ namespace cvColorVision
                 {
                     if (imageData.iChannels == 1)
                     {
-                        showChannel = new Mat((int)imageData.iHei, (int)imageData.iWid, MatType.CV_8UC1, imageData.pData);
+                        showChannel = Mat.FromPixelData((int)imageData.iHei, (int)imageData.iWid, MatType.CV_8UC1, imageData.pData);
                     }
                     else if (imageData.iChannels == 3)
                     {
-                        Mat srcChannel = new((int)imageData.iHei, (int)imageData.iWid, MatType.CV_8UC1, imageData.pData);
+                        Mat srcChannel = Mat.FromPixelData((int)imageData.iHei, (int)imageData.iWid, MatType.CV_8UC1, imageData.pData);
                         Mat[] dstChannel = new Mat[3];
                         Cv2.Split(srcChannel, out dstChannel);
                         showChannel = dstChannel[channelNum];
@@ -2111,13 +2111,13 @@ namespace cvColorVision
                 {
                     if (imageData.iChannels == 1)
                     {
-                        Mat srcChannel = new((int)imageData.iHei, (int)imageData.iWid, MatType.CV_16UC1, imageData.pData);
+                        Mat srcChannel = Mat.FromPixelData((int)imageData.iHei, (int)imageData.iWid, MatType.CV_16UC1, imageData.pData);
                         Mat mat = srcChannel.Clone();
                         showChannel = mat;
                     }
                     else if (imageData.iChannels == 3)
                     {
-                        Mat srcChannel = new((int)imageData.iHei, (int)imageData.iWid, MatType.CV_16UC3, imageData.pData);
+                        Mat srcChannel = Mat.FromPixelData((int)imageData.iHei, (int)imageData.iWid, MatType.CV_16UC3, imageData.pData);
                         Mat[] dstChannel = new Mat[3];
                         Cv2.Split(srcChannel, out dstChannel);
                         Mat mat = dstChannel[channelNum].Clone();
@@ -2129,7 +2129,7 @@ namespace cvColorVision
                 {
                     if (imageData.iChannels == 1)
                     {
-                        Mat srcChannel = new((int)imageData.iHei, (int)imageData.iWid, MatType.CV_32FC1, imageData.pData);
+                        Mat srcChannel = Mat.FromPixelData((int)imageData.iHei, (int)imageData.iWid, MatType.CV_32FC1, imageData.pData);
                         Mat mat = srcChannel.Clone();
                         Cv2.Normalize(srcChannel, mat, 255, 0);
                         srcChannel.ConvertTo(mat, MatType.CV_8UC1);
@@ -2137,7 +2137,7 @@ namespace cvColorVision
                     }
                     else if (imageData.iChannels == 3)
                     {
-                        Mat srcChannel = new((int)imageData.iHei, (int)imageData.iWid, MatType.CV_32FC3, imageData.pData);
+                        Mat srcChannel = Mat.FromPixelData((int)imageData.iHei, (int)imageData.iWid, MatType.CV_32FC3, imageData.pData);
                         Mat[] dstChannel = new Mat[3];
                         Cv2.Split(srcChannel, out dstChannel);
                         Mat mat = dstChannel[channelNum].Clone();

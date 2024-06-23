@@ -21,12 +21,12 @@
 		<PackageReference Include="Extended.Wpf.Toolkit" Version="4.6.0" />
 		<PackageReference Include="LiveChartsCore.SkiaSharpView.WPF" Version="2.0.0-rc2" />
 		<PackageReference Include="MahApps.Microsoft.DwayneNeed" Version="1.0.1" />
-		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.77" />
+		<PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.122" />
 		<PackageReference Include="MQTTnet" Version="4.3.4.1084" />
 		<PackageReference Include="MySql.Data" Version="8.4.0" />
 		<PackageReference Include="MySqlConnector" Version="2.3.7" />
-		<PackageReference Include="OpenCvSharp4.Extensions" Version="4.9.0.20240103" />
-		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.9.0.20240103" />
+		<PackageReference Include="OpenCvSharp4.Extensions" Version="4.10.0.20240616" />
+		<PackageReference Include="OpenCvSharp4.WpfExtensions" Version="4.10.0.20240616" />
 		<PackageReference Include="QRCoder.Xaml" Version="1.5.1" />
 		<PackageReference Include="ScottPlot.WPF" Version="4.1.67" />
 		<PackageReference Include="System.IO.Ports" Version="8.0.0" />

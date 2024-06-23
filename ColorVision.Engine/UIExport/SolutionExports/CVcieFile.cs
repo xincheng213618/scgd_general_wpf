@@ -76,7 +76,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports
             cvcie.FileExtType = FullName.Contains(".cvraw") ? FileExtType.Raw : FullName.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
 
             CVFileUtil.ReadCIEFileData(FullName, ref cvcie, index);
-            var src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
+            var src = Mat.FromPixelData(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
 
             System.Windows.Forms.SaveFileDialog dialog = new System.Windows.Forms.SaveFileDialog();
             dialog.FileName = Path.GetFileNameWithoutExtension(FullName) + $".{imageFormat}";

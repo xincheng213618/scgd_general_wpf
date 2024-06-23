@@ -55,7 +55,7 @@ namespace ColorVision.Engine.Services.Devices.FileServer
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    View.OpenImage(arg.FileData);
+                    View.OpenImage(arg.FileData.ToWriteableBitmap());
                 });
             }
             handler?.Close();

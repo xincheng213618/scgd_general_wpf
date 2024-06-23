@@ -319,7 +319,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         public void OpenImage(CVCIEFile fileData)
         {
-            ImageView.OpenImage(fileData);
+            ImageView.OpenImage(fileData.ToWriteableBitmap());
         }
 
         MeasureImgResultDao MeasureImgResultDao = new();

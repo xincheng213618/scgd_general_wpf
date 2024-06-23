@@ -64,7 +64,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 CVFileUtil.ReadCVRaw(FileUrl, out CVCIEFile fileInfo);
                 Window window = new() { Title = Properties.Resources.QuickPreview, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 window.Content = imageView;
-                imageView.OpenImage(new NetFileUtil().OpenLocalCVFile(FileUrl));
+                imageView.OpenImage(new NetFileUtil().OpenLocalCVFile(FileUrl).ToWriteableBitmap());
 
                 window.Show();
                 window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() => {

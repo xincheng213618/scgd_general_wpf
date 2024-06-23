@@ -23,6 +23,7 @@ using CVCommCore.CVAlgorithm;
 using ColorVision.UI.Views;
 using ColorVision.Solution;
 using MQTTMessageLib.FileServer;
+using ColorVision.Engine.Media;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
@@ -227,7 +228,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                         foreach (var item in result.PoiResultDatas)
                             DrawPoiPoint.Add(item.Point);
-                        ImageView.AddPOIPoint(DrawPoiPoint);
+                        AddPOIPoint(DrawPoiPoint);
                         listViewSide.Visibility = Visibility.Visible;
                         break;
                     case AlgorithmResultType.LEDStripDetection:
@@ -264,7 +265,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                         foreach (var item in result.PoiResultCIExyuvDatas)
                             DrawPoiPoint.Add(item.Point);
-                        ImageView.AddPOIPoint(DrawPoiPoint);
+                        AddPOIPoint(DrawPoiPoint);
                         listViewSide.Visibility = Visibility.Visible;
                         break;
                     case AlgorithmResultType.POI_Y:
@@ -296,7 +297,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         DrawPoiPoint = new List<POIPoint>();
                         foreach (var item in result.PoiResultCIEYDatas)
                             DrawPoiPoint.Add(item.Point);
-                        ImageView.AddPOIPoint(DrawPoiPoint);
+                        AddPOIPoint(DrawPoiPoint);
                         listViewSide.Visibility = Visibility.Visible;
                         break;
                     case AlgorithmResultType.FOV:
@@ -362,7 +363,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         listViewSide.ItemsSource = result.SFRData;
                         if (result.SFRData.Count > 0)
                         {
-                            ImageView.AddRect(new Rect(10, 10, 10, 10));
+                            AddRect(new Rect(10, 10, 10, 10));
                         }
 
                         break;
@@ -396,7 +397,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         {
                             DrawPoiPoint.Add(item.Point);
                         }
-                        ImageView.AddPOIPoint(DrawPoiPoint);
+                        AddPOIPoint(DrawPoiPoint);
 
                         break;
                     case AlgorithmResultType.Ghost:
@@ -519,7 +520,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             {
                                 points.Add(new Point(item.X, item.Y));
                             }
-                            ImageView.AddPoint(points);
+                            AddPoint(points);
                         }
 
                         break;
@@ -580,13 +581,40 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         {
                             DrawPoiPoint.Add(item.Point);
                         }
-                        ImageView.AddPOIPoint(DrawPoiPoint);
+                        AddPOIPoint(DrawPoiPoint);
                         break;
                     default:
                         break;
                 }
 
             }
+        }
+
+        public void AddPoint(List<Point> points)
+        {
+            int id = 0;
+            foreach (var item in points)
+            {
+                id++;
+                DrawingVisualCircleWord Circle = new();
+                Circle.Attribute.Center = item;
+                Circle.Attribute.Radius = 20 / ImageView.Zoombox1.ContentMatrix.M11;
+                Circle.Attribute.Brush = Brushes.Transparent;
+                Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / ImageView.Zoombox1.ContentMatrix.M11);
+                Circle.Attribute.ID = id;
+                Circle.Render();
+                ImageView.AddVisual(Circle);
+            }
+        }
+
+        public void AddRect(Rect rect)
+        {
+            DrawingVisualRectangleWord Rectangle = new();
+            Rectangle.Attribute.Rect = new Rect(rect.X, rect.Y, rect.Width, rect.Height);
+            Rectangle.Attribute.Brush = Brushes.Transparent;
+            Rectangle.Attribute.Pen = new Pen(Brushes.Red, rect.Width / 30.0);
+            Rectangle.Render();
+            ImageView.AddVisual(Rectangle);
         }
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -615,10 +643,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             ListRow1.Height = new GridLength(1, GridUnitType.Star);
         }
 
-        internal void OpenImage(CVCIEFile fileInfo)
-        {
-            ImageView.OpenImage(fileInfo);
-        }
+        internal void OpenImage(CVCIEFile fileInfo) => ImageView.OpenImage(fileInfo.ToWriteableBitmap());
+
 
         private void Button_Delete_Click(object sender, RoutedEventArgs e)
         {
@@ -664,6 +690,55 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
             SerchPopup.IsOpen = false;
         }
+
+
+        public void AddPOIPoint(List<POIPoint> PoiPoints)
+        {
+            foreach (var item in PoiPoints)
+            {
+                switch (item.PointType)
+                {
+                    case POIPointTypes.Circle:
+                        DrawingVisualCircleWord Circle = new();
+                        Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
+                        Circle.Attribute.Radius = item.Radius;
+                        Circle.Attribute.Brush = Brushes.Transparent;
+                        Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / ImageView.Zoombox1.ContentMatrix.M11);
+                        Circle.Attribute.ID = item.Id ?? -1;
+                        Circle.Attribute.Text = item.Name;
+                        Circle.Render();
+                        ImageView.AddVisual(Circle);
+                        break;
+                    case POIPointTypes.Rect:
+                        DrawingVisualRectangleWord Rectangle = new();
+                        Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
+                        Rectangle.Attribute.Brush = Brushes.Transparent;
+                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / ImageView.Zoombox1.ContentMatrix.M11);
+                        Rectangle.Attribute.ID = item.Id ?? -1;
+                        Rectangle.Attribute.Name = item.Name;
+                        Rectangle.Render();
+                        ImageView.AddVisual(Rectangle);
+                        break;
+                    case POIPointTypes.Mask:
+                        break;
+                    case POIPointTypes.SolidPoint:
+                        DrawingVisualCircleWord Circle1 = new();
+                        Circle1.Attribute.Center = new Point(item.PixelX, item.PixelY);
+                        Circle1.Attribute.Radius = 10;
+                        Circle1.Attribute.Brush = Brushes.Red;
+                        Circle1.Attribute.Pen = new Pen(Brushes.Red, 1 / ImageView.Zoombox1.ContentMatrix.M11);
+                        Circle1.Attribute.ID = item.Id ?? -1;
+                        Circle1.Attribute.Text = item.Name;
+                        Circle1.Render();
+                        ImageView.AddVisual(Circle1);
+                        break;
+                    default:
+                        break;
+                }
+
+            }
+        }
+
 
         public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 

@@ -30,9 +30,11 @@ namespace ColorVision.Common.Extension
 
                 // Convert the 16-bit channel data to 8-bit by taking the most significant byte
                 // This is a simplification and may result in some loss of color precision
-                byte red = pixelData[0];
-                byte green = pixelData[2];
-                byte blue = pixelData[4];
+
+                byte red = (byte)(BitConverter.ToUInt16(pixelData, 0) >> 8);
+                byte green = (byte)(BitConverter.ToUInt16(pixelData, 2) >> 8);
+                byte blue = (byte)(BitConverter.ToUInt16(pixelData, 4) >> 8);
+
 
                 // There is no alpha channel in RGB48, so we assume it's fully opaque (255)
                 return Color.FromArgb(255, red, green, blue);

@@ -334,7 +334,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         }
         public void OpenImage(CVCIEFile fileData)
         {
-            ImageView.OpenImage(fileData);
+            ImageView.OpenImage(fileData.ToWriteableBitmap());
         }
 
         public void ShowResult(MeasureImgResultModel model)

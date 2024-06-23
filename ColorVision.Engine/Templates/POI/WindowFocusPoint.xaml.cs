@@ -299,14 +299,14 @@ namespace ColorVision.Engine.Services.Templates.POI
                         OpenCvSharp.Mat src;
                         if (fileInfo.bpp != 8)
                         {
-                            OpenCvSharp.Mat temp = new(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
+                            OpenCvSharp.Mat temp = OpenCvSharp.Mat.FromPixelData(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
                             src = new OpenCvSharp.Mat();
                             temp.ConvertTo(src, OpenCvSharp.MatType.CV_8U, 1.0 / 256.0);
                             temp.Dispose();
                         }
                         else
                         {
-                             src = new OpenCvSharp.Mat(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
+                             src = OpenCvSharp.Mat.FromPixelData(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
                         }
 
                         BitmapSource bitmapSource = src.ToBitmapSource();
@@ -1416,7 +1416,7 @@ namespace ColorVision.Engine.Services.Templates.POI
 
         private void ShowImage(CVCIEFile fileInfo)
         {
-            OpenCvSharp.Mat src = new(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
+            OpenCvSharp.Mat src = OpenCvSharp.Mat.FromPixelData(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
             OpenCvSharp.Mat dst = null;
             if (fileInfo.bpp == 32)
             {

@@ -56,7 +56,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports.Export
                     if (export.IsExportSrc)
                     {
                         CVFileUtil.ReadCIEFileData(FileName, ref cvcie, index);
-                        src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
+                        src = Mat.FromPixelData(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
                         SaveTo(export, src, SavePath + "\\" + Name + "Src.");
                     }
                     break;
@@ -64,7 +64,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports.Export
                     if (export.IsExportSrc)
                     {
                         CVFileUtil.ReadCIEFileData(FileName, ref cvcie, index);
-                        src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
+                        src = Mat.FromPixelData(cvcie.cols, cvcie.rows, MatType.MakeType(cvcie.Depth, cvcie.channels), cvcie.data);
                         SaveTo(export, src, SavePath + "\\" + Name + "Src.");
                     }
                     break;
@@ -77,7 +77,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports.Export
                         {
                             if (CVFileUtil.Read(cvcie.srcFileName, out CVCIEFile cvraw))
                             {
-                                src = new Mat(cvraw.cols, cvraw.rows, MatType.MakeType(cvraw.Depth, cvraw.channels), cvraw.data);
+                                src = Mat.FromPixelData(cvraw.cols, cvraw.rows, MatType.MakeType(cvraw.Depth, cvraw.channels), cvraw.data);
                                 SaveTo(export, src, SavePath + "\\" + Name + "_Src.");
                             }
                         }
@@ -88,7 +88,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports.Export
                         {
                             if (export.IsExportChannelY)
                             {
-                                src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(MatType.CV_32F, 1), cvcie.data);
+                                src = Mat.FromPixelData(cvcie.cols, cvcie.rows, MatType.MakeType(MatType.CV_32F, 1), cvcie.data);
                                 SaveTo(export, src, SavePath + "\\" + Name + "_Y.");
                             }
                         }
@@ -100,14 +100,14 @@ namespace ColorVision.Engine.UIExport.SolutionExports.Export
                             {
                                 byte[] data = new byte[len];
                                 Buffer.BlockCopy(cvcie.data, 0 * len, data, 0, len);
-                                src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(MatType.CV_32F, 1), data);
+                                src = Mat.FromPixelData(cvcie.cols, cvcie.rows, MatType.MakeType(MatType.CV_32F, 1), data);
                                 SaveTo(export, src, SavePath + "\\" + Name + "_X.");
                             }
                             if (export.IsExportChannelY)
                             {
                                 byte[] data = new byte[len];
                                 Buffer.BlockCopy(cvcie.data, 1 * len, data, 0, len);
-                                src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(MatType.CV_32F, 1), data);
+                                src = Mat.FromPixelData(cvcie.cols, cvcie.rows, MatType.MakeType(MatType.CV_32F, 1), data);
                                 SaveTo(export, src, SavePath + "\\" + Name + "_Y.");
 
                             }
@@ -115,7 +115,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports.Export
                             {
                                 byte[] data = new byte[len];
                                 Buffer.BlockCopy(cvcie.data, 2 * len, data, 0, len);
-                                src = new Mat(cvcie.cols, cvcie.rows, MatType.MakeType(MatType.CV_32F, 1), data);
+                                src = Mat.FromPixelData(cvcie.cols, cvcie.rows, MatType.MakeType(MatType.CV_32F, 1), data);
                                 SaveTo(export, src, SavePath + "\\" + Name + "_Z.");
                             }
                         }

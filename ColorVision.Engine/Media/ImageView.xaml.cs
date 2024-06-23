@@ -3,19 +3,13 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
-using ColorVision.Engine;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Net;
 using ColorVision.UI.Views;
 using ColorVision.Util.Draw.Special;
 using cvColorVision;
-using CVCommCore.CVAlgorithm;
 using log4net;
 using MQTTMessageLib.FileServer;
-using OpenCvSharp.WpfExtensions;
-using SkiaSharp.Views.WPF;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
@@ -27,12 +21,47 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Media
 {
+
+    public interface IImageViewOpen
+    {
+        public string Extension { get; }
+        public BitmapSource? Open(string filePath);
+    }
+
+    public class CVCIEImageViewOpen :IImageViewOpen
+    {
+        public string Extension { get => ".cvraw|.cvcie"; }
+
+        public BitmapSource? Open(string filePath)
+        {
+            if (filePath != null && File.Exists(filePath))
+            {
+                string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
+                if (ext.Contains(".cvraw") || ext.Contains(".cvsrc") || ext.Contains(".cvcie"))
+                {
+                    FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
+                    try
+                    {
+                        return (BitmapSource)new NetFileUtil().OpenLocalCVFile(filePath, fileExtType).ToWriteableBitmap();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message);
+                    }
+                }
+            }
+            return null;
+        }
+
+    }
+
+
+
     /// <summary>
     /// ImageView.xaml 的交互逻辑
     /// </summary>
@@ -161,7 +190,7 @@ namespace ColorVision.Engine.Media
                     if (fn.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
                     {
                         CVFileUtil.ReadCVRaw(fn, out CVCIEFile fileInfo);
-                        OpenImage(fileInfo);
+                        OpenImage(fileInfo.ToWriteableBitmap());
                     }
                     else if (Tool.IsImageFile(fn))
                     {
@@ -223,7 +252,7 @@ namespace ColorVision.Engine.Media
                 {
                     drawing.BaseAttribute.IsShow = false;
                 };
-                MenuItem menuIte2 = new() { Header = "删除(_D)" };
+                MenuItem menuIte2 = new() { Header = ColorVision.Engine.Properties.Resources.MenuDelete };
                 menuIte2.Click += (s, e) =>
                 {
                     ImageShow.RemoveVisual(DrawingVisual);
@@ -504,63 +533,7 @@ namespace ColorVision.Engine.Media
         }
         public string? FilePath { get; set; }
 
-        public void OpenImage(CVCIEFile fileInfo)
-        {
-            try
-            {
-                if (fileInfo.FileExtType == FileExtType.Tif)
-                {
-                    var src = OpenCvSharp.Cv2.ImDecode(fileInfo.data, OpenCvSharp.ImreadModes.Unchanged);
-                    SetImageSource(src.ToWriteableBitmap());
-                }
-                else if (fileInfo.FileExtType == FileExtType.Raw || fileInfo.FileExtType == FileExtType.Src)
-                {
-                    logger.Info("OpenImage .....");
 
-                    OpenCvSharp.Mat src = new(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
-                    OpenCvSharp.Mat dst = null;
-                    if (fileInfo.bpp == 32)
-                    {
-                        OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
-                        dst = new OpenCvSharp.Mat();
-                        src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
-                    }
-                    else
-                    {
-                        dst = src;
-                    }
-                    SetImageSource(dst.ToWriteableBitmap());
-                    dst.Dispose();
-                    src.Dispose();
-                }
-                else if (fileInfo.FileExtType == FileExtType.CIE)
-                {
-                    logger.Info("OpenImage .....");
-
-                    OpenCvSharp.Mat src = new(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
-                    OpenCvSharp.Mat dst = null;
-                    if (fileInfo.bpp == 32)
-                    {
-                        OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
-                        dst = new OpenCvSharp.Mat();
-                        src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
-                    }
-                    else
-                    {
-                        dst = src;
-                    }
-                    var Data = dst.ToWriteableBitmap();
-                    SetImageSource(Data);
-                    dst.Dispose();
-                    src.Dispose();
-                }
-            }
-            catch(Exception ex)
-            {
-                logger.Error(ex);
-                MessageBox.Show(Application.Current.GetActiveWindow(),$"打开文件失败:{ex.Message} ", "ColorVision");
-            }
-        }
 
         public void Clear()
         {
@@ -578,6 +551,12 @@ namespace ColorVision.Engine.Media
             FilePath = null;
         }
 
+        public void OpenImage(WriteableBitmap? writeableBitmap)
+        {
+           if (writeableBitmap != null) 
+                SetImageSource(writeableBitmap);
+        }
+
         public void OpenImage(string? filePath)
         {
             if (filePath != null && File.Exists(filePath))
@@ -589,7 +568,7 @@ namespace ColorVision.Engine.Media
                     try
                     {
                         FilePath = filePath;
-                        OpenImage(new NetFileUtil().OpenLocalCVFile(filePath, fileExtType));
+                        OpenImage(new NetFileUtil().OpenLocalCVFile(filePath, fileExtType).ToWriteableBitmap());
                     }
                     catch (Exception ex)
                     {
@@ -776,79 +755,9 @@ namespace ColorVision.Engine.Media
             
         }
 
-        public void AddPoint(List<Point> points)
-        {
-            int id =0;
-            foreach (var item in points)
-            {
-                id++;
-                DrawingVisualCircleWord Circle = new();
-                Circle.Attribute.Center = item;
-                Circle.Attribute.Radius = 20 / Zoombox1.ContentMatrix.M11;
-                Circle.Attribute.Brush = Brushes.Transparent;
-                Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                Circle.Attribute.ID = id;
-                Circle.Render();
-                ImageShow.AddVisual(Circle);
-            }
-        }
 
-        public void AddRect(Rect rect)
-        {
-            DrawingVisualRectangleWord Rectangle = new();
-            Rectangle.Attribute.Rect = new Rect(rect.X, rect.Y, rect.Width, rect.Height);
-            Rectangle.Attribute.Brush = Brushes.Transparent;
-            Rectangle.Attribute.Pen = new Pen(Brushes.Red, rect.Width / 30.0);
-            Rectangle.Render();
-            ImageShow.AddVisual(Rectangle);
-        }
+        public void AddVisual(Visual visual) => ImageShow.AddVisual(visual);
 
-        public void AddPOIPoint(List<POIPoint> PoiPoints)
-        {
-            foreach (var item in PoiPoints)
-            {
-                switch (item.PointType)
-                {   
-                    case POIPointTypes.Circle:
-                        DrawingVisualCircleWord Circle = new();
-                        Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
-                        Circle.Attribute.Radius = item.Radius;
-                        Circle.Attribute.Brush = Brushes.Transparent;
-                        Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                        Circle.Attribute.ID = item.Id ?? -1;
-                        Circle.Attribute.Text = item.Name;
-                        Circle.Render();
-                        ImageShow.AddVisual(Circle);
-                        break;
-                    case POIPointTypes.Rect:
-                        DrawingVisualRectangleWord Rectangle = new();
-                        Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
-                        Rectangle.Attribute.Brush = Brushes.Transparent;
-                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                        Rectangle.Attribute.ID = item.Id ?? -1;
-                        Rectangle.Attribute.Name = item.Name;
-                        Rectangle.Render();
-                        ImageShow.AddVisual(Rectangle);
-                        break;
-                    case POIPointTypes.Mask:
-                        break;
-                    case POIPointTypes.SolidPoint:
-                        DrawingVisualCircleWord Circle1 = new();
-                        Circle1.Attribute.Center = new Point(item.PixelX, item.PixelY);
-                        Circle1.Attribute.Radius = 10;
-                        Circle1.Attribute.Brush = Brushes.Red;
-                        Circle1.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                        Circle1.Attribute.ID = item.Id ?? -1;
-                        Circle1.Attribute.Text = item.Name;
-                        Circle1.Render();
-                        ImageShow.AddVisual(Circle1);
-                        break;
-                    default:
-                        break;
-                }
-
-            }
-        }
 
         private void reference_Click(object sender, RoutedEventArgs e)
         {
@@ -927,13 +836,11 @@ namespace ColorVision.Engine.Media
 
         public void ShowCVCIE(object sender, ImageInfo imageInfo)
         {
-            int xx = imageInfo.Y;
-            int yy = imageInfo.X;
             float dXVal = 0;
             float dYVal = 0;
             float dZVal = 0;
             float dx = 0, dy = 0, du = 0, dv = 0;
-            _= ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZ.Handle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
+            _= ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZ.Handle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
             ToolBarTop.MouseMagnifier.DrawImageCVCIE(imageInfo, dXVal, dYVal, dZVal, dx, dy, du, dv);
         }
 
