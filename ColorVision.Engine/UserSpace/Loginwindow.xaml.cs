@@ -57,7 +57,7 @@ namespace ColorVision.UserSpace
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            UserDao userDao = new();
+            UserDao userDao = new UserDao();
             if (userDao.Checklogin(Account1.Text, PasswordBox1.Password))
             {
                 Close();

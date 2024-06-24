@@ -37,7 +37,7 @@ namespace ColorVision.Engine.Services.ShowPage.Dao
 
         public ArchiveStatus ArchiveStatus { get => (ArchiveStatus)BatchResultMasterModel.ArchivedFlag; }
 
-        public bool IshowArch => ArchiveStatus == ArchiveStatus.Pending;
+        public bool IshowArch => ArchiveStatus == ArchiveStatus.Pending || ArchiveStatus == ArchiveStatus.NotArchived;
 
 
         public string? Batch { get { return _Batch; } set { _Batch = value; NotifyPropertyChanged(); } }

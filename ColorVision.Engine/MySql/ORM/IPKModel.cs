@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.MySql.ORM
+﻿using ColorVision.Common.MVVM;
+
+namespace ColorVision.Engine.MySql.ORM
 {
     public interface IPKModel
     {
@@ -7,6 +9,12 @@
 
     public class PKModel : IPKModel
     {
+        [Column("id")]
         public int Id { get; set; }  
+    }
+    public class VPKModel : ViewModelBase ,IPKModel
+    {
+        [Column("id")]
+        public int Id { get; set; }
     }
 }

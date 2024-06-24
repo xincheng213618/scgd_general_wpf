@@ -1,10 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
+using System.Collections.Generic;
 using System.ComponentModel;
 
 namespace ColorVision.UserSpace
 {
+
     public class UserConfig : ViewModelBase, IConfig
     {
         public static UserConfig Instance => ConfigHandler.GetInstance().GetRequiredService<UserConfig>();
@@ -13,6 +15,7 @@ namespace ColorVision.UserSpace
         /// </summary>
         public string Account { get => _Account; set { _Account = value; NotifyPropertyChanged(); } }
         private string _Account = string.Empty;
+
         /// <summary>
         /// 密码
         /// </summary>
@@ -30,6 +33,7 @@ namespace ColorVision.UserSpace
         /// </summary>
         public int TenantId { get => _TenantId; set { _TenantId = value; NotifyPropertyChanged(); } }
         private int _TenantId;
+        public ICollection<int> UserTenants { get; set; }
 
         //性别
         public Gender Gender { get => _Gender; set { _Gender = value; NotifyPropertyChanged(); } }

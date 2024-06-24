@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI.Sorts;
+using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -24,6 +25,11 @@ namespace ColorVision.Engine.Services.ShowPage.Dao
         }
 
         public ArchivedDetailModel ArchivedDetailModel { get; set; }
+
+
+        public string OutputValue => JsonConvert.SerializeObject(ArchivedDetailModel.OutputValue, Formatting.Indented);
+
+
     }
 
 

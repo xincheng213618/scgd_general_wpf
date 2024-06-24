@@ -28,7 +28,7 @@
                         </ContextMenu>
                     </ListView.Resources>
                     <ListView.ItemContainerStyle>
-                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}" >
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}" >
                             <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
                         </Style>
                     </ListView.ItemContainerStyle>
@@ -50,7 +50,20 @@
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
-
+                            <GridViewColumn  Header="设备名称">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:ViewArchiveDetailResult}"  >
+                                        <TextBlock Text="{Binding ArchivedDetailModel.DeviceCode}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
+                            <GridViewColumn  Header="输入参数">
+                                <GridViewColumn.CellTemplate>
+                                    <DataTemplate DataType="{x:Type local:ViewArchiveDetailResult}"  >
+                                        <TextBlock Text="{Binding ArchivedDetailModel.InputCfg}"/>
+                                    </DataTemplate>
+                                </GridViewColumn.CellTemplate>
+                            </GridViewColumn>
                             <GridViewColumn  Header="名称">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewArchiveDetailResult}"  >
@@ -59,11 +72,10 @@
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
 
-
-                            <GridViewColumn  Header="Data">
+                            <GridViewColumn  Header="Data"  Width="600">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type local:ViewArchiveDetailResult}"  >
-                                        <TextBlock Text="{Binding ArchivedDetailModel.OutputValue}"/>
+                                        <TextBox Text="{Binding OutputValue}" Height="100" TextWrapping="WrapWithOverflow" />
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

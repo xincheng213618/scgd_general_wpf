@@ -9,12 +9,23 @@ namespace ColorVision.Engine.Services.ShowPage.Dao
 {
     public class ArchivedDetailModel : PKModel
     {
+        [Column("guid")]
         public string Guid { get; set; }
+        [Column("p_guid")]
         public string PGuid { get; set; }
+        [Column("detail_type")]
         public string DetailType { get; set; }
+        [Column("z_index")]
         public int? ZIndex { get; set; }
+        [Column("output_value")]
         public string OutputValue { get; set; }
+        [Column("device_code")]
+        public string DeviceCode { get; set; }
+        [Column("device_cfg")]
+        public string DeviceCfg { get; set; }
 
+        [Column("input_cfg")]
+        public string InputCfg { get; set; }
 
     }
     public class ArchivedDetailDao : BaseTableDao<ArchivedDetailModel>
@@ -25,15 +36,6 @@ namespace ColorVision.Engine.Services.ShowPage.Dao
         {
 
         }
-
-        public override ArchivedDetailModel GetModelFromDataRow(DataRow item) => new()
-        {
-            Guid = item.Field<string>("guid"),
-            PGuid = item.Field<string>("p_guid"),
-            DetailType = item.Field<string>("detail_type"),
-            ZIndex = item.Field<int?>("z_index"),
-            OutputValue = item.Field<string>("output_value"),
-        };
 
         public List<ArchivedDetailModel> ConditionalQuery(string batchCode)
         {

@@ -233,10 +233,8 @@ namespace ColorVision.Util.Draw.Special
                     DrawImage(imageInfo);
                     MouseMoveColorHandler?.Invoke(this, imageInfo);
                 }
-            }
+            }  
         }
-
-
 
         public void MouseEnter(object sender, MouseEventArgs e) => DrawVisualImageControl(true);
 

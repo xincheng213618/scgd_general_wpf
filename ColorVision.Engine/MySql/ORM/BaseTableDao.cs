@@ -1,4 +1,5 @@
-﻿using log4net;
+﻿using ColorVision.Engine.Services.Dao;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -6,18 +7,18 @@ using System.Linq;
 
 namespace ColorVision.Engine.MySql.ORM
 {
-    public class BaseTableDao<T> : BaseDao where T : IPKModel
+    public class BaseTableDao<T> : BaseDao where T : IPKModel ,new()
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(BaseTableDao<T>));
 
-        public BaseTableDao(string tableName, string pkField) : base(tableName, pkField)
+        public BaseTableDao(string tableName, string pkField ="id") : base(tableName, pkField)
         {
 
         }
 
-        public virtual T? GetModelFromDataRow(DataRow item) => default;
-        public virtual DataRow Model2Row(T item, DataRow row) => row;
-        public virtual DataTable CreateColumns(DataTable dataTable) => dataTable;
+        public virtual T? GetModelFromDataRow(DataRow item) => ReflectionHelper.GetModelFromDataRow<T>(item);
+        public virtual DataRow Model2Row(T item, DataRow row) => ReflectionHelper.Model2Row(item, row);
+        public virtual DataTable CreateColumns(DataTable dataTable) => ReflectionHelper.CreateColumns<ModDetailModel>(dataTable);
 
         public DataTable SelectById(int id)
         {

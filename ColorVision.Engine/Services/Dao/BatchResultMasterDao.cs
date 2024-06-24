@@ -20,57 +20,32 @@ namespace ColorVision.Engine.Services.DAO
             CreateDate = DateTime.Now;
             TotalTime = 0;
         }
-
+        [Column("t_id")]
         public int? TId { get; set; }
+        [Column("name")]
         public string? Name { get; set; }
+        [Column("code")]
         public string? Code { get; set; }
+        [Column("create_date")]
         public DateTime? CreateDate { get; set; }
+        [Column("total_time")]
         public int? TotalTime { get; set; }
+        [Column("result")]
         public string? Result { get; set; }
+        [Column("archived_flag")]
         public short ArchivedFlag { get; set; }
+        [Column("tenant_id")]
         public int TenantId { get; set; }
     }
+
+
+
     public class BatchResultMasterDao : BaseTableDao<BatchResultMasterModel>
     {
         public static BatchResultMasterDao Instance { get; set; } = new BatchResultMasterDao();
 
-        public BatchResultMasterDao() : base("t_scgd_measure_batch", "id")
+        public BatchResultMasterDao() : base("t_scgd_measure_batch")
         {
-        }
-
-        public override BatchResultMasterModel GetModelFromDataRow(DataRow item)
-        {
-            BatchResultMasterModel model = new()
-            {
-                Id = item.Field<int>("id"),
-                TId = item.Field<int?>("t_id"),
-                Name = item.Field<string>("name"),
-                Code = item.Field<string>("code"),
-                TenantId = item.Field<int>("tenant_id"),
-                TotalTime = item.Field<int?>("total_time"),
-                Result = item.Field<string>("result"),
-                CreateDate = item.Field<DateTime?>("create_date"),
-                ArchivedFlag = item.Field<short>("archived_flag")
-            };
-
-            return model;
-        }
-
-        public override DataRow Model2Row(BatchResultMasterModel item, DataRow row)
-        {
-            if (item != null)
-            {
-                row["id"] = item.Id;
-                row["name"] = item.Name;
-                row["code"] = item.Code;
-                row["t_id"] = item.TId;
-                row["create_date"] = item.CreateDate;
-                row["result"] = item.Result;
-                row["total_time"] = item.TotalTime;
-                row["tenant_id"] = item.TenantId;
-                row["archived_flag"] = DataTableExtension.IsDBNull(item.ArchivedFlag);
-            }
-            return row;
         }
 
         public List<BatchResultMasterModel> ConditionalQuery(string batchCode)
