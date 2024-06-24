@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.DwayneNeed.Win32.Gdi32;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -19,8 +20,31 @@ namespace ColorVision.Engine.MySql.ORM
         }
     }
 
+    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
+    public class TableAttribute : Attribute
+    {
+        public string TableName { get; }
+
+        public TableAttribute(string tableName)
+        {
+            TableName = tableName;
+        }
+    }
+
     public static class ReflectionHelper
     {
+
+        public static BaseTableDao<T>? Create<T>() where T :IPKModel, new()
+        {
+            var type = typeof(BaseTableDao<>);
+            var TableName = GetTableName(type);
+
+            var genericType = type.MakeGenericType(typeof(T));
+            return (BaseTableDao<T>)Activator.CreateInstance(genericType, TableName);
+        }
+
+
+
         private static readonly Dictionary<Type, PropertyInfo[]> PropertyCache = new Dictionary<Type, PropertyInfo[]>();
         public static T GetModelFromDataRow<T>(DataRow row) where T : new()
         {
@@ -91,6 +115,12 @@ namespace ColorVision.Engine.MySql.ORM
         {
             var attribute = prop.GetCustomAttributes(typeof(ColumnAttribute), false).FirstOrDefault() as ColumnAttribute;
             return attribute?.Name ?? prop.Name;
+        }
+
+        private static string GetTableName(Type type)
+        {
+            var attribute = type.GetCustomAttributes(typeof(TableAttribute), false).FirstOrDefault() as TableAttribute;
+            return attribute?.TableName ?? type.Name;
         }
     }
 

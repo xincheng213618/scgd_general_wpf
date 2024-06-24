@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.UserSpace.Dao;
 using log4net;
 using MySql.Data.MySqlClient;
 
 namespace ColorVision.UserSpace.Dao
 {
-
+    [Table("t_scgd_sys_user")]
     public class UserModel : VPKModel
     {
         public string UserName { get => _UserName; set { _UserName = value; NotifyPropertyChanged(); } }
@@ -18,7 +20,11 @@ namespace ColorVision.UserSpace.Dao
         /// </summary>
         public int TenantId { get => _TenantId; set { _TenantId = value; NotifyPropertyChanged(); } }
         private int _TenantId;
-        public ICollection<int> UserTenants { get; set; }
+
+        public  List<Tenant?> UserTenants()
+        {
+            return UserTenantDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "user_id", Id } }).Select(item => TenantDao.Instance.GetById(item.Id)).ToList();
+        }
 
         //性别
         public Gender Gender { get => _Gender; set { _Gender = value; NotifyPropertyChanged(); } }
