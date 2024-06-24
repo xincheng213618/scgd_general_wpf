@@ -17,36 +17,58 @@ namespace ColorVision.Common.Extension
             {
                 throw new ArgumentOutOfRangeException(nameof(bitmapImage));
             }
-            byte[] pixelData;
-            CroppedBitmap croppedBitmap;
-            if (bitmapImage is WriteableBitmap writeableBitmap && writeableBitmap.Format.ToString() == "Rgb48")
+
+            PixelFormat format = bitmapImage.Format;
+            int bitsPerPixel = format.BitsPerPixel;
+            int bytesPerPixel = (bitsPerPixel + 7) / 8; // Round up to the nearest whole byte
+
+            byte[] pixelData = new byte[bytesPerPixel];
+            CroppedBitmap croppedBitmap = new CroppedBitmap(bitmapImage, new Int32Rect(x, y, 1, 1));
+            croppedBitmap.CopyPixels(pixelData, bytesPerPixel, 0);
+
+            // Handle different pixel formats
+            switch (format)
             {
-                // For RGB48 format, each channel is 16 bits, so we need 6 bytes per pixel
-                pixelData = new byte[6];
-                croppedBitmap = new CroppedBitmap(bitmapImage, new Int32Rect(x, y, 1, 1));
+                case PixelFormat fmt when fmt == PixelFormats.Rgb48:
+                    // For RGB48 format, each channel is 16 bits
+                    ushort red16 = BitConverter.ToUInt16(pixelData, 0);
+                    ushort green16 = BitConverter.ToUInt16(pixelData, 2);
+                    ushort blue16 = BitConverter.ToUInt16(pixelData, 4);
 
-                // Stride is the number of bytes per pixel row, for RGB48 it's 6 bytes per pixel
-                croppedBitmap.CopyPixels(pixelData, 6, 0);
+                    // Scale down to 8 bits
+                    byte red = (byte)(red16 >> 8);
+                    byte green = (byte)(green16 >> 8);
+                    byte blue = (byte)(blue16 >> 8);
 
-                // Convert the 16-bit channel data to 8-bit by taking the most significant byte
-                // This is a simplification and may result in some loss of color precision
+                    // Return color with full opacity
+                    return Color.FromArgb(255, red, green, blue);
 
-                byte red = (byte)(BitConverter.ToUInt16(pixelData, 0) >> 8);
-                byte green = (byte)(BitConverter.ToUInt16(pixelData, 2) >> 8);
-                byte blue = (byte)(BitConverter.ToUInt16(pixelData, 4) >> 8);
+                case PixelFormat fmt when fmt == PixelFormats.Bgr24:
+                    // For BGR24 format, each channel is 8 bits
+                    return Color.FromArgb(255, pixelData[2], pixelData[1], pixelData[0]);
 
+                case PixelFormat fmt when fmt == PixelFormats.Bgra32 || fmt == PixelFormats.Pbgra32:
+                    // For BGRA32 and PBGRA32 formats, each channel is 8 bits
+                    return Color.FromArgb(pixelData[3], pixelData[2], pixelData[1], pixelData[0]);
+                case PixelFormat fmt when fmt == PixelFormats.Bgr32 || fmt == PixelFormats.Bgr32:
+                    // For BGRA32 and PBGRA32 formats, each channel is 8 bits
+                    return Color.FromArgb(255, pixelData[2], pixelData[1], pixelData[0]);
 
-                // There is no alpha channel in RGB48, so we assume it's fully opaque (255)
-                return Color.FromArgb(255, red, green, blue);
+                case PixelFormat fmt when fmt == PixelFormats.Gray8:
+                    // For Gray8 format, single channel is 8 bits
+                    return Color.FromArgb(255, pixelData[0], pixelData[0], pixelData[0]);
+
+                case PixelFormat fmt when fmt == PixelFormats.Gray16:
+                    // For Gray16 format, single channel is 16 bits
+                    ushort gray16 = BitConverter.ToUInt16(pixelData, 0);
+                    byte gray = (byte)(gray16 >> 8);
+                    return Color.FromArgb(255, gray, gray, gray);
+
+                default:
+                    throw new NotSupportedException($"Pixel format {format} is not supported.");
             }
-
-            Color color = Colors.Black;
-            pixelData = new byte[4];
-            croppedBitmap = new CroppedBitmap(bitmapImage, new Int32Rect(x, y, 1, 1));
-            croppedBitmap.CopyPixels(pixelData, 4, 0);
-            color = Color.FromArgb(pixelData[3], pixelData[2], pixelData[1], pixelData[0]);
-            return color;
         }
+
 
         public static string ToHex(this Color color) => "#" + color.R.ToString("X2") + color.G.ToString("X2") + color.B.ToString("X2");
 
