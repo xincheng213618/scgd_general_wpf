@@ -23,11 +23,6 @@ namespace ColorVision.Engine.UserSpace.Dao
 
         public UserTenantDao() : base("t_scgd_sys_user2tenant")
         {
-            List<Tenant> tenants = new List<Tenant>();
-            foreach (var item in UserTenantDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "user_id", userId } }))
-            {
-                tenants.Add(TenantDao.Instance.GetById(item.Id));
-            }
         }
     }
 
