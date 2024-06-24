@@ -6,12 +6,19 @@ namespace ColorVision.Engine.Services.Dao
 {
     public class SysModMasterModel : PKModel
     {
+        [Column("name")]
         public string? Name { get; set; }
+        [Column("code")]
         public string? Code { get; set; }
+        [Column("create_date")]
         public DateTime? CreateDate { get; set; } = DateTime.Now;
+        [Column("is_enable")]
         public bool IsEnable { get; set; } = true;
+        [Column("is_delete")]
         public bool? IsDelete { get; set; } = false;
+        [Column("remark")]
         public string? Remark { get; set; }
+        [Column("tenant_id")]
         public int TenantId { get; set; }
     }
 
@@ -20,36 +27,6 @@ namespace ColorVision.Engine.Services.Dao
         public static SysModMasterDao Instance { get; set; } = new SysModMasterDao();
         public SysModMasterDao() : base("t_scgd_sys_dictionary_mod_master", "id")
         {
-        }
-
-        public override SysModMasterModel GetModelFromDataRow(DataRow item)
-        {
-            SysModMasterModel model = new()
-            {
-                Id = item.Field<int>("id"),
-                Name = item.Field<string>("name"),
-                Code = item.Field<string>("code"),
-                CreateDate = item.Field<DateTime?>("create_date"),
-                IsEnable = item.Field<bool>("is_enable"),
-                IsDelete = item.Field<bool>("is_delete"),
-                Remark = item.Field<string?>("remark"),
-            };
-
-            return model;
-        }
-        public override DataRow Model2Row(SysModMasterModel item, DataRow row)
-        {
-            if (item != null)
-            {
-                row["id"] = item.Id;
-                row["name"] = item.Name;
-                row["code"] = item.Code;
-                row["create_date"] = item.CreateDate;
-                row["is_enable"] = item.IsEnable;
-                row["is_delete"] = item.IsDelete;
-                row["remark"] = item.Remark;   
-            }
-            return row;
         }
     }
 }

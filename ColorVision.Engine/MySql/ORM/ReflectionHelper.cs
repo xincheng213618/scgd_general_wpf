@@ -22,7 +22,6 @@ namespace ColorVision.Engine.MySql.ORM
     public static class ReflectionHelper
     {
         private static readonly Dictionary<Type, PropertyInfo[]> PropertyCache = new Dictionary<Type, PropertyInfo[]>();
-
         public static T GetModelFromDataRow<T>(DataRow row) where T : new()
         {
             T model = new T();
@@ -37,7 +36,19 @@ namespace ColorVision.Engine.MySql.ORM
                     var targetType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
 
                     // Convert the value to the target type
-                    var safeValue = Convert.ChangeType(value, targetType);
+                    object safeValue;
+                    if (targetType.IsEnum)
+                    {
+                        // If the target type is an enum, convert the value to the underlying type of the enum
+                        var enumUnderlyingType = Enum.GetUnderlyingType(targetType);
+                        var enumValue = Convert.ChangeType(value, enumUnderlyingType);
+                        safeValue = Enum.ToObject(targetType, enumValue);
+                    }
+                    else
+                    {
+                        safeValue = Convert.ChangeType(value, targetType);
+                    }
+
                     prop.SetValue(model, safeValue);
                 }
             }

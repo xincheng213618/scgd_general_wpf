@@ -38,30 +38,35 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
 
     public class CameraLicenseModel : ViewModelBase,IPKModel, ISortID
     {
+        [Column("id")]
         public int Id { get; set; }
         public CameraLicenseModel()
         {
             CreateDate = DateTime.Now;
             ExpiryDate = DateTime.Now;
         }
+        [Column("code")]
         public string? Code { get; set; }
+        [Column("res_dev_cam_pid")]
         public int? DevCameraId { get; set; }
-
+        [Column("res_dev_cali_pid")]
         public int? DevCaliId { get; set; }
 
+        [Column("value")]
         public string? LicenseValue { get; set; }
 
         public string? LicenseContent { get => Tool.Base64Decode(LicenseValue?? string.Empty); }
 
         public ColorVisionLincense ColorVisionLincense { get => JsonConvert.DeserializeObject<ColorVisionLincense>(LicenseContent??string.Empty)?? new ColorVisionLincense(); }
-
+        [Column("model")]
         public string? Model { get; set; }
-
+        [Column("mac_sn")]
         public string? MacAddress { get; set; }
-
+        [Column("expired")]
         public DateTime? ExpiryDate { get; set; }
-
+        [Column("customer_name")]
         public string? CusTomerName { get; set; }
+        [Column("create_date")]
         public DateTime? CreateDate { get; set; }
 
     }
@@ -73,52 +78,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
         public CameraLicenseDao() : base("t_scgd_camera_license", "id")
         {
 
-        }
-
-        public override DataTable CreateColumns(DataTable dataTable)
-        {
-            dataTable.Columns.Add("id", typeof(int));
-            dataTable.Columns.Add("customer_name", typeof(string));
-            dataTable.Columns.Add("mac_sn", typeof(string));
-            dataTable.Columns.Add("model", typeof(string));
-            dataTable.Columns.Add("value", typeof(string));
-            dataTable.Columns.Add("create_date", typeof(DateTime));
-            dataTable.Columns.Add("expired", typeof(DateTime));
-            dataTable.Columns.Add("code", typeof(string));
-            dataTable.Columns.Add("res_dev_cam_pid", typeof(int));
-            dataTable.Columns.Add("res_dev_cali_pid", typeof(int));
-            return dataTable;
-        }
-
-        public override CameraLicenseModel GetModelFromDataRow(DataRow item) => new()
-        {
-            Id = item.Field<int>("id"),
-            LicenseValue = item.Field<string?>("value"),
-            Model = item.Field<string?>("model"),
-            MacAddress = item.Field<string?>("mac_sn"),
-            CusTomerName = item.Field<string?>("customer_name"),
-            CreateDate = item.Field<DateTime>("create_date"),
-            ExpiryDate = item.Field<DateTime?>("expired"),
-            //Code = item.Field<string?>("code"),
-            DevCameraId = item.Field<int?>("res_dev_cam_pid"),
-            DevCaliId = item.Field<int?>("res_dev_cali_pid")
-        };
-
-        public override DataRow Model2Row(CameraLicenseModel item, DataRow row)
-        {
-            if (item != null)
-            {
-                row["id"] = item.Id;
-                row["value"] = item.LicenseValue;
-                row["model"] = item.Model;
-                row["mac_sn"] = item.MacAddress;
-                row["customer_name"] = item.CusTomerName;
-                row["create_date"] = item.CreateDate;
-                row["expired"] = item.ExpiryDate;
-                row["res_dev_cam_pid"] = DataTableExtension.IsDBNull(item.DevCameraId);
-                row["res_dev_cali_pid"] = DataTableExtension.IsDBNull(item.DevCaliId);
-            }
-            return row;
         }
 
         public CameraLicenseModel? GetByMAC(string Code) => GetByParam(new Dictionary<string, object>() { { "mac_sn", Code } });

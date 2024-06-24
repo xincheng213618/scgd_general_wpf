@@ -11,13 +11,19 @@ namespace ColorVision.Engine.Services.ShowPage.Dao
 
     public class ArchivedMasterModel : PKModel
     {
+        [Column("code")]
         public string Code { get; set; }
+        [Column("name")]
         public string Name { get; set; }
+        [Column("data")]
         public string Data { get; set; }
+        [Column("remark")]
         public string Remark { get; set; }
+        [Column("tenant_id")]
         public int? TenantId { get; set; }
-
+        [Column("create_date")]
         public DateTime? CreateDate { get; set; } = DateTime.Now;
+        [Column("arch_date")]
         public DateTime? ArchDate { get; set; } = DateTime.Now;
 
     }
@@ -29,17 +35,6 @@ namespace ColorVision.Engine.Services.ShowPage.Dao
         {
 
         }
-
-        public override ArchivedMasterModel GetModelFromDataRow(DataRow item) => new()
-        {
-            Name = item.Field<string>("name"),
-            TenantId = item.Field<int?>("tenant_id"),
-            Code = item.Field<string>("code"),
-            Data = item.Field<string>("data"),
-            Remark = item.Field<string>("data"),
-            ArchDate = item.Field<DateTime?>("arch_date"),
-            CreateDate = item.Field<DateTime?>("create_date"),
-        };
 
         public List<ArchivedMasterModel> ConditionalQuery(string batchCode)
         {
