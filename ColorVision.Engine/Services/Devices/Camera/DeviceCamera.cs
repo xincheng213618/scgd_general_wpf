@@ -6,6 +6,7 @@ using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using ColorVision.Util.Interfaces;
 using log4net;
@@ -104,14 +105,14 @@ namespace ColorVision.Engine.Services.Devices.Camera
             MsgRecord msgRecord =  DeviceService.GetAllCameraID();
             msgRecord.MsgSucessed += (e) =>
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(),"GetAllCameraID Sucess");
+                MessageBox1.Show(Application.Current.GetActiveWindow(),"GetAllCameraID Sucess");
                 PhyCameraManager.GetInstance().LoadPhyCamera();
             };
         }
 
         public void SaveDis()
         {
-            if (MessageBox.Show(Application.Current.GetActiveWindow(), "是否保存当前界面的曝光配置", "ColorVison", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), "是否保存当前界面的曝光配置", "ColorVison", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
             SaveConfig();
         }
 
@@ -130,11 +131,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
             var model = CameraTempDao.Instance.GetLatestCameraTemp(SysResourceModel.Id);
             if (model != null)
             {
-                MessageBox.Show(Application.Current.MainWindow, $"{model.CreateDate:HH:mm:ss} {Environment.NewLine}温度:{model.TempValue}");
+                MessageBox1.Show(Application.Current.MainWindow, $"{model.CreateDate:HH:mm:ss} {Environment.NewLine}温度:{model.TempValue}");
             }
             else
             {
-                MessageBox.Show(Application.Current.MainWindow, "查询不到对应的温度数据");
+                MessageBox1.Show(Application.Current.MainWindow, "查询不到对应的温度数据");
             }
         }
 

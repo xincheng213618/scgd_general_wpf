@@ -10,6 +10,7 @@ using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.UIExport.SolutionExports.Export;
 using ColorVision.Net;
+using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
@@ -124,7 +125,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 handler?.Close();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MessageBox.Show(Application.Current.MainWindow, "文件打开失败", "ColorVision");
+                    MessageBox1.Show(Application.Current.MainWindow, "文件打开失败", "ColorVision");
                 });
             }
         }
@@ -221,7 +222,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                     case MQTTFileServerEventEnum.Event_File_Download:
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            MessageBox.Show("文件下载失败");
+                            MessageBox1.Show("文件下载失败");
                         });
                         break;
                     case MQTTFileServerEventEnum.Event_File_GetChannel:
@@ -253,7 +254,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             if (listView1.SelectedIndex < 0)
             {
-                MessageBox.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
+                MessageBox1.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
                 return;
             }
             using var dialog = new System.Windows.Forms.SaveFileDialog();
@@ -465,7 +466,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 }
                 else
                 {
-                    MessageBox.Show("请先选择您要切换的图像");
+                    MessageBox1.Show("请先选择您要切换的图像");
                 }
 
             }
@@ -530,7 +531,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 }
                 else
                 {
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到原始文件", "ColorVision");
+                    MessageBox1.Show(WindowHelpers.GetActiveWindow(), "找不到原始文件", "ColorVision");
                 }
             }
         }
@@ -539,12 +540,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         {
             if (!ImageView.IsCVCIE)
             {
-                MessageBox.Show("仅对CVCIE图像支持");
+                MessageBox1.Show("仅对CVCIE图像支持");
                 return;
             }
             if (ComboxPOITemplate.SelectedValue is not PoiParam poiParams)
             {
-                MessageBox.Show("需要配置关注点");
+                MessageBox1.Show("需要配置关注点");
                 return;
             }
 

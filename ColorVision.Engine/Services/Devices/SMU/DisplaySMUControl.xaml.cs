@@ -2,6 +2,7 @@
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Templates;
+using ColorVision.Themes;
 using ColorVision.UI;
 using CVCommCore;
 using System;
@@ -189,7 +190,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 WindowTemplate windowTemplate;
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
-                    MessageBox.Show(Properties.Resources.DatabaseConnectionFailed, "ColorVision");
+                    MessageBox1.Show(Properties.Resources.DatabaseConnectionFailed, "ColorVision");
                     return;
                 }
                 switch (control.Tag?.ToString() ?? string.Empty)

@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
 using log4net;
@@ -170,7 +171,7 @@ namespace ColorVision.Update
 
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            if (MessageBox.Show($"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?",$"{ Properties.Resources.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            if (MessageBox1.Show($"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?",$"{ Properties.Resources.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
                                 Update(LatestVersion, Path.GetTempPath());
                             }
@@ -180,7 +181,7 @@ namespace ColorVision.Update
                     {
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            if (MessageBox.Show($"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            if (MessageBox1.Show($"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
                                 Update(LatestVersion, Path.GetTempPath());
                             }
@@ -192,7 +193,7 @@ namespace ColorVision.Update
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         if (detection)
-                            MessageBox.Show(Application.Current.GetActiveWindow(),Properties.Resources.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
+                            MessageBox1.Show(Application.Current.GetActiveWindow(),Properties.Resources.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
                     });
 
                 }

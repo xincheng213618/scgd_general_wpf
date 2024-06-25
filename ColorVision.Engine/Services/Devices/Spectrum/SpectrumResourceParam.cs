@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using ColorVision.Themes;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {
@@ -45,7 +46,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(SpectrumResourceParam)}模板失败", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(SpectrumResourceParam)}模板失败", "ColorVision");
             }
         }
     }

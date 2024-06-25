@@ -10,6 +10,7 @@ using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Net;
+using ColorVision.Themes;
 using ColorVision.UI;
 using CVCommCore.CVAlgorithm;
 using log4net;
@@ -199,7 +200,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         {
             if (comboBox.SelectedIndex == -1)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), errorMessage, "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), errorMessage, "ColorVision");
                 return false;
             }
             return true;
@@ -386,7 +387,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 {
                     if (string.IsNullOrWhiteSpace(AlgBatchCode.Text))
                     {
-                        MessageBox.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
+                        MessageBox1.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
                         return false;
                     }
                     sn = AlgBatchCode.Text;
@@ -402,7 +403,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 }
                 if (string.IsNullOrWhiteSpace(imgFileName))
                 {
-                    MessageBox.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
+                    MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
                     return false;
                 }
                 return true;
@@ -477,7 +478,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         {
             if (string.IsNullOrWhiteSpace(CB_CIEImageFiles.Text))
             {
-                MessageBox.Show("请先选中图片");
+                MessageBox1.Show("请先选中图片");
                 return;
             }
             handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
@@ -515,7 +516,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             {
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
-                    MessageBox.Show(Application.Current.MainWindow, "数据库连接失败，请先连接数据库在操作", "ColorVision");
+                    MessageBox1.Show(Application.Current.MainWindow, "数据库连接失败，请先连接数据库在操作", "ColorVision");
                     return;
                 }
                 switch (button.Tag?.ToString() ?? string.Empty)
@@ -620,7 +621,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         {
             if (string.IsNullOrWhiteSpace(CB_RawImageFiles.Text))
             {
-                MessageBox.Show("请先选中图片");
+                MessageBox1.Show("请先选中图片");
                 return;
             }
             handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);

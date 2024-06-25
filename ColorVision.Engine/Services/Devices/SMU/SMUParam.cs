@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
 using System.Windows;
+using ColorVision.Themes;
 
 namespace ColorVision.Engine.Services.Devices.SMU
 {
@@ -30,7 +31,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         {
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(),"数据库连接失败，请先连接数据库在操作", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(),"数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
             new WindowTemplate(new TemplateSMUParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;

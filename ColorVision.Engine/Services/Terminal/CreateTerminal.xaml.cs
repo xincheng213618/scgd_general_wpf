@@ -65,7 +65,7 @@ namespace ColorVision.Engine.Services.Terminal
             var deviceS = ServiceManager.GetInstance().DeviceServices.FirstOrDefault(x => x.Code == CreateCode.Text);
             if (deviceS != null)
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "设备标识已存在,不允许重复添加","ColorVision");
+                MessageBox1.Show(WindowHelpers.GetActiveWindow(), "设备标识已存在,不允许重复添加","ColorVision");
                 return;
             }
             DeviceService deviceService = null;
@@ -216,7 +216,7 @@ namespace ColorVision.Engine.Services.Terminal
             }
             else
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "创建失败", "ColorVision");
+                MessageBox1.Show(WindowHelpers.GetActiveWindow(), "创建失败", "ColorVision");
             }
 
         }

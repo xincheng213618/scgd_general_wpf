@@ -70,6 +70,15 @@ namespace ColorVision.Util.Properties {
         }
         
         /// <summary>
+        ///   查找类似 取消 的本地化字符串。
+        /// </summary>
+        public static string Cancel {
+            get {
+                return ResourceManager.GetString("Cancel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 清除 的本地化字符串。
         /// </summary>
         public static string Clear {
@@ -304,11 +313,29 @@ namespace ColorVision.Util.Properties {
         }
         
         /// <summary>
+        ///   查找类似 否 的本地化字符串。
+        /// </summary>
+        public static string No {
+            get {
+                return ResourceManager.GetString("No", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 未找到相关项目 的本地化字符串。
         /// </summary>
         public static string NoRelatedItemsFound {
             get {
                 return ResourceManager.GetString("NoRelatedItemsFound", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 确认 的本地化字符串。
+        /// </summary>
+        public static string OK {
+            get {
+                return ResourceManager.GetString("OK", resourceCulture);
             }
         }
         
@@ -543,6 +570,15 @@ namespace ColorVision.Util.Properties {
         public static string TransparentWindow {
             get {
                 return ResourceManager.GetString("TransparentWindow", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 是 的本地化字符串。
+        /// </summary>
+        public static string Yes {
+            get {
+                return ResourceManager.GetString("Yes", resourceCulture);
             }
         }
     }

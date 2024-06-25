@@ -279,4 +279,16 @@
   <data name="ThemeCyan" xml:space="preserve">
     <value>Голубой</value>
   </data>
+  <data name="Yes" xml:space="preserve">
+    <value>да</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>нет</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>ХОРОШО</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Отмена</value>
+  </data>
 </root>

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Themes;
 using ColorVision.UI;
 using log4net;
 using System;
@@ -61,12 +62,12 @@ namespace ColorVision.Update
                             // 如果找到匹配项，提取变更日志
                             string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
                             // 显示变更日志
-                            MessageBox.Show(Application.Current.GetActiveWindow(), $"{changeLogForCurrentVersion.ReplaceLineEndings()}", $"{currentVersion} {Properties.Resources.ChangeLog}：");
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), $"{changeLogForCurrentVersion.ReplaceLineEndings()}", $"{currentVersion} {Properties.Resources.ChangeLog}：");
                         }
                         else
                         {
                             // 如果未找到匹配项，说明没有为当前版本列出变更日志
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "1.修复了一些已知的BUG", $"{currentVersion} {Properties.Resources.ChangeLog}：");
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), "1.修复了一些已知的BUG", $"{currentVersion} {Properties.Resources.ChangeLog}：");
                         }
 
                     }
@@ -75,8 +76,8 @@ namespace ColorVision.Update
                         log.Error(ex.Message);
                     }
                 });
-                MainWindowConfig.Instance.LastOpenVersion = Assembly.GetExecutingAssembly().GetName().Version;
             }
+            MainWindowConfig.Instance.LastOpenVersion = Assembly.GetExecutingAssembly().GetName().Version;
         }
 
 

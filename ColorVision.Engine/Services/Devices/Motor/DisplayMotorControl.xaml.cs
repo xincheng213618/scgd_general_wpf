@@ -1,4 +1,5 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Themes;
+using ColorVision.UI;
 using CVCommCore;
 using System;
 using System.Windows;
@@ -64,7 +65,7 @@ namespace ColorVision.Engine.Services.Devices.Motor
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.MainWindow,"指令已经发送请稍等","ColorVision");
+                    MessageBox1.Show(Application.Current.MainWindow,"指令已经发送请稍等","ColorVision");
                 }
             }
         }

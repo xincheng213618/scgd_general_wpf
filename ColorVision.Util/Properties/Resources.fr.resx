@@ -279,4 +279,16 @@
   <data name="ThemeCyan" xml:space="preserve">
     <value>Cyan</value>
   </data>
+  <data name="Yes" xml:space="preserve">
+    <value>Oui</value>
+  </data>
+  <data name="No" xml:space="preserve">
+    <value>Non</value>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>D'ACCORD</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Annuler</value>
+  </data>
 </root>

@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Scheduler;
+using ColorVision.Themes;
 using ColorVision.UI;
 using cvColorVision;
 using CVCommCore;
@@ -223,7 +224,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     {
                         if (Device.PhyCamera != null && Device.PhyCamera.CameraLicenseModel?.DevCaliId == null)
                         {
-                            MessageBox.Show(Application.Current.GetActiveWindow(), "使用校正模板需要先配置校正服务", "ColorVision");
+                            MessageBox1.Show(Application.Current.GetActiveWindow(), "使用校正模板需要先配置校正服务", "ColorVision");
                             return;
                         }
                     }
@@ -245,7 +246,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     {
                         if (s == MsgRecordState.Timeout)
                         {
-                            MessageBox.Show("取图失败,请检查是否为物理相机配置校正");
+                            MessageBox1.Show("取图失败,请检查是否为物理相机配置校正");
                         }
                     };
                 }  
@@ -308,7 +309,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     }
                     else
                     {
-                        MessageBox.Show("视频模式下，本地端口打开失败");
+                        MessageBox1.Show("视频模式下，本地端口打开失败");
                         logger.Debug($"Local socket open failed.{host}:{port}");
                     }
                 }
@@ -353,12 +354,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (Device.PhyCamera == null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
                 return;
             }
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
-                MessageBox.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
+                MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
                 return;
             }
             var ITemplate = new TemplateCalibrationParam(Device.PhyCamera);

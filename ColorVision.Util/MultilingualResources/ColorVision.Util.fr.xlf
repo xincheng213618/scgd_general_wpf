@@ -7,6 +7,10 @@
           <source>应用</source>
           <target state="new">application</target>
         </trans-unit>
+        <trans-unit id="Cancel" translate="yes" xml:space="preserve">
+          <source>取消</source>
+          <target state="new">Annuler</target>
+        </trans-unit>
         <trans-unit id="Clear" translate="yes" xml:space="preserve">
           <source>清除</source>
           <target state="new">Clair</target>
@@ -111,9 +115,17 @@
           <source>新建工程</source>
           <target state="new">Nouvelle construction</target>
         </trans-unit>
+        <trans-unit id="No" translate="yes" xml:space="preserve">
+          <source>否</source>
+          <target state="new">Non</target>
+        </trans-unit>
         <trans-unit id="NoRelatedItemsFound" translate="yes" xml:space="preserve">
           <source>未找到相关项目</source>
           <target state="new">Aucun élément associé trouvé</target>
+        </trans-unit>
+        <trans-unit id="OK" translate="yes" xml:space="preserve">
+          <source>确认</source>
+          <target state="new">D'ACCORD</target>
         </trans-unit>
         <trans-unit id="Open" translate="yes" xml:space="preserve">
           <source>打开</source>
@@ -218,6 +230,10 @@
         <trans-unit id="TransparentWindow" translate="yes" xml:space="preserve">
           <source>透明窗口</source>
           <target state="new">fenêtre transparente</target>
+        </trans-unit>
+        <trans-unit id="Yes" translate="yes" xml:space="preserve">
+          <source>是</source>
+          <target state="new">Oui</target>
         </trans-unit>
       </group>
     </body>

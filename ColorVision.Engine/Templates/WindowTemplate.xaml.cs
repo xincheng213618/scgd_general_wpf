@@ -165,7 +165,7 @@ namespace ColorVision.Engine.Templates
         {
             if (ListView1.SelectedIndex > -1)
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否删除{ITemplate.Code}模板,删除后无法恢复!", Application.Current.MainWindow.Title, MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
+                if (MessageBox1.Show(Application.Current.GetActiveWindow(), $"是否删除{ITemplate.Code}模板,删除后无法恢复!", "ColorVision", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
                 {
                     int index = ListView1.SelectedIndex;
                     ITemplate.Delete(ListView1.SelectedIndex);
@@ -176,7 +176,7 @@ namespace ColorVision.Engine.Templates
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "请先选择", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "请先选择", "ColorVision");
             }
         }
 
@@ -214,7 +214,7 @@ namespace ColorVision.Engine.Templates
         {
             if (ListView1.SelectedIndex < 0)
             {
-                MessageBox.Show("请选择您要导出的流程", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                MessageBox1.Show("请选择您要导出的流程", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
             ITemplate.Export(ListView1.SelectedIndex);

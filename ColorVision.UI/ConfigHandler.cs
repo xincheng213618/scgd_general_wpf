@@ -219,7 +219,7 @@ namespace ColorVision.UI
                                         }
                                     }
                                 }
-                                catch 
+                                catch (Exception ex)
                                 {
                                     if (Activator.CreateInstance(type) is IConfig defaultConfig)
                                     {
@@ -230,8 +230,9 @@ namespace ColorVision.UI
                         }
                     }
                 }
-                catch
+                catch(Exception ex)
                 {
+                    
                     LoadDefaultConfigs();
                 }
             }

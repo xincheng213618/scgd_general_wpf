@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Themes;
 using ColorVision.UI.Extension;
 using cvColorVision;
 using CVCommCore;
@@ -77,7 +78,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                     string Msg = "SaturationR:" + Config.SaturationR.ToString() + Environment.NewLine +
                                                  "SaturationG:" + Config.SaturationG.ToString() + Environment.NewLine +
                                                  "SaturationB:" + Config.SaturationB.ToString() + Environment.NewLine;
-                                    MessageBox.Show(Application.Current.GetActiveWindow(), Msg);
+                                    MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
                                 }
                                 else
                                 {
@@ -85,7 +86,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                     Config.Saturation = (int)msg.Data[0].resultSaturation;
 
                                     string Msg = "Saturation:" + Config.Saturation.ToString();
-                                    MessageBox.Show(Application.Current.GetActiveWindow(), Msg);
+                                    MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
                                 }
                             } );
                         }   
@@ -122,7 +123,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         Common.NativeMethods.Clipboard.SetText(SN);
                         Application.Current.Dispatcher.BeginInvoke(() => 
                         {
-                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"相机打开失败，找不到激活文件,设备码{msg.DeviceCode} {Environment.NewLine} 请粘贴到SN到指定位置:{SN} ","ColorVision");
+                            MessageBox1.Show(WindowHelpers.GetActiveWindow(), $"相机打开失败，找不到激活文件,设备码{msg.DeviceCode} {Environment.NewLine} 请粘贴到SN到指定位置:{SN} ","ColorVision");
                         });
                         break;
                     default:
@@ -138,7 +139,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         break;
                     case "Open":
                         DeviceStatus = DeviceStatusType.Closed;
-                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, "打开失败", "ColorVision"));
+                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox1.Show(Application.Current.MainWindow, "打开失败", "ColorVision"));
                         break;
                     case "Init":
                         break;

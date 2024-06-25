@@ -160,7 +160,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         {
             if (string.IsNullOrWhiteSpace(CB_RawImageFiles.Text))
             {
-                MessageBox.Show("请先选中图片");
+                MessageBox1.Show("请先选中图片");
                 return;
             }
             doOpen(CB_RawImageFiles.Text, FileExtType.Raw);
@@ -176,7 +176,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         {
             if (Device.PhyCamera == null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
                 return;
             }
             if (sender is Button button)
@@ -184,7 +184,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 WindowTemplate windowTemplate;
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
-                    MessageBox.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
+                    MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
                     return;
                 }
                 switch (button.Tag?.ToString() ?? string.Empty)
@@ -212,7 +212,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             {
                 if (string.IsNullOrWhiteSpace(AlgBatchCode.Text))
                 {
-                    MessageBox.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
+                    MessageBox1.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
                     return false;
                 }
                 sn = AlgBatchCode.Text;
@@ -232,7 +232,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             }
             if (string.IsNullOrWhiteSpace(sn) && string.IsNullOrWhiteSpace(imgFileName))
             {
-                MessageBox.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
+                MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
                 return false;
             }
             return true;

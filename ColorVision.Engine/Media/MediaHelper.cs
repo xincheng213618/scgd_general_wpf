@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Net;
+using ColorVision.Themes;
 using MQTTMessageLib.FileServer;
 using OpenCvSharp.WpfExtensions;
 using System;
@@ -67,7 +68,7 @@ namespace ColorVision.Engine.Media
             }
             catch (Exception ex)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"打开文件失败:{ex.Message} ", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), $"打开文件失败:{ex.Message} ", "ColorVision");
                 return writeableBitmap;
             }
         }

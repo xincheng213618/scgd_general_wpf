@@ -28,6 +28,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.Themes;
 
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views
@@ -93,7 +94,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 handler?.Close();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    MessageBox.Show(Application.Current.MainWindow, "文件打开失败", "ColorVision");
+                    MessageBox1.Show(Application.Current.MainWindow, "文件打开失败", "ColorVision");
                 });
             }
         }
@@ -190,7 +191,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                     case MQTTFileServerEventEnum.Event_File_Download:
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            MessageBox.Show("文件下载失败");
+                            MessageBox1.Show("文件下载失败");
                         });
                         break;
                     case MQTTFileServerEventEnum.Event_File_GetChannel:
@@ -232,7 +233,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         {
             if (listView1.SelectedIndex < 0)
             {
-                MessageBox.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
+                MessageBox1.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
                 return;
             }
             using var dialog = new System.Windows.Forms.SaveFileDialog();
@@ -496,7 +497,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 }
                 else
                 {
-                    MessageBox.Show("请先选择您要切换的图像");
+                    MessageBox1.Show("请先选择您要切换的图像");
                 }
 
             }

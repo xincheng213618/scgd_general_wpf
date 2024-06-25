@@ -1,4 +1,5 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Themes;
+using ColorVision.UI;
 using CVCommCore;
 using System;
 using System.Windows;
@@ -84,7 +85,7 @@ namespace ColorVision.Engine.Services.Devices.PG
                 int port;
                 if (!int.TryParse(TextBoxPGPort.Text, out port))
                 {
-                    MessageBox.Show(Application.Current.MainWindow, "端口配置错误");
+                    MessageBox1.Show(Application.Current.MainWindow, "端口配置错误");
                     return;
                 }
                 if (PGService.Config.IsNet) PGService.Open(CommunicateType.Tcp, TextBoxPGIP.Text, port);

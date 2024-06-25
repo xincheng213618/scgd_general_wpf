@@ -6,6 +6,7 @@ using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.UIExport.SolutionExports.Export;
 using ColorVision.Net;
+using ColorVision.Themes;
 using ColorVision.UI.Sorts;
 using MQTTMessageLib.Camera;
 using System;
@@ -73,7 +74,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到文件", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "找不到文件", "ColorVision");
             }
 
         }

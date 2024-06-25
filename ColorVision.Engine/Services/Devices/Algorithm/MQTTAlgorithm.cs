@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.Services.Msg;
+using ColorVision.Themes;
 using CVCommCore;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib;
@@ -50,10 +51,10 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     case MQTTFileServerEventEnum.Event_File_List_All:
                         break;
                     case "MTF":
-                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision"));
+                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox1.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision"));
                         break;
                     case "FOV":
-                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision"));
+                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox1.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision"));
                         break;
                     default:
                         break;

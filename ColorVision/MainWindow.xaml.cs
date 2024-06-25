@@ -48,7 +48,7 @@ namespace ColorVision
             SizeChanged += (s, e) => MainWindowConfig.SetConfig(this);
             var IsAdministrator = Tool.IsAdministrator();
             Title += $"- {(IsAdministrator ? Properties.Resources.RunAsAdmin : Properties.Resources.NotRunAsAdmin)}";
-            this.ApplyCaption();   
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -101,10 +101,7 @@ namespace ColorVision
             this.LoadHotKeyFromAssembly();
 
             QuartzSchedulerManager.GetInstance();
-
             Application.Current.MainWindow = this;
-
-
             LoadIMainWindowInitialized();
         }
 

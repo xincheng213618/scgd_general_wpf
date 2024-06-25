@@ -32,7 +32,6 @@
         </Border>
         <StackPanel x:Name="WizardStackPanel" Grid.Row="1" Margin="10"/>
 
-
         <Grid Grid.Row="2">
             <Button  Content="{x:Static properties:Resources.ConfigurationComplete}" Height="30" Foreground="White" Background="{StaticResource PrimaryBrush}"  Click="Button_Click"/>
         </Grid>
