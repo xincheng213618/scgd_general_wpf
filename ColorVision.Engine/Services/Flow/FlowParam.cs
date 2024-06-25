@@ -245,7 +245,7 @@ namespace ColorVision.Engine.Services.Flow
         public static int Save(ModMasterModel modMaster)
         {
             int ret = -1;
-            SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(modMaster.Pcode, modMaster.TenantId);
+            SysDictionaryModModel mod = SysDictionaryModDao.Instance.GetByCode(modMaster.Pcode ??string.Empty, modMaster.TenantId);
             if (mod != null)
             {
                 modMaster.Pid = mod.Id;

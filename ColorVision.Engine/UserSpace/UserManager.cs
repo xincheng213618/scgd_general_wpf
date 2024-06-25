@@ -55,6 +55,7 @@ namespace ColorVision.Engine.UserSpace
 
         public void Save()
         {
+            IsLogin = true;
             Authorization.Instance.PermissionMode = UserConfig.Instance.PerMissionMode;
         }
 

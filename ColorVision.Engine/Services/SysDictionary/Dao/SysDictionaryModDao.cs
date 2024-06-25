@@ -40,6 +40,6 @@ namespace ColorVision.Engine.Services.SysDictionary
         {
         }
 
-        public SysDictionaryModModel? GetByCode(string? code, int tenantId) => GetByParam( new Dictionary<string, object>() { { "is_delete",0 }, { "code", code }, { "tenant_id", tenantId } });
+        public SysDictionaryModModel? GetByCode(string code, int tenantId) => GetByParam( new Dictionary<string, object>() { { "is_delete",0 }, { "code", code }, { "tenant_id", tenantId } });
     }
 }
