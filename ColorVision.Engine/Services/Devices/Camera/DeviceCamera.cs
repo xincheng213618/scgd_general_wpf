@@ -1,19 +1,17 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Util.Interfaces;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.UI.Authorizations;
+using ColorVision.Util.Interfaces;
 using log4net;
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.UserSpace;
-using ColorVision.UI.Authorizations;
-using ColorVision.Engine.Services.Devices.PG;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -77,7 +75,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Config.CameraModel = e.CameraModel;
             Config.TakeImageMode = e.TakeImageMode;
             Config.ImageBpp = e.ImageBpp;
-            SaveConfig();
+            Save();
         }
 
         [RequiresPermission(PermissionMode.Administrator)]

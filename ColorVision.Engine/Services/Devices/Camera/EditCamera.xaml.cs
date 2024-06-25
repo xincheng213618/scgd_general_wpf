@@ -1,8 +1,6 @@
-﻿using ColorVision.Common.Extension;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.PhyCameras;
-using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Themes;
 using cvColorVision;
 using System;
@@ -53,9 +51,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
             var type = DeviceCamera.Config.CameraType;
-
-            List<int> BaudRates = new() { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
-            List<string> Serials = new() { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10" };
 
 
             ComboxeEvaFunc.ItemsSource = from e1 in Enum.GetValues(typeof(EvaFunc)).Cast<EvaFunc>()
