@@ -373,7 +373,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         if (result.MTFData == null)
                         {
                             result.MTFData = new ObservableCollection<MTFResultData>();
-                            List<AlgResultMTFModel> AlgResultMTFModels = AlgResultMTFDao.Instance.GetAllByPid(result.Id);
+                            List<POIPointResultModel> AlgResultMTFModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultMTFModels)
                             {
                                 MTFResultData mTFResultData = new(item);
@@ -530,7 +530,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         if (result.LedResultDatas == null)
                         {
                             result.LedResultDatas = new ObservableCollection<LedResultData>();
-                            List<AlgResultMTFModel> AlgResultLedcheckModels = AlgResultMTFDao.Instance.GetAllByPid(result.Id);
+                            List<POIPointResultModel> AlgResultLedcheckModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultLedcheckModels)
                             {
                                 LedResultData ledResultData = new(new Point((double)item.PoiX, (double)item.PoiY), (double)item.PoiWidth / 2);
@@ -569,7 +569,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         if (result.BuildPoiResultData == null)
                         {
                             result.BuildPoiResultData = new ObservableCollection<BuildPoiResultData>();
-                            List<AlgResultMTFModel> AlgResultMTFModels = AlgResultMTFDao.Instance.GetAllByPid(result.Id);
+                            List<POIPointResultModel> AlgResultMTFModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
                             foreach (var item in AlgResultMTFModels)
                             {
                                 BuildPoiResultData mTFResultData = new(item);

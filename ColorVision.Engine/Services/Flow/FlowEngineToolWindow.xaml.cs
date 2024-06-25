@@ -25,17 +25,17 @@ namespace ColorVision.Engine.Services.Flow
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
         {
-            new WindowFlowEngine() { WindowStartupLocation = WindowStartupLocation.CenterScreen }.ShowDialog();
+            new FlowEngineToolWindow() { WindowStartupLocation = WindowStartupLocation.CenterScreen }.ShowDialog();
         }
     }
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class WindowFlowEngine : Window
+    public partial class FlowEngineToolWindow : Window
     {
 
-        public WindowFlowEngine()
+        public FlowEngineToolWindow()
         {
             InitializeComponent();
             //ButtonSave.Visibility = Visibility.Collapsed;
@@ -45,7 +45,7 @@ namespace ColorVision.Engine.Services.Flow
             this.ApplyCaption();
         }
         FlowParam FlowParam { get; set; }
-        public WindowFlowEngine(FlowParam flowParam) : this()
+        public FlowEngineToolWindow(FlowParam flowParam) : this()
         {
             FlowParam = flowParam;
             OpenFlowBase64(flowParam);

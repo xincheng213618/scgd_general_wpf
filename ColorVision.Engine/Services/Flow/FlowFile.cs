@@ -39,7 +39,7 @@ namespace ColorVision.Engine.Services.Flow
             bool IsOpen = false;
             foreach (var item in Application.Current.Windows)
             {
-                if (item is WindowFlowEngine WindowFlowEngine)
+                if (item is FlowEngineToolWindow WindowFlowEngine)
                 {
                     WindowFlowEngine.OpenFlow(FullName);
                     WindowFlowEngine.Activate();
@@ -48,7 +48,7 @@ namespace ColorVision.Engine.Services.Flow
                 }
             }
             if (!IsOpen)
-                new WindowFlowEngine() { Owner = null }.Show();
+                new FlowEngineToolWindow() { Owner = null }.Show();
         }
 
 

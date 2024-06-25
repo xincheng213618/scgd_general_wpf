@@ -1158,29 +1158,6 @@ namespace ColorVision.Engine.Services.Templates.POI
           
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            int[] dstPointX = new int[4] { 990, 4420, 4430, 1000 };
-            int[] dstPointY = new int[4] { 980, 590, 2700, 3180 };
-            float[] PointX = new float[4];
-            float[] PointY = new float[4];
-
-            if (ImageShow.Source is BitmapImage bitmapImage)
-            {
-                byte[] data;
-                JpegBitmapEncoder encoder = new();
-                encoder.Frames.Add(BitmapFrame.Create(bitmapImage));
-                using (MemoryStream ms = new())
-                {
-                    encoder.Save(ms);
-                    data = ms.ToArray();
-                }
-                int  num = cvCameraCSLib.FindBrightArea((uint)PoiParam.Width, (UInt32)PoiParam.Height,8,3, Array.Empty<byte>());
-
-            }
-
-
-        }
 
         //读取本地的灯珠检测配置文件
         private void Button_Click_2(object sender, RoutedEventArgs e)

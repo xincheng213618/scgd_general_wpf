@@ -6,7 +6,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
     public class BuildPoiResultData : PoiResultData
     {
-        public BuildPoiResultData(AlgResultMTFModel detail)
+        public BuildPoiResultData(POIPointResultModel detail)
         {
             Point = new POIPoint(detail.PoiId ?? -1, -1, detail.PoiName, (POIPointTypes)detail.PoiType, (int)detail.PoiX, (int)detail.PoiY, (int)detail.PoiWidth, (int)detail.PoiHeight);
         }
