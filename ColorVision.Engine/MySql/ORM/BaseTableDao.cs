@@ -44,8 +44,6 @@ namespace ColorVision.Engine.MySql.ORM
             }
         }
 
-
-
         public T? GetById(int id) => GetByParam(new Dictionary<string, object> { { "id", id } });
 
         public T? GetByParam(Dictionary<string, object> param)

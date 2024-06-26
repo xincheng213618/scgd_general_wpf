@@ -16,19 +16,15 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <ScrollViewer x:Name="EditContent" DataContext="{Binding Config}" >
+        <ScrollViewer x:Name="EditContent" DataContext="{Binding  UserDetailModel}" >
             <StackPanel  Grid.Row="1" Grid.Column="1">
+                <DockPanel Margin="5">
+                    <TextBlock Text="User Image:" Width="100"/>
+                    <TextBox Text="{Binding UserImage}"/>
+                </DockPanel>
                 <DockPanel Margin="5">
                     <TextBlock Text="权限" Width="100"/>
                     <ComboBox x:Name="CmPerMissionMode"  SelectedValue="{Binding PerMissionMode}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
-                </DockPanel>
-                <DockPanel Margin="5">
-                    <TextBlock Text="User Name:" Width="100"/>
-                    <TextBox Text="{Binding UserName}"/>
-                </DockPanel>
-                <DockPanel Margin="5">
-                    <TextBlock Text="Tenant ID:" Width="100"/>
-                    <TextBox Text="{Binding TenantId}"/>
                 </DockPanel>
                 <DockPanel Margin="5">
                     <TextBlock Text="Gender:" Width="100"/>
@@ -62,10 +58,7 @@
                     <TextBlock Text="Remark:" Width="100"/>
                     <TextBox Text="{Binding Remark}"/>
                 </DockPanel>
-                <DockPanel Margin="5">
-                    <TextBlock Text="User Image:" Width="100"/>
-                    <TextBox Text="{Binding UserImage}"/>
-                </DockPanel>
+
             </StackPanel>
         </ScrollViewer>
         <StackPanel Grid.Row="1"  Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="10">

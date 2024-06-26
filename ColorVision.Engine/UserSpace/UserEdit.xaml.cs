@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
-using ColorVision.UserSpace;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +14,7 @@ namespace ColorVision.Engine.UserSpace
     public partial class UserEdit : Window
     {
         public UserManager UserManager { get; set; }
-        public UserConfig UserConfigCopy { get; set; }
+        public UserDetailModel UserConfigCopy { get; set; }
 
         public UserEdit(UserManager userManager)
         {
@@ -27,7 +26,7 @@ namespace ColorVision.Engine.UserSpace
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.Title = $"{Properties.Resources.Edit} {UserManager.Config.Account} 个人资料"; 
-            UserConfigCopy = UserManager.Config.Clone();
+            UserConfigCopy = UserManager.UserDetailModel.Clone();
             this.DataContext = UserManager;
             EditContent.DataContext = UserConfigCopy;
 
@@ -37,7 +36,7 @@ namespace ColorVision.Engine.UserSpace
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-            UserManager.Config.CopyFrom(UserConfigCopy);
+            UserManager.UserDetailModel.CopyFrom(UserConfigCopy);
             this.Close();
 
         }
