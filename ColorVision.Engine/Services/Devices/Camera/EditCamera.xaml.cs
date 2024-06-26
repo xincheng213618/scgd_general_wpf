@@ -47,6 +47,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
             CameraPhyID.SelectedItem = PhyCameraManager.GetInstance().GetPhyCamera(DeviceCamera.Config.CameraID);
             CameraPhyID.DisplayMemberPath = "Code";
+            CameraPhyID.SelectedValuePath = "Name";
 
             var type = DeviceCamera.Config.CameraType;
 
@@ -71,7 +72,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void CameraPhyID_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ComboBox comboBox && comboBox.SelectedIndex > -1 && EditConfig !=null)
+            if (sender is ComboBox comboBox && EditConfig !=null)
             {
                 UpdateConfig();
             }

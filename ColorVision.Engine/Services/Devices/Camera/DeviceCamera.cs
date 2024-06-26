@@ -69,6 +69,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 lastPhyCamera.ConfigChanged -= PhyCameraConfigChanged;
                 lastPhyCamera = phyCamera;
+                lastPhyCamera.DeviceCamera = this;
                 lastPhyCamera.DeviceCamera = null;
             }
             Config.Channel = e.Channel;

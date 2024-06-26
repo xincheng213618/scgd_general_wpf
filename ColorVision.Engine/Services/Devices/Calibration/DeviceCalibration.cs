@@ -39,6 +39,25 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             }, a => AccessControl.Check(PermissionMode.Administrator));
             OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger(),a => AccessControl.Check(OpenPhyCameraManger));
             DisplayLazy = new Lazy<DisplayCalibrationControl>(() => new DisplayCalibrationControl(this));
+            if (PhyCamera != null)
+            {
+                PhyCamera.ConfigChanged += PhyCameraConfigChanged;
+                PhyCamera.DeviceCalibration = this;
+            }
+        }
+
+        private PhyCamera lastPhyCamera;
+
+        public void PhyCameraConfigChanged(object? sender, PhyCameras.Configs.ConfigPhyCamera e)
+        {
+            if (lastPhyCamera != null && sender is PhyCamera phyCamera && phyCamera != lastPhyCamera)
+            {
+                lastPhyCamera.ConfigChanged -= PhyCameraConfigChanged;
+                lastPhyCamera = phyCamera;
+                phyCamera.DeviceCalibration = this;
+                lastPhyCamera.DeviceCalibration = null;
+            }
+            Save();
         }
 
         public RelayCommand OpenPhyCameraMangerCommand { get; set; }

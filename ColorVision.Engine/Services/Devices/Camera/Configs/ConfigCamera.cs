@@ -14,8 +14,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
     /// </summary>
     public class ConfigCamera : DeviceServiceConfig
     {
-        public string? CameraCode { get => _CameraCode; set { if (_CameraCode == value) return; _CameraCode = value; NotifyPropertyChanged();  } }
+        public string? CameraCode { get => _CameraCode; set { _CameraCode = value; NotifyPropertyChanged();  } }
         private string? _CameraCode;
+
         public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged();} }
         private string _CameraID;
 
