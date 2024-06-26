@@ -82,7 +82,7 @@ namespace ColorVision
             var textBoxAppender = new TextBoxAppender(logTextBox);
 
             // 设置布局格式
-            var layout = new PatternLayout("%date [%thread] %-5level %logger %newline %message%newline");
+            var layout = new PatternLayout("%date [%thread] %-5level %logger %  %message%newline");
             textBoxAppender.Layout = layout;
             // 将Appender添加到Logger中
             hierarchy.Root.AddAppender(textBoxAppender);
@@ -111,9 +111,8 @@ namespace ColorVision
         private void LoadLogHistory()
         {
             if (MainWindowConfig.Instance.LogLoadState == LogLoadState.None) return;
-
-
-                var logFilePath = GetLogFilePath();
+            logTextBox.Text = string.Empty;
+           var logFilePath = GetLogFilePath();
             if (logFilePath != null && File.Exists(logFilePath))
             {
                 try
@@ -121,54 +120,82 @@ namespace ColorVision
                     using (FileStream fileStream = new FileStream(logFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     using (StreamReader reader = new StreamReader(fileStream, Encoding.Default))
                     {
-                        string line;
-                        DateTime today = DateTime.Today;
-                        DateTime startupTime = Process.GetCurrentProcess().StartTime;
-
-                        while ((line = reader.ReadLine()) != null)
-                        {
-                            if (string.IsNullOrWhiteSpace(line)) continue;
-                            string timestampLine = line;
-                            string logContentLine = reader.ReadLine(); // 读取日志内容行
-
-
-                            if (DateTime.TryParseExact(timestampLine.Substring(0, 23), "yyyy-MM-dd HH:mm:ss,fff", null, System.Globalization.DateTimeStyles.None, out DateTime logTime))
-                            {
-                                if (MainWindowConfig.Instance.LogLoadState == LogLoadState.AllToday && logTime.Date != today)
-                                {
-                                    continue;
-                                }
-                                else if (MainWindowConfig.Instance.LogLoadState == LogLoadState.SinceStartup && logTime < startupTime)
-                                {
-                                    continue;
-                                }
-                            }
-
-                            string logEntry = timestampLine + Environment.NewLine + logContentLine + Environment.NewLine;
-
-                            if (MainWindowConfig.Instance.LogReserve)
-                            {
-                                logTextBox.Text = logEntry + logTextBox.Text;
-                            }
-                            else
-                            {
-                                logTextBox.AppendText(logEntry);
-                            }
-                        }
+                        LoadLogs(reader);
                     }
                 }
                 catch (IOException ex)
                 {
                     MessageBox.Show($"Error reading log file: {ex.Message}");
                 }
-                catch 
+                catch (Exception ex)
                 {
-                    
+                    MessageBox.Show($"An unexpected error occurred: {ex.Message}");
                 }
             }
         }
 
+        private void LoadLogs(StreamReader reader)
+        {
+            var logLoadState = MainWindowConfig.Instance.LogLoadState;
+            var logReserve = MainWindowConfig.Instance.LogReserve;
+            DateTime today = DateTime.Today;
+            DateTime startupTime = Process.GetCurrentProcess().StartTime;
+            StringBuilder logBuilder = new StringBuilder();
 
+            string line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
+                string timestampLine = line;
+                string logContentLine = reader.ReadLine(); // 读取日志内容行
+
+                if (timestampLine.Length>23 && DateTime.TryParseExact(timestampLine.Substring(0, 23), "yyyy-MM-dd HH:mm:ss,fff", null, DateTimeStyles.None, out DateTime logTime))
+                {
+                    if (logLoadState == LogLoadState.AllToday && logTime.Date != today)
+                    {
+                        continue;
+                    }
+                    else if (logLoadState == LogLoadState.SinceStartup && logTime < startupTime)
+                    {
+                        continue;
+                    }
+                }
+                else
+                {
+                    // 如果时间解析失败，跳过当前日志条目
+                    continue;
+                }
+
+                // 找到符合条件的日志条目后，读取并添加后续所有日志条目
+                logBuilder.AppendLine(timestampLine);
+                logBuilder.AppendLine(logContentLine);
+
+                while ((line = reader.ReadLine()) != null)
+                {
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+
+                    logBuilder.AppendLine(line);
+                    logContentLine = reader.ReadLine(); // 读取日志内容行
+                    if (!string.IsNullOrWhiteSpace(logContentLine))
+                    {
+                        logBuilder.AppendLine(logContentLine);
+                    }
+                }
+
+                break; // 退出外层循环
+            }
+
+            // 将日志内容添加到日志文本框中
+            if (logReserve)
+            {
+                logTextBox.Text = logBuilder.ToString() + logTextBox.Text;
+            }
+            else
+            {
+                logTextBox.AppendText(logBuilder.ToString());
+            }
+        }
 
         private void cmlog_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {

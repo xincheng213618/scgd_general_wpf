@@ -37,7 +37,7 @@
             </StackPanel>
         </Grid>
 
-        <TextBox x:Name="logTextBox" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
-        <TextBox x:Name="logTextBoxSerch" Visibility="Collapsed" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
+        <TextBox x:Name="logTextBox" TextWrapping="Wrap" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
+        <TextBox x:Name="logTextBoxSerch" TextWrapping="Wrap" Visibility="Collapsed" Grid.Row="1" ScrollViewer.VerticalScrollBarVisibility="Auto" BorderThickness="0"  VerticalAlignment="Stretch" VerticalContentAlignment="Top" IsReadOnly="True" />
     </Grid>
 </Window>
