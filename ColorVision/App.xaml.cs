@@ -24,12 +24,15 @@ namespace ColorVision
         {
             Startup += Application_Startup;
             Exit += Application_Exit;
+            #if(DEBUG == false)
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
             Application.Current.DispatcherUnhandledException += Application_DispatcherUnhandledException;
+            #endif
         }
         private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
         {
             log.Fatal(e.Exception);
+            MessageBox.Show(e.Exception.Message);
             //使用这一行代码告诉运行时，该异常被处理了，不再作为UnhandledException抛出了。
             e.Handled = true;
         }

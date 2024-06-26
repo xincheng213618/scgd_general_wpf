@@ -131,6 +131,7 @@ namespace ColorVision
                             string timestampLine = line;
                             string logContentLine = reader.ReadLine(); // 读取日志内容行
 
+
                             if (DateTime.TryParseExact(timestampLine.Substring(0, 23), "yyyy-MM-dd HH:mm:ss,fff", null, System.Globalization.DateTimeStyles.None, out DateTime logTime))
                             {
                                 if (MainWindowConfig.Instance.LogLoadState == LogLoadState.AllToday && logTime.Date != today)
@@ -159,6 +160,10 @@ namespace ColorVision
                 catch (IOException ex)
                 {
                     MessageBox.Show($"Error reading log file: {ex.Message}");
+                }
+                catch 
+                {
+                    
                 }
             }
         }
@@ -239,7 +244,7 @@ namespace ColorVision
         private TextBox _textBox;
         protected override void Append(LoggingEvent loggingEvent)
         {
-            if (MainWindowConfig.Instance.AutoRefresh) return;
+            if (!MainWindowConfig.Instance.AutoRefresh) return;
             var renderedMessage = RenderLoggingEvent(loggingEvent);
             Application.Current.Dispatcher.Invoke(() =>
             {
