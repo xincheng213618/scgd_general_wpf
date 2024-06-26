@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.DAO;
 using ColorVision.Engine.Templates;
+using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
 using ColorVision.UI.Menus;
@@ -157,7 +158,7 @@ namespace ColorVision.Engine.Services.Flow
                 {
                     Application.Current.Dispatcher.Invoke(() =>
                     {
-                        MessageBox.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName, "ColorVision");
+                        MessageBox1.Show(Application.Current.GetActiveWindow(), "流程计算" + FlowControlData.EventName, "ColorVision");
                     });
                 }
             }
