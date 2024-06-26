@@ -89,7 +89,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                     MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
                                 }
                             } );
-                        }   
+                        }
                         break;
                     case "SaveLicense":
                         log.Debug($"SaveLicense:{msg.Data}");
@@ -102,10 +102,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     case "MoveDiaphragm":
                         break;
                     case "AutoFocus":
-                        Config.MotorConfig.Position = msg.Data.nPos;
+                        Application.Current.Dispatcher.Invoke(() => Config.MotorConfig.Position = msg.Data.nPos);
                         break;
                     case "GetPosition":
-                        Config.MotorConfig.Position = msg.Data.nPosition;
+                        Application.Current.Dispatcher.Invoke(() => Config.MotorConfig.Position = msg.Data.nPosition);
                         break;
                     case "SetCfg":
                         break;
