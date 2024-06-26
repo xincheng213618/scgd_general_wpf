@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿using log4net;
+using Microsoft.VisualBasic.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Reflection;
@@ -118,6 +120,8 @@ namespace ColorVision.UI
 
     public class ConfigHandler:ConfigBase<IConfig>
     {
+        private static ILog log = log4net.LogManager.GetLogger(typeof(ConfigHandler));
+
         private static ConfigHandler _instance;
         private static readonly object _locker = new();
         public static ConfigHandler GetInstance() { lock (_locker) { return _instance ??= new ConfigHandler(); } }
@@ -221,6 +225,7 @@ namespace ColorVision.UI
                                 }
                                 catch (Exception ex)
                                 {
+                                    log.Warn(ex);
                                     if (Activator.CreateInstance(type) is IConfig defaultConfig)
                                     {
                                         Configs[type] = defaultConfig;
@@ -232,7 +237,7 @@ namespace ColorVision.UI
                 }
                 catch(Exception ex)
                 {
-                    
+                    log.Warn(ex);
                     LoadDefaultConfigs();
                 }
             }

@@ -315,7 +315,7 @@ namespace ColorVision
             StatusBarGrid.ContextMenu = contextMenu;
 
 
-             void AddStatusBarIconMetadata(StatusBarIconMetadata statusBarIconMetadata)
+            void AddStatusBarIconMetadata(StatusBarIconMetadata statusBarIconMetadata)
             {
                 if (statusBarIconMetadata.Type == StatusBarType.Icon)
                 {
@@ -363,7 +363,6 @@ namespace ColorVision
                         menuItem.SetBinding(MenuItem.IsCheckedProperty, isCheckedBinding1);
                     }
                     contextMenu.Items.Add(menuItem);
-
                 }
                 else if (statusBarIconMetadata.Type == StatusBarType.Text)
                 {
