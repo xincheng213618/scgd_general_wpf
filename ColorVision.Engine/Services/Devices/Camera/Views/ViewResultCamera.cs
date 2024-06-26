@@ -76,7 +76,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             {
                 MessageBox1.Show(Application.Current.GetActiveWindow(), "找不到文件", "ColorVision");
             }
-
         }
 
         public RelayCommand ExportCVCIECommand { get; set; }

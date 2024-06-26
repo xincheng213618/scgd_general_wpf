@@ -36,7 +36,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadPhyCamera();
             if (MySqlControl.GetInstance().IsConnect)
                 LoadPhyCamera();
-
             ImportCommand = new RelayCommand(a => Import());
         }
 

@@ -24,11 +24,12 @@
                 </DockPanel>
                 <DockPanel Margin="5">
                     <TextBlock Text="权限" Width="100"/>
-                    <ComboBox x:Name="CmPerMissionMode"  SelectedValue="{Binding PerMissionMode}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
+                    <ComboBox x:Name="CmPerMissionMode"  SelectedValue="{Binding PermissionMode}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
                 </DockPanel>
                 <DockPanel Margin="5">
                     <TextBlock Text="Gender:" Width="100"/>
-                    <ComboBox SelectedItem="{Binding Gender}"/>
+                    <ComboBox x:Name="CmGender"  SelectedValue="{Binding Gender}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
+
                 </DockPanel>
                 <DockPanel Margin="5">
                     <TextBlock Text="Email:" Width="100"/>

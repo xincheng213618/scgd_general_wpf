@@ -48,8 +48,12 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand UploadLincenseCommand { get; set; }
         public RelayCommand RefreshLincenseCommand { get; set; }
         public RelayCommand ResetCommand { get; set; }
-
         public RelayCommand EditCommand { get; set; }
+
+
+        public RelayCommand EditCameraCommand { get; set; }
+        public RelayCommand EditCalibrationCommand { get; set; }
+
 
         public ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; NotifyPropertyChanged(); } }
         private ImageSource? _QRIcon;
@@ -63,10 +67,11 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
 
+        public string? Code => SysResourceModel.Code;
         public PhyCamera(SysResourceModel sysResourceModel):base(sysResourceModel)
         {
             this.SetIconResource("DrawingImageCamera");
-
+            
             Config = BaseResourceObjectExtensions.TryDeserializeConfig<ConfigPhyCamera>(SysResourceModel.Value);
             DeleteCommand = new RelayCommand(a => Delete(), a => AccessControl.Check(PermissionMode.Administrator));
             EditCommand = new RelayCommand(a =>

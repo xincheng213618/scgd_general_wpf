@@ -14,22 +14,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
     /// </summary>
     public class ConfigCamera : DeviceServiceConfig
     {
-        public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(CameraCode)); } }
+        public string? CameraCode { get => _CameraCode; set { if (_CameraCode == value) return; _CameraCode = value; NotifyPropertyChanged();  } }
+        private string? _CameraCode;
+        public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged();} }
         private string _CameraID;
 
-        [JsonIgnore]
-       public string? CameraCode
-        {
-            get
-            {
-                if (string.IsNullOrWhiteSpace(CameraID)) return null;
-                var PhyCamera = PhyCameraManager.GetInstance().PhyCameras.First(a => a.Name == CameraID);
-                if (PhyCamera != null)
-                    return PhyCamera.SysResourceModel.Code;
-                return null;
-
-            }
-        }
         public CameraType CameraType { get => _CameraType; set { if (_CameraType == value) return; _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); UpdateCameraModeAndIBM(value); } }
         private CameraType _CameraType;
 

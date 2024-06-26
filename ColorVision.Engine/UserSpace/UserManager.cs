@@ -85,7 +85,7 @@ namespace ColorVision.Engine.UserSpace
         {
             UserDetailDao.Instance.Save(UserDetailModel);
             IsLogin = true;
-            Authorization.Instance.PermissionMode = UserConfig.Instance.PerMissionMode;
+            Authorization.Instance.PermissionMode = UserConfig.Instance.PermissionMode;
         }
     }
 }

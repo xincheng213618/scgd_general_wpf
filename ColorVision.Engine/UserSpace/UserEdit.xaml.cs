@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
+using ColorVision.UserSpace;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,6 +33,9 @@ namespace ColorVision.Engine.UserSpace
 
             CmPerMissionMode.ItemsSource = from e1 in Enum.GetValues(typeof(PermissionMode)).Cast<PermissionMode>()
                                            select new KeyValuePair<PermissionMode, string>(e1, e1.ToString());
+
+            CmGender.ItemsSource = from e1 in Enum.GetValues(typeof(Gender)).Cast<Gender>()
+                                   select new KeyValuePair<Gender, string>(e1, e1.ToString());
         }
 
         private void Save_Click(object sender, RoutedEventArgs e)

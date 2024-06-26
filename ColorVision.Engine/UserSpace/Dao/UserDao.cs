@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.UI.Authorizations;
 using ColorVision.UserSpace;
 using log4net;
 using MySql.Data.MySqlClient;
@@ -40,6 +41,10 @@ namespace ColorVision.Engine.UserSpace
         [Column("user_id")]
         public int UserId { get => _UserId; set { _UserId = value; NotifyPropertyChanged(); } }
         private int _UserId;
+
+        [Column("permission_mode")]
+        public PermissionMode PermissionMode { get => _PermissionMode; set { _PermissionMode = value; NotifyPropertyChanged(); } }
+        private PermissionMode _PermissionMode;
 
         [Column("gender")]
         public Gender Gender { get => _Gender; set { _Gender = value; NotifyPropertyChanged(); } }

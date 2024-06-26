@@ -21,7 +21,7 @@ namespace ColorVision.Themes.Controls
         /// 不在提示
         /// </summary>
         public bool DontShowAgain { get => _DontShowAgain; set { _DontShowAgain = value; NotifyPropertyChanged(); } }
-        public bool _DontShowAgain;
+        private bool _DontShowAgain;
 
         /// <summary>
         /// 显示结果

@@ -14,51 +14,53 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <ScrollViewer x:Name="EditContent"  d:DataContext="{Binding Config}">
+        <ScrollViewer >
             <StackPanel  Grid.Row="1" Grid.Column="1">
+                <Button  Content="{x:Static properties:Resources.Edit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding EditCommand}" />
                 <hc:ImageSelector/>
                 <hc:ImageViewer/>
-                <DockPanel Margin="5">
+                <DockPanel Margin="0,2">
                     <TextBlock Text="Account:" Width="100"/>
-                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Account}"/>
+                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserModel.Code}"/>
                 </DockPanel>
-                <DockPanel Margin="5">
+                <DockPanel Margin="0,2">
                     <TextBlock Text="User Name:" Width="100"/>
-                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserName}"/>
+                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserModel.UserName}"/>
                 </DockPanel>
-                <DockPanel Margin="5">
+                <DockPanel Margin="0,2">
                     <TextBlock Text="Email:" Width="100"/>
-                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Email}"/>
+                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserDetailModel.Email}"/>
                 </DockPanel>
-                <DockPanel Margin="5">
+                <DockPanel Margin="0,2">
                     <TextBlock Text="Phone:" Width="100"/>
-                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Phone}"/>
+                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserDetailModel.Phone}"/>
                 </DockPanel>
-                <DockPanel Margin="5">
+                <DockPanel Margin="0,2">
                     <TextBlock Text="Address:" Width="100"/>
-                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Address}"/>
+                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserDetailModel.Address}"/>
                 </DockPanel>
-                <DockPanel Margin="5">
+                <DockPanel Margin="0,2">
                     <TextBlock Text="Company:" Width="100"/>
-                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Company}"/>
+                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserDetailModel.Company}"/>
                 </DockPanel>
-                <DockPanel Margin="5">
+                <DockPanel Margin="0,2">
                     <TextBlock Text="Department:" Width="100"/>
-                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Department}"/>
+                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserDetailModel.Department}"/>
                 </DockPanel>
-                <DockPanel Margin="5">
+                <DockPanel Margin="0,2">
                     <TextBlock Text="Position:" Width="100"/>
-                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Position}"/>
+                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserDetailModel.Position}"/>
                 </DockPanel>
-                <DockPanel Margin="5">
+                <DockPanel Margin="0,2">
                     <TextBlock Text="Remark:" Width="100"/>
-                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Remark}"/>
+                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserDetailModel.Remark}"/>
                 </DockPanel>
             </StackPanel>
 
         </ScrollViewer>
         <Border Grid.Row="1" Height="30">
-            <Button  Content="{x:Static properties:Resources.Edit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding EditCommand}" />
+            <Button  Content="{x:Static properties:Resources.Close}" Foreground="White" Background="{StaticResource PrimaryBrush}" Click="Button_Click_1" />
+
         </Border>
 
     </Grid>

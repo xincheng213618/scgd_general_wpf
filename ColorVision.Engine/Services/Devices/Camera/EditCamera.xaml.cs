@@ -46,9 +46,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
             CameraPhyID.SelectedItem = PhyCameraManager.GetInstance().GetPhyCamera(DeviceCamera.Config.CameraID);
-            CameraPhyID.DisplayMemberPath = "Name";
-
-
+            CameraPhyID.DisplayMemberPath = "Code";
 
             var type = DeviceCamera.Config.CameraType;
 
@@ -87,7 +85,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 EditConfig.CFW.CopyFrom(phyCamera.Config.CFW);
                 EditConfig.MotorConfig.CopyFrom(phyCamera.Config.MotorConfig);
 
-                EditConfig.CameraID = phyCamera.Config.CameraID;
+                EditConfig.CameraID = phyCamera.Name;
                 EditConfig.CameraType = phyCamera.Config.CameraType;
                 EditConfig.CameraMode = phyCamera.Config.CameraMode;
                 EditConfig.CameraModel = phyCamera.Config.CameraModel;

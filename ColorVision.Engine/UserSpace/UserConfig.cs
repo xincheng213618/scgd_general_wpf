@@ -17,8 +17,8 @@ namespace ColorVision.UserSpace
         public string UserPwd { get => _UserPwd; set { _UserPwd = value; NotifyPropertyChanged(); } }
         private string _UserPwd = "admin";
 
-        public PermissionMode PerMissionMode { get => _PerMissionMode; set { _PerMissionMode = value; NotifyPropertyChanged(); } }
-        private PermissionMode _PerMissionMode;
+        public PermissionMode PermissionMode { get => _PermissionMode; set { _PermissionMode = value; NotifyPropertyChanged(); } }
+        private PermissionMode _PermissionMode = PermissionMode.Administrator;
 
         public string UserName { get => _UserName; set { _UserName = value; NotifyPropertyChanged(); } }
         private string _UserName = string.Empty;
