@@ -301,7 +301,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         listViewSide.Visibility = Visibility.Visible;
                         break;
                     case AlgorithmResultType.FOV:
-                        ImageView.OpenImage(result.FilePath);
                         listViewSide.Visibility = Visibility.Visible;
 
                         if (result.SFRData == null)
@@ -330,7 +329,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         listViewSide.ItemsSource = result.FOVData;
                         break;
                     case AlgorithmResultType.SFR:
-                        ImageView.OpenImage(result.FilePath);
                         listViewSide.Visibility = Visibility.Visible;
 
                         if (result.SFRData == null)
@@ -368,7 +366,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                         break;
                     case AlgorithmResultType.MTF:
-                        ImageView.OpenImage(result.FilePath);
                         listViewSide.Visibility = Visibility.Visible;
                         if (result.MTFData == null)
                         {
@@ -489,7 +486,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         listViewSide.ItemsSource = result.GhostData;
                         break;
                     case AlgorithmResultType.Distortion:
-                        ImageView.OpenImage(result.FilePath);
                         listViewSide.Visibility = Visibility.Visible;
 
                         if (result.DistortionData == null)
@@ -525,7 +521,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                         break;
                     case AlgorithmResultType.LedCheck:
-                        ImageView.OpenImage(result.FilePath);
                         listViewSide.Visibility = Visibility.Visible;
                         if (result.LedResultDatas == null)
                         {
@@ -564,7 +559,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         }
                         break;
                     case AlgorithmResultType.BuildPOI:
-                        ImageView.OpenImage(result.FilePath);
                         listViewSide.Visibility = Visibility.Collapsed;
                         if (result.BuildPoiResultData == null)
                         {
@@ -582,6 +576,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             DrawPoiPoint.Add(item.Point);
                         }
                         AddPOIPoint(DrawPoiPoint);
+                        break;
+                    case AlgorithmResultType.Compliance_Contrast:
+                    case AlgorithmResultType.Compliance_Contrast_CIE_Y:
+                    case AlgorithmResultType.Compliance_Contrast_CIE_XYZ:
+                    case AlgorithmResultType.Compliance_Math:
+                    case AlgorithmResultType.Compliance_Math_CIE_Y:
+                    case AlgorithmResultType.Compliance_Math_CIE_XYZ:
                         break;
                     default:
                         break;
