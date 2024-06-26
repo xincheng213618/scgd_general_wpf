@@ -1,0 +1,107 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Global colors -->
+    <Color x:Key="GlobalBackgroundColor">#CAE0E4</Color>
+    <Color x:Key="GlobalBroderBrushColor">#B4D4D8</Color>
+    <Color x:Key="GlobalTextColor">Black</Color>
+
+    <!-- Icon colors -->
+    <SolidColorBrush x:Key="IconSolidColorBrush" Color="#00ACC1"/>
+    <!-- 深青色 -->
+    <SolidColorBrush x:Key="IconSolidColorBackgroundBrush" Color="#D1E8EB"/>
+    <!-- 次要背景色 -->
+
+    <!-- Selection colors -->
+    <Color x:Key="SelectedBackgroundColor">#80DEEA</Color>
+    <!-- 浅青色 -->
+    <Color x:Key="SelectedUnfocusedColor">#D1E8EB</Color>
+    <!-- 次要背景色 -->
+
+    <!-- Border colors -->
+    <SolidColorBrush x:Key="BordrBrush" Color="#CAE0E4"/>
+    <!-- 主背景色 -->
+    <SolidColorBrush x:Key="Background" Color="#80DEEA"/>
+    <!-- 浅青色 -->
+
+    <!-- Button colors -->
+    <SolidColorBrush x:Key="ButtonBackground" Color="#B2EBF2"/>
+    <!-- 浅青色 -->
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#00ACC1"/>
+    <!-- 深青色 -->
+
+    <!-- Global background and border -->
+    <SolidColorBrush x:Key="GlobalBackground" Color="{StaticResource GlobalBackgroundColor}" />
+    <SolidColorBrush x:Key="GlobalBorderBrush" Color="{StaticResource GlobalBroderBrushColor}"/>
+
+    <!-- More global colors -->
+    <SolidColorBrush x:Key="GlobalBorderBrush1" Color="#B2EBF2"/>
+    <!-- 浅青色 -->
+
+    <!-- Text colors -->
+    <SolidColorBrush x:Key="GlobalTextBrush" Color="{StaticResource GlobalTextColor}" />
+    <SolidColorBrush x:Key="StatusBarBackgroundBrush" Color="#00ACC1"/>
+    <!-- 深青色 -->
+    <SolidColorBrush x:Key="MeasureBackground" Color="{StaticResource GlobalBackgroundColor}"/>
+    <SolidColorBrush x:Key="MeasureBarBackgroundBrush" Color="#D1E8EB"/>
+    <!-- 次要背景色 -->
+
+    <!-- Caption buttons -->
+    <SolidColorBrush x:Key="CaptionButtonBrush" Color="#00ACC1"/>
+    <!-- 深青色 -->
+    <SolidColorBrush x:Key="CaptionButtonForeground" Color="#00ACC1"/>
+    <!-- 深青色 -->
+    <SolidColorBrush x:Key="WindowIsNotActiveForeground" Color="#80DEEA"/>
+    <!-- 浅青色 -->
+    <SolidColorBrush x:Key="CaptionButtonChoiceBrush" Color="#80DEEA"/>
+    <!-- 浅青色 -->
+    <SolidColorBrush x:Key="CaptionButtonChoiceBackgrouundBrush" Color="#D1E8EB"/>
+    <!-- 次要背景色 -->
+    <SolidColorBrush x:Key="CaptionButtonCloseBrush" Color="Red"/>
+
+    <!-- Menu Items -->
+    <!-- ... (other menu item styles) ... -->
+
+    <!-- Context Menu -->
+    <SolidColorBrush x:Key="toplevelmenuheaderhoverborder" Color="Transparent" />
+    <SolidColorBrush x:Key="toplevelmenuheaderhover" Color="#D1E8EB"/>
+    <!-- 次要背景色 -->
+    <SolidColorBrush x:Key="menuitemglyphpanelborderbrush" Color="#D1E8EB"/>
+    <!-- 次要背景色 -->
+    <SolidColorBrush x:Key="MenuItemHighlightedInnerBorder" Color="#D1E8EB"/>
+    <!-- 次要背景色 -->
+    <SolidColorBrush x:Key="MenuItemDisabledForeground" Color="#80DEEA"/>
+    <!-- 浅青色 -->
+    <SolidColorBrush x:Key="MenuItemDisabledGlyphPanelBackground" Color="#D1E8EB"/>
+    <!-- 次要背景色 -->
+
+    <SolidColorBrush x:Key="MenuItemDisabledGlyphFill" Color="#00ACC1"/>
+    <!-- 深青色 -->
+    <SolidColorBrush x:Key="environmentcommandbar"  Color="#B2EBF2"/>
+    <!-- 浅青色 -->
+    <SolidColorBrush x:Key="environmentcommandbaricon" Color="#D1E8EB"/>
+    <!-- 次要背景色 -->
+    <SolidColorBrush x:Key="EnvironmentCommandBarMenuMouseOverSubmenuGlyph" Color="#80DEEA"/>
+    <!-- 浅青色 -->
+    <SolidColorBrush x:Key="environmentcommandbarmenuseparator" Color="#80DEEA"/>
+    <!-- 浅青色 -->
+    <SolidColorBrush x:Key="EnvironmentCommandBarCheckBox" Color="#00ACC1"/>
+    <!-- 深青色 -->
+    <SolidColorBrush x:Key="EnvironmentCommandBarSelectedIcon" Color="#D1E8EB"/>
+    <!-- 次要背景色 -->
+    <SolidColorBrush x:Key="EnvironmentCommandBarCheckBoxMouseOver" Color="#E0F7FA"/>
+    <!-- 浅青色 -->
+    <SolidColorBrush x:Key="EnvironmentCommandBarHoverOverSelectedIcon" Color="#80DEEA"/>
+    <!-- 浅青色 -->
+    <SolidColorBrush x:Key="EnvironmentCommandBarMenuItemMouseOver" Color="#80DEEA"/>
+    <!-- 浅青色 -->
+
+    <SolidColorBrush x:Key="ContextMenuBackground" Color="#D1E8EB"/>
+    <!-- 次要背景色 -->
+    <SolidColorBrush x:Key="ContextMenuBorderBrush" Color="#D1E8EB"/>
+    <!-- 次要背景色 -->
+    <SolidColorBrush x:Key="ContextMenuRectangleFill" Color="#D1E8EB"/>
+    <!-- 次要背景色 -->
+
+    <!-- ... (other styles) ... -->
+</ResourceDictionary>

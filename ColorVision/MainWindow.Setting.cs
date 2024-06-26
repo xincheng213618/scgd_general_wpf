@@ -1,19 +1,8 @@
-﻿using ColorVision.Media;
-using ColorVision.Net;
-using ColorVision.Solution;
-using ColorVision.Common.Extension;
-
-using HandyControl.Tools;
-using HandyControl.Tools.Extension;
+﻿using ColorVision.UI;
 using System;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Interop;
-using System.Windows.Media;
-using System.Windows.Media.Animation;
-using ColorVision.Draw;
 
 namespace ColorVision
 {
@@ -43,35 +32,18 @@ namespace ColorVision
                         int size = GlobalGetAtomName((ushort)wParam, chars, chars.Length);
                         if (size > 0)
                         {
-                            string result = new(chars, 0, size);
+                            string receivedString = new(chars, 0, size);
                             GlobalDeleteAtom((short)wParam);
 
-                            if (File.Exists(result))
+                            char separator = '\u0001';
+                            string[] parsedArgs = receivedString.Split(separator);
+                            var parser = ArgumentParser.GetInstance();
+                            parser.CommandLineArgs = parsedArgs;
+                            parser.Parse();
+                            string inputFile = parser.GetValue("input");
+                            if (inputFile != null)
                             {
-                                if (result.EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    SolutionManager.GetInstance().OpenSolution(result);
-                                }
-                                if (result.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    ImageView imageView = new();
-                                    CVFileUtil.ReadCVRaw(result, out CVCIEFile fileInfo);
-                                    Window window = new() { Title = "快速预览", Owner = Application.Current.MainWindow};
-                                    window.Content = imageView;
-                                    imageView.OpenImage(fileInfo);
-
-                                    window.Show();
-                                    window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() => {
-                                        imageView.ToolBarTop.ClearImage();
-                                    }));
-
-
-
-                                }
-                            }
-                            else
-                            {
-                                MessageBox.Show(result, "ColorVision");
+                                FileHandlerProcessor.GetInstance().ProcessFile(inputFile);
                             }
                         }
                     }
@@ -85,57 +57,5 @@ namespace ColorVision
         }
 
 
-        private GridLength _columnDefinitionWidth;
-        private void OnLeftMainContentShiftOut(object sender, RoutedEventArgs e)
-        {
-            ButtonShiftOut.Collapse();
-            GridSplitter.IsEnabled = false;
-
-            double targetValue = -ColumnDefinitionLeft.MaxWidth;
-            _columnDefinitionWidth = ColumnDefinitionLeft.Width;
-
-            DoubleAnimation animation = AnimationHelper.CreateAnimation(targetValue, milliseconds: 1);
-            animation.FillBehavior = FillBehavior.Stop;
-            animation.Completed += OnAnimationCompleted;
-            LeftMainContent.RenderTransform.BeginAnimation(TranslateTransform.XProperty, animation);
-            void OnAnimationCompleted(object? _, EventArgs args)
-            {
-                animation.Completed -= OnAnimationCompleted;
-                LeftMainContent.RenderTransform.SetCurrentValue(TranslateTransform.XProperty, targetValue);
-
-                Grid.SetColumn(MainContent, 0);
-                Grid.SetColumnSpan(MainContent, 2);
-                ColumnDefinitionLeft.MinWidth = 0;
-                ColumnDefinitionLeft.Width = new GridLength(0);
-                ButtonShiftIn.Show();
-            }
-        }
-
-        private void OnLeftMainContentShiftIn(object sender, RoutedEventArgs e)
-        {
-            ButtonShiftIn.Collapse();
-            
-            GridSplitter.IsEnabled = true;
-
-            double targetValue = ColumnDefinitionLeft.Width.Value;
-
-            DoubleAnimation animation = AnimationHelper.CreateAnimation(targetValue, milliseconds: 1);
-            animation.FillBehavior = FillBehavior.Stop;
-            animation.Completed += OnAnimationCompleted;
-            LeftMainContent.RenderTransform.BeginAnimation(TranslateTransform.XProperty, animation);
-
-            void OnAnimationCompleted(object? _, EventArgs args)
-            {
-                animation.Completed -= OnAnimationCompleted;
-                LeftMainContent.RenderTransform.SetCurrentValue(TranslateTransform.XProperty, targetValue);
-
-                Grid.SetColumn(MainContent, 1);
-                Grid.SetColumnSpan(MainContent, 1);
-
-                ColumnDefinitionLeft.MinWidth = 240;
-                ColumnDefinitionLeft.Width = _columnDefinitionWidth;
-                ButtonShiftOut.Show();
-            }
-        }
     }
 }

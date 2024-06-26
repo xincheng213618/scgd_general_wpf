@@ -1,19 +1,21 @@
 ﻿using ColorVision.UI.HotKey.GlobalHotKey;
 using ColorVision.UI.HotKey.WindowHotKey;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.UI.HotKey
 {
-
     [Serializable]
     public class HotKeys : INotifyPropertyChanged
     {
-        public static readonly List<HotKeys> HotKeysList = new();
+        public static readonly ObservableCollection<HotKeys> HotKeysList = new ObservableCollection<HotKeys>();
         public static readonly Dictionary<HotKeys,Hotkey> HotKeysDefaultHotkey = new();
 
         /// <summary>
@@ -33,7 +35,6 @@ namespace ColorVision.UI.HotKey
 
         public HotKeys()
         {
-            HotKeysList.Add(this);
         }
 
         /// <summary>
@@ -47,11 +48,14 @@ namespace ColorVision.UI.HotKey
             Hotkey = hotkey;
             HotKeyHandler += hotKeyCallBackHanlder;
         }
+        [JsonIgnore]
         public Control Control { get; set; }
 
         public string Name { get => _Name; set { if (value == _Name) return; _Name = value; NotifyPropertyChanged(); } }
         private string _Name = string.Empty;
+        [JsonIgnore]
         public HotKeyCallBackHanlder HotKeyHandler { get; set; }
+
         public Hotkey Hotkey
         {
             get => _Hotkey;  set  
@@ -71,36 +75,37 @@ namespace ColorVision.UI.HotKey
                 NotifyPropertyChanged(); 
             }
         }
-        private Hotkey _Hotkey = Hotkey.None;
+        private Hotkey _Hotkey = new Hotkey() { Key = Key.None, Modifiers = ModifierKeys.None };
         public HotKeyKinds Kinds
         {
             get => _Kinds; set
             {
                 if (value == _Kinds) return;
-                if (_Kinds == HotKeyKinds.Global)
+                if (Control != null)
                 {
-                    GlobalHotKeyManager.GetInstance(Window.GetWindow(Control)).UnRegister(this);
-                }
-                else
-                {
-                    WindowHotKeyManager.GetInstance(Control).UnRegister(this);
+                    if (_Kinds == HotKeyKinds.Global)
+                    {
+                        GlobalHotKeyManager.GetInstance(Window.GetWindow(Control)).UnRegister(this);
+                    }
+                    else
+                    {
+                        WindowHotKeyManager.GetInstance(Control).UnRegister(this);
+                    }
+                    _Kinds = value;
+                    if (_Kinds == HotKeyKinds.Global)
+                    {
+                        IsRegistered = GlobalHotKeyManager.GetInstance(Window.GetWindow(Control)).Register(this);
+                    }
+                    else
+                    {
+                        IsRegistered = WindowHotKeyManager.GetInstance(Control).Register(this);
+                    }
                 }
                 _Kinds = value;
-                if (_Kinds == HotKeyKinds.Global)
-                {
-                    IsRegistered = GlobalHotKeyManager.GetInstance(Window.GetWindow(Control)).Register(this);
-                }
-                else
-                {
-                    IsRegistered = WindowHotKeyManager.GetInstance(Control).Register(this);
-                }
-
                 NotifyPropertyChanged(nameof(IsGlobal));
                 NotifyPropertyChanged();
             }
         }
-        private HotKeyKinds _Kinds = HotKeyKinds.Windows;
-
         public bool IsGlobal
         {
             get => Kinds == HotKeyKinds.Global; set
@@ -115,6 +120,9 @@ namespace ColorVision.UI.HotKey
                 }
             }
         }
+        private HotKeyKinds _Kinds = HotKeyKinds.Windows;
+
+
 
 
 

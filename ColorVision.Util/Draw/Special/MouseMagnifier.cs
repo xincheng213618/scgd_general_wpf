@@ -1,4 +1,4 @@
-﻿using ColorVision.Extension;
+﻿using ColorVision.UI.Extension;
 using System.Windows;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
@@ -66,6 +66,8 @@ namespace ColorVision.Util.Draw.Special
             }
         }
         private bool _IsShow;
+
+
 
         public void DrawImageCVCIE(ImageInfo imageInfo,double XVal,double YVal, double ZVal,double x,double y,double u,double v)
         {
@@ -231,10 +233,8 @@ namespace ColorVision.Util.Draw.Special
                     DrawImage(imageInfo);
                     MouseMoveColorHandler?.Invoke(this, imageInfo);
                 }
-            }
+            }  
         }
-
-
 
         public void MouseEnter(object sender, MouseEventArgs e) => DrawVisualImageControl(true);
 

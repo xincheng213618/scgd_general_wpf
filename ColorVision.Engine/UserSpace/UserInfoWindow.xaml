@@ -1,0 +1,65 @@
+﻿<Window x:Class="ColorVision.Engine.UserSpace.UserInfoWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Engine.UserSpace"
+        xmlns:properties ="clr-namespace:ColorVision.Engine.Properties"
+        xmlns:hc ="https://handyorg.github.io/handycontrol"
+        mc:Ignorable="d"
+        d:DataContext="{d:DesignInstance local:UserManager}"
+        Title="用户" Height="450" Width="500" Background="{DynamicResource GlobalBackground}" Initialized="Window_Initialized">
+    <Grid Margin="5">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <ScrollViewer x:Name="EditContent"  d:DataContext="{Binding Config}">
+            <StackPanel  Grid.Row="1" Grid.Column="1">
+                <hc:ImageSelector/>
+                <hc:ImageViewer/>
+                <DockPanel Margin="5">
+                    <TextBlock Text="Account:" Width="100"/>
+                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Account}"/>
+                </DockPanel>
+                <DockPanel Margin="5">
+                    <TextBlock Text="User Name:" Width="100"/>
+                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding UserName}"/>
+                </DockPanel>
+                <DockPanel Margin="5">
+                    <TextBlock Text="Email:" Width="100"/>
+                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Email}"/>
+                </DockPanel>
+                <DockPanel Margin="5">
+                    <TextBlock Text="Phone:" Width="100"/>
+                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Phone}"/>
+                </DockPanel>
+                <DockPanel Margin="5">
+                    <TextBlock Text="Address:" Width="100"/>
+                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Address}"/>
+                </DockPanel>
+                <DockPanel Margin="5">
+                    <TextBlock Text="Company:" Width="100"/>
+                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Company}"/>
+                </DockPanel>
+                <DockPanel Margin="5">
+                    <TextBlock Text="Department:" Width="100"/>
+                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Department}"/>
+                </DockPanel>
+                <DockPanel Margin="5">
+                    <TextBlock Text="Position:" Width="100"/>
+                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Position}"/>
+                </DockPanel>
+                <DockPanel Margin="5">
+                    <TextBlock Text="Remark:" Width="100"/>
+                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Remark}"/>
+                </DockPanel>
+            </StackPanel>
+
+        </ScrollViewer>
+        <Border Grid.Row="1" Height="30">
+            <Button  Content="{x:Static properties:Resources.Edit}" Foreground="White" Background="{StaticResource PrimaryBrush}" Command="{Binding EditCommand}" />
+        </Border>
+
+    </Grid>
+</Window>

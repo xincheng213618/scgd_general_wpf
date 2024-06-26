@@ -1,22 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net6.0-windows</TargetFramework>
 		<Nullable>enable</Nullable>
 		<UseWPF>true</UseWPF>
 		<UseWindowsForms>True</UseWindowsForms>
 		<ImplicitUsings>disable</ImplicitUsings>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 	</PropertyGroup>
+	<ItemGroup>
+	  <None Remove="Assets\Image\background0.png" />
+	  <None Remove="Assets\Image\ColorVision.ico" />
+	  <None Remove="Assets\Image\ColorVision1.ico" />
+	  <None Remove="Assets\Image\归档查询.png" />
+	  <None Remove="Assets\Image\综合查询.png" />
+	  <None Remove="Assets\uploadbg.avif" />
+	  <None Remove="Controls\uploadbg.avif" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Extended.Wpf.Toolkit" Version="4.6.0" />
 		<PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
 		<PackageReference Include="HandyControl" Version="3.5.1" />
-		<PackageReference Include="log4net" Version="2.0.17" />
-		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-		<PackageReference Include="Panuon.WPF.UI" Version="1.2.1.2" />
+		<PackageReference Include="Panuon.WPF.UI" Version="1.2.2" />
+		<PackageReference Include="Quartz" Version="3.9.0" />
 		<PackageReference Include="WPF-UI" Version="2.1.0" />
-		<PackageReference Include="YamlDotNet" Version="15.1.2" />
+		<PackageReference Include="YamlDotNet" Version="15.3.0" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -25,10 +32,24 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Compile Update="Properties\Resource.Designer.cs">
+	  <Resource Include="Assets\Image\background0.png">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </Resource>
+	  <Resource Include="Assets\Image\ColorVision.ico" />
+	  <Resource Include="Assets\Image\ColorVision1.ico" />
+	  <Resource Include="Assets\Image\uploadbg.avif" />
+	  <Resource Include="Assets\Image\归档查询.png" />
+	  <Resource Include="Assets\Image\综合查询.png" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Update="Properties\Resources.Designer.cs">
 	    <DesignTime>True</DesignTime>
 	    <AutoGen>True</AutoGen>
-	    <DependentUpon>Resource.resx</DependentUpon>
+	    <DependentUpon>Resources.resx</DependentUpon>
+	  </Compile>
+	  <Compile Update="Scheduler\CreateTask.xaml.cs">
+	    <SubType>Code</SubType>
 	  </Compile>
 	  <Compile Update="Themes\Contorls\Upload.xaml.cs">
 	    <SubType>Code</SubType>
@@ -36,9 +57,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <EmbeddedResource Update="Properties\Resource.resx">
+	  <EmbeddedResource Update="Properties\RESOURCES.RESX">
 	    <Generator>PublicResXFileCodeGenerator</Generator>
-	    <LastGenOutput>Resource.Designer.cs</LastGenOutput>
+	    <LastGenOutput>Resources.Designer.cs</LastGenOutput>
 	  </EmbeddedResource>
 	</ItemGroup>
 </Project>

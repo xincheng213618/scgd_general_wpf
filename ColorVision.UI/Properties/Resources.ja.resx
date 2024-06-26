@@ -183,4 +183,25 @@
   <data name="MenuLanguage" xml:space="preserve">
     <value>言語(_L)</value>
   </data>
+  <data name="Theme" xml:space="preserve">
+    <value>テーマ</value>
+  </data>
+  <data name="Language" xml:space="preserve">
+    <value>言語</value>
+  </data>
+  <data name="AutoSwitchSelectedView" xml:space="preserve">
+    <value>選択したビューを自動的に切り替える</value>
+  </data>
+  <data name="HotKeys" xml:space="preserve">
+    <value>ショートカットキー</value>
+  </data>
+  <data name="WindowHidden" xml:space="preserve">
+    <value>非表示</value>
+  </data>
+  <data name="WindowSingle" xml:space="preserve">
+    <value>独立したウィンドウ</value>
+  </data>
+  <data name="MenuExit" xml:space="preserve">
+    <value>終了する (_X)</value>
+  </data>
 </root>

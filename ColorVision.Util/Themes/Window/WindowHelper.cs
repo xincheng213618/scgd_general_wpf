@@ -5,8 +5,8 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
-using ColorVision.NativeMethods;
-using static ColorVision.NativeMethods.User32;
+using ColorVision.Common.NativeMethods;
+using static ColorVision.Common.NativeMethods.User32;
 
 namespace ColorVision.Themes.Controls
 {

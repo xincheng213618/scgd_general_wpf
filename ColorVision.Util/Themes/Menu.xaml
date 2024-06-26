@@ -150,7 +150,7 @@
     <ControlTemplate  x:Key="{x:Static MenuItem.TopLevelHeaderTemplateKey}" TargetType="{x:Type MenuItem}">
         <Border Name="Border">
             <Grid>
-                <Border x:Name="TopLevelContentBorder" Padding="1,2,2,1" >
+                <Border x:Name="TopLevelContentBorder" Padding="1,2,2,1"  CornerRadius="5">
                     <Border x:Name="TopLevelContentBorder11">
                         <ContentPresenter  Margin="6,2,6,2"  ContentSource="Header" RecognizesAccessKey="True"  />
                     </Border>
@@ -170,8 +170,8 @@
                                 </ScrollViewer>
                             </Border>
                             <StackPanel Orientation="Horizontal"  VerticalAlignment="Top" Margin="1,0,0,0" HorizontalAlignment="Left">
-                                <Rectangle Height="2"   Width="{Binding ElementName=TopLevelContentBorder11,Path=ActualWidth}" Fill="{DynamicResource ContextMenuBackground}"/>
-                                <Rectangle Height="2"   Width="1" Fill="{DynamicResource ContextMenuBackground}"/>
+                                <Rectangle Height="2"  Width="{Binding ElementName=TopLevelContentBorder11,Path=ActualWidth}" Fill="{DynamicResource ContextMenuBackground}"/>
+                                <Rectangle Height="2"  Width="1" Fill="{DynamicResource ContextMenuBackground}"/>
                             </StackPanel>
                       
                         </Grid>
@@ -232,17 +232,7 @@
 
 
 
-
-
-
-
-
     <Style x:Key="{x:Type MenuItem}" TargetType="{x:Type MenuItem}">
-        <Setter Property="HorizontalContentAlignment" Value="{Binding Path=HorizontalContentAlignment,RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
-        <Setter Property="VerticalContentAlignment" Value="{Binding Path=VerticalContentAlignment,RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
-        <Setter Property="Background" Value="{Binding Path=Background,RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
-        <Setter Property="Foreground" Value="{Binding Path=Foreground,RelativeSource={RelativeSource AncestorType={x:Type ItemsControl}}}"/>
-        <Setter Property="ScrollViewer.PanningMode" Value="Both"/>
         <Setter Property="Stylus.IsFlicksEnabled" Value="False"/>
         <Setter Property="Template" Value="{DynamicResource {ComponentResourceKey TypeInTargetAssembly={x:Type MenuItem}, ResourceId=SubmenuItemTemplateKey}}"/>
         <Style.Triggers>

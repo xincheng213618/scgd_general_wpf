@@ -54,23 +54,23 @@
 
     <Style x:Key="MinimizeButtonStyle" TargetType="Button" BasedOn="{StaticResource CaptionButtonStyleDefault}">
         <Setter Property="Content" Value="&#xE949;"/>
-        <Setter Property="ToolTip" Value="{x:Static resx:Resource.Minimize}"/>
+        <Setter Property="ToolTip" Value="{x:Static resx:Resources.Minimize}"/>
     </Style>
     <Style x:Key="MaximizeButtonStyle" TargetType="Button" BasedOn="{StaticResource CaptionButtonStyleDefault}">
         <Setter Property="Content" Value="&#xE739;"/>
-        <Setter Property="ToolTip" Value="{x:Static resx:Resource.Maximize}"/>
+        <Setter Property="ToolTip" Value="{x:Static resx:Resources.Maximize}"/>
     </Style>
     <Style x:Key="TopMostButtonStyle" TargetType="Button" BasedOn="{StaticResource CaptionButtonStyleDefault}">
         <Setter Property="Content" Value="&#xE718;"/>
-        <Setter Property="ToolTip" Value="{x:Static resx:Resource.Pin}"/>
+        <Setter Property="ToolTip" Value="{x:Static resx:Resources.Pin}"/>
     </Style>
     <Style x:Key="RestoreButtonStyle" TargetType="Button" BasedOn="{StaticResource CaptionButtonStyleDefault}">
         <Setter Property="Content" Value="&#xE923;"/>
-        <Setter Property="ToolTip" Value="{x:Static resx:Resource.Restore}"/>
+        <Setter Property="ToolTip" Value="{x:Static resx:Resources.Restore}"/>
     </Style>
     <Style x:Key="CloseButtonStyle" TargetType="Button" BasedOn="{StaticResource CaptionButtonStyleClose}">
         <Setter Property="Content" Value="&#xE8BB;"/>
-        <Setter Property="ToolTip" Value="{x:Static resx:Resource.Close}"/>
+        <Setter Property="ToolTip" Value="{x:Static resx:Resources.Close}"/>
     </Style>
 
 

@@ -29,6 +29,14 @@ namespace ColorVision.Common.NativeMethods
             // Save the shortcut
             shortcut.Save();
         }
+        public static string GetShortcutTargetFile(string shortcutFilename)
+        {
+            WshShell shell = new WshShell();
+            IWshShortcut link = (IWshShortcut)shell.CreateShortcut(shortcutFilename); // Load the shortcut
+
+            // Return the target path
+            return link.TargetPath;
+        }
     }
 }
     

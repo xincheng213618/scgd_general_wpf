@@ -14,24 +14,7 @@ namespace ColorVision.UI.Sorts
         {
             var sortedItems = collection.ToList();
             sortedItems.Sort((x, y) => descending ? string.Compare(y.Name, x.Name, System.StringComparison.Ordinal) : string.Compare(x.Name, y.Name, System.StringComparison.Ordinal));
-
-            int index = 0;
-            while (index < sortedItems.Count)
-            {
-                if (!collection[index].Equals(sortedItems[index]))
-                {
-                    // 查找当前位置的正确项在未排序集合中的位置
-                    var correctItem = sortedItems[index];
-                    var currentIndex = collection.IndexOf(correctItem);
-
-                    // 交换集合中的项
-                    collection.Move(currentIndex, index);
-                }
-                else
-                {
-                    index++;
-                }
-            }
+            collection.UpdateCollection(sortedItems);
         }
     }
 }

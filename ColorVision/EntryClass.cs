@@ -1,8 +1,10 @@
 // // Copyright (c) Microsoft. All rights reserved.
 // // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using ColorVision.NativeMethods;
+using ColorVision.Common.NativeMethods;
+using ColorVision.UI;
 using log4net;
+using log4net.Config;
 using System;
 using System.CodeDom.Compiler;
 using System.Diagnostics;
@@ -10,6 +12,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 
+[assembly: XmlConfigurator(ConfigFile = "log4net.config", Watch = true)]
 namespace ColorVision
 {
     /// <summary>
@@ -17,6 +20,7 @@ namespace ColorVision
     /// </summary>
     public partial class App
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(App));
         private static Mutex mutex;
 
         [DllImport("user32.dll", CharSet = CharSet.Auto)]
@@ -26,36 +30,14 @@ namespace ColorVision
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         private static extern ushort GlobalAddAtom(string lpString);
 
-        public static string SolutionPath { get; set; } = string.Empty;
-
-        static string[] Sysargs;
         [STAThread]
         [DebuggerNonUserCode]
         [GeneratedCode("PresentationBuildTasks", "4.0.0.0")]
         public static void Main(string[] args)
         {
-            Sysargs = args;
-            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+            ArgumentParser.GetInstance().CommandLineArgs = args;
 
-            bool IsDebug = Debugger.IsAttached;
-            if (args.Count() > 0)
-            {
-                for (int i = 0; i < args.Count(); i++)
-                {
-                    if (args[i].ToLower() == "-d" || args[i].ToLower() == "-debug")
-                    {
-                        IsDebug = true;
-                    }
-                    if (args[i].ToLower() == "-r" || args[i].ToLower() == "-restart")
-                    {
-                        App.IsReStart = true;
-                    }
-                    if (args[i].EndsWith("cvsln", StringComparison.OrdinalIgnoreCase))
-                    {
-                        SolutionPath = args[i];
-                    }
-                }
-            }
+            System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
             if (Environment.CurrentDirectory.Contains("C:\\Program Files"))
             {
@@ -67,15 +49,17 @@ namespace ColorVision
                 }
             }
 
-            mutex = new Mutex(true, "ElectronicNeedleTherapySystem", out bool ret);
-            if (!ret)
+            mutex = new Mutex(true, "ColorVision", out bool ret);
+            if (!ret && !Debugger.IsAttached)
             {
                 IntPtr hWnd = CheckAppRunning.Check("ColorVision");
                 if (hWnd != IntPtr.Zero)
                 {
                     if (args.Length > 0)  
                     {
-                        ushort atom = GlobalAddAtom(args[0]);
+                        char separator = '\u0001';
+                        string combinedArgs = string.Join(separator.ToString(), args);
+                        ushort atom = GlobalAddAtom(combinedArgs);
                         SendMessage(hWnd, WM_USER + 1, (IntPtr)atom, IntPtr.Zero);  // 发送消息
                     }
                     log.Info("程序已经打开");

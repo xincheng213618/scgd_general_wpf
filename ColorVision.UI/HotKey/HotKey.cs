@@ -23,8 +23,13 @@ namespace ColorVision.UI.HotKey
         public static bool IsNullOrEmpty(Hotkey hotkey) => hotkey != null && hotkey != None;
         public static int ToInt(Hotkey hotkey) => ((int)hotkey.Modifiers << 8) + (int)hotkey.Key;
         #endregion
-        public Key Key { get; }
-        public ModifierKeys Modifiers { get; }
+
+        public Key Key { get; set; } = Key.None;
+        public ModifierKeys Modifiers { get; set; } = ModifierKeys.None;
+
+        public Hotkey()
+        {
+        }
 
         public Hotkey(Key key, ModifierKeys modifiers)
         {

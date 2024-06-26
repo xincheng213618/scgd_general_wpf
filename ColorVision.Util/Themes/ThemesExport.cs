@@ -2,13 +2,13 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI.HotKey;
 using ColorVision.Themes;
-using ColorVision.UI;
 using System;
 using System.Globalization;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using ColorVision.UI.Menus;
 
 namespace ColorVision.Themes
 {
@@ -21,7 +21,7 @@ namespace ColorVision.Themes
         public int Order => 1000;
         public Visibility Visibility => Visibility.Visible;
 
-        public string? Header => Util.Properties.Resource.MenuTheme;
+        public string? Header => Util.Properties.Resources.MenuTheme;
 
         public string? InputGestureText => "Ctrl + Shift + T";
 
@@ -34,7 +34,7 @@ namespace ColorVision.Themes
                 foreach (var item in Enum.GetValues(typeof(Theme)).Cast<Theme>())
                 {
                     MenuItem ThemeItem = new();
-                    ThemeItem.Header = Util.Properties.Resource.ResourceManager.GetString(item.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
+                    ThemeItem.Header = Util.Properties.Resources.ResourceManager.GetString(item.ToDescription(), CultureInfo.CurrentUICulture) ?? "";
                     ThemeItem.Click += (s, e) =>
                     {
                         ThemeConfig.Instance.Theme = item;
@@ -56,7 +56,7 @@ namespace ColorVision.Themes
                 return MenuTheme;
             } }
 
-        public HotKeys HotKeys => new(Util.Properties.Resource.Theme, new Hotkey(Key.T, ModifierKeys.Control | ModifierKeys.Shift), Execute);
+        public HotKeys HotKeys => new(Util.Properties.Resources.Theme, new Hotkey(Key.T, ModifierKeys.Control | ModifierKeys.Shift), Execute);
 
         private void Execute()
         {

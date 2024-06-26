@@ -9,7 +9,6 @@
         xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns:properties="clr-namespace:ColorVision.Properties"
         mc:Ignorable="d"     
-        d:DataContext="{d:DesignInstance local:SoftwareConfig}"
         Height="450" IsBlurEnabled="True" WindowStartupLocation="CenterScreen"  Background="Transparent" ResizeMode="NoResize" Width="600" Initialized="Window_Initialized">
     <Window.Resources>
       
@@ -58,340 +57,47 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
         </Style>
+        <Style TargetType="{x:Type ComboBox}" BasedOn="{StaticResource ComboBox.Small}">
+            <Setter Property="Width" Value="150"/>
+        </Style>
+        <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Opacity" Value="0.8" />
+                    <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
+                </Trigger>
+            </Style.Triggers>
+            <Setter Property="Background" Value="Transparent"/>
+        </Style>
     </Window.Resources>
     <Grid>
-        <TabControl TabStripPlacement="Left" Background="Transparent" BorderThickness="1,0,0,0"  Style="{StaticResource  TabControlBaseStyle}">
+        <TabControl x:Name="TabControlSetting" TabStripPlacement="Left" Background="Transparent" BorderThickness="1,0,0,0"  Style="{StaticResource  TabControlBaseStyle}">
             <TabControl.Resources>
+                <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
+                    <Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Opacity" Value="0.8" />
+                            <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
+                        </Trigger>
+                    </Style.Triggers>
+                    <Setter Property="Background" Value="Transparent"/>
+                </Style>
             </TabControl.Resources>
-            <TabItem  x:Name="UniversalTabItem" MinWidth="100" Header="{x:Static properties:Resource.GeneralSettings}" >
-                <TabItem.Style>
-                    <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
-                        <Style.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
-                            </Trigger>
-                        </Style.Triggers>
-                        <Setter Property="Background" Value="Transparent"/>
-                    </Style>
-                </TabItem.Style>
+            <TabItem  x:Name="UniversalTabItem" Background="Transparent" MinWidth="100" Header="{x:Static properties:Resources.GeneralSettings}" >
                 <Grid Background="{DynamicResource GlobalBorderBrush}">
                     <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
                         <GroupBox.Header>
-                            <TextBlock Text="{x:Static properties:Resource.General}" FontSize="20"/>
+                            <TextBlock Text="{x:Static properties:Resources.General}" FontSize="20"/>
                         </GroupBox.Header>
                         <ScrollViewer  HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                             <Border Style="{StaticResource BorderModuleArea}">
-                                <StackPanel Margin="5">
-                                    <DockPanel Margin="5" ToolTip="模板数据保存Mysql数据库">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding MySqlSetting.IsUseMySql}"/>
-                                        <TextBlock Text="{x:Static properties:Resource.EnableDatabase}"/>
-                                        <DockPanel  MouseLeftButtonDown="TextBlock_MouseLeftButtonDown1" Visibility="{Binding MySqlSetting.IsUseMySql,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MySql" >
-                                            <ToggleButton x:Name="StatusBarMysql" Style="{StaticResource ButtonDrawingImageMysql}"   Margin="0,-10" IsChecked="{Binding MySqlSetting.MySqlControl.IsConnect,Mode=OneWay}" Height="20" IsEnabled="False"/>
-                                        </DockPanel>
-                                        <TextBlock Text="  (启用数据库后，模板等信息会从数据库中读取)" Visibility="{Binding MySqlSetting.IsUseMySql,Converter={StaticResource bool2VisibilityConverter1}}"  FontSize="8" Margin="0,3,0,0" />
-                                    </DockPanel>
-
-                                    <DockPanel Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding MQTTSetting.IsUseMQTT}"/>
-                                        <TextBlock Text="启用MQTT    "/>
-                                        <DockPanel MouseLeftButtonDown="TextBlock_MouseLeftButtonDown" Visibility="{Binding MQTTSetting.IsUseMQTT,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MQTT">
-                                            <ToggleButton  x:Name="StatusBarMqtt"   Style="{StaticResource ButtonDrawingImageMQTT}"   Margin="0,-10" IsChecked="{Binding MQTTSetting.MQTTControl.IsConnect,Mode=OneWay}"  Height="20" IsEnabled="False" />
-                                        </DockPanel>
-                                        <TextBlock Text="  (这里必须要配置）" Visibility="{Binding MQTTSetting.IsUseMQTT,Converter={StaticResource bool2VisibilityConverter1}}"  FontSize="8" Margin="0,3,0,0" />
-                                    </DockPanel>
-
-                                    <DockPanel Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding  RCSetting.IsUseRCService}"/>
-                                        <TextBlock Text="启用注册中心    "/>
-                                        <DockPanel MouseLeftButtonDown="TextBlock_MouseLeftButtonDown2" Visibility="{Binding MQTTSetting.IsUseMQTT,Converter={StaticResource bool2VisibilityConverter}}" ToolTip="MQTT">
-                                            <ToggleButton   Style="{StaticResource ButtonDrawingImageRCService}"   Margin="0,-10" IsChecked="{Binding RCSetting.RCServiceControl.IsConnect,Mode=OneWay}"  Height="20" IsEnabled="False" />
-                                        </DockPanel>
-                                        <TextBlock Text="  (这里必须要配置）" Visibility="{Binding MQTTSetting.IsUseMQTT,Converter={StaticResource bool2VisibilityConverter1}}"  FontSize="8" Margin="0,3,0,0" />
-                                    </DockPanel>
-
-                                    <DockPanel Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding SoftwareSetting.IsDefaultOpenService}"/>
-                                        <TextBlock Text="启动自动配置服务"/>
-                                    </DockPanel>
-                                    <DockPanel x:Name="AutoRunDock" Margin="5" >
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding IsAutoRun}"/>
-                                        <TextBlock Text="{x:Static properties:Resource.TbSettingsStartBoot}"/>
-                                    </DockPanel>
-                                    <DockPanel  Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding MainWindowConfig.IsRestoreWindow}"/>
-                                        <TextBlock Text="{x:Static properties:Resource.StartRecoverUILayout}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding ViewConfig.IsAutoSelect}"/>
-                                        <TextBlock Text="{x:Static properties:Resource.AutoSwitchSelectedView}"/>
-                                    </DockPanel>
-                                    <DockPanel  Margin="5">
-                                        <hc:ComboBox x:Name="cmbloglevel" Text="{Binding SoftwareSetting.LogLevel}" hc:InfoElement.Placeholder="Level"  DockPanel.Dock="Right"  Style="{StaticResource ComboBox.Small}" Width="150"  />
-                                        <TextBlock Text="{x:Static properties:Resource.LogLevel}"/>
-                                    </DockPanel>
-                                    <DockPanel  Margin="5" >
-                                        <hc:ComboBox x:Name="cmtheme" SelectedValue="{Binding ThemeConfig.Theme}" hc:InfoElement.Placeholder="{x:Static properties:Resource.Theme}"  DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}" Width="150"  />
-                                        <TextBlock Text="{x:Static properties:Resource.Theme}"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding ThemeConfig.TransparentWindow}"/>
-                                        <TextBlock Text="{x:Static properties:Resource.TransparentWindow}"/>
-                                    </DockPanel>
-
-
-                                    <DockPanel  Margin="5" x:Name="lauagDock" >
-                                        <hc:ComboBox x:Name="cmlauage" SelectedValue="{Binding UICulture}" hc:InfoElement.Placeholder="{x:Static properties:Resource.Language}"  DockPanel.Dock="Right" Style="{StaticResource ComboBox.Small}" Width="150" />
-                                        <TextBlock Text="{x:Static properties:Resource.Language}"/>
-                                    </DockPanel>
-                                    <DockPanel  Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding AutoUpdateConfig.IsAutoUpdate}"/>
-                                        <TextBlock Text="{x:Static properties:Resource.CheckUpdatesOnStartup}"/>
-                                    </DockPanel>
-                                    <DockPanel  Margin="5">
-                                        <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resource.CheckForUpdates}" Command="{Binding AutoUpdateConfig.AutoUpdater.UpdateCommand}"/>
-                                        <TextBlock Text="{Binding AutoUpdateConfig.AutoUpdater.LatestVersion}"/>
-                                        <TextBlock Text="{x:Static properties:Resource.SoftwareVersion}"/>
-                                    </DockPanel>
-                                    <ProgressBar Height="15"  Foreground="#B41515" Maximum="100" Minimum="0" Value="{Binding AutoUpdateConfig.AutoUpdater.ProgressValue}" Background="#373B41" BorderThickness="0" Margin="5" VerticalAlignment="Bottom" />
-                                    <DockPanel  Margin="5">
-                                        <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding ThemeConfig.TransparentWindow}"/>
-                                        <TextBlock Text="{x:Static properties:Resource.DisableHardwareAcceleration}"/>
-                                    </DockPanel>
+                                <StackPanel x:Name="UniversalStackPanel" Margin="5">
                                 </StackPanel>
                             </Border>
                         </ScrollViewer>
                     </GroupBox>
                 </Grid>
             </TabItem>
-            <TabItem  Header="{x:Static properties:Resource.ProjectSettings}" >
-                <TabItem.Style>
-                    <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
-                        <Style.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Opacity" Value="0.8" />
-                                <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
-                            </Trigger>
-                        </Style.Triggers>
-                        <Setter Property="Background" Value="Transparent"/>
-                    </Style>
-                </TabItem.Style>
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="{DynamicResource GlobalBorderBrush}" VerticalScrollBarVisibility="Auto" >
-                    <StackPanel>
-                        <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
-                            <GroupBox.Header>
-                                <TextBlock Text="{x:Static properties:Resource.Project}" FontSize="20"/>
-                            </GroupBox.Header>
-                            <StackPanel>
-                                <Border Style="{StaticResource BorderModuleArea}" >
-                                    <StackPanel Margin="5">
-
-                                        <DockPanel Margin="5" >
-                                            <Button  DockPanel.Dock="Right"  Content="{x:Static properties:Resource.Clear}"    />
-                                            <TextBlock Text="{x:Static properties:Resource.ClearCache}" />
-                                        </DockPanel>
-                                    </StackPanel>
-                                </Border>
-                                <Border Style="{StaticResource BorderModuleArea}" CornerRadius="8">
-                                    <StackPanel Margin="5">
-                                        <DockPanel Margin="5" >
-                                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.Reset}" Click="SetProjectDefaultCreatName_Click"  />
-                                            <TextBlock Text="{x:Static properties:Resource.NewProjectFormat}" MinWidth="150" />
-                                            <TextBox Text="{Binding SolutionSetting.DefaultCreatName}"  HorizontalAlignment="Left" Width="200"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="5" >
-                                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.Reset}" Click="SetProjectDefault__Click"  />
-                                            <TextBlock Text="默认文件存储格式:"  MinWidth="150"  />
-                                            <TextBox Text="{Binding SolutionSetting.DefaultSaveName}" HorizontalAlignment="Left" Width="200" />
-                                        </DockPanel>
-                                        <DockPanel Margin="5" >
-                                            <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding SolutionSetting.IsLackWarning}"/>
-                                            <TextBlock Text="工程硬盘剩余空间不足提示" />
-                                        </DockPanel>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border Style="{StaticResource BorderModuleArea}" CornerRadius="8">
-                                    <StackPanel Margin="5">
-                                        <DockPanel Margin="5" >
-                                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resource.Reset}" Click="SetProjectDefault__Click"  />
-                                            <TextBlock Text="{x:Static properties:Resource.DefaultExportStorageFormat}"  MinWidth="150"  />
-                                            <TextBox Text="{Binding SolutionSetting.DefaultImageSaveName}" HorizontalAlignment="Left" Width="200" />
-                                        </DockPanel>
-                                    </StackPanel>
-                                </Border>
-                            </StackPanel>
-                        </GroupBox>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-
-            <TabItem  Header="MQTT">
-                <TabItem.Style>
-                    <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
-                        <Style.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Opacity" Value="0.8" />
-                                <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
-                            </Trigger>
-                        </Style.Triggers>
-                        <Setter Property="Background" Value="Transparent"/>
-                    </Style>
-                </TabItem.Style>
-                <ScrollViewer HorizontalScrollBarVisibility="Disabled" Background="{DynamicResource GlobalBorderBrush}" VerticalScrollBarVisibility="Auto" >
-                    <StackPanel>
-                        <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
-                            <GroupBox.Header>
-                                <TextBlock Text="MQTT设置" FontSize="20"/>
-                            </GroupBox.Header>
-                            <StackPanel>
-                                <Border Style="{StaticResource BorderModuleArea}" >
-                                    <StackPanel Margin="5">
-                                        <DockPanel Margin="5">
-                                            <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resource.Clear}" Click="Button_Click_1" Width="80"/>
-                                            <TextBlock Text="{x:Static properties:Resource.HistoryCache}"/>
-                                        </DockPanel>
-                                        <DockPanel Margin="5,2">
-                                            <TextBox DockPanel.Dock="Right" Text="{Binding MsgConfig.CacheLength}" HorizontalContentAlignment="Right" Style="{StaticResource  TextBox.Small}" Width="80"/>
-                                            <TextBlock Text="指令缓存数据长度"  />
-                                        </DockPanel>
-             
-                                    </StackPanel>
-                                </Border>
-                            </StackPanel>
-
-                        </GroupBox>
-                    </StackPanel>
-                </ScrollViewer>
-            </TabItem>
-
-            <TabItem  Header="{x:Static properties:Resource.PerformanceTest}" >
-                <TabItem.Style>
-                    <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
-                        <Style.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Opacity" Value="0.8" />
-                                <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
-                            </Trigger>
-                        </Style.Triggers>
-                        <Setter Property="Background" Value="Transparent"/>
-                    </Style>
-                </TabItem.Style>
-                <Grid Background="{DynamicResource GlobalBorderBrush}">
-                    <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
-                        <GroupBox.Header>
-                            <TextBlock Text="性能" FontSize="20"/>
-                        </GroupBox.Header>
-
-                        <ScrollViewer HorizontalScrollBarVisibility="Disabled"  VerticalScrollBarVisibility="Auto" >
-                            <StackPanel>
-                                <Border Style="{StaticResource BorderModuleArea}" >
-                                    <StackPanel Margin="5">
-                                        <DockPanel Margin="5,2">
-                                            <TextBox DockPanel.Dock="Right"   Text="{Binding SystemMonitorSetting.UpdateSpeed}" HorizontalContentAlignment="Right" HorizontalAlignment="Left" Width="200"/>
-                                            <TextBlock Text="{x:Static properties:Resource.UpdateSpeed}" />
-                                        </DockPanel>
-                                        <DockPanel Margin="5,2">
-                                            <TextBox  DockPanel.Dock="Right"  Text="{Binding SystemMonitorSetting.DefaultTimeFormat}"  HorizontalContentAlignment="Right" Width="200"/>
-                                            <TextBlock Text="日期格式" />
-                                        </DockPanel>
-                                        <DockPanel Margin="5">
-                                            <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding SystemMonitorSetting.IsShowTime}"/>
-                                            <TextBlock Text="显示时间"/>
-                                        </DockPanel>
-                                    </StackPanel>
-                                </Border>
-
-                                <Border  Style="{StaticResource BorderModuleArea}" >
-                                    <StackPanel>
-                                        <ListView  Grid.Row="1" Background="{StaticResource TransparentBrush}"  BorderThickness="0" ItemsSource="{Binding SystemMonitor.DriveInfos}">
-                                            <ListView.View>
-                                                <GridView>
-                                                    <GridViewColumn Header="Drive" DisplayMemberBinding="{Binding Name}"  Width="80"  />
-                                                    <GridViewColumn Header="Type" DisplayMemberBinding="{Binding DriveFormat}"  />
-                                                    <GridViewColumn Header="Total Size (GB)">
-                                                        <GridViewColumn.CellTemplate>
-                                                            <DataTemplate>
-                                                                <TextBlock Text="{Binding TotalSize, Converter={StaticResource MemorySizeConverter}}" />
-                                                            </DataTemplate>
-                                                        </GridViewColumn.CellTemplate>
-                                                    </GridViewColumn>
-                                                    <GridViewColumn Header="Free Space  (GB)">
-                                                        <GridViewColumn.CellTemplate>
-                                                            <DataTemplate>
-                                                                <TextBlock Text="{Binding AvailableFreeSpace, Converter={StaticResource MemorySizeConverter}}" />
-                                                            </DataTemplate>
-                                                        </GridViewColumn.CellTemplate>
-                                                    </GridViewColumn>
-                                                </GridView>
-                                            </ListView.View>
-                                        </ListView>
-                                    </StackPanel>
-                                </Border>
-
-
-
-
-
-                                <Border  Style="{StaticResource BorderModuleArea}" >
-                                    <StackPanel Orientation="Horizontal" Margin="15">
-                                        <Grid Margin="10,0">
-                                            <hc:WaveProgressBar  Value="{Binding SystemMonitor.RAMPercent}"/>
-                                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="RAM"/>
-                                        </Grid>
-                                        <Grid  Margin="10,0">
-                                            <hc:WaveProgressBar  Value="{Binding SystemMonitor.RAMThisPercent}"/>
-                                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding SystemMonitor.RAMThis}"/>
-                                        </Grid>
-                                        <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,20" Text="{Binding SystemMonitor.Time}"/>
-                                    </StackPanel>
-                                </Border>
-                            </StackPanel>
-                        </ScrollViewer>
-
-
-                    </GroupBox>
-                </Grid>
-            </TabItem>
-
-            <TabItem  Header="{x:Static properties:Resource.HotKeys}">
-                <TabItem.Style>
-                    <Style TargetType="TabItem"  BasedOn="{StaticResource TabItemStyle}">
-                        <Style.Triggers>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter Property="Opacity" Value="0.8" />
-                                <Setter Property="Background" Value="{DynamicResource BorderBrush}" />
-                            </Trigger>
-                        </Style.Triggers>
-                        <Setter Property="Background" Value="Transparent"/>
-                    </Style>
-                </TabItem.Style>
-                <Grid Background="{DynamicResource GlobalBorderBrush}">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <TextBox  Width="1" Height="0" Margin="0,-200,0,0"/>
-                    <ScrollViewer HorizontalScrollBarVisibility="Disabled"  VerticalScrollBarVisibility="Auto" >
-                        <StackPanel>
-                            <GroupBox Template="{StaticResource GroupBoxHeader1}"  Background="Transparent" >
-                                <GroupBox.Header>
-                                    <TextBlock Text="{x:Static properties:Resource.HotKeys}" FontSize="20"/>
-                                </GroupBox.Header>
-                                <Border  Style="{StaticResource BorderModuleArea}" >
-                                    <StackPanel x:Name="HotKeyStackPanel"  Margin="10,5" Initialized="HotKeyStackPanel_Initialized"/>
-                                </Border>
-                            </GroupBox>
-                        </StackPanel>
-                    </ScrollViewer>
-
-                    <UniformGrid Grid.Row="1" Columns="3"  Width="300" HorizontalAlignment="Right" Margin="10">
-                        <Button Content="恢复默认" Width="80" Click="SetDefault_Click" />
-                        <Button Content="保存热键" Width="80" Click="ButtonSave_Click" />
-                        <Button Content="加载热键" Width="80" Click="ButtonLoad_Click" />
-                    </UniformGrid>
-                </Grid>
-            </TabItem>
-
         </TabControl>
 
         <Grid Margin="0,-30,0,0" Height="30" VerticalAlignment="Top">

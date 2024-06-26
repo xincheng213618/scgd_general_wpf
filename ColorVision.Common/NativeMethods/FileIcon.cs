@@ -8,7 +8,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows;
 
-namespace ColorVision.NativeMethods
+namespace ColorVision.Common.NativeMethods
 {
     public class FileIcon
     {

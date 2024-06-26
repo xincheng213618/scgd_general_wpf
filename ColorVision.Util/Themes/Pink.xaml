@@ -1,54 +1,112 @@
 ﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- Icon colors -->
-    <SolidColorBrush x:Key="IconSolidColorBrush" Color="#FFB6C1"/>
-    <SolidColorBrush x:Key="IconSolidColorBackgroundBrush" Color="#FFC0CB"/>
-
     <!-- Global colors -->
-    <Color x:Key="GlobalBackgroundColor">White</Color>
-    <Color x:Key="GlobalBroderBrushColor">#F9F9F9</Color>
+    <Color x:Key="GlobalBackgroundColor">#F9BCD3</Color>
+    <Color x:Key="GlobalBroderBrushColor">#FAD1DF</Color>
     <Color x:Key="GlobalTextColor">Black</Color>
 
+    <!-- Icon colors -->
+    <SolidColorBrush x:Key="IconSolidColorBrush" Color="#E91E63"/>
+    <!-- 深粉色 -->
+    <SolidColorBrush x:Key="IconSolidColorBackgroundBrush" Color="#FADCE4"/>
+    <!-- 次要背景色 -->
+
     <!-- Selection colors -->
-    <Color x:Key="SelectedBackgroundColor">#FFC5CBF9</Color>
-    <Color x:Key="SelectedUnfocusedColor">#FFDDDDDD</Color>
+    <Color x:Key="SelectedBackgroundColor">#F48FB1</Color>
+    <!-- 浅粉色 -->
+    <Color x:Key="SelectedUnfocusedColor">#FADCE4</Color>
+    <!-- 次要背景色 -->
 
     <!-- Border colors -->
-    <SolidColorBrush x:Key="BordrBrush">#D5DFE5</SolidColorBrush>
+    <SolidColorBrush x:Key="BordrBrush" Color="#F9BCD3"/>
+    <!-- 主背景色 -->
+    <SolidColorBrush x:Key="Background" Color="#F48FB1"/>
+    <!-- 浅粉色 -->
 
     <!-- Button colors -->
-    <SolidColorBrush x:Key="ButtonBackground" Color="#FFB6C1" />
-    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#FF69B4" />
+    <SolidColorBrush x:Key="ButtonBackground" Color="#F8BBD0"/>
+    <!-- 浅粉色 -->
+    <SolidColorBrush x:Key="ButtonBorderBrush" Color="#E91E63"/>
+    <!-- 深粉色 -->
 
     <!-- Global background and border -->
     <SolidColorBrush x:Key="GlobalBackground" Color="{StaticResource GlobalBackgroundColor}" />
     <SolidColorBrush x:Key="GlobalBorderBrush" Color="{StaticResource GlobalBroderBrushColor}"/>
 
     <!-- More global colors -->
-    <SolidColorBrush x:Key="GlobalBorderBrush1" Color="#EE82EE"/>
+    <SolidColorBrush x:Key="GlobalBorderBrush1" Color="#F8BBD0"/>
+    <!-- 浅粉色 -->
 
     <!-- Text colors -->
     <SolidColorBrush x:Key="GlobalTextBrush" Color="{StaticResource GlobalTextColor}" />
-    <SolidColorBrush x:Key="StatusBarBackgroundBrush" Color="#F08080"/>
+    <SolidColorBrush x:Key="StatusBarBackgroundBrush" Color="#E91E63"/>
+    <!-- 深粉色 -->
     <SolidColorBrush x:Key="MeasureBackground" Color="{StaticResource GlobalBackgroundColor}"/>
-    <SolidColorBrush x:Key="MeasureBarBackgroundBrush" Color="#FFC0CB"/>
+    <SolidColorBrush x:Key="MeasureBarBackgroundBrush" Color="#FADCE4"/>
+    <!-- 次要背景色 -->
 
     <!-- Caption buttons -->
-    <SolidColorBrush x:Key="CaptionButtonBrush" Color="{StaticResource GlobalTextColor}"/>
-    <SolidColorBrush x:Key="CaptionButtonForeground" Color="{StaticResource GlobalTextColor}"/>
-    <SolidColorBrush x:Key="WindowIsNotActiveForeground">#d7d7d7</SolidColorBrush>
-    <SolidColorBrush x:Key="CaptionButtonChoiceBrush">#C7CACF</SolidColorBrush>
-    <SolidColorBrush x:Key="CaptionButtonChoiceBackgrouundBrush">#E5E5E5</SolidColorBrush>
+    <SolidColorBrush x:Key="CaptionButtonBrush" Color="#E91E63"/>
+    <!-- 深粉色 -->
+    <SolidColorBrush x:Key="CaptionButtonForeground" Color="#E91E63"/>
+    <!-- 深粉色 -->
+    <SolidColorBrush x:Key="WindowIsNotActiveForeground" Color="#F48FB1"/>
+    <!-- 浅粉色 -->
+    <SolidColorBrush x:Key="CaptionButtonChoiceBrush" Color="#F48FB1"/>
+    <!-- 浅粉色 -->
+    <SolidColorBrush x:Key="CaptionButtonChoiceBackgrouundBrush" Color="#FADCE4"/>
+    <!-- 次要背景色 -->
     <SolidColorBrush x:Key="CaptionButtonCloseBrush" Color="Red"/>
 
     <!-- Menu Items -->
     <!-- ... (other menu item styles) ... -->
 
     <!-- Context Menu -->
-    <SolidColorBrush x:Key="ContextMenuBackground" Color="#FFB6C1" />
-    <SolidColorBrush x:Key="ContextMenuBorderBrush" Color="#FF69B4" />
-    <SolidColorBrush x:Key="ContextMenuRectangleFill" Color="#EE82EE" />
+    <SolidColorBrush x:Key="toplevelmenuheaderhoverborder" Color="Transparent" />
+    <SolidColorBrush x:Key="toplevelmenuheaderhover" Color="#FADCE4"/>
+
+
+    <!-- 次要背景色 -->
+    <SolidColorBrush x:Key="menuitemglyphpanelborderbrush" Color="#FADCE4"/>
+    <!-- 次要背景色 -->
+    <SolidColorBrush x:Key="MenuItemHighlightedInnerBorder" Color="#FADCE4"/>
+    <!-- 次要背景色 -->
+    <SolidColorBrush x:Key="MenuItemDisabledForeground" Color="#F48FB1"/>
+    <!-- 浅粉色 -->
+    <SolidColorBrush x:Key="MenuItemDisabledGlyphPanelBackground" Color="#FADCE4"/>
+    <!-- 次要背景色 -->
+    <SolidColorBrush x:Key="SubMenuBrushKey"   Color="#EAB1C7"/>
+    <SolidColorBrush x:Key="SubMenuBorderBrushKey"   Color="Transparent"/>
+    
+    
+    <SolidColorBrush x:Key="MenuItemDisabledGlyphFill" Color="#E91E63"/>
+    <!-- 深粉色 -->
+    <SolidColorBrush x:Key="environmentcommandbar"  Color="#F8BBD0"/>
+    <!-- 浅粉色 -->
+    <SolidColorBrush x:Key="environmentcommandbaricon" Color="#FADCE4"/>
+    <!-- 次要背景色 -->
+    <SolidColorBrush x:Key="EnvironmentCommandBarMenuMouseOverSubmenuGlyph" Color="#F48FB1"/>
+    <!-- 浅粉色 -->
+    <SolidColorBrush x:Key="environmentcommandbarmenuseparator" Color="#F48FB1"/>
+    <!-- 浅粉色 -->
+    <SolidColorBrush x:Key="EnvironmentCommandBarCheckBox" Color="#E91E63"/>
+    <!-- 深粉色 -->
+    <SolidColorBrush x:Key="EnvironmentCommandBarSelectedIcon" Color="#FADCE4"/>
+    <!-- 次要背景色 -->
+    <SolidColorBrush x:Key="EnvironmentCommandBarCheckBoxMouseOver" Color="#F5E6FF"/>
+    <!-- 浅粉色 -->
+    <SolidColorBrush x:Key="EnvironmentCommandBarHoverOverSelectedIcon" Color="#F48FB1"/>
+    <!-- 浅粉色 -->
+    <SolidColorBrush x:Key="EnvironmentCommandBarMenuItemMouseOver" Color="#F48FB1"/>
+    <!-- 浅粉色 -->
+
+    <SolidColorBrush x:Key="ContextMenuBackground" Color="#FADCE4"/>
+    <!-- 次要背景色 -->
+    <SolidColorBrush x:Key="ContextMenuBorderBrush" Color="#FADCE4"/>
+    <!-- 次要背景色 -->
+    <SolidColorBrush x:Key="ContextMenuRectangleFill" Color="#FADCE4"/>
+    <!-- 次要背景色 -->
 
     <!-- ... (other styles) ... -->
 </ResourceDictionary>

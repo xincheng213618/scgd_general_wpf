@@ -1,6 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Linq;
-using ColorVision.NativeMethods;
+using ColorVision.Common.NativeMethods;
 
 namespace ColorVision.UI.Sorts
 {
@@ -20,23 +20,16 @@ namespace ColorVision.UI.Sorts
         {
             var sortedItems = collection.ToList();
             sortedItems.Sort((x, y) => descending ? Shlwapi.CompareLogical(y.Batch ?? string.Empty, x.Batch ?? string.Empty) : Shlwapi.CompareLogical(x.Batch ?? string.Empty, y.Batch ?? string.Empty));
+            collection.UpdateCollection(sortedItems);
+        }
 
-            int index = 0;
-            while (index < sortedItems.Count)
+        public static void InvokeSortMethod(string methodName, Type itemType, object collection, bool isSortDescending)
+        {
+            var methodInfo = typeof(SortableExtension).GetMethod(methodName);
+            if (methodInfo != null)
             {
-                if (!collection[index].Equals(sortedItems[index]))
-                {
-                    // 查找当前位置的正确项在未排序集合中的位置
-                    var correctItem = sortedItems[index];
-                    var currentIndex = collection.IndexOf(correctItem);
-
-                    // 交换集合中的项
-                    collection.Move(currentIndex, index);
-                }
-                else
-                {
-                    index++;
-                }
+                var genericMethod = methodInfo.MakeGenericMethod(itemType);
+                genericMethod.Invoke(null, new object[] { collection, isSortDescending });
             }
         }
 

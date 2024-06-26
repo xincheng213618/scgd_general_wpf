@@ -1,35 +1,33 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.UI.HotKey;
-using ColorVision.UI;
 using System;
 using System.Windows;
 using System.Windows.Input;
+using ColorVision.UI.Menus;
+using ColorVision.Themes;
+using ColorVision.Common.Utilities;
+using ColorVision.UI.Authorizations;
 
 namespace ColorVision.Update
 {
-    public class ExportUpdate: IHotKey, IMenuItem
+    public class ExportUpdate: MenuItemBase, IHotKey
     {
-        public HotKeys HotKeys => new(Properties.Resource.MenuUpdate, new Hotkey(Key.U, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(ColorVision.Properties.Resources.Update, new Hotkey(Key.U, ModifierKeys.Control), Execute);
 
-        public string? OwnerGuid => "Help";
+        public override string OwnerGuid => "Help";
 
-        public string? GuidId => "MenuUpdate";
+        public override string GuidId => "MenuUpdate";
 
-        public int Order => 10003;
-        public Visibility Visibility => Visibility.Visible;
+        public override int Order => 10003;
+        public override Visibility Visibility => Visibility.Visible;
 
-        public string? Header => Properties.Resource.MenuUpdate;
+        public override string Header => Properties.Resources.MenuUpdate;
 
-        public string? InputGestureText => "Ctrl + U";
+        public override string InputGestureText => "Ctrl + U";
 
-        public object? Icon { get; set; }
 
-        public RelayCommand Command => new(A => Execute());
-
-        private void Execute()
-        {
-            AutoUpdater.GetInstance().CheckAndUpdate();
-        }
+        [RequiresPermission(PermissionMode.Administrator)]
+        public override void Execute() => _ = AutoUpdater.GetInstance().CheckAndUpdate();
     }
 
 
@@ -42,6 +40,7 @@ namespace ColorVision.Update
         public WindowUpdate()
         {
             InitializeComponent();
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)

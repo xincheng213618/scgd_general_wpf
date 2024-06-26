@@ -1,20 +1,15 @@
 #pragma warning disable CS8601,CA1822
-using MQTTMessageLib.Camera;
+using CVCommCore.CVImage;
+using log4net;
 using MQTTMessageLib.FileServer;
 using NetMQ;
 using NetMQ.Sockets;
+using OpenCvSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
-using log4net;
-using System.Linq;
-using System.Windows.Navigation;
-using System.Windows.Markup;
-using OpenCvSharp;
-using System.Drawing.Imaging;
-using CVCommCore.CVImage;
 
 namespace ColorVision.Net
 {
@@ -395,7 +390,7 @@ namespace ColorVision.Net
         {
             if (CVFileUtil.ReadCVRaw(fileName, out fileInfo))
             {
-                OpenCvSharp.Mat src = new(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
+                OpenCvSharp.Mat src = Mat.FromPixelData(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
                 OpenCvSharp.Mat dst = new();
                 if (fileInfo.bpp == 32)
                 {
@@ -456,13 +451,13 @@ namespace ColorVision.Net
                 {
                     byte[] data = new byte[len];
                     Buffer.BlockCopy(fileInfo.data, len, data, 0, data.Length);
-                    OpenCvSharp.Mat src = new((int)fileInfo.rows, (int)fileInfo.cols, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
+                    OpenCvSharp.Mat src = Mat.FromPixelData((int)fileInfo.rows, (int)fileInfo.cols, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), data);
                     OpenCvSharp.Cv2.Normalize(src, src, 0, 1, OpenCvSharp.NormTypes.MinMax);
                     src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U, 255);
                 }
                 else
                 {
-                    OpenCvSharp.Mat src = new((int)fileInfo.cols, (int)fileInfo.rows, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), fileInfo.data);
+                    OpenCvSharp.Mat src = Mat.FromPixelData((int)fileInfo.cols, (int)fileInfo.rows, OpenCvSharp.MatType.MakeType(OpenCvSharp.MatType.CV_32F, 1), fileInfo.data);
                     OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
                     src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
                 }

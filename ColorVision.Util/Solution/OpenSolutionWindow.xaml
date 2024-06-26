@@ -1,0 +1,140 @@
+﻿<base:BaseWindow x:Class="ColorVision.Solution.OpenSolutionWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Solution"
+        xmlns:base ="clr-namespace:ColorVision.Themes.Controls"
+        xmlns:hc ="https://handyorg.github.io/handycontrol"
+        xmlns:properties="clr-namespace:ColorVision.Util.Properties"
+        mc:Ignorable="d"
+        Height="550" Width="850"  MinWidth="500" MinHeight="500" Background="{DynamicResource GlobalBackground}" WindowStyle="ToolWindow" WindowStartupLocation="CenterScreen" Initialized="BaseWindow_Initialized">
+    <base:BaseWindow.Resources>
+        <Style TargetType="TextBlock" >
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+        </Style>
+    </base:BaseWindow.Resources>
+    <Grid>
+        <TextBlock Text="Color Vision" FontSize="20"  HorizontalAlignment="Left" VerticalAlignment="Top" Margin="20,0,0,0"/>
+        <Grid Margin="20,40,0,0" >
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"  MinWidth="300" />
+                <ColumnDefinition Width="300"/>
+            </Grid.ColumnDefinitions>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="30"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <DockPanel  >
+                    <TextBlock Text="{x:Static properties:Resources.RecentUsedContent}"  VerticalAlignment="Center" FontSize="18"/>
+                    <TextBox x:Name="Searchbox"   BorderBrush="#CCCEDB" MaxLength="15" VerticalContentAlignment="Center"  TextChanged="Searchbox_TextChanged"   Margin="10,0" Width="200"  HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                </DockPanel>
+                <Grid  Grid.Row="1" Margin="-10,0,0,0">
+                    <ListView  x:Name="ListView1" Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged"  PreviewMouseRightButtonDown="ListView1_MouseRightButtonDown">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem" BasedOn="{StaticResource ListViewItemBaseStyle}">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="ContextMenu" Value="{Binding ContextMenu}"/>
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                        <ListView.View>
+                            <GridView>
+                                <GridView.ColumnHeaderContainerStyle>
+                                    <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                    </Style>
+                                </GridView.ColumnHeaderContainerStyle>
+                                <GridViewColumn >
+                                    <GridViewColumn.CellTemplate>
+                                        <DataTemplate DataType="{x:Type local:SolutionInfo}" >
+                                            <Border x:Name="border1"  Height="45" Background="Transparent" Margin="0,2,0,2" BorderThickness="0" Width="450">
+                                                <Border.ContextMenu>
+                                                    <ContextMenu>
+                                                        <MenuItem Header="{x:Static properties:Resources.Delete}"  Click="Delete" />
+                                                    </ContextMenu>
+                                                </Border.ContextMenu>
+                                                <Grid Margin="0,2,50,2">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <Grid Grid.Column="1" Margin="0,2">
+                                                        <TextBlock Text="{Binding Name}" TextTrimming = "CharacterEllipsis" FontWeight="Bold" VerticalAlignment="Top"/>
+                                                        <TextBlock Text="{Binding FullName }" TextTrimming = "CharacterEllipsis" VerticalAlignment="Bottom"/>
+                                                        <TextBlock Text="{Binding CreationTime}" TextTrimming = "CharacterEllipsis" VerticalAlignment="Top" HorizontalAlignment="Right"/>
+                                                    </Grid>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </GridViewColumn.CellTemplate>
+
+                                </GridViewColumn>
+                            </GridView>
+                        </ListView.View>
+                    </ListView>
+                    <TextBlock x:Name="SearchNoneText" Visibility="Collapsed" VerticalAlignment="Top" FontSize="16" Margin="20,20,0,0" Text="{x:Static properties:Resources.NoRelatedItemsFound}" />
+                </Grid>
+            </Grid>
+
+            <StackPanel Grid.Column="1"   Margin="10" >
+                <Grid  Height="50"  Margin="5">
+                    <Border  Grid.Row="2"  Background="#FFFFFFFF" CornerRadius="5" />
+                    <Border  CornerRadius="5" >
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1" MappingMode="RelativeToBoundingBox">
+                                <GradientStop Color="#668D69D7" Offset="0"/>
+                                <GradientStop Color="#66B4AFFF" Offset="0.3644"/>
+                                <GradientStop Color="#66D3D0FF" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                    </Border>
+                    <Grid Margin="5">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Viewbox Grid.Row="0" Grid.RowSpan="2"  Margin="5,10,10,10">
+                            <Path Fill="#FFE39E"  Data="M970.666667 213.333333H546.586667a10.573333 10.573333 0 0 1-7.54-3.126666L429.793333 100.953333A52.986667 52.986667 0 0 0 392.08 85.333333H96a53.393333 53.393333 0 0 0-53.333333 53.333334v704a53.393333 53.393333 0 0 0 53.333333 53.333333h874.666667a53.393333 53.393333 0 0 0 53.333333-53.333333V266.666667a53.393333 53.393333 0 0 0-53.333333-53.333334z" />
+                        </Viewbox>
+                        <TextBlock  Grid.Row="0" Grid.Column="1" FontSize="17"  Foreground="Black" Text="{x:Static properties:Resources.OpenItem}" />
+                        <TextBlock  Grid.Row="1" Grid.Column="1" FontSize="10" Foreground="Black" Text="{x:Static properties:Resources.OpenLocalProjectOrFile}" VerticalAlignment="Center"/>
+                    </Grid>
+                    <Button  Background="Transparent"  BorderThickness="0" Click="Button_Click" Padding="0"/>
+                </Grid>
+                <Grid  Height="50" Margin="5">
+                    <Border  Grid.Row="2"  Background="#FFFFFFFF" CornerRadius="5" />
+                    <Border  CornerRadius="5" >
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1" MappingMode="RelativeToBoundingBox">
+                                <GradientStop Color="#6633AAF2" Offset="0.1575"/>
+                                <GradientStop Color="#666CF0F9" Offset="0.8429"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                    </Border>
+                    <Grid Margin="5">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="40"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Viewbox Grid.Row="0" Grid.RowSpan="2"  Margin="5,10,10,10">
+                            <Path Fill="#FFE39E"  Data="M970.666667 213.333333H546.586667a10.573333 10.573333 0 0 1-7.54-3.126666L429.793333 100.953333A52.986667 52.986667 0 0 0 392.08 85.333333H96a53.393333 53.393333 0 0 0-53.333333 53.333334v704a53.393333 53.393333 0 0 0 53.333333 53.333333h874.666667a53.393333 53.393333 0 0 0 53.333333-53.333333V266.666667a53.393333 53.393333 0 0 0-53.333333-53.333334z" />
+                        </Viewbox>
+                        <TextBlock  Grid.Row="0" Grid.Column="1" FontSize="17"  Foreground="Black" Text="{x:Static properties:Resources.CreateProject}" />
+                        <TextBlock  Grid.Row="1" Grid.Column="1" FontSize="10" Foreground="Black" Text="{x:Static properties:Resources.CreateNewProjectOrFile}" VerticalAlignment="Center"/>
+                    </Grid>
+                    <Button  Background="Transparent"  BorderThickness="0" Click="Button_Click" Padding="0"/>
+                </Grid>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</base:BaseWindow>

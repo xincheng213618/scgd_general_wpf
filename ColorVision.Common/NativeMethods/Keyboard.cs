@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace ColorVision.NativeMethods
+namespace ColorVision.Common.NativeMethods
 {
     /// <summary>
     /// 键盘操作

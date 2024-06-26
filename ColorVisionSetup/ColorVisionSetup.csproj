@@ -68,7 +68,7 @@
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
   <PropertyGroup>
-    <AssemblyOriginatorKeyFile>ColorVision.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>$(SolutionDir)ColorVision.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -113,6 +113,12 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Core.cs" />
+    <Compile Include="CyclingGradient.xaml.cs">
+      <DependentUpon>CyclingGradient.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Utils.cs" />
+    <Compile Include="VideoPlayer.cs" />
     <Compile Include="ViewModelBase.cs" />
     <Compile Include="WindowUpdate.xaml.cs">
       <DependentUpon>WindowUpdate.xaml</DependentUpon>
@@ -122,6 +128,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="AutoUpdater.cs" />
+    <Page Include="CyclingGradient.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
     <Page Include="WindowUpdate.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -145,7 +155,7 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
-    <None Include="ColorVision.snk" />
+    <Resource Include="Assets\images\background.webp" />
     <None Include="Properties\app.manifest" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -169,6 +179,14 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="ColorVision1.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="logi_codecs_shared.dll" />
+    <EmbeddedResource Include="logi_installer_shared.dll" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Assets\images\background-mask.png" />
+    <Resource Include="Assets\images\spinner.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

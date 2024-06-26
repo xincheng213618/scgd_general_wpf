@@ -1,0 +1,53 @@
+﻿<UserControl x:Class="ColorVision.Solution.TreeViewControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:svgc="http://sharpvectors.codeplex.com/svgc/"
+             xmlns:local="clr-namespace:ColorVision.Solution"
+             xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:properties="clr-namespace:ColorVision.Util.Properties"
+             d:DataContext="{d:DesignInstance local:SolutionManager}"
+             mc:Ignorable="d" 
+             d:DesignWidth="300" d:DesignHeight="600"  Initialized="UserControl_Initialized" Background="{DynamicResource GlobalBackground}" Loaded="UserControl_Loaded">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/ColorVision.Util;component/Solution/V/TreeView.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid >
+        <Grid.RowDefinitions>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid x:Name="SoulutionButtonPanel1" Grid.Row="0" >
+            <ToolBar Background="{DynamicResource GlobalBackgroundBrush}">
+                <Button Command="{Binding SolutionCreateCommand}" Content="新建" Margin="5,0"/>
+                <Button Command="{Binding SolutionOpenCommand}" Content="{x:Static properties:Resources.Open}" Margin="5,0"/>
+            </ToolBar>
+        </Grid>
+
+        <Grid Grid.Row="1" >
+            <hc:SearchBar x:Name="SearchBar1"  Margin="5,0,5,0" TextChanged="SearchBar1_TextChanged" hc:InfoElement.Placeholder="{x:Static properties:Resources.SearchProjectFiles}" hc:InfoElement.ShowClearButton="True" Style="{StaticResource SearchBarPlus}" IsRealTime="True"   />
+        </Grid>
+
+
+        <Border BorderThickness="0" Grid.Row="2" CornerRadius="4"  Padding="0" >
+            <TreeView  	x:Name="SolutionTreeView"  BorderThickness="0" Background="{DynamicResource GlobalBackground}" ScrollViewer.CanContentScroll="False">
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="{x:Type TreeViewItem}"  BasedOn="{StaticResource TreeViewItemBaseStyle }">
+                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>
+                        <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                        <Setter Property="ContextMenu" Value="{Binding ContextMenu}" />
+                        <EventSetter Event="RequestBringIntoView" Handler="TreeViewItem_RequestBringIntoView"/>
+                        <Setter Property="local:DoubleClickCommandBehavior.DoubleClickCommand" Value="{Binding OpenCommand}" />
+                    </Style>
+                </TreeView.ItemContainerStyle>
+            </TreeView>
+        </Border>
+    </Grid>
+
+</UserControl>

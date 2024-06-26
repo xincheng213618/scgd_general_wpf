@@ -1,81 +1,35 @@
 ﻿using ColorVision.Adorners;
 using ColorVision.Common.Utilities;
-using ColorVision.MQTT;
-using ColorVision.MySql;
-using ColorVision.Services.Flow;
-using ColorVision.Services.RC;
-using ColorVision.Services.Templates;
-using ColorVision.Settings;
+using ColorVision.Engine.UserSpace;
+using ColorVision.Scheduler;
 using ColorVision.Solution;
 using ColorVision.Solution.Searches;
 using ColorVision.Themes;
 using ColorVision.UI;
+using ColorVision.UI.Configs;
 using ColorVision.UI.HotKey;
+using ColorVision.UI.Menus;
 using ColorVision.UI.Views;
-using ColorVision.Update;
-using ColorVision.UserSpace;
-using ColorVision.Utils;
 using log4net;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
-using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
+using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision
 {
-    public class MainWindowConfig : IConfig
-    {
-        public static MainWindowConfig Instance => ConfigHandler1.GetInstance().GetRequiredService<MainWindowConfig>();
-
-        public bool IsRestoreWindow { get; set; }
-
-        public double Width { get; set; }
-        public double Height { get; set; }
-        public double Left { get; set; }
-        public double Top { get; set; }
-        public int WindowState { get; set; }
-
-        public void SetWindow(Window window)
-        {
-            if (IsRestoreWindow && Height != 0 && Width != 0)
-            {
-                window.Top = Top;
-                window.Left = Left;
-                window.Height = Height;
-                window.Width = Width;
-                window.WindowState = (WindowState)WindowState;
-
-                if (Width > SystemParameters.WorkArea.Width)
-                {
-                    window.Width = SystemParameters.WorkArea.Width;
-                }
-                if (Height > SystemParameters.WorkArea.Height)
-                {
-                    window.Height = SystemParameters.WorkArea.Height;
-                }
-            }
-        }
-        public void SetConfig(Window window)
-        {
-            Top = window.Top;
-            Left = window.Left;
-            Height = window.Height;
-            Width = window.Width;
-            WindowState = (int)window.WindowState;
-        }
-    }
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -83,13 +37,8 @@ namespace ColorVision
     /// 
     public partial class MainWindow : Window
     {
-
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
         public ViewGridManager ViewGridManager { get; set; }
-
-        public static ConfigHandler ConfigHandler  => ConfigHandler.GetInstance();
-
-        public static SoftwareSetting SoftwareSetting => ConfigHandler.SoftwareConfig.SoftwareSetting;
         public static MainWindowConfig MainWindowConfig => MainWindowConfig.Instance;
 
         public MainWindow()
@@ -98,18 +47,15 @@ namespace ColorVision
             MainWindowConfig.SetWindow(this);
             SizeChanged += (s, e) => MainWindowConfig.SetConfig(this);
             var IsAdministrator = Tool.IsAdministrator();
-            Title = Title + $"- {(IsAdministrator ? Properties.Resource.RunAsAdmin : Properties.Resource.NotRunAsAdmin)}";
+            Title += $"- {(IsAdministrator ? Properties.Resources.RunAsAdmin : Properties.Resources.NotRunAsAdmin)}";
+            this.ApplyCaption();
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            TemplateControl.GetInstance();
             MenuManager.GetInstance().Menu = Menu1;
-            if (MySqlControl.GetInstance().IsConnect)
-            {
-            }
-
-
+            MainWindowConfig.IsOpenSidebar = true;
+            this.DataContext = MainWindowConfig;
             if (!WindowConfig.IsExist || (WindowConfig.IsExist && WindowConfig.Icon == null))
             {
                 ThemeManager.Current.SystemThemeChanged += (e) =>
@@ -137,8 +83,6 @@ namespace ColorVision
             ViewGridManager = ViewGridManager.GetInstance();
             ViewGridManager.MainView = ViewGrid;
 
-            StatusBarGrid.DataContext = ConfigHandler.GetInstance();
-            MenuStatusBar.DataContext = ConfigHandler.GetInstance().SoftwareConfig;
             ViewGridManager.SetViewGrid(ViewConfig.Instance.LastViewCount);
 
             ViewGridManager.GetInstance().ViewMaxChangedEvent += (e) =>
@@ -147,90 +91,39 @@ namespace ColorVision
             };
 
             Closed += (s, e) => { Environment.Exit(-1); };
-            Debug.WriteLine(Properties.Resource.LaunchSuccess);
-
-            MenuItem menulogs = new() { Header = ColorVision.Properties.Resource.ServiceLog };
-            MenuHelp.Items.Insert(0, menulogs);
-
-            MenuItem menulog = new() { Header = Properties.Resource.x64ServiceLog };
-            menulog.Click += (s, e) =>
-            {
-                PlatformHelper.OpenFolder("http://localhost:8064/system/log");
-            };
-            menulogs.Items.Insert(0, menulog);
-
-            MenuItem menulog1 = new() { Header = Properties.Resource.CameraLog };
-            menulog1.Click += (s, e) =>
-            {
-                PlatformHelper.OpenFolder("http://localhost:8064/system/device/camera/log");
-            };
-            menulogs.Items.Insert(1, menulog1);
-
-            MenuItem menulog2 = new() { Header = ColorVision.Properties.Resource.x86ServiceLog };
-            menulog2.Click += (s, e) =>
-            {
-                PlatformHelper.OpenFolder("http://localhost:8086/system/log");
-
-            };
-            menulogs.Items.Insert(2, menulog2);
-
-            MenuItem menulog3 = new() { Header = Properties.Resource.SpectrometerLog };
-            menulog3.Click += (s, e) =>
-            {
-                PlatformHelper.OpenFolder("http://localhost:8086/system/device/Spectrum/log");
-            };
-            menulogs.Items.Insert(3, menulog3);
-
-            MenuItem menulogs1 = new() { Header = ColorVision.Properties.Resource.RCServiceLog };
-            menulogs1.Click += (s, e) =>
-            {
-                PlatformHelper.OpenFolder("http://localhost:8080/system/log");
-            };
-            menulogs.Items.Insert(0, menulogs1);
-
-
-            if (AutoUpdateConfig.Instance.IsAutoUpdate)
-            {
-                Thread thread1 = new(async () => await CheckUpdate()) { IsBackground = true };
-                thread1.Start();
-            }
-
-
-
-            Task.Run(CheckVersion);
+            Debug.WriteLine(Properties.Resources.LaunchSuccess);
 
             Task.Run(CheckCertificate);
-
-            Task.Run(EnsureLocalInfile);
-
-
             SolutionTab1.Content = new TreeViewControl();
-
-            PluginLoader.LoadPluginsAssembly("Plugins");
-
             PluginLoader.LoadPlugins("Plugins");
             PluginLoader.LoadAssembly<IPlugin>(Assembly.GetExecutingAssembly());
             MenuManager.GetInstance().LoadMenuItemFromAssembly();
-            this.LoadHotKeyFromAssembly<IHotKey>();
+            this.LoadHotKeyFromAssembly();
 
+            QuartzSchedulerManager.GetInstance();
             Application.Current.MainWindow = this;
+            LoadIMainWindowInitialized();
         }
 
-        public async static Task EnsureLocalInfile()
+        public static void LoadIMainWindowInitialized() 
         {
-            await Task.Delay(3000);
-            log.Info($"{DateTime.Now}:EnsureLocalInfile ");
-            try
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                if (MySqlControl.GetInstance().IsConnect)
-                    MySqlControl.GetInstance().EnsureLocalInfile();
+                foreach (Type type in assembly.GetTypes().Where(t => typeof(IMainWindowInitialized).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is IMainWindowInitialized componentInitialize)
+                    {
+                        try
+                        {
+                            componentInitialize.Initialize();
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error(ex);
+                        }
+                    }
+                }
             }
-            catch (Exception ex)
-            {
-                log.Info($"{DateTime.Now}:EnsureLocalInfile {ex.Message} ");
-
-            }
-
         }
 
 
@@ -243,7 +136,7 @@ namespace ColorVision
                 X509Certificate2 x509Certificate2 = GetCertificateFromSignedFile(Process.GetCurrentProcess()?.MainModule?.FileName);
                 if (x509Certificate2 != null)
                 {
-                    MenuItem menuItem = new() { Header = Properties.Resource.InstallCertificate };
+                    MenuItem menuItem = new() { Header = Properties.Resources.InstallCertificate };
                     menuItem.Click += (s, e) =>
                     {
                         InstallCertificate(x509Certificate2);
@@ -284,92 +177,25 @@ namespace ColorVision
             catch (Exception ex)
             {
                 Console.WriteLine($"An error occurred while installing the certificate: {ex.Message}");
-            }
-        }
-
-        public static async Task CheckVersion()
-        {
-            await Task.Delay(500);
-            if (System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString() != ConfigHandler.SoftwareConfig.Version)
-            {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    try
-                    {
-                        string? currentVersion = System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString();
-                        string changelogPath = "CHANGELOG.md";
-
-                        // 读取CHANGELOG.md文件的所有内容
-                        string changelogContent = File.ReadAllText(changelogPath);
-
-                        // 使用正则表达式来匹配当前版本的日志条目
-                        string versionPattern = $"## \\[{currentVersion}\\].*?\\n(.*?)(?=\\n## |$)";
-                        Match match = Regex.Match(changelogContent, versionPattern, RegexOptions.Singleline);
-
-                        if (match.Success)
-                        {
-                            // 如果找到匹配项，提取变更日志
-                            string changeLogForCurrentVersion = match.Groups[1].Value.Trim();
-                            // 显示变更日志
-                            MessageBox.Show(Application.Current.MainWindow, $"{changeLogForCurrentVersion.ReplaceLineEndings()}", $"{currentVersion} {Properties.Resource.ChangeLog}：");
-                        }
-                        else
-                        {
-                            // 如果未找到匹配项，说明没有为当前版本列出变更日志
-                            MessageBox.Show(Application.Current.MainWindow, "1.修复了一些已知的BUG", $"{currentVersion} {Properties.Resource.ChangeLog}：");
-                        }
-
-                    }
-                    catch (Exception ex)
-                    {
-                        log.Error(ex.Message);
-                    }
-
-
-
-                });
-                ConfigHandler.SoftwareConfig.Version = System.Reflection.Assembly.GetExecutingAssembly().GetName()?.Version?.ToString();
-                ConfigHandler.SaveConfig();
-            }
+            } 
         }
 
 
 
-        public static async Task CheckUpdate()
-        {
-            await Task.Delay(1000);
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                AutoUpdater.DeleteAllCachedUpdateFiles();
-                AutoUpdater autoUpdater = AutoUpdater.GetInstance();
-                autoUpdater.CheckAndUpdate(false);
-            });
-        }
 
-        private void MenuStatusBar_Click(object sender, RoutedEventArgs e)
-        {
-            if (sender is MenuItem menuItem)
-            {
-                menuItem.IsChecked = !menuItem.IsChecked;
-            }
-        }
 
-        private FlowDisplayControl flowDisplayControl;
 
         private void StackPanelSPD_Initialized(object sender, EventArgs e)
         {
             if (sender is StackPanel stackPanel1)
             {
-                flowDisplayControl = FlowDisplayControl.GetInstance();
-                if (stackPanel1.Children.Contains(flowDisplayControl))
-                    stackPanel1.Children.Remove(flowDisplayControl);
-                stackPanel1.Children.Insert(0, flowDisplayControl);
-
                 foreach (var item in DisPlayManager.GetInstance().IDisPlayControls)
                 {
                     if (item is UserControl userControl)
                         stackPanel1.Children.Add(userControl);
                 }
+
+                
 
                 DisPlayManager.GetInstance().IDisPlayControls.CollectionChanged += (s, e) =>
                 {
@@ -390,12 +216,37 @@ namespace ColorVision
                                             stackPanel1.Children.Remove(userControl);
                                 break;
                             case System.Collections.Specialized.NotifyCollectionChangedAction.Replace:
+                                if (e.OldItems != null && e.NewItems != null && e.OldItems.Count == e.NewItems.Count)
+                                {
+                                    for (int i = 0; i < e.OldItems.Count; i++)
+                                    {
+                                        IDisPlayControl oldItem = (IDisPlayControl)e.OldItems[i];
+                                        IDisPlayControl newItem = (IDisPlayControl)e.NewItems[i];
+                                        if (oldItem is UserControl oldUserControl && newItem is UserControl newUserControl)
+                                        {
+                                            int index = stackPanel1.Children.IndexOf(oldUserControl);
+                                            if (index >= 0)
+                                            {
+                                                stackPanel1.Children[index] = newUserControl;
+                                            }
+                                        }
+                                    }
+                                }
                                 break;
                             case System.Collections.Specialized.NotifyCollectionChangedAction.Move:
+                                if (e.OldItems != null && e.NewItems != null)
+                                {
+                                    // Assuming only one item is moved at a time
+                                    IDisPlayControl movedItem = (IDisPlayControl)e.NewItems[0];
+                                    if (movedItem is UserControl movedUserControl)
+                                    {
+                                        stackPanel1.Children.Remove(movedUserControl);
+                                        stackPanel1.Children.Insert(e.NewStartingIndex, movedUserControl);
+                                    }
+                                }
                                 break;
                             case System.Collections.Specialized.NotifyCollectionChangedAction.Reset:
                                 stackPanel1.Children.Clear();
-                                stackPanel1.Children.Insert(0, flowDisplayControl);
                                 break;
                             default:
                                 break;
@@ -411,7 +262,16 @@ namespace ColorVision
                 };
 
                 Interaction.GetBehaviors(stackPanel1).Add(fluidMoveBehavior);
-                stackPanel1.AddAdorners(this);
+                var opoo = stackPanel1.AddAdorners(this);
+
+                opoo.Changed += (s, e) =>
+                {
+                    for (int i = 0; i < stackPanel1.Children.Count; i++)
+                    {
+                        if (stackPanel1.Children[i] is IDisPlayControl disPlayControl)
+                            DisPlayManagerConfig.Instance.PlayControls[disPlayControl.DisPlayName] = i;
+                    }
+                };
             }
 
         }
@@ -442,56 +302,93 @@ namespace ColorVision
             }
         }
 
-        private void TextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-        {
-            new MQTTConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-        private void TextBlock_MouseLeftButtonDown1(object sender, MouseButtonEventArgs e)
-        {
-            new MySqlConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-        private void TextBlock_MouseLeftButtonDown_RC(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            new RCServiceConnect() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
-        }
-
-        private void LogF_Click(object sender, RoutedEventArgs e)
-        {
-            var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
-            if (fileAppender != null)
-            {
-                Process.Start("explorer.exe", $"{Path.GetDirectoryName(fileAppender.File)}");
-            }
-        }
-
-        private void SettingF_Click(object sender, RoutedEventArgs e)
-        {
-            Process.Start("explorer.exe", $"{Path.GetDirectoryName(ConfigHandler.GetInstance().SoftwareConfigFileName)}");
-        }
-
-
-
-        private void Setting_Click(object sender, RoutedEventArgs e)
-        {
-            string fileName = ConfigHandler.GetInstance().SoftwareConfigFileName;
-            bool result = Tool.HasDefaultProgram(fileName);
-            if (!result)
-                Process.Start(result ? "explorer.exe" : "notepad.exe", fileName);
-        }
-
 
         private void Login_Click(object sender, RoutedEventArgs e)
         {
-            if (UserConfig.Instance.UserName != null)
+            new UserInfoWindow() { }.ShowDialog();
+        }
+
+        private void StatusBarGrid_Initialized(object sender, EventArgs e)
+        {
+             void AddStatusBarIconMetadata(StatusBarIconMetadata statusBarIconMetadata)
             {
-                var user = UserConfig.Instance;
-                MessageBox.Show(user.PerMissionMode.ToString() + ":" + user.UserName + " 已经登录", "ColorVision");
+                if (statusBarIconMetadata.Type == StatusBarType.Icon)
+                {
+                    // 创建 StatusBarItem
+                    StatusBarItem statusBarItem = new StatusBarItem { ToolTip = statusBarIconMetadata.Description };
+                    statusBarItem.DataContext = statusBarIconMetadata.Source;
+
+                    if (statusBarIconMetadata.VisibilityBindingName != null)
+                    {
+                        var visibilityBinding = new Binding(statusBarIconMetadata.VisibilityBindingName)
+                        {
+                            Converter = (IValueConverter)Application.Current.FindResource("bool2VisibilityConverter")
+                        };
+                        statusBarItem.SetBinding(StatusBarItem.VisibilityProperty, visibilityBinding);
+                    }
+                    // 设置 MouseLeftButtonDown 事件处理程序
+                    if (statusBarIconMetadata.Action != null)
+                    {
+                        statusBarItem.MouseLeftButtonDown += (s, e) => statusBarIconMetadata.Action.Invoke();
+                    }
+                    // 创建 ToggleButton
+                    ToggleButton toggleButton = new ToggleButton { IsEnabled = false };
+                    // 设置 Style 资源
+                    if (Application.Current.TryFindResource(statusBarIconMetadata.ButtonStyleName) is Style styleResource)
+                        toggleButton.Style = styleResource;
+
+                    // 设置 IsChecked 绑定
+                    var isCheckedBinding = new Binding(statusBarIconMetadata.BindingName) { Mode = BindingMode.OneWay };
+                    toggleButton.SetBinding(ToggleButton.IsCheckedProperty, isCheckedBinding);
+                    statusBarItem.Content = toggleButton;
+                    toggleButton.DataContext = statusBarIconMetadata.Source;
+
+                    StatusBarIconDocker.Children.Add(statusBarItem);
+                }
+                else if (statusBarIconMetadata.Type == StatusBarType.Text)
+                {
+                    StatusBarItem statusBarItem = new StatusBarItem();
+                    statusBarItem.DataContext = statusBarIconMetadata.Source;
+
+                    var Binding = new Binding(statusBarIconMetadata.BindingName) { Mode = BindingMode.OneWay };
+                    statusBarItem.SetBinding(ToggleButton.ContentProperty, Binding);
+
+
+                    if (statusBarIconMetadata.VisibilityBindingName != null)
+                    {
+                        var visibilityBinding = new Binding(statusBarIconMetadata.VisibilityBindingName)
+                        {
+                            Converter = (IValueConverter)Application.Current.FindResource("bool2VisibilityConverter")
+                        };
+                        statusBarItem.SetBinding(StatusBarItem.VisibilityProperty, visibilityBinding);
+                    }
+
+                    StatusBarTextDocker.Children.Add(statusBarItem);
+                }
 
             }
-            else
+
+            var allSettings = new List<StatusBarIconMetadata>();
+
+            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
-                new LoginWindow() { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                foreach (var type in assembly.GetTypes().Where(t => typeof(IStatusBarIconProvider).IsAssignableFrom(t) && !t.IsAbstract))
+                {
+                    if (Activator.CreateInstance(type) is IStatusBarIconProvider configSetting)
+                    {
+                        allSettings.AddRange(configSetting.GetStatusBarIconMetadata());
+                    }
+                }
+            }
+            // 先按 ConfigSettingType 分组，再在每个组内按 Order 排序
+            var sortedSettings = allSettings
+                .GroupBy(setting => setting.Type)
+                .SelectMany(group => group.OrderBy(setting => setting.Order));
+
+            // 将排序后的配置设置添加到集合中
+            foreach (var item in sortedSettings)
+            {
+                AddStatusBarIconMetadata(item);
             }
 
         }
