@@ -67,6 +67,7 @@
                                 <Button Content="校正模板管理" Margin="5" Height="100" Width="180" Command="{Binding CalibrationEditCommand}"/>
                                 <Button Content="资源组管理" Margin="5" Height="100" Width="180" Command="{Binding ResourceManagerCommand}"/>
                                 <Button Content="重置" Margin="5" Height="100" Width="180" Command="{Binding ResetCommand}"/>
+                                <Button Content="逻辑相机" Margin="5" Height="100" Width="180" Command="{Binding EditCameraCommand}"/>
                             </UniformGrid>
                             <StackPanel  HorizontalAlignment="Right" VerticalAlignment="Bottom">
                                 <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding SysResourceModel.Code}"/>

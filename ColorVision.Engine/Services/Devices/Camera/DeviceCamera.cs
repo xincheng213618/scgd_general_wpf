@@ -55,7 +55,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger());
 
             if (PhyCamera != null)
+            {
                 PhyCamera.ConfigChanged += PhyCameraConfigChanged;
+                PhyCamera.DeviceCamera = this;
+            }
         }
 
         private PhyCamera lastPhyCamera;
@@ -66,7 +69,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 lastPhyCamera.ConfigChanged -= PhyCameraConfigChanged;
                 lastPhyCamera = phyCamera;
-            }          
+                lastPhyCamera.DeviceCamera = null;
+            }
             Config.Channel = e.Channel;
             Config.CFW.CopyFrom(e.CFW);
             Config.MotorConfig.CopyFrom(e.MotorConfig);

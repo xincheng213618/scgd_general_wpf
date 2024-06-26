@@ -105,7 +105,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             UploadLincenseCommand = new RelayCommand(a => UploadLincense());
             RefreshLincenseCommand = new RelayCommand(a => RefreshLincense());
             RefreshLincense();
-
+            EditCameraCommand = new RelayCommand(a => DeviceCamera?.EditCommand.Execute(this) ,a=> DeviceCamera!=null && DeviceCamera.EditCommand.CanExecute(this));
             QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
         }
 
