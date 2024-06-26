@@ -18,7 +18,7 @@ namespace ColorVision.UI.ACE
             var companyAttribute = (AssemblyCompanyAttribute)assembly
                 .GetCustomAttributes(typeof(AssemblyCompanyAttribute), false)
                 .FirstOrDefault();
-            return companyAttribute?.Company ?? "ColorVision";
+            return companyAttribute?.Company ?? "ColorVision";  
         }
 
         /// <summary>

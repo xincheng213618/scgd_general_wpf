@@ -18,6 +18,15 @@
             <RowDefinition Height="*"/>
             <RowDefinition Height="auto"/>
         </Grid.RowDefinitions>
+        <Grid x:Name="WaitWindow" Visibility="Collapsed" Grid.Row="1" Grid.ColumnSpan="3" Panel.ZIndex="99">
+            <Grid Background="{DynamicResource GlobalTextBrush}" Opacity="0.1"/>
+            <Border Background="{DynamicResource GlobalBackground}" Height="250" Width="550" CornerRadius="10">
+                <Grid Margin="10">
+                    <TextBox x:Name="textBox"/>
+                    <ProgressBar Height="20" VerticalAlignment="Bottom" IsIndeterminate="True"/>
+                </Grid>
+            </Border>
+        </Grid>
         <Border Grid.Row="0"  Height ="27 " BorderBrush="{DynamicResource BorderBrush}" Background="{DynamicResource GlobalBackground}"  BorderThickness="0,0,0,1">
             <Grid>
                 <Menu x:Name="Menu1" Background="{DynamicResource GlobalBackground}" >

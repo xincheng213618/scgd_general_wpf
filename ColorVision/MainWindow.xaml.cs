@@ -49,6 +49,7 @@ namespace ColorVision
             var IsAdministrator = Tool.IsAdministrator();
             Title += $"- {(IsAdministrator ? Properties.Resources.RunAsAdmin : Properties.Resources.NotRunAsAdmin)}";
             this.ApplyCaption();
+            this.Closed += (s, e) => Environment.Exit(-1);
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -310,6 +311,10 @@ namespace ColorVision
 
         private void StatusBarGrid_Initialized(object sender, EventArgs e)
         {
+            ContextMenu contextMenu= new ContextMenu();
+            StatusBarGrid.ContextMenu = contextMenu;
+
+
              void AddStatusBarIconMetadata(StatusBarIconMetadata statusBarIconMetadata)
             {
                 if (statusBarIconMetadata.Type == StatusBarType.Icon)
@@ -344,6 +349,21 @@ namespace ColorVision
                     toggleButton.DataContext = statusBarIconMetadata.Source;
 
                     StatusBarIconDocker.Children.Add(statusBarItem);
+
+                    MenuItem menuItem = new MenuItem() { Header = statusBarIconMetadata.Name };
+                    menuItem.Click += (s, e) => menuItem.IsChecked = !menuItem.IsChecked;
+                    menuItem.DataContext = statusBarIconMetadata.Source;
+                    // 绑定 MenuItem 的 IsChecked 属性到 VisibilityBindingName
+                    if (statusBarIconMetadata.VisibilityBindingName != null)
+                    {
+                        var isCheckedBinding1 = new Binding(statusBarIconMetadata.VisibilityBindingName)
+                        {
+                            Mode = BindingMode.TwoWay,
+                        };
+                        menuItem.SetBinding(MenuItem.IsCheckedProperty, isCheckedBinding1);
+                    }
+                    contextMenu.Items.Add(menuItem);
+
                 }
                 else if (statusBarIconMetadata.Type == StatusBarType.Text)
                 {
@@ -364,6 +384,20 @@ namespace ColorVision
                     }
 
                     StatusBarTextDocker.Children.Add(statusBarItem);
+
+                    MenuItem menuItem = new MenuItem() { Header = statusBarIconMetadata.Name };
+                    menuItem.Click += (s, e) => menuItem.IsChecked = !menuItem.IsChecked;
+                    menuItem.DataContext = statusBarIconMetadata.Source;
+                    // 绑定 MenuItem 的 IsChecked 属性到 VisibilityBindingName
+                    if (statusBarIconMetadata.VisibilityBindingName != null)
+                    {
+                        var isCheckedBinding = new Binding(statusBarIconMetadata.VisibilityBindingName)
+                        {
+                            Mode = BindingMode.TwoWay,
+                        };
+                        menuItem.SetBinding(MenuItem.IsCheckedProperty, isCheckedBinding);
+                    }
+                    contextMenu.Items.Add(menuItem);
                 }
 
             }

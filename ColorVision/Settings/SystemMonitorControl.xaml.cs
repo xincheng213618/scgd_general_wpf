@@ -28,7 +28,7 @@ namespace ColorVision.Settings
             {
                 new StatusBarIconMetadata()
                 {
-                    Name = Properties.Resources.PerformanceTest,
+                    Name = "Time",
                     Description = Properties.Resources.PerformanceTest,
                     Order =12,
                     Type =StatusBarType.Text,
@@ -38,7 +38,7 @@ namespace ColorVision.Settings
                 },
                 new StatusBarIconMetadata()
                 {
-                    Name = Properties.Resources.PerformanceTest,
+                    Name = "RAM",
                     Description = Properties.Resources.PerformanceTest,
                     Order =10,
                     Type =StatusBarType.Text,
