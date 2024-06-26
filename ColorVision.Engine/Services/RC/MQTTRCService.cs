@@ -210,7 +210,6 @@ namespace ColorVision.Engine.Services.RC
 
                                                     if (serviceBase.DeviceStatus == DeviceStatusType.Unknown)
                                                     {
-                                                        log.Debug(serviceBase.ToJsonN());
                                                     }
                                                 }
 

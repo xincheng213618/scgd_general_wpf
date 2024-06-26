@@ -20,8 +20,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCamera));
 
-        public PhyCamera? PhyCamera { get => PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraID);}
-
+        public PhyCamera? PhyCamera { get; set; }
         public ViewCamera View { get; set; }
         public MQTTCamera DeviceService { get; set; }
 
@@ -51,9 +50,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             DisPlaySaveCommand = new RelayCommand(a => SaveDis());
             DisplayCameraControlLazy = new Lazy<DisplayCameraControl>(() => new DisplayCameraControl(this));
 
+
             RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
             OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger());
-
+            PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraID);
             if (PhyCamera != null)
             {
                 PhyCamera.ConfigChanged += PhyCameraConfigChanged;
@@ -123,6 +123,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public override void Save()
         {
+            PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraID);
             if (PhyCamera != null)
             {
                 PhyCamera.SetDeviceCamera(this);

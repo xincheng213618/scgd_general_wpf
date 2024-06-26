@@ -40,12 +40,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 e.Handled = true;
             }
         }
-        public ObservableCollection<PhyCamera> PhyCameras { get; set; } = new ObservableCollection<PhyCamera>();
+        public List<PhyCamera> PhyCameras { get; set; } = new List<PhyCamera>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
-            CameraPhyID.SelectedItem = PhyCameraManager.GetInstance().GetPhyCamera(DeviceCamera.Config.CameraID);
+            var phyCameraManager = PhyCameraManager.GetInstance();
+            var deviceCamera = DeviceCamera;
+            PhyCameras = phyCameraManager.PhyCameras
+                .Where(p => p.DeviceCamera == null || p.DeviceCamera.Name == deviceCamera.Name)
+                .ToList();
+
+            CameraPhyID.ItemsSource = PhyCameras;
+
+            CameraPhyID.SelectedItem = phyCameraManager.GetPhyCamera(deviceCamera.Config.CameraID);
             CameraPhyID.DisplayMemberPath = "Code";
             CameraPhyID.SelectedValuePath = "Name";
 
@@ -81,12 +88,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (CameraPhyID.SelectedIndex > -1)
             {
-                var phyCamera = PhyCameraManager.GetInstance().PhyCameras[CameraPhyID.SelectedIndex];
+                var phyCamera = PhyCameras[CameraPhyID.SelectedIndex];
                 EditConfig.Channel = phyCamera.Config.Channel;
                 EditConfig.CFW.CopyFrom(phyCamera.Config.CFW);
                 EditConfig.MotorConfig.CopyFrom(phyCamera.Config.MotorConfig);
 
-                EditConfig.CameraID = phyCamera.Name;
                 EditConfig.CameraType = phyCamera.Config.CameraType;
                 EditConfig.CameraMode = phyCamera.Config.CameraMode;
                 EditConfig.CameraModel = phyCamera.Config.CameraModel;
