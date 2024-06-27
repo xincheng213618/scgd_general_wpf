@@ -110,39 +110,56 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     SetVisibility(ButtonInit, Visibility.Collapsed);
                     SetVisibility(ButtonOffline, Visibility.Collapsed);
                     SetVisibility(ButtonClose, Visibility.Collapsed);
-                    SetVisibility(StackPanelImage, Visibility.Collapsed);
                     SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
                     SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                    SetVisibility(StackPanelOpen, Visibility.Collapsed);
                 }
                 // Default state
-                SetVisibility(StackPanelOpen, Visibility.Visible);
                 HideAllButtons();
 
                 switch (status)
                 {
                     case DeviceStatusType.Unauthorized:
-                        SetVisibility(StackPanelOpen, Visibility.Collapsed);
                         SetVisibility(ButtonUnauthorized, Visibility.Visible);
                         break;
                     case DeviceStatusType.Unknown:
-                        SetVisibility(StackPanelOpen, Visibility.Collapsed);
                         SetVisibility(TextBlockUnknow, Visibility.Visible);
                         break;
                     case DeviceStatusType.OffLine:
-                        SetVisibility(StackPanelOpen, Visibility.Collapsed);
                         SetVisibility(ButtonOffline, Visibility.Visible);
                         break;
                     case DeviceStatusType.UnInit:
-                        SetVisibility(StackPanelOpen, Visibility.Collapsed);
                         SetVisibility(ButtonInit, Visibility.Visible);
                         break;
                     case DeviceStatusType.Closed:
                         SetVisibility(ButtonOpen, Visibility.Visible);
                         break;
                     case DeviceStatusType.LiveOpened:
-                    case DeviceStatusType.Opened:
+                        SetVisibility(StackPanelOpen, Visibility.Visible);
+                        SetVisibility(ButtonClose, Visibility.Visible);
+
+                        CameraVideoControl ??= new CameraVideoControl();
                         if (!DService.IsVideoOpen)
-                            SetVisibility(StackPanelImage, Visibility.Visible);
+                        {
+                            DService.CurrentTakeImageMode = TakeImageMode.Live;
+                            string host = Device.Config.VideoConfig.Host;
+                            int port = Tool.GetFreePort(Device.Config.VideoConfig.Port);
+                            port = CameraVideoControl.Open(host, port);
+                            if (port > 0)
+                            {
+                                View.ImageView.ImageShow.Source = null;
+                                CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
+                                CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
+                            }
+                            else
+                            {
+                                CameraVideoControl.Close();
+                            }
+                        }
+                        break;
+
+                    case DeviceStatusType.Opened:
+                        SetVisibility(StackPanelOpen, Visibility.Visible);
                         SetVisibility(ButtonClose, Visibility.Visible);
                         break;
                     case DeviceStatusType.Closing:
@@ -206,7 +223,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 {
                     ButtonOpen.Visibility = Visibility.Collapsed;
                     ButtonClose.Visibility = Visibility.Visible;
-                    StackPanelImage.Visibility = Visibility.Visible;
+                    StackPanelOpen.Visibility = Visibility.Visible;
                     msgRecord.MsgSucessed -= msgRecordStateChangedHandler;
                 };
                 msgRecord.MsgSucessed += msgRecordStateChangedHandler;
@@ -300,6 +317,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                             {
                                 ButtonOpen.Visibility = Visibility.Collapsed;
                                 ButtonClose.Visibility = Visibility.Visible;
+                                StackPanelOpen.Visibility = Visibility.Visible;
                             }
                         };
                         ServicesHelper.SendCommand(button, msg);
@@ -411,7 +429,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     DService.IsVideoOpen = false;
                     ButtonOpen.Visibility = Visibility.Visible;
                     ButtonClose.Visibility = Visibility.Collapsed;
-                    StackPanelImage.Visibility = Visibility.Collapsed;
+                    StackPanelOpen.Visibility = Visibility.Collapsed;
+
                     msgRecord.MsgRecordStateChanged -= msgRecordStateChangedHandler;
                 };
                 msgRecord.MsgRecordStateChanged += msgRecordStateChangedHandler;
