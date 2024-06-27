@@ -74,8 +74,8 @@
                                 <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding SysResourceModel.Code}"/>
                             </StackPanel>
                         </Grid>
-
                     </TabItem>
+                    
                     <TabItem Header="设备配置">
                         <StackPanel Margin="10">
                             <DockPanel>

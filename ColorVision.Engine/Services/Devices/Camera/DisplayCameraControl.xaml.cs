@@ -14,6 +14,7 @@ using CVCommCore;
 using log4net;
 using MQTTMessageLib.Camera;
 using Newtonsoft.Json;
+using Panuon.WPF.UI;
 using Quartz;
 using System;
 using System.Collections.ObjectModel;
@@ -359,7 +360,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void AutoFocus_Click(object sender, RoutedEventArgs e)
         {
-            ServicesHelper.SendCommandEx(sender, DService.AutoFocus);
+            MsgRecord msgRecord = DService.AutoFocus();
+            ServicesHelper.SendCommand(msgRecord, "自动聚焦");
         }
 
 
