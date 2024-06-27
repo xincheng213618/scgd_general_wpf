@@ -517,7 +517,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         }
 
-
         private void MenuItem_Export_Click(object sender, RoutedEventArgs e)
         {
             if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCamera viewCamera)

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.SysDictionary;
 using ColorVision.Themes;
 using System;
@@ -56,6 +57,9 @@ namespace ColorVision.Engine.Services.Devices.Sensor
             DataContext = Device;
             EditConfig = Device.Config.Clone();
             EditContent.DataContext = EditConfig;
+
+            CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
+            CameraPhyID.DisplayMemberPath = "Code";
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

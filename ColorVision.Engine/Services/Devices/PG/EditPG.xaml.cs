@@ -14,6 +14,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Common.MVVM;
 using ColorVision.Themes;
+using ColorVision.Engine.Services.PhyCameras;
 
 
 namespace ColorVision.Engine.Services.Devices.PG
@@ -73,6 +74,9 @@ namespace ColorVision.Engine.Services.Devices.PG
 
             EditConfig = Device.Config.Clone();
             EditContent.DataContext = EditConfig;
+
+            CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
+            CameraPhyID.DisplayMemberPath = "Code";
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

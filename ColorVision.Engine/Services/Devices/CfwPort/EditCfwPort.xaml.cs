@@ -6,18 +6,18 @@ using System.Windows;
 using System.Windows.Input;
 
 
-namespace ColorVision.Engine.Services.Devices.Motor
+namespace ColorVision.Engine.Services.Devices.CfwPort
 {
     /// <summary>
     /// EditMotor.xaml 的交互逻辑
     /// </summary>
-    public partial class EditMotor : Window
+    public partial class EditCfwPort : Window
     {
-        public DeviceMotor Device { get; set; }
+        public DeviceCfwPort Device { get; set; }
 
-        public ConfigMotor EditConfig { get; set; }
+        public ConfigCfwPort EditConfig { get; set; }
 
-        public EditMotor(DeviceMotor device)
+        public EditCfwPort(DeviceCfwPort device)
         {
             Device = device;
             InitializeComponent();
