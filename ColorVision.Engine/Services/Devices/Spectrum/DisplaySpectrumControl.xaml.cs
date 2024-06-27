@@ -51,6 +51,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                     SetVisibility(StackPanelOpen, Visibility.Collapsed);
                 }
                 HideAllButtons();
+                btn_autoTest.Content = "自动测试";
                 switch (status)
                 {
                     case DeviceStatusType.OffLine:
@@ -72,20 +73,16 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         break;
                     case DeviceStatusType.Closing:
                     case DeviceStatusType.Opening:
+                    case DeviceStatusType.SP_Continuous_Mode:
+                        btn_autoTest.Content = "取消自动测试";
+                        break;
                     default:
-                        // No specific action needed
                         break;
                 }
             }
 
             UpdateUI(SpectrumService.DeviceStatus);
             SpectrumService.DeviceStatusChanged += UpdateUI;
-
-            SpectrumService.HeartbeatHandlerEvent += (e) =>
-            {
-                doSpectrumHeartbeat(e);
-            };
-
             ComboxResourceTemplate.ItemsSource = DeviceSpectrum.SpectrumResourceParams.CreateEmpty();
             ComboxResourceTemplate.SelectedIndex = 0;
             this.ApplyChangedSelectedColor(DisPlayBorder);
@@ -97,47 +94,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
-
-        private void doHeartbeat(HeartbeatParam e)
-        {
-            SpectrumService.Config.DeviceStatus = e.DeviceStatus;
-            if (e.DeviceStatus == DeviceStatusType.Opened)
-            {
-                btn_connect.Content = "关闭";
-            }
-            else if (e.DeviceStatus == DeviceStatusType.Closed)
-            {
-                btn_connect.Content = "打开";
-            }
-            else if (e.DeviceStatus == DeviceStatusType.Opening)
-            {
-                btn_connect.Content = "打开中";
-            }
-            else if (e.DeviceStatus == DeviceStatusType.Closing)
-            {
-                btn_connect.Content = "关闭中";
-            }
-            else if (e.DeviceStatus == DeviceStatusType.Busy)
-            {
-                enableBtn(false);
-            }
-            else if (e.DeviceStatus == DeviceStatusType.Free)
-            {
-                enableBtn(true);
-            }
-        }
-        private void doSpectrumHeartbeat(SpectrumHeartbeatParam e)
-        {
-            doHeartbeat(e);
-            if (e.IsAutoGetData)
-            {
-                btn_autoTest.Content = "取消自动测试";
-            }
-            else
-            {
-                btn_autoTest.Content = "自动测试";
-            }
-        }
 
         private void enableBtn(bool enable)
         {
