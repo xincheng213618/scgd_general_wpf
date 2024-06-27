@@ -9,7 +9,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public bool IsUseMotor { get => _IsUseMotor; set { _IsUseMotor = value; NotifyPropertyChanged(); } }
         private bool _IsUseMotor;
 
-
         public FOCUS_COMMUN eFOCUSCOMMUN { get => _eFOCUSCOMMUN; set { _eFOCUSCOMMUN = value; NotifyPropertyChanged(); } }
         private FOCUS_COMMUN _eFOCUSCOMMUN;
 
@@ -25,5 +24,29 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
 
         public int DwTimeOut { get => _dwTimeOut; set { _dwTimeOut = value; NotifyPropertyChanged(); } }
         private int _dwTimeOut = 5000;
+
+        // 电机运行加速度
+        public int RunAcceleration { get => _RunAcceleration; set { _RunAcceleration = value; NotifyPropertyChanged(); } }
+        private int _RunAcceleration = 409600;
+
+        // 电机平稳运行速度
+        public int RunSpeed { get => _RunSpeed; set { _RunSpeed = value; NotifyPropertyChanged(); } }
+        private int _RunSpeed = 500000;
+
+        // 电机减速度
+        public int Deceleration { get => _Deceleration; set { _Deceleration = value; NotifyPropertyChanged(); } }
+        private int _Deceleration = 409600;
+
+        // 回原点时的加速度
+        public int HomeAcceleration { get => _HomeAcceleration; set { _HomeAcceleration = value; NotifyPropertyChanged(); } }
+        private int _HomeAcceleration = 409600;
+
+        // 回原点时的平稳运行速度
+        public int HomeSpeed { get => _HomeSpeed; set { _HomeSpeed = value; NotifyPropertyChanged(); } }
+        private int _HomeSpeed = 2000;
+
+        // 回原点时的减速度
+        public int HomeDeceleration { get => _HomeDeceleration; set { _HomeDeceleration = value; NotifyPropertyChanged(); } }
+        private int _HomeDeceleration = 409600;
     }
 }

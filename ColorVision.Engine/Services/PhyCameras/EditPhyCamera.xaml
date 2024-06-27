@@ -150,6 +150,31 @@
                                     <TextBlock Text="波特率:" Width="120"/>
                                     <hc:ComboBox x:Name="TextBaudRate" IsEditable="True" Text="{Binding MotorConfig.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
                                 </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="电机运行加速度:" Width="120"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.RunAcceleration}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="电机平稳运行速度:" Width="120"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.RunSpeed}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="电机减速度:" Width="120"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.Deceleration}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="回原点时的加速度:" Width="120"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.HomeAcceleration}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="回原点时的平稳运行速度:" Width="120"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.HomeSpeed}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="回原点时的减速度:" Width="120"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.HomeDeceleration}"/>
+                                </DockPanel>
+
                             </StackPanel>
                         </StackPanel>
                     </GroupBox>
