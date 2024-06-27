@@ -1,4 +1,6 @@
-﻿using ColorVision.Engine.MySql;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.MySql;
+using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Templates;
@@ -37,7 +39,57 @@ namespace ColorVision.Engine.Services.Devices.SMU
         {
             DataContext = Device;
 
-            DService.HeartbeatEvent += (e) => SMUService_DeviceStatusHandler(e.DeviceStatus);
+            void UpdateUI(DeviceStatusType status)
+            {
+                void SetVisibility(UIElement element, Visibility visibility) => element.Visibility = visibility;
+                void HideAllButtons()
+                {
+                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                    SetVisibility(StackPanelRun, Visibility.Collapsed);
+                }
+                // Default state
+                HideAllButtons();
+
+                switch (status)
+                {
+                    case DeviceStatusType.Unauthorized:
+                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Unknown:
+                        SetVisibility(TextBlockUnknow, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.OffLine:
+                        SetVisibility(StackPanelRun, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.UnInit:
+                        SetVisibility(StackPanelRun, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Closed:
+                        SetVisibility(StackPanelRun, Visibility.Visible);
+                        ButtonSourceMeter1.Content = "打开";
+                        break;
+                    case DeviceStatusType.LiveOpened:
+                    case DeviceStatusType.Opened:
+                        SetVisibility(StackPanelRun, Visibility.Visible);
+                        ButtonSourceMeter1.Content = "关闭";
+                        break;
+                    case DeviceStatusType.Closing:
+                        SetVisibility(StackPanelRun, Visibility.Visible);
+                        ButtonSourceMeter1.Content = "关闭中";
+                        break;
+                    case DeviceStatusType.Opening:
+                        SetVisibility(StackPanelRun, Visibility.Visible);
+                        ButtonSourceMeter1.Content = "打开中";
+                        break;
+                    default:
+                        break;
+                }
+            }
+            UpdateUI(DService.DeviceStatus);
+            DService.DeviceStatusChanged += UpdateUI;
+
+
             DService.ScanResultEvent += SMUService_ScanResultHandler;
             DService.ResultEvent += SMUService_ResultHandler;
 
@@ -83,25 +135,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             }
         }
 
-        private  void SMUService_DeviceStatusHandler(DeviceStatusType deviceStatus)
-        {
-            if (deviceStatus == DeviceStatusType.Opened)
-            {
-                ButtonSourceMeter1.Content = "关闭";
-            }
-            else if (deviceStatus == DeviceStatusType.Closed)
-            {
-                ButtonSourceMeter1.Content = "打开";
-            }
-            else if (deviceStatus == DeviceStatusType.Opening)
-            {
-                ButtonSourceMeter1.Content = "打开中";
-            }
-            else if (deviceStatus == DeviceStatusType.Closing)
-            {
-                ButtonSourceMeter1.Content = "关闭中";
-            }
-        }
 
         PassSxSource passSxSource = new();
 
@@ -173,10 +206,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             DService.Scan(Config.IsSourceV, Config.StartMeasureVal, Config.StopMeasureVal, Config.LimitVal, Config.Number);
         }
 
-        private void StackPanelVI_Initialized(object sender, EventArgs e)
-        {
-
-        }
 
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
