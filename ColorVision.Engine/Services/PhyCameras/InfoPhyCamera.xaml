@@ -83,33 +83,26 @@
                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.TakeImageMode}"/>
                             </DockPanel>
                             <DockPanel>
+                                <TextBlock Text="CameraID:" Width="120"/>
+                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CameraID}"/>
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBlock Text="相机模式:" Width="120"/>
+                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CameraMode}"/>
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBlock Text="相机型号:" Width="120"/>
+                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CameraModel}"/>
+                            </DockPanel>
+                            <DockPanel>
                                 <TextBlock Text="图像位数:" Width="120"/>
                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ImageBpp}"/>
                             </DockPanel>
+
                             <DockPanel>
                                 <TextBlock Text="图像通道:" Width="120"/>
                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Channel}"/>
                             </DockPanel>
-                            <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
-                                <DockPanel>
-                                    <TextBlock Text="默认曝光:" Width="120"/>
-                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ExpTime}"/>
-                                </DockPanel>
-                            </StackPanel>
-                            <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter}}">
-                                <DockPanel>
-                                    <TextBlock Text="默认R通道曝光:" Width="120"/>
-                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ExpTimeR}"/>
-                                </DockPanel>
-                                <DockPanel>
-                                    <TextBlock Text="默认G通道曝光:" Width="120"/>
-                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ExpTimeG}"/>
-                                </DockPanel>
-                                <DockPanel>
-                                    <TextBlock Text="默认B通道曝光:" Width="120"/>
-                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ExpTimeB}"/>
-                                </DockPanel>
-                            </StackPanel>
                         </StackPanel>
 
                     </TabItem>

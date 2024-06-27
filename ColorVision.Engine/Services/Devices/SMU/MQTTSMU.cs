@@ -66,11 +66,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
                         else if (json.EventName == "Uninit")
                         {
                         }
-                        else if (json.EventName == "Heartbeat" && json.ServiceName.Equals(ServiceName, StringComparison.Ordinal))
-                        {
-                            List<DeviceHeartbeatParam> devs_heartbeat = JsonConvert.DeserializeObject<List<DeviceHeartbeatParam>>(JsonConvert.SerializeObject(json.Data));
-                            if (devs_heartbeat != null && devs_heartbeat.Count > 0) DoHeartbeat(devs_heartbeat);
-                        }
                     }
                 }
                 catch

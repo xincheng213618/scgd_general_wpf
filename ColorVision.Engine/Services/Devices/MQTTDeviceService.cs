@@ -2,10 +2,7 @@
 using ColorVision.Engine.Services.Core;
 using CVCommCore;
 using System;
-using System.Collections.Generic;
-using System.Globalization;
 using System.Windows;
-using System.Windows.Data;
 
 namespace ColorVision.Engine.Services.Devices
 {
@@ -28,8 +25,6 @@ namespace ColorVision.Engine.Services.Devices
 
         public T Config { get; set; }
 
-        public event HeartbeatHandler HeartbeatEvent;
-
         public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; } }
 
         public override string DeviceCode { get => Config.Code; set => Config.Code = value; }
@@ -49,26 +44,6 @@ namespace ColorVision.Engine.Services.Devices
             Config = config;
             SendTopic = Config.SendTopic;
             SubscribeTopic = Config.SubscribeTopic;
-
-            //SubscribeCache();
-        }
-
-        public void DoHeartbeat(List<DeviceHeartbeatParam> devsheartbeat)
-        {
-            foreach (DeviceHeartbeatParam dev_heartbeat in devsheartbeat)
-            {
-                if (dev_heartbeat.DeviceName.Equals(Config.Code, StringComparison.Ordinal))
-                {
-                    HeartbeatParam heartbeat = new();
-                    heartbeat.DeviceStatus = dev_heartbeat.DeviceStatus;
-                    DoHeartbeat(heartbeat);
-                }
-            }
-        }
-
-        public void DoHeartbeat(HeartbeatParam heartbeat)
-        {
-            Application.Current.Dispatcher.Invoke(() => HeartbeatEvent?.Invoke(heartbeat));
         }
     }
 }
