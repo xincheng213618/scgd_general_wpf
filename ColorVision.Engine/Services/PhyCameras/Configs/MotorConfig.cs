@@ -41,12 +41,12 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public int HomeAcceleration { get => _HomeAcceleration; set { _HomeAcceleration = value; NotifyPropertyChanged(); } }
         private int _HomeAcceleration = 409600;
 
-        // 回原点时的平稳运行速度
-        public int HomeSpeed { get => _HomeSpeed; set { _HomeSpeed = value; NotifyPropertyChanged(); } }
-        private int _HomeSpeed = 2000;
+        // 高速回原点
+        public int HomeHightSpeed { get => _HomeHightSpeed; set { _HomeHightSpeed = value; NotifyPropertyChanged(); } }
+        private int _HomeHightSpeed = 2000;
 
-        // 回原点时的减速度
-        public int HomeDeceleration { get => _HomeDeceleration; set { _HomeDeceleration = value; NotifyPropertyChanged(); } }
-        private int _HomeDeceleration = 409600;
+        // 低速高速回原点
+        public int HomeLowSpeed { get => _HomeLowSpeed; set { _HomeLowSpeed = value; NotifyPropertyChanged(); } }
+        private int _HomeLowSpeed = 2000;
     }
 }

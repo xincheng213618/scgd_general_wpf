@@ -167,12 +167,12 @@
                                     <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.HomeAcceleration}"/>
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
-                                    <TextBlock Text="原点平稳运行速度" Width="120"/>
-                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.HomeSpeed}"/>
+                                    <TextBlock Text="高速回原点" Width="120"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.HomeHightSpeed}"/>
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
-                                    <TextBlock Text="原点减速度" Width="120"/>
-                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.HomeDeceleration}"/>
+                                    <TextBlock Text="低速回原点" Width="120"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.HomeLowSpeed}"/>
                                 </DockPanel>
 
                             </StackPanel>
