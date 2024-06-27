@@ -26,26 +26,32 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         private int _dwTimeOut = 5000;
 
         // 电机运行加速度
+        [JsonProperty("nAcc")]
         public int RunAcceleration { get => _RunAcceleration; set { _RunAcceleration = value; NotifyPropertyChanged(); } }
         private int _RunAcceleration = 409600;
 
         // 电机平稳运行速度
+        [JsonProperty("nSpeed")]
         public int RunSpeed { get => _RunSpeed; set { _RunSpeed = value; NotifyPropertyChanged(); } }
         private int _RunSpeed = 500000;
 
         // 电机减速度
+        [JsonProperty("ndec")]
         public int Deceleration { get => _Deceleration; set { _Deceleration = value; NotifyPropertyChanged(); } }
         private int _Deceleration = 409600;
 
         // 回原点时的加速度
+        [JsonProperty("HnAcc")]
         public int HomeAcceleration { get => _HomeAcceleration; set { _HomeAcceleration = value; NotifyPropertyChanged(); } }
         private int _HomeAcceleration = 409600;
 
         // 高速回原点
+        [JsonProperty("nHighSpeed")]
         public int HomeHightSpeed { get => _HomeHightSpeed; set { _HomeHightSpeed = value; NotifyPropertyChanged(); } }
         private int _HomeHightSpeed = 2000;
 
         // 低速高速回原点
+        [JsonProperty("nLowSpeed")]
         public int HomeLowSpeed { get => _HomeLowSpeed; set { _HomeLowSpeed = value; NotifyPropertyChanged(); } }
         private int _HomeLowSpeed = 2000;
     }
