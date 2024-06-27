@@ -156,7 +156,7 @@
                     </StackPanel>
                     <GroupBox Header="电机操作" Visibility="{Binding Config.MotorConfig.IsUseMotor,Converter={StaticResource bool2VisibilityConverter}}">
                         <StackPanel Margin="2">
-                            <Button Content="自动聚焦" Click="AutoFocus_Click" />
+                            <Button Content="自动聚焦" Click="AutoFocus_Click"  Visibility="{Binding DeviceService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter1}}" />
                             <DockPanel Margin="0,2">
                                 <Button  DockPanel.Dock="Right" Content="移动"  Click="Move_Click" />
                                 <CheckBox  x:Name="CheckBoxIsAbs" Content="绝对位置" />
