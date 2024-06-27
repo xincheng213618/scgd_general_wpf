@@ -39,7 +39,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 Common.NativeMethods.Keyboard.PressKey(0x09);
                 e.Handled = true;
             }
-        }
+        }  
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
