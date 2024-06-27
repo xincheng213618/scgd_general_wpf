@@ -53,8 +53,10 @@
                             <DockPanel Margin="0,2" >
                                 <CheckBox DockPanel.Dock="Right" Content="网络" Width="50" Margin="5" IsChecked="{Binding IsNet}"/>
                                 <TextBlock Text="设备地址"  Width="120"/>
-                                <TextBox Text="{Binding Id}" DockPanel.Dock="Right" Visibility="{Binding IsNet,Converter={StaticResource bool2VisibilityConverter}}" />
-                                <hc:ComboBox  x:Name="TextSerial" DockPanel.Dock="Right" IsEditable="True" Text="{Binding Id}"  Visibility="{Binding IsNet,Converter={StaticResource bool2VisibilityConverter1}}" hc:InfoElement.ShowClearButton="True"  />
+                                <Grid DockPanel.Dock="Right" >
+                                    <TextBox Text="{Binding Id}" Visibility="{Binding IsNet,Converter={StaticResource bool2VisibilityConverter}}" />
+                                    <hc:ComboBox  x:Name="TextSerial" IsEditable="True" Text="{Binding Id}"  Visibility="{Binding IsNet,Converter={StaticResource bool2VisibilityConverter1}}" hc:InfoElement.ShowClearButton="True"  />
+                                </Grid>
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
