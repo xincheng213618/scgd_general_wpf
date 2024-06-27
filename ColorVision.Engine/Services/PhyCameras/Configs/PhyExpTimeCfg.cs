@@ -16,24 +16,29 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         [JsonProperty("autoExpTimeBegin")]
         public float AutoExpTimeBegin { get => _AutoExpTimeBegin; set { _AutoExpTimeBegin = value; NotifyPropertyChanged(); } }
         private float _AutoExpTimeBegin = 10;
+
         /// <summary>
         ///自动同步频率
         /// </summary>
         [JsonProperty("autoExpSyncFreq")]
         public float AutoExpSyncFreq { get => _AutoExpSyncFreq; set { _AutoExpSyncFreq = value; NotifyPropertyChanged(); } }
         private float _AutoExpSyncFreq = -1;
+
         [JsonProperty("autoExpSaturation")]
         public float AutoExpSaturation { get => _AutoExpSaturation; set { _AutoExpSaturation = value; NotifyPropertyChanged(); } }
         private float _AutoExpSaturation = 70.0f;
+
         [JsonProperty("autoExpSatMaxAD")]
         public uint AutoExpSatMaxAD { get => _AutoExpSatMaxAD; set { _AutoExpSatMaxAD = value; NotifyPropertyChanged(); } }
         private uint _AutoExpSatMaxAD = 65000;
+
         /// <summary>
         ///误差值
         /// </summary>
         [JsonProperty("autoExpMaxPecentage")]
         public float AutoExpMaxPecentage { get => _AutoExpMaxPecentage; set { _AutoExpMaxPecentage = value; NotifyPropertyChanged(); } }
         private float _AutoExpMaxPecentage = 0.01f;
+
         [JsonProperty("autoExpSatDev")]
         public float AutoExpSatDev { get => _AutoExpSatDev; set { _AutoExpSatDev = value; NotifyPropertyChanged(); } }
         private float _AutoExpSatDev = 20.0f;
@@ -43,6 +48,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         [JsonProperty("maxExpTime")]
         public float MaxExpTime { get => _MaxExpTime; set { _MaxExpTime = value; NotifyPropertyChanged(); } }
         private float _MaxExpTime = 60000;
+
         /// <summary>
         /// 最小曝光
         /// </summary>

@@ -73,7 +73,9 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                         break;
                     case DeviceStatusType.Closing:
                     case DeviceStatusType.Opening:
+                        break;
                     case DeviceStatusType.SP_Continuous_Mode:
+                        SetVisibility(StackPanelOpen, Visibility.Visible);
                         btn_autoTest.Content = "取消自动测试";
                         break;
                     default:
