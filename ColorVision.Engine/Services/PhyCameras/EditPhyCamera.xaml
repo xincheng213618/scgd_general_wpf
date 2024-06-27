@@ -140,15 +140,15 @@
                             <StackPanel Visibility="{Binding MotorConfig.IsUseMotor,Converter={StaticResource bool2VisibilityConverter}}">
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="类型:" Width="120"/>
-                                    <ComboBox x:Name="ComboxMotorType"  SelectedValue="{Binding MotorConfig.eFOCUSCOMMUN}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,0,0"/>
+                                    <ComboBox x:Name="ComboxMotorType"  SelectedValue="{Binding MotorConfig.eFOCUSCOMMUN}"  SelectedValuePath="Key"  DisplayMemberPath="Value" />
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="串口:" Width="120"/>
-                                    <hc:ComboBox  x:Name="TextSerial" IsEditable="True" Text="{Binding MotorConfig.SzComName}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                                    <hc:ComboBox  x:Name="TextSerial" IsEditable="True" Text="{Binding MotorConfig.SzComName}"  hc:InfoElement.ShowClearButton="True"  />
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="波特率:" Width="120"/>
-                                    <hc:ComboBox x:Name="TextBaudRate" IsEditable="True" Text="{Binding MotorConfig.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                                    <hc:ComboBox x:Name="TextBaudRate" IsEditable="True" Text="{Binding MotorConfig.BaudRate}"  hc:InfoElement.ShowClearButton="True"  />
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="电机运行加速度:" Width="120"/>
@@ -163,15 +163,15 @@
                                     <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.Deceleration}"/>
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
-                                    <TextBlock Text="回原点时的加速度:" Width="120"/>
+                                    <TextBlock Text="原点加速度" Width="120"/>
                                     <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.HomeAcceleration}"/>
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
-                                    <TextBlock Text="回原点时的平稳运行速度:" Width="120"/>
+                                    <TextBlock Text="原点平稳运行速度" Width="120"/>
                                     <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.HomeSpeed}"/>
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
-                                    <TextBlock Text="回原点时的减速度:" Width="120"/>
+                                    <TextBlock Text="原点减速度" Width="120"/>
                                     <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.HomeDeceleration}"/>
                                 </DockPanel>
 
