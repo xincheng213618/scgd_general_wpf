@@ -84,9 +84,13 @@ namespace ColorVision.Engine.MySql.ORM
             foreach (var prop in typeof(T).GetProperties())
             {
                 var columnName = GetColumnName(prop);
-                if (row.Table.Columns.Contains(columnName))
+                var value = prop.GetValue(model);
+                if (columnName.Equals("id", StringComparison.OrdinalIgnoreCase) && value is int intValue && intValue < 0)
                 {
-                    var value = prop.GetValue(model);
+                    row[columnName] = DBNull.Value;
+                }
+                else
+                {
                     row[columnName] = value ?? DBNull.Value;
                 }
             }

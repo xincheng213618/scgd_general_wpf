@@ -103,6 +103,14 @@ namespace ColorVision.Engine.Templates
         {
 
         }
+
+        public virtual void OpenCreate()
+        {
+            CreateTemplate createWindow = new CreateTemplate(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            createWindow.ShowDialog();
+        }
+
+
         public virtual bool ExitsTemplateName(string templateName)
         {
             throw new NotImplementedException();

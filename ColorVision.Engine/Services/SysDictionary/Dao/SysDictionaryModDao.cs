@@ -9,7 +9,7 @@ namespace ColorVision.Engine.Services.SysDictionary
     public class SysDictionaryModModel : ViewModelBase,IPKModel
     {
         [Column("id")]
-        public int Id { get; set; }
+        public int Id { get; set; } = -1;
         [Column("pid")]
         public int? PId { get => _PId; set { _PId = value; NotifyPropertyChanged(); } }
         private int? _PId;

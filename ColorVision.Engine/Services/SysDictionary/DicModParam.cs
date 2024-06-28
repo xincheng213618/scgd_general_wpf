@@ -108,6 +108,22 @@ namespace ColorVision.Engine.Services.SysDictionary
             }
         }
 
+        public override void OpenCreate()
+        {
+            CreateDicTemplate createDicTemplate = new CreateDicTemplate(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            createDicTemplate.ShowDialog();
+        }
+
+        public void Create(string templateCode, string templateName)
+        {
+            SysDictionaryModModel sysDictionaryModModel = new SysDictionaryModModel() { Name = templateName, Code = templateCode, ModType = 7 };
+            SysDictionaryModDao.Instance.Save(sysDictionaryModModel);
+            var list = SysDictionaryModDetailDao.Instance.GetAllByPid(sysDictionaryModModel.Id);
+            var t = new DicModParam(sysDictionaryModModel, list);
+            var templateModel = new TemplateModel<DicModParam>(t.Name ?? "default", t);
+            TemplateParams.Add(templateModel);
+        }
+
         public override void Create(string templateName)
         {
             SysDictionaryModModel sysDictionaryModModel = new SysDictionaryModModel() { Name = templateName, Code = templateName ,ModType = 7 };

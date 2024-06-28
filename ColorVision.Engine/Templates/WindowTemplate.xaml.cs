@@ -149,8 +149,7 @@ namespace ColorVision.Engine.Templates
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
             int oldnum = ITemplate.Count;
-            CreateTemplate createWindow = new CreateTemplate(ITemplate) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            createWindow.ShowDialog();
+            ITemplate.OpenCreate();
             if (oldnum!= ITemplate.Count)
             {
                 ListView1.SelectedIndex= ITemplate.Count-1;
