@@ -50,7 +50,7 @@
         </DockPanel>
 
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
-            <StackPanel Margin="5" >
+            <StackPanel Margin="5">
                 <DockPanel Margin="0,2">
                     <TextBlock Text="{x:Static properties:Resources.ImageSource}" Margin="0,0,10,0"/>
                     <ComboBox x:Name="CB_SourceImageFiles"  Style="{StaticResource ComboBox.Small}"  SelectedValuePath="Code"  DisplayMemberPath="Name" />

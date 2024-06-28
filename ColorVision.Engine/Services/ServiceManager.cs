@@ -324,7 +324,7 @@ namespace ColorVision.Engine.Services
                             break;
                         case ServiceTypes.Sensor:
                             DeviceSensor device1 = new(sysResourceModel);
-                            svrObj = device1.DeviceService;
+                            svrObj = device1.DService;
                             terminalService.AddChild(device1);
                             DeviceServices.Add(device1);
                             break;

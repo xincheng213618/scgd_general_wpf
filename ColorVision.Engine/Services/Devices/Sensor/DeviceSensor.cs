@@ -10,11 +10,11 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 {
     public class DeviceSensor : DeviceService<ConfigSensor>
     {
-        public MQTTSensor DeviceService { get; set; }
+        public MQTTSensor DService { get; set; }
 
         public DeviceSensor(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
-            DeviceService = new MQTTSensor(Config);
+            DService = new MQTTSensor(Config);
             EditCommand = new RelayCommand(a =>
             {
                 EditSensor window = new(this);
@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
         public override MQTTServiceBase? GetMQTTService()
         {
-            return DeviceService;
+            return DService;
         }
     }
 }

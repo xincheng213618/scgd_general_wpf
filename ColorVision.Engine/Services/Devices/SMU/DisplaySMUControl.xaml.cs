@@ -46,7 +46,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 {
                     SetVisibility(TextBlockUnknow, Visibility.Collapsed);
                     SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
-                    SetVisibility(StackPanelRun, Visibility.Collapsed);
+                    SetVisibility(StackPanelContent, Visibility.Collapsed);
                 }
                 // Default state
                 HideAllButtons();
@@ -60,26 +60,26 @@ namespace ColorVision.Engine.Services.Devices.SMU
                         SetVisibility(TextBlockUnknow, Visibility.Visible);
                         break;
                     case DeviceStatusType.OffLine:
-                        SetVisibility(StackPanelRun, Visibility.Visible);
+                        SetVisibility(StackPanelContent, Visibility.Visible);
                         break;
                     case DeviceStatusType.UnInit:
-                        SetVisibility(StackPanelRun, Visibility.Visible);
+                        SetVisibility(StackPanelContent, Visibility.Visible);
                         break;
                     case DeviceStatusType.Closed:
-                        SetVisibility(StackPanelRun, Visibility.Visible);
+                        SetVisibility(StackPanelContent, Visibility.Visible);
                         ButtonSourceMeter1.Content = "打开";
                         break;
                     case DeviceStatusType.LiveOpened:
                     case DeviceStatusType.Opened:
-                        SetVisibility(StackPanelRun, Visibility.Visible);
+                        SetVisibility(StackPanelContent, Visibility.Visible);
                         ButtonSourceMeter1.Content = "关闭";
                         break;
                     case DeviceStatusType.Closing:
-                        SetVisibility(StackPanelRun, Visibility.Visible);
+                        SetVisibility(StackPanelContent, Visibility.Visible);
                         ButtonSourceMeter1.Content = "关闭中";
                         break;
                     case DeviceStatusType.Opening:
-                        SetVisibility(StackPanelRun, Visibility.Visible);
+                        SetVisibility(StackPanelContent, Visibility.Visible);
                         ButtonSourceMeter1.Content = "打开中";
                         break;
                     default:

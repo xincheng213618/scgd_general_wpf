@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Templates;
 using ColorVision.UI;
@@ -18,7 +19,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
     {
 
         public DeviceSensor Device { get; set; }
-        private MQTTSensor DeviceService { get => Device.DeviceService;  }
+        private MQTTSensor DeviceService { get => Device.DService;  }
         public string DisPlayName => Device.Config.Name;
 
         public DisplaySensor(DeviceSensor device)
@@ -35,7 +36,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
-            Device.DeviceService.DeviceStatusChanged += (e) =>
+            Device.DService.DeviceStatusChanged += (e) =>
             {
                 switch (e)
                 {
@@ -53,6 +54,51 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                         break;
                 }
             };
+
+            void UpdateUI(DeviceStatusType status)
+            {
+                void SetVisibility(UIElement element, Visibility visibility) => element.Visibility = visibility;
+                void HideAllButtons()
+                {
+                    SetVisibility(ButtonOpen, Visibility.Collapsed);
+                    SetVisibility(ButtonClose, Visibility.Collapsed);
+                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                    SetVisibility(StackPanelContent, Visibility.Collapsed);
+                }
+                // Default state
+                HideAllButtons();
+
+                switch (status)
+                {
+                    case DeviceStatusType.Unauthorized:
+                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Unknown:
+                        SetVisibility(TextBlockUnknow, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.OffLine:
+                        break;
+                    case DeviceStatusType.UnInit:
+                        break;
+                    case DeviceStatusType.Closed:
+                        SetVisibility(ButtonOpen, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.LiveOpened:
+                    case DeviceStatusType.Opened:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        SetVisibility(ButtonClose, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Closing:
+                    case DeviceStatusType.Opening:
+                    default:
+                        // No specific action needed
+                        break;
+                }
+            }
+            UpdateUI(Device.DService.DeviceStatus);
+            Device.DService.DeviceStatusChanged += UpdateUI;
+
         }
 
         public event RoutedEventHandler Selected;

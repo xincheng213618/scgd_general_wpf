@@ -42,7 +42,6 @@
             </Button>
 
             <Grid>
-                <TextBlock HorizontalAlignment="Right" Text="{Binding Config.DeviceStatus}"/>
                 <ToggleButton  x:Name="ToggleButton0"  Style="{StaticResource ButtonPageControl1}"  Content="{Binding Config.Name}"  FontSize="15"  IsChecked="{Binding IsDisplayOpen}" />
                 <Grid  Height="18"   HorizontalAlignment="Left" MouseLeftButtonDown="Grid_MouseLeftButtonDown" Visibility="{Binding ElementName=ToggleButton0,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}" Background="{DynamicResource GlobalBackground}" Margin="4,0,0,0">
                     <Image Source="{Binding Icon}"/>
@@ -53,7 +52,7 @@
             <StackPanel  x:Name="StackPanelVI" Margin="5">
                 <TextBlock x:Name="TextBlockUnknow" Text="未知状态"  HorizontalAlignment="Center"/>
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="源表未注册" Command="{Binding EditCommand}"/>
-                <StackPanel x:Name="StackPanelRun">
+                <StackPanel x:Name="StackPanelContent">
                     <DockPanel Margin="0,3">
                         <CheckBox IsChecked="{Binding Config.IsNet}" VerticalAlignment="Center" Content="网络" DockPanel.Dock="Right" IsEnabled="False"/>
                         <Button x:Name="ButtonSourceMeter1" Margin="10,0" DockPanel.Dock="Right" Content="打开"  Click="ButtonSourceMeter1_Click"/>
