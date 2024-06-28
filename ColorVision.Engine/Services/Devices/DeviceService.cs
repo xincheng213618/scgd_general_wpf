@@ -129,8 +129,7 @@ namespace ColorVision.Engine.Services.Devices
             CopyCommand = new RelayCommand(a => {
                 if (Config!=null)
                 {
-                    Common.NativeMethods.Clipboard.SetText(Config.ToJsonN());
-                    MessageBox1.Show(WindowHelpers.GetActiveWindow(),"复制成功", "ColorVision");
+                    MessageBox1.Show(WindowHelpers.GetActiveWindow(), Config.ToJsonN(), "ColorVision");
                 }
             });
             ResetCommand = new RelayCommand(a => {
