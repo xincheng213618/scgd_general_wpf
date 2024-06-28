@@ -36,24 +36,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
-            Device.DService.DeviceStatusChanged += (e) =>
-            {
-                switch (e)
-                {
-                    case DeviceStatusType.Opened:
-                        ButtonClose.Visibility = Visibility.Visible;
-                        ButtonOpen.Visibility = Visibility.Collapsed;
-                        break;
-                    case DeviceStatusType.Closed:
-                        ButtonOpen.Visibility = Visibility.Visible;
-                        ButtonClose.Visibility = Visibility.Collapsed;
-                        break;
-                    default:
-                        ButtonOpen.Visibility = Visibility.Visible;
-                        ButtonClose.Visibility = Visibility.Collapsed;
-                        break;
-                }
-            };
 
             void UpdateUI(DeviceStatusType status)
             {
@@ -65,6 +47,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                     SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
                     SetVisibility(TextBlockUnknow, Visibility.Collapsed);
                     SetVisibility(StackPanelContent, Visibility.Collapsed);
+                    SetVisibility(TextBlockOffLine, Visibility.Collapsed);
+
                 }
                 // Default state
                 HideAllButtons();
@@ -78,8 +62,10 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                         SetVisibility(TextBlockUnknow, Visibility.Visible);
                         break;
                     case DeviceStatusType.OffLine:
+                        SetVisibility(TextBlockOffLine, Visibility.Visible);
                         break;
                     case DeviceStatusType.UnInit:
+                        SetVisibility(ButtonOpen, Visibility.Visible);
                         break;
                     case DeviceStatusType.Closed:
                         SetVisibility(ButtonOpen, Visibility.Visible);
@@ -92,7 +78,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                     case DeviceStatusType.Closing:
                     case DeviceStatusType.Opening:
                     default:
-                        // No specific action needed
                         break;
                 }
             }

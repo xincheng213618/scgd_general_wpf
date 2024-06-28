@@ -49,9 +49,10 @@
             </Grid>
         </DockPanel>
         <Border  x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}" Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
-            <StackPanel  Margin="5">
+            <StackPanel Margin="5">
                 <TextBlock x:Name="TextBlockUnknow" Text="未知状态"  HorizontalAlignment="Center"/>
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="源表未注册" Command="{Binding EditCommand}"/>
+                <TextBlock x:Name="TextBlockOffLine" Text="OffLine状态"  HorizontalAlignment="Center"/>
                 <StackPanel x:Name="StackPanelContent">
                     <DockPanel Margin="0,3">
                         <CheckBox IsChecked="{Binding Config.IsNet}" VerticalAlignment="Center" Content="网络" DockPanel.Dock="Right" IsEnabled="False"/>

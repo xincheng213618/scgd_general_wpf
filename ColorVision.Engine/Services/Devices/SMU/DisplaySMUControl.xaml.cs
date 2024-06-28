@@ -47,6 +47,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                     SetVisibility(TextBlockUnknow, Visibility.Collapsed);
                     SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
                     SetVisibility(StackPanelContent, Visibility.Collapsed);
+                    SetVisibility(TextBlockOffLine, Visibility.Collapsed);
                 }
                 // Default state
                 HideAllButtons();
@@ -60,7 +61,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                         SetVisibility(TextBlockUnknow, Visibility.Visible);
                         break;
                     case DeviceStatusType.OffLine:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        SetVisibility(TextBlockOffLine, Visibility.Visible);
                         break;
                     case DeviceStatusType.UnInit:
                         SetVisibility(StackPanelContent, Visibility.Visible);

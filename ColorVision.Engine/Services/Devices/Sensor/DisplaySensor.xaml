@@ -46,6 +46,7 @@
             <StackPanel Margin="5">
                 <TextBlock x:Name="TextBlockUnknow" Text="未知状态"  HorizontalAlignment="Center"/>
                 <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="传感器未注册" Command="{Binding EditCommand}"/>
+                <TextBlock x:Name="TextBlockOffLine" Text="OffLine状态"  HorizontalAlignment="Center"/>
                 <StackPanel x:Name="StackPanelContent">
                     <StackPanel  IsEnabled="False">
                         <DockPanel Margin="0,5" IsEnabled="False">

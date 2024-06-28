@@ -45,36 +45,48 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             void UpdateUI(DeviceStatusType status)
             {
                 void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };
+
                 void HideAllButtons()
                 {
+                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                    SetVisibility(StackPanelContent, Visibility.Collapsed);
                     SetVisibility(TemplateChoice, Visibility.Collapsed);
                     SetVisibility(StackPanelOpen, Visibility.Collapsed);
+                    SetVisibility(TextBlockOffLine, Visibility.Collapsed);
                 }
+
                 HideAllButtons();
                 btn_autoTest.Content = "自动测试";
                 switch (status)
                 {
-                    case DeviceStatusType.OffLine:
-                        break;
+
                     case DeviceStatusType.Unknown:
+                        SetVisibility(TextBlockUnknow, Visibility.Visible);
+                        break;
                     case DeviceStatusType.Unauthorized:
+                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.OffLine:
+                        SetVisibility(TextBlockOffLine, Visibility.Visible);
+                        break;
                     case DeviceStatusType.UnInit:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
                         SetVisibility(TemplateChoice, Visibility.Visible);
                         btn_connect.Content = "打开";
                         break;
                     case DeviceStatusType.Closed:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
                         SetVisibility(TemplateChoice, Visibility.Visible);
                         btn_connect.Content = "打开";
                         break;
-                    case DeviceStatusType.LiveOpened:
                     case DeviceStatusType.Opened:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
                         SetVisibility(StackPanelOpen, Visibility.Visible);
                         btn_connect.Content = "关闭";
                         break;
-                    case DeviceStatusType.Closing:
-                    case DeviceStatusType.Opening:
-                        break;
                     case DeviceStatusType.SP_Continuous_Mode:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
                         SetVisibility(StackPanelOpen, Visibility.Visible);
                         btn_autoTest.Content = "取消自动测试";
                         break;
