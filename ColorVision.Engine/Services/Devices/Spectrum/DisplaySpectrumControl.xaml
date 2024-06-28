@@ -49,7 +49,7 @@
             <StackPanel Margin="5">
                 <TextBlock x:Name="TextBlockUnknow" Text="未知状态"  HorizontalAlignment="Center"/>
                 <TextBlock x:Name="TextBlockOffLine" Text="OffLine状态"  HorizontalAlignment="Center"/>
-                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="源表未注册" Command="{Binding EditCommand}"/>
+                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="未注册" Command="{Binding EditCommand}"/>
                 <StackPanel x:Name="StackPanelContent">
                     <DockPanel Margin="0,0,0,2">
                         <DockPanel x:Name="TemplateChoice" Margin="0,2">
