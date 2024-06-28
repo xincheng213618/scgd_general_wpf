@@ -623,7 +623,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     Circle.Attribute.Brush = Brushes.Transparent;
                                     Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                     Circle.Attribute.ID = start + i + 1;
-                                    Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
+                                    Circle.Attribute.Name = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
                                     Circle.Render();
                                     ImageShow.AddVisual(Circle);
                                     break;
@@ -776,7 +776,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         Circle.Attribute.Brush = Brushes.Transparent;
                                         Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                         Circle.Attribute.ID = start + i * cols + j + 1;
-                                        Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
+                                        Circle.Attribute.Name = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
                                         Circle.Render();
                                         ImageShow.AddVisual(Circle);
                                         break;
@@ -841,7 +841,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         Circle.Attribute.Brush = Brushes.Transparent;
                                         Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                         Circle.Attribute.ID = start + i * cols + j + 1;
-                                        Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
+                                        Circle.Attribute.Name = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
                                         Circle.Render();
                                         ImageShow.AddVisual(Circle);
                                         break;
@@ -885,7 +885,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         Circle.Attribute.Brush = Brushes.Transparent;
                                         Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                         Circle.Attribute.ID = start + No;
-                                        Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
+                                        Circle.Attribute.Name = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
                                         Circle.Render();
                                         ImageShow.AddVisual(Circle);
                                         break;
@@ -921,7 +921,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         Circle.Attribute.Brush = Brushes.Transparent;
                                         Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                         Circle.Attribute.ID = start + i + 1;
-                                        Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
+                                        Circle.Attribute.Name = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
                                         Circle.Render();
                                         ImageShow.AddVisual(Circle);
                                         break;
