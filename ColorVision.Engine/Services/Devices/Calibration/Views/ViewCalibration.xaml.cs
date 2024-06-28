@@ -48,7 +48,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         public ViewCalibration(DeviceCalibration device)
         {
             Device = device;
-            DeviceService = device.DeviceService;
+            DeviceService = device.DService;
             InitializeComponent();
         }
 

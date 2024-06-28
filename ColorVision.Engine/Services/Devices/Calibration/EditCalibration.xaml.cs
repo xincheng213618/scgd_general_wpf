@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
     {
         public DeviceCalibration DeviceCalibration { get; set; }
 
-        public MQTTCalibration Service { get => DeviceCalibration.DeviceService; }
+        public MQTTCalibration Service { get => DeviceCalibration.DService; }
 
         public ConfigCalibration EditConfig { get; set; }
         public EditCalibration(DeviceCalibration  deviceCalibration)

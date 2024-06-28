@@ -9,6 +9,7 @@ using ColorVision.Net;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Views;
+using CVCommCore;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using System;
@@ -27,7 +28,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
     {
 
         public DeviceCalibration Device { get; set; }
-        private MQTTCalibration DeviceService { get => Device.DeviceService;  }
+        private MQTTCalibration DeviceService { get => Device.DService;  }
         public string DisPlayName => Device.Config.Name;
 
         public DisplayCalibrationControl(DeviceCalibration device)
@@ -57,6 +58,48 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             
             this.AddViewConfig(View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
+
+
+            void UpdateUI(DeviceStatusType status)
+            {
+                void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };
+
+                void HideAllButtons()
+                {
+                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                    SetVisibility(StackPanelContent, Visibility.Collapsed);
+                }
+                // Default state
+                HideAllButtons();
+
+                switch (status)
+                {
+                    case DeviceStatusType.Unauthorized:
+                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Unknown:
+                        SetVisibility(TextBlockUnknow, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.OffLine:
+                        break;
+                    case DeviceStatusType.UnInit:
+                        break;
+                    case DeviceStatusType.Closed:
+                        break;
+                    case DeviceStatusType.LiveOpened:
+                    case DeviceStatusType.Opened:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Closing:
+                    case DeviceStatusType.Opening:
+                    default:
+                        // No specific action needed
+                        break;
+                }
+            }
+            UpdateUI(Device.DService.DeviceStatus);
+            Device.DService.DeviceStatusChanged += UpdateUI;
         }
 
         public event RoutedEventHandler Selected;

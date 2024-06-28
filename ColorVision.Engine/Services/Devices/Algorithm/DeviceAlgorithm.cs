@@ -13,12 +13,12 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 {
     public class DeviceAlgorithm : DeviceService<ConfigAlgorithm>
     {
-        public MQTTAlgorithm MQTTService { get; set; }
+        public MQTTAlgorithm DService { get; set; }
         public AlgorithmView View { get; set; }
 
         public DeviceAlgorithm(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
-            MQTTService = new MQTTAlgorithm(this, Config);
+            DService = new MQTTAlgorithm(this, Config);
 
             View = new AlgorithmView();
             View.View.Title = $"算法视图 - {Config.Code}";
@@ -46,7 +46,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         public override MQTTServiceBase? GetMQTTService()
         {
-            return MQTTService;
+            return DService;
         }
     }
 }

@@ -12,6 +12,7 @@ using ColorVision.Engine.Templates.POI;
 using ColorVision.Net;
 using ColorVision.Themes;
 using ColorVision.UI;
+using CVCommCore;
 using CVCommCore.CVAlgorithm;
 using log4net;
 using MQTTMessageLib.FileServer;
@@ -34,7 +35,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         public DeviceAlgorithm Device { get; set; }
 
-        public MQTTAlgorithm Service { get => Device.MQTTService; }
+        public MQTTAlgorithm Service { get => Device.DService; }
 
         public AlgorithmView View { get => Device.View; }
         public string DisPlayName => Device.Config.Name;
@@ -189,6 +190,51 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             UpdateCB_SourceImageFiles();
             Service.MsgReturnReceived += Service_OnAlgorithmEvent;
+
+
+
+            void UpdateUI(DeviceStatusType status)
+            {
+                void SetVisibility(UIElement element, Visibility visibility){ if (element.Visibility != visibility) element.Visibility = visibility; };
+                void HideAllButtons()
+                {
+                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                    SetVisibility(StackPanelContent, Visibility.Collapsed);
+                }
+                // Default state
+                HideAllButtons();
+
+                switch (status)
+                {
+                    case DeviceStatusType.Unauthorized:
+                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Unknown:
+                        SetVisibility(TextBlockUnknow, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.OffLine:
+                        break;
+                    case DeviceStatusType.UnInit:
+                        break;
+                    case DeviceStatusType.Closed:
+                        break;
+                    case DeviceStatusType.LiveOpened:
+                    case DeviceStatusType.Opened:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Closing:
+                    case DeviceStatusType.Opening:
+                    default:
+                        // No specific action needed
+                        break;
+                }
+            }
+            UpdateUI(Device.DService.DeviceStatus);
+            Device.DService.DeviceStatusChanged += UpdateUI;
+
+
+
         }
        public event RoutedEventHandler Selected;
         public event RoutedEventHandler Unselected;

@@ -17,7 +17,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCalibration));
 
-        public MQTTCalibration DeviceService { get; set; }
+        public MQTTCalibration DService { get; set; }
 
         public PhyCamera? PhyCamera { get => PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraID); }
 
@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         public DeviceCalibration(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
-            DeviceService = new MQTTCalibration(Config);
+            DService = new MQTTCalibration(Config);
             View = new ViewCalibration(this);
             View.View.Title = $"校正视图 - {Config.Code}";
             this.SetIconResource("DICalibrationIcon", View.View);;
@@ -86,7 +86,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         public override MQTTServiceBase? GetMQTTService()
         {
-            return DeviceService;
+            return DService;
         }
     }
 }

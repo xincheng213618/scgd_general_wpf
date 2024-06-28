@@ -336,14 +336,14 @@ namespace ColorVision.Engine.Services
                             break;
                         case ServiceTypes.Algorithm:
                             DeviceAlgorithm alg = new(sysResourceModel);
-                            svrObj = alg.MQTTService;
+                            svrObj = alg.DService;
                             terminalService.AddChild(alg);
                             DeviceServices.Add(alg);
                             break;
                         case ServiceTypes.Calibration:
                             
                             DeviceCalibration deviceCalibration = new DeviceCalibration(sysResourceModel);
-                            svrObj = deviceCalibration.DeviceService;
+                            svrObj = deviceCalibration.DService;
                             terminalService.AddChild(deviceCalibration);
                             DeviceServices.Add(deviceCalibration);
                             break;

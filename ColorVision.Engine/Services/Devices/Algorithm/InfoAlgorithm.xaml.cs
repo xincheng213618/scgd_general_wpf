@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
     public partial class InfoAlgorithm : UserControl
     {
         public DeviceAlgorithm Device { get; set; }
-        public MQTTAlgorithm DService { get => Device.MQTTService; }
+        public MQTTAlgorithm DService { get => Device.DService; }
 
         public InfoAlgorithm(DeviceAlgorithm device)
         {

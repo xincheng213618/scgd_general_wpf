@@ -104,7 +104,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             void UpdateUI(DeviceStatusType status)
             {
-                void SetVisibility(UIElement element, Visibility visibility) => element.Visibility = visibility;
+                void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };
                 void HideAllButtons()
                 {
                     SetVisibility(ButtonOpen, Visibility.Collapsed);
