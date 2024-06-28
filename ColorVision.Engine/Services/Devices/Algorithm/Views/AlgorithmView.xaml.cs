@@ -587,8 +587,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             }
 
                             //亮度
-                            List<string> ComplianceYHeader = new() { "名称", "位置", "大小", "形状", "Y", "Validate" };
-                            List<string> ComplianceYHeaderBind = new() { "Name", "PixelPos", "PixelSize", "Shapes", "Y", "POIPointResultModel.ValidateResult" };
+                            List<string> ComplianceYHeader = new() { "名称" ,"值", "Validate" };
+                            List<string> ComplianceYHeaderBind = new() { "Name", "DataValue", "ValidateResult" };
 
                             listViewSide.Visibility = Visibility.Visible;
                             LeftGridViewColumnVisibilitys.Clear();
@@ -606,6 +606,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             {
                                 result.ComplianceXYZDatas = ComplianceXYZDao.Instance.GetAllByPid(result.Id);
                             }
+                            List<string> ComplianceXYZHeader = new() { "名称", "x","y","z","xxx","yyy","zzz","cct","wave", "Validate" };
+                            List<string> ComplianceXYZHeaderBind = new() { "Name", "DataValuex","DataValuey", "DataValuez", "DataValuexxx", "DataValueyyy", "DataValuezzz", "DataValueCCT", "DataValueWave", "ValidateResult" };
+                            listViewSide.Visibility = Visibility.Visible;
+                            LeftGridViewColumnVisibilitys.Clear();
+                            gridView.Columns.Clear();
+                            for (int i = 0; i < ComplianceXYZHeader.Count; i++)
+                                gridView.Columns.Add(new GridViewColumn() { Header = ComplianceXYZHeader[i], DisplayMemberBinding = new Binding(ComplianceXYZHeaderBind[i]) });
+                            listViewSide.ItemsSource = result.ComplianceXYZDatas;
                             break;
                         default:
                             break;

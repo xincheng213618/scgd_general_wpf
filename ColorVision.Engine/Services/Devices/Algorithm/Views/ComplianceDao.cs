@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public int PId { get; set; }
 
         [Column("name")]
-        public int Name { get; set; }
+        public string Name { get; set; }
 
         [Column("data_type")]
         public int DataType { get; set; }
@@ -53,7 +53,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         [Column("pid")]
         public int PId { get; set; }
         [Column("name")]
-        public int Name { get; set; }
+        public string Name { get; set; }
         [Column("data_type")]
         public int DataType { get; set; }
 
