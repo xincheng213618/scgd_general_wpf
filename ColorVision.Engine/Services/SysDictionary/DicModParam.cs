@@ -6,6 +6,8 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI.Dao;
 using ColorVision.Engine.Templates.POI.Validate;
+using ColorVision.UI.Authorizations;
+using ColorVision.UI.Menus;
 using ColorVision.UserSpace;
 using NPOI.SS.Formula.Functions;
 using NPOI.XWPF.UserModel;
@@ -18,13 +20,34 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.SysDictionary
 {
-
-    public class TemplateDicModParam : ITemplate<DicModParam>, IITemplateLoad
+    public class ExportDicModParam : MenuItemBase
     {
-        public TemplateDicModParam()
+        public override string OwnerGuid => "Template";
+
+        public override string GuidId => "DicModParam";
+        public override int Order => 31;
+        public override string Header => "算法模板编辑";
+
+        [RequiresPermission(PermissionMode.Administrator)]
+        public override void Execute()
+        {
+            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
+                return;
+            }
+            new WindowTemplate(new TemplateAlgModParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        }
+    }
+
+    public class TemplateAlgModParam : ITemplate<DicModParam>, IITemplateLoad
+    {
+        public static ObservableCollection<TemplateModel<DicModParam>> Params { get; set; } = new ObservableCollection<TemplateModel<DicModParam>>();
+
+        public TemplateAlgModParam()
         {
             Title = "DicModParam";
-            TemplateParams = DicModParam.Params;
+            TemplateParams = Params;
             IsUserControl = true;  
         }
 
@@ -45,7 +68,7 @@ namespace ColorVision.Engine.Services.SysDictionary
 
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-                var models = SysDictionaryModDao.Instance.GetAllByTenantId(UserConfig.Instance.TenantId);
+                var models = SysDictionaryModDao.Instance.GetAllByParam( new Dictionary<string, object>() { {"tenant_id", UserConfig.Instance.TenantId },{"mod_type",7 } });
                 foreach (var model in models)
                 {
                     var list = SysDictionaryModDetailDao.Instance.GetAllByPid(model.Id);
@@ -87,7 +110,7 @@ namespace ColorVision.Engine.Services.SysDictionary
 
         public override void Create(string templateName)
         {
-            SysDictionaryModModel sysDictionaryModModel = new SysDictionaryModModel() { Name = templateName, Code = templateName ,ModType =5 };
+            SysDictionaryModModel sysDictionaryModModel = new SysDictionaryModModel() { Name = templateName, Code = templateName ,ModType = 7 };
             SysDictionaryModDao.Instance.Save(sysDictionaryModModel);
             var list = SysDictionaryModDetailDao.Instance.GetAllByPid(sysDictionaryModModel.Id);
             var t = new DicModParam(sysDictionaryModModel, list);
@@ -96,10 +119,59 @@ namespace ColorVision.Engine.Services.SysDictionary
         }
     }
 
+    public class ExportTemplateSensor : MenuItemBase
+    {
+        public override string OwnerGuid => "Template";
+
+        public override string GuidId => "TemplateSensor";
+        public override int Order => 31;
+        public override string Header => "传感器模板编辑";
+
+        [RequiresPermission(PermissionMode.Administrator)]
+        public override void Execute()
+        {
+            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
+                return;
+            }
+            new WindowTemplate(new TemplateSensorDicModParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        }
+    }
+
+    public class TemplateSensorDicModParam : ITemplate<DicModParam>, IITemplateLoad
+    {
+        public static ObservableCollection<TemplateModel<DicModParam>> Params { get; set; } = new ObservableCollection<TemplateModel<DicModParam>>();
+
+        public TemplateSensorDicModParam()
+        {
+            Title = "传感器模板编辑";
+            TemplateParams = Params;
+            IsUserControl = true;
+        }
+
+        public override void Load()
+        {
+            var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
+
+            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
+            {
+                var models = SysDictionaryModDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", UserConfig.Instance.TenantId }, { "mod_type", 5 } });
+                foreach (var model in models)
+                {
+                    var list = SysDictionaryModDetailDao.Instance.GetAllByPid(model.Id);
+                }
+            }
+        }
+
+
+    }
+
+
+
 
     public class DicModParam : ParamBase
     {
-        public static ObservableCollection<TemplateModel<DicModParam>> Params { get; set; } = new ObservableCollection<TemplateModel<DicModParam>>();
 
         public SysDictionaryModModel modMasterModel { get; set; }
         public RelayCommand CreateCommand { get; set; }
@@ -118,6 +190,8 @@ namespace ColorVision.Engine.Services.SysDictionary
         }
 
         public ObservableCollection<SysDictionaryModDetaiModel> ModDetaiModels { get; set; }
+
+
 
 
     };
