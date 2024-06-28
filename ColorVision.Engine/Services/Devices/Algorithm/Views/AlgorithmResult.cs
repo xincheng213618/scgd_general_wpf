@@ -6,6 +6,8 @@ using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.ObjectModel;
 using HandyControl.Data;
+using System.Windows.Documents;
+using System.Collections.Generic;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
@@ -23,6 +25,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public ObservableCollection<GhostResultData> GhostData { get; set; }
         public ObservableCollection<DistortionResultData> DistortionData { get; set; }
         public ObservableCollection<LedResultData> LedResultDatas { get; set; }
+        public List<ComplianceYModel> ComplianceYDatas { get; set; }
+        public List<ComplianceXYZModel> ComplianceXYZDatas { get; set; }
+
 
         public AlgorithmResult(AlgResultMasterModel item)
         {

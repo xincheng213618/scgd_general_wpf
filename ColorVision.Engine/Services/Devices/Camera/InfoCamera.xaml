@@ -277,8 +277,13 @@
                                         <TextBlock Text="缩放比例:" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.VideoConfig.ResizeRatio}"/>
                                     </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="缓存大小:" Width="120"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.VideoConfig.Capacity}"/>
+                                    </DockPanel>
                                 </StackPanel>
                             </GroupBox>
+
                         </StackPanel>
 
                     </TabItem>

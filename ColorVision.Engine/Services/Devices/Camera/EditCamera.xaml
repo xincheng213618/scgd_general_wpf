@@ -229,6 +229,10 @@
                                         <TextBlock Text="缩放比例:" Width="120"/>
                                         <TextBox Text="{Binding VideoConfig.ResizeRatio}"/>
                                     </DockPanel>
+                                    <DockPanel>
+                                        <TextBlock Text="缓存大小:" Width="120"/>
+                                        <TextBox  Text="{Binding VideoConfig.Capacity}"/>
+                                    </DockPanel>
                                 </StackPanel>
                             </GroupBox>
                         </StackPanel>

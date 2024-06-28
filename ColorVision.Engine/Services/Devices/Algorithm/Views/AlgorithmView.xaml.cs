@@ -197,395 +197,420 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         ImageView.OpenImage(result.FilePath);
                     }
                 }
-
-                switch (result.ResultType)
+                if (listViewSide.View is GridView gridView)
                 {
-                    case AlgorithmResultType.POI:
-                        if (result.PoiResultDatas == null)
-                        {
-                            result.PoiResultDatas = new ObservableCollection<PoiResultData>();
-                            List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
-                            int id = 0;
-                            foreach (var item in POIPointResultModels)
+
+                    switch (result.ResultType)
+                    {
+                        case AlgorithmResultType.POI:
+                            if (result.PoiResultDatas == null)
                             {
-                                PoiResultData poiResult = new(item) { Id = id++ };
-                                result.PoiResultDatas.Add(poiResult);
-                            };
-                        }
-
-                        cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes" , "POIPointResultModel.ValidateResult" };
-                        cieHeader = new List<string> { "名称", "位置", "大小", "形状" ,"Validate" };
-
-                        if (listViewSide.View is GridView gridViewPOI)
-                        {
-                            LeftGridViewColumnVisibilitys.Clear();
-                            gridViewPOI.Columns.Clear();
-                            for (int i = 0; i < cieHeader.Count; i++)
-                                gridViewPOI.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
-                        }
-
-                        listViewSide.ItemsSource = result.PoiResultDatas;
-
-                        foreach (var item in result.PoiResultDatas)
-                            DrawPoiPoint.Add(item.Point);
-                        AddPOIPoint(DrawPoiPoint);
-                        listViewSide.Visibility = Visibility.Visible;
-                        break;
-                    case AlgorithmResultType.LEDStripDetection:
-                    case AlgorithmResultType.POI_XYZ:
-                        if (result.PoiResultCIExyuvDatas == null)
-                        {
-                            result.PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
-                            List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
-                            int id = 0;
-                            foreach (var item in POIPointResultModels)
-                            {
-                                PoiResultCIExyuvData poiResultCIExyuvData = new(item) { Id = id++ };
-                                result.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
-                            };
-                        }
-                        cieHeader = new List<string> { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Shape, Properties.Resources.Size, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "Validate" };
-
-                        if (result.ResultType == AlgorithmResultType.LEDStripDetection)
-                        {
-                            cieHeader = new List<string> { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Shape };
-                        }
-
-                        cieBdHeader = new List<string> { "Id", "Name", "PixelPos", "Shapes", "PixelSize", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "POIPointResultModel.ValidateResult" };
-
-                        if (listViewSide.View is GridView gridViewPOI_XY_UV1)
-                        {
-                            LeftGridViewColumnVisibilitys.Clear();
-                            gridViewPOI_XY_UV1.Columns.Clear();
-                            for (int i = 0; i < cieHeader.Count; i++)
-                                gridViewPOI_XY_UV1.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
-                        }
-
-                        listViewSide.ItemsSource = result.PoiResultCIExyuvDatas;
-
-                        foreach (var item in result.PoiResultCIExyuvDatas)
-                            DrawPoiPoint.Add(item.Point);
-                        AddPOIPoint(DrawPoiPoint);
-                        listViewSide.Visibility = Visibility.Visible;
-                        break;
-                    case AlgorithmResultType.POI_Y:
-                        if (result.PoiResultCIEYDatas == null)
-                        {
-                            result.PoiResultCIEYDatas = new ObservableCollection<PoiResultCIEYData>();
-                            List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
-                            foreach (var item in POIPointResultModels)
-                            {
-                                PoiResultCIEYData poiResultCIExyuvData = new(item);
-                                result.PoiResultCIEYDatas.Add(poiResultCIExyuvData);
-                            };
-                        }
-
-                        //亮度
-                        List<string> bdheadersY = new() { "Name", "PixelPos", "PixelSize", "Shapes", "Y" , "POIPointResultModel.ValidateResult" };
-                        List<string> headersY = new() { "名称", "位置", "大小", "形状", "Y", "Validate" };
-
-                        if (listViewSide.View is GridView gridViewY)
-                        {
-                            LeftGridViewColumnVisibilitys.Clear();
-                            gridViewY.Columns.Clear();
-                            for (int i = 0; i < headersY.Count; i++)
-                                gridViewY.Columns.Add(new GridViewColumn() { Header = headersY[i], DisplayMemberBinding = new Binding(bdheadersY[i]) });
-                        }
-
-                        listViewSide.ItemsSource = result.PoiResultCIEYDatas;
-
-                        DrawPoiPoint = new List<POIPoint>();
-                        foreach (var item in result.PoiResultCIEYDatas)
-                            DrawPoiPoint.Add(item.Point);
-                        AddPOIPoint(DrawPoiPoint);
-                        listViewSide.Visibility = Visibility.Visible;
-                        break;
-                    case AlgorithmResultType.FOV:
-                        listViewSide.Visibility = Visibility.Visible;
-
-                        if (result.SFRData == null)
-                        {
-                            result.FOVData = new ObservableCollection<FOVResultData>();
-                            List<AlgResultFOVModel> AlgResultFOVModels = AlgResultFOVDao.Instance.GetAllByPid(result.Id);
-                            foreach (var item in AlgResultFOVModels)
-                            {
-                                FOVResultData fOVResultData = new(item);
-                                result.FOVData.Add(fOVResultData);
-                            };
-                        }
-
-                        List<string> bdheadersFOV = new() { "Pattern", "Type", "Degrees" };
-                        List<string> headersFOV = new() { "Pattern", "Type", "Degrees" };
-
-                        if (listViewSide.View is GridView gridViewFOV)
-                        {
-                            LeftGridViewColumnVisibilitys.Clear();
-                            gridViewFOV.Columns.Clear();
-                            for (int i = 0; i < headersFOV.Count; i++)
-                                gridViewFOV.Columns.Add(new GridViewColumn() { Header = headersFOV[i], DisplayMemberBinding = new Binding(bdheadersFOV[i]) });
-                        }
-
-                        listViewSide.Visibility = Visibility.Visible;
-                        listViewSide.ItemsSource = result.FOVData;
-                        break;
-                    case AlgorithmResultType.SFR:
-                        listViewSide.Visibility = Visibility.Visible;
-
-                        if (result.SFRData == null)
-                        {
-                            result.SFRData = new ObservableCollection<SFRResultData>();
-                            List<AlgResultSFRModel> AlgResultSFRModels = AlgResultSFRDao.Instance.GetAllByPid(result.Id);
-                            foreach (var item in AlgResultSFRModels)
-                            {
-                                var Pdfrequencys = JsonConvert.DeserializeObject<float[]>(item.Pdfrequency);
-                                var PdomainSamplingDatas = JsonConvert.DeserializeObject<float[]>(item.PdomainSamplingData);
-                                for (int i = 0; i < Pdfrequencys.Length; i++)
+                                result.PoiResultDatas = new ObservableCollection<PoiResultData>();
+                                List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                                int id = 0;
+                                foreach (var item in POIPointResultModels)
                                 {
-                                    SFRResultData resultData = new(Pdfrequencys[i], PdomainSamplingDatas[i]);
-                                    result.SFRData.Add(resultData);
-                                }
-                            };
-                        }
-
-                        List<string> bdheadersSFR = new() { "pdfrequency", "pdomainSamplingData" };
-                        List<string> headersSFR = new() { "pdfrequency", "pdomainSamplingData" };
-
-                        if (listViewSide.View is GridView gridViewSFR)
-                        {
-                            LeftGridViewColumnVisibilitys.Clear();
-                            gridViewSFR.Columns.Clear();
-                            for (int i = 0; i < headersSFR.Count; i++)
-                                gridViewSFR.Columns.Add(new GridViewColumn() { Header = headersSFR[i], DisplayMemberBinding = new Binding(bdheadersSFR[i]) });
-                        }
-
-                        listViewSide.ItemsSource = result.SFRData;
-                        if (result.SFRData.Count > 0)
-                        {
-                            AddRect(new Rect(10, 10, 10, 10));
-                        }
-
-                        break;
-                    case AlgorithmResultType.MTF:
-                        listViewSide.Visibility = Visibility.Visible;
-                        if (result.MTFData == null)
-                        {
-                            result.MTFData = new ObservableCollection<MTFResultData>();
-                            List<POIPointResultModel> AlgResultMTFModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
-                            foreach (var item in AlgResultMTFModels)
-                            {
-                                MTFResultData mTFResultData = new(item);
-                                result.MTFData.Add(mTFResultData);
+                                    PoiResultData poiResult = new(item) { Id = id++ };
+                                    result.PoiResultDatas.Add(poiResult);
+                                };
                             }
-                        }
 
-                        List<string> bdheadersMTF = new() { "PixelPos", "PixelSize", "Shapes", "Articulation" , "AlgResultMTFModel.ValidateResult" };
-                        List<string> headersMTF = new() { "位置", "大小", "形状", "MTF","Value" };
+                            cieBdHeader = new List<string> { "Name", "PixelPos", "PixelSize", "Shapes", "POIPointResultModel.ValidateResult" };
+                            cieHeader = new List<string> { "名称", "位置", "大小", "形状", "Validate" };
 
-                        if (listViewSide.View is GridView gridViewMTF)
-                        {
-                            LeftGridViewColumnVisibilitys.Clear();
-                            gridViewMTF.Columns.Clear();
-                            for (int i = 0; i < headersMTF.Count; i++)
-                                gridViewMTF.Columns.Add(new GridViewColumn() { Header = headersMTF[i], DisplayMemberBinding = new Binding(bdheadersMTF[i]) });
-                        }
-
-                        listViewSide.ItemsSource = result.MTFData;
-                        foreach (var item in result.MTFData)
-                        {
-                            DrawPoiPoint.Add(item.Point);
-                        }
-                        AddPOIPoint(DrawPoiPoint);
-
-                        break;
-                    case AlgorithmResultType.Ghost:
-                        if (result.GhostData == null)
-                        {
-                            result.GhostData = new ObservableCollection<GhostResultData>();
-                            List<AlgResultGhostModel> AlgResultGhostModels = AlgResultGhostDao.Instance.GetAllByPid(result.Id);
-                            foreach (var item in AlgResultGhostModels)
+                            if (listViewSide.View is GridView gridViewPOI)
                             {
-                                GhostResultData ghostResultData = new(item);
-                                result.GhostData.Add(ghostResultData);
+                                LeftGridViewColumnVisibilitys.Clear();
+                                gridViewPOI.Columns.Clear();
+                                for (int i = 0; i < cieHeader.Count; i++)
+                                    gridViewPOI.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
                             }
-                        }
-                        try
-                        {
-                            string GhostPixels = result.GhostData[0].GhostPixels;
-                            List<List<Point1>> GhostPixel = JsonConvert.DeserializeObject<List<List<Point1>>>(GhostPixels);
-                            int[] Ghost_pixel_X;
-                            int[] Ghost_pixel_Y;
-                            List<Point1> Points = new();
-                            foreach (var item in GhostPixel)
-                                foreach (var item1 in item)
-                                    Points.Add(item1);
 
-                            if (Points != null)
+                            listViewSide.ItemsSource = result.PoiResultDatas;
+
+                            foreach (var item in result.PoiResultDatas)
+                                DrawPoiPoint.Add(item.Point);
+                            AddPOIPoint(DrawPoiPoint);
+                            listViewSide.Visibility = Visibility.Visible;
+                            break;
+                        case AlgorithmResultType.LEDStripDetection:
+                        case AlgorithmResultType.POI_XYZ:
+                            if (result.PoiResultCIExyuvDatas == null)
                             {
-                                Ghost_pixel_X = new int[Points.Count];
-                                Ghost_pixel_Y = new int[Points.Count];
-                                for (int i = 0; i < Points.Count; i++)
+                                result.PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
+                                List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                                int id = 0;
+                                foreach (var item in POIPointResultModels)
                                 {
-                                    Ghost_pixel_X[i] = (int)Points[i].X;
-                                    Ghost_pixel_Y[i] = (int)Points[i].Y;
+                                    PoiResultCIExyuvData poiResultCIExyuvData = new(item) { Id = id++ };
+                                    result.PoiResultCIExyuvDatas.Add(poiResultCIExyuvData);
+                                };
+                            }
+                            cieHeader = new List<string> { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Shape, Properties.Resources.Size, "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "Validate" };
+
+                            if (result.ResultType == AlgorithmResultType.LEDStripDetection)
+                            {
+                                cieHeader = new List<string> { "Id", Properties.Resources.Name, Properties.Resources.Position, Properties.Resources.Shape };
+                            }
+
+                            cieBdHeader = new List<string> { "Id", "Name", "PixelPos", "Shapes", "PixelSize", "CCT", "Wave", "X", "Y", "Z", "u", "v", "x", "y", "POIPointResultModel.ValidateResult" };
+
+                            if (listViewSide.View is GridView gridViewPOI_XY_UV1)
+                            {
+                                LeftGridViewColumnVisibilitys.Clear();
+                                gridViewPOI_XY_UV1.Columns.Clear();
+                                for (int i = 0; i < cieHeader.Count; i++)
+                                    gridViewPOI_XY_UV1.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
+                            }
+
+                            listViewSide.ItemsSource = result.PoiResultCIExyuvDatas;
+
+                            foreach (var item in result.PoiResultCIExyuvDatas)
+                                DrawPoiPoint.Add(item.Point);
+                            AddPOIPoint(DrawPoiPoint);
+                            listViewSide.Visibility = Visibility.Visible;
+                            break;
+                        case AlgorithmResultType.POI_Y:
+                            if (result.PoiResultCIEYDatas == null)
+                            {
+                                result.PoiResultCIEYDatas = new ObservableCollection<PoiResultCIEYData>();
+                                List<POIPointResultModel> POIPointResultModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                                foreach (var item in POIPointResultModels)
+                                {
+                                    PoiResultCIEYData poiResultCIExyuvData = new(item);
+                                    result.PoiResultCIEYDatas.Add(poiResultCIExyuvData);
+                                };
+                            }
+
+                            //亮度
+                            List<string> bdheadersY = new() { "Name", "PixelPos", "PixelSize", "Shapes", "Y", "POIPointResultModel.ValidateResult" };
+                            List<string> headersY = new() { "名称", "位置", "大小", "形状", "Y", "Validate" };
+
+                            if (listViewSide.View is GridView gridViewY)
+                            {
+                                LeftGridViewColumnVisibilitys.Clear();
+                                gridViewY.Columns.Clear();
+                                for (int i = 0; i < headersY.Count; i++)
+                                    gridViewY.Columns.Add(new GridViewColumn() { Header = headersY[i], DisplayMemberBinding = new Binding(bdheadersY[i]) });
+                            }
+
+                            listViewSide.ItemsSource = result.PoiResultCIEYDatas;
+
+                            DrawPoiPoint = new List<POIPoint>();
+                            foreach (var item in result.PoiResultCIEYDatas)
+                                DrawPoiPoint.Add(item.Point);
+                            AddPOIPoint(DrawPoiPoint);
+                            listViewSide.Visibility = Visibility.Visible;
+                            break;
+                        case AlgorithmResultType.FOV:
+                            listViewSide.Visibility = Visibility.Visible;
+
+                            if (result.SFRData == null)
+                            {
+                                result.FOVData = new ObservableCollection<FOVResultData>();
+                                List<AlgResultFOVModel> AlgResultFOVModels = AlgResultFOVDao.Instance.GetAllByPid(result.Id);
+                                foreach (var item in AlgResultFOVModels)
+                                {
+                                    FOVResultData fOVResultData = new(item);
+                                    result.FOVData.Add(fOVResultData);
+                                };
+                            }
+
+                            List<string> bdheadersFOV = new() { "Pattern", "Type", "Degrees" };
+                            List<string> headersFOV = new() { "Pattern", "Type", "Degrees" };
+
+                            if (listViewSide.View is GridView gridViewFOV)
+                            {
+                                LeftGridViewColumnVisibilitys.Clear();
+                                gridViewFOV.Columns.Clear();
+                                for (int i = 0; i < headersFOV.Count; i++)
+                                    gridViewFOV.Columns.Add(new GridViewColumn() { Header = headersFOV[i], DisplayMemberBinding = new Binding(bdheadersFOV[i]) });
+                            }
+
+                            listViewSide.Visibility = Visibility.Visible;
+                            listViewSide.ItemsSource = result.FOVData;
+                            break;
+                        case AlgorithmResultType.SFR:
+                            listViewSide.Visibility = Visibility.Visible;
+
+                            if (result.SFRData == null)
+                            {
+                                result.SFRData = new ObservableCollection<SFRResultData>();
+                                List<AlgResultSFRModel> AlgResultSFRModels = AlgResultSFRDao.Instance.GetAllByPid(result.Id);
+                                foreach (var item in AlgResultSFRModels)
+                                {
+                                    var Pdfrequencys = JsonConvert.DeserializeObject<float[]>(item.Pdfrequency);
+                                    var PdomainSamplingDatas = JsonConvert.DeserializeObject<float[]>(item.PdomainSamplingData);
+                                    for (int i = 0; i < Pdfrequencys.Length; i++)
+                                    {
+                                        SFRResultData resultData = new(Pdfrequencys[i], PdomainSamplingDatas[i]);
+                                        result.SFRData.Add(resultData);
+                                    }
+                                };
+                            }
+
+                            List<string> bdheadersSFR = new() { "pdfrequency", "pdomainSamplingData" };
+                            List<string> headersSFR = new() { "pdfrequency", "pdomainSamplingData" };
+
+                            if (listViewSide.View is GridView gridViewSFR)
+                            {
+                                LeftGridViewColumnVisibilitys.Clear();
+                                gridViewSFR.Columns.Clear();
+                                for (int i = 0; i < headersSFR.Count; i++)
+                                    gridViewSFR.Columns.Add(new GridViewColumn() { Header = headersSFR[i], DisplayMemberBinding = new Binding(bdheadersSFR[i]) });
+                            }
+
+                            listViewSide.ItemsSource = result.SFRData;
+                            if (result.SFRData.Count > 0)
+                            {
+                                AddRect(new Rect(10, 10, 10, 10));
+                            }
+
+                            break;
+                        case AlgorithmResultType.MTF:
+                            listViewSide.Visibility = Visibility.Visible;
+                            if (result.MTFData == null)
+                            {
+                                result.MTFData = new ObservableCollection<MTFResultData>();
+                                List<POIPointResultModel> AlgResultMTFModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                                foreach (var item in AlgResultMTFModels)
+                                {
+                                    MTFResultData mTFResultData = new(item);
+                                    result.MTFData.Add(mTFResultData);
                                 }
                             }
-                            else
+
+                            List<string> bdheadersMTF = new() { "PixelPos", "PixelSize", "Shapes", "Articulation", "AlgResultMTFModel.ValidateResult" };
+                            List<string> headersMTF = new() { "位置", "大小", "形状", "MTF", "Value" };
+
+                            if (listViewSide.View is GridView gridViewMTF)
                             {
-                                Ghost_pixel_X = new int[1] { 1 };
-                                Ghost_pixel_Y = new int[1] { 1 };
+                                LeftGridViewColumnVisibilitys.Clear();
+                                gridViewMTF.Columns.Clear();
+                                for (int i = 0; i < headersMTF.Count; i++)
+                                    gridViewMTF.Columns.Add(new GridViewColumn() { Header = headersMTF[i], DisplayMemberBinding = new Binding(bdheadersMTF[i]) });
                             }
 
-                            string LedPixels = result.GhostData[0].LedPixels;
-                            List<List<Point1>> LedPixel = JsonConvert.DeserializeObject<List<List<Point1>>>(LedPixels);
-                            int[] LED_pixel_X;
-                            int[] LED_pixel_Y;
-
-                            Points.Clear();
-                            foreach (var item in LedPixel)
-                                foreach (var item1 in item)
-                                    Points.Add(item1);
-
-                            if (Points != null)
+                            listViewSide.ItemsSource = result.MTFData;
+                            foreach (var item in result.MTFData)
                             {
-                                LED_pixel_X = new int[Points.Count];
-                                LED_pixel_Y = new int[Points.Count];
-                                for (int i = 0; i < Points.Count; i++)
+                                DrawPoiPoint.Add(item.Point);
+                            }
+                            AddPOIPoint(DrawPoiPoint);
+
+                            break;
+                        case AlgorithmResultType.Ghost:
+                            if (result.GhostData == null)
+                            {
+                                result.GhostData = new ObservableCollection<GhostResultData>();
+                                List<AlgResultGhostModel> AlgResultGhostModels = AlgResultGhostDao.Instance.GetAllByPid(result.Id);
+                                foreach (var item in AlgResultGhostModels)
                                 {
-                                    LED_pixel_X[i] = (int)Points[i].X;
-                                    LED_pixel_Y[i] = (int)Points[i].Y;
+                                    GhostResultData ghostResultData = new(item);
+                                    result.GhostData.Add(ghostResultData);
                                 }
                             }
-                            else
+                            try
                             {
-                                LED_pixel_X = new int[1] { 1 };
-                                LED_pixel_Y = new int[1] { 1 };
+                                string GhostPixels = result.GhostData[0].GhostPixels;
+                                List<List<Point1>> GhostPixel = JsonConvert.DeserializeObject<List<List<Point1>>>(GhostPixels);
+                                int[] Ghost_pixel_X;
+                                int[] Ghost_pixel_Y;
+                                List<Point1> Points = new();
+                                foreach (var item in GhostPixel)
+                                    foreach (var item1 in item)
+                                        Points.Add(item1);
+
+                                if (Points != null)
+                                {
+                                    Ghost_pixel_X = new int[Points.Count];
+                                    Ghost_pixel_Y = new int[Points.Count];
+                                    for (int i = 0; i < Points.Count; i++)
+                                    {
+                                        Ghost_pixel_X[i] = (int)Points[i].X;
+                                        Ghost_pixel_Y[i] = (int)Points[i].Y;
+                                    }
+                                }
+                                else
+                                {
+                                    Ghost_pixel_X = new int[1] { 1 };
+                                    Ghost_pixel_Y = new int[1] { 1 };
+                                }
+
+                                string LedPixels = result.GhostData[0].LedPixels;
+                                List<List<Point1>> LedPixel = JsonConvert.DeserializeObject<List<List<Point1>>>(LedPixels);
+                                int[] LED_pixel_X;
+                                int[] LED_pixel_Y;
+
+                                Points.Clear();
+                                foreach (var item in LedPixel)
+                                    foreach (var item1 in item)
+                                        Points.Add(item1);
+
+                                if (Points != null)
+                                {
+                                    LED_pixel_X = new int[Points.Count];
+                                    LED_pixel_Y = new int[Points.Count];
+                                    for (int i = 0; i < Points.Count; i++)
+                                    {
+                                        LED_pixel_X[i] = (int)Points[i].X;
+                                        LED_pixel_Y[i] = (int)Points[i].Y;
+                                    }
+                                }
+                                else
+                                {
+                                    LED_pixel_X = new int[1] { 1 };
+                                    LED_pixel_Y = new int[1] { 1 };
+                                }
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    ImageView.OpenGhostImage(result.FilePath, LED_pixel_X, LED_pixel_Y, Ghost_pixel_X, Ghost_pixel_Y);
+                                });
                             }
-                            Application.Current.Dispatcher.Invoke(() =>
+                            catch (Exception ex)
                             {
-                                ImageView.OpenGhostImage(result.FilePath, LED_pixel_X, LED_pixel_Y, Ghost_pixel_X, Ghost_pixel_Y);
-                            });
-                        }
-                        catch (Exception ex)
-                        {
-                            MessageBox.Show(ex.Message);
-                        }
-
-
-                        listViewSide.Visibility = Visibility.Visible;
-                        List<string> bdheadersGhost = new() { "LedCenters", "LedBlobGray", "GhostAvrGray" };
-                        List<string> headersGhost = new() { "质心坐标", "光斑灰度", "鬼影灰度" };
-
-                        if (listViewSide.View is GridView gridViewGhost)
-                        {
-                            LeftGridViewColumnVisibilitys.Clear();
-                            gridViewGhost.Columns.Clear();
-                            for (int i = 0; i < headersGhost.Count; i++)
-                                gridViewGhost.Columns.Add(new GridViewColumn() { Header = headersGhost[i], DisplayMemberBinding = new Binding(bdheadersGhost[i]) });
-                        }
-
-                        listViewSide.ItemsSource = result.GhostData;
-                        break;
-                    case AlgorithmResultType.Distortion:
-                        listViewSide.Visibility = Visibility.Visible;
-
-                        if (result.DistortionData == null)
-                        {
-                            result.DistortionData = new ObservableCollection<DistortionResultData>();
-                            var Distortions = AlgResultDistortionDao.Instance.GetAllByPid(result.Id);
-                            foreach (var item in Distortions)
-                            {
-                                DistortionResultData distortionResultData = new(item);
-                                result.DistortionData.Add(distortionResultData);
+                                MessageBox.Show(ex.Message);
                             }
-                        }
-                        List<string> bdheadersDis = new() { "DisTypeDesc", "SlopeTypeDesc", "LayoutTypeDesc", "CornerTypeDesc", "MaxRatio" };
-                        List<string> headersDis = new() { "类型", "斜率", "布点", "角点", "畸变率" };
 
-                        if (listViewSide.View is GridView gridViewDis)
-                        {
-                            LeftGridViewColumnVisibilitys.Clear();
-                            gridViewDis.Columns.Clear();
-                            for (int i = 0; i < headersDis.Count; i++)
-                                gridViewDis.Columns.Add(new GridViewColumn() { Header = headersDis[i], DisplayMemberBinding = new Binding(bdheadersDis[i]) });
-                        }
-                        listViewSide.ItemsSource = result.DistortionData;
-                        if (result.DistortionData.Count > 0)
-                        {
-                            List<Point> points = new();
-                            foreach (var item in result.DistortionData[0].FinalPoints)
+
+                            listViewSide.Visibility = Visibility.Visible;
+                            List<string> bdheadersGhost = new() { "LedCenters", "LedBlobGray", "GhostAvrGray" };
+                            List<string> headersGhost = new() { "质心坐标", "光斑灰度", "鬼影灰度" };
+
+                            if (listViewSide.View is GridView gridViewGhost)
                             {
-                                points.Add(new Point(item.X, item.Y));
+                                LeftGridViewColumnVisibilitys.Clear();
+                                gridViewGhost.Columns.Clear();
+                                for (int i = 0; i < headersGhost.Count; i++)
+                                    gridViewGhost.Columns.Add(new GridViewColumn() { Header = headersGhost[i], DisplayMemberBinding = new Binding(bdheadersGhost[i]) });
                             }
-                            AddPoint(points);
-                        }
 
-                        break;
-                    case AlgorithmResultType.LedCheck:
-                        listViewSide.Visibility = Visibility.Visible;
-                        if (result.LedResultDatas == null)
-                        {
-                            result.LedResultDatas = new ObservableCollection<LedResultData>();
-                            List<POIPointResultModel> AlgResultLedcheckModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
-                            foreach (var item in AlgResultLedcheckModels)
+                            listViewSide.ItemsSource = result.GhostData;
+                            break;
+                        case AlgorithmResultType.Distortion:
+                            listViewSide.Visibility = Visibility.Visible;
+
+                            if (result.DistortionData == null)
                             {
-                                LedResultData ledResultData = new(new Point((double)item.PoiX, (double)item.PoiY), (double)item.PoiWidth / 2);
-                                result.LedResultDatas.Add(ledResultData);
-                            };
-                        }
+                                result.DistortionData = new ObservableCollection<DistortionResultData>();
+                                var Distortions = AlgResultDistortionDao.Instance.GetAllByPid(result.Id);
+                                foreach (var item in Distortions)
+                                {
+                                    DistortionResultData distortionResultData = new(item);
+                                    result.DistortionData.Add(distortionResultData);
+                                }
+                            }
+                            List<string> bdheadersDis = new() { "DisTypeDesc", "SlopeTypeDesc", "LayoutTypeDesc", "CornerTypeDesc", "MaxRatio" };
+                            List<string> headersDis = new() { "类型", "斜率", "布点", "角点", "畸变率" };
 
-                        bdheadersDis = new List<string> { "Point", "Radius" };
-                        headersDis = new List<string> { "坐标", "半径" };
-                        if (listViewSide.View is GridView gridView)
-                        {
+                            if (listViewSide.View is GridView gridViewDis)
+                            {
+                                LeftGridViewColumnVisibilitys.Clear();
+                                gridViewDis.Columns.Clear();
+                                for (int i = 0; i < headersDis.Count; i++)
+                                    gridViewDis.Columns.Add(new GridViewColumn() { Header = headersDis[i], DisplayMemberBinding = new Binding(bdheadersDis[i]) });
+                            }
+                            listViewSide.ItemsSource = result.DistortionData;
+                            if (result.DistortionData.Count > 0)
+                            {
+                                List<Point> points = new();
+                                foreach (var item in result.DistortionData[0].FinalPoints)
+                                {
+                                    points.Add(new Point(item.X, item.Y));
+                                }
+                                AddPoint(points);
+                            }
+
+                            break;
+                        case AlgorithmResultType.LedCheck:
+                            listViewSide.Visibility = Visibility.Visible;
+                            if (result.LedResultDatas == null)
+                            {
+                                result.LedResultDatas = new ObservableCollection<LedResultData>();
+                                List<POIPointResultModel> AlgResultLedcheckModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                                foreach (var item in AlgResultLedcheckModels)
+                                {
+                                    LedResultData ledResultData = new(new Point((double)item.PoiX, (double)item.PoiY), (double)item.PoiWidth / 2);
+                                    result.LedResultDatas.Add(ledResultData);
+                                };
+                            }
+
+                            bdheadersDis = new List<string> { "Point", "Radius" };
+                            headersDis = new List<string> { "坐标", "半径" };
                             LeftGridViewColumnVisibilitys.Clear();
                             gridView.Columns.Clear();
                             for (int i = 0; i < headersDis.Count; i++)
                                 gridView.Columns.Add(new GridViewColumn() { Header = headersDis[i], DisplayMemberBinding = new Binding(bdheadersDis[i]) });
-                        }
-                        listViewSide.ItemsSource = result.LedResultDatas;
-                        if (result.LedResultDatas.Count > 0)
-                        {
-                            List<Point> points = new();
-                            foreach (var item in result.LedResultDatas)
+
+                            listViewSide.ItemsSource = result.LedResultDatas;
+                            if (result.LedResultDatas.Count > 0)
                             {
-                                DrawingVisualCircle Circle = new();
-                                Circle.Attribute.Center = item.Point;
-                                Circle.Attribute.Radius = item.Radius;
-                                Circle.Attribute.Brush = Brushes.Transparent;
-                                Circle.Attribute.Pen = new Pen(Brushes.Red, 2);
-                                Circle.Render();
-                                ImageView.ImageShow.AddVisual(Circle);
+                                List<Point> points = new();
+                                foreach (var item in result.LedResultDatas)
+                                {
+                                    DrawingVisualCircle Circle = new();
+                                    Circle.Attribute.Center = item.Point;
+                                    Circle.Attribute.Radius = item.Radius;
+                                    Circle.Attribute.Brush = Brushes.Transparent;
+                                    Circle.Attribute.Pen = new Pen(Brushes.Red, 2);
+                                    Circle.Render();
+                                    ImageView.ImageShow.AddVisual(Circle);
+                                }
                             }
-                        }
-                        break;
-                    case AlgorithmResultType.BuildPOI:
-                        listViewSide.Visibility = Visibility.Collapsed;
-                        if (result.BuildPoiResultData == null)
-                        {
-                            result.BuildPoiResultData = new ObservableCollection<BuildPoiResultData>();
-                            List<POIPointResultModel> AlgResultMTFModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
-                            foreach (var item in AlgResultMTFModels)
+                            break;
+                        case AlgorithmResultType.BuildPOI:
+                            listViewSide.Visibility = Visibility.Collapsed;
+                            if (result.BuildPoiResultData == null)
                             {
-                                BuildPoiResultData mTFResultData = new(item);
-                                result.BuildPoiResultData.Add(mTFResultData);
+                                result.BuildPoiResultData = new ObservableCollection<BuildPoiResultData>();
+                                List<POIPointResultModel> AlgResultMTFModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
+                                foreach (var item in AlgResultMTFModels)
+                                {
+                                    BuildPoiResultData mTFResultData = new(item);
+                                    result.BuildPoiResultData.Add(mTFResultData);
+                                }
                             }
-                        }
-                        listViewSide.ItemsSource = result.BuildPoiResultData;
-                        foreach (var item in result.BuildPoiResultData)
-                        {
-                            DrawPoiPoint.Add(item.Point);
-                        }
-                        AddPOIPoint(DrawPoiPoint);
-                        break;
-                    case AlgorithmResultType.Compliance_Contrast:
-                    case AlgorithmResultType.Compliance_Contrast_CIE_Y:
-                    case AlgorithmResultType.Compliance_Contrast_CIE_XYZ:
-                    case AlgorithmResultType.Compliance_Math:
-                    case AlgorithmResultType.Compliance_Math_CIE_Y:
-                    case AlgorithmResultType.Compliance_Math_CIE_XYZ:
-                        break;
-                    default:
-                        break;
+                            listViewSide.ItemsSource = result.BuildPoiResultData;
+                            foreach (var item in result.BuildPoiResultData)
+                            {
+                                DrawPoiPoint.Add(item.Point);
+                            }
+                            AddPOIPoint(DrawPoiPoint);
+                            break;
+                        case AlgorithmResultType.Compliance_Contrast:
+                        case AlgorithmResultType.Compliance_Math:
+                        case AlgorithmResultType.Compliance_Contrast_CIE_Y:
+                        case AlgorithmResultType.Compliance_Math_CIE_Y:
+                            if (result.LedResultDatas == null)
+                            {
+                                result.ComplianceYDatas = ComplianceYDao.Instance.GetAllByPid(result.Id);
+                            }
+
+                            //亮度
+                            List<string> ComplianceYHeader = new() { "名称", "位置", "大小", "形状", "Y", "Validate" };
+                            List<string> ComplianceYHeaderBind = new() { "Name", "PixelPos", "PixelSize", "Shapes", "Y", "POIPointResultModel.ValidateResult" };
+
+                            listViewSide.Visibility = Visibility.Visible;
+                            LeftGridViewColumnVisibilitys.Clear();
+                            gridView.Columns.Clear();
+                            for (int i = 0; i < ComplianceYHeader.Count; i++)
+                                gridView.Columns.Add(new GridViewColumn() { Header = ComplianceYHeader[i], DisplayMemberBinding = new Binding(ComplianceYHeaderBind[i]) });
+
+                            listViewSide.ItemsSource = result.ComplianceYDatas;
+
+                            break;
+                        case AlgorithmResultType.Compliance_Contrast_CIE_XYZ:
+                        case AlgorithmResultType.Compliance_Math_CIE_XYZ:
+                            listViewSide.Visibility = Visibility.Visible;
+                            if (result.LedResultDatas == null)
+                            {
+                                result.ComplianceXYZDatas = ComplianceXYZDao.Instance.GetAllByPid(result.Id);
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+
                 }
 
             }

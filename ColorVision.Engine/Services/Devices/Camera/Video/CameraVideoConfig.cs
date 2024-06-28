@@ -28,5 +28,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             }
         }
         private int _Port = 9002;
+
+        public long Capacity { get => _Capacity; set { _Capacity = value; NotifyPropertyChanged(); } }
+        private long _Capacity = 1073741824;
     }
 }
