@@ -213,20 +213,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     case DeviceStatusType.Unknown:
                         SetVisibility(TextBlockUnknow, Visibility.Visible);
                         break;
-                    case DeviceStatusType.OffLine:
-                        break;
-                    case DeviceStatusType.UnInit:
-                        break;
-                    case DeviceStatusType.Closed:
-                        break;
-                    case DeviceStatusType.LiveOpened:
-                    case DeviceStatusType.Opened:
-                        SetVisibility(StackPanelContent, Visibility.Visible);
-                        break;
-                    case DeviceStatusType.Closing:
-                    case DeviceStatusType.Opening:
                     default:
-                        // No specific action needed
+                        SetVisibility(StackPanelContent, Visibility.Visible);
                         break;
                 }
             }
