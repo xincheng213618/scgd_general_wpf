@@ -29,9 +29,9 @@ namespace ColorVision.Engine.Services
                 }
             }
         }
-        public static IPendingHandler SendCommand(MsgRecord msgRecord, string Msg)
+        public static IPendingHandler SendCommand(MsgRecord msgRecord, string Msg,bool canCancel =true)
         {
-            IPendingHandler handler = PendingBox.Show(Application.Current.MainWindow, Msg, true);
+            IPendingHandler handler = PendingBox.Show(Application.Current.MainWindow, Msg, canCancel);
             var temp = Application.Current.MainWindow.Cursor;
             Application.Current.MainWindow.Cursor = Cursors.Wait;
             MsgRecordStateChangedHandler msgRecordStateChangedHandler;

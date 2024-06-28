@@ -361,7 +361,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void AutoFocus_Click(object sender, RoutedEventArgs e)
         {
             MsgRecord msgRecord = DService.AutoFocus();
-            ServicesHelper.SendCommand(msgRecord, "自动聚焦");
+            ServicesHelper.SendCommand(msgRecord, "自动聚焦",false);
         }
 
 
