@@ -230,7 +230,7 @@
                                         <TextBox Text="{Binding VideoConfig.ResizeRatio}"/>
                                     </DockPanel>
                                     <DockPanel>
-                                        <TextBlock Text="缓存大小:" Width="120"/>
+                                        <TextBlock Text="缓存大小(Byte):" Width="120"/>
                                         <TextBox  Text="{Binding VideoConfig.Capacity}"/>
                                     </DockPanel>
                                 </StackPanel>
