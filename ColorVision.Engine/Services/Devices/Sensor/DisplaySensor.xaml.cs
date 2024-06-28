@@ -65,9 +65,11 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                         SetVisibility(TextBlockOffLine, Visibility.Visible);
                         break;
                     case DeviceStatusType.UnInit:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
                         SetVisibility(ButtonOpen, Visibility.Visible);
                         break;
                     case DeviceStatusType.Closed:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
                         SetVisibility(ButtonOpen, Visibility.Visible);
                         break;
                     case DeviceStatusType.LiveOpened:
@@ -78,6 +80,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                     case DeviceStatusType.Closing:
                     case DeviceStatusType.Opening:
                     default:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
                         break;
                 }
             }
