@@ -82,7 +82,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             MsgSend msg = new()
             {
                 EventName = "SetParam",
-                ServiceName = Config.Code,
             };
             PublishAsyncClient(msg);
             return true;
@@ -93,7 +92,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             MsgSend msg = new()
             {
                 EventName = MQTTSMUEventEnum.Event_Open,
-                ServiceName = Config.Code,
                 Params = new SMUOpenParam() { DevName = devName, IsNet = isNet, }
             };
             return PublishAsyncClient(msg);
@@ -104,7 +102,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             MsgSend msg = new()
             {
                 EventName = MQTTSMUEventEnum.Event_GetData,
-                ServiceName = Config.Code,
                 Params = new SMUGetDataParam() { IsSourceV = isSourceV, MeasureValue = measureVal, LimitValue = lmtVal }
             };
             PublishAsyncClient(msg);
@@ -116,7 +113,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             MsgSend msg = new()
             {
                 EventName = MQTTSMUEventEnum.Event_Close,
-                ServiceName = Config.Code,
             };
             return PublishAsyncClient(msg);
         }
@@ -129,7 +125,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             MsgSend msg = new()
             {
                 EventName = MQTTSMUEventEnum.Event_Scan,
-                ServiceName = Config.Code,
                 SerialNumber = sn,
                 Params = Params,
             };
@@ -142,7 +137,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             MsgSend msg = new()
             {
                 EventName = MQTTSMUEventEnum.Event_CloseOutput,
-                ServiceName = Config.Code,
             };
             PublishAsyncClient(msg);
             return true;
