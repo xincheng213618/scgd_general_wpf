@@ -53,8 +53,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
         [Column("value")]
         public string? LicenseValue { get; set; }
 
+        [ColumnIgnore]
         public string? LicenseContent { get => Tool.Base64Decode(LicenseValue?? string.Empty); }
-
+        [ColumnIgnore]
         public ColorVisionLincense ColorVisionLincense { get => JsonConvert.DeserializeObject<ColorVisionLincense>(LicenseContent??string.Empty)?? new ColorVisionLincense(); }
         [Column("model")]
         public string? Model { get; set; }
@@ -66,7 +67,6 @@ namespace ColorVision.Engine.Services.PhyCameras.Dao
         public string? CusTomerName { get; set; }
         [Column("create_date")]
         public DateTime? CreateDate { get; set; }
-
     }
 
     public class CameraLicenseDao : BaseTableDao<CameraLicenseModel>

@@ -19,6 +19,10 @@ namespace ColorVision.Engine.MySql.ORM
             Name = name;
         }
     }
+    [AttributeUsage(AttributeTargets.Property)]
+    public class ColumnIgnoreAttribute : Attribute
+    {
+    }
 
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public class TableAttribute : Attribute
@@ -33,19 +37,17 @@ namespace ColorVision.Engine.MySql.ORM
 
     public static class ReflectionHelper
     {
-
-        public static BaseTableDao<T>? Create<T>() where T :IPKModel, new()
+        public static BaseTableDao<T>? Create<T>() where T : IPKModel, new()
         {
             var type = typeof(BaseTableDao<>);
-            var TableName = GetTableName(type);
+            var tableName = GetTableName(type);
 
             var genericType = type.MakeGenericType(typeof(T));
-            return (BaseTableDao<T>)Activator.CreateInstance(genericType, TableName);
+            return (BaseTableDao<T>)Activator.CreateInstance(genericType, tableName);
         }
 
-
-
         private static readonly Dictionary<Type, PropertyInfo[]> PropertyCache = new Dictionary<Type, PropertyInfo[]>();
+
         public static T GetModelFromDataRow<T>(DataRow row) where T : new()
         {
             T model = new T();
@@ -53,6 +55,8 @@ namespace ColorVision.Engine.MySql.ORM
 
             foreach (var prop in properties)
             {
+                if (ShouldIgnoreProperty(prop)) continue;
+
                 var columnName = GetColumnName(prop);
                 if (row.Table.Columns.Contains(columnName) && row[columnName] != DBNull.Value)
                 {
@@ -83,9 +87,11 @@ namespace ColorVision.Engine.MySql.ORM
         {
             foreach (var prop in typeof(T).GetProperties())
             {
+                if (ShouldIgnoreProperty(prop)) continue;
+
                 var columnName = GetColumnName(prop);
                 var value = prop.GetValue(model);
-                ///自增需要从1开始
+                // 自增需要从1开始
                 if (columnName.Equals("id", StringComparison.OrdinalIgnoreCase) && value is int intValue && intValue >= 0)
                 {
                     row[columnName] = DBNull.Value;
@@ -102,11 +108,14 @@ namespace ColorVision.Engine.MySql.ORM
         {
             foreach (var prop in typeof(T).GetProperties())
             {
+                if (ShouldIgnoreProperty(prop)) continue;
+
                 var columnName = GetColumnName(prop);
                 table.Columns.Add(columnName, Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType);
             }
             return table;
         }
+
         private static PropertyInfo[] GetProperties(Type type)
         {
             if (!PropertyCache.TryGetValue(type, out var properties))
@@ -116,7 +125,8 @@ namespace ColorVision.Engine.MySql.ORM
             }
             return properties;
         }
-        private static string GetColumnName(System.Reflection.PropertyInfo prop)
+
+        private static string GetColumnName(PropertyInfo prop)
         {
             var attribute = prop.GetCustomAttributes(typeof(ColumnAttribute), false).FirstOrDefault() as ColumnAttribute;
             return attribute?.Name ?? prop.Name;
@@ -126,6 +136,11 @@ namespace ColorVision.Engine.MySql.ORM
         {
             var attribute = type.GetCustomAttributes(typeof(TableAttribute), false).FirstOrDefault() as TableAttribute;
             return attribute?.TableName ?? type.Name;
+        }
+
+        private static bool ShouldIgnoreProperty(PropertyInfo prop)
+        {
+            return prop.GetCustomAttributes(typeof(ColumnIgnoreAttribute), false).Any();
         }
     }
 
