@@ -140,7 +140,7 @@ namespace ColorVision.Engine.MySql.ORM
 
         private static bool ShouldIgnoreProperty(PropertyInfo prop)
         {
-            return prop.GetCustomAttributes(typeof(ColumnIgnoreAttribute), false).Any();
+            return prop.GetCustomAttributes(typeof(ColumnIgnoreAttribute), false).Length != 0;
         }
     }
 
