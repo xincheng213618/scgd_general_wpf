@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using System.Collections.Generic;
 using System;
+using Newtonsoft.Json;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
 {
@@ -47,8 +48,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         }
         private long _Capacity = 1073741824;
 
+        [JsonIgnore]
         public string CapacityText => MemorySizeText(_Capacity);
 
+        [JsonIgnore]
         public string CapacityInput
         {
             get => MemorySizeText(_Capacity);
@@ -86,7 +89,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
                     double value = (double)memorySize / unit.Item1;
                     if (memorySize < unit.Item1 * 10)
                     {
-                        return $"{value:F1} {unit.Item2}";
+                        return $"{value:F3} {unit.Item2}";
                     }
                     return $"{(long)value} {unit.Item2}";
                 }
@@ -107,18 +110,23 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
             var units = new Dictionary<string, long>
         {
             { "PB", 1024L * 1024 * 1024 * 1024 * 1024 },
+            { "P", 1024L * 1024 * 1024 * 1024 * 1024 },
             { "TB", 1024L * 1024 * 1024 * 1024 },
+            { "T", 1024L * 1024* 1024  * 1024},
             { "GB", 1024L * 1024 * 1024 },
+            { "G", 1024L * 1024* 1024 },
             { "MB", 1024L * 1024 },
+            { "M", 1024L * 1024 }, // Adding "M" for MB
             { "KB", 1024L },
+            { "K", 1024L * 1024 },
             { "B", 1L }
         };
 
             foreach (var unit in units)
             {
-                if (input.EndsWith(unit.Key))
+                if (input.EndsWith(unit.Key,StringComparison.CurrentCulture))
                 {
-                    if (double.TryParse(input.Substring(0, input.Length - unit.Key.Length), out double value))
+                    if (double.TryParse(input.AsSpan(0, input.Length - unit.Key.Length), out double value))
                     {
                         memorySize = (long)(value * unit.Value);
                         return true;
