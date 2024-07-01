@@ -73,20 +73,9 @@ namespace ColorVision.Solution.Searches
                     layoutDocument.Content = e.UserControl;
                     ;
                     e.Open();
-                    layoutDocument.Closing += async (s, e1) =>
+                    layoutDocument.Closing += (s,e1) =>
                     {
-                        e1.Cancel = true; // 取消默认的关闭行为
                         e.Close();
-                        // 延时100毫秒
-                        await Task.Delay(30);
-
-                        // 释放资源
-                        layoutDocument.Content = null;
-                        // 从父容器中移除
-                        if (layoutDocument.Parent is ILayoutContainer parentPane)
-                        {
-                            parentPane.RemoveChild(layoutDocument);
-                        }
                     };
                     LayoutDocumentPane.Children.Add(layoutDocument);
                     LayoutDocumentPane.SelectedContentIndex = LayoutDocumentPane.IndexOf(layoutDocument);
@@ -94,6 +83,7 @@ namespace ColorVision.Solution.Searches
 
             };
         }
+
 
         public void SelectContentId(string ContentId)
         {

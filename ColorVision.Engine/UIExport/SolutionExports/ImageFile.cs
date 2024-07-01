@@ -116,7 +116,7 @@ namespace ColorVision.Engine.UIExport.SolutionExports
 
     public class ImageFileOpen : IFileControl
     {
-        public ImageView ImageView { get; set; } = new ImageView();
+        public ImageView ImageView { get; set; } = ImageView.GetInstance();
 
         public string Name { get; set; }
 
@@ -130,7 +130,6 @@ namespace ColorVision.Engine.UIExport.SolutionExports
         public void Close()
         {
             ImageView.ToolBarTop.ClearImage();
-            ImageView.Dispose();
         }
 
         public virtual void Open()

@@ -10,6 +10,7 @@ using cvColorVision;
 using log4net;
 using MQTTMessageLib.FileServer;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
@@ -67,6 +68,21 @@ namespace ColorVision.Engine.Media
     /// </summary>
     public partial class ImageView : UserControl, IView,IDisposable, INotifyPropertyChanged
     {
+        public static List<ImageView> Views { get; set; } = new List<ImageView>();
+
+        public static ImageView GetInstance()
+        {
+            foreach (var item in Views)
+            {
+                if (item.Parent == null)
+                    return item;
+            }
+            ImageView imageView = new ImageView();
+            Views.Add(imageView);
+            return imageView;
+        }
+
+
         private static readonly ILog logger = LogManager.GetLogger(typeof(ImageView));
         public ToolBarTop ToolBarTop { get; set; }
 
@@ -561,7 +577,9 @@ namespace ColorVision.Engine.Media
                     try
                     {
                         FilePath = filePath;
-                        OpenImage(new NetFileUtil().OpenLocalCVFile(filePath, fileExtType).ToWriteableBitmap());
+                        CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath, fileExtType);
+
+                        OpenImage(cVCIEFile.ToWriteableBitmap());
                     }
                     catch (Exception ex)
                     {
@@ -646,21 +664,25 @@ namespace ColorVision.Engine.Media
                 HImageCache = null;
             };
 
-            Task.Run(() => Application.Current.Dispatcher.Invoke((() => HImageCache = writeableBitmap.ToHImage())));
+            Task.Run(() => Application.Current.Dispatcher.Invoke((() =>
+            {
+                HImageCache = writeableBitmap.ToHImage();
+                if (HImageCache?.channels == 1)
+                {
+                    ToolBarTop.CIEVisible = Visibility.Collapsed;
+                }
+                else
+                {
+                    ToolBarTop.CIEVisible = Visibility.Visible;
+                }
+            }
+            )));
 
             ToolBarTop.PseudoVisible = Visibility.Visible;
 
             PseudoSlider.ValueChanged -= RangeSlider1_ValueChanged;
             PseudoSlider.ValueChanged += RangeSlider1_ValueChanged;
 
-            if (HImageCache?.channels == 1)
-            {
-                ToolBarTop.CIEVisible = Visibility.Collapsed;
-            }
-            else
-            {
-                ToolBarTop.CIEVisible = Visibility.Visible;
-            }
 
             ViewBitmapSource = writeableBitmap;
             ImageShow.Source = ViewBitmapSource;
