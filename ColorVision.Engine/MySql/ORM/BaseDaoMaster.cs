@@ -35,29 +35,15 @@ namespace ColorVision.Engine.MySql.ORM
             Model2Row(item, row);
         }
 
-        public virtual int Save(List<T> datas, int tenantId)
-        {
-            DeleteAll(tenantId);
-            DataTable d_info = GetDataTable();
-            //CreateColumns(d_info);
-            foreach (var item in datas)
-            {
-                DataRow row = GetRow(item, d_info);
-                //d_info.Rows.Add(row);
-                Model2Row(item, row);
-            }
-            return Save(d_info);
-        }
+
         public int UpdateByPid(int pid, List<T> datas)
         {
             string sql = $"select * from {TableName} where pid={pid}" + GetDelSQL(true);
             DataTable d_info = GetData(sql);
             d_info.TableName = TableName;
-            //CreateColumns(d_info);
             foreach (var item in datas)
             {
                 DataRow row = GetRow(item, d_info);
-                //d_info.AcceptChanges();
                 Model2Row(item, row);
             }
             return Save(d_info);
@@ -69,7 +55,6 @@ namespace ColorVision.Engine.MySql.ORM
             DataTable d_info = GetDataTable();
             foreach (var item in datas)
             {
-                //DataRow row = GetRow(item, d_info);
                 DataRow row = d_info.NewRow();
                 d_info.Rows.Add(row);
                 Model2Row(item, row);
