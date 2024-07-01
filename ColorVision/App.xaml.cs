@@ -136,7 +136,7 @@ namespace ColorVision
         {
             log.Info(ColorVision.Properties.Resources.ApplicationExit);
 
-            Environment.Exit(0);
+            //Environment.Exit(0);
         }
     }
 }
