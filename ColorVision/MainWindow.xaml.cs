@@ -49,7 +49,6 @@ namespace ColorVision
             var IsAdministrator = Tool.IsAdministrator();
             Title += $"- {(IsAdministrator ? Properties.Resources.RunAsAdmin : Properties.Resources.NotRunAsAdmin)}";
             this.ApplyCaption();
-            this.Closed += (s, e) => Environment.Exit(-1);
         }
 
         private void Window_Initialized(object sender, EventArgs e)
@@ -91,7 +90,6 @@ namespace ColorVision
                 ViewConfig.Instance.LastViewCount = e;
             };
 
-            Closed += (s, e) => { Environment.Exit(-1); };
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
 
             Task.Run(CheckCertificate);
