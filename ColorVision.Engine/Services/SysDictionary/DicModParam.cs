@@ -224,16 +224,11 @@ namespace ColorVision.Engine.Services.SysDictionary
             IsUserControl = true;
         }
 
-        public ValidateControl EditDictionaryMode { get; set; } = new ValidateControl();
 
         public override UserControl GetUserControl()
         {
             return EditDictionaryMode;
         }
-        //public override void SetUserControlDataContext(int index)
-        //{
-        //    ValidateControl.SetParam(TemplateParams[index].Value);
-        //}
 
         public override void Load()
         {

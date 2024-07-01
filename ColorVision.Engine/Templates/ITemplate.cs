@@ -3,6 +3,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI.Extension;
 using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.UserSpace;
 using Newtonsoft.Json;

@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.DAO;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Solution.Searches;

@@ -16,6 +16,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Windows;
+using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Services.Flow
 {

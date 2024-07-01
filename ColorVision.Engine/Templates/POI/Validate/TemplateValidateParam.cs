@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.SysDictionary;
 using ColorVision.Engine.Templates.POI.Validate.Dao;
 using ColorVision.UI.Menus;

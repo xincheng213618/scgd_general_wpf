@@ -24,6 +24,7 @@ using ColorVision.UI.Views;
 using ColorVision.Solution;
 using MQTTMessageLib.FileServer;
 using ColorVision.Engine.Media;
+using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {

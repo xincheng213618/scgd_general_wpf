@@ -24,14 +24,14 @@ namespace ColorVision.Themes.Contorls
         private static readonly object _lock = new object();
 
 
-        public static LoadingOverlay GetInstance(Window? parentWindow, Action onCancel = null)
+        public static LoadingOverlay GetInstance(Window? parentWindow, Action? onCancel = null)
         {
             lock (_lock)
             {
-                if (!_instances.ContainsKey(parentWindow))
+                ArgumentNullException.ThrowIfNull(parentWindow);
+                if (!_instances.TryGetValue(parentWindow, out LoadingOverlay overlay))
                 {
-                    var overlay = new LoadingOverlay() { Visibility = Visibility.Collapsed };
-
+                    overlay = new LoadingOverlay() { Visibility = Visibility.Collapsed };
                     _instances[parentWindow] = overlay;
                     overlay.parentContent = parentWindow.Content;
 

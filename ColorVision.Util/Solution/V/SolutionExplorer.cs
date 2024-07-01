@@ -82,10 +82,11 @@ namespace ColorVision.Solution.V
                     }
                 }
 
-                Config = JsonConvert.DeserializeObject<SolutionConfig>(File.ReadAllText(FullPath));
+               var config = JsonConvert.DeserializeObject<SolutionConfig>(File.ReadAllText(FullPath));
 
-                if (Config == null)
+                if (config == null)
                     MessageBox.Show("打开失败");
+                Config = config ?? new SolutionConfig();
 
                 Config?.ToJsonNFile(FullPath);
             }
