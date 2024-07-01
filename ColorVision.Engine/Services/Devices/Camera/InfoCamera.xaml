@@ -273,7 +273,7 @@
                                     </DockPanel>
                                     <DockPanel>
                                         <TextBlock Text="缓存大小:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.VideoConfig.CapacityText}"/>
+                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.VideoConfig.CapacityText,Mode=OneWay}"/>
                                     </DockPanel>
                                 </StackPanel>
                             </GroupBox>
