@@ -155,8 +155,6 @@ namespace ColorVision.Engine.MySql.ORM
             return d_info;
         }
 
-        public List<T> GetAllById(int id) => GetAllByParam(new Dictionary<string, object> { { "id", id } });
-
         public List<T> GetAll() => GetAllByParam(new Dictionary<string, object>());
 
         public List<T> GetAllByParam(Dictionary<string, object> param)
@@ -236,39 +234,6 @@ namespace ColorVision.Engine.MySql.ORM
             }
             return list;
         }
-
-        public List<T> GetPidIsNotNull(int tenantId)
-        {
-            List<T> list = new();
-            string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and pid > 0" + GetDelSQL(true);
-            DataTable d_info = GetData(sql);
-            foreach (var item in d_info.AsEnumerable())
-            {
-                T? model = GetModelFromDataRow(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
-
-        public List<T> GetPidIsNull(int tenantId)
-        {
-            List<T> list = new();
-            string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and ( pid is null or pid=-1)" + GetDelSQL(true);
-            DataTable d_info = GetData(sql);
-            foreach (var item in d_info.AsEnumerable())
-            {
-                T? model = GetModelFromDataRow(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
-
 
 
         public List<T> GetAllByPid(int pid)

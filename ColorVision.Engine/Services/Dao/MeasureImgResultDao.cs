@@ -9,7 +9,6 @@ namespace ColorVision.Engine.Services.Dao
 {
     public class MeasureImgResultModel : PKModel
     {
-
         public int BatchId { get; set; }
         public string? BatchCode { get; set; }
         public string? ReqParams { get; set; }
