@@ -231,7 +231,7 @@
                                     </DockPanel>
                                     <DockPanel>
                                         <TextBlock Text="缓存大小(Byte):" Width="120"/>
-                                        <TextBox  Text="{Binding VideoConfig.Capacity}"/>
+                                        <TextBox  Text="{Binding VideoConfig.CapacityInput}"/>
                                     </DockPanel>
                                 </StackPanel>
                             </GroupBox>
