@@ -4,7 +4,6 @@ using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Services.RC;
 using CVCommCore;
 using log4net;
-using MQTTMessageLib;
 using MQTTnet.Client;
 using Newtonsoft.Json;
 using System;
@@ -20,20 +19,19 @@ namespace ColorVision.Engine.Services.Core
     public class MQTTServiceBase : ViewModelBase, IHeartbeat, IServiceConfig, IDisposable
     {
         internal static readonly ILog log = LogManager.GetLogger(typeof(MQTTServiceBase));
-        public MQTTSetting MQTTSetting { get; set; }
         public MQTTControl MQTTControl { get; set; }
 
         public virtual DeviceStatusType DeviceStatus { get; set; }
-
         public event EventHandler Connected;
         public event EventHandler DisConnected;
+
+        private Timer timer;
 
         public MQTTServiceBase()
         {
             MQTTControl = MQTTControl.GetInstance();
-            MQTTSetting = MQTTControl.Setting;
             MQTTControl.ApplicationMessageReceivedAsync += Processing;
-            var timer = new Timer
+             timer = new Timer
             {
                 Interval = TimeSpan.FromMilliseconds(30).TotalMilliseconds,
                 AutoReset = true,
@@ -135,7 +133,7 @@ namespace ColorVision.Engine.Services.Core
         {
             TimeSpan sp = DateTime.Now - LastAliveTime;
             //这里其实有问题,但是返回信号并不标准，只能按照这种写法
-            long overTime = HeartbeatTime + HeartbeatTime / 2  +1;
+            long overTime = HeartbeatTime + HeartbeatTime / 2  + 5;
             if (sp > TimeSpan.FromMilliseconds(overTime))
             {
                 DisConnected?.Invoke(sender, new EventArgs());
@@ -209,12 +207,8 @@ namespace ColorVision.Engine.Services.Core
         public virtual void Dispose()
         {
             MQTTControl.ApplicationMessageReceivedAsync -= Processing;
+            timer.Dispose();
             GC.SuppressFinalize(this);
-        }
-
-        public virtual void UpdateStatus(MQTTNodeService nodeService)
-        {
-            ServiceToken = nodeService.ServiceToken;
         }
     }
 }

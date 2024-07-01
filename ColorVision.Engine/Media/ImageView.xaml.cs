@@ -20,6 +20,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -36,7 +37,6 @@ namespace ColorVision.Engine.Media
     public class CVCIEImageViewOpen :IImageViewOpen
     {
         public string Extension { get => ".cvraw|.cvcie"; }
-
         public BitmapSource? Open(string filePath)
         {
             if (filePath != null && File.Exists(filePath))
@@ -79,10 +79,7 @@ namespace ColorVision.Engine.Media
             View = new View();
             InitializeComponent();
         }
-        public void Dispose()
-        {
-            GC.SuppressFinalize(this);
-        }
+
 
         public event PropertyChangedEventHandler? PropertyChanged;
         /// <summary>
@@ -94,87 +91,83 @@ namespace ColorVision.Engine.Media
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            //这里是为了让控件可以被选中，作为做了一个底层的Textbox,这样就可以让控件被选中了，后面看看能不能优化掉，这个写法并不是好的。
-            MouseDown += (s, e) =>
-            {
-                TextBox1.Focus();
-            };
+
             ToolBarTop = new ToolBarTop(this,Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
             ToolBar2.DataContext = ToolBarTop;
             ToolBarTop.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             ListView1.ItemsSource = DrawingVisualLists;
 
-            ToolBarTop.ClearImageEventHandler += (s, e) => Clear();
-
+            ToolBarTop.ClearImageEventHandler += Clear;
             Focusable = true;
             Zoombox1.LayoutUpdated += Zoombox1_LayoutUpdated;
-
-
-            ImageShow.VisualsAdd += (s, e) =>
-            {
-                if (s is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && s is Visual visual1)
-                {
-                    DrawingVisualLists.Add(visual);
-                    visual.BaseAttribute.PropertyChanged += (s1, e1) =>
-                    {
-                        if (e1.PropertyName == "IsShow")
-                        {
-                            ListView1.ScrollIntoView(visual);
-                            ListView1.SelectedIndex = DrawingVisualLists.IndexOf(visual);
-                            if (visual.BaseAttribute.IsShow == true)
-                            {
-                                if (!ImageShow.ContainsVisual(visual1))
-                                {
-                                    ImageShow.AddVisual(visual1);
-                                }
-                            }
-                            else
-                            {
-                                if (ImageShow.ContainsVisual(visual1))
-                                {
-                                    ImageShow.RemoveVisual(visual1);
-                                }
-                            }
-                        }
-                    };
-
-                }
-            };
-
-            //如果是不显示
-            ImageShow.VisualsRemove += (s, e) =>
-            {
-                if (s is IDrawingVisual visual)
-                {
-                    if (visual.BaseAttribute.IsShow)
-                        DrawingVisualLists.Remove(visual);
-                }
-            };
-
-            PreviewKeyDown += (s, e) =>
-            {
-                if (e.Key == Key.R)
-                {
-                    BorderPropertieslayers.Visibility = BorderPropertieslayers.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
-                }
-
-            };
-            PreviewKeyDown += (s,e)=>
-            {
-                if (e.Key == Key.Escape)
-                {
-                    if (DrawingVisualPolygonCache != null)
-                    {
-                        ImageShow.RemoveVisual(DrawingVisualPolygonCache);
-                        DrawingVisualPolygonCache.Render();
-                    }
-                }
-            };
+            ImageShow.VisualsAdd += ImageShow_VisualsAdd;
+            ImageShow.VisualsRemove += ImageShow_VisualsRemove;
+            PreviewKeyDown += ImageView_PreviewKeyDown;
 
 
             AllowDrop = true;
             Drop += ImageView_Drop; ;
+        }
+
+        public void Clear(object? sender, EventArgs e)
+        {
+            Clear();
+        }
+
+
+        private void ImageShow_VisualsAdd(object? sender, EventArgs e)
+        {
+            if (sender is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && sender is Visual visual1)
+            {
+                DrawingVisualLists.Add(visual);
+                visual.BaseAttribute.PropertyChanged += (s1, e1) =>
+                {
+                    if (e1.PropertyName == "IsShow")
+                    {
+                        ListView1.ScrollIntoView(visual);
+                        ListView1.SelectedIndex = DrawingVisualLists.IndexOf(visual);
+                        if (visual.BaseAttribute.IsShow == true)
+                        {
+                            if (!ImageShow.ContainsVisual(visual1))
+                            {
+                                ImageShow.AddVisual(visual1);
+                            }
+                        }
+                        else
+                        {
+                            if (ImageShow.ContainsVisual(visual1))
+                            {
+                                ImageShow.RemoveVisual(visual1);
+                            }
+                        }
+                    }
+                };
+            }
+
+        }
+
+        private void ImageShow_VisualsRemove(object? sender, EventArgs e)
+        {
+            if (sender is IDrawingVisual visual)
+                if (visual.BaseAttribute.IsShow)
+                    DrawingVisualLists.Remove(visual);
+        }
+
+        private void ImageView_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                if (DrawingVisualPolygonCache != null)
+                {
+                    ImageShow.RemoveVisual(DrawingVisualPolygonCache);
+                    DrawingVisualPolygonCache.Render();
+                }
+            }
+            else if (e.Key == Key.R)
+            {
+                BorderPropertieslayers.Visibility = BorderPropertieslayers.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+            }
         }
 
         private void ImageView_Drop(object sender, DragEventArgs e)
@@ -833,6 +826,7 @@ namespace ColorVision.Engine.Media
         }
         public bool IsCVCIE { get => _IsCVCIE; set { _IsCVCIE = value; NotifyPropertyChanged(); } }
         private bool _IsCVCIE;
+        private bool disposedValue;
 
         public void ShowCVCIE(object sender, ImageInfo imageInfo)
         {
@@ -954,6 +948,31 @@ namespace ColorVision.Engine.Media
             Window window = new Window() { Width = 256, Height = 170 };
             window.Content = image;
             window.Show();
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    ToolBarTop.ClearImageEventHandler -= Clear;
+                    ToolBarTop.Dispose();
+                    Zoombox1.LayoutUpdated -= Zoombox1_LayoutUpdated;
+                    ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
+                    ImageShow.VisualsRemove -= ImageShow_VisualsRemove;
+                    PreviewKeyDown -= ImageView_PreviewKeyDown;
+                    Drop -= ImageView_Drop;
+                }
+                disposedValue = true;
+            }
+        }
+
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

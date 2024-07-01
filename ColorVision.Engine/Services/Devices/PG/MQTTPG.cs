@@ -175,45 +175,5 @@ namespace ColorVision.Engine.Services.Devices.PG
             SetParam(new List<ParamFunction>() { new() { Name = PGParam.CustomKey, Params = new Dictionary<string, object>() { { "cmdTxt", text } } } });
         }
 
-        public override void UpdateStatus(MQTTNodeService nodeService)
-        {
-            base.UpdateStatus(nodeService);
-            HeartbeatParam heartbeat = new();
-            foreach (var item in nodeService.Devices)
-            {
-                if (Config.Code.Equals(item.Key, System.StringComparison.Ordinal))
-                {
-                    var dev = item.Value;
-                    DeviceStatusType devStatus = (DeviceStatusType)System.Enum.Parse(typeof(DeviceStatusType), dev.Status);
-                    switch (devStatus)
-                    {
-                        case DeviceStatusType.Unknown:
-                            heartbeat.DeviceStatus = DeviceStatusType.Closed;
-                            break;
-                        case DeviceStatusType.Closed:
-                            heartbeat.DeviceStatus = DeviceStatusType.Closed;
-                            break;
-                        case DeviceStatusType.Closing:
-                            heartbeat.DeviceStatus = DeviceStatusType.Closing;
-                            break;
-                        case DeviceStatusType.Opened:
-                            heartbeat.DeviceStatus = DeviceStatusType.Opened;
-                            break;
-                        case DeviceStatusType.Opening:
-                            heartbeat.DeviceStatus = DeviceStatusType.Opening;
-                            break;
-                        case DeviceStatusType.Busy:
-                            heartbeat.DeviceStatus = DeviceStatusType.Busy;
-                            break;
-                        case DeviceStatusType.Free:
-                            heartbeat.DeviceStatus = DeviceStatusType.Free;
-                            break;
-                        default:
-                            heartbeat.DeviceStatus = DeviceStatusType.Closed;
-                            break;
-                    }
-                }
-            }
-        }
     }
 }

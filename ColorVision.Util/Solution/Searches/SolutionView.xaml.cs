@@ -69,7 +69,9 @@ namespace ColorVision.Solution.Searches
                 }
                 else
                 {
-                    LayoutDocument layoutDocument = new LayoutDocument() { IconSource =e.IconSource, ContentId = e.GuidId.ToString(), Content = e.UserControl, Title = e.Name };
+                    LayoutDocument layoutDocument = new LayoutDocument() { IconSource =e.IconSource, ContentId = e.GuidId.ToString(), Title = e.Name };
+                    layoutDocument.Content = e.UserControl;
+                    ;
                     e.Open();
                     layoutDocument.Closing += async (s, e1) =>
                     {
@@ -80,13 +82,11 @@ namespace ColorVision.Solution.Searches
 
                         // 释放资源
                         layoutDocument.Content = null;
-
                         // 从父容器中移除
                         if (layoutDocument.Parent is ILayoutContainer parentPane)
                         {
                             parentPane.RemoveChild(layoutDocument);
                         }
-
                     };
                     LayoutDocumentPane.Children.Add(layoutDocument);
                     LayoutDocumentPane.SelectedContentIndex = LayoutDocumentPane.IndexOf(layoutDocument);

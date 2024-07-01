@@ -34,7 +34,7 @@ namespace ColorVision.Draw
         public ResizeMode ResizeMode { get; set; }
     }
 
-    public class ToolBarTop : ViewModelBase
+    public class ToolBarTop : ViewModelBase,IDisposable
     {
         public RelayCommand ZoomUniformToFill { get; set; }
         public RelayCommand ZoomUniform { get; set; }
@@ -48,7 +48,8 @@ namespace ColorVision.Draw
 
         public RelayCommand SaveImageCommand { get; set; }
         public RelayCommand ClearImageCommand { get; set; }
-        public EventHandler ClearImageEventHandler { get; set; }
+
+        public event EventHandler ClearImageEventHandler;
 
         public RelayCommand PrintImageCommand { get; set; }
 
@@ -115,23 +116,6 @@ namespace ColorVision.Draw
             RotateLeftCommand = new RelayCommand(a => RotateLeft());
             RotateRightCommand = new RelayCommand(a => RotateRight());
 
-            Parent.PreviewKeyDown += (s, e) =>
-            {
-                if (e.Key == Key.F11)
-                {
-                    if (!IsMax)
-                        MaxImage();
-                }
-                if (e.Key == Key.Add)
-                {
-                    ZoomIncrease.RaiseExecute(e);
-                }
-                if (e.Key == Key.Subtract)
-                {
-                    ZoomDecrease.RaiseExecute(e);
-                }
-            };
-
             EditModeChanged += (s, e) =>
             {
                 if (e.IsEditMode)
@@ -145,6 +129,9 @@ namespace ColorVision.Draw
             };
             AddContextMenu();
         }
+
+
+
 
         public void Print()
         {
@@ -301,7 +288,9 @@ namespace ColorVision.Draw
 
         public void ClearImage()
         {
+            Image.Clear();
             Image.Source = null;
+            Image.UpdateLayout();
             ToolBarScaleRuler.IsShow = false;
             ClearImageEventHandler?.Invoke(this, new EventArgs());
         }
@@ -329,6 +318,20 @@ namespace ColorVision.Draw
 
         private void PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (e.Key == Key.F11)
+            {
+                if (!IsMax)
+                    MaxImage();
+            }
+            if (e.Key == Key.Add)
+            {
+                ZoomIncrease.RaiseExecute(e);
+            }
+            if (e.Key == Key.Subtract)
+            {
+                ZoomDecrease.RaiseExecute(e);
+            }
+
             if (e.Key == Key.Left)
             {
                 TranslateTransform translateTransform = new();
@@ -586,6 +589,8 @@ namespace ColorVision.Draw
         private string _LastChoice { get; set; }
 
         private bool _EraseVisual;
+        private bool disposedValue;
+
         public bool EraseVisual {  get => _EraseVisual;
             set
             {
@@ -610,8 +615,28 @@ namespace ColorVision.Draw
             }
         }
 
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: 释放托管状态(托管对象)
+                }
+
+                // TODO: 释放未托管的资源(未托管的对象)并重写终结器
+                // TODO: 将大型字段设置为 null
+                disposedValue = true;
+            }
+        }
 
 
 
+        public void Dispose()
+        {
+            // 不要更改此代码。请将清理代码放入“Dispose(bool disposing)”方法中
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
     }
 }
