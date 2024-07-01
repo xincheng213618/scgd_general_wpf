@@ -15,7 +15,8 @@ namespace ColorVision.Engine.Services.Devices
             get => _DeviceStatus; set
             {
                 _DeviceStatus = value;
-                Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value));
+                if (Application.Current != null)
+                    Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value));
                 NotifyPropertyChanged(); NotifyPropertyChanged(nameof(DeviceStatusString));
             }
         }
