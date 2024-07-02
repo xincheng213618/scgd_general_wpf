@@ -6,8 +6,6 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <ui:ThemesDictionary Theme="Light" />
-                <ui:ControlsDictionary />
                 <ResourceDictionary Source="/HandyControl;component/Themes/basic/colors/colors.xaml"/>
                 <ResourceDictionary Source="/HandyControl;component/Themes/Theme.xaml"/>
                 <ResourceDictionary Source="/ColorVision.Util;component/Themes/White.xaml"/>

@@ -40,7 +40,7 @@
                         <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding Config.IsShowRAM}"/>
                         <TextBlock Text="显示RAM"/>
                     </DockPanel>
-                    <ui:Rating HorizontalAlignment="Left" Value="5" />
+                    <ui:RatingControl HorizontalAlignment="Left" Value="5" />
                 </StackPanel>
             </Border>
 
