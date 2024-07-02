@@ -181,13 +181,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             if (listView1.Items[listView1.SelectedIndex] is AlgorithmResult result)
             {
                 ImageView.ImageShow.Clear();
-                ImageView.FilePath = result.FilePath;
                 List<POIPoint> DrawPoiPoint = new();
                 List<string> cieBdHeader = new();
                 List<string> cieHeader = new();
 
                 if (File.Exists(result.FilePath))
                 {
+                    ImageView.Config.FilePath = result.FilePath;
                     if (CVFileUtil.IsCIEFile(result.FilePath))
                     {
                         var FileData = netFileUtil.OpenLocalCVFile(result.FilePath);

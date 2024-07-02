@@ -221,37 +221,40 @@
                     <Button x:Name="HistogramButton"  Visibility="{Binding PseudoVisible}" Click="HistogramButton_Click">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIHistogram}"  Margin="-5"/>
                     </Button>
+                    <StackPanel x:Name="PseudoStackPanel">
 
-                    <ToggleButton x:Name="Pseudo"  Visibility="{Binding PseudoVisible}" Click="ToggleButton_Click">
-                        <Image Style="{StaticResource ToolBarImage}"   Source="/ColorVision.Engine;component/Assets/png/PowerToy.png" Margin="-5"/>
-                    </ToggleButton>
+                        <ToggleButton x:Name="Pseudo"  Visibility="{Binding PseudoVisible}" Click="ToggleButton_Click">
+                            <Image Style="{StaticResource ToolBarImage}"   Source="/ColorVision.Engine;component/Assets/png/PowerToy.png" Margin="-5"/>
+                        </ToggleButton>
 
-                    <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
-                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="Calibration"  Click="Pseudo_MouseDoubleClick"/>
-                    </Grid>
-                    <Grid  Height="200" Visibility="{Binding ElementName=Pseudo,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        <TextBox Grid.Row="0" Width="28" Text="{Binding ValueEnd, ElementName=PseudoSlider, StringFormat=#0}" Style="{StaticResource BaseStyle}"  Background="Transparent"  BorderThickness="0"  HorizontalContentAlignment="Center" />
-                        <TextBox Grid.Row="2" Width="28" Text="{Binding ValueStart, ElementName=PseudoSlider, StringFormat=#0}" Style="{StaticResource BaseStyle}" Background="Transparent"  BorderThickness="0" HorizontalContentAlignment="Center"/>
-                        <Grid Grid.Row="1"   Width="18">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="0"  x:Name="RowDefinitionStart"/>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="0"  x:Name="RowDefinitionEnd"/>
-                            </Grid.RowDefinitions>
-                            <Border Grid.Row="0" Background="White" CornerRadius="10,10,0,0"/>
-                            <Border Grid.Row="1"  Background="Transparent">
-                                <Image Source="/Assets/Image/pictureBox1.Image.png" Stretch="Fill" VerticalAlignment="Top"/>
-                            </Border>
-                            <Border Grid.Row="2" Background="Black" CornerRadius="0,0,10,10 "/>
+                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="Calibration"  Click="Pseudo_MouseDoubleClick"/>
                         </Grid>
-                        <hc:RangeSlider Grid.Row="1"  x:Name="PseudoSlider" FocusVisualStyle="{x:Null}"  Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical" HorizontalAlignment="Center" />
-                    </Grid>
+                        <Grid  Height="200" Visibility="{Binding ElementName=Pseudo,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBox Grid.Row="0" Width="28" Text="{Binding ValueEnd, ElementName=PseudoSlider, StringFormat=#0}" Style="{StaticResource BaseStyle}"  Background="Transparent"  BorderThickness="0"  HorizontalContentAlignment="Center" />
+                            <TextBox Grid.Row="2" Width="28" Text="{Binding ValueStart, ElementName=PseudoSlider, StringFormat=#0}" Style="{StaticResource BaseStyle}" Background="Transparent"  BorderThickness="0" HorizontalContentAlignment="Center"/>
+                            <Grid Grid.Row="1"   Width="18">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="0"  x:Name="RowDefinitionStart"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="0"  x:Name="RowDefinitionEnd"/>
+                                </Grid.RowDefinitions>
+                                <Border Grid.Row="0" Background="White" CornerRadius="10,10,0,0"/>
+                                <Border Grid.Row="1"  Background="Transparent">
+                                    <Image Source="/ColorVision.Engine;component/Assets/Image/pictureBox1.Image.png" Stretch="Fill" VerticalAlignment="Top"/>
+                                </Border>
+                                <Border Grid.Row="2" Background="Black" CornerRadius="0,0,10,10 "/>
+                            </Grid>
+                            <hc:RangeSlider Grid.Row="1"  x:Name="PseudoSlider" FocusVisualStyle="{x:Null}"  Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical" HorizontalAlignment="Center" />
+                        </Grid>
+
+                    </StackPanel>
 
 
                 </ToolBar>

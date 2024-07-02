@@ -221,23 +221,26 @@
                                         <TextBlock Text="串流指定端口:" Width="120"/>
                                         <TextBox Text="{Binding VideoConfig.Port}"/>
                                     </DockPanel>
-                                </StackPanel>
-                            </GroupBox>
-                            <GroupBox Header="视频图像配置" Margin="0,5" >
-                                <StackPanel Margin="5">
                                     <DockPanel>
                                         <TextBlock Text="缩放比例:" Width="120"/>
                                         <TextBox Text="{Binding VideoConfig.ResizeRatio}"/>
-                                    </DockPanel>
-                                    <DockPanel>
-                                        <TextBlock Text="缓存大小(Byte):" Width="120"/>
-                                        <TextBox  Text="{Binding VideoConfig.CapacityInput}"/>
                                     </DockPanel>
                                 </StackPanel>
                             </GroupBox>
                         </StackPanel>
                     </GroupBox>
-
+                    <GroupBox Header="缓存" Margin="0,5" >
+                        <StackPanel Margin="5">
+                            <DockPanel Margin="0,2">
+                                <TextBlock Text="启用:" Width="120"/>
+                                <ui:ToggleSwitch IsChecked="{Binding UsingFileCaching}"/>
+                            </DockPanel>
+                            <DockPanel>
+                                <TextBlock Text="缓存大小(Byte):" Width="120"/>
+                                <TextBox  Text="{Binding VideoConfig.CapacityInput}"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
                     <GroupBox Header="数据文件服务配置" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">

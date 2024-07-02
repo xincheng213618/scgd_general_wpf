@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CS8604,CS8629
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
@@ -35,11 +36,16 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
-    public class ViewCameraConfig : IConfig
+    public class ViewCameraConfig : ViewModelBase, IConfig
     {
         public static ViewCameraConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ViewCameraConfig>();
 
         public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+
+        public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
+
+        public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; NotifyPropertyChanged(); } }
+        private bool _IsShowListView = true;
     }
 
 
@@ -50,11 +56,14 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(App));
 
-
         public View View { get; set; }
         public ObservableCollection<ViewResultCamera> ViewResultCameras { get; set; } = new ObservableCollection<ViewResultCamera>();
         public MQTTCamera DeviceService{ get; set; }
         public DeviceCamera Device { get; set; }
+
+        public static ViewCameraConfig Config => ViewCameraConfig.Instance;
+
+
         public ViewCamera(DeviceCamera device)
         {
             Device = device;
@@ -64,7 +73,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            View= new View();
+            this.DataContext = this ;
+            View = new View();
+            ImageView.SetConfig(ViewCameraConfig.Instance.ImageViewConfig);
+
             ImageView.ToolBarTop.ToolBarScaleRuler.ScalRuler.ActualLength = Device.Config.ScaleFactor;
             ImageView.ToolBarTop.ToolBarScaleRuler.ScalRuler.PhysicalUnit = Device.Config.ScaleFactorUnit;
             ImageView.ToolBarTop.ToolBarScaleRuler.ScalRuler.PropertyChanged += (s, e) =>
@@ -283,7 +295,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 if (File.Exists(data.FileUrl))
                 {
                     LocalFileName = data.FileUrl;
-                    ImageView.FilePath = LocalFileName;
+                    ImageView.Config.FilePath = LocalFileName;
                     var FileData = netFileUtil.OpenLocalCVFile(data.FileUrl);
                     OpenImage(FileData);
                 }
@@ -309,12 +321,12 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         }
                         if (string.IsNullOrEmpty(localName) || !File.Exists(localName))
                         {
-                            ImageView.FilePath = localName;
+                            ImageView.Config.FilePath = localName;
                             MsgRecord msgRecord = DeviceService.DownloadFile(data.FilePath, fileExt);
                         }
                         else
                         {
-                            ImageView.FilePath = localName;
+                            ImageView.Config.FilePath = localName;
                             var FileData = netFileUtil.OpenLocalCVFile(localName, fileExt);
                             OpenImage(FileData);
                         }
@@ -619,6 +631,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
 
 
+
+        }
+
+        private void ToggleButton_Click(object sender, RoutedEventArgs e)
+        {
 
         }
     }

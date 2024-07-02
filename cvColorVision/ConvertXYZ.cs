@@ -21,6 +21,10 @@ namespace cvColorVision
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetBufferXYZ", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int CM_SetBufferXYZ(IntPtr handle, UInt32 w, UInt32 h, UInt32 bpp, UInt32 channels, byte[] rawArray);
 
+        [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_ReleaseBuffer", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
+        public unsafe static extern int CM_ReleaseBuffer(IntPtr handle);
+
+
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_SetFilter", CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]
         public unsafe static extern int CM_SetFilter(IntPtr handle, bool bEnable, float fthreshold);
 

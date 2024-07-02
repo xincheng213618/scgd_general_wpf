@@ -30,6 +30,20 @@ namespace ColorVision.Common.Utilities
         public static readonly bool IsWinXP = OSVersion >= new Version(5, 1) && OSVersion < new Version(6, 0);
         public static readonly bool IsWinXP64 = OSVersion == new Version(5, 2); // Windows XP 64-bit Edition
 
+        public static IntPtr GenerateRandomIntPtr()
+        {
+            // 使用随机数生成器
+            Random random = new Random();
+
+            // 生成一个随机的整数值
+            int randomValue = random.Next();
+
+            // 将随机整数转换为 IntPtr
+            IntPtr randomIntPtr = new IntPtr(randomValue);
+
+            return randomIntPtr;
+        }
+
         /// <summary>
         /// 获取系统hosts
         /// </summary>

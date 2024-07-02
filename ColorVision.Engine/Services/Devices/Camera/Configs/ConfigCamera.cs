@@ -38,6 +38,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         private ImageChannel _Channel;
 
         public CameraVideoConfig VideoConfig { get; set; } = new CameraVideoConfig();
+
+        public bool UsingFileCaching { get => _UsingFileCaching; set { _UsingFileCaching = value; NotifyPropertyChanged(); } }
+        private bool _UsingFileCaching = true;
+
         public int Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
         private int _Gain = 10;
 
