@@ -63,7 +63,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         public static ViewCameraConfig Config => ViewCameraConfig.Instance;
 
-
         public ViewCamera(DeviceCamera device)
         {
             Device = device;
@@ -480,7 +479,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 {
                     MessageBox1.Show("请先选择您要切换的图像");
                 }
-
             }
 
         }

@@ -27,11 +27,12 @@
         <cv:ImageView Grid.Row="0" x:Name="ImageView"></cv:ImageView>
         <Grid x:Name="Grid1" Grid.Row="1">
             <Grid.RowDefinitions>
-                <RowDefinition Height="38"/>
+                <RowDefinition Height="34"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <ToolBarTray  Grid.Row="0" Panel.ZIndex="9" IsLocked="True">
-                <ToolBar Band="0" BandIndex="0">
+            <ToolBarTray  Grid.Row="0" Panel.ZIndex="9"  IsLocked="True" Margin="0,3,0,1">
+                <ToolBar Band="0" BandIndex="0" Padding="3,2">
+                    <ToggleButton  Style="{StaticResource ToggleButtonSwitch}"  IsChecked="{Binding Config.IsShowListView, Converter={StaticResource Boolean2BooleanReConverter}}"/>
                     <Button Click="Button_Click_Export" Margin="2,0,0,0" >
                         <Image  Stretch="Uniform" Source="{DynamicResource DrawingImageSave}" />
                     </Button>
@@ -72,10 +73,18 @@
                         </Border>
                     </Popup>
                 </ToolBar>
-                <ToolBar Band="0" BandIndex="1" >
-                    <StackPanel Orientation="Horizontal" Margin="5,0">
+                <ToolBar Band="0" BandIndex="1" Padding="3,2">
+                    <StackPanel Orientation="Horizontal" Margin="5,0"  Visibility="{Binding Config.ImageViewConfig.IsChannel3,Converter={StaticResource bool2VisibilityConverter}}">
                         <TextBlock Text="{x:Static properties:Resources.Layers}" MinWidth="40" Margin="0,0,5,0"/>
-                        <ComboBox x:Name="ComboBoxLayers" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" SelectionChanged="ComboBoxLayers_SelectionChanged"/>
+                        <ComboBox x:Name="ComboBoxLayers" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" SelectionChanged="ComboBoxLayers_SelectionChanged">
+                            <ComboBoxItem Content="Src"  />
+                            <ComboBoxItem Content="R" />
+                            <ComboBoxItem Content="G" />
+                            <ComboBoxItem Content="B" />
+                            <ComboBoxItem Content="X"  Visibility="{Binding ElementName=ImageView,Path=IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}" />
+                            <ComboBoxItem Content="Y" Visibility="{Binding ElementName=ImageView,Path=IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}"  />
+                            <ComboBoxItem Content="Z"  Visibility="{Binding ElementName=ImageView,Path=IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}" />
+                        </ComboBox>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="5,0">
                         <TextBlock Text="{x:Static properties:Resources.FocusPoint}" MinWidth="40" Margin="0,0,5,0"/>
@@ -84,7 +93,7 @@
                 </ToolBar>
             </ToolBarTray>
 
-            <ListView Height="250" Grid.Row="1" x:Name="listView1" BorderThickness="0"  Margin="-5" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
+            <ListView Height="250" Grid.Row="1" x:Name="listView1" BorderThickness="0" Padding="0" Visibility="{Binding Config.IsShowListView, Converter={StaticResource bool2VisibilityConverter}}" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" >
                 <ListView.Resources >
                     <ContextMenu x:Key="ContextMenuItem">
                         <MenuItem Header="{x:Static properties:Resources.Delete}"  Click="MenuItem_Delete_Click" Tag="{Binding .}"  />

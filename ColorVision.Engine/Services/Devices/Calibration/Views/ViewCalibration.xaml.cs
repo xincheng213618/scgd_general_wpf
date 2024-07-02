@@ -29,10 +29,27 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Themes;
+using ColorVision.UI;
+using ColorVision.Common.MVVM;
+using ColorVision.Engine.Services.Devices.PG;
 
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views
 {
+
+    public class ViewCalibrationConfig : ViewModelBase, IConfig
+    {
+        public static ViewCalibrationConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ViewCalibrationConfig>();
+
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+
+        public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
+
+        public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; NotifyPropertyChanged(); } }
+        private bool _IsShowListView = true;
+    }
+
+
     /// <summary>
     /// ViewCamera.xaml 的交互逻辑
     /// </summary>
@@ -43,29 +60,34 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         public View View { get; set; }
 
         public ObservableCollection<ViewResultCalibration> ViewResultCalibrations { get; set; } = new ObservableCollection<ViewResultCalibration>();
-        public MQTTCalibration DeviceService{ get; set; }
+        public  MQTTCalibration DeviceService => Device.DService;
         public DeviceCalibration Device { get; set; }
+        public static ViewCameraConfig Config => ViewCameraConfig.Instance;
+
         public ViewCalibration(DeviceCalibration device)
         {
             Device = device;
-            DeviceService = device.DService;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            this.DataContext = this;
             View = new View();
+            ImageView.SetConfig(Config.ImageViewConfig);
+
             listView1.ItemsSource = ViewResultCalibrations;
 
             ComboxPOITemplate.ItemsSource = PoiParam.Params.CreateEmpty();
             ComboxPOITemplate.SelectedIndex = 0;
 
             if (listView1.View is GridView gridView)
+            {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-
-
-            ComboBoxLayers.ItemsSource = from e1 in Enum.GetValues(typeof(ImageLayer)).Cast<ImageLayer>()
-                                         select new KeyValuePair<string, ImageLayer>(e1.ToString(), e1);
+                Config.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
+                Config.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
+                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+            }
 
             netFileUtil = new NetFileUtil();
             netFileUtil.handler += NetFileUtil_handler;
@@ -462,44 +484,30 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ComboBox comboBox && comboBox.SelectedValue is ImageLayer imageLayer)
+            if (sender is ComboBox comboBox)
             {
                 if (listView1.SelectedIndex > -1)
                 {
-                    var ViewResultCamera = ViewResultCalibrations[listView1.SelectedIndex];
-                    switch (imageLayer)
-                    {
-                        case ImageLayer.Src:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.SRC);
-                            break;
-                        case ImageLayer.R:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_R);
-                            break;
-                        case ImageLayer.G:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_G);
-                            break;
-                        case ImageLayer.B:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_B);
-                            break;
-                        case ImageLayer.X:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_X);
-                            break;
-                        case ImageLayer.Y:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Y);
-                            break;
-                        case ImageLayer.Z:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Z);
-                            break;
-                        default:
-                            break;
-                    }
-
+                    var viewResult = ViewResultCalibrations[listView1.SelectedIndex];
+                    if (comboBox.Text == "Src")
+                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.SRC);
+                    if (comboBox.Text == "R")
+                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.RGB_R);
+                    if (comboBox.Text == "G")
+                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.RGB_G);
+                    if (comboBox.Text == "B")
+                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.RGB_B);
+                    if (comboBox.Text == "X")
+                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.CIE_XYZ_X);
+                    if (comboBox.Text == "Y")
+                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.CIE_XYZ_Y);
+                    if (comboBox.Text == "Z")
+                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.CIE_XYZ_Z);
                 }
                 else
                 {
                     MessageBox1.Show("请先选择您要切换的图像");
                 }
-
             }
 
         }
