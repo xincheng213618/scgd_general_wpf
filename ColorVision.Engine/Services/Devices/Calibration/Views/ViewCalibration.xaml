@@ -101,7 +101,7 @@
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                 </ListView.Resources>
                 <ListView.ItemContainerStyle>
-                    <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle}">
+                    <Style TargetType="{x:Type ListViewItem}"  BasedOn="{StaticResource  GridViewColumnHeaderBase}">
                         <Setter Property="ContextMenu" Value="{StaticResource ContextMenuItem}"/>
                     </Style>
                 </ListView.ItemContainerStyle>

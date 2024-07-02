@@ -92,7 +92,7 @@
                     <ListView.View >
                         <GridView >
                             <GridView.ColumnHeaderContainerStyle>
-                                <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                                <Style TargetType="{x:Type GridViewColumnHeader}"  BasedOn="{StaticResource  GridViewColumnHeaderBase}">
                                     <Setter Property="Visibility" Value="Visible"/>
                                     <Setter Property="Background" Value="Transparent"/>
                                     <Setter Property="BorderThickness" Value="0"/>
@@ -162,7 +162,7 @@
             <ListView.View >
                 <GridView>
                     <GridView.ColumnHeaderContainerStyle>
-                        <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
+                        <Style TargetType="{x:Type GridViewColumnHeader}"  BasedOn="{StaticResource  GridViewColumnHeaderBase}">
                             <Setter Property="Visibility" Value="Visible"/>
                             <Setter Property="Background" Value="Transparent"/>
                             <Setter Property="BorderThickness" Value="0"/>

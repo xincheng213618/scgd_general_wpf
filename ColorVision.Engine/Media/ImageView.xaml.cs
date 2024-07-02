@@ -34,6 +34,9 @@ namespace ColorVision.Engine.Media
         [JsonIgnore]
         public IntPtr ConvertXYZhandle { get; set; } = Tool.GenerateRandomIntPtr();
 
+        [JsonIgnore]
+        public bool ConvertXYZhandleOnce { get; set; }
+
         public ColormapTypes ColormapTypes { get => _ColormapTypes; set { _ColormapTypes = value; NotifyPropertyChanged(); } }
         private ColormapTypes _ColormapTypes = ColormapTypes.COLORMAP_JET;
 
@@ -125,8 +128,6 @@ namespace ColorVision.Engine.Media
             AllowDrop = true;
             Drop += ImageView_Drop;
 
-            int result = ConvertXYZ.CM_InitXYZ(Config.ConvertXYZhandle);
-            logger.Info($"ConvertXYZ.CM_InitXYZ :{result}");
         }
 
         public void Clear(object? sender, EventArgs e)
@@ -702,16 +703,23 @@ namespace ColorVision.Engine.Media
 
             if (Config.IsCVCIE)
             {
+                if (!Config.ConvertXYZhandleOnce)
+                {
+                    int result = ConvertXYZ.CM_InitXYZ(Config.ConvertXYZhandle);
+                    logger.Info($"ConvertXYZ.CM_InitXYZ :{result}");
+                    Config.ConvertXYZhandleOnce = true;
+                }
+
+
                 int index = CVFileUtil.ReadCIEFileHeader(Config.FilePath, out CVCIEFile cVCIEFile);
                 CVFileUtil.ReadCIEFileData(Config.FilePath, ref cVCIEFile, index);
 
-                int result = ConvertXYZ.CM_SetBufferXYZ(ConvertXYZ.Handle, (uint)cVCIEFile.rows, (uint)cVCIEFile.cols, (uint)cVCIEFile.bpp, (uint)cVCIEFile.channels, cVCIEFile.data);
-                logger.Debug($"CM_SetBufferXYZ :{result}");
+                int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(ConvertXYZ.Handle, (uint)cVCIEFile.rows, (uint)cVCIEFile.cols, (uint)cVCIEFile.bpp, (uint)cVCIEFile.channels, cVCIEFile.data);
+                logger.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
 
                 ToolBarTop.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
             }
         }
-
         public ImageSource PseudoImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
 
