@@ -175,11 +175,6 @@ namespace ColorVision
             }
         }
 
-        private void ImageLogo_Initialized(object sender, EventArgs e)
-        {
-
-        }
-
         private void CloseButton_MouseLeave(object sender, MouseEventArgs e)
         {
             Cursor = Cursors.Arrow;
