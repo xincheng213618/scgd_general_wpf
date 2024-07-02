@@ -65,7 +65,7 @@
         <Setter Property="BorderThickness" Value="0,0,0,0" />
         <Setter Property="Margin" Value="0,0,0,0" />
         <Setter Property="Padding" Value="2,3" />
-        <Setter Property="Foreground" Value="{DynamicResource TextFillColorPrimaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
         <Setter Property="FontWeight" Value="Normal" />
         <Setter Property="Template">
             <Setter.Value>
