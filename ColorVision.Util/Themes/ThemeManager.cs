@@ -101,7 +101,6 @@ namespace ColorVision.Themes
 
         public static List<string> ResourceDictionaryDark { get; set; } = new List<string>()
         {
-            "/ColorVision.Util;component/Themes/Wpf.Ui.xaml",
             "/HandyControl;component/themes/basic/colors/colorsdark.xaml",
             "/HandyControl;component/Themes/Theme.xaml",
             "/ColorVision.Util;component/Themes/Dark.xaml",
@@ -114,7 +113,6 @@ namespace ColorVision.Themes
 
         public static List<string> ResourceDictionaryWhite { get; set; } = new List<string>()
         {
-            "/ColorVision.Util;component/Themes/Wpf.Ui.xaml",
             "/HandyControl;component/Themes/basic/colors/colors.xaml",
             "/HandyControl;component/Themes/Theme.xaml",
             "/ColorVision.Util;component/Themes/White.xaml",
@@ -127,7 +125,6 @@ namespace ColorVision.Themes
 
         public static List<string> ResourceDictionaryPink { get; set; } = new List<string>()
         {
-            "/ColorVision.Util;component/Themes/Wpf.Ui.xaml",
             "/ColorVision.Util;component/Themes/HPink.xaml",
             "/HandyControl;component/Themes/Theme.xaml",
             "/ColorVision.Util;component/Themes/White.xaml",
@@ -140,7 +137,6 @@ namespace ColorVision.Themes
         };
         public static List<string> ResourceDictionaryCyan { get; set; } = new List<string>()
         {
-            "/ColorVision.Util;component/Themes/Wpf.Ui.xaml",
             "/ColorVision.Util;component/Themes/HCyan.xaml",
             "/HandyControl;component/Themes/Theme.xaml",
             "/ColorVision.Util;component/Themes/White.xaml",
@@ -151,7 +147,6 @@ namespace ColorVision.Themes
             "/ColorVision.Util;component/Themes/Icons.xaml",
             "/ColorVision.Util;component/Themes/Window/BaseWindow.xaml"
         };
-
 
         private void ApplyActTheme(Application app, Theme theme)
         {
@@ -167,17 +162,20 @@ namespace ColorVision.Themes
                     var light = new Wpf.Ui.Markup.ThemesDictionary();
                     light.Theme = ApplicationTheme.Light;
                     app.Resources.MergedDictionaries.Add(light);
+                    app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
+
                     foreach (var item in ResourceDictionaryWhite)
                     {
                         ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
                         app.Resources.MergedDictionaries.Add(dictionary);
                     }
-
                     break;
                 case Theme.Dark:
                     var dark = new Wpf.Ui.Markup.ThemesDictionary();
                     dark.Theme = ApplicationTheme.Dark;
                     app.Resources.MergedDictionaries.Add(dark);
+                    app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
+
                     foreach (var item in ResourceDictionaryDark)
                     {
                         ResourceDictionary dictionary = Application.LoadComponent(new Uri(item, UriKind.Relative)) as ResourceDictionary;
@@ -188,6 +186,7 @@ namespace ColorVision.Themes
                     var pink1 = new Wpf.Ui.Markup.ThemesDictionary();
                     pink1.Theme = ApplicationTheme.Light;
                     app.Resources.MergedDictionaries.Add(pink1);
+                    app.Resources.MergedDictionaries.Add(new Wpf.Ui.Markup.ControlsDictionary());
 
                     foreach (var item in ResourceDictionaryPink)
                     {

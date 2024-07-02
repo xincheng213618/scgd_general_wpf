@@ -12,11 +12,15 @@
     <BooleanToVisibilityConverter x:Key="bool2VisibilityConverter"/>
     <converter:InverseBooleanConverter x:Key="inverseBooleanConverter"/>
     <converter:BooleanToVisibilityReConverter x:Key="bool2VisibilityConverter1"/>
-
+    <Style TargetType="{x:Type AccessText}">
+        <Setter Property="VerticalAlignment" Value="Center"/>
+        <Setter Property="SnapsToDevicePixels" Value="True" />
+        <Setter Property="OverridesDefaultStyle" Value="True" />
+    </Style>
     <Style TargetType="{x:Type TextBlock}">
         <Setter Property="VerticalAlignment" Value="Center"/>
         <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
-        <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        <Setter Property="Background" Value="Transparent"/>
     </Style>
 
     <Style x:Key="TextBlock1" TargetType="{x:Type TextBlock}">
