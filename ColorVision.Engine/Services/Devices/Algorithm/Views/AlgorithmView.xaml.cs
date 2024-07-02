@@ -1,8 +1,16 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
-using ColorVision.Draw;
-using ColorVision.Net;
-using ColorVision.Engine.Services.Devices.Algorithm.Dao;
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Draw;
+using ColorVision.Engine.Media;
+using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.Devices.Algorithm.Dao;
+using ColorVision.Engine.Services.Devices.Camera.Views;
+using ColorVision.Net;
+using ColorVision.UI;
+using ColorVision.UI.Sorts;
+using ColorVision.UI.Views;
+using CVCommCore.CVAlgorithm;
 using log4net;
 using MQTTMessageLib.Algorithm;
 using Newtonsoft.Json;
@@ -18,16 +26,25 @@ using System.Windows.Controls.Primitives;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.UI.Sorts;
-using CVCommCore.CVAlgorithm;
-using ColorVision.UI.Views;
-using ColorVision.Solution;
-using MQTTMessageLib.FileServer;
-using ColorVision.Engine.Media;
-using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
+
+    public class ViewAlgorithmConfig : ViewModelBase, IConfig
+    {
+        public static ViewAlgorithmConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ViewAlgorithmConfig>();
+
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+
+        public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
+
+        public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; NotifyPropertyChanged(); } }
+        private bool _IsShowListView = true;
+        public bool IsShowSideListView { get => _IsShowSideListView; set { _IsShowSideListView = value; NotifyPropertyChanged(); } }
+        private bool _IsShowSideListView = true;
+    }
+
+
     /// <summary>
     /// ViewSpectrum.xaml 的交互逻辑
     /// </summary>
@@ -42,15 +59,21 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         }
 
         private NetFileUtil netFileUtil;
+
+        public static ViewAlgorithmConfig Config => ViewAlgorithmConfig.Instance;
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            TextBox TextBox1 = new() { Width = 10, Background = Brushes.Transparent, BorderThickness = new Thickness(0), Foreground = Brushes.Transparent };
-            Grid.SetColumn(TextBox1, 0);
-            Grid.SetRow(TextBox1, 0);
-            MainGrid.Children.Insert(0, TextBox1);
-            MouseDown += (s, e) => TextBox1.Focus();
-
+            this.DataContext = this;
             View = new View();
+            ImageView.SetConfig(Config.ImageViewConfig);
+            if (listView1.View is GridView gridView)
+            {
+                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+                Config.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
+                Config.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
+                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+            }
+
 
             listView1.ItemsSource = AlgResults;
 
@@ -59,9 +82,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 .Cast<AlgorithmResultType>()
                 .Select(e1 => new KeyValuePair<AlgorithmResultType, string>(e1, e1.ToString()))
                 .ToList();
-
-            if (listView1.View is GridView gridView)
-                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
 
             netFileUtil = new NetFileUtil();
             netFileUtil.handler += NetFileUtil_handler;

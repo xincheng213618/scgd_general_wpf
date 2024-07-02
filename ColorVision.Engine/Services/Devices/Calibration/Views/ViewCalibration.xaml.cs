@@ -62,14 +62,13 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         public ObservableCollection<ViewResultCalibration> ViewResultCalibrations { get; set; } = new ObservableCollection<ViewResultCalibration>();
         public  MQTTCalibration DeviceService => Device.DService;
         public DeviceCalibration Device { get; set; }
-        public static ViewCameraConfig Config => ViewCameraConfig.Instance;
 
         public ViewCalibration(DeviceCalibration device)
         {
             Device = device;
             InitializeComponent();
         }
-
+        public static ViewCameraConfig Config => ViewCameraConfig.Instance;
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             this.DataContext = this;
