@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 
-namespace ColorVision.Engine.UserSpace
+namespace ColorVision.Engine.Rbac
 {
     /// <summary>
     /// UserInfoWindow.xaml 的交互逻辑

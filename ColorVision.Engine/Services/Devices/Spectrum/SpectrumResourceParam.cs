@@ -2,7 +2,7 @@
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.UserSpace;
+using ColorVision.Rbac;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ColorVision.Engine.UserSpace
+namespace ColorVision.Engine.Rbac
 {
     [Table("t_scgd_sys_user2tenant")]
     public class UserTenant : VPKModel

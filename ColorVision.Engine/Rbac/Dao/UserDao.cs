@@ -1,12 +1,12 @@
 ﻿using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Authorizations;
-using ColorVision.UserSpace;
+using ColorVision.Rbac;
 using log4net;
 using MySql.Data.MySqlClient;
 using System;
 
-namespace ColorVision.Engine.UserSpace
+namespace ColorVision.Engine.Rbac
 {
 
     [Table("t_scgd_sys_user")]

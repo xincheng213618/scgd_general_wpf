@@ -3,11 +3,11 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
-using ColorVision.UserSpace;
+using ColorVision.Rbac;
 using log4net;
 using System.Windows;
 
-namespace ColorVision.Engine.UserSpace
+namespace ColorVision.Engine.Rbac
 {
     public class UserManagerService : IMainWindowInitialized
     {

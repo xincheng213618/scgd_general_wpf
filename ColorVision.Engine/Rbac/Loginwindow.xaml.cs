@@ -1,12 +1,12 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.UserSpace;
+using ColorVision.Engine.Rbac;
 using ColorVision.Themes;
 using ColorVision.UI.Menus;
 using System;
 using System.Windows;
 
-namespace ColorVision.UserSpace
+namespace ColorVision.Rbac
 {
     public class ExportLogin : IMenuItem
     {

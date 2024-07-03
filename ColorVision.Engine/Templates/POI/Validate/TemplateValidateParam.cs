@@ -5,7 +5,7 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.SysDictionary;
 using ColorVision.Engine.Templates.POI.Validate.Dao;
 using ColorVision.UI.Menus;
-using ColorVision.UserSpace;
+using ColorVision.Rbac;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;

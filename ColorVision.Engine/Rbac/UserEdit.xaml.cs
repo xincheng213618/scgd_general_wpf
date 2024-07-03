@@ -1,13 +1,13 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
-using ColorVision.UserSpace;
+using ColorVision.Rbac;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 
-namespace ColorVision.Engine.UserSpace
+namespace ColorVision.Engine.Rbac
 {
     /// <summary>
     /// UserEdit.xaml 的交互逻辑

@@ -6,7 +6,7 @@ using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
-using ColorVision.UserSpace;
+using ColorVision.Rbac;
 using System;
 using System.Windows;
 
