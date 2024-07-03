@@ -48,6 +48,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         private int _BaudRate = 115200;
 
         public List<ChannelCfg> ChannelCfgs { get => _ChannelCfgs; set { _ChannelCfgs = value; NotifyPropertyChanged(); } }
+
         private List<ChannelCfg> _ChannelCfgs = new List<ChannelCfg>{
             new() { Cfwport =0,Chtype =ImageChannelType.Gray_Y }, new() {Cfwport =1,Chtype =ImageChannelType.Gray_X }, new(){ Cfwport =2,Chtype =ImageChannelType.Gray_Z}
         };

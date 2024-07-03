@@ -54,7 +54,6 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand EditCameraCommand { get; set; }
         public RelayCommand EditCalibrationCommand { get; set; }
 
-
         public ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; NotifyPropertyChanged(); } }
         private ImageSource? _QRIcon;
         public ImageSource Icon { get => _Icon; set{ _Icon = value; NotifyPropertyChanged(); } }

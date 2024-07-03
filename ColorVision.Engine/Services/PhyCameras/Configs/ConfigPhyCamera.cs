@@ -171,7 +171,8 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         public MotorConfig MotorConfig { get; set; } = new MotorConfig();
         public PhyCameraCfg CameraCfg { get; set; } = new PhyCameraCfg();
         public CFWPORT CFW { get; set; } = new CFWPORT();
-        public FileSeviceConfig FileServerCfg { get; set; } = new FileSeviceConfig();
+        public FileSeviceConfig FileServerCfg { get => _FileServerCfg; set { _FileServerCfg = value; NotifyPropertyChanged(); } } 
+        private FileSeviceConfig _FileServerCfg = new FileSeviceConfig();
     }
 
     public  class FileSeviceConfig :ViewModelBase

@@ -196,6 +196,10 @@ namespace ColorVision.Engine.Services.PhyCameras
                 EditConfig.CFW.ChannelCfgs = EditConfig.CFW.ChannelCfgs.GetRange(0, 9);
 
 
+            if (!string.Equals(EditConfig.FileServerCfg.FileBasePath, PhyCamera.Config.FileServerCfg.FileBasePath, StringComparison.Ordinal))
+            {
+                MessageBox1.Show("您需要手动重启服务，并且将原来文件夹复制到新的文件夹里，否则不起效果，如果未复制文件，请重置校正文件");
+            }
             EditConfig.CopyTo(PhyCamera.Config);
             Close();
         }
