@@ -1,6 +1,7 @@
 ﻿using ColorVision.Adorners;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Rbac;
+using ColorVision.FloatingBall;
 using ColorVision.Scheduler;
 using ColorVision.Solution;
 using ColorVision.Solution.Searches;
@@ -39,13 +40,13 @@ namespace ColorVision
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
         public ViewGridManager ViewGridManager { get; set; }
-        public static MainWindowConfig MainWindowConfig => MainWindowConfig.Instance;
+        public static MainWindowConfig Config => MainWindowConfig.Instance;
 
         public MainWindow()
         {
             InitializeComponent();
-            MainWindowConfig.SetWindow(this);
-            SizeChanged += (s, e) => MainWindowConfig.SetConfig(this);
+            Config.SetWindow(this);
+            SizeChanged += (s, e) => Config.SetConfig(this);
             var IsAdministrator = Tool.IsAdministrator();
             Title += $"- {(IsAdministrator ? Properties.Resources.RunAsAdmin : Properties.Resources.NotRunAsAdmin)}";
             this.ApplyCaption();
@@ -54,8 +55,8 @@ namespace ColorVision
         private void Window_Initialized(object sender, EventArgs e)
         {
             MenuManager.GetInstance().Menu = Menu1;
-            MainWindowConfig.IsOpenSidebar = true;
-            this.DataContext = MainWindowConfig;
+            Config.IsOpenSidebar = true;
+            this.DataContext = Config;
             if (!WindowConfig.IsExist || (WindowConfig.IsExist && WindowConfig.Icon == null))
             {
                 ThemeManager.Current.SystemThemeChanged += (e) =>
@@ -102,6 +103,8 @@ namespace ColorVision
             QuartzSchedulerManager.GetInstance();
             Application.Current.MainWindow = this;
             LoadIMainWindowInitialized();
+            if (Config.OpenFloatingBall)
+                new FloatingBallWindow().Show();
         }
 
         public static void LoadIMainWindowInitialized() 

@@ -99,6 +99,8 @@ namespace ColorVision
             Width = window.Width;
             WindowState = (int)window.WindowState;
         }
+        public bool OpenFloatingBall { get => _OpenFloatingBall; set { _OpenFloatingBall = value; NotifyPropertyChanged(); } }
+        private bool _OpenFloatingBall;
 
         public const string AutoRunRegPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
         public const string AutoRunName = "ColorVisionAutoRun";
@@ -122,6 +124,8 @@ namespace ColorVision
         }
         public bool AutoScrollToEnd { get => _AutoScrollToEnd; set { _AutoScrollToEnd = value;NotifyPropertyChanged(); } }
         private bool _AutoScrollToEnd = true;
+
+
 
         public bool AutoRefresh { get => _AutoRefresh; set { _AutoRefresh = value; NotifyPropertyChanged(); } }
         private bool _AutoRefresh = true;

@@ -5,10 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.FloatingBall"
         mc:Ignorable="d"
-        Title="FloatingBallWindow" Height="40" Width="100" Background="Transparent" AllowsTransparency="True"  Topmost="True" ShowInTaskbar="False" WindowStyle="None" AllowDrop="True" Initialized="Window_Initialized">
+        Title="FloatingBallWindow" Height="35" Width="125" Background="Transparent" AllowsTransparency="True"  Topmost="True" ShowInTaskbar="False" WindowStyle="None" AllowDrop="True" Initialized="Window_Initialized">
     <Grid>
-        <Border Background="White" CornerRadius="5"  BorderThickness="1" BorderBrush="#f5f5f5"  Opacity="0.4">
-        </Border>
-        <Image Source="/Assets/Image/ColorVision.png"  Margin="4" Opacity="0.7"/>
+        <Border Background="White" CornerRadius="10"  BorderThickness="1" BorderBrush="#AF000000"  Opacity="0.8"/>
+        <StackPanel Margin="10" VerticalAlignment="Center">
+            <TextBlock Text=""/>
+        </StackPanel>
+
     </Grid>
 </Window>
