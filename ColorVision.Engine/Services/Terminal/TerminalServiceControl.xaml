@@ -26,84 +26,84 @@
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <Grid >
-                <Grid  x:Name="MQTTShowContent" Grid.Row="0">
+            <Grid x:Name="MQTTShowContent" Grid.Row="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-
-                    <StackPanel>
-                        <Border Background ="{DynamicResource RegionBrush}" CornerRadius="5">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel  Orientation="Horizontal" Grid.Column="1" Margin="5,0,0,0" >
-                                    <Button  Margin="0,0,0,5" Height="40" Command="{Binding EditCommand}" ToolTip="{x:Static properties:Resources.Edit}">
-                                        <Image Source="{StaticResource DrawingImageEdit}" Height="25"/>
-                                    </Button>
-                                    <Button Margin="0,0,0,5" Height="40" Grid.Column="2"  Command="{Binding RefreshCommand}"  VerticalAlignment="Stretch"   ToolTip="刷新">
-                                        <Button.Triggers>
-                                            <EventTrigger RoutedEvent="Button.Click">
-                                                <BeginStoryboard>
-                                                    <Storyboard>
-                                                        <DoubleAnimation Storyboard.TargetName="rotateTransform" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
-                                                    </Storyboard>
-                                                </BeginStoryboard>
-                                            </EventTrigger>
-                                        </Button.Triggers>
-                                        <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets"   Foreground="{DynamicResource GlobalTextBrush}"  FontSize="15" ToolTip="刷新">
-                                            <TextBlock.RenderTransform>
-                                                <RotateTransform x:Name="rotateTransform" CenterX="7.5" CenterY="7.5"/>
-                                            </TextBlock.RenderTransform>
-                                        </TextBlock>
-                                    </Button>
-                                    <Grid Height="40" Margin="0,0,0,5">
-                                        <Image Source="{StaticResource DrawingImageAdd1}" Margin="5"/>
-                                        <Button  Background="Transparent" Command="{Binding OpenCreateWindowCommand}" VerticalAlignment="Stretch"/>
-                                    </Grid>
-                                </StackPanel>
-
-                                <StackPanel Margin="5">
-                                    <DockPanel Margin="5,0">
-                                        <ToggleButton DockPanel.Dock="Right"  Style="{StaticResource ButtonMQTTConnect}"  Height="20" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
-                                        <Grid  Height="18"   HorizontalAlignment="Left"  Margin="0,0,4,0">
-                                            <Image Source="{Binding Icon}"/>
-                                        </Grid>
-                                        <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
-                                    </DockPanel>
-                                </StackPanel>
+                    <Border Background ="{DynamicResource RegionBrush}" CornerRadius="5">
+                        <StackPanel Margin="5">
+                            <DockPanel Margin="5,0">
+                                <ToggleButton DockPanel.Dock="Right"  Style="{StaticResource ButtonMQTTConnect}"  Height="20" Width="20"  HorizontalAlignment="Right" IsChecked="{Binding  Config.IsAlive,Mode=OneWay}" IsEnabled="False" />
+                                <Grid  Height="18"   HorizontalAlignment="Left"  Margin="0,0,4,0">
+                                    <Image Source="{Binding Icon}"/>
+                                </Grid>
+                                <TextBlock Text="{Binding Config.Name}" FontWeight="Bold" FontSize="20"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Grid.Column="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5"  Margin="5,0,0,0">
+                        <StackPanel  Orientation="Horizontal" >
+                            <Button Command="{Binding RefreshCommand}" Background="Transparent"  BorderThickness="0" >
+                                <Button.Triggers>
+                                    <EventTrigger RoutedEvent="Button.Click">
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="rotateTransform1" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:0.5" FillBehavior="Stop"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </EventTrigger>
+                                </Button.Triggers>
+                                <TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" Foreground="{DynamicResource GlobalTextBrush}"  FontSize="20" ToolTip="刷新">
+                                    <TextBlock.RenderTransform>
+                                        <RotateTransform x:Name="rotateTransform1" CenterX="10" CenterY="10"/>
+                                    </TextBlock.RenderTransform>
+                                </TextBlock>
+                            </Button>
+                            <Grid Visibility="{Binding ElementName=ButtonEdit,Path=IsEnabled,Converter={StaticResource bool2VisibilityConverter}}" Width="25" >
+                                <Image Source="{StaticResource  DrawingImageEdit}" Width="17" Margin="0" />
+                                <Button x:Name="ButtonEdit" Background="Transparent" BorderThickness="0" Command="{Binding EditCommand}"/>
                             </Grid>
-
-                        </Border>
-
-                        <Border  Background ="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
-                            <GroupBox Header="{x:Static properties:Resources.BasicInformation}" Margin="5">
-                                <StackPanel Margin="5">
-                                    <DockPanel >
-                                        <TextBlock Text="服务代码:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding SysResourceModel.Code}"/>
-                                    </DockPanel>
-                                    <DockPanel >
-                                        <TextBlock Text="发送信道:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.SendTopic}"/>
-                                    </DockPanel>
-                                    <DockPanel >
-                                        <TextBlock Text="接收信道:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.SubscribeTopic}"/>
-                                    </DockPanel>
-                                    <DockPanel >
-                                        <TextBlock Text="心跳:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.HeartbeatTime}"/>
-                                    </DockPanel>
-                                </StackPanel>
-                            </GroupBox>
-                        </Border>
-                    </StackPanel>
+                            <Grid Height="30" Margin="5,0" >
+                                <Image Source="{StaticResource DrawingImageAdd1}" Margin="5"/>
+                                <Button  Background="Transparent" BorderThickness="0" Command="{Binding OpenCreateWindowCommand}" VerticalAlignment="Stretch"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
                 </Grid>
+
+                <StackPanel Grid.Row="1">
+
+                    <Border  Background ="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
+                        <GroupBox Header="{x:Static properties:Resources.BasicInformation}" Margin="5">
+                            <StackPanel Margin="5">
+                                <DockPanel >
+                                    <TextBlock Text="服务代码:" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding SysResourceModel.Code}"/>
+                                </DockPanel>
+                                <DockPanel >
+                                    <TextBlock Text="发送信道:" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.SendTopic}"/>
+                                </DockPanel>
+                                <DockPanel >
+                                    <TextBlock Text="接收信道:" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.SubscribeTopic}"/>
+                                </DockPanel>
+                                <DockPanel >
+                                    <TextBlock Text="心跳:" Width="120"/>
+                                    <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.HeartbeatTime}"/>
+                                </DockPanel>
+                            </StackPanel>
+                        </GroupBox>
+                    </Border>
+                </StackPanel>
             </Grid>
+
             <ListView  x:Name="ListViewService" Background="Transparent" BorderThickness="0" Padding="0" SelectionChanged="ListViewService_SelectionChanged" Grid.Row="1">
                 <ListView.Resources >
                 </ListView.Resources>

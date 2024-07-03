@@ -9,6 +9,7 @@
              xmlns:draw ="clr-namespace:ColorVision.Draw;assembly=ColorVision.Util"
              xmlns:resx="clr-namespace:ColorVision.Engine.Properties"
              xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
              d:DataContext="{d:DesignInstance local:ImageView}"
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="1000" Initialized="UserControl_Initialized" AllowDrop="True">
@@ -42,7 +43,6 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="auto"/>
         </Grid.ColumnDefinitions>
-        <TextBox Grid.Column="0" x:Name="TextBox1" Background="Transparent" Width="5" BorderThickness="0" Foreground="Transparent"/>
         <Grid x:Name="ImageGroupGrid" Grid.Column="1"  Width="300"  Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
@@ -204,34 +204,34 @@
                 </ToolBar>
                 
             </ToolBarTray>
-            <ToolBarTray x:Name="ToolBar2"  DockPanel.Dock="Left" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="0,30,0,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Left" VerticalAlignment="Top">
-                <ToolBar ToolBarTray.IsLocked="True" >
-                    <Button Click="Button_Click">
+            <ToolBarTray x:Name="ToolBar2"  DockPanel.Dock="Left" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="2,30,0,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Left" VerticalAlignment="Top">
+                <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
+                    <Button Click="Button_Click" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource openDrawingImage}" Margin="-5"/>
                     </Button>
-                    <Button Command="{Binding SaveImageCommand}">
+                    <Button Command="{Binding SaveImageCommand}" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageSave}"  Margin="-5"/>
                     </Button>
-                    <Button Command="{Binding ClearImageCommand}">
+                    <Button Command="{Binding ClearImageCommand}" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageClear}"  Margin="-5"/>
                     </Button>
-                    <Button x:Name="ButtonCIE1931"  Visibility="{Binding CIEVisible}" Click="ButtonCIE1931_Click">
+                    <Button x:Name="ButtonCIE1931"  Visibility="{Binding CIEVisible}" Click="ButtonCIE1931_Click" Margin="0,0,0,2">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="/ColorVision.Engine;component/Assets/Image/CIE1931xy1.png" Margin="-5"/>
                     </Button>
-                    <Button x:Name="HistogramButton"  Visibility="{Binding PseudoVisible}" Click="HistogramButton_Click">
+                    <Button x:Name="HistogramButton"  Visibility="{Binding PseudoVisible}" Click="HistogramButton_Click" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIHistogram}"  Margin="-5"/>
                     </Button>
                     <StackPanel x:Name="PseudoStackPanel">
 
-                        <ToggleButton x:Name="Pseudo"  Visibility="{Binding PseudoVisible}" Click="ToggleButton_Click">
+                        <ToggleButton x:Name="Pseudo"  Visibility="{Binding PseudoVisible}" Click="ToggleButton_Click"  Margin="0,0,0,2" >
                             <Image Style="{StaticResource ToolBarImage}"   Source="/ColorVision.Engine;component/Assets/png/PowerToy.png" Margin="-5"/>
                         </ToggleButton>
 
-                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                        <Grid Width="20" Margin="0,0,0,2" HorizontalAlignment="Center" >
                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
                             <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="Calibration"  Click="Pseudo_MouseDoubleClick"/>
                         </Grid>
-                        <Grid  Height="200" Visibility="{Binding ElementName=Pseudo,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+                        <Grid  Height="200"  Visibility="{Binding ElementName=Pseudo,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
@@ -265,6 +265,20 @@
                     <TextBlock Text="{Binding ElementName=ImageShow,Path=Source.Width}" Foreground="White" HorizontalAlignment="Center" />
                     <TextBlock Text="{Binding ElementName=ImageShow,Path=Source.Height}" Foreground="White"  HorizontalAlignment="Center" />
                 </StackPanel>
+            </Border>
+        </Grid>
+
+
+        <Grid x:Name="WaitControl" Grid.Row="0" Grid.ColumnSpan="2" Panel.ZIndex="9" Visibility="Collapsed">
+            <Grid   Background="Black"  Opacity="0.3"/>
+            <Border   Background="#F9F9F9"  Height="250" Width="250"  CornerRadius="10">
+                <Border Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" CornerRadius="5" Margin="5">
+                    <Grid>
+                        <base:ProgressRing  BorderBrush="Red" Margin="30" />
+                        <TextBlock x:Name="WaitControlText" Text="数据加载中" HorizontalAlignment="Center" FontSize="16"/>
+                        <ProgressBar x:Name="WaitControlProgressBar" Visibility="Collapsed" BorderThickness="0"  Maximum="100" Minimum="0"  Margin="5" VerticalAlignment="Bottom" />
+                    </Grid>
+                </Border>
             </Border>
         </Grid>
     </Grid>

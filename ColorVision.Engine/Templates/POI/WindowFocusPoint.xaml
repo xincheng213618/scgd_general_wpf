@@ -703,7 +703,6 @@
                         <ProgressBar x:Name="WaitControlProgressBar" Visibility="Collapsed" BorderThickness="0"  Maximum="100" Minimum="0"  Margin="5" VerticalAlignment="Bottom" />
                     </Grid>
                 </Border>
-
             </Border>
         </Grid>
     </Grid>

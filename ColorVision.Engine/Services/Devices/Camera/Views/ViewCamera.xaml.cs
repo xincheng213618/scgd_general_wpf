@@ -134,10 +134,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             else
             {
                 handler?.Close();
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MessageBox1.Show(Application.Current.MainWindow, "文件打开失败", "ColorVision");
-                });
             }
         }
 

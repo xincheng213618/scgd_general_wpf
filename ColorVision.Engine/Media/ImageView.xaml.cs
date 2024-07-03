@@ -57,8 +57,8 @@ namespace ColorVision.Engine.Media
         [JsonIgnore]
         public bool IsChannel3 => Channel == 3;
 
-
-
+        public bool IsShowLoadImage { get => _IsShowLoadImage; set { _IsShowLoadImage = value; NotifyPropertyChanged(); } }
+        private bool _IsShowLoadImage = true;
     }
 
 
@@ -576,9 +576,27 @@ namespace ColorVision.Engine.Media
                     FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
                     try
                     {
-                        CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath, fileExtType);
-                        Config.FilePath = filePath;
-                        OpenImage(cVCIEFile.ToWriteableBitmap());
+                        if (Config.IsShowLoadImage)
+                        {
+
+                            WaitControl.Visibility = Visibility.Visible;
+                            Task.Run(() =>
+                            {
+                                CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath, fileExtType);
+                                Config.FilePath = filePath;
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    OpenImage(cVCIEFile.ToWriteableBitmap());
+                                    WaitControl.Visibility = Visibility.Collapsed;
+                                });
+                            });
+                        }
+                        else
+                        {
+                            CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath, fileExtType);
+                            Config.FilePath = filePath;
+                            OpenImage(cVCIEFile.ToWriteableBitmap());
+                        };
                     }
                     catch (Exception ex)
                     {
