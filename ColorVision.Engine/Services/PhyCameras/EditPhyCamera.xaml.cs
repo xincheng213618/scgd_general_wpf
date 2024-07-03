@@ -7,6 +7,7 @@ using ColorVision.Themes;
 using cvColorVision;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -199,10 +200,30 @@ namespace ColorVision.Engine.Services.PhyCameras
             if (!string.Equals(EditConfig.FileServerCfg.FileBasePath, PhyCamera.Config.FileServerCfg.FileBasePath, StringComparison.Ordinal))
             {
                 MessageBox1.Show("您需要手动重启服务，并且将原来文件夹复制到新的文件夹里，否则不起效果，如果未复制文件，请重置校正文件");
+                string sourceDir = PhyCamera.Config.FileServerCfg.FileBasePath + "\\" + PhyCamera.Code;
+                string targetDir = EditConfig.FileServerCfg.FileBasePath;
+
+                if (MessageBox1.Show($"自动复制文件夹 {sourceDir} to {targetDir}  ", "ColorVision",MessageBoxButton.YesNo) == MessageBoxResult.Yes)
+                {
+                    if (!Directory.Exists(targetDir))
+                        Directory.CreateDirectory(targetDir);
+                    try
+                    {
+                        Common.NativeMethods.ShellFileOperations.Move(sourceDir, targetDir);
+                        MessageBox.Show("文件夹复制成功！");
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("文件夹复制失败: " + ex.Message);
+                    }
+
+                }
+
             }
             EditConfig.CopyTo(PhyCamera.Config);
             Close();
         }
+
 
         private void FileBasePath_Click(object sender, RoutedEventArgs e)
         {
