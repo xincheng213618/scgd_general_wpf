@@ -106,6 +106,24 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 添加物理相机 的本地化字符串。
+        /// </summary>
+        public static string AddPhysicalCamera {
+            get {
+                return ResourceManager.GetString("AddPhysicalCamera", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 添加未创建的相机 的本地化字符串。
+        /// </summary>
+        public static string AddUncreatedCamera {
+            get {
+                return ResourceManager.GetString("AddUncreatedCamera", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 高级设置 的本地化字符串。
         /// </summary>
         public static string AdvancedSettings {
@@ -849,6 +867,15 @@ namespace ColorVision.Engine.Properties {
         public static string Layers {
             get {
                 return ResourceManager.GetString("Layers", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 许可证导入 的本地化字符串。
+        /// </summary>
+        public static string LicenseImport {
+            get {
+                return ResourceManager.GetString("LicenseImport", resourceCulture);
             }
         }
         

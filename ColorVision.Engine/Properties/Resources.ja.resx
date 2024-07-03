@@ -783,4 +783,13 @@
   <data name="MenuSensorHeYuan" xml:space="preserve">
     <value>汎用センサーテンプレート設定(S)</value>
   </data>
+  <data name="AddPhysicalCamera" xml:space="preserve">
+    <value>物理カメラを追加する</value>
+  </data>
+  <data name="AddUncreatedCamera" xml:space="preserve">
+    <value>未作成のカメラを追加する</value>
+  </data>
+  <data name="LicenseImport" xml:space="preserve">
+    <value>ライセンスのインポート</value>
+  </data>
 </root>

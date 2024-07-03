@@ -783,4 +783,13 @@
   <data name="MenuSensorHeYuan" xml:space="preserve">
     <value>通用感測器模板設定(_H)</value>
   </data>
+  <data name="AddPhysicalCamera" xml:space="preserve">
+    <value>增加實體相機</value>
+  </data>
+  <data name="AddUncreatedCamera" xml:space="preserve">
+    <value>新增未建立的相機</value>
+  </data>
+  <data name="LicenseImport" xml:space="preserve">
+    <value>許可證導入</value>
+  </data>
 </root>

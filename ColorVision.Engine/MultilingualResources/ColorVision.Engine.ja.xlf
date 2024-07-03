@@ -23,6 +23,14 @@
           <source>添加</source>
           <target state="new">追加</target>
         </trans-unit>
+        <trans-unit id="AddPhysicalCamera" translate="yes" xml:space="preserve">
+          <source>添加物理相机</source>
+          <target state="new">物理カメラを追加する</target>
+        </trans-unit>
+        <trans-unit id="AddUncreatedCamera" translate="yes" xml:space="preserve">
+          <source>添加未创建的相机</source>
+          <target state="new">未作成のカメラを追加する</target>
+        </trans-unit>
         <trans-unit id="AdvanceSearch" translate="yes" xml:space="preserve">
           <source>高级查询</source>
           <target state="new">高度な検索</target>
@@ -354,6 +362,10 @@
         <trans-unit id="Layers" translate="yes" xml:space="preserve">
           <source>图层</source>
           <target state="new">レイヤー</target>
+        </trans-unit>
+        <trans-unit id="LicenseImport" translate="yes" xml:space="preserve">
+          <source>许可证导入</source>
+          <target state="new">ライセンスのインポート</target>
         </trans-unit>
         <trans-unit id="LicenseManagement" translate="yes" xml:space="preserve">
           <source>许可证管理</source>

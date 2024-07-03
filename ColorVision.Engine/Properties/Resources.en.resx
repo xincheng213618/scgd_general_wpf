@@ -783,4 +783,13 @@
   <data name="MenuSensorHeYuan" xml:space="preserve">
     <value>Generic sensor template settings(_H)</value>
   </data>
+  <data name="AddPhysicalCamera" xml:space="preserve">
+    <value>Adding a Physical Camera</value>
+  </data>
+  <data name="AddUncreatedCamera" xml:space="preserve">
+    <value>Adding an uncreated camera</value>
+  </data>
+  <data name="LicenseImport" xml:space="preserve">
+    <value>License Import</value>
+  </data>
 </root>
