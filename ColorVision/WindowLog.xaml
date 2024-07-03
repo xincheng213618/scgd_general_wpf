@@ -25,15 +25,14 @@
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <hc:SearchBar x:Name="SearchBar1"  Margin="0,0,5,0" TextChanged="SearchBar1_TextChanged" hc:InfoElement.Placeholder="过滤器支持正则" hc:InfoElement.ShowClearButton="True" Style="{StaticResource SearchBarPlus}" IsRealTime="True"   />
+            <hc:SearchBar x:Name="SearchBar1"  Margin="0,0,5,0" TextChanged="SearchBar1_TextChanged" hc:InfoElement.Placeholder="{x:Static properties:Resources.FilterSupportsRegex}" hc:InfoElement.ShowClearButton="True" Style="{StaticResource SearchBarPlus}" IsRealTime="True"   />
             <StackPanel Grid.Column="1"  Orientation="Horizontal">
                 <ToggleButton  Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="AutoScrollToEnd" IsChecked="{Binding AutoScrollToEnd}" Margin="5,0"/>
-                <ToggleButton  Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="AutoRefresh" IsChecked="{Binding AutoRefresh}" Margin="5,0"/>
-                <ToggleButton  Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="LogReserve" IsChecked="{Binding LogReserve}" Margin="5,0"/>
+                <ToggleButton  Style="{StaticResource ToggleButtonSwitchBaseStyle}"  Content="{x:Static properties:Resources.AutoRefresh}" IsChecked="{Binding AutoRefresh}" Margin="5,0"/>
                 <ComboBox Name="cmlogLoadState"  Width="100" SelectedValuePath="Key" DisplayMemberPath="Value" SelectedValue="{Binding LogLoadState}" SelectionChanged="cmlogLoadState_SelectionChanged"/>
                 <TextBlock Text="{x:Static properties:Resources.LogLevel}"  Margin="0,0,5,0"/>
                 <ComboBox Name="cmlog"  Width="100" SelectedValuePath="Key" DisplayMemberPath="Value" SelectedValue="{Binding LogLevel}" SelectionChanged="cmlog_SelectionChanged"/>
-                <Button Content="清除" Click="Clear_Click" Margin="5,0,0,0"/>
+                <Button Content="{x:Static properties:Resources.Clear}" Click="Clear_Click" Margin="5,0,0,0"/>
             </StackPanel>
         </Grid>
 

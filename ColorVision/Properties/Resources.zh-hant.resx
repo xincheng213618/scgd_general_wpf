@@ -354,4 +354,13 @@
   <data name="Initializer" xml:space="preserve">
     <value>初始化模組</value>
   </data>
+  <data name="FilterSupportsRegex" xml:space="preserve">
+    <value>過濾器支援正規</value>
+  </data>
+  <data name="AutoRefresh" xml:space="preserve">
+    <value>自動重新整理</value>
+  </data>
+  <data name="AutoScrollToEnd" xml:space="preserve">
+    <value>自動滾動到底部</value>
+  </data>
 </root>

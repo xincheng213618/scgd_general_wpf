@@ -97,6 +97,24 @@ namespace ColorVision.Properties {
         }
         
         /// <summary>
+        ///   查找类似 自动刷新 的本地化字符串。
+        /// </summary>
+        public static string AutoRefresh {
+            get {
+                return ResourceManager.GetString("AutoRefresh", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 自动滚动到底部 的本地化字符串。
+        /// </summary>
+        public static string AutoScrollToEnd {
+            get {
+                return ResourceManager.GetString("AutoScrollToEnd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 取消 的本地化字符串。
         /// </summary>
         public static string Cancel {
@@ -246,6 +264,15 @@ namespace ColorVision.Properties {
         public static string ExperimentalFeature {
             get {
                 return ResourceManager.GetString("ExperimentalFeature", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 过滤器支持正则 的本地化字符串。
+        /// </summary>
+        public static string FilterSupportsRegex {
+            get {
+                return ResourceManager.GetString("FilterSupportsRegex", resourceCulture);
             }
         }
         

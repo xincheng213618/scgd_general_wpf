@@ -354,4 +354,13 @@
   <data name="Initializer" xml:space="preserve">
     <value>初期化モジュール</value>
   </data>
+  <data name="FilterSupportsRegex" xml:space="preserve">
+    <value>フィルターは正規表現をサポートします</value>
+  </data>
+  <data name="AutoRefresh" xml:space="preserve">
+    <value>自動更新</value>
+  </data>
+  <data name="AutoScrollToEnd" xml:space="preserve">
+    <value>自動的に一番下までスクロールします</value>
+  </data>
 </root>

@@ -354,4 +354,13 @@
   <data name="Initializer" xml:space="preserve">
     <value>初始化模块</value>
   </data>
+  <data name="FilterSupportsRegex" xml:space="preserve">
+    <value>过滤器支持正则</value>
+  </data>
+  <data name="AutoRefresh" xml:space="preserve">
+    <value>自动刷新</value>
+  </data>
+  <data name="AutoScrollToEnd" xml:space="preserve">
+    <value>自动滚动到底部</value>
+  </data>
 </root>
