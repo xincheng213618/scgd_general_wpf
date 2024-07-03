@@ -6,7 +6,7 @@ using ColorVision.UI.Menus;
 using System;
 using System.Windows;
 
-namespace ColorVision.Rbac
+namespace ColorVision.Engine.Rbac
 {
     public class ExportLogin : IMenuItem
     {

@@ -1,7 +1,7 @@
 ﻿using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.UI.Authorizations;
-using ColorVision.Rbac;
+using ColorVision.Engine.Rbac;
 using log4net;
 using MySql.Data.MySqlClient;
 using System;

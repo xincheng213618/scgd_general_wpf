@@ -21,7 +21,7 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
-using ColorVision.Rbac;
+using ColorVision.Engine.Rbac;
 using FlowEngineLib;
 using System;
 using System.Collections.Generic;

@@ -15,7 +15,7 @@ using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Themes;
-using ColorVision.Rbac;
+using ColorVision.Engine.Rbac;
 using Newtonsoft.Json;
 using System;
 using System.Linq;

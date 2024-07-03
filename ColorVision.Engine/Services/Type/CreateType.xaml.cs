@@ -5,7 +5,7 @@ using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
-using ColorVision.Rbac;
+using ColorVision.Engine.Rbac;
 using Newtonsoft.Json;
 using System;
 using System.Windows;

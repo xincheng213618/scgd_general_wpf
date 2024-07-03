@@ -4,7 +4,7 @@ using ColorVision.UI.Authorizations;
 using System.Collections.Generic;
 using System.ComponentModel;
 
-namespace ColorVision.Rbac
+namespace ColorVision.Engine.Rbac
 {
 
     public class UserConfig : ViewModelBase, IConfig

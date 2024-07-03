@@ -1,5 +1,7 @@
-﻿using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using ColorVision.Themes;
+using ColorVision.UI;
 using ColorVision.UI.Menus;
 using System;
 using System.Globalization;
@@ -8,6 +10,22 @@ using System.Windows.Data;
 
 namespace ColorVision.Engine.Services.PhyCameras
 {
+
+    public class PhyCamerManagerWizardStep : IWizardStep
+    {
+        public int Order => 9;
+
+        public string Title => "添加物理相机";
+
+        public string Description => "对设备的物理相机进行配置";
+
+        public RelayCommand? RelayCommand => new RelayCommand(a =>
+        {
+            new PhyCameraManagerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterScreen }.ShowDialog();
+        });
+    }
+
+
     public sealed class NameStringConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)

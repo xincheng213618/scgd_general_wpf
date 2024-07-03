@@ -6,7 +6,7 @@ using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates;
-using ColorVision.Rbac;
+using ColorVision.Engine.Rbac;
 using cvColorVision;
 using NPOI.XWPF.UserModel;
 using System;

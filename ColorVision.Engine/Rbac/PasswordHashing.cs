@@ -3,7 +3,7 @@ using System;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace ColorVision.Rbac
+namespace ColorVision.Engine.Rbac
 {
     public class PasswordHashing
     {

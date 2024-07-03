@@ -3,7 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
-using ColorVision.Rbac;
+using ColorVision.Engine.Rbac;
 using log4net;
 using System.Windows;
 
