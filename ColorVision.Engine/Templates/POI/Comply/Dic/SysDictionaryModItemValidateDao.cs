@@ -4,7 +4,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql.ORM;
 using System.Data;
 
-namespace ColorVision.Engine.Templates.POI.Comply.Dao
+namespace ColorVision.Engine.Templates.POI.Comply.Dic
 {
     [Table("t_scgd_sys_dictionary_mod_item_validate")]
     public class SysDictionaryModItemValidateModel : VPKModel

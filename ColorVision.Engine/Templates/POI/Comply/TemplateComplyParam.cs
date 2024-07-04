@@ -12,6 +12,7 @@ using System.Windows;
 using System.Windows.Controls;
 using ColorVision.UI.Authorizations;
 using System.Collections.ObjectModel;
+using ColorVision.Engine.Templates.POI.Comply.Dic;
 
 namespace ColorVision.Engine.Templates.POI.Comply
 {
