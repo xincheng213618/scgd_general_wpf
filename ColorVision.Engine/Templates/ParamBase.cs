@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -6,6 +7,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Windows;
 
 namespace ColorVision.Engine.Templates
 {
@@ -191,11 +193,14 @@ namespace ColorVision.Engine.Templates
         [Browsable(false)]
         public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string _Name;
-        
+
+        public virtual RelayCommand CreateCommand { get; set; }
+
         public ObservableCollection<ModDetailModel> ModDetailModels { get; set; } = new ObservableCollection<ModDetailModel>();
         public ParamBase() : base(new List<ModDetailModel>())
         {
             Id = No++;
+            CreateCommand = new RelayCommand(a => new CreateModeDetail(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(), a => true);
         }
 
         public ParamBase(int id, string name, List<ModDetailModel> detail) : base(detail)
@@ -203,6 +208,7 @@ namespace ColorVision.Engine.Templates
             Id = id;
             Name = name;
             ModDetailModels = new ObservableCollection<ModDetailModel>(detail);
+            CreateCommand = new RelayCommand(a => new CreateModeDetail(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(), a => true);
         }
     }
 }

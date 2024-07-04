@@ -9,7 +9,6 @@ namespace ColorVision.Engine.Templates.POI.Comply.Dic
     {
 
         public SysDictionaryModModel ModMasterModel { get; set; }
-        public RelayCommand CreateCommand { get; set; }
 
         public DicComplyParam()
         {

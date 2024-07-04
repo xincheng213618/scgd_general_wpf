@@ -10,20 +10,20 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Services.SysDictionary
+namespace ColorVision.Engine.Templates
 {
     /// <summary>
     /// EditTerminal.xaml 的交互逻辑
     /// </summary>
     public partial class CreateModeDetail : Window
     {
-        DicModParam DicModParam { get; set; }
+        ParamBase Param { get; set; }
 
-        public SysDictionaryModDetaiModel CreateConfig { get; set; }
+        public ModDetailModel CreateConfig { get; set; }
 
-        public CreateModeDetail(DicModParam dicModParam)
+        public CreateModeDetail(ParamBase dicModParam)
         {
-            DicModParam = dicModParam;
+            Param = dicModParam;
             InitializeComponent();
             this.ApplyCaption();
         }
@@ -31,16 +31,18 @@ namespace ColorVision.Engine.Services.SysDictionary
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = DicModParam;
-            CreateConfig = new SysDictionaryModDetaiModel() {  PId = DicModParam.Id};
+            this.DataContext = Param;
+            CreateConfig = new ModDetailModel() { };
+            CreateConfig.Pid = Param.Id;
+            CreateConfig.SysPid = 500;
             BorderEdit.DataContext  = CreateConfig;
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            int i = SysDictionaryModDetailDao.Instance.Save(CreateConfig);
+            int i = ModDetailDao.Instance.Save(CreateConfig);
             if (i > 0)
             {
-                DicModParam.ModDetaiModels.Add(CreateConfig);
+                Param.ModDetailModels.Add(CreateConfig);
                 this.Close();
             }
             else

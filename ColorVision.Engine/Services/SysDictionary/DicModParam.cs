@@ -131,11 +131,10 @@ namespace ColorVision.Engine.Services.SysDictionary
     {
 
         public SysDictionaryModModel modMasterModel { get; set; }
-        public RelayCommand CreateCommand { get; set; }
 
         public DicModParam()
         {
-            CreateCommand = new RelayCommand(a => new CreateModeDetail(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(), a => true);
+            CreateCommand = new RelayCommand(a => new CreateDicModeDetail(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(), a => true);
         }
 
         public DicModParam(SysDictionaryModModel modMasterModel,List<SysDictionaryModDetaiModel> dicModParams) 
@@ -143,7 +142,7 @@ namespace ColorVision.Engine.Services.SysDictionary
             Id = modMasterModel.Id;
             Name = modMasterModel.Name ??"default";
             ModDetaiModels = new ObservableCollection<SysDictionaryModDetaiModel>(dicModParams);
-            CreateCommand = new RelayCommand(a => new CreateModeDetail(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(), a => true);
+            CreateCommand = new RelayCommand(a => new CreateDicModeDetail(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(), a => true);
         }
 
         public ObservableCollection<SysDictionaryModDetaiModel> ModDetaiModels { get; set; }
