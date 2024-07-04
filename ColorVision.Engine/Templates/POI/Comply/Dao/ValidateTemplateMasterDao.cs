@@ -3,7 +3,7 @@ using ColorVision.Engine.MySql.ORM;
 using System;
 using System.Data;
 
-namespace ColorVision.Engine.Templates.POI.Validate.Dao
+namespace ColorVision.Engine.Templates.POI.Comply.Dao
 {
     public class ValidateTemplateMasterModel : PKModel
     {

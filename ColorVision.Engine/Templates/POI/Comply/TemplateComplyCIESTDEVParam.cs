@@ -4,7 +4,7 @@ using ColorVision.UI.Menus;
 using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace ColorVision.Engine.Templates.POI.Validate
+namespace ColorVision.Engine.Templates.POI.Comply
 {
     public class ExportValidueCIESTDEV : IMenuItem
     {
@@ -21,14 +21,14 @@ namespace ColorVision.Engine.Templates.POI.Validate
 
         public RelayCommand Command => new RelayCommand(a =>
         {
-            new WindowTemplate(new TemplateValidateCIESTDEVParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateComplyCIESTDEVParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
     }
 
-    public class TemplateValidateCIESTDEVParam : TemplateValidateParam
+    public class TemplateComplyCIESTDEVParam : TemplateComplyParam
     {
         public static ObservableCollection<TemplateModel<ValidateParam>> CIESTDEVParams { get; set; } = new ObservableCollection<TemplateModel<ValidateParam>>();
-        public TemplateValidateCIESTDEVParam()
+        public TemplateComplyCIESTDEVParam()
         {
             Title = "Comply.CIE.STDEV";
             TemplateParams = CIESTDEVParams;

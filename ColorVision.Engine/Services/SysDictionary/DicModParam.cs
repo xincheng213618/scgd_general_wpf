@@ -5,7 +5,7 @@ using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI.Dao;
-using ColorVision.Engine.Templates.POI.Validate;
+using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
 using ColorVision.Engine.Rbac;

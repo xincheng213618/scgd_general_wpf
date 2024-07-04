@@ -4,7 +4,7 @@ using ColorVision.Draw;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Templates.POI.Validate;
+using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.Net;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Util.Draw.Rectangle;
@@ -58,7 +58,7 @@ namespace ColorVision.Engine.Services.Templates.POI
             ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>() select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType.SelectedIndex = 0;
 
-            ComboBoxValidate.ItemsSource = TemplateValidateCIEAVGParam.CIEAVGParams.CreateEmpty();
+            ComboBoxValidate.ItemsSource = TemplateComplyCIEAVGParam.CIEAVGParams.CreateEmpty();
             ComboBoxValidateCIE.ItemsSource = ValidateParam.CIEParams.CreateEmpty();
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()  select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;

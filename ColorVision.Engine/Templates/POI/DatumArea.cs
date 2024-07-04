@@ -1,6 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Templates.POI.Validate;
+using ColorVision.Engine.Templates.POI.Comply;
 using Newtonsoft.Json;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -62,7 +62,7 @@ namespace ColorVision.Engine.Templates.POI
     {
         public RelayCommand ValidateCIECommand => new RelayCommand(a =>
         {
-            var Template = new TemplateValidateParam();
+            var Template = new TemplateComplyParam();
             new WindowTemplate(Template, Template.FindIndex(DeafultValidateCIEId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
 

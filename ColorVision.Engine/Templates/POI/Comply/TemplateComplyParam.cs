@@ -3,7 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.SysDictionary;
-using ColorVision.Engine.Templates.POI.Validate.Dao;
+using ColorVision.Engine.Templates.POI.Comply.Dao;
 using ColorVision.UI.Menus;
 using ColorVision.Engine.Rbac;
 using System.Collections.Generic;
@@ -13,7 +13,7 @@ using System.Windows.Controls;
 using ColorVision.UI.Authorizations;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Engine.Templates.POI.Validate
+namespace ColorVision.Engine.Templates.POI.Comply
 {
     public class ExportComplyEdit : MenuItemBase
     {
@@ -93,13 +93,13 @@ namespace ColorVision.Engine.Templates.POI.Validate
 
         public RelayCommand Command => new(a =>
         {
-            new WindowTemplate(new TemplateValidateParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateComplyParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
     }
 
-    public class TemplateValidateParam : ITemplate<ValidateParam>, IITemplateLoad
+    public class TemplateComplyParam : ITemplate<ValidateParam>, IITemplateLoad
     {
-        public TemplateValidateParam()
+        public TemplateComplyParam()
         {
             Title = "Comply.CIE";
             TemplateParams = ValidateParam.CIEParams;

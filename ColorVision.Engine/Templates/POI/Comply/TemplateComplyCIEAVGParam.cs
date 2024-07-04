@@ -4,7 +4,7 @@ using ColorVision.UI.Menus;
 using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace ColorVision.Engine.Templates.POI.Validate
+namespace ColorVision.Engine.Templates.POI.Comply
 {
 
     public class ExportValidueCIEAVG : IMenuItem
@@ -22,15 +22,15 @@ namespace ColorVision.Engine.Templates.POI.Validate
 
         public RelayCommand Command => new RelayCommand(a =>
         {
-            new WindowTemplate(new TemplateValidateCIEAVGParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateComplyCIEAVGParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
     }
 
-    public class TemplateValidateCIEAVGParam : TemplateValidateParam
+    public class TemplateComplyCIEAVGParam : TemplateComplyParam
     {
         public static ObservableCollection<TemplateModel<ValidateParam>> CIEAVGParams { get; set; } = new ObservableCollection<TemplateModel<ValidateParam>>();
 
-        public TemplateValidateCIEAVGParam()
+        public TemplateComplyCIEAVGParam()
         {
             Title = "Comply.CIE.AVG";
             TemplateParams = CIEAVGParams;

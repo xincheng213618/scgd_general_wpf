@@ -1,8 +1,8 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
-using ColorVision.Engine.Templates.POI.Validate.Dao;
-using ColorVision.Engine.Templates.POI.Validate;
+using ColorVision.Engine.Templates.POI.Comply.Dao;
+using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.Engine.Templates;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;

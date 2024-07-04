@@ -1,10 +1,10 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI.Validate.Dao;
+using ColorVision.Engine.Templates.POI.Comply.Dao;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace ColorVision.Engine.Templates.POI.Validate
+namespace ColorVision.Engine.Templates.POI.Comply
 {
 
     public class ValidateParam : ParamBase

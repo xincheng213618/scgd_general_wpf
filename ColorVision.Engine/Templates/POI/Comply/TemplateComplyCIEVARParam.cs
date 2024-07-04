@@ -4,7 +4,7 @@ using ColorVision.UI.Menus;
 using System.Collections.ObjectModel;
 using System.Windows;
 
-namespace ColorVision.Engine.Templates.POI.Validate
+namespace ColorVision.Engine.Templates.POI.Comply
 {
     public class ExportValidueCIEVAR : IMenuItem
     {
@@ -21,14 +21,14 @@ namespace ColorVision.Engine.Templates.POI.Validate
 
         public RelayCommand Command => new RelayCommand(a =>
         {
-            new WindowTemplate(new TemplateValidateCIEVARParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateComplyCIEVARParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
     }
 
-    public class TemplateValidateCIEVARParam : TemplateValidateParam
+    public class TemplateComplyCIEVARParam : TemplateComplyParam
     {
         public static ObservableCollection<TemplateModel<ValidateParam>> CIEVARParams { get; set; } = new ObservableCollection<TemplateModel<ValidateParam>>();
-        public TemplateValidateCIEVARParam()
+        public TemplateComplyCIEVARParam()
         {
             Title = "Comply.CIE.VAR";
             TemplateParams = CIEVARParams;

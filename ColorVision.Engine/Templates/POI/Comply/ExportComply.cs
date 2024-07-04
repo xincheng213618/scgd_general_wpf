@@ -3,10 +3,10 @@ using ColorVision.Common.Utilities;
 using ColorVision.UI.Menus;
 using System.Windows;
 
-namespace ColorVision.Engine.Templates.POI.Validate
+namespace ColorVision.Engine.Templates.POI.Comply
 {
 
-    public class ExportValidue : IMenuItem
+    public class ExportComply : IMenuItem
     {
         public string OwnerGuid => "Template";
 

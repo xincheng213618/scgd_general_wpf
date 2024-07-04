@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Templates.POI.Validate;
+﻿using ColorVision.Engine.Templates.POI.Comply;
 using System.Windows;
 using System.Windows.Controls;
 

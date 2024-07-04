@@ -2,7 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates.POI.Dao;
-using ColorVision.Engine.Templates.POI.Validate;
+using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Templates.POI;
 using ColorVision.UI.Sorts;
@@ -206,7 +206,7 @@ namespace ColorVision.Engine.Templates.POI
 
         public RelayCommand ValidateCIEAVGCommand => new RelayCommand(a =>
         {
-            var Template = new TemplateValidateCIEAVGParam();
+            var Template = new TemplateComplyCIEAVGParam();
             new WindowTemplate(Template, Template.FindIndex(ValidateId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
 
