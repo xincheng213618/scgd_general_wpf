@@ -5,11 +5,9 @@ using System.Windows;
 
 namespace ColorVision.Engine.Templates.POI.Comply
 {
-
     public class ExportComply : IMenuItem
     {
         public string OwnerGuid => "Template";
-
         public string GuidId => "Comply";
         public int Order => 4;
         public Visibility Visibility => Visibility.Visible;

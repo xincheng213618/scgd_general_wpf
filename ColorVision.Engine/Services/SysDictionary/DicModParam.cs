@@ -214,9 +214,5 @@ namespace ColorVision.Engine.Services.SysDictionary
         }
 
         public ObservableCollection<SysDictionaryModDetaiModel> ModDetaiModels { get; set; }
-
-
-
-
     };
 }

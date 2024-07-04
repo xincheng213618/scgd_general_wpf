@@ -1,21 +1,33 @@
 ﻿#pragma warning disable CS8601
 
+using ColorVision.Common.MVVM;
 using ColorVision.Engine.MySql.ORM;
 using System.Data;
 
 namespace ColorVision.Engine.Templates.POI.Comply.Dao
 {
-    public class SysDictionaryModItemValidateModel : PKModel
+    [Table("t_scgd_sys_dictionary_mod_item_validate")]
+    public class SysDictionaryModItemValidateModel : VPKModel
     {
+        [Column("pid")]
         public int? Pid { get; set; }
+        [Column("code")]
         public string Code { get; set; }
+        [Column("val_max")]
         public float ValMax { get; set; }
+        [Column("val_min")]
         public float ValMin { get; set; }
+        [Column("val_equal")]
         public string ValEqual { get; set; }
+        [Column("val_radix")]
         public short ValRadix { get; set; }
+        [Column("val_type")]
         public short ValType { get; set; }
+        [Column("is_enable")]
         public bool IsEnable { get; set; }
     }
+
+
     public class SysDictionaryModItemValidateDao : BaseTableDao<SysDictionaryModItemValidateModel>
     {
         public static SysDictionaryModItemValidateDao Instance { get; set; } = new SysDictionaryModItemValidateDao();
@@ -24,37 +36,5 @@ namespace ColorVision.Engine.Templates.POI.Comply.Dao
         {
 
         }
-
-        public override SysDictionaryModItemValidateModel GetModelFromDataRow(DataRow item) => new()
-        {
-            Id = item.Field<int>("id"),
-            Pid = item.Field<int>("pid"),
-            Code = item.Field<string>("code"),
-            ValMax = item.Field<float>("val_max"),
-            ValMin = item.Field<float>("val_min"),
-            ValEqual = item.Field<string>("val_equal"),
-            ValRadix = item.Field<short>("val_radix"),
-            ValType = item.Field<short>("val_type"),
-            IsEnable = item.Field<bool>("is_enable"),
-        };
-
-
-        public override DataRow Model2Row(SysDictionaryModItemValidateModel item, DataRow row)
-        {
-            if (item != null)
-            {
-                row["id"] = item.Id;
-                row["pid"] = item.Pid;
-                row["code"] = DataTableExtension.IsDBNull(item.Code);
-                row["val_max"] = item.ValMax;
-                row["val_min"] = item.ValMin;
-                row["val_equal"] = DataTableExtension.IsDBNull(item.ValEqual);
-                row["val_radix"] = item.ValRadix;
-                row["val_type"] = item.ValType;
-                row["is_enable"] = item.IsEnable;
-            }
-            return row;
-        }
-
     }
 }
