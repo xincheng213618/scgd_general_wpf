@@ -91,8 +91,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                         break;
                 }
             }
-            //UpdateUI(Device.DService.DeviceStatus);
-            //Device.DService.DeviceStatusChanged += UpdateUI;
+            UpdateUI(Device.DService.DeviceStatus);
+            Device.DService.DeviceStatusChanged += UpdateUI;
 
         }
 
