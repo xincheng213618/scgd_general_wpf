@@ -2,6 +2,7 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using System.Data;
+using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates
 {
@@ -15,6 +16,8 @@ namespace ColorVision.Engine.Templates
             Pid = pid;
             ValueA = val;
         }
+
+
         public int SysPid { get; set; }
         public int Pid { get; set; }
         public string? ValueA { get; set; }

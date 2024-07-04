@@ -51,14 +51,18 @@ namespace ColorVision.Engine.Templates
             this.DataContext = Param;
             if (ListView1.View is GridView gridView)
                 GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
-
         }
 
 
         private void Button_Del_Click(object sender, RoutedEventArgs e)
         {
-
+            if (sender is MenuItem menuItem && menuItem.Tag is ModDetailModel modDetailModel)
+            {
+                ModDetailDao.Instance.DeleteById(modDetailModel.Id, false);
+                Param.ModDetailModels.Remove(modDetailModel);  
+            }
         }
+
 
         private void GridViewColumnSort(object sender, RoutedEventArgs e)
         {

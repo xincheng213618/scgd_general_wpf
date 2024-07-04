@@ -49,7 +49,7 @@
                     <GridViewColumn  Header="Value">
                         <GridViewColumn.CellTemplate>
                             <DataTemplate  DataType="{x:Type local:ModDetailModel}">
-                                <TextBlock Text="{Binding  ValueA}" />
+                                <TextBox Text="{Binding ValueA}" />
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
