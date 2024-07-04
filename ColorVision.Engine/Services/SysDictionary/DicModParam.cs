@@ -22,11 +22,11 @@ namespace ColorVision.Engine.Services.SysDictionary
 {
     public class ExportDicModParam : MenuItemBase
     {
-        public override string OwnerGuid => "Template";
+        public override string OwnerGuid => "TemplateAlgorithm";
 
-        public override string GuidId => "DicModParam";
-        public override int Order => 31;
-        public override string Header => "算法模板编辑";
+        public override string GuidId => "EditDeaflutAlgrothmParam";
+        public override int Order => 99;
+        public override string Header => "编辑默认算法模板";
 
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()
@@ -125,13 +125,13 @@ namespace ColorVision.Engine.Services.SysDictionary
         }
     }
 
-    public class ExportTemplateSensor : MenuItemBase
+    public class ExportDicSensor : MenuItemBase
     {
-        public override string OwnerGuid => "Template";
+        public override string OwnerGuid => "Sensor";
 
         public override string GuidId => "TemplateSensor";
-        public override int Order => 31;
-        public override string Header => "传感器模板编辑";
+        public override int Order => 99;
+        public override string Header => "编辑默认传感器模板";
 
         [RequiresPermission(PermissionMode.Administrator)]
         public override void Execute()

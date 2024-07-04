@@ -113,7 +113,7 @@ namespace ColorVision.Solution.V
                     {
                         if (item is VFolder vFile && vFile.DirectoryInfo.FullName == parentDirectory)
                         {
-                            Application.Current.Dispatcher.Invoke(() =>
+                            Application.Current?.Dispatcher.Invoke(() =>
                             {
                                 CreateFile(item, new FileInfo(e.FullPath));
                             });
@@ -121,13 +121,13 @@ namespace ColorVision.Solution.V
                     }
                 };
                 FileSystemWatcher.Deleted += (s, e) => {
-                    Application.Current.Dispatcher.Invoke(() =>
+                    Application.Current?.Dispatcher.Invoke(() =>
                     {
                         VisualChildrenEventHandler?.Invoke(this, new EventArgs());
                     });
                 };
                 FileSystemWatcher.Changed += (s, e) => {
-                    Application.Current.Dispatcher.Invoke(() =>
+                    Application.Current?.Dispatcher.Invoke(() =>
                     {
                         VisualChildrenEventHandler?.Invoke(this, new EventArgs());
                     });

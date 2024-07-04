@@ -9,4 +9,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates
         public override string Header => Properties.Resources.MenuAlgorithm;
         public override int Order => 2;
     }
+
+
 }
