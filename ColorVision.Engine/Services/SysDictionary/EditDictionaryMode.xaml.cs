@@ -1,9 +1,19 @@
 ﻿using ColorVision.Engine.Templates.POI.Comply;
+using ColorVision.UI;
+using ColorVision.UI.Sorts;
+using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.SysDictionary
 {
+
+    public class EditDictionaryModeConfig : IConfig
+    {
+        public static EditDictionaryModeConfig Instance => ConfigHandler.GetInstance().GetRequiredService<EditDictionaryModeConfig>();
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+    }
+
     /// <summary>
     /// EditDictionaryMode.xaml 的交互逻辑
     /// </summary>
@@ -13,6 +23,25 @@ namespace ColorVision.Engine.Services.SysDictionary
         {
             InitializeComponent();
         }
+        public static EditDictionaryModeConfig Config => EditDictionaryModeConfig.Instance;
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+
+        private void UserControl_Initialized(object sender, System.EventArgs e)
+        {
+            if (ListView1.View is GridView gridView)
+            {
+                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+                Config.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
+                Config.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
+                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+            }
+        }
+        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && ListView1.View is GridView gridView)
+                GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
+        }
+
 
         public DicModParam Param { get; set; }
 
@@ -20,6 +49,9 @@ namespace ColorVision.Engine.Services.SysDictionary
         {
             Param = param;
             this.DataContext = Param;
+            if (ListView1.View is GridView gridView)
+                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+
         }
 
 
@@ -37,5 +69,7 @@ namespace ColorVision.Engine.Services.SysDictionary
         {
 
         }
+
+
     }
 }

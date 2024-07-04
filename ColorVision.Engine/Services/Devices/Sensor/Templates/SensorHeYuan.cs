@@ -12,27 +12,15 @@ using ColorVision.Themes;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
-    public class ExportSensorHeYuan : IMenuItem
+    public class ExportSensorHeYuan : ExportTemplateBase
     {
-        public string OwnerGuid => "Sensor";
+        public override string OwnerGuid => "TemplateSensor";
 
-        public string? GuidId => "SensorHeYuan";
-        public int Order => 21;
-        public string? Header => Properties.Resources.MenuSensorHeYuan;
+        public override string GuidId => "HeYuan串口模板编辑";
+        public override int Order => 21;
+        public override string Header => Properties.Resources.MenuSensorHeYuan;
 
-        public string? InputGestureText { get; }
-
-        public object? Icon { get; }
-        public Visibility Visibility => Visibility.Visible;
-
-        public RelayCommand Command => new(a => {
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
-                return;
-            }
-            new WindowTemplate(new TemplateSensorHeYuan()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        });
+        public override ITemplate Template => new TemplateSensorHeYuan();
     }
 
 
@@ -40,7 +28,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
     {
         public TemplateSensorHeYuan()
         {
-            Title = "SensorHeYuan设置";
+            Title = "编辑";
             Code = "Sensor.HeYuan";
             TemplateParams = SensorHeYuan.SensorHeYuans;
         }

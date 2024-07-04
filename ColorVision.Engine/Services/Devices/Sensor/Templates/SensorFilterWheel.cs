@@ -12,35 +12,22 @@ using ColorVision.Themes;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
-    public class ExportFilterWheel : IMenuItem
+    public class ExportFilterWheel : ExportTemplateBase
     {
-        public string OwnerGuid => "Sensor";
+        public override string OwnerGuid => "TemplateSensor";
 
-        public string? GuidId => "SensorFilterWheel";
-        public int Order => 21;
-        public string? Header => "FilterWheel";
+        public override string GuidId => "SensorFilterWheel";
+        public override int Order => 21;
+        public override string Header => "FilterWheel";
 
-        public string? InputGestureText { get; }
-
-        public object? Icon { get; }
-        public Visibility Visibility => Visibility.Visible;
-
-        public RelayCommand Command => new(a => {
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox1.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
-                return;
-            }
-            new WindowTemplate(new TemplateFilterWheel()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        });
+        public override ITemplate Template => new TemplateFilterWheel();
     }
-
 
     public class TemplateFilterWheel : ITemplate<SensorFilterWheel>, IITemplateLoad
     {
         public TemplateFilterWheel()
         {
-            Title = "SensorHeYuan设置";
+            Title = "滤色轮模板";
             Code = "Sensor.FW";
             TemplateParams = SensorFilterWheel.Params;
         }

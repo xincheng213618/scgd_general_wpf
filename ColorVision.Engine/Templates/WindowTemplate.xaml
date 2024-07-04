@@ -11,7 +11,7 @@
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         ShowInTaskbar="False"
-        d:DataContext="{d:DesignInstance local:TemplateConfig}"
+        d:DataContext="{d:DesignInstance local:WindowTemplateConfig}"
         Height="600" Width="700"  MinWidth="600" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>

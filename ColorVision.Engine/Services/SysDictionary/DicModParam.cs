@@ -125,63 +125,6 @@ namespace ColorVision.Engine.Services.SysDictionary
         }
     }
 
-    public class ExportDicSensor : MenuItemBase
-    {
-        public override string OwnerGuid => "Sensor";
-
-        public override string GuidId => "TemplateSensor";
-        public override int Order => 99;
-        public override string Header => "编辑默认传感器模板";
-
-        [RequiresPermission(PermissionMode.Administrator)]
-        public override void Execute()
-        {
-            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
-            {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
-                return;
-            }
-            new WindowTemplate(new TemplateSensorDicModParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        }
-    }
-
-    public class TemplateSensorDicModParam : TemplateModParam
-    {
-        public new static ObservableCollection<TemplateModel<DicModParam>> Params { get; set; } = new ObservableCollection<TemplateModel<DicModParam>>();
-
-        public TemplateSensorDicModParam()
-        {
-            Title = "传感器模板编辑";
-            TemplateParams = Params;
-            IsUserControl = true;
-        }
-
-        public override void Load()
-        {
-            var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);
-
-            if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
-            {
-                var models = SysDictionaryModDao.Instance.GetAllByParam(new Dictionary<string, object>() { { "tenant_id", UserConfig.Instance.TenantId }, { "mod_type", 5 } });
-                foreach (var model in models)
-                {
-                    var t = new DicModParam(model,new List<SysDictionaryModDetaiModel>());
-                    if (backup.TryGetValue(t.Id, out var template))
-                    {
-                        template.Value = t;
-                        template.Key = t.Name;
-                    }
-                    else
-                    {
-                        var templateModel = new TemplateModel<DicModParam>(t.Name ?? "default", t);
-                        TemplateParams.Add(templateModel);
-                    }
-                }
-            }
-        }
-
-
-    }
 
 
     public class DicModParam : ParamBase

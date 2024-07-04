@@ -23,6 +23,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
         {
             ValidateParam = param;
             this.DataContext = ValidateParam;
+
         }
 
         private void SCManipulationBoundaryFeedback(object sender, ManipulationBoundaryFeedbackEventArgs e)

@@ -24,10 +24,10 @@ namespace ColorVision.Engine.Templates
             this.Title += ITemplate.Title;
             List<string> list =
             [
-                ITemplate.NewCreateFileName(ITemplate.Code + "_" + TemplateConfig.Instance.DefaultCreateTemplateName),
-                ITemplate.NewCreateFileName(ITemplate.Code + "." + TemplateConfig.Instance.DefaultCreateTemplateName),
+                ITemplate.NewCreateFileName(ITemplate.Code + "_" + WindowTemplateConfig.Instance.DefaultCreateTemplateName),
+                ITemplate.NewCreateFileName(ITemplate.Code + "." + WindowTemplateConfig.Instance.DefaultCreateTemplateName),
                 ITemplate.NewCreateFileName(ITemplate.Code),
-                ITemplate.NewCreateFileName(TemplateConfig.Instance.DefaultCreateTemplateName),
+                ITemplate.NewCreateFileName(WindowTemplateConfig.Instance.DefaultCreateTemplateName),
             ];
 
             CreateCode.ItemsSource = list;

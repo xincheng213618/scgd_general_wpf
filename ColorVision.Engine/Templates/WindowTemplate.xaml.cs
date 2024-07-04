@@ -10,9 +10,21 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Themes;
+using ColorVision.UI;
+using ColorVision.Common.MVVM;
 
 namespace ColorVision.Engine.Templates
 {
+    public class WindowTemplateConfig : ViewModelBase, IConfig
+    {
+        public static WindowTemplateConfig Instance => ConfigHandler.GetInstance().GetRequiredService<WindowTemplateConfig>();
+
+        public string DefaultCreateTemplateName { get => _DefaultCreateTemplateName; set { _DefaultCreateTemplateName = value; NotifyPropertyChanged(); } }
+        private string _DefaultCreateTemplateName = Properties.Resources.DefaultCreateTemplateName;
+
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+    }
+
     /// <summary>
     /// CalibrationTemplate.xaml 的交互逻辑
     /// </summary>
@@ -30,11 +42,20 @@ namespace ColorVision.Engine.Templates
             InitializeComponent();
             this.ApplyCaption();
         }
-
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+        public static WindowTemplateConfig Config => WindowTemplateConfig.Instance;
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = TemplateConfig.Instance;
+            this.DataContext = Config;
+           if (ListView1.View is GridView gridView)
+            {
+                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+                Config.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
+                Config.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
+                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+            }
+
             if (ITemplate.IsSideHide)
             {
                 GridProperty.Visibility = Visibility.Collapsed;
@@ -58,13 +79,7 @@ namespace ColorVision.Engine.Templates
             Title = ITemplate.Title;
             ListView1.ItemsSource = ITemplate.ItemsSource;
             ListView1.SelectedIndex = DefaultIndex;
-            if (ListView1.View is GridView gridView)
-            {
-                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-                TemplateConfig.Instance.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
-                TemplateConfig.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
-                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
-            }
+
             Closed += WindowTemplate_Closed;
 
             this.PreviewKeyDown += (s, e) =>
@@ -85,6 +100,53 @@ namespace ColorVision.Engine.Templates
                 }
             };
         }
+
+        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && ListView1.View is GridView gridView)
+                GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
+        }
+
+        private void GridViewColumnSort(object sender, RoutedEventArgs e)
+        {
+            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
+            {
+                var columnName = gridViewColumnHeader.Content.ToString();
+                foreach (var item in GridViewColumnVisibilitys)
+                {
+                    if (item.ColumnName.ToString() == columnName)
+                    {
+                        item.IsSortD = !item.IsSortD;
+
+                        var collection = ITemplate.GetValue();
+                        var itemType = collection.GetType().GetGenericArguments().FirstOrDefault();
+
+                        if (itemType != null)
+                        {
+                            if (columnName == Properties.Resources.SerialNumber1 && typeof(ISortID).IsAssignableFrom(itemType))
+                            {
+                                SortableExtension.InvokeSortMethod("SortByID", itemType, collection, item.IsSortD);
+                            }
+                            else if (columnName == Properties.Resources.Name && typeof(ISortKey).IsAssignableFrom(itemType))
+                            {
+                                SortableExtension.InvokeSortMethod("SortByKey", itemType, collection, item.IsSortD);
+                            }
+                            else if (columnName == Properties.Resources.Choice)
+                            {
+                                foreach (var modebase in ITemplate.ItemsSource.OfType<TemplateModelBase>())
+                                {
+                                    modebase.IsSelected = item.IsSortD;
+                                }
+                                e.Handled = true;
+                            }
+                        }
+                    }
+                }
+            }
+            e.Handled = true;
+        }
+
+
 
 
         private void WindowTemplate_Closed(object? sender, EventArgs e)
@@ -264,52 +326,6 @@ namespace ColorVision.Engine.Templates
                     }
                 }
             }
-        }
-
-        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
-        {
-            if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && ListView1.View is GridView gridView)
-                GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
-        }
-        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-
-        private void GridViewColumnSort(object sender, RoutedEventArgs e)
-        {
-            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
-            {
-                var columnName = gridViewColumnHeader.Content.ToString();
-                foreach (var item in GridViewColumnVisibilitys)
-                {
-                    if (item.ColumnName.ToString() == columnName)
-                    {
-                        item.IsSortD = !item.IsSortD;
-
-                        var collection = ITemplate.GetValue();
-                        var itemType = collection.GetType().GetGenericArguments().FirstOrDefault();
-
-                        if (itemType != null)
-                        {
-                            if (columnName == Properties.Resources.SerialNumber1 && typeof(ISortID).IsAssignableFrom(itemType))
-                            {
-                                SortableExtension.InvokeSortMethod("SortByID", itemType, collection, item.IsSortD);
-                            }
-                            else if (columnName == Properties.Resources.Name && typeof(ISortKey).IsAssignableFrom(itemType))
-                            {
-                                SortableExtension.InvokeSortMethod("SortByKey", itemType, collection, item.IsSortD);
-                            }
-                            else if (columnName == Properties.Resources.Choice)
-                            {
-                                foreach (var modebase in ITemplate.ItemsSource.OfType<TemplateModelBase>())
-                                {
-                                    modebase.IsSelected = item.IsSortD;
-                                }
-                                e.Handled = true;
-                            }
-                        }
-                    }
-                }
-            }
-            e.Handled = true;
         }
 
 
