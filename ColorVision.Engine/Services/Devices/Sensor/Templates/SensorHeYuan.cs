@@ -25,6 +25,10 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
     }
 
 
+
+
+
+
     public class TemplateSensorHeYuan : ITemplate<SensorHeYuan>, IITemplateLoad
     {
         public TemplateSensorHeYuan()

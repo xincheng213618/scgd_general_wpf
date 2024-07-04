@@ -84,8 +84,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor
                         break;
                 }
             }
-            UpdateUI(Device.DService.DeviceStatus);
-            Device.DService.DeviceStatusChanged += UpdateUI;
+            //UpdateUI(Device.DService.DeviceStatus);
+            //Device.DService.DeviceStatusChanged += UpdateUI;
 
         }
 
@@ -127,7 +127,8 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
-            new WindowTemplate(new TemplateSensorHeYuan()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            SensorHeYuan.SensorHeYuans.Clear();
+            new WindowTemplate(new TemplateSensorHeYuan() { Code = Device.Config.Category }) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         }
     }
 }
