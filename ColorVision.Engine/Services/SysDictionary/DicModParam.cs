@@ -36,15 +36,15 @@ namespace ColorVision.Engine.Services.SysDictionary
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
-            new WindowTemplate(new TemplateAlgModParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateModParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         }
     }
 
-    public class TemplateAlgModParam : ITemplate<DicModParam>, IITemplateLoad
+    public class TemplateModParam : ITemplate<DicModParam>, IITemplateLoad
     {
         public static ObservableCollection<TemplateModel<DicModParam>> Params { get; set; } = new ObservableCollection<TemplateModel<DicModParam>>();
 
-        public TemplateAlgModParam()
+        public TemplateModParam()
         {
             Title = "DicModParam";
             TemplateParams = Params;
@@ -114,19 +114,9 @@ namespace ColorVision.Engine.Services.SysDictionary
             createDicTemplate.ShowDialog();
         }
 
-        public void Create(string templateCode, string templateName)
+        public override void Create(string templateCode, string templateName)
         {
             SysDictionaryModModel sysDictionaryModModel = new SysDictionaryModModel() { Name = templateName, Code = templateCode, ModType = 7 };
-            SysDictionaryModDao.Instance.Save(sysDictionaryModModel);
-            var list = SysDictionaryModDetailDao.Instance.GetAllByPid(sysDictionaryModModel.Id);
-            var t = new DicModParam(sysDictionaryModModel, list);
-            var templateModel = new TemplateModel<DicModParam>(t.Name ?? "default", t);
-            TemplateParams.Add(templateModel);
-        }
-
-        public override void Create(string templateName)
-        {
-            SysDictionaryModModel sysDictionaryModModel = new SysDictionaryModModel() { Name = templateName, Code = templateName ,ModType = 7 };
             SysDictionaryModDao.Instance.Save(sysDictionaryModModel);
             var list = SysDictionaryModDetailDao.Instance.GetAllByPid(sysDictionaryModModel.Id);
             var t = new DicModParam(sysDictionaryModModel, list);
@@ -155,7 +145,7 @@ namespace ColorVision.Engine.Services.SysDictionary
         }
     }
 
-    public class TemplateSensorDicModParam : TemplateAlgModParam
+    public class TemplateSensorDicModParam : TemplateModParam
     {
         public new static ObservableCollection<TemplateModel<DicModParam>> Params { get; set; } = new ObservableCollection<TemplateModel<DicModParam>>();
 

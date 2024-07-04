@@ -8,7 +8,7 @@ namespace ColorVision.Engine.Templates.POI.Comply.Dic
     public class DicComplyParam : ParamBase
     {
 
-        public SysDictionaryModModel modMasterModel { get; set; }
+        public SysDictionaryModModel ModMasterModel { get; set; }
         public RelayCommand CreateCommand { get; set; }
 
         public DicComplyParam()
@@ -19,6 +19,7 @@ namespace ColorVision.Engine.Templates.POI.Comply.Dic
         {
             Id = modMasterModel.Id;
             Name = modMasterModel.Name ?? "default";
+            ModMasterModel = modMasterModel;
             ModDetaiModels = new ObservableCollection<SysDictionaryModItemValidateModel>(dicModParams);
         }
 

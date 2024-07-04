@@ -111,6 +111,12 @@ namespace ColorVision.Engine.Templates
             createWindow.ShowDialog();
         }
 
+        public virtual void Create(string templateCode, string templateName)
+        {
+
+        }
+
+
 
         public virtual bool ExitsTemplateName(string templateName)
         {
@@ -344,11 +350,6 @@ namespace ColorVision.Engine.Templates
                     Directory.Delete(tempDirectory, true);
                 }
             }
-        }
-
-        public void Export()
-        {
-
         }
 
         public T? ExportTemp { get; set; }

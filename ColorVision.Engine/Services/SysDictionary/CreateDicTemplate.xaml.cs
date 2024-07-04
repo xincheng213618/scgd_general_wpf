@@ -11,9 +11,9 @@ namespace ColorVision.Engine.Services.SysDictionary
     /// </summary>
     public partial class CreateDicTemplate : Window
     {
-        public TemplateAlgModParam ITemplate { get; set; }
+        public ITemplate ITemplate { get; set; }
 
-        public CreateDicTemplate(TemplateAlgModParam template,bool IsImport =false)  
+        public CreateDicTemplate(ITemplate template,bool IsImport =false)  
         {
             ITemplate = template;
             InitializeComponent();

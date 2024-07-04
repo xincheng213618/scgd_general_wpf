@@ -1,10 +1,12 @@
-﻿using ColorVision.Engine.MySql;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.SysDictionary;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates.POI.Comply.Dic
@@ -56,6 +58,43 @@ namespace ColorVision.Engine.Templates.POI.Comply.Dic
                 Add(110);
                 Add(111);
             }
+        }
+
+
+        public override void Save()
+        {
+            if (SaveIndex.Count == 0) return;
+
+            foreach (var index in SaveIndex)
+            {
+                if (index > -1 && index < TemplateParams.Count)
+                {
+                    var item = TemplateParams[index];
+                    var modMasterModel = SysDictionaryModDao.Instance.GetById(item.Value.Id);
+                    SysDictionaryModDao.Instance.Save(item.Value.ModMasterModel);
+                    foreach (var modDetaiModel in TemplateParams[index].Value.ModDetaiModels)
+                    {
+                        SysDictionaryModItemValidateDao.Instance.Save(modDetaiModel);
+                    }
+                }
+            }
+        }
+
+        public override void OpenCreate()
+        {
+            CreateDicTemplate createDicTemplate = new CreateDicTemplate(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            createDicTemplate.ShowDialog();
+
+        }
+
+        public override void Create(string templateCode, string templateName)
+        {
+            SysDictionaryModModel sysDictionaryModModel = new SysDictionaryModModel() { Name = templateName, Code = templateCode, ModType = 7 };
+            SysDictionaryModDao.Instance.Save(sysDictionaryModModel);
+            var t = new DicComplyParam(sysDictionaryModModel, new List<SysDictionaryModItemValidateModel>());
+
+            var templateModel = new TemplateModel<DicComplyParam>(t.Name ?? "default", t);
+            TemplateParams.Add(templateModel);
         }
     }
 
