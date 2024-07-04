@@ -9,9 +9,9 @@ namespace ColorVision.Engine.Templates.POI.Validate
 
     public class ExportValidueCIEAVG : IMenuItem
     {
-        public string OwnerGuid => "Validue";
+        public string OwnerGuid => "Comply";
 
-        public string GuidId => "ValidueCIEAVG";
+        public string GuidId => "ComplyCIEAVG";
         public int Order => 2;
         public Visibility Visibility => Visibility.Visible;
         public string Header => "CIE均值合规";

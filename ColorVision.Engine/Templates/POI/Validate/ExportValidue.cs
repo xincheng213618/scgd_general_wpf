@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Templates.POI.Validate
     {
         public string OwnerGuid => "Template";
 
-        public string GuidId => "Validue";
+        public string GuidId => "Comply";
         public int Order => 4;
         public Visibility Visibility => Visibility.Visible;
         public string Header => Properties.Resources.MenuValidue;

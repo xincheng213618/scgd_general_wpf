@@ -51,12 +51,10 @@ namespace ColorVision.Engine.Templates
         {
 
         }
-
         public CameraExposureParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
         {
 
         }
-
 
         [Category("CamerExp"), Description("ExpTime")]
         public int ExpTime { get => GetValue(_ExpTime); set { SetProperty(ref _ExpTime, value); } }
