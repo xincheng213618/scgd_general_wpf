@@ -3,9 +3,9 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql.ORM;
 using System.Data;
 
-namespace ColorVision.Engine.Services.Dao
+namespace ColorVision.Engine.Templates
 {
-    public class ModDetailModel : ViewModelBase,IPKModel
+    public class ModDetailModel : ViewModelBase, IPKModel
     {
         public int Id { get; set; }
         public ModDetailModel() : this(-1, -1, null) { }
@@ -20,6 +20,8 @@ namespace ColorVision.Engine.Services.Dao
         public string? ValueA { get; set; }
         public string? ValueB { get; set; }
         public string? Symbol { get; set; }
+        public string? SymbolName { get; set; }
+
         public bool? IsEnable { get; set; } = true;
         public bool? IsDelete { get; set; } = false;
 
@@ -30,6 +32,7 @@ namespace ColorVision.Engine.Services.Dao
             return code;
         }
     }
+
 
     public class ModDetailDao : BaseDaoMaster<ModDetailModel>
     {
@@ -51,6 +54,7 @@ namespace ColorVision.Engine.Services.Dao
                 Symbol = item.Field<string>("symbol"),
                 IsEnable = item.Field<bool>("is_enable"),
                 IsDelete = item.Field<bool>("is_delete"),
+                SymbolName = item.Field<string>("name")
             };
             return model;
         }
@@ -66,6 +70,7 @@ namespace ColorVision.Engine.Services.Dao
                 if (item.ValueB != null) row["value_b"] = item.ValueB;
                 row["is_enable"] = item.IsEnable;
                 row["is_delete"] = item.IsDelete;
+
             }
             return row;
         }

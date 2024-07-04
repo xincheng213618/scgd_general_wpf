@@ -179,6 +179,9 @@
     <Compile Update="Services\Type\CreateType.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Update="Templates\EditTemplateModeDetail.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>

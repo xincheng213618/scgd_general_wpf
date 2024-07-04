@@ -9,6 +9,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 using ColorVision.Themes;
+using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
@@ -28,9 +29,19 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
     {
         public TemplateSensorHeYuan()
         {
-            Title = "编辑";
+            Title = "HeYuan串口模板编辑";
             Code = "Sensor.HeYuan";
             TemplateParams = SensorHeYuan.SensorHeYuans;
+            IsUserControl = true;
+        }
+
+        public EditTemplateModeDetail EditTemplateModeDetail { get; set; } = new EditTemplateModeDetail();
+
+        public override UserControl GetUserControl() => EditTemplateModeDetail;
+
+        public override void SetUserControlDataContext(int index)
+        {
+            EditTemplateModeDetail.SetParam(TemplateParams[index].Value);
         }
     }
 

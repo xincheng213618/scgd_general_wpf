@@ -1,5 +1,4 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Dao;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -192,9 +191,8 @@ namespace ColorVision.Engine.Templates
         [Browsable(false)]
         public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string _Name;
-
+        
         public ObservableCollection<ModDetailModel> ModDetailModels { get; set; } = new ObservableCollection<ModDetailModel>();
-
         public ParamBase() : base(new List<ModDetailModel>())
         {
             Id = No++;

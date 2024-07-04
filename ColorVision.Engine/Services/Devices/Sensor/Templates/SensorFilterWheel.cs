@@ -9,6 +9,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;
 using ColorVision.Themes;
+using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
@@ -30,7 +31,18 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             Title = "滤色轮模板";
             Code = "Sensor.FW";
             TemplateParams = SensorFilterWheel.Params;
+            IsUserControl = true;
         }
+
+        public EditTemplateModeDetail EditTemplateModeDetail { get; set; } = new EditTemplateModeDetail();
+
+        public override UserControl GetUserControl() => EditTemplateModeDetail;
+
+        public override void SetUserControlDataContext(int index)
+        {
+            EditTemplateModeDetail.SetParam(TemplateParams[index].Value);
+        }
+
     }
 
     public class SensorFilterWheel : ParamBase
