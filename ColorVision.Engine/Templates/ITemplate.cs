@@ -29,7 +29,7 @@ namespace ColorVision.Engine.Templates
     {
         public virtual IEnumerable ItemsSource { get; }
 
-        public string Title { get; set; }
+        public virtual string Title { get; set; }
 
         public string Code { get; set; }
         public virtual int Count { get; }

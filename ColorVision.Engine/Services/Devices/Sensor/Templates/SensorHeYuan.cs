@@ -13,31 +13,26 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
-    public class ExportSensorHeYuan : ExportTemplateBase
+    public class TemplateSensorHeYuan : ITemplate<SensorHeYuan>
     {
-        public override string OwnerGuid => "TemplateSensor";
+        public static Dictionary<string, ObservableCollection<TemplateModel<SensorHeYuan>>> Params { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<SensorHeYuan>>>();
 
-        public override string GuidId => "HeYuan串口模板编辑";
-        public override int Order => 21;
-        public override string Header => Properties.Resources.MenuSensorHeYuan;
-
-        public override ITemplate Template => new TemplateSensorHeYuan();
-    }
-
-
-
-
-
-
-    public class TemplateSensorHeYuan : ITemplate<SensorHeYuan>, IITemplateLoad
-    {
-        public TemplateSensorHeYuan()
+        public TemplateSensorHeYuan(string code)
         {
-            Title = "HeYuan串口模板编辑";
-            Code = "Sensor.HeYuan";
-            TemplateParams = SensorHeYuan.SensorHeYuans;
+            Code = code;
+            if (Params.TryGetValue(Code, out var templatesParams))
+            {
+                TemplateParams = templatesParams;
+            }
+            else
+            {
+                templatesParams = new ObservableCollection<TemplateModel<SensorHeYuan>>();
+                TemplateParams = templatesParams;
+                Params.Add(Code,templatesParams);
+            }
             IsUserControl = true;
         }
+        public override string Title { get => Code + "编辑"; set { } }
 
         public EditTemplateModeDetail EditTemplateModeDetail { get; set; } = new EditTemplateModeDetail();
 
@@ -51,57 +46,13 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 
     public class SensorHeYuan:ParamBase
     {
-        public static ObservableCollection<TemplateModel<SensorHeYuan>> SensorHeYuans { get; set; } = new ObservableCollection<TemplateModel<SensorHeYuan>>();
-
         public SensorHeYuan() : base()
         {
 
         }
-
         public SensorHeYuan(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
         {
 
         }
-
-        [Category("SensorHeYuan"), Description("上电")]
-        public string? PowerOn { get => GetValue(_PowerOn); set { SetProperty(ref _PowerOn, value); } }
-        private string? _PowerOn = "5A 05 07 02 31 02 9B,5A 06 08 03 31 02 00 9E";
-
-        [Category("SensorHeYuan"), Description("红亮")]
-        public string? RedOn { get => GetValue(_RedOn); set { SetProperty(ref _RedOn, value); } }
-        private string? _RedOn = "5A 05 09 04 01 FE 00 01 6C,5A 06 08 03 01 FE 00 6A";
-
-        [Category("SensorHeYuan"), Description("红灭")]
-        public string? RedOff { get => GetValue(_RedOff); set { SetProperty(ref _RedOff, value); } }
-        private string? _RedOff = "5A 05 09 04 01 FE 00 00 6B,5A 06 08 03 01 FE 00 6A";
-
-        [Category("SensorHeYuan"), Description("AMBER亮")]
-        public string? AMBEROn { get => GetValue(_AMBEROn); set { SetProperty(ref _AMBEROn, value); } }
-        private string? _AMBEROn = "5A 05 09 04 01 FE 01 01 6D,5A 06 08 03 01 FE 00 6A";
-
-        [Category("SensorHeYuan"), Description("AMBER灭")]
-        public string? AMBEROff { get => GetValue(_AMBEROff); set { SetProperty(ref _AMBEROff, value); } }
-        private string? _AMBEROff = "5A 05 09 04 01 FE 01 00 6C,5A 06 08 03 01 FE 00 6A";
-
-        [Category("SensorHeYuan"), Description("白亮")]
-        public string? WHITEOn { get => GetValue(_WHITEOn); set { SetProperty(ref _WHITEOn, value); } }
-        private string? _WHITEOn = "5A 05 09 04 01 FE 02 01 6E,5A 06 08 03 01 FE 00 6A";
-
-        [Category("SensorHeYuan"), Description("白灭")]
-        public string? WHITEOff { get => GetValue(_WHITEOff); set { SetProperty(ref _WHITEOff, value); } }
-        private string? _WHITEOff = "5A 05 09 04 01 FE 02 00 6D,5A 06 08 03 01 FE 00 6A";
-
-        [Category("SensorHeYuan"), Description("蓝亮")]
-        public string? BLUEOn { get => GetValue(_BLUEOn); set { SetProperty(ref _BLUEOn, value); } }
-        private string? _BLUEOn = "5A 05 09 04 01 FE 03 01 6F,5A 06 08 03 01 FE 00 6A";
-
-        [Category("SensorHeYuan"), Description("蓝灭")]
-        public string? BLUEOff { get => GetValue(_BLUEOff); set { SetProperty(ref _BLUEOff, value); } }
-        private string? _BLUEOff = "5A 05 09 04 01 FE 03 00 6E,5A 06 08 03 01 FE 00 6A";
-
-        [Category("SensorHeYuan"), Description("下电")]
-        public string? PowerOff { get => GetValue(_PowerOff); set { SetProperty(ref _PowerOff, value); } }
-        private string? _PowerOff = "5A 05 07 02 31 FF 98,5A 06 08 03 31 FF 00 9B";
-
     }
 }

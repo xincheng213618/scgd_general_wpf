@@ -56,10 +56,11 @@ namespace ColorVision.Common.MVVM
                             var fieldValue = field.GetValue(source);
                             if (fieldValue != null && field.FieldType.IsSubclassOf(typeof(ViewModelBase)))
                             {
-                                // Create a new instance of the field type
-                                var targetFieldValue = Activator.CreateInstance(field.FieldType);
-                                ((ViewModelBase)fieldValue).CopyTo((ViewModelBase)targetFieldValue);
-                                field.SetValue(target, targetFieldValue);
+                                if (fieldValue is ViewModelBase viewModelBase && Activator.CreateInstance(field.FieldType) is ViewModelBase targetFieldValue)
+                                {
+                                    viewModelBase.CopyTo(targetFieldValue);
+                                    field.SetValue(target, targetFieldValue);
+                                }
                             }
                             else
                             {
@@ -84,10 +85,11 @@ namespace ColorVision.Common.MVVM
                         var propertyValue = property.GetValue(source);
                         if (propertyValue != null && property.PropertyType.IsSubclassOf(typeof(ViewModelBase)))
                         {
-                            // Create a new instance of the property type
-                            var targetPropertyValue = Activator.CreateInstance(property.PropertyType);
-                            ((ViewModelBase)propertyValue).CopyTo((ViewModelBase)targetPropertyValue);
-                            property.SetValue(target, targetPropertyValue);
+                            if (propertyValue is ViewModelBase viewModelBase && Activator.CreateInstance(property.PropertyType) is ViewModelBase targetPropertyValue)
+                            {
+                                viewModelBase.CopyTo(targetPropertyValue);
+                                property.SetValue(target, targetPropertyValue);
+                            }
                         }
                         else
                         {

@@ -31,7 +31,14 @@ namespace ColorVision.Engine.Services.Devices.Sensor
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
-            ComboxSensorTemplate.ItemsSource = SensorHeYuan.SensorHeYuans;
+            void Update()
+            {
+                var list = new TemplateSensorHeYuan(Device.Config.Category);
+                list.Load();
+                ComboxSensorTemplate.ItemsSource = list.TemplateParams;
+            }
+            Device.ConfigChanged += (s, e) => Update();
+            Update();
             ComboBoxType.ItemsSource = Enum.GetValues(typeof(SensorCmdType));
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
@@ -127,8 +134,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
-            SensorHeYuan.SensorHeYuans.Clear();
-            new WindowTemplate(new TemplateSensorHeYuan() { Code = Device.Config.Category }) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateSensorHeYuan(Device.Config.Category)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         }
     }
 }
