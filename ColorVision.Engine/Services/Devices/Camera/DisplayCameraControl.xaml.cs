@@ -205,7 +205,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void CameraOffline_Click(object sender, RoutedEventArgs e)
         {
-            ServicesHelper.SendCommandEx(sender, DService.GetAllCameraID);
+            ServicesHelper.SendCommandEx(sender, DService.GetCameraID);
         }
 
         private void CameraInit_Click(object sender, RoutedEventArgs e)

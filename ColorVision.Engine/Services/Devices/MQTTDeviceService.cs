@@ -3,6 +3,7 @@ using ColorVision.Engine.Services.Core;
 using CVCommCore;
 using System;
 using System.Windows;
+using System.Windows.Documents;
 
 namespace ColorVision.Engine.Services.Devices
 {
@@ -10,16 +11,33 @@ namespace ColorVision.Engine.Services.Devices
     {
         public event DeviceStatusChangedHandler DeviceStatusChanged;
 
+
         public override DeviceStatusType DeviceStatus
         {
             get => _DeviceStatus; set
             {
+
+                if (value == DeviceStatusType.Unknown)
+                {
+                    TryN++;
+                    if (TryN > 4)
+                    {
+                        TryN = 0;
+                        return;
+                    }
+                }
                 _DeviceStatus = value;
-                if (Application.Current != null)
-                    Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value));
+
+
+                Application.Current?.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value));
                 NotifyPropertyChanged(); NotifyPropertyChanged(nameof(DeviceStatusString));
             }
         }
+
+        public int TryN { get; set; }
+
+
+
         private DeviceStatusType _DeviceStatus;
 
         public string DeviceStatusString { get => _DeviceStatus.ToDescription(); set { } }

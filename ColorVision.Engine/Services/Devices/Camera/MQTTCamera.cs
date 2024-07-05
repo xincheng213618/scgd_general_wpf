@@ -270,6 +270,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return PublishAsyncClient(msg, timeout + 10000);
         }  
         public MsgRecord GetAllCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
+        public MsgRecord GetCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetSnID" });
 
         public MsgRecord AutoFocus()
         {
