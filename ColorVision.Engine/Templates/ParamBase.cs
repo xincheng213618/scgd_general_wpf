@@ -194,8 +194,10 @@ namespace ColorVision.Engine.Templates
         public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string _Name;
 
+        [Browsable(false)]
         public virtual RelayCommand CreateCommand { get; set; }
 
+        [Browsable(false)]
         public ObservableCollection<ModDetailModel> ModDetailModels { get; set; } = new ObservableCollection<ModDetailModel>();
         public ParamBase() : base(new List<ModDetailModel>())
         {
