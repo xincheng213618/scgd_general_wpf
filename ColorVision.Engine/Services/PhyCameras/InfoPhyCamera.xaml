@@ -53,14 +53,14 @@
                         <Grid Margin="5">
                             <UniformGrid Margin="5" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
                                 <Button Content="修改配置" Margin="5" Height="100" Width="180" Command="{Binding EditCommand}"/>
-                                <Border Height="100"  Width="180" BorderBrush="{StaticResource SecondaryRegionBrush}" BorderThickness="1.5" CornerRadius="5" Margin="5">
-                                    <Grid Margin="15"   >
+
+                                <Button Height="100"  Width="180" BorderBrush="{StaticResource SecondaryRegionBrush}" BorderThickness="1.5" Margin="5"  Command="{Binding UploadLincenseCommand}">
+                                    <Grid Height="60" >
                                         <TextBlock VerticalAlignment="Top" HorizontalAlignment="Center" Text="{Binding CameraLicenseModel.Model}"/>
                                         <TextBlock Text="修改许可证" HorizontalAlignment="Center"/>
                                         <TextBlock VerticalAlignment="Bottom" HorizontalAlignment="Center" Text="{Binding CameraLicenseModel.ExpiryDate,StringFormat=yyyy/MM//dd}"/>
-                                        <Button  Command="{Binding UploadLincenseCommand}" BorderThickness="0" Background="#04FFFFFF"/>
                                     </Grid>
-                                </Border>
+                                </Button>
 
                                 <Button Content="上传校正文件" Margin="5" Height="100" Width="180" Command="{Binding UploadCalibrationCommand}" />
                                 <Button Content="校正模板设置" Margin="5" Height="100" Width="180" Tag="Calibration"  Click="MenuItem_Template" />

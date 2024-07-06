@@ -38,6 +38,7 @@ namespace ColorVision.Engine.Services.SysDictionary
         public SysDictionaryModDetailDao() : base("t_scgd_sys_dictionary_mod_item", "id")
         {
         }
+
         public override DataTable CreateColumns(DataTable dataTable)
         {
             dataTable.Columns.Add("id", typeof(int));

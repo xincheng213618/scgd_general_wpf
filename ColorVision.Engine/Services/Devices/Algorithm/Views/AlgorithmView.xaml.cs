@@ -431,68 +431,72 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                     result.GhostData.Add(ghostResultData);
                                 }
                             }
-                            try
+                            else
                             {
-                                string GhostPixels = result.GhostData[0].GhostPixels;
-                                List<List<Point1>> GhostPixel = JsonConvert.DeserializeObject<List<List<Point1>>>(GhostPixels);
-                                int[] Ghost_pixel_X;
-                                int[] Ghost_pixel_Y;
-                                List<Point1> Points = new();
-                                foreach (var item in GhostPixel)
-                                    foreach (var item1 in item)
-                                        Points.Add(item1);
-
-                                if (Points != null)
+                                try
                                 {
-                                    Ghost_pixel_X = new int[Points.Count];
-                                    Ghost_pixel_Y = new int[Points.Count];
-                                    for (int i = 0; i < Points.Count; i++)
+                                    string GhostPixels = result.GhostData[0].GhostPixels;
+                                    List<List<Point1>> GhostPixel = JsonConvert.DeserializeObject<List<List<Point1>>>(GhostPixels);
+                                    int[] Ghost_pixel_X;
+                                    int[] Ghost_pixel_Y;
+                                    List<Point1> Points = new();
+                                    foreach (var item in GhostPixel)
+                                        foreach (var item1 in item)
+                                            Points.Add(item1);
+
+                                    if (Points != null)
                                     {
-                                        Ghost_pixel_X[i] = (int)Points[i].X;
-                                        Ghost_pixel_Y[i] = (int)Points[i].Y;
+                                        Ghost_pixel_X = new int[Points.Count];
+                                        Ghost_pixel_Y = new int[Points.Count];
+                                        for (int i = 0; i < Points.Count; i++)
+                                        {
+                                            Ghost_pixel_X[i] = (int)Points[i].X;
+                                            Ghost_pixel_Y[i] = (int)Points[i].Y;
+                                        }
                                     }
-                                }
-                                else
-                                {
-                                    Ghost_pixel_X = new int[1] { 1 };
-                                    Ghost_pixel_Y = new int[1] { 1 };
-                                }
-
-                                string LedPixels = result.GhostData[0].LedPixels;
-                                List<List<Point1>> LedPixel = JsonConvert.DeserializeObject<List<List<Point1>>>(LedPixels);
-                                int[] LED_pixel_X;
-                                int[] LED_pixel_Y;
-
-                                Points.Clear();
-                                foreach (var item in LedPixel)
-                                    foreach (var item1 in item)
-                                        Points.Add(item1);
-
-                                if (Points != null)
-                                {
-                                    LED_pixel_X = new int[Points.Count];
-                                    LED_pixel_Y = new int[Points.Count];
-                                    for (int i = 0; i < Points.Count; i++)
+                                    else
                                     {
-                                        LED_pixel_X[i] = (int)Points[i].X;
-                                        LED_pixel_Y[i] = (int)Points[i].Y;
+                                        Ghost_pixel_X = new int[1] { 1 };
+                                        Ghost_pixel_Y = new int[1] { 1 };
                                     }
-                                }
-                                else
-                                {
-                                    LED_pixel_X = new int[1] { 1 };
-                                    LED_pixel_Y = new int[1] { 1 };
-                                }
-                                Application.Current.Dispatcher.Invoke(() =>
-                                {
-                                    ImageView.OpenGhostImage(result.FilePath, LED_pixel_X, LED_pixel_Y, Ghost_pixel_X, Ghost_pixel_Y);
-                                });
-                            }
-                            catch (Exception ex)
-                            {
-                                MessageBox.Show(ex.Message);
-                            }
 
+                                    string LedPixels = result.GhostData[0].LedPixels;
+                                    List<List<Point1>> LedPixel = JsonConvert.DeserializeObject<List<List<Point1>>>(LedPixels);
+                                    int[] LED_pixel_X;
+                                    int[] LED_pixel_Y;
+
+                                    Points.Clear();
+                                    foreach (var item in LedPixel)
+                                        foreach (var item1 in item)
+                                            Points.Add(item1);
+
+                                    if (Points != null)
+                                    {
+                                        LED_pixel_X = new int[Points.Count];
+                                        LED_pixel_Y = new int[Points.Count];
+                                        for (int i = 0; i < Points.Count; i++)
+                                        {
+                                            LED_pixel_X[i] = (int)Points[i].X;
+                                            LED_pixel_Y[i] = (int)Points[i].Y;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        LED_pixel_X = new int[1] { 1 };
+                                        LED_pixel_Y = new int[1] { 1 };
+                                    }
+                                    Application.Current.Dispatcher.Invoke(() =>
+                                    {
+                                        ImageView.OpenGhostImage(result.FilePath, LED_pixel_X, LED_pixel_Y, Ghost_pixel_X, Ghost_pixel_Y);
+                                    });
+                                }
+                                catch (Exception ex)
+                                {
+                                    MessageBox.Show(ex.Message);
+                                }
+
+
+                            }
 
                             listViewSide.Visibility = Visibility.Visible;
                             List<string> bdheadersGhost = new() { "LedCenters", "LedBlobGray", "GhostAvrGray" };
