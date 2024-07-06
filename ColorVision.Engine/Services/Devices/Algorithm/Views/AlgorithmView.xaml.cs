@@ -431,7 +431,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                     result.GhostData.Add(ghostResultData);
                                 }
                             }
-                            else
+                            if (result.GhostData.Count != 0)
                             {
                                 try
                                 {
@@ -495,8 +495,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                     MessageBox.Show(ex.Message);
                                 }
 
-
                             }
+
 
                             listViewSide.Visibility = Visibility.Visible;
                             List<string> bdheadersGhost = new() { "LedCenters", "LedBlobGray", "GhostAvrGray" };
