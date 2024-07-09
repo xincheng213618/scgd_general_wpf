@@ -49,7 +49,7 @@ namespace ColorVision
             Config.SetWindow(this);
             SizeChanged += (s, e) => Config.SetConfig(this);
             var IsAdministrator = Tool.IsAdministrator();
-            //Title += $"- {(IsAdministrator ? Properties.Resources.RunAsAdmin : Properties.Resources.NotRunAsAdmin)}";
+            Title += $"- {(IsAdministrator ? Properties.Resources.RunAsAdmin : Properties.Resources.NotRunAsAdmin)}";
             this.ApplyCaption();
         }
 
@@ -67,6 +67,7 @@ namespace ColorVision
                 if (ThemeManager.Current.SystemTheme == Theme.Dark)
                     Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
             }
+
 
             if (WindowConfig.IsExist)
             {

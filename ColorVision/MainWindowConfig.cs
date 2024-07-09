@@ -99,6 +99,7 @@ namespace ColorVision
             Width = window.Width;
             WindowState = (int)window.WindowState;
         }
+
         public bool OpenFloatingBall { get => _OpenFloatingBall; set { _OpenFloatingBall = value; NotifyPropertyChanged(); } }
         private bool _OpenFloatingBall;
 

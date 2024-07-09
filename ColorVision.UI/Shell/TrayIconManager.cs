@@ -1,10 +1,50 @@
 ﻿using ColorVision.Common.Extension;
+using ColorVision.Common.MVVM;
+using ColorVision.UI.Configs;
+using System.Configuration;
 using System.Drawing;
 using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.UI.Shell
 {
+    public class TrayIconConfig : ViewModelBase, IConfig, IConfigSettingProvider
+    {
+        public static TrayIconConfig Instance => ConfigHandler.GetInstance().GetRequiredService<TrayIconConfig>();
+
+        public bool IsShowTrayIcon { get => _IsShowTrayIcon; set { _IsShowTrayIcon = value; NotifyPropertyChanged(); } }
+        private bool _IsShowTrayIcon;
+
+        public bool IsUseWPFContextMenu { get => _IsUseWPFContextMenu; set { _IsUseWPFContextMenu = value; NotifyPropertyChanged(); } }
+        private bool _IsUseWPFContextMenu = true;
+
+        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
+        {
+            return new List<ConfigSettingMetadata>()
+            {
+                new ConfigSettingMetadata()
+                {
+                    Name = "TrayIconShow",
+                    Description = "TrayIconShow",
+                    Order = 19,
+                    Type = ConfigSettingType.Bool,
+                    BindingName =nameof(IsShowTrayIcon),
+                    Source = this,
+                },
+                new ConfigSettingMetadata()
+                {
+                    Name = "TrayIconContentUseWPF",
+                    Description = "TrayIconContentUseWPF",
+                    Order = 20,
+                    Type = ConfigSettingType.Bool,
+                    BindingName =nameof(IsUseWPFContextMenu),
+                    Source = this,
+                },
+            };
+        }
+    }
+
+
     public class TrayIconManager : IDisposable
     {
         private static TrayIconManager _instance;
@@ -17,9 +57,11 @@ namespace ColorVision.UI.Shell
 
         public TrayIconManager()
         {
-            InitializeNotifyIcon();
-            InitializeContextMenu();
-
+            if (TrayIconConfig.Instance.IsShowTrayIcon)
+            {
+                InitializeNotifyIcon();
+                InitializeContextMenu();
+            }
         }
 
         private void InitializeNotifyIcon()
@@ -31,15 +73,20 @@ namespace ColorVision.UI.Shell
                 Text = "ColorVisino"
             };
 
-            //使用winform
-            //var contextMenu = new System.Windows.Forms.ContextMenuStrip();
-            //contextMenu.Items.Add("Show", null, Show_Click);
-            //contextMenu.Items.Add("Exit", null, Exit_Click);
-            //_notifyIcon.ContextMenuStrip = contextMenu;
-            //_notifyIcon.DoubleClick += NotifyIcon_DoubleClick;
-            //使用wpf 的ContextMenu
-            _notifyIcon.MouseUp += NotifyIcon_MouseUp;
-
+            if (TrayIconConfig.Instance.IsUseWPFContextMenu)
+            {
+                //使用wpf 的ContextMenu
+                _notifyIcon.MouseUp += NotifyIcon_MouseUp;
+            }
+            else
+            {
+                //使用winform
+                var contextMenu = new System.Windows.Forms.ContextMenuStrip();
+                contextMenu.Items.Add("Show", null, Show_Click);
+                contextMenu.Items.Add("Exit", null, Exit_Click);
+                _notifyIcon.ContextMenuStrip = contextMenu;
+                _notifyIcon.DoubleClick += NotifyIcon_DoubleClick;
+            }
         }
 
 
@@ -55,30 +102,30 @@ namespace ColorVision.UI.Shell
             exitMenuItem.Click += Exit_Click;
             _contextMenu.Items.Add(exitMenuItem);
         }
-        private void NotifyIcon_MouseUp(object sender, System.Windows.Forms.MouseEventArgs e)
+        private void NotifyIcon_MouseUp(object? sender, System.Windows.Forms.MouseEventArgs e)
         {
             if (e.Button == System.Windows.Forms.MouseButtons.Right)
             {
                 _contextMenu.IsOpen = true;
             }
         }
-        private void NotifyIcon_DoubleClick(object sender, EventArgs e)
+        private void NotifyIcon_DoubleClick(object?  sender, EventArgs e)
         {
             ShowMainWindow();
         }
 
-        private void Show_Click(object sender, EventArgs e)
+        private void Show_Click(object? sender, EventArgs e)
         {
             ShowMainWindow();
         }
 
-        private void Exit_Click(object sender, EventArgs e)
+        private void Exit_Click(object? sender, EventArgs e)
         {
             _notifyIcon.Visible = false;
             Application.Current.Shutdown();
         }
 
-        private void ShowMainWindow()
+        private static void ShowMainWindow()
         {
             var mainWindow = Application.Current.MainWindow;
             if (mainWindow.WindowState == WindowState.Minimized)

@@ -85,7 +85,6 @@ namespace ColorVision
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
 
             TrayIconManager.GetInstance();
-
             //代码先进入启动窗口
 
             bool IsReStart = parser.GetFlag("restart");

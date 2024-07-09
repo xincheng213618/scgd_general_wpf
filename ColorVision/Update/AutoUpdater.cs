@@ -157,8 +157,8 @@ namespace ColorVision.Update
             {
                 // 获取服务器版本
                 LatestVersion = await GetLatestVersionNumber(UpdateUrl);
-
-                if (LatestVersion > Assembly.GetExecutingAssembly().GetName().Version)
+                var Version = Assembly.GetExecutingAssembly().GetName().Version;
+                if (LatestVersion > Version)
                 {
                     string CHANGELOG = await GetChangeLog(CHANGELOGUrl);
                     string versionPattern = $"## \\[{LatestVersion}\\].*?\\n(.*?)(?=\\n## |$)";
