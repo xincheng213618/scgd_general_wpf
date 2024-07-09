@@ -50,7 +50,6 @@ namespace ColorVision
             {
                 UI.ACE.License.Create();
             }
-
             bool IsDebug = Debugger.IsAttached;
             var parser = ArgumentParser.GetInstance();
 
@@ -84,6 +83,9 @@ namespace ColorVision
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
+
+            TrayIconManager.GetInstance();
+
             //代码先进入启动窗口
 
             bool IsReStart = parser.GetFlag("restart");

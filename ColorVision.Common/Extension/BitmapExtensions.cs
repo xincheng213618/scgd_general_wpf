@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -7,6 +8,24 @@ namespace ColorVision.Common.Extension
 {
     public static class BitmapExtensions
     {
+
+        public static System.Drawing.Icon ToIcon(this ImageSource imageSource)
+        {
+            ArgumentNullException.ThrowIfNull(imageSource);
+            var bitmapSource = imageSource as BitmapSource ?? throw new ArgumentException("ImageSource must be of type BitmapSource", nameof(imageSource));
+            using (var memoryStream = new MemoryStream())
+            {
+                var encoder = new PngBitmapEncoder();
+                encoder.Frames.Add(BitmapFrame.Create(bitmapSource));
+                encoder.Save(memoryStream);
+
+                using (var bitmap = new System.Drawing.Bitmap(memoryStream))
+                {
+                    IntPtr hIcon = bitmap.GetHicon();
+                    return System.Drawing.Icon.FromHandle(hIcon);
+                }
+            }
+        }
 
         public static int ToInt32(this double num) => Convert.ToInt32(num);
 
