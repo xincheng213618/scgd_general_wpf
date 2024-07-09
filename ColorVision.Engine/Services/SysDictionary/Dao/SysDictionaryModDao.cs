@@ -18,8 +18,8 @@ namespace ColorVision.Engine.Services.SysDictionary
         private short _ModType;
 
         [Column("code")]
-        public string? Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }
-        private string? _Code;
+        public string Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }
+        private string _Code;
         [Column("name")]
         public string? Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string? _Name;

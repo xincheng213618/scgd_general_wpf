@@ -1,4 +1,6 @@
-﻿using ColorVision.UI;
+﻿using ColorVision.Solution;
+using ColorVision.UI;
+using ColorVision.UI.Shell;
 using System;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -45,6 +47,12 @@ namespace ColorVision
                             {
                                 FileHandlerProcessor.GetInstance().ProcessFile(inputFile);
                             }
+                            string s = parser.GetValue("solutionpath");
+                            if (s != null)
+                            {
+                                SolutionManager.GetInstance().OpenSolution(s);
+                            }
+
                         }
                     }
                     catch (Exception ex) 

@@ -2,7 +2,7 @@
 // // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ColorVision.Common.NativeMethods;
-using ColorVision.UI;
+using ColorVision.UI.Shell;
 using log4net;
 using log4net.Config;
 using System;
@@ -66,7 +66,7 @@ namespace ColorVision
                     Environment.Exit(0);
                 }
                 ////写在这里可以Avoid命令行多开的效果，但是没有办法检测版本，实现同版本的情况下更新条件唯一
-                Environment.Exit(0);
+                //Environment.Exit(0);
             }
 
             log.Info("程序打开");

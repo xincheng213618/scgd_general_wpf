@@ -1,4 +1,4 @@
-﻿namespace ColorVision.UI
+﻿namespace ColorVision.UI.Shell
 {
     public class Argument
     {
@@ -39,7 +39,7 @@
 
             for (int i = 0; i < args.Length; i++)
             {
-                if (args[i].StartsWith("-",StringComparison.CurrentCulture))
+                if (args[i].StartsWith("-", StringComparison.CurrentCulture))
                 {
                     string key = args[i].TrimStart('-').ToLower(System.Globalization.CultureInfo.CurrentCulture);
                     if (aliasMap.TryGetValue(key, out string? value))
@@ -52,7 +52,7 @@
                         Argument argument = _arguments.Find(arg => arg.Name.Equals(key, StringComparison.OrdinalIgnoreCase));
                         if (argument != null)
                         {
-                            string value1 = argument.IsFlag ? "true" : (i + 1 < args.Length && !args[i + 1].StartsWith("-", StringComparison.CurrentCulture)) ? args[i + 1] : null;
+                            string value1 = argument.IsFlag ? "true" : i + 1 < args.Length && !args[i + 1].StartsWith("-", StringComparison.CurrentCulture) ? args[i + 1] : null;
                             if (value1 != null)
                             {
                                 _parsedArguments[key] = value1;

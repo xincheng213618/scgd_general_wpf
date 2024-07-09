@@ -13,6 +13,7 @@ using YamlDotNet.Core;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Threading.Tasks;
+using ColorVision.UI.Shell;
 
 namespace ColorVision.Solution
 {
@@ -103,7 +104,8 @@ namespace ColorVision.Solution
             {
                 su =OpenSolution(SolutionHistory.RecentFiles[0]);
             }
-
+            JumpListManager jumpListManager = new JumpListManager();
+            jumpListManager.AddRecentFiles(SolutionHistory.RecentFiles);
             if (!su)
             {
                 string Default = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + "\\ColorVision";
