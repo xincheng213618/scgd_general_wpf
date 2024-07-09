@@ -4,6 +4,8 @@
 
 1.添加 JumpList
 
+2.添加 TrayIconManager
+
 ## [1.1.1.26] 2024.07.08
 
 1.修补一些小的界面UI BUG
