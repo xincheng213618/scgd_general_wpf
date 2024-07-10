@@ -2,7 +2,7 @@
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
 {
-    public class ViewResultSFR : ViewModelBase
+    public class ViewResultSFR : ViewModelBase, IViewResult
     {
         public ViewResultSFR(float pdfrequency, float pdomainSamplingData)
         {

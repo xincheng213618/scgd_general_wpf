@@ -3,7 +3,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
 {
-    public class ViewResultLedCheck : ViewModelBase
+    public class ViewResultLedCheck : ViewModelBase, IViewResult
     {
         public ViewResultLedCheck(Point point, double radius)
         {

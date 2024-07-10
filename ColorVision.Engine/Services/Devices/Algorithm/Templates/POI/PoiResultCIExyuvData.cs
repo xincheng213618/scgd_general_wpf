@@ -11,7 +11,7 @@ using System.Text;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
 {
-    public class PoiResultCIExyuvData : PoiResultData
+    public class PoiResultCIExyuvData : PoiResultData, IViewResult
     {
         public static void SaveCsv(ObservableCollection<PoiResultCIExyuvData> poiResultCIExyuvDatas, string FileName)
         {

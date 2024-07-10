@@ -4,7 +4,7 @@ using MQTTMessageLib.Algorithm;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
 {
-    public class ViewResultFOV : ViewModelBase
+    public class ViewResultFOV : ViewModelBase, IViewResult
     {
         public FovPattern Pattern { get; set; }
 

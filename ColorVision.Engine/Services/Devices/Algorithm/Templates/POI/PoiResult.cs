@@ -4,7 +4,7 @@ using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
 {
-    public class PoiResult : ViewModelBase
+    public class PoiResult : ViewModelBase, IViewResult
     {
         private int _Id;
         private string _SerialNumber;

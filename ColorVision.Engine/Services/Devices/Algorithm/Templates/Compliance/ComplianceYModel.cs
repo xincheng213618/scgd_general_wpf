@@ -3,7 +3,7 @@
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance
 {
     [Table("t_scgd_algorithm_result_detail_compliance_y")]
-    public class ComplianceYModel : PKModel
+    public class ComplianceYModel : PKModel, IViewResult
     {
         [Column("pid")]
         public int PId { get; set; }

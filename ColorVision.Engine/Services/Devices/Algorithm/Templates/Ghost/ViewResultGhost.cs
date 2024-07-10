@@ -2,7 +2,7 @@
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost
 {
-    public class ViewResultGhost : ViewModelBase
+    public class ViewResultGhost : ViewModelBase, IViewResult
     {
         public ViewResultGhost(AlgResultGhostModel algResultGhostModel)
         {

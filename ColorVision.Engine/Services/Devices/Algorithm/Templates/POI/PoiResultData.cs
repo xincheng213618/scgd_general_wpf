@@ -9,7 +9,7 @@ using System.Collections.ObjectModel;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
 {
-    public class PoiResultCIEYData : PoiResultData
+    public class PoiResultCIEYData : PoiResultData, IViewResult
     {
         public double Y { get { return _Y; } set { _Y = value; NotifyPropertyChanged(); } }
         private double _Y;
@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.POI
 
     }
 
-    public class PoiResultData : ViewModelBase
+    public class PoiResultData : ViewModelBase, IViewResult
     {
         public PoiResultData()
         {

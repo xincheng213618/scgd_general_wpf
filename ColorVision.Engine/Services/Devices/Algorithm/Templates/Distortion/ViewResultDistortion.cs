@@ -6,7 +6,7 @@ using System;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion
 {
-    public class ViewResultDistortion : ViewModelBase
+    public class ViewResultDistortion : ViewModelBase, IViewResult
     {
         public ViewResultDistortion(AlgResultDistortionModel algResultDistortionModel)
         {

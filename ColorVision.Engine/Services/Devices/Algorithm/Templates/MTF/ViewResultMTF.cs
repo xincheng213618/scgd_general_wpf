@@ -5,7 +5,7 @@ using Newtonsoft.Json;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF
 {
-    public class ViewResultMTF : PoiResultData
+    public class ViewResultMTF : PoiResultData, IViewResult
     {
         public double Articulation { get { return _Articulation; } set { _Articulation = value; NotifyPropertyChanged(); } }
 
