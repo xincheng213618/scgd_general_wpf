@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Services.Dao;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.UI.Sorts;
@@ -99,7 +100,7 @@ namespace ColorVision.Engine.Services.ShowPage.Dao
                 if (AlgorithmView == null)
                 {
                     AlgorithmView = new AlgorithmView();
-                    Window window = new Window() { Content = AlgorithmView };
+                    Window window = new Window() { Content = AlgorithmView ,Owner =Application.Current.GetActiveWindow() };
                     window.Closed += (s, args) => AlgorithmView = null; // 订阅窗口关闭事件
                     window.Show();
                 }

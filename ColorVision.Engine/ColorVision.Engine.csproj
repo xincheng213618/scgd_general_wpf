@@ -166,7 +166,7 @@
     <Compile Update="Services\PhyCameras\PhyCameraManagerWindow.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Update="Services\SysDictionary\CreateDicModeDetail.xaml.cs">
+    <Compile Update="Services\EditTemplate\CreateDicModeDetail.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Update="Templates\CreateModeDetail.xaml.cs">
