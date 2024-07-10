@@ -1,9 +1,7 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Engine.Extension;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
-using ColorVision.UI.HotKey;
+using ColorVision.UI.Extension;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.ObjectModel;
@@ -23,6 +21,8 @@ namespace ColorVision.Engine.Services.OnlineLicensing
         public override string GuidId => "Lincense";
         public override int Order => 10003;
         public override string Header => Properties.Resources.MyLicense_R;
+
+
         public override void Execute()
         {
             new LicenseMangerWindow() { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();

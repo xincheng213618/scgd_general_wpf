@@ -1,8 +1,6 @@
-﻿using System;
-using System.Threading.Tasks;
-using System.Windows.Controls;
+﻿using System.Windows.Controls;
 
-namespace ColorVision.Engine.Extension
+namespace ColorVision.UI.Extension
 {
     public static class ButtonExtension
     {

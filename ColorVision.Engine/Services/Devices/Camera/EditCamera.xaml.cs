@@ -67,7 +67,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditStackPanel.Children.Add(GenerateContent(EditConfig));
         }
 
-        private static UIElement GenerateContent(object config)
+        private static StackPanel GenerateContent(object config)
         {
             var stackPanel = new StackPanel();
             var type = config.GetType();
