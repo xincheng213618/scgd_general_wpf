@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.OnlineLicensing;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Extension;
@@ -12,7 +13,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Services.OnlineLicensing
+namespace ColorVision.Engine.OnlineLicensing
 {
 
     public class ExportLincense : MenuItemBase

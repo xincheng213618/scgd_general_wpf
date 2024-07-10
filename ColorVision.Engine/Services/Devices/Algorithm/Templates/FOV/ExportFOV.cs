@@ -6,8 +6,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV
     {
         public override string OwnerGuid => "TemplateAlgorithm";
         public override string GuidId => "FOV";
-        public override string Header => Properties.Resources.MenuFocusPoints;
+        public override string Header => Properties.Resources.MenuFOV;
         public override int Order => 5;
-        public override ITemplate Template => new TemplateFocusPointsParam();
+        public override ITemplate Template => new TemplateFOVParam();
     }
 }
