@@ -266,7 +266,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                 }
                             }
                             AddPOIPoint(DrawPoiPoint);
-                            listViewSide.Visibility = Visibility.Visible;
                             break;
                         case AlgorithmResultType.LEDStripDetection:
                         case AlgorithmResultType.POI_XYZ:
@@ -308,7 +307,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                 }
                             }
                             AddPOIPoint(DrawPoiPoint);
-                            listViewSide.Visibility = Visibility.Visible;
                             break;
                         case AlgorithmResultType.POI_Y:
                             if (result.ViewResults == null)
@@ -344,10 +342,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                 }
                             }
                             AddPOIPoint(DrawPoiPoint);
-                            listViewSide.Visibility = Visibility.Visible;
                             break;
                         case AlgorithmResultType.FOV:
-                            listViewSide.Visibility = Visibility.Visible;
 
                             if (result.ViewResults == null)
                             {
@@ -371,12 +367,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                     gridViewFOV.Columns.Add(new GridViewColumn() { Header = headersFOV[i], DisplayMemberBinding = new Binding(bdheadersFOV[i]) });
                             }
 
-                            listViewSide.Visibility = Visibility.Visible;
                             listViewSide.ItemsSource = result.ViewResults;
                             break;
                         case AlgorithmResultType.SFR:
-                            listViewSide.Visibility = Visibility.Visible;
-
                             if (result.ViewResults == null)
                             {
                                 result.ViewResults = new ObservableCollection<IViewResult>();
@@ -412,7 +405,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                             break;
                         case AlgorithmResultType.MTF:
-                            listViewSide.Visibility = Visibility.Visible;
                             if (result.ViewResults == null)
                             {
                                 result.ViewResults = new ObservableCollection<IViewResult>();
@@ -448,6 +440,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                             break;
                         case AlgorithmResultType.Ghost:
+                            listViewSide.Visibility = Visibility.Visible;
                             if (result.ViewResults == null)
                             {
                                 result.ViewResults = new ObservableCollection<IViewResult>();
@@ -525,8 +518,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                             }
 
-
-                            listViewSide.Visibility = Visibility.Visible;
                             List<string> bdheadersGhost = new() { "LedCenters", "LedBlobGray", "GhostAvrGray" };
                             List<string> headersGhost = new() { "质心坐标", "光斑灰度", "鬼影灰度" };
 
@@ -541,8 +532,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             listViewSide.ItemsSource = result.ViewResults;
                             break;
                         case AlgorithmResultType.Distortion:
-                            listViewSide.Visibility = Visibility.Visible;
-
                             if (result.ViewResults == null)
                             {
                                 result.ViewResults = new ObservableCollection<IViewResult>();
@@ -575,7 +564,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             }
                             break;
                         case AlgorithmResultType.LedCheck:
-                            listViewSide.Visibility = Visibility.Visible;
                             if (result.ViewResults == null)
                             {
                                 result.ViewResults = new ObservableCollection<IViewResult>();
@@ -644,7 +632,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             List<string> ComplianceYHeader = new() { "名称" ,"值", "Validate" };
                             List<string> ComplianceYHeaderBind = new() { "Name", "DataValue", "ValidateResult" };
 
-                            listViewSide.Visibility = Visibility.Visible;
                             LeftGridViewColumnVisibilitys.Clear();
                             gridView.Columns.Clear();
                             for (int i = 0; i < ComplianceYHeader.Count; i++)
@@ -655,7 +642,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             break;
                         case AlgorithmResultType.Compliance_Contrast_CIE_XYZ:
                         case AlgorithmResultType.Compliance_Math_CIE_XYZ:
-                            listViewSide.Visibility = Visibility.Visible;
                             if (result.ViewResults == null)
                             {
                                 result.ViewResults = ComplianceXYZDao.Instance.GetAllByPid(result.Id).ToViewResults();
