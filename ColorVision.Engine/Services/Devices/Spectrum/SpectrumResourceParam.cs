@@ -1,13 +1,12 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Rbac;
+using ColorVision.Engine.Templates;
+using ColorVision.Themes;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.Themes;
 
 namespace ColorVision.Engine.Services.Devices.Spectrum
 {

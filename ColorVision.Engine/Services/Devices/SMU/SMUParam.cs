@@ -2,15 +2,13 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Templates;
+using ColorVision.Themes;
 using ColorVision.UI.Menus;
 using cvColorVision;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Text;
 using System.Windows;
-using ColorVision.Themes;
 
 namespace ColorVision.Engine.Services.Devices.SMU
 {

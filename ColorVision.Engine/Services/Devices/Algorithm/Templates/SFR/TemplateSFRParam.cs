@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Templates;
+﻿using ColorVision.Engine.Templates;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
 {

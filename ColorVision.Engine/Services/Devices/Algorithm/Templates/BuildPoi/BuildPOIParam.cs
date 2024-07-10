@@ -1,14 +1,8 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.Templates;
+﻿using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Services.Dao;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Windows;
-using ColorVision.UI.Menus;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
 {

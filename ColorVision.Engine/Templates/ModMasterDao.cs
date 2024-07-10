@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 
-namespace ColorVision.Engine.Services.Dao
+namespace ColorVision.Engine.Templates
 {
     public partial class ModMasterType
     {
@@ -50,6 +50,8 @@ namespace ColorVision.Engine.Services.Dao
 
         public string? Pcode { get; set; }
     }
+
+
     public class ModMasterDao : BaseDaoMaster<ModMasterModel>
     {
         public static ModMasterDao Instance { get; set; } = new ModMasterDao(string.Empty);

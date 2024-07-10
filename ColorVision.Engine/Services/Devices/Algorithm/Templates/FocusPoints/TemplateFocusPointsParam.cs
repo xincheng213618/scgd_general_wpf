@@ -1,5 +1,4 @@
 ﻿using ColorVision.Engine.Templates;
-using ColorVision.Engine.Services.Dao;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
 {

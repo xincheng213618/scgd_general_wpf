@@ -3,7 +3,6 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Rbac;

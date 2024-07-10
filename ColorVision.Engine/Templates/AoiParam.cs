@@ -1,11 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.PhyCameras;
-using ColorVision.Engine.Templates.POI;
-using ColorVision.UI.Menus;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Windows;

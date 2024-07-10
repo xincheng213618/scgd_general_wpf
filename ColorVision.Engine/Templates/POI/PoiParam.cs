@@ -1,18 +1,17 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
-using ColorVision.Engine.Templates.POI.Dao;
-using ColorVision.Engine.Templates.POI.Comply;
-using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Templates.POI;
-using ColorVision.UI.Sorts;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Rbac;
+using ColorVision.Engine.Services.Templates.POI;
+using ColorVision.Engine.Templates.POI.Comply;
+using ColorVision.Engine.Templates.POI.Dao;
+using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
-using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Templates.POI
 {

@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CA1707
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
