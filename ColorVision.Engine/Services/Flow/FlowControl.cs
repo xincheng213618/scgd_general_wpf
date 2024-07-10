@@ -66,19 +66,6 @@ namespace ColorVision.Engine.Services.Flow
             }
             ClearEventHandler();
         }
-        public void Stop(FlowParam flowParam)
-        {
-            var serviceInfo = ServiceManager.GetInstance().GetServiceInfo(ServiceTypes.Flow, string.Empty);
-            if (serviceInfo == null)
-            {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "找不到"); return;
-            }
-            devName = serviceInfo.Devices.First().Key;
-            MQTTFlowStop req = new(serviceInfo.ServiceCode, devName, SerialNumber, serviceInfo.Token);
-            string Msg = JsonConvert.SerializeObject(req);
-            Application.Current.Dispatcher.Invoke(() => FlowMsg?.Invoke(Msg, new EventArgs()));
-            Task.Run(() => MQTTControl.PublishAsyncClient(serviceInfo.PublishTopic, Msg, false));
-        }
 
         public void Start(string sn)
         {

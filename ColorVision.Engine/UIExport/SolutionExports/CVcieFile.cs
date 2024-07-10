@@ -180,8 +180,6 @@ namespace ColorVision.Engine.UIExport.SolutionExports
             throw new System.NotImplementedException();
         }
 
-
-
         public void ReName()
         {
             throw new System.NotImplementedException();

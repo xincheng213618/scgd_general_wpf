@@ -5,58 +5,24 @@ using ColorVision.Engine.Services.DAO;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes;
 using ColorVision.UI;
-using ColorVision.UI.Configs;
 using ColorVision.UI.Menus;
 using ColorVision.Util.Interfaces;
 using Panuon.WPF.UI;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-
 namespace ColorVision.Engine.Services.Flow
 {
-    public class FlowDisplayControlConfig : ViewModelBase,IConfig
+    public partial class FlowDisplayControl : UserControl, IDisPlayControl, IIcon
     {
-        public static FlowDisplayControlConfig Instance =>ConfigHandler.GetInstance().GetRequiredService<FlowDisplayControlConfig>();
-
-        public bool ForceDisableDwayneNeed { get => _ForceDisableDwayneNeed; set { _ForceDisableDwayneNeed = value; NotifyPropertyChanged(); } }
-        private bool _ForceDisableDwayneNeed = true;
-    }
-
-    public class FlowDisplayControlConfigProvider : IConfigSettingProvider
-    {
-        public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
-        {
-            return new List<ConfigSettingMetadata> {
-                            new ConfigSettingMetadata
-                            {
-                                Name = "ForceDisableDwayneNeed",
-                                Description = "重启生效",
-                                Type = ConfigSettingType.Bool,
-                                BindingName = nameof(FlowDisplayControlConfig.ForceDisableDwayneNeed),
-                                Source = FlowDisplayControlConfig.Instance,
-                                Order = 800
-                            }
-            };
-        }
-    }
-
-
-        /// <summary>
-        /// FlowDisplayControl.xaml 的交互逻辑
-        /// </summary>
-        public partial class FlowDisplayControl : UserControl, IDisPlayControl, IIcon
-    {
-
         private static FlowDisplayControl _instance;
         private static readonly object _locker = new();
         public static FlowDisplayControl GetInstance() { lock (_locker) { return _instance ??= new FlowDisplayControl(); } }
 
-        public IFlowView View { get; set; }
+        public CVFlowView1 View { get; set; }
         public string DisPlayName => "Flow";
 
         public FlowDisplayControl()
@@ -71,14 +37,8 @@ namespace ColorVision.Engine.Services.Flow
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
             FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
 
-            if (FlowDisplayControlConfig.Instance.ForceDisableDwayneNeed)
-            {
-                View = new CVFlowView1();
-            }
-            else
-            {
-                View = new CVFlowView();
-            }
+            View = new CVFlowView1();
+
             View.View.Title = $"流程窗口 ";
             this.SetIconResource("DrawingImageFlow", View.View);
 

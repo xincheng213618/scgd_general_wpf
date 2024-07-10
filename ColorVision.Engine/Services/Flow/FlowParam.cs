@@ -1,13 +1,12 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.SysDictionary;
-using ColorVision.Engine.Templates;
+using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Flow.Dao;
-using ColorVision.Engine.Services.Templates;
+using ColorVision.Engine.Services.SysDictionary;
+using ColorVision.Engine.Templates;
 using ColorVision.UI.Menus;
-using ColorVision.Engine.Rbac;
 using CVCommCore;
 using System;
 using System.Collections.Generic;
@@ -16,30 +15,24 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Windows;
-using ColorVision.Engine.MySql.ORM;
 
 namespace ColorVision.Engine.Services.Flow
 {
-    public class ExportFlow : IMenuItem
+    public class ExportFlow :MenuItemBase
     {
-        public string? OwnerGuid => "Template";
-
-        public string? GuidId => "FlowParam";
-        public int Order => 0;
-        public string? Header => Properties.Resources.MenuFlow;
-
-        public string? InputGestureText { get; }
-        public Visibility Visibility => Visibility.Visible;
-        public object? Icon { get; }
-
-        public RelayCommand Command => new(a => {
+        public override string OwnerGuid => "Template";
+        public override string GuidId => "FlowParam";
+        public override int Order => 0;
+        public override  string Header => Properties.Resources.MenuFlow;
+        public override void Execute()
+        {
             if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
             {
                 MessageBox.Show(Application.Current.GetActiveWindow(), "数据库连接失败，请先连接数据库在操作", "ColorVision");
                 return;
             }
             new WindowTemplate(new TemplateFlow()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        });
+        }
     }
 
     public class TemplateFlow : ITemplate<FlowParam>, IITemplateLoad
@@ -155,13 +148,6 @@ namespace ColorVision.Engine.Services.Flow
                     Directory.Delete(tempDirectory, true);
                 }
             }
-
-
-
-
-
-
-
         }
 
         public override bool Import()
