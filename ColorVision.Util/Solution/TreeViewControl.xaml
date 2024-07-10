@@ -24,19 +24,19 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid x:Name="SoulutionButtonPanel1" Grid.Row="0" >
-            <StackPanel Background="{DynamicResource GlobalBackgroundBrush}" Orientation="Horizontal" Margin="5">
-                <Button Command="{Binding SolutionCreateCommand}" Content="新建" Margin="0,0,5,0"/>
-                <Button Command="{Binding SolutionOpenCommand}" Content="{x:Static properties:Resources.Open}" Margin="0,0,5,0"/>
+            <StackPanel Background="{DynamicResource GlobalBackgroundBrush}" Orientation="Horizontal" Margin="3">
+                <Button Command="{Binding SolutionCreateCommand}" Content="新建" Margin="0,0,3,0"/>
+                <Button Command="{Binding SolutionOpenCommand}" Content="{x:Static properties:Resources.Open}" Margin="0,0,3,0"/>
             </StackPanel>
         </Grid>
 
         <Grid Grid.Row="1" >
-            <hc:SearchBar x:Name="SearchBar1"  Margin="5,0,5,0" TextChanged="SearchBar1_TextChanged" hc:InfoElement.Placeholder="{x:Static properties:Resources.SearchProjectFiles}" hc:InfoElement.ShowClearButton="True" Style="{StaticResource SearchBarPlus}" IsRealTime="True"   />
+            <hc:SearchBar x:Name="SearchBar1"  Margin="3,0,3,0" TextChanged="SearchBar1_TextChanged" hc:InfoElement.Placeholder="{x:Static properties:Resources.SearchProjectFiles}" hc:InfoElement.ShowClearButton="True" Style="{StaticResource SearchBarPlus}" IsRealTime="True"   />
         </Grid>
 
 
         <Border BorderThickness="0" Grid.Row="2" CornerRadius="4"  Padding="0" >
-            <TreeView  	x:Name="SolutionTreeView"  BorderThickness="0" Background="{DynamicResource GlobalBackground}" ScrollViewer.CanContentScroll="False">
+            <TreeView  	x:Name="SolutionTreeView"  BorderThickness="0" Padding="0" Margin="-3,3,3,0" Background="{DynamicResource GlobalBackground}" ScrollViewer.CanContentScroll="False">
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="{x:Type TreeViewItem}"  BasedOn="{StaticResource TreeViewItemBaseStyle }">
                         <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}"/>

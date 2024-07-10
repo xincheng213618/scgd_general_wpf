@@ -188,7 +188,7 @@ namespace ColorVision.Solution
         public static void OpenSolutionWindow()
         {
             OpenSolutionWindow openSolutionWindow = new OpenSolutionWindow() { Owner = WindowHelpers.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            openSolutionWindow.Show();
+            openSolutionWindow.ShowDialog();
         }
 
         public void NewCreateWindow()

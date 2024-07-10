@@ -56,10 +56,10 @@
     </Style>
 
     <DataTemplate x:Key="displayTemplate">
-        <TextBlock Text="{Binding Path=Name}" ></TextBlock>
+        <TextBlock Text="{Binding Path=Name}" Padding="6,0" ></TextBlock>
     </DataTemplate>
     <DataTemplate x:Key="editTemplate">
-        <TextBox Text="{Binding Path=Name, Mode=OneWay}" Padding="0" Tag="{Binding .}"  LostFocus="TextBox_LostFocus" KeyUp="TextBox_KeyUp"/>
+        <TextBox Text="{Binding Path=Name, Mode=OneWay}"  Tag="{Binding .}"  LostFocus="TextBox_LostFocus" KeyUp="TextBox_KeyUp"/>
     </DataTemplate>
 
     <Style x:Key="EditableTextBlockStyle"   TargetType="local:EditableTextBlock">

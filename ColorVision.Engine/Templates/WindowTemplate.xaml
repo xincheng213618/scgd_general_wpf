@@ -81,8 +81,8 @@
                                 <DataTemplate DataType="{x:Type local:TemplateModelBase}">
                                     <DockPanel Height="20">
                                         <Grid VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Key}" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}" />
-                                            <TextBox  Text="{Binding Key}" LostFocus="TextBox_LostFocus" Tag="{Binding .}"   HorizontalAlignment="Left" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}"/>
+                                            <TextBlock Text="{Binding Key}" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}" Padding="6,0"/>
+                                            <TextBox  Text="{Binding Key}" LostFocus="TextBox_LostFocus" Tag="{Binding .}" HorizontalAlignment="Left" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}"/>
                                         </Grid>
                                     </DockPanel>
                                 </DataTemplate>
