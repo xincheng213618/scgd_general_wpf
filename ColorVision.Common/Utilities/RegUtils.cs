@@ -3,7 +3,7 @@ using System;
 
 namespace ColorVision.Common.Utilities
 {
-    public static class RegUtil
+    public static class RegUtils
     {
         public static string ReadValue(string path, string name, string def)
         {

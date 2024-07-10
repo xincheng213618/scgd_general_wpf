@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Extension;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Net;
 using ColorVision.UI;

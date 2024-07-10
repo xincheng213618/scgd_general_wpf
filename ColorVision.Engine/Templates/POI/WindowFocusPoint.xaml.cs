@@ -1,12 +1,12 @@
-﻿using ColorVision.Common.Extension;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Draw;
 using ColorVision.Engine.MySql;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.Net;
-using ColorVision.Engine.Services.Dao;
+using ColorVision.Themes;
 using ColorVision.Util.Draw.Rectangle;
 using cvColorVision;
 using cvColorVision.Util;
@@ -17,7 +17,6 @@ using OpenCvSharp.WpfExtensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -29,7 +28,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using ColorVision.Themes;
 
 namespace ColorVision.Engine.Services.Templates.POI
 {
@@ -340,7 +338,7 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             Thread thread = new(() => 
             {
-                BitmapImage bitmapImage = ImageUtil.CreateSolidColorBitmap(width, height, color);
+                BitmapImage bitmapImage = ImageUtils.CreateSolidColorBitmap(width, height, color);
                 bitmapImage.Freeze();
                 Application.Current.Dispatcher.Invoke(() =>
                 {

@@ -1,7 +1,6 @@
-﻿using ColorVision.Common.Extension;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.SysDictionary;
+using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.DAO;
@@ -18,10 +17,11 @@ using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Engine.Services.SysDictionary;
 using ColorVision.Engine.Services.Terminal;
 using ColorVision.Engine.Services.Types;
 using ColorVision.UI;
-using ColorVision.Engine.Rbac;
 using FlowEngineLib;
 using System;
 using System.Collections.Generic;
@@ -30,8 +30,6 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Diagnostics;
-using ColorVision.Engine.Services.PhyCameras.Group;
 
 namespace ColorVision.Engine.Services
 {

@@ -4,18 +4,18 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
-namespace ColorVision.Common.Extension
+namespace ColorVision.Common.Utilities
 {
     /// <summary>
     /// ObservableCollection 类的一些扩展函数。
     /// </summary>
-    public static class ObservableCollectionExtension
+    public static class CollectionUtils
     {
         /// <summary>
         /// RemoveAll for ObservableCollections
         /// </summary>
         /// https://stackoverflow.com/questions/5118513/removeall-for-observablecollections
-        public static int RemoveAll<T>(this ObservableCollection<T> This, Func<T, bool> condition)
+        public static int RemoveAll<T>(this Collection<T> This, Func<T, bool> condition)
         {
             var itemsToRemove = This.Where(condition).ToList();
 
@@ -66,7 +66,7 @@ namespace ColorVision.Common.Extension
         /// <summary>
         /// 按照给定的排序规则，生成一个新的数组。
         /// </summary>
-        public static void Sort<T>(this ObservableCollection<T> This, out ObservableCollection<T> dataList, IComparer<T> comparer)
+        public static void Sort<T>(this Collection<T> This, out ObservableCollection<T> dataList, IComparer<T> comparer)
         {
             dataList = new ObservableCollection<T>();
             foreach (var item in This)
@@ -78,7 +78,7 @@ namespace ColorVision.Common.Extension
         /// <summary>
         /// 按照升序的方式，将项目加入集合。
         /// </summary>
-        public static void SortedAdd<T>(this ObservableCollection<T> This, T item)
+        public static void SortedAdd<T>(this Collection<T> This, T item)
         {
             int index = This.BinarySearch(item);
             if (index < 0) index = -index - 1;
@@ -88,7 +88,7 @@ namespace ColorVision.Common.Extension
         /// <summary>
         /// 按照升序的方式，将项目加入集合。
         /// </summary>
-        public static void SortedAdd<T>(this ObservableCollection<T> This, T item, Comparison<T> comparison)
+        public static void SortedAdd<T>(this Collection<T> This, T item, Comparison<T> comparison)
         {
             int index = This.BinarySearch(item, comparison);
             if (index < 0) index = -index - 1;
@@ -98,7 +98,7 @@ namespace ColorVision.Common.Extension
         /// <summary>
         /// 按照升序的方式，将项目加入集合。
         /// </summary>
-        public static void SortedAdd<T>(this ObservableCollection<T> This, T item, IComparer<T> comparer)
+        public static void SortedAdd<T>(this Collection<T> This, T item, IComparer<T> comparer)
         {
             int index = This.BinarySearch(item, comparer);
             if (index < 0) index = -index - 1;
@@ -108,7 +108,7 @@ namespace ColorVision.Common.Extension
         /// <summary>
         /// 按照升序的方式，将项目加入集合。
         /// </summary>
-        public static void SortedAdd<T>(this ObservableCollection<T> This, IEnumerable<T> items)
+        public static void SortedAdd<T>(this Collection<T> This, IEnumerable<T> items)
         {
             if (items != null)
             {
@@ -120,7 +120,7 @@ namespace ColorVision.Common.Extension
         /// <summary>
         /// 按照升序的方式，将项目加入集合。
         /// </summary>
-        public static void SortedAdd<T>(this ObservableCollection<T> This, IEnumerable<T> items, Comparison<T> comparison)
+        public static void SortedAdd<T>(this Collection<T> This, IEnumerable<T> items, Comparison<T> comparison)
         {
             if (items != null)
             {
@@ -132,7 +132,7 @@ namespace ColorVision.Common.Extension
         /// <summary>
         /// 按照升序的方式，将项目加入集合。
         /// </summary>
-        public static void SortedAdd<T>(this ObservableCollection<T> This, IEnumerable<T> items, IComparer<T> comparer)
+        public static void SortedAdd<T>(this Collection<T> This, IEnumerable<T> items, IComparer<T> comparer)
         {
             if (items != null)
             {
@@ -149,7 +149,7 @@ namespace ColorVision.Common.Extension
         ///     如果指定项目不存在的话，则返回集合中下一个比指定项目大的元素的序号负数，如果指定的项目最大，
         /// 则返回 -Count。此时对返回值 -ret - 1，就得到了数组的插入位置。
         /// </returns>
-        public static int BinarySearch<T>(this ObservableCollection<T> This, T item)
+        public static int BinarySearch<T>(this Collection<T> This, T item)
         {
             if (item is IComparable<T>)
             {
@@ -199,7 +199,7 @@ namespace ColorVision.Common.Extension
         ///     如果指定项目不存在的话，则返回集合中下一个比指定项目大的元素的序号负数，如果指定的项目最大，
         /// 则返回 -Count。此时对返回值 -ret - 1，就得到了数组的插入位置。
         /// </returns>
-        public static int BinarySearch<T>(this ObservableCollection<T> This, T item, Comparison<T> comparison)
+        public static int BinarySearch<T>(this Collection<T> This, T item, Comparison<T> comparison)
         {
             int left = 0, right = This.Count - 1, mid;
             while (left <= right)
@@ -223,7 +223,7 @@ namespace ColorVision.Common.Extension
         ///     如果指定项目不存在的话，则返回集合中下一个比指定项目大的元素的序号负数，如果指定的项目最大，
         /// 则返回 -Count。此时对返回值 -ret - 1，就得到了数组的插入位置。
         /// </returns>
-        public static int BinarySearch<T>(this ObservableCollection<T> This, T item, IComparer<T> comparer)
+        public static int BinarySearch<T>(this Collection<T> This, T item, IComparer<T> comparer)
         {
             int left = 0, right = This.Count - 1, mid;
             while (left <= right)

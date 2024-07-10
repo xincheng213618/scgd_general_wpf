@@ -1,8 +1,8 @@
 ﻿using ColorVision.Common.Utilities;
 
-namespace ColorVision.Common.Extension
+namespace ColorVision.Common.Utilities
 {
-    public static class FileExtension
+    public static class FileUtils
     {
         public static bool HasDefaultProgram(this System.IO.FileInfo file) => Tool.HasDefaultProgram(file.FullName);
 

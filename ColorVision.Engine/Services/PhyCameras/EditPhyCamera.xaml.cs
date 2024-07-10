@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.Extension;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera;

@@ -342,17 +342,17 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 if(bitmap.Width!= bmp.Width)
                 {
-                    WriteableBitmap writeableBitmap = ImageUtil.BitmapToWriteableBitmap(bmp);
+                    WriteableBitmap writeableBitmap = ImageUtils.BitmapToWriteableBitmap(bmp);
                     View.ImageView.ImageShow.Source = writeableBitmap;
                 }
                 else
                 {
-                    ImageUtil.BitmapCopyToWriteableBitmap(bmp, bitmap, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height), 0, 0, bmp.PixelFormat);
+                    ImageUtils.BitmapCopyToWriteableBitmap(bmp, bitmap, new System.Drawing.Rectangle(0, 0, bmp.Width, bmp.Height), 0, 0, bmp.PixelFormat);
                 }
             }
             else
             {
-                WriteableBitmap writeableBitmap = ImageUtil.BitmapToWriteableBitmap(bmp);
+                WriteableBitmap writeableBitmap = ImageUtils.BitmapToWriteableBitmap(bmp);
                 View.ImageView.ImageShow.Source = writeableBitmap;
             }
         }

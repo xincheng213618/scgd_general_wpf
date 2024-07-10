@@ -18,7 +18,7 @@ namespace ColorVision.Engine.Services
             {
                 if (disPlayControl.IsSelected)
                 {
-                    border.BorderBrush = ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme switch
+                    border.BorderBrush = ImageUtils.ConvertFromString(ThemeManager.Current.CurrentUITheme switch
                     {
                         Theme.Light => "#5649B0",
                         Theme.Dark => "#A79CF1",

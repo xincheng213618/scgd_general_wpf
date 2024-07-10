@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Extension;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Msg;
 using Panuon.WPF.UI;
 using System;
@@ -8,7 +7,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Threading;
 
 
 namespace ColorVision.Engine.Services

@@ -265,7 +265,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             else
             {
                 ImageSource bitmapSource = ImageView.ImageShow.Source;
-                ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
+                ImageUtils.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
             }
         }
 

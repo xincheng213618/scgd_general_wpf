@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.Extension;
+﻿using ColorVision.Common.Utilities;
 using System;
 using System.Globalization;
 using System.Windows.Data;

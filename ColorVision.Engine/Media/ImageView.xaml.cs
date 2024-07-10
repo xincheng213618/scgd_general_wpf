@@ -617,7 +617,7 @@ namespace ColorVision.Engine.Media
                             Task.Run(() =>
                             {
                                 byte[] imageData = File.ReadAllBytes(filePath);
-                                BitmapImage bitmapImage = ImageUtil.CreateBitmapImage(imageData);
+                                BitmapImage bitmapImage = ImageUtils.CreateBitmapImage(imageData);
 
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {

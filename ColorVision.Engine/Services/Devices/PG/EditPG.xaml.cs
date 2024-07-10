@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.Extension;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.PG;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Spectrum;

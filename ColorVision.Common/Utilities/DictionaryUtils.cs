@@ -1,11 +1,11 @@
 ﻿using System.Collections.Generic;
 
-namespace ColorVision.Common.Extension
+namespace ColorVision.Common.Utilities
 {
     /// <summary>
     /// 对字典的扩展(解决输出不规范的问题)
     /// </summary>
-    public static class DictionaryExtensions
+    public static class DictionaryUtils
     {
 
         public static string GetString(this Dictionary<string, object> This, string key)

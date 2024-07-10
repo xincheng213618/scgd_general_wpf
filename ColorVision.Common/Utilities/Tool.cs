@@ -341,7 +341,7 @@ namespace ColorVision.Common.Utilities
             bool hasDefaultProgram = false;
             try
             {
-                ProcessStartInfo psi = new(fileName);
+                ProcessStartInfo psi = new ProcessStartInfo(fileName);
                 psi.UseShellExecute = true;
                 Process.Start(psi);
                 hasDefaultProgram = true;
@@ -433,7 +433,7 @@ namespace ColorVision.Common.Utilities
 
 
                 //delete first
-                RegUtil.WriteValue(AutoRunRegPath, autoRunName, "");
+                RegUtils.WriteValue(AutoRunRegPath, autoRunName, "");
                 if (IsAdministrator())
                 {
                     //AutoStart(autoRunName, "", "");
@@ -445,11 +445,11 @@ namespace ColorVision.Common.Utilities
                     if (IsAdministrator())
                     {
                         //AutoStart(autoRunName, exePath, "");
-                        RegUtil.WriteValue(AutoRunRegPath, autoRunName, exePath);
+                        RegUtils.WriteValue(AutoRunRegPath, autoRunName, exePath);
                     }
                     else
                     {
-                        RegUtil.WriteValue(AutoRunRegPath, autoRunName, exePath);
+                        RegUtils.WriteValue(AutoRunRegPath, autoRunName, exePath);
                     }
                 }
             }
@@ -487,12 +487,12 @@ namespace ColorVision.Common.Utilities
         {
             try
             {
-                if (string.IsNullOrEmpty(RegUtil.ReadValue(AutoRunRegPath, AutoRunName, "")))
+                if (string.IsNullOrEmpty(RegUtils.ReadValue(AutoRunRegPath, AutoRunName, "")))
                 {
-                    RegUtil.WriteValue(AutoRunRegPath, AutoRunName, "");
+                    RegUtils.WriteValue(AutoRunRegPath, AutoRunName, "");
                 }
 
-                string value = RegUtil.ReadValue(AutoRunRegPath, AutoRunName, "");
+                string value = RegUtils.ReadValue(AutoRunRegPath, AutoRunName, "");
                 string exePath = Environment.ProcessPath;
                 if (value == exePath || value == $"\"{exePath}\"")
                 {

@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.Extension;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;

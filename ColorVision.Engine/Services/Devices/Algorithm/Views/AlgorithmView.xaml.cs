@@ -141,7 +141,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     case AlgorithmResultType.POI_XYZ:
                         var PoiResultCIExyuvDatas = result.ViewResults.ToSpecificViewResults<PoiResultCIExyuvData>();
                         PoiResultCIExyuvData.SaveCsv(PoiResultCIExyuvDatas, dialog.FileName);
-                        ImageUtil.SaveImageSourceToFile(ImageView.ImageShow.Source, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
+                        ImageUtils.SaveImageSourceToFile(ImageView.ImageShow.Source, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
                         return;
                     default:
                         break;
@@ -173,7 +173,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 }
                 file.WriteLine(value);
                 ImageSource bitmapSource = ImageView.ImageShow.Source;
-                ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine( Path.GetDirectoryName(dialog.FileName),Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
+                ImageUtils.SaveImageSourceToFile(bitmapSource, Path.Combine( Path.GetDirectoryName(dialog.FileName),Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
             }
         }
 

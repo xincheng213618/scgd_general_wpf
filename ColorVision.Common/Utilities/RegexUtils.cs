@@ -8,7 +8,7 @@ namespace ColorVision.Common.Utilities
     /// <summary>
     /// 常用的正则辅助工具类
     /// </summary>
-    public static class RegexUtil
+    public static class RegexUtils
     {
         public static bool IsEmail(string email) => Regex.IsMatch(email, @"^[A-Za-z0-9]+([_\.][A-Za-z0-9]+)*@([A-Za-z0-9\-]+\.)+[A-Za-z]{2,6}$");
 

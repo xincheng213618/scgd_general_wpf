@@ -27,7 +27,6 @@ public static class PlatformHelper
             Process.Start("xdg-open", $"\"{folder}\"");
         }
     }
-    public static readonly bool IsWin10 = !(Environment.OSVersion.Version >= new Version(10, 0, 21996)) && Environment.OSVersion.Version >= new Version(10, 0);
 
     /// <summary>
     /// 打开各种 (文件、url)

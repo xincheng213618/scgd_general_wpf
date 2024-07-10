@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Interop;
 
-namespace ColorVision.Common.Extension
+namespace ColorVision.Common.Utilities
 {
-    public static class WindowExtensions
+    public static class WindowUtils
     {
         public static class WindowNotifications
         {
@@ -68,7 +68,7 @@ namespace ColorVision.Common.Extension
             }
         }
 
-        // Extension method to check if a window has been disposed.
+        // Utilities method to check if a window has been disposed.
         public static bool IsDisposed(this Window window)
         {
             // Check if the window is disposed based on its state.

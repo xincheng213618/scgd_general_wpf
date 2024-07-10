@@ -1,5 +1,4 @@
 ﻿#pragma warning disable CS8604,CS8629
-using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
