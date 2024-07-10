@@ -9,17 +9,17 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Services.ShowPage.Dao
+namespace ColorVision.Engine.Services.DataHistory.Dao
 {
     /// <summary>
-    /// BatchShowPage.xaml 的交互逻辑
+    /// BatchDataHistory.xaml 的交互逻辑
     /// </summary>
-    public partial class BatchShowPage : Page
+    public partial class BatchDataHistory : Page
     {
         public Frame Frame { get; set; }
         public ViewBatchResult ViewBatchResult { get; set; }
 
-        public BatchShowPage(Frame frame, ViewBatchResult viewBatchResult)
+        public BatchDataHistory(Frame frame, ViewBatchResult viewBatchResult)
         {
             Frame = frame;
             ViewBatchResult = viewBatchResult;

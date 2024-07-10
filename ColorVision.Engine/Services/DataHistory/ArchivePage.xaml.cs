@@ -9,7 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Services.ShowPage.Dao
+namespace ColorVision.Engine.Services.DataHistory.Dao
 {
     public class ViewArchiveResult : ViewModelBase, ISortID,ISortCreateTime
     {
@@ -135,7 +135,7 @@ namespace ColorVision.Engine.Services.ShowPage.Dao
             }
             else
             {
-                EditArchived editArchived = new(configArchivedModel) {  Owner =Application.Current.GetActiveWindow()};
+                EditArchived editArchived = new EditArchived(configArchivedModel) {  Owner = Application.Current.GetActiveWindow() ,WindowStartupLocation =WindowStartupLocation.CenterOwner};
                 editArchived.ShowDialog();
             }
 

@@ -24,10 +24,10 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
         <Grid x:Name="SoulutionButtonPanel1" Grid.Row="0" >
-            <ToolBar Background="{DynamicResource GlobalBackgroundBrush}">
-                <Button Command="{Binding SolutionCreateCommand}" Content="新建" Margin="5,0"/>
-                <Button Command="{Binding SolutionOpenCommand}" Content="{x:Static properties:Resources.Open}" Margin="5,0"/>
-            </ToolBar>
+            <StackPanel Background="{DynamicResource GlobalBackgroundBrush}" Orientation="Horizontal" Margin="5">
+                <Button Command="{Binding SolutionCreateCommand}" Content="新建" Margin="0,0,5,0"/>
+                <Button Command="{Binding SolutionOpenCommand}" Content="{x:Static properties:Resources.Open}" Margin="0,0,5,0"/>
+            </StackPanel>
         </Grid>
 
         <Grid Grid.Row="1" >

@@ -10,7 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Services.ShowPage.Dao
+namespace ColorVision.Engine.Services.DataHistory.Dao
 {
     public enum ArchiveStatus
     {
@@ -156,7 +156,7 @@ namespace ColorVision.Engine.Services.ShowPage.Dao
         {
             if (sender is ListView listView && listView.SelectedIndex > -1)
             {
-                Frame.Navigate(new BatchShowPage(Frame, ViewBatchResults[listView.SelectedIndex]));
+                Frame.Navigate(new BatchDataHistory(Frame, ViewBatchResults[listView.SelectedIndex]));
             }
         }
         private void Arch_Click(object sender, RoutedEventArgs e)

@@ -9,7 +9,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Engine.Services.ShowPage.Dao
+namespace ColorVision.Engine.Services.DataHistory.Dao
 {
     public class ViewArchiveDetailResult : ViewModelBase
     {

@@ -5,7 +5,7 @@ using System.Windows;
 using System.Windows.Input;
 
 
-namespace ColorVision.Engine.Services.ShowPage.Dao
+namespace ColorVision.Engine.Services.DataHistory.Dao
 {
     /// <summary>
     /// EditCalibration.xaml 的交互逻辑
@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Services.ShowPage.Dao
         {
             EditConfig.CopyTo(configArchivedModel);
             ConfigArchivedDao.Instance.Save(configArchivedModel);
-            MessageBox.Show(Application.Current.GetActiveWindow(), "保存成功", "ColorVision");
+            //MessageBox.Show(Application.Current.GetActiveWindow(), "保存成功", "ColorVision");
             Close();
         }
 
