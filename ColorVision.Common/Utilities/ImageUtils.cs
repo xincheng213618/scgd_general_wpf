@@ -3,34 +3,27 @@ using System.Windows.Media.Imaging;
 using System.Windows.Media;
 using System.Windows;
 using System.IO;
+using System.Windows.Interop;
 
 namespace ColorVision.Common.Utilities
 {
-    /// <summary>
-    /// 图像操作的一些静态方法
-    /// </summary>
-    public static class ImageUtils
+
+    public static partial class ImageUtils
     {
-        private static BrushConverter brushConverter = new();
 
-        public static Brush? ConvertFromString(string colorCode)
+        /// <summary>
+        /// 对图标的扩展
+        /// </summary>
+        /// <param name="icon"></param>
+        /// <returns></returns>
+        public static ImageSource ToImageSource(this System.Drawing.Icon icon)
         {
-            return (Brush)brushConverter.ConvertFromString(colorCode);
-        }
+            ImageSource imageSource = Imaging.CreateBitmapSourceFromHIcon(
+                icon.Handle,
+                Int32Rect.Empty,
+                BitmapSizeOptions.FromEmptyOptions());
 
-        private static BitmapImage BitmapToImageSource(System.Drawing.Bitmap bitmap)
-        {
-            using (MemoryStream memory = new())
-            {
-                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
-                memory.Position = 0;
-                BitmapImage bitmapImage = new();
-                bitmapImage.BeginInit();
-                bitmapImage.StreamSource = memory;
-                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                bitmapImage.EndInit();
-                return bitmapImage;
-            }
+            return imageSource;
         }
 
         public static System.Drawing.Icon ToIcon(this ImageSource imageSource)
@@ -50,6 +43,66 @@ namespace ColorVision.Common.Utilities
                 }
             }
         }
+
+
+        private static BitmapImage ToBitmapImage(System.Drawing.Bitmap bitmap)
+        {
+            BitmapImage bitmapImage = new BitmapImage();
+            using (MemoryStream memory = new())
+            {
+                bitmap.Save(memory, System.Drawing.Imaging.ImageFormat.Bmp);
+                memory.Position = 0;
+                bitmapImage.BeginInit();
+                bitmapImage.StreamSource = memory;
+                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapImage.EndInit();
+            }
+            return bitmapImage;
+        }
+
+        public static BitmapImage CreateBitmapImage(byte[] imageData)
+        {
+            BitmapImage bitmapImage = new BitmapImage();
+            using (MemoryStream ms = new MemoryStream(imageData))
+            {
+                bitmapImage.BeginInit();
+                bitmapImage.StreamSource = ms;
+                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapImage.EndInit();
+                bitmapImage.Freeze(); // Freeze the BitmapImage to make it cross-thread accessible
+            }
+            return bitmapImage;
+        }
+
+        public static WriteableBitmap ToWriteableBitmap(System.Drawing.Bitmap src)
+        {
+            var wb = CreateCompatibleWriteableBitmap(src);
+            System.Drawing.Imaging.PixelFormat format = src.PixelFormat;
+            if (wb == null)
+            {
+                wb = new WriteableBitmap(src.Width, src.Height, 0, 0, PixelFormats.Bgra32, null);
+                format = System.Drawing.Imaging.PixelFormat.Format32bppArgb;
+            }
+            BitmapCopyToWriteableBitmap(src, wb, new System.Drawing.Rectangle(0, 0, src.Width, src.Height), 0, 0, format);
+            return wb;
+        }
+    }
+
+
+
+    /// <summary>
+    /// 图像操作的一些静态方法
+    /// </summary>
+    public static partial class ImageUtils
+    {
+
+        private static BrushConverter brushConverter = new();
+
+        public static Brush? ConvertFromString(string colorCode)
+        {
+            return (Brush)brushConverter.ConvertFromString(colorCode);
+        }
+
 
         public static int ToInt32(this double num) => Convert.ToInt32(num);
 
@@ -119,33 +172,59 @@ namespace ColorVision.Common.Utilities
         public static Color ToMediaColor(this System.Drawing.Color color) => Color.FromArgb(color.A, color.R, color.G, color.B);
 
 
-        public static bool SaveImageSourceToFile(ImageSource imageSource, string filePath)
+        public static bool SaveImageSourceToFile(this ImageSource imageSource, string filePath)
         {
-            if (imageSource is BitmapSource bitmapSource)
+            ArgumentNullException.ThrowIfNull(imageSource);
+
+            if (string.IsNullOrWhiteSpace(filePath)) throw new ArgumentNullException(nameof(filePath));
+
+            BitmapSource bitmapSource = null;
+
+            if (imageSource is BitmapSource source)
+            {
+                bitmapSource = source;
+            }
+            else
+            {
+                // Attempt to convert ImageSource to BitmapSource
+                try
+                {
+                    var drawingVisual = new DrawingVisual();
+                    using (var drawingContext = drawingVisual.RenderOpen())
+                    {
+                        drawingContext.DrawImage(imageSource, new Rect(0, 0, imageSource.Width, imageSource.Height));
+                    }
+
+                    var renderTargetBitmap = new RenderTargetBitmap(
+                        (int)imageSource.Width,
+                        (int)imageSource.Height,
+                        96, 96, PixelFormats.Pbgra32);
+                    renderTargetBitmap.Render(drawingVisual);
+                    bitmapSource = renderTargetBitmap;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"An error occurred while converting ImageSource to BitmapSource: {ex.Message}");
+                    return false;
+                }
+            }
+
+            try
             {
                 BitmapEncoder encoder = new PngBitmapEncoder();
                 encoder.Frames.Add(BitmapFrame.Create(bitmapSource));
-                using var fileStream = new FileStream(filePath, FileMode.Create);
+
+                using var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None);
                 encoder.Save(fileStream);
                 return true;
             }
-            return false;
-        }
-
-        public static BitmapImage CreateBitmapImage(byte[] imageData)
-        {
-            BitmapImage bitmapImage = new BitmapImage();
-            using (MemoryStream ms = new MemoryStream(imageData))
+            catch (Exception ex)
             {
-                bitmapImage.BeginInit();
-                bitmapImage.StreamSource = ms;
-                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
-                bitmapImage.EndInit();
-                bitmapImage.Freeze(); // Freeze the BitmapImage to make it cross-thread accessible
+                // Log the exception or handle it as necessary
+                Console.WriteLine($"An error occurred while saving the image: {ex.Message}");
+                return false;
             }
-            return bitmapImage;
         }
-
 
 
         /// <summary>
@@ -195,22 +274,7 @@ namespace ColorVision.Common.Utilities
             return bitmapImage;
         }
 
-
-
-        public static WriteableBitmap BitmapToWriteableBitmap(System.Drawing.Bitmap src)
-        {
-            var wb = CreateCompatibleWriteableBitmap(src);
-            System.Drawing.Imaging.PixelFormat format = src.PixelFormat;
-            if (wb == null)
-            {
-                wb = new WriteableBitmap(src.Width, src.Height, 0, 0, PixelFormats.Bgra32, null);
-                format = System.Drawing.Imaging.PixelFormat.Format32bppArgb;
-            }
-            BitmapCopyToWriteableBitmap(src, wb, new System.Drawing.Rectangle(0, 0, src.Width, src.Height), 0, 0, format);
-            return wb;
-        }
-
-        public static PixelFormat CoverFormat(System.Drawing.Bitmap src)
+        private static PixelFormat CoverFormat(System.Drawing.Bitmap src)
         {
             return src.PixelFormat switch
             {
@@ -246,7 +310,7 @@ namespace ColorVision.Common.Utilities
             return new WriteableBitmap(src.Width, src.Height, 0, 0, CoverFormat(src), null);
         }
         //将Bitmap数据写入WriteableBitmap中
-        public static void BitmapCopyToWriteableBitmap(System.Drawing.Bitmap src, WriteableBitmap dst, System.Drawing.Rectangle srcRect, int destinationX, int destinationY, System.Drawing.Imaging.PixelFormat srcPixelFormat)
+        private static void BitmapCopyToWriteableBitmap(System.Drawing.Bitmap src, WriteableBitmap dst, System.Drawing.Rectangle srcRect, int destinationX, int destinationY, System.Drawing.Imaging.PixelFormat srcPixelFormat)
         {
             var data = src.LockBits(new System.Drawing.Rectangle(new System.Drawing.Point(0, 0), src.Size), System.Drawing.Imaging.ImageLockMode.ReadOnly, srcPixelFormat);
             dst.WritePixels(new Int32Rect(srcRect.X, srcRect.Y, srcRect.Width, srcRect.Height), data.Scan0, data.Height * data.Stride, data.Stride, destinationX, destinationY);

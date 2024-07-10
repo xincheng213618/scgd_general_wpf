@@ -102,20 +102,7 @@ namespace ColorVision.UI.Extension
                 return Colors.Transparent;
         }
 
-        /// <summary>
-        /// 对图标的扩展
-        /// </summary>
-        /// <param name="icon"></param>
-        /// <returns></returns>
-        public static ImageSource ToImageSource(this System.Drawing.Icon icon)
-        {
-            ImageSource imageSource = Imaging.CreateBitmapSourceFromHIcon(
-                icon.Handle,
-                Int32Rect.Empty,
-                BitmapSizeOptions.FromEmptyOptions());
 
-            return imageSource;
-        }
 
 
         public static string Description(object obj)

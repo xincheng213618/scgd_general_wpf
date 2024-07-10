@@ -342,7 +342,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 if(bitmap.Width!= bmp.Width)
                 {
-                    WriteableBitmap writeableBitmap = ImageUtils.BitmapToWriteableBitmap(bmp);
+                    WriteableBitmap writeableBitmap = ImageUtils.ToWriteableBitmap(bmp);
                     View.ImageView.ImageShow.Source = writeableBitmap;
                 }
                 else
@@ -352,7 +352,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
             else
             {
-                WriteableBitmap writeableBitmap = ImageUtils.BitmapToWriteableBitmap(bmp);
+                WriteableBitmap writeableBitmap = ImageUtils.ToWriteableBitmap(bmp);
                 View.ImageView.ImageShow.Source = writeableBitmap;
             }
         }
