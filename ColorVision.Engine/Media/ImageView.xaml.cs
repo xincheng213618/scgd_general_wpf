@@ -578,7 +578,6 @@ namespace ColorVision.Engine.Media
                     {
                         if (Config.IsShowLoadImage)
                         {
-
                             WaitControl.Visibility = Visibility.Visible;
                             Task.Run(() =>
                             {
@@ -607,9 +606,32 @@ namespace ColorVision.Engine.Media
                 {
                     try
                     {
-                        Config.FilePath = filePath;
-                        BitmapImage bitmapImage = new(new Uri(filePath));
-                        SetImageSource(bitmapImage);
+
+                        if (Config.IsShowLoadImage)
+                        {
+                            WaitControl.Visibility = Visibility.Visible;
+                            Config.FilePath = filePath;
+
+                            Task.Run(() =>
+                            {
+                                byte[] imageData = File.ReadAllBytes(filePath);
+                                BitmapImage bitmapImage = ImageUtil.CreateBitmapImage(imageData);
+
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    SetImageSource(bitmapImage);
+                                    WaitControl.Visibility = Visibility.Collapsed;
+                                });
+                            });
+
+                        }
+                        else
+                        {
+                            Config.FilePath = filePath;
+                            BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
+                            SetImageSource(bitmapImage);
+                        };
+
                     }
                     catch(Exception ex)
                     {
@@ -619,6 +641,8 @@ namespace ColorVision.Engine.Media
                 }
             }
         }
+
+
 
 
         public void OpenGhostImage(string? filePath,int[] LEDpixelX, int[] LEDPixelY, int[] GhostPixelX, int[] GhostPixelY)

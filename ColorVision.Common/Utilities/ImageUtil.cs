@@ -46,17 +46,18 @@ namespace ColorVision.Common.Utilities
             return false;
         }
 
-        public static BitmapImage ByteArrayToBitmapImage(byte[] byteArray)
+        public static BitmapImage CreateBitmapImage(byte[] imageData)
         {
-            using Stream stream = new MemoryStream(byteArray);
-            BitmapImage image = new();
-            stream.Position = 0;
-            image.BeginInit();
-            image.CacheOption = BitmapCacheOption.OnLoad;
-            image.StreamSource = stream;
-            image.EndInit();
-            image.Freeze();
-            return image;
+            BitmapImage bitmapImage = new BitmapImage();
+            using (MemoryStream ms = new MemoryStream(imageData))
+            {
+                bitmapImage.BeginInit();
+                bitmapImage.StreamSource = ms;
+                bitmapImage.CacheOption = BitmapCacheOption.OnLoad;
+                bitmapImage.EndInit();
+                bitmapImage.Freeze(); // Freeze the BitmapImage to make it cross-thread accessible
+            }
+            return bitmapImage;
         }
 
 
