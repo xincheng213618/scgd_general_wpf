@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 
-namespace ColorVision.Engine.Services.Devices.Algorithm.Dao
+namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
     public class AlgResultMasterModel : PKModel
     {
@@ -38,6 +38,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Dao
         public long TotalTime { get; set; }
         public DateTime? CreateDate { get; set; }
     }
+
+
     public class AlgResultMasterDao : BaseDaoMaster<AlgResultMasterModel>
     {
         public static AlgResultMasterDao Instance { get; set; } = new AlgResultMasterDao();
@@ -63,7 +65,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Dao
             return dInfo;
         }
 
-        public List<AlgResultMasterModel> ConditionalQuery(string id, string batchid, string ImageType, string fileName ,DateTime? dateTimeStart,DateTime? dateTimeEnd)
+        public List<AlgResultMasterModel> ConditionalQuery(string id, string batchid, string ImageType, string fileName, DateTime? dateTimeStart, DateTime? dateTimeEnd)
         {
             Dictionary<string, object> keyValuePairs = new(0);
             keyValuePairs.Add("id", id);

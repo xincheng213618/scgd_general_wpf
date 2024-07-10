@@ -1,5 +1,4 @@
 ﻿using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Algorithm.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.UI.Sorts;

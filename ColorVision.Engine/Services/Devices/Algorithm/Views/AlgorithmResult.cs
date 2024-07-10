@@ -1,7 +1,6 @@
 ﻿#pragma  warning disable CA1708,CS8602,CS8604,CS8629
 using ColorVision.Common.MVVM;
 using ColorVision.UI.Sorts;
-using ColorVision.Engine.Services.Devices.Algorithm.Dao;
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Generic;
@@ -15,6 +14,7 @@ using ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
 using MQTTMessageLib.Algorithm;
+
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
@@ -41,20 +41,15 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             Id = item.Id;
             Batch = item.BatchCode;
             FilePath = item.ImgFile;
-            _POITemplateName = item.TName;
+            POITemplateName = item.TName;
             CreateTime = item.CreateDate;
-            _ResultType = item.ImgFileType;
-            _resultCode = (int)item.ResultCode;
-            _totalTime = item.TotalTime;
-            _resultDesc = item.Result;
+            ResultType = item.ImgFileType;
+            ResultCode = item.ResultCode;
+            TotalTime = item.TotalTime;
+            ResultDesc = item.Result;
         }
 
-        private AlgorithmResultType _ResultType;
-        private int _resultCode;
-        private long _totalTime;
-        private string _resultDesc;
-
-        public int Id { get { return _Id; } set { _Id = value; NotifyPropertyChanged(); } }
+        public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
 
         public string? Batch { get { return _Batch; } set { _Batch = value; NotifyPropertyChanged(); } }
@@ -69,25 +64,19 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public DateTime? CreateTime { get { return _CreateTime; } set { _CreateTime = value; NotifyPropertyChanged(); } }
         private DateTime? _CreateTime;
 
-        public string ResultTypeDis => _ResultType switch
-        {
-            AlgorithmResultType.POI_XYZ => "色度",
-            AlgorithmResultType.POI_Y => "亮度",
-            AlgorithmResultType.POI => "关注点",
-            AlgorithmResultType.Distortion => "畸变",
-            AlgorithmResultType.Ghost => "鬼影",
-            _ => _ResultType.ToString(),
-        };
 
-        public AlgorithmResultType ResultType
-        {
-            get { return _ResultType; }
-            set { _ResultType = value; }
-        }
+        public AlgorithmResultType ResultType {get=> ResultType; set { _ResultType = value; NotifyPropertyChanged(); } }
+        private AlgorithmResultType _ResultType;
 
-        public string ResultDesc { get { return _resultDesc; } set { _resultDesc = value; NotifyPropertyChanged(); } }
-        public string TotalTime => string.Format("{0}", TimeSpan.FromMilliseconds(_totalTime).ToString().TrimEnd('0'));
-        public int ResultCode { get { return _resultCode; } set { _resultCode = value; NotifyPropertyChanged(); } }
+        public string ResultDesc { get { return _ResultDesc; } set { _ResultDesc = value; NotifyPropertyChanged(); } }
+        private string _ResultDesc;
+
+        public long TotalTime { get => _TotalTime; set { _TotalTime = value; NotifyPropertyChanged(); } }
+        private long _TotalTime;
+
+        public int? ResultCode { get { return _ResultCode; } set { _ResultCode = value; NotifyPropertyChanged(); } }
+        private int? _ResultCode;
+
         public string Result => ResultCode == 0 ? "成功" : "失败";
 
 

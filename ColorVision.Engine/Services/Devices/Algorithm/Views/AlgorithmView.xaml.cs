@@ -4,7 +4,6 @@ using ColorVision.Common.Utilities;
 using ColorVision.Draw;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Devices.Algorithm.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion;
@@ -166,7 +165,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         + item.POITemplateName + ","
                         + item.FilePath + ","
                         + item.CreateTime + ","
-                        + item.ResultTypeDis + ","
+                        + item.ResultType + ","
                         + item.TotalTime + ","
                         + item.Result + ","
                         + item.ResultDesc + ","
