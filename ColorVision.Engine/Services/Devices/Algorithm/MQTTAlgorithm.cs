@@ -18,79 +18,20 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         public MQTTAlgorithm(DeviceAlgorithm device, ConfigAlgorithm Config) : base(Config)
         {
             DeviceAlgorithm = device;
-            MsgReturnReceived += MQTTCamera_MsgReturnChanged;
+            MsgReturnReceived += MQTTAlgorithm_MsgReturnReceived;   
             DeviceStatus = DeviceStatusType.Unknown;
         }
 
-
-        private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
+        private void MQTTAlgorithm_MsgReturnReceived(MsgReturn msg)
         {
             if (msg.DeviceCode != Config.Code) return;
-            IsRun = false;
-            if (msg.Code == 0)
+            switch (msg.Code)
             {
-                switch (msg.EventName)
-                {
-                    case "SetParam":
-                        break;
-                    case "Close":
-                        DeviceStatus = DeviceStatusType.Closed;
-                        break;
-                    case "Open":
-                        DeviceStatus = DeviceStatusType.Opened;
-                        break;
-
-                    case MQTTAlgorithmEventEnum.Event_POI_GetData:
-                        DeviceStatus = DeviceStatusType.Opened;
-                        break;
-                    case "SaveLicense":
-                        break;
-                    case MQTTFileServerEventEnum.Event_File_Download:
-                    //    break;
-                    case MQTTFileServerEventEnum.Event_File_Upload:
-                    case MQTTFileServerEventEnum.Event_File_List_All:
-                        break;
-                    case "MTF":
-                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox1.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision"));
-                        break;
-                    case "FOV":
-                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox1.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision"));
-                        break;
-                    default:
-                        break;
-                }
-            }
-            else
-            {
-                switch (msg.EventName)
-                {
-                    case "GetData":
-                        DeviceStatus = DeviceStatusType.Opened;
-                        break;
-                    case "Calibrations":
-                        break;
-                    default:
-                        DeviceStatus = DeviceStatusType.Opened;
-                        break;
-                }
+                default:
+                    break;
             }
         }
 
-        public bool IsRun { get; set; }
-        public MsgRecord Init()
-        {
-            MsgSend msg = new()
-            {
-                EventName = "Init",
-            };
-            return PublishAsyncClient(msg);
-        }
-
-        public MsgRecord UnInit()
-        {
-            MsgSend msg = new() { EventName = "UnInit" };
-            return PublishAsyncClient(msg);
-        }
         public void GetRawFiles(string deviceCode, string deviceType)
         {
             MsgSend msg = new()

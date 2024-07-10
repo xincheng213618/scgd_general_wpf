@@ -2,12 +2,19 @@
 using ColorVision.Common.MVVM;
 using ColorVision.UI.Sorts;
 using ColorVision.Engine.Services.Devices.Algorithm.Dao;
-using MQTTMessageLib.Algorithm;
 using System;
 using System.Collections.ObjectModel;
-using HandyControl.Data;
-using System.Windows.Documents;
 using System.Collections.Generic;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
+using MQTTMessageLib.Algorithm;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 {
@@ -18,13 +25,13 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
         public ObservableCollection<PoiResultData> PoiResultDatas { get; set; }
         public ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas { get; set; }
         public ObservableCollection<PoiResultCIEYData> PoiResultCIEYDatas { get; set; }
-        public ObservableCollection<FOVResultData> FOVData { get; set; }
-        public ObservableCollection<MTFResultData> MTFData { get; set; }
-        public ObservableCollection<BuildPoiResultData> BuildPoiResultData { get; set; }
-        public ObservableCollection<SFRResultData> SFRData { get; set; }
-        public ObservableCollection<GhostResultData> GhostData { get; set; }
-        public ObservableCollection<DistortionResultData> DistortionData { get; set; }
-        public ObservableCollection<LedResultData> LedResultDatas { get; set; }
+        public ObservableCollection<ViewResultFOV> FOVData { get; set; }
+        public ObservableCollection<ViewResultMTF> MTFData { get; set; }
+        public ObservableCollection<ViewResultBuildPoi> BuildPoiResultData { get; set; }
+        public ObservableCollection<ViewResultSFR> SFRData { get; set; }
+        public ObservableCollection<ViewResultGhost> GhostData { get; set; }
+        public ObservableCollection<ViewResultDistortion> DistortionData { get; set; }
+        public ObservableCollection<ViewResultLedCheck> LedResultDatas { get; set; }
         public List<ComplianceYModel> ComplianceYDatas { get; set; }
         public List<ComplianceXYZModel> ComplianceXYZDatas { get; set; }
 

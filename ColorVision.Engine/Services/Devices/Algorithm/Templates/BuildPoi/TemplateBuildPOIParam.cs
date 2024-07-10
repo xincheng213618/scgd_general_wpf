@@ -1,0 +1,15 @@
+﻿using ColorVision.Engine.Templates;
+using ColorVision.Engine.Services.Dao;
+
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
+{
+    public class TemplateBuildPOIParam : ITemplate<BuildPOIParam>, IITemplateLoad
+    {
+        public TemplateBuildPOIParam()
+        {
+            Title = "BuildPOI算法设置";
+            Code = ModMasterType.BuildPOI;
+            TemplateParams = BuildPOIParam.BuildPOIParams;
+        }
+    }
+}

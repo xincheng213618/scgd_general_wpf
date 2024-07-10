@@ -5,7 +5,7 @@ using ColorVision.Draw;
 using ColorVision.Draw.Ruler;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;

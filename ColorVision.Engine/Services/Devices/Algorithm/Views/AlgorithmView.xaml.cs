@@ -5,6 +5,15 @@ using ColorVision.Draw;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.Algorithm.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.Compliance;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Net;
 using ColorVision.UI;
@@ -328,11 +337,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                             if (result.SFRData == null)
                             {
-                                result.FOVData = new ObservableCollection<FOVResultData>();
+                                result.FOVData = new ObservableCollection<ViewResultFOV>();
                                 List<AlgResultFOVModel> AlgResultFOVModels = AlgResultFOVDao.Instance.GetAllByPid(result.Id);
                                 foreach (var item in AlgResultFOVModels)
                                 {
-                                    FOVResultData fOVResultData = new(item);
+                                    ViewResultFOV fOVResultData = new(item);
                                     result.FOVData.Add(fOVResultData);
                                 };
                             }
@@ -356,7 +365,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                             if (result.SFRData == null)
                             {
-                                result.SFRData = new ObservableCollection<SFRResultData>();
+                                result.SFRData = new ObservableCollection<ViewResultSFR>();
                                 List<AlgResultSFRModel> AlgResultSFRModels = AlgResultSFRDao.Instance.GetAllByPid(result.Id);
                                 foreach (var item in AlgResultSFRModels)
                                 {
@@ -364,7 +373,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                                     var PdomainSamplingDatas = JsonConvert.DeserializeObject<float[]>(item.PdomainSamplingData);
                                     for (int i = 0; i < Pdfrequencys.Length; i++)
                                     {
-                                        SFRResultData resultData = new(Pdfrequencys[i], PdomainSamplingDatas[i]);
+                                        ViewResultSFR resultData = new(Pdfrequencys[i], PdomainSamplingDatas[i]);
                                         result.SFRData.Add(resultData);
                                     }
                                 };
@@ -392,11 +401,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             listViewSide.Visibility = Visibility.Visible;
                             if (result.MTFData == null)
                             {
-                                result.MTFData = new ObservableCollection<MTFResultData>();
+                                result.MTFData = new ObservableCollection<ViewResultMTF>();
                                 List<POIPointResultModel> AlgResultMTFModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
                                 foreach (var item in AlgResultMTFModels)
                                 {
-                                    MTFResultData mTFResultData = new(item);
+                                    ViewResultMTF mTFResultData = new(item);
                                     result.MTFData.Add(mTFResultData);
                                 }
                             }
@@ -423,11 +432,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         case AlgorithmResultType.Ghost:
                             if (result.GhostData == null)
                             {
-                                result.GhostData = new ObservableCollection<GhostResultData>();
+                                result.GhostData = new ObservableCollection<ViewResultGhost>();
                                 List<AlgResultGhostModel> AlgResultGhostModels = AlgResultGhostDao.Instance.GetAllByPid(result.Id);
                                 foreach (var item in AlgResultGhostModels)
                                 {
-                                    GhostResultData ghostResultData = new(item);
+                                    ViewResultGhost ghostResultData = new(item);
                                     result.GhostData.Add(ghostResultData);
                                 }
                             }
@@ -517,11 +526,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                             if (result.DistortionData == null)
                             {
-                                result.DistortionData = new ObservableCollection<DistortionResultData>();
+                                result.DistortionData = new ObservableCollection<ViewResultDistortion>();
                                 var Distortions = AlgResultDistortionDao.Instance.GetAllByPid(result.Id);
                                 foreach (var item in Distortions)
                                 {
-                                    DistortionResultData distortionResultData = new(item);
+                                    ViewResultDistortion distortionResultData = new(item);
                                     result.DistortionData.Add(distortionResultData);
                                 }
                             }
@@ -551,11 +560,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             listViewSide.Visibility = Visibility.Visible;
                             if (result.LedResultDatas == null)
                             {
-                                result.LedResultDatas = new ObservableCollection<LedResultData>();
+                                result.LedResultDatas = new ObservableCollection<ViewResultLedCheck>();
                                 List<POIPointResultModel> AlgResultLedcheckModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
                                 foreach (var item in AlgResultLedcheckModels)
                                 {
-                                    LedResultData ledResultData = new(new Point((double)item.PoiX, (double)item.PoiY), (double)item.PoiWidth / 2);
+                                    ViewResultLedCheck ledResultData = new(new Point((double)item.PoiX, (double)item.PoiY), (double)item.PoiWidth / 2);
                                     result.LedResultDatas.Add(ledResultData);
                                 };
                             }
@@ -587,11 +596,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                             listViewSide.Visibility = Visibility.Collapsed;
                             if (result.BuildPoiResultData == null)
                             {
-                                result.BuildPoiResultData = new ObservableCollection<BuildPoiResultData>();
+                                result.BuildPoiResultData = new ObservableCollection<ViewResultBuildPoi>();
                                 List<POIPointResultModel> AlgResultMTFModels = POIPointResultDao.Instance.GetAllByPid(result.Id);
                                 foreach (var item in AlgResultMTFModels)
                                 {
-                                    BuildPoiResultData mTFResultData = new(item);
+                                    ViewResultBuildPoi mTFResultData = new(item);
                                     result.BuildPoiResultData.Add(mTFResultData);
                                 }
                             }
