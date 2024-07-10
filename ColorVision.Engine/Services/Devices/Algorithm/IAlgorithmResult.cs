@@ -2,6 +2,8 @@
 using NPOI.SS.Formula.Functions;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Windows.Controls;
+using System.Windows.Documents;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
