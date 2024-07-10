@@ -3,7 +3,7 @@ using System.Collections.Specialized;
 
 namespace ColorVision.Engine.Templates
 {
-    public static class TemplateHelpers
+    public static class Extension
     {
         public static ObservableCollection<TemplateModel<T>> CreateEmpty<T>(this ObservableCollection<TemplateModel<T>>? templateModels) where T : ParamBase, new()
         {

@@ -1,30 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Windows;
 
-namespace ColorVision.Engine.Templates
+namespace ColorVision.Engine.Templates.Aoi
 {
-    public class ExportAOI : ExportTemplateBase
-    {
-        public override string GuidId => "AOIParam";
-        public override string Header => "AOIParam";
-        public override int Order => 1;
-        public override Visibility Visibility => Visibility.Collapsed;
-        public override ITemplate Template { get; } = new TemplateAOIParam();
-    }
-
-    public class TemplateAOIParam : ITemplate<AOIParam>, IITemplateLoad
-    {
-        public TemplateAOIParam()
-        {
-            Title = "AOIParam设置";
-            Code = ModMasterType.Aoi;
-            TemplateParams = AOIParam.Params;
-        }
-    }
-
-
     public class AOIParam : ParamBase
     {
         public static ObservableCollection<TemplateModel<AOIParam>> Params { get; set; } = new ObservableCollection<TemplateModel<AOIParam>>();

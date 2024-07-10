@@ -20,10 +20,7 @@ using ColorVision.Engine.Services.SysDictionary;
 
 namespace ColorVision.Engine.Templates
 {
-    public interface IITemplateLoad
-    {
-        public virtual void Load() { }
-    }
+
 
     public class ITemplate
     {

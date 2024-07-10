@@ -30,6 +30,7 @@ namespace ColorVision.Engine.Templates
     public class ModMasterModel : PKModel
     {
         public ModMasterModel() : this("", "", 0) { }
+
         public ModMasterModel(string pcode, string text, int tenantId)
         {
             Pcode = pcode;
@@ -56,22 +57,20 @@ namespace ColorVision.Engine.Templates
     {
         public static ModMasterDao Instance { get; set; } = new ModMasterDao(string.Empty);
 
-        private string _code;
+        public string Code { get; set; }
         public ModMasterDao(string code) : base("v_scgd_mod_master", "t_scgd_mod_param_master", "id", true)
         {
-            _code = code;
+            Code = code;
         }
-
         public override DataTable GetTableAllByTenantId(int tenantId)
         {
             string sql;
-            if (string.IsNullOrEmpty(ViewName)) sql = $"select * from {TableName} where is_delete=0 and tenant_id={tenantId} and pcode='{_code}'";
-            else sql = $"select * from {ViewName} where is_delete=0 and tenant_id={tenantId} and pcode='{_code}'";
+            if (string.IsNullOrEmpty(ViewName)) sql = $"select * from {TableName} where is_delete=0 and tenant_id={tenantId} and pcode='{Code}'";
+            else sql = $"select * from {ViewName} where is_delete=0 and tenant_id={tenantId} and pcode='{Code}'";
             DataTable d_info = GetData(sql);
             return d_info;
         }
 
-        public string GetPCode() { return _code; }
 
         public override ModMasterModel GetModelFromDataRow(DataRow item)
         {
@@ -108,7 +107,7 @@ namespace ColorVision.Engine.Templates
 
         public DataTable GetTableAllByTenantIdAdnResId(int tenantId, int resourceId)
         {
-            string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and pcode='{_code}' and res_pid={resourceId}" + GetDelSQL(true);
+            string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and pcode='{Code}' and res_pid={resourceId}" + GetDelSQL(true);
             DataTable d_info = GetData(sql);
             return d_info;
         }
