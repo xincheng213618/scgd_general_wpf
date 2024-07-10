@@ -570,13 +570,16 @@ namespace ColorVision.Engine.Media
         {
             if (filePath != null && File.Exists(filePath))
             {
+                long fileSize = new FileInfo(filePath).Length;
+                bool isLargeFile = fileSize > 1024 * 1024 * 100;//例如，文件大于1MB时认为是大文件
+
                 string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
                 if (ext.Contains(".cvraw") || ext.Contains(".cvsrc") || ext.Contains(".cvcie"))
                 {
                     FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
                     try
                     {
-                        if (Config.IsShowLoadImage)
+                        if (Config.IsShowLoadImage && isLargeFile)
                         {
                             WaitControl.Visibility = Visibility.Visible;
                             Task.Run(() =>
@@ -607,11 +610,10 @@ namespace ColorVision.Engine.Media
                     try
                     {
 
-                        if (Config.IsShowLoadImage)
+                        if (Config.IsShowLoadImage && isLargeFile)
                         {
                             WaitControl.Visibility = Visibility.Visible;
                             Config.FilePath = filePath;
-
                             Task.Run(() =>
                             {
                                 byte[] imageData = File.ReadAllBytes(filePath);
