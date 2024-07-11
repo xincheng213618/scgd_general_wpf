@@ -7,10 +7,6 @@
           <source>应用</source>
           <target state="new">приложение</target>
         </trans-unit>
-        <trans-unit id="Cancel" translate="yes" xml:space="preserve">
-          <source>取消</source>
-          <target state="new">Отмена</target>
-        </trans-unit>
         <trans-unit id="Clear" translate="yes" xml:space="preserve">
           <source>清除</source>
           <target state="new">Прозрачный</target>
@@ -91,17 +87,9 @@
           <source>新建工程</source>
           <target state="new">Новое строительство</target>
         </trans-unit>
-        <trans-unit id="No" translate="yes" xml:space="preserve">
-          <source>否</source>
-          <target state="new">нет</target>
-        </trans-unit>
         <trans-unit id="NoRelatedItemsFound" translate="yes" xml:space="preserve">
           <source>未找到相关项目</source>
           <target state="new">Похожие товары не найдены</target>
-        </trans-unit>
-        <trans-unit id="OK" translate="yes" xml:space="preserve">
-          <source>确认</source>
-          <target state="new">ХОРОШО</target>
         </trans-unit>
         <trans-unit id="Open" translate="yes" xml:space="preserve">
           <source>打开</source>
@@ -170,14 +158,6 @@
         <trans-unit id="SelectProjectSaveLocation" translate="yes" xml:space="preserve">
           <source>选择项目保存位置</source>
           <target state="new">Выберите, где сохранить проект</target>
-        </trans-unit>
-        <trans-unit id="ThemeCyan" translate="yes" xml:space="preserve">
-          <source>青色</source>
-          <target state="new">Голубой</target>
-        </trans-unit>
-        <trans-unit id="Yes" translate="yes" xml:space="preserve">
-          <source>是</source>
-          <target state="new">да</target>
         </trans-unit>
       </group>
     </body>

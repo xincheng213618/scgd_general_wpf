@@ -153,9 +153,6 @@
   <data name="TransparentWindow" xml:space="preserve">
     <value>прозрачное окно</value>
   </data>
-  <data name="Save" xml:space="preserve">
-    <value>сохранять</value>
-  </data>
   <data name="ThemeCyan" xml:space="preserve">
     <value>Голубой</value>
   </data>

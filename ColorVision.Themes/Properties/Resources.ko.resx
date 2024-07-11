@@ -153,9 +153,6 @@
   <data name="TransparentWindow" xml:space="preserve">
     <value>투명한 창</value>
   </data>
-  <data name="Save" xml:space="preserve">
-    <value>저장</value>
-  </data>
   <data name="ThemeCyan" xml:space="preserve">
     <value>청록색</value>
   </data>

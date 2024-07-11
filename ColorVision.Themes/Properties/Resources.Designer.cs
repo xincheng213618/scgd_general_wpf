@@ -142,15 +142,6 @@ namespace ColorVision.Themes.Properties {
         }
         
         /// <summary>
-        ///   查找类似 保存 的本地化字符串。
-        /// </summary>
-        public static string Save {
-            get {
-                return ResourceManager.GetString("Save", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 主题 的本地化字符串。
         /// </summary>
         public static string Theme {

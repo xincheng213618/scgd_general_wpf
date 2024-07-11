@@ -7,10 +7,6 @@
           <source>应用</source>
           <target state="new">application</target>
         </trans-unit>
-        <trans-unit id="Cancel" translate="yes" xml:space="preserve">
-          <source>取消</source>
-          <target state="new">Annuler</target>
-        </trans-unit>
         <trans-unit id="Clear" translate="yes" xml:space="preserve">
           <source>清除</source>
           <target state="new">Clair</target>
@@ -91,17 +87,9 @@
           <source>新建工程</source>
           <target state="new">Nouvelle construction</target>
         </trans-unit>
-        <trans-unit id="No" translate="yes" xml:space="preserve">
-          <source>否</source>
-          <target state="new">Non</target>
-        </trans-unit>
         <trans-unit id="NoRelatedItemsFound" translate="yes" xml:space="preserve">
           <source>未找到相关项目</source>
           <target state="new">Aucun élément associé trouvé</target>
-        </trans-unit>
-        <trans-unit id="OK" translate="yes" xml:space="preserve">
-          <source>确认</source>
-          <target state="new">D'ACCORD</target>
         </trans-unit>
         <trans-unit id="Open" translate="yes" xml:space="preserve">
           <source>打开</source>
@@ -170,14 +158,6 @@
         <trans-unit id="SelectProjectSaveLocation" translate="yes" xml:space="preserve">
           <source>选择项目保存位置</source>
           <target state="new">Choisissez où enregistrer le projet</target>
-        </trans-unit>
-        <trans-unit id="ThemeCyan" translate="yes" xml:space="preserve">
-          <source>青色</source>
-          <target state="new">Cyan</target>
-        </trans-unit>
-        <trans-unit id="Yes" translate="yes" xml:space="preserve">
-          <source>是</source>
-          <target state="new">Oui</target>
         </trans-unit>
       </group>
     </body>

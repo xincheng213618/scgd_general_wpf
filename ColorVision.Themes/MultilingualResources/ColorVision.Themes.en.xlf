@@ -39,10 +39,6 @@
           <source>向下还原</source>
           <target state="new">Restore</target>
         </trans-unit>
-        <trans-unit id="Save" translate="yes" xml:space="preserve">
-          <source>保存</source>
-          <target state="new">Save</target>
-        </trans-unit>
         <trans-unit id="Theme" translate="yes" xml:space="preserve">
           <source>主题</source>
           <target state="new">Theme</target>

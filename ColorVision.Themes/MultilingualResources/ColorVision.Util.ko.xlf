@@ -7,10 +7,6 @@
           <source>应用</source>
           <target state="new">애플리케이션</target>
         </trans-unit>
-        <trans-unit id="Cancel" translate="yes" xml:space="preserve">
-          <source>取消</source>
-          <target state="new">취소</target>
-        </trans-unit>
         <trans-unit id="Clear" translate="yes" xml:space="preserve">
           <source>清除</source>
           <target state="new">분명한</target>
@@ -91,17 +87,9 @@
           <source>新建工程</source>
           <target state="new">신조</target>
         </trans-unit>
-        <trans-unit id="No" translate="yes" xml:space="preserve">
-          <source>否</source>
-          <target state="new">아니요</target>
-        </trans-unit>
         <trans-unit id="NoRelatedItemsFound" translate="yes" xml:space="preserve">
           <source>未找到相关项目</source>
           <target state="new">관련 항목을 찾을 수 없습니다</target>
-        </trans-unit>
-        <trans-unit id="OK" translate="yes" xml:space="preserve">
-          <source>确认</source>
-          <target state="new">좋아요</target>
         </trans-unit>
         <trans-unit id="Open" translate="yes" xml:space="preserve">
           <source>打开</source>
@@ -170,14 +158,6 @@
         <trans-unit id="SelectProjectSaveLocation" translate="yes" xml:space="preserve">
           <source>选择项目保存位置</source>
           <target state="new">프로젝트를 저장할 위치를 선택하세요</target>
-        </trans-unit>
-        <trans-unit id="ThemeCyan" translate="yes" xml:space="preserve">
-          <source>青色</source>
-          <target state="new">청록색</target>
-        </trans-unit>
-        <trans-unit id="Yes" translate="yes" xml:space="preserve">
-          <source>是</source>
-          <target state="new">예</target>
         </trans-unit>
       </group>
     </body>

@@ -7,10 +7,6 @@
           <source>应用</source>
           <target state="new">応用</target>
         </trans-unit>
-        <trans-unit id="Cancel" translate="yes" xml:space="preserve">
-          <source>取消</source>
-          <target state="new">キャンセル</target>
-        </trans-unit>
         <trans-unit id="Clear" translate="yes" xml:space="preserve">
           <source>清除</source>
           <target state="new">クリア</target>
@@ -91,17 +87,9 @@
           <source>新建工程</source>
           <target state="new">新築</target>
         </trans-unit>
-        <trans-unit id="No" translate="yes" xml:space="preserve">
-          <source>否</source>
-          <target state="new">いいえ</target>
-        </trans-unit>
         <trans-unit id="NoRelatedItemsFound" translate="yes" xml:space="preserve">
           <source>未找到相关项目</source>
           <target state="new">関連商品は見つかりませんでした</target>
-        </trans-unit>
-        <trans-unit id="OK" translate="yes" xml:space="preserve">
-          <source>确认</source>
-          <target state="new">わかりました</target>
         </trans-unit>
         <trans-unit id="Open" translate="yes" xml:space="preserve">
           <source>打开</source>
@@ -170,14 +158,6 @@
         <trans-unit id="SelectProjectSaveLocation" translate="yes" xml:space="preserve">
           <source>选择项目保存位置</source>
           <target state="new">プロジェクトを保存する場所を選択します</target>
-        </trans-unit>
-        <trans-unit id="ThemeCyan" translate="yes" xml:space="preserve">
-          <source>青色</source>
-          <target state="new">シアン</target>
-        </trans-unit>
-        <trans-unit id="Yes" translate="yes" xml:space="preserve">
-          <source>是</source>
-          <target state="new">はい</target>
         </trans-unit>
       </group>
     </body>

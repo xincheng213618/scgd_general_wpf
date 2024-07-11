@@ -234,19 +234,4 @@
   <data name="MenuCopy" xml:space="preserve">
     <value>복사(C)</value>
   </data>
-  <data name="ThemeCyan" xml:space="preserve">
-    <value>청록색</value>
-  </data>
-  <data name="Yes" xml:space="preserve">
-    <value>예</value>
-  </data>
-  <data name="No" xml:space="preserve">
-    <value>아니요</value>
-  </data>
-  <data name="OK" xml:space="preserve">
-    <value>좋아요</value>
-  </data>
-  <data name="Cancel" xml:space="preserve">
-    <value>취소</value>
-  </data>
 </root>

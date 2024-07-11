@@ -177,14 +177,8 @@
   <data name="AutoAdjustColumnWidth" xml:space="preserve">
     <value>Автоматически регулировать ширину столбцов</value>
   </data>
-  <data name="MenuTheme" xml:space="preserve">
-    <value>Тема(H)</value>
-  </data>
   <data name="MenuLanguage" xml:space="preserve">
     <value>Язык(Л)</value>
-  </data>
-  <data name="Theme" xml:space="preserve">
-    <value>тема</value>
   </data>
   <data name="Language" xml:space="preserve">
     <value>язык пользовательского интерфейса</value>
