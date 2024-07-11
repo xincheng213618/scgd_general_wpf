@@ -23,7 +23,7 @@
 	  </Content>
 	  <Content Include="..\DLL\scgd_internal_dll\SCBase.dll" Link="libs\SCBase.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+	  </Content>
 	  <Content Include="..\DLL\scgd_internal_dll\SCGDCamLayer.dll" Link="libs\SCGDCamLayer.dll">
 		  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </Content>

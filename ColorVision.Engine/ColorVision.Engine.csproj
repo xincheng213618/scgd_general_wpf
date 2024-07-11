@@ -196,4 +196,26 @@
     </Page>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Libs\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\packages\opencv\x64\opencv_core480.dll" Link="Libs\opencv_core480.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\packages\opencv\x64\opencv_highgui480.dll" Link="Libs\opencv_highgui480.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\packages\opencv\x64\opencv_imgcodecs480.dll" Link="Libs\opencv_imgcodecs480.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\packages\opencv\x64\opencv_imgproc480.dll" Link="Libs\opencv_imgproc480.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\packages\opencv\x64\opencv_videoio480.dll" Link="Libs\opencv_videoio480.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
