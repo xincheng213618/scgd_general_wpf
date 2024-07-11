@@ -4,7 +4,7 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
-using ColorVision.Themes;
+using ColorVision.Themes.Controls;
 using ColorVision.UI.Menus;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;

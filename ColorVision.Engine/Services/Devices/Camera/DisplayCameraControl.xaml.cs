@@ -7,7 +7,7 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Scheduler;
-using ColorVision.Themes;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using cvColorVision;
 using CVCommCore;

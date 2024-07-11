@@ -2,7 +2,6 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Util.Properties;
 using ColorVision.RecentFile;
-using ColorVision.Themes.Controls;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using System;
@@ -14,6 +13,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.Themes.Controls;
 
 namespace ColorVision.Solution
 {

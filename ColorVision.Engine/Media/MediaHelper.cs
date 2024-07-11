@@ -1,13 +1,9 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Net;
-using ColorVision.Themes;
+using ColorVision.Themes.Controls;
 using MQTTMessageLib.FileServer;
 using OpenCvSharp.WpfExtensions;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
 

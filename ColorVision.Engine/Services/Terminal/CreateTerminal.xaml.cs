@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices;
@@ -15,7 +16,7 @@ using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Themes;
-using ColorVision.Engine.Rbac;
+using ColorVision.Themes.Controls;
 using Newtonsoft.Json;
 using System;
 using System.Linq;

@@ -8,7 +8,6 @@ using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Templates;
 using ColorVision.Themes.Controls;
 using ColorVision.UI.Authorizations;
-using ColorVision.Util.Controls;
 using ColorVision.Util.Interfaces;
 using System;
 using System.Collections.ObjectModel;

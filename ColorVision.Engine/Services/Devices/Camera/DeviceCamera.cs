@@ -6,7 +6,7 @@ using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Services.PhyCameras;
-using ColorVision.Themes;
+using ColorVision.Themes.Controls;
 using ColorVision.UI.Authorizations;
 using ColorVision.Util.Interfaces;
 using log4net;

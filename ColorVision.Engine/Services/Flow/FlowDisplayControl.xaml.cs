@@ -1,9 +1,8 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
 using ColorVision.Engine.Services.DAO;
 using ColorVision.Engine.Templates;
-using ColorVision.Themes;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Menus;
 using ColorVision.Util.Interfaces;

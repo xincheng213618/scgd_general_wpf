@@ -1,4 +1,4 @@
-﻿using ColorVision.Themes;
+﻿using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using CVCommCore;
 using System;

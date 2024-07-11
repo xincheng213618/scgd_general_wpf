@@ -12,6 +12,7 @@ using System.Windows.Media;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.Common.MVVM;
+using ColorVision.Themes.Controls;
 
 namespace ColorVision.Engine.Templates
 {

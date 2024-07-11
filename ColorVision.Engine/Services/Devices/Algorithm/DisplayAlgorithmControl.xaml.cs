@@ -17,7 +17,7 @@ using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Net;
-using ColorVision.Themes;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using CVCommCore;
 using CVCommCore.CVAlgorithm;

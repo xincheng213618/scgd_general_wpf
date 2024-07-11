@@ -9,7 +9,7 @@
              xmlns:draw ="clr-namespace:ColorVision.Draw;assembly=ColorVision.Util"
              xmlns:resx="clr-namespace:ColorVision.Engine.Properties"
              xmlns:hc="https://handyorg.github.io/handycontrol"
-             xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
+             xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
              d:DataContext="{d:DesignInstance local:ImageView}"
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="1000" Initialized="UserControl_Initialized" AllowDrop="True">

@@ -1,10 +1,8 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.Devices.Camera.Video;
+﻿using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Views;
 using ColorVision.Engine.Templates;
-using ColorVision.Themes;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using CVCommCore;
 using System;

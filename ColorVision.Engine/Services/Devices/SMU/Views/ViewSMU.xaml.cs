@@ -1,5 +1,8 @@
-﻿using ColorVision.Engine.Services.Devices.SMU.Dao;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.Devices.SMU.Dao;
+using ColorVision.Themes.Controls;
+using ColorVision.UI.Sorts;
+using ColorVision.UI.Views;
 using ScottPlot;
 using ScottPlot.Plottable;
 using System;
@@ -10,9 +13,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using ColorVision.UI.Sorts;
-using ColorVision.UI.Views;
-using ColorVision.Themes;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Views
 {

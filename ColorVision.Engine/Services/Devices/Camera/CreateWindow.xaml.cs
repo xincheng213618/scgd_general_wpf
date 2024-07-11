@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using System;
 using System.Linq;
 using System.Windows;
+using ColorVision.Themes.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {

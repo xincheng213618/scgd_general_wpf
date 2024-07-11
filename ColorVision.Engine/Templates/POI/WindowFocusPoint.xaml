@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:ColorVision.Engine.Templates.POI"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:converter="clr-namespace:ColorVision.Draw.Converter;assembly=ColorVision.Util"
-        xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util"
+        xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
         xmlns:draw ="clr-namespace:ColorVision.Draw;assembly=ColorVision.Util"
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"

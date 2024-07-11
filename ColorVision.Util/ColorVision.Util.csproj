@@ -13,21 +13,17 @@
 	  <None Remove="Assets\Image\归档查询.png" />
 	  <None Remove="Assets\Image\综合查询.png" />
 	  <None Remove="Assets\uploadbg.avif" />
-	  <None Remove="Controls\uploadbg.avif" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Extended.Wpf.Toolkit" Version="4.6.0" />
 		<PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
-		<PackageReference Include="HandyControl" Version="3.5.1" />
-		<PackageReference Include="Panuon.WPF.UI" Version="1.2.2" />
 		<PackageReference Include="Quartz" Version="3.10.0" />
-		<PackageReference Include="WPF-UI" Version="3.0.4" />
 		<PackageReference Include="YamlDotNet" Version="15.3.0" />
 	</ItemGroup>
 
 	<ItemGroup>
 	  <ProjectReference Include="..\ColorVision.Common\ColorVision.Common.csproj" />
+	  <ProjectReference Include="..\ColorVision.Themes\ColorVision.Themes.csproj" />
 	  <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
 	</ItemGroup>
 
@@ -49,9 +45,6 @@
 	    <DependentUpon>Resources.resx</DependentUpon>
 	  </Compile>
 	  <Compile Update="Scheduler\CreateTask.xaml.cs">
-	    <SubType>Code</SubType>
-	  </Compile>
-	  <Compile Update="Themes\Contorls\Upload.xaml.cs">
 	    <SubType>Code</SubType>
 	  </Compile>
 	</ItemGroup>

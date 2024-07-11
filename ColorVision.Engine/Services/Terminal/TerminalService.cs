@@ -5,7 +5,7 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
-using ColorVision.Themes;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.Util.Interfaces;

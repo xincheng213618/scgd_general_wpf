@@ -28,10 +28,10 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.PG;
+using ColorVision.Themes.Controls;
 
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views
