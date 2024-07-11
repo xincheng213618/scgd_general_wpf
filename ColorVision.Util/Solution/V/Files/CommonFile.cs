@@ -1,11 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
-using ColorVision.UI.Extension;
 using ColorVision.Common.NativeMethods;
+using ColorVision.Common.Utilities;
+using System;
 using System.IO;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-using System;
-using System.Windows;
 
 namespace ColorVision.Solution.V.Files
 {

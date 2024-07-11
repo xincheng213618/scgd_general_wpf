@@ -2,7 +2,7 @@
 using QRCoder.Xaml;
 using System.Windows.Media;
 
-namespace ColorVision.Handler
+namespace ColorVision.Engine.Handler
 {
     public class QRCodeHelper
     {

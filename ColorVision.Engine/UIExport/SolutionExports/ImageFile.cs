@@ -1,19 +1,15 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
+using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
-using ColorVision.UI.Extension;
+using ColorVision.Solution;
 using ColorVision.Solution.V.Files;
 using System;
 using System.IO;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
-using ColorVision.Solution;
-using System.Drawing;
 using System.Windows.Documents;
-using ColorVision.Common.Utilities;
-using ColorVision.Net;
+using System.Windows.Media;
 
 namespace ColorVision.Engine.UIExport.SolutionExports
 {

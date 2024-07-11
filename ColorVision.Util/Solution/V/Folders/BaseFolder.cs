@@ -1,11 +1,11 @@
-﻿using ColorVision.Common.NativeMethods;
-using System.IO;
-using ColorVision.UI.Extension;
-using System.Windows.Media;
-using System.Windows.Controls;
-using ColorVision.Common.MVVM;
+﻿using ColorVision.Common.MVVM;
+using ColorVision.Common.NativeMethods;
+using ColorVision.Common.Utilities;
 using System;
+using System.IO;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ColorVision.Solution.V.Folders
 {

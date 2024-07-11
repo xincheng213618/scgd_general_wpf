@@ -1,9 +1,8 @@
-﻿using ColorVision.UI.Extension;
+﻿using ColorVision.Common.Utilities;
 using System.ComponentModel;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Windows;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace ColorVision.Themes.Controls
 {

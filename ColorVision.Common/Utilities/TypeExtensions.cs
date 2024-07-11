@@ -11,9 +11,6 @@ namespace ColorVision.Common.Utilities
             return (T)Activator.CreateInstance(type, args);
         }
 
-
-        private static readonly BindingFlags DefaultFlags = BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance;
-
         public static MethodInfo? GetGetMethod(this PropertyInfo propertyInfo)
         {
             return propertyInfo.GetGetMethod(false);
