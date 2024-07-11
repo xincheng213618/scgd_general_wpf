@@ -147,134 +147,14 @@
   <data name="MenuTheme" xml:space="preserve">
     <value>テーマ（_H）</value>
   </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>言語(_L)</value>
-  </data>
   <data name="ThemeUseSystem" xml:space="preserve">
     <value>システムのテーマを使用する</value>
-  </data>
-  <data name="Language" xml:space="preserve">
-    <value>言語</value>
   </data>
   <data name="TransparentWindow" xml:space="preserve">
     <value>透明な窓</value>
   </data>
-  <data name="RecentUsedContent" xml:space="preserve">
-    <value>最近使用したコンテンツ</value>
-  </data>
-  <data name="RecentFiles" xml:space="preserve">
-    <value>最近のファイル(_F)</value>
-  </data>
-  <data name="SearchProjectFiles" xml:space="preserve">
-    <value>プロジェクトファイルの検索</value>
-  </data>
-  <data name="Open" xml:space="preserve">
-    <value>開ける</value>
-  </data>
-  <data name="Import" xml:space="preserve">
-    <value>輸入</value>
-  </data>
-  <data name="Export" xml:space="preserve">
-    <value>輸出</value>
-  </data>
-  <data name="Edit" xml:space="preserve">
-    <value>編集する</value>
-  </data>
-  <data name="Delete" xml:space="preserve">
-    <value>消去</value>
-  </data>
-  <data name="Create" xml:space="preserve">
-    <value>作成する</value>
-  </data>
-  <data name="Apply" xml:space="preserve">
-    <value>応用</value>
-  </data>
-  <data name="OpenSolution" xml:space="preserve">
-    <value>プロジェクトを開く</value>
-  </data>
-  <data name="OpenItem" xml:space="preserve">
-    <value>プロジェクトを開く</value>
-  </data>
-  <data name="OpenLocalProjectOrFile" xml:space="preserve">
-    <value>ローカルプロジェクトまたはファイルを開きます</value>
-  </data>
-  <data name="NewSolution" xml:space="preserve">
-    <value>新築</value>
-  </data>
-  <data name="NewProjectFormat" xml:space="preserve">
-    <value>新しいプロジェクト形式</value>
-  </data>
-  <data name="MenuNew" xml:space="preserve">
-    <value>新規作成 (_N)</value>
-  </data>
-  <data name="Reset" xml:space="preserve">
-    <value>リセット</value>
-  </data>
-  <data name="MenuOpen" xml:space="preserve">
-    <value>開く (_O)</value>
-  </data>
-  <data name="ProjectSettings" xml:space="preserve">
-    <value>プロジェクト設定</value>
-  </data>
-  <data name="Property" xml:space="preserve">
-    <value>属性</value>
-  </data>
-  <data name="Reseted" xml:space="preserve">
-    <value>リセット完了</value>
-  </data>
-  <data name="NoRelatedItemsFound" xml:space="preserve">
-    <value>関連商品は見つかりませんでした</value>
-  </data>
-  <data name="Refresh" xml:space="preserve">
-    <value>リフレッシュする</value>
-  </data>
-  <data name="Clear" xml:space="preserve">
-    <value>クリア</value>
-  </data>
-  <data name="ConfigureNewProject" xml:space="preserve">
-    <value>新しいプロジェクトを構成する</value>
-  </data>
-  <data name="ProjectName" xml:space="preserve">
-    <value>プロジェクト名</value>
-  </data>
-  <data name="Project" xml:space="preserve">
-    <value>プロジェクト</value>
-  </data>
-  <data name="ClearCache" xml:space="preserve">
-    <value>キャッシュの消去</value>
-  </data>
   <data name="Save" xml:space="preserve">
     <value>保存</value>
-  </data>
-  <data name="Search" xml:space="preserve">
-    <value>検索</value>
-  </data>
-  <data name="CreateProject" xml:space="preserve">
-    <value>プロジェクトの作成</value>
-  </data>
-  <data name="DefaultExportStorageFormat" xml:space="preserve">
-    <value>デフォルトのエクスポート保存形式</value>
-  </data>
-  <data name="CreateNewProjectOrFile" xml:space="preserve">
-    <value>新しいプロジェクトまたはファイルを作成する</value>
-  </data>
-  <data name="SelectProjectSaveLocation" xml:space="preserve">
-    <value>プロジェクトを保存する場所を選択します</value>
-  </data>
-  <data name="MenuCopyFullPath" xml:space="preserve">
-    <value>フルパスをコピー(U)</value>
-  </data>
-  <data name="MenuOpenContainingFolder" xml:space="preserve">
-    <value>フォルダを開く(O)</value>
-  </data>
-  <data name="MenuOpenFileInExplorer" xml:space="preserve">
-    <value>ファイルマネージャーでフォルダーを開きます（X）</value>
-  </data>
-  <data name="MenuCut" xml:space="preserve">
-    <value>カット(T)</value>
-  </data>
-  <data name="MenuCopy" xml:space="preserve">
-    <value>コピー(C)</value>
   </data>
   <data name="ThemeCyan" xml:space="preserve">
     <value>シアン</value>
