@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
 using System.Reflection;
+using System.Windows;
 namespace ColorVision.UI
 {
 
@@ -151,6 +152,12 @@ namespace ColorVision.UI
             {
                 SaveConfigs(ConfigFilePath);
             };
+        }
+
+        public void Reload()
+        {
+            SaveConfigs();
+            LoadConfigs(ConfigFilePath);
         }
 
         public void SaveConfigs() => SaveConfigs(ConfigFilePath);

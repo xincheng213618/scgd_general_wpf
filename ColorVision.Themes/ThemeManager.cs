@@ -44,11 +44,11 @@ namespace ColorVision.Themes
 
                 ThemeManager.Current.CurrentThemeChanged += (theme) =>
                 {
-                    window.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision.Util;component/Assets/Image/{(theme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));
+                    window.Icon = new BitmapImage(new Uri($"pack://application:,,,/ColorVision.Themes;component/Assets/Image/{(theme == Theme.Dark ? "ColorVision1.ico" : "ColorVision.ico")}"));
                     ThemeManager.SetWindowTitleBarColor(hwnd, theme);
                 };
                 if (ThemeManager.Current.CurrentTheme == Theme.Dark)
-                    window.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision.Util;component/Assets/Image/ColorVision1.ico"));
+                    window.Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision.Themes;component/Assets/Image/ColorVision1.ico"));
 
                 ThemeManager.SetWindowTitleBarColor(hwnd, ThemeManager.Current.CurrentUITheme);
 
@@ -103,49 +103,49 @@ namespace ColorVision.Themes
         {
             "/HandyControl;component/themes/basic/colors/colorsdark.xaml",
             "/HandyControl;component/Themes/Theme.xaml",
-            "/ColorVision.Util;component/Themes/Dark.xaml",
-            "/ColorVision.Util;component/Themes/Base.xaml",
-            "/ColorVision.Util;component/Themes/Menu.xaml",
-            "/ColorVision.Util;component/Themes/GroupBox.xaml" ,
-            "/ColorVision.Util;component/Themes/Icons.xaml",
-            "/ColorVision.Util;component/Themes/Window/BaseWindow.xaml"
+            "/ColorVision.Themes;component/Themes/Dark.xaml",
+            "/ColorVision.Themes;component/Themes/Base.xaml",
+            "/ColorVision.Themes;component/Themes/Menu.xaml",
+            "/ColorVision.Themes;component/Themes/GroupBox.xaml" ,
+            "/ColorVision.Themes;component/Themes/Icons.xaml",
+            "/ColorVision.Themes;component/Themes/Window/BaseWindow.xaml"
         };
 
         public static List<string> ResourceDictionaryWhite { get; set; } = new List<string>()
         {
             "/HandyControl;component/Themes/basic/colors/colors.xaml",
             "/HandyControl;component/Themes/Theme.xaml",
-            "/ColorVision.Util;component/Themes/White.xaml",
-            "/ColorVision.Util;component/Themes/Base.xaml",
-            "/ColorVision.Util;component/Themes/Menu.xaml",
-            "/ColorVision.Util;component/Themes/GroupBox.xaml" ,
-            "/ColorVision.Util;component/Themes/Icons.xaml",
-            "/ColorVision.Util;component/Themes/Window/BaseWindow.xaml"
+            "/ColorVision.Themes;component/Themes/White.xaml",
+            "/ColorVision.Themes;component/Themes/Base.xaml",
+            "/ColorVision.Themes;component/Themes/Menu.xaml",
+            "/ColorVision.Themes;component/Themes/GroupBox.xaml" ,
+            "/ColorVision.Themes;component/Themes/Icons.xaml",
+            "/ColorVision.Themes;component/Themes/Window/BaseWindow.xaml"
         };
 
         public static List<string> ResourceDictionaryPink { get; set; } = new List<string>()
         {
-            "/ColorVision.Util;component/Themes/HPink.xaml",
+            "/ColorVision.Themes;component/Themes/HPink.xaml",
             "/HandyControl;component/Themes/Theme.xaml",
-            "/ColorVision.Util;component/Themes/White.xaml",
-            "/ColorVision.Util;component/Themes/Pink.xaml",
-            "/ColorVision.Util;component/Themes/Base.xaml",
-            "/ColorVision.Util;component/Themes/Menu.xaml",
-            "/ColorVision.Util;component/Themes/GroupBox.xaml" ,
-            "/ColorVision.Util;component/Themes/Icons.xaml",
-            "/ColorVision.Util;component/Themes/Window/BaseWindow.xaml"
+            "/ColorVision.Themes;component/Themes/White.xaml",
+            "/ColorVision.Themes;component/Themes/Pink.xaml",
+            "/ColorVision.Themes;component/Themes/Base.xaml",
+            "/ColorVision.Themes;component/Themes/Menu.xaml",
+            "/ColorVision.Themes;component/Themes/GroupBox.xaml" ,
+            "/ColorVision.Themes;component/Themes/Icons.xaml",
+            "/ColorVision.Themes;component/Themes/Window/BaseWindow.xaml"
         };
         public static List<string> ResourceDictionaryCyan { get; set; } = new List<string>()
         {
-            "/ColorVision.Util;component/Themes/HCyan.xaml",
+            "/ColorVision.Themes;component/Themes/HCyan.xaml",
             "/HandyControl;component/Themes/Theme.xaml",
-            "/ColorVision.Util;component/Themes/White.xaml",
-            "/ColorVision.Util;component/Themes/Cyan.xaml",
-            "/ColorVision.Util;component/Themes/Base.xaml",
-            "/ColorVision.Util;component/Themes/Menu.xaml",
-            "/ColorVision.Util;component/Themes/GroupBox.xaml" ,
-            "/ColorVision.Util;component/Themes/Icons.xaml",
-            "/ColorVision.Util;component/Themes/Window/BaseWindow.xaml"
+            "/ColorVision.Themes;component/Themes/White.xaml",
+            "/ColorVision.Themes;component/Themes/Cyan.xaml",
+            "/ColorVision.Themes;component/Themes/Base.xaml",
+            "/ColorVision.Themes;component/Themes/Menu.xaml",
+            "/ColorVision.Themes;component/Themes/GroupBox.xaml" ,
+            "/ColorVision.Themes;component/Themes/Icons.xaml",
+            "/ColorVision.Themes;component/Themes/Window/BaseWindow.xaml"
         };
 
         private void ApplyActTheme(Application app, Theme theme)

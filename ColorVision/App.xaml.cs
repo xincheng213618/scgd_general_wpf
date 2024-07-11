@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.MySql;
+using ColorVision.Solution;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Languages;
@@ -102,7 +103,9 @@ namespace ColorVision
             }
             else
             {
-                MySqlControl.GetInstance().Connect();
+                SolutionManager.GetInstance();
+                MySqlControl.GetInstance();
+
                 var _IComponentInitializers = new List<UI.IInitializer>();
                 MessageUpdater messageUpdater = new MessageUpdater();
                 foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
@@ -130,6 +133,7 @@ namespace ColorVision
                 MainWindow.Show();
             }
         }
+
 
         /// <summary>
         /// Application Close

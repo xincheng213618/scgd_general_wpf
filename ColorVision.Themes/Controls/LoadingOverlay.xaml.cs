@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Themes.Contorls
+namespace ColorVision.Themes.Controls
 {
     /// <summary>
     /// LoadingOverlay.xaml 的交互逻辑
