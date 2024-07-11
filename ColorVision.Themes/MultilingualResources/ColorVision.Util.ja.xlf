@@ -19,10 +19,6 @@
           <source>清除缓存</source>
           <target state="new">キャッシュの消去</target>
         </trans-unit>
-        <trans-unit id="Close" translate="yes" xml:space="preserve">
-          <source>关闭</source>
-          <target state="new">キャンセル</target>
-        </trans-unit>
         <trans-unit id="ConfigureNewProject" translate="yes" xml:space="preserve">
           <source>配置新工程</source>
           <target state="new">新しいプロジェクトを構成する</target>
@@ -59,14 +55,6 @@
           <source>导入</source>
           <target state="new">輸入</target>
         </trans-unit>
-        <trans-unit id="Language" translate="yes" xml:space="preserve">
-          <source>用户界面语言</source>
-          <target state="new">言語</target>
-        </trans-unit>
-        <trans-unit id="Maximize" translate="yes" xml:space="preserve">
-          <source>最大化</source>
-          <target state="new">最大化</target>
-        </trans-unit>
         <trans-unit id="MenuCopy" translate="yes" xml:space="preserve">
           <source>复制(_C)</source>
           <target state="new">コピー(C)</target>
@@ -78,10 +66,6 @@
         <trans-unit id="MenuCut" translate="yes" xml:space="preserve">
           <source>剪切(_T)</source>
           <target state="new">カット(T)</target>
-        </trans-unit>
-        <trans-unit id="MenuLanguage" translate="yes" xml:space="preserve">
-          <source>语言(_L)</source>
-          <target state="new">言語(_L)</target>
         </trans-unit>
         <trans-unit id="MenuNew" translate="yes" xml:space="preserve">
           <source>新建(_N)</source>
@@ -98,14 +82,6 @@
         <trans-unit id="MenuOpenFileInExplorer" translate="yes" xml:space="preserve">
           <source>在文件管理器中打开文件夹(_X)</source>
           <target state="new">ファイルマネージャーでフォルダーを開きます（X）</target>
-        </trans-unit>
-        <trans-unit id="MenuTheme" translate="yes" xml:space="preserve">
-          <source>主题(_H)</source>
-          <target state="new">テーマ（_H）</target>
-        </trans-unit>
-        <trans-unit id="Minimize" translate="yes" xml:space="preserve">
-          <source>最小化</source>
-          <target state="new">最小化</target>
         </trans-unit>
         <trans-unit id="NewProjectFormat" translate="yes" xml:space="preserve">
           <source>新建工程格式</source>
@@ -143,10 +119,6 @@
           <source>打开工程</source>
           <target state="new">プロジェクトを開く</target>
         </trans-unit>
-        <trans-unit id="Pin" translate="yes" xml:space="preserve">
-          <source>置顶</source>
-          <target state="new">ピン留めする</target>
-        </trans-unit>
         <trans-unit id="Project" translate="yes" xml:space="preserve">
           <source>工程</source>
           <target state="new">プロジェクト</target>
@@ -183,10 +155,6 @@
           <source>已重置</source>
           <target state="new">リセット完了</target>
         </trans-unit>
-        <trans-unit id="Restore" translate="yes" xml:space="preserve">
-          <source>向下还原</source>
-          <target state="new">リセットする</target>
-        </trans-unit>
         <trans-unit id="Save" translate="yes" xml:space="preserve">
           <source>保存</source>
           <target state="new">保存</target>
@@ -203,33 +171,9 @@
           <source>选择项目保存位置</source>
           <target state="new">プロジェクトを保存する場所を選択します</target>
         </trans-unit>
-        <trans-unit id="Theme" translate="yes" xml:space="preserve">
-          <source>主题</source>
-          <target state="new">テーマ</target>
-        </trans-unit>
         <trans-unit id="ThemeCyan" translate="yes" xml:space="preserve">
           <source>青色</source>
           <target state="new">シアン</target>
-        </trans-unit>
-        <trans-unit id="ThemeDark" translate="yes" xml:space="preserve">
-          <source>深色</source>
-          <target state="new">ダークカラー</target>
-        </trans-unit>
-        <trans-unit id="ThemeLight" translate="yes" xml:space="preserve">
-          <source>浅色</source>
-          <target state="new">ライトテーマ</target>
-        </trans-unit>
-        <trans-unit id="ThemePink" translate="yes" xml:space="preserve">
-          <source>粉色</source>
-          <target state="new">ピンク</target>
-        </trans-unit>
-        <trans-unit id="ThemeUseSystem" translate="yes" xml:space="preserve">
-          <source>跟随系统</source>
-          <target state="new">システムのテーマを使用する</target>
-        </trans-unit>
-        <trans-unit id="TransparentWindow" translate="yes" xml:space="preserve">
-          <source>透明窗口</source>
-          <target state="new">透明な窓</target>
         </trans-unit>
         <trans-unit id="Yes" translate="yes" xml:space="preserve">
           <source>是</source>

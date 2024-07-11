@@ -117,48 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Maximize" xml:space="preserve">
-    <value>максимизировать</value>
-  </data>
-  <data name="Minimize" xml:space="preserve">
-    <value>минимизировать</value>
-  </data>
-  <data name="Close" xml:space="preserve">
-    <value>закрытие</value>
-  </data>
-  <data name="Pin" xml:space="preserve">
-    <value>прикрепить сверху</value>
-  </data>
-  <data name="Restore" xml:space="preserve">
-    <value>Восстановить вниз</value>
-  </data>
-  <data name="ThemeLight" xml:space="preserve">
-    <value>светлый цвет</value>
-  </data>
-  <data name="ThemeDark" xml:space="preserve">
-    <value>Темный</value>
-  </data>
-  <data name="Theme" xml:space="preserve">
-    <value>тема</value>
-  </data>
-  <data name="ThemePink" xml:space="preserve">
-    <value>розовый</value>
-  </data>
-  <data name="MenuTheme" xml:space="preserve">
-    <value>Тема(H)</value>
-  </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>Язык(Л)</value>
-  </data>
-  <data name="ThemeUseSystem" xml:space="preserve">
-    <value>Следуйте системе</value>
-  </data>
-  <data name="Language" xml:space="preserve">
-    <value>язык пользовательского интерфейса</value>
-  </data>
-  <data name="TransparentWindow" xml:space="preserve">
-    <value>прозрачное окно</value>
-  </data>
   <data name="RecentUsedContent" xml:space="preserve">
     <value>Недавно использованный контент</value>
   </data>

@@ -1,6 +1,6 @@
 #   CHANGELOAG
 
-## [1.1.2.1] 2024.07.11
+## [1.1.2.2] 2024.07.11
 
 1.拆分Util，独立ColorVision.Themes
 

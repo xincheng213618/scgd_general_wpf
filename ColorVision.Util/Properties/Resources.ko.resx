@@ -117,48 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Maximize" xml:space="preserve">
-    <value>최대화</value>
-  </data>
-  <data name="Minimize" xml:space="preserve">
-    <value>최소화</value>
-  </data>
-  <data name="Close" xml:space="preserve">
-    <value>닫기</value>
-  </data>
-  <data name="Pin" xml:space="preserve">
-    <value>상단 고정</value>
-  </data>
-  <data name="Restore" xml:space="preserve">
-    <value>아래로 복원</value>
-  </data>
-  <data name="ThemeLight" xml:space="preserve">
-    <value>밝은</value>
-  </data>
-  <data name="ThemeDark" xml:space="preserve">
-    <value>진한 색상</value>
-  </data>
-  <data name="Theme" xml:space="preserve">
-    <value>테마</value>
-  </data>
-  <data name="ThemePink" xml:space="preserve">
-    <value>분홍색</value>
-  </data>
-  <data name="MenuTheme" xml:space="preserve">
-    <value>테마(_H)</value>
-  </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>언어(_L)</value>
-  </data>
-  <data name="ThemeUseSystem" xml:space="preserve">
-    <value>시스템 테마 사용</value>
-  </data>
-  <data name="Language" xml:space="preserve">
-    <value>UI 언어</value>
-  </data>
-  <data name="TransparentWindow" xml:space="preserve">
-    <value>투명한 창</value>
-  </data>
   <data name="RecentUsedContent" xml:space="preserve">
     <value>최근 사용한 콘텐츠</value>
   </data>

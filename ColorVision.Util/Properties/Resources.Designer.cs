@@ -97,15 +97,6 @@ namespace ColorVision.Util.Properties {
         }
         
         /// <summary>
-        ///   查找类似 关闭 的本地化字符串。
-        /// </summary>
-        public static string Close {
-            get {
-                return ResourceManager.GetString("Close", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 配置新工程 的本地化字符串。
         /// </summary>
         public static string ConfigureNewProject {
@@ -187,24 +178,6 @@ namespace ColorVision.Util.Properties {
         }
         
         /// <summary>
-        ///   查找类似 用户界面语言 的本地化字符串。
-        /// </summary>
-        public static string Language {
-            get {
-                return ResourceManager.GetString("Language", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 最大化 的本地化字符串。
-        /// </summary>
-        public static string Maximize {
-            get {
-                return ResourceManager.GetString("Maximize", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 复制(_C) 的本地化字符串。
         /// </summary>
         public static string MenuCopy {
@@ -228,15 +201,6 @@ namespace ColorVision.Util.Properties {
         public static string MenuCut {
             get {
                 return ResourceManager.GetString("MenuCut", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 语言(_L) 的本地化字符串。
-        /// </summary>
-        public static string MenuLanguage {
-            get {
-                return ResourceManager.GetString("MenuLanguage", resourceCulture);
             }
         }
         
@@ -273,24 +237,6 @@ namespace ColorVision.Util.Properties {
         public static string MenuOpenFileInExplorer {
             get {
                 return ResourceManager.GetString("MenuOpenFileInExplorer", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 主题(_H) 的本地化字符串。
-        /// </summary>
-        public static string MenuTheme {
-            get {
-                return ResourceManager.GetString("MenuTheme", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 最小化 的本地化字符串。
-        /// </summary>
-        public static string Minimize {
-            get {
-                return ResourceManager.GetString("Minimize", resourceCulture);
             }
         }
         
@@ -376,15 +322,6 @@ namespace ColorVision.Util.Properties {
         }
         
         /// <summary>
-        ///   查找类似 置顶 的本地化字符串。
-        /// </summary>
-        public static string Pin {
-            get {
-                return ResourceManager.GetString("Pin", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 工程 的本地化字符串。
         /// </summary>
         public static string Project {
@@ -466,15 +403,6 @@ namespace ColorVision.Util.Properties {
         }
         
         /// <summary>
-        ///   查找类似 向下还原 的本地化字符串。
-        /// </summary>
-        public static string Restore {
-            get {
-                return ResourceManager.GetString("Restore", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 保存 的本地化字符串。
         /// </summary>
         public static string Save {
@@ -511,65 +439,11 @@ namespace ColorVision.Util.Properties {
         }
         
         /// <summary>
-        ///   查找类似 主题 的本地化字符串。
-        /// </summary>
-        public static string Theme {
-            get {
-                return ResourceManager.GetString("Theme", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 青色 的本地化字符串。
         /// </summary>
         public static string ThemeCyan {
             get {
                 return ResourceManager.GetString("ThemeCyan", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 深色 的本地化字符串。
-        /// </summary>
-        public static string ThemeDark {
-            get {
-                return ResourceManager.GetString("ThemeDark", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 浅色 的本地化字符串。
-        /// </summary>
-        public static string ThemeLight {
-            get {
-                return ResourceManager.GetString("ThemeLight", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 粉色 的本地化字符串。
-        /// </summary>
-        public static string ThemePink {
-            get {
-                return ResourceManager.GetString("ThemePink", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 跟随系统 的本地化字符串。
-        /// </summary>
-        public static string ThemeUseSystem {
-            get {
-                return ResourceManager.GetString("ThemeUseSystem", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 透明窗口 的本地化字符串。
-        /// </summary>
-        public static string TransparentWindow {
-            get {
-                return ResourceManager.GetString("TransparentWindow", resourceCulture);
             }
         }
         

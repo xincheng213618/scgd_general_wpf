@@ -117,48 +117,6 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Maximize" xml:space="preserve">
-    <value>最大化</value>
-  </data>
-  <data name="Minimize" xml:space="preserve">
-    <value>最小化</value>
-  </data>
-  <data name="Close" xml:space="preserve">
-    <value>キャンセル</value>
-  </data>
-  <data name="Pin" xml:space="preserve">
-    <value>ピン留めする</value>
-  </data>
-  <data name="Restore" xml:space="preserve">
-    <value>リセットする</value>
-  </data>
-  <data name="ThemeLight" xml:space="preserve">
-    <value>ライトテーマ</value>
-  </data>
-  <data name="ThemeDark" xml:space="preserve">
-    <value>ダークカラー</value>
-  </data>
-  <data name="Theme" xml:space="preserve">
-    <value>テーマ</value>
-  </data>
-  <data name="ThemePink" xml:space="preserve">
-    <value>ピンク</value>
-  </data>
-  <data name="MenuTheme" xml:space="preserve">
-    <value>テーマ（_H）</value>
-  </data>
-  <data name="MenuLanguage" xml:space="preserve">
-    <value>言語(_L)</value>
-  </data>
-  <data name="ThemeUseSystem" xml:space="preserve">
-    <value>システムのテーマを使用する</value>
-  </data>
-  <data name="Language" xml:space="preserve">
-    <value>言語</value>
-  </data>
-  <data name="TransparentWindow" xml:space="preserve">
-    <value>透明な窓</value>
-  </data>
   <data name="RecentUsedContent" xml:space="preserve">
     <value>最近使用したコンテンツ</value>
   </data>
