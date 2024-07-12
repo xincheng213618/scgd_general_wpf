@@ -46,10 +46,10 @@ namespace ColorVision.Engine.Services.Devices.PG
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            Device.DeviceService.ReLoadCategoryLib();
-            pgCategory.ItemsSource = Device.DeviceService.PGCategoryLib;
+            Device.DService.ReLoadCategoryLib();
+            pgCategory.ItemsSource = Device.DService.PGCategoryLib;
 
-            foreach (var item in Device.DeviceService.PGCategoryLib)
+            foreach (var item in Device.DService.PGCategoryLib)
             {
                 if (item.Key.Equals(Device.Config.Category, StringComparison.Ordinal))
                 {

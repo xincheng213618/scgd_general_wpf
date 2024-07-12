@@ -14,11 +14,11 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
 {
     public class DeviceCfwPort : DeviceService<ConfigCfwPort>
     {
-        public MQTTCfwPort DeviceService { get; set; }
+        public MQTTCfwPort DService { get; set; }
 
         public DeviceCfwPort(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
-            DeviceService = new MQTTCfwPort(Config);
+            DService = new MQTTCfwPort(Config);
 
             this.SetIconResource("CfwPortDrawingImage");
 
@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
 
         public override MQTTServiceBase? GetMQTTService()
         {
-            return DeviceService;
+            return DService;
         }
     }
 }

@@ -10,11 +10,11 @@ namespace ColorVision.Engine.Services.Devices.PG
 {
     public class DevicePG : DeviceService<ConfigPG>
     {
-        public MQTTPG DeviceService { get; set; }
+        public MQTTPG DService { get; set; }
 
         public DevicePG(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
-            DeviceService = new MQTTPG(Config);
+            DService = new MQTTPG(Config);
 
             EditCommand = new RelayCommand(a =>
             {
@@ -31,7 +31,7 @@ namespace ColorVision.Engine.Services.Devices.PG
         public override UserControl GetDisplayControl() => new DisplayPG(this);
         public override MQTTServiceBase? GetMQTTService()
         {
-            return DeviceService;
+            return DService;
         }
         public string IsNet
         {

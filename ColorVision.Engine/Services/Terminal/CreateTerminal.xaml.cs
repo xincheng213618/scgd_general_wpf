@@ -14,6 +14,7 @@ using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
@@ -201,6 +202,19 @@ namespace ColorVision.Engine.Services.Terminal
                     if (sysDevModel != null)
                     {
                         deviceService = new DeviceMotor(sysDevModel);
+                    }
+                    break;
+                case ServiceTypes.ThirdPartyAlgorithms:
+                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6600);
+                    deviceConfig = new ConfigThirdPartyAlgorithms
+                    {
+                        Id = CreateCode.Text,
+                        Name = CreateName.Text,
+                    };
+                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                    if (sysDevModel != null)
+                    {
+                        deviceService = new DeviceThirdPartyAlgorithms(sysDevModel);
                     }
                     break;
                 default:

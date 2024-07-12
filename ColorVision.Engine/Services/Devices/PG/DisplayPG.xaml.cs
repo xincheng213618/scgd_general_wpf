@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Services.Devices.PG
     /// </summary>
     public partial class DisplayPG : UserControl, IDisPlayControl
     {
-        private MQTTPG PGService { get => DevicePG.DeviceService; }
+        private MQTTPG PGService { get => DevicePG.DService; }
         private DevicePG DevicePG { get; set; }
         public string DisPlayName => DevicePG.Config.Name;
 

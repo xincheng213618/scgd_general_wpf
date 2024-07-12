@@ -21,7 +21,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
     {
         public DeviceCamera DeviceCamera { get; set; }
 
-        public MQTTCamera Service { get => DeviceCamera.DeviceService; }
+        public MQTTCamera Service { get => DeviceCamera.DService; }
 
         public ConfigCamera EditConfig { get; set; }
 

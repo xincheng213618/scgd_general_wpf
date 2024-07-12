@@ -66,7 +66,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         public ViewCamera(DeviceCamera device)
         {
             Device = device;
-            DeviceService = device.DeviceService;
+            DeviceService = device.DService;
             InitializeComponent();
         }
 

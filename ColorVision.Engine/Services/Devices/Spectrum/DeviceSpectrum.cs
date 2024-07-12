@@ -20,7 +20,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 {
     public class DeviceSpectrum : DeviceService<ConfigSpectrum>, IUploadMsg
     {
-        public MQTTSpectrum DeviceService { get; set; }
+        public MQTTSpectrum DService { get; set; }
 
         public ViewSpectrum View { get; set; }
         public RelayCommand UploadSpectrumCommand { get; set; }
@@ -28,7 +28,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public DeviceSpectrum(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
-            DeviceService = new MQTTSpectrum(Config);
+            DService = new MQTTSpectrum(Config);
             View = new ViewSpectrum(this);
             View.View.Title = $"光谱仪视图 - {Config.Code}";
             this.SetIconResource("DISpectrumIcon", View.View);
@@ -108,7 +108,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         public override UserControl GetDisplayControl() => DisplayLazy.Value;
         public override MQTTServiceBase? GetMQTTService()
         {
-            return DeviceService;
+            return DService;
         }
     }
 }

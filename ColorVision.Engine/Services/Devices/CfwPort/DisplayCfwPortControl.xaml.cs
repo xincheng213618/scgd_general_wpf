@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
     {
 
         public DeviceCfwPort Device { get; set; }
-        private MQTTCfwPort DeviceService { get => Device.DeviceService;  }
+        private MQTTCfwPort DeviceService { get => Device.DService;  }
 
         public string DisPlayName => Device.Config.Code;
 

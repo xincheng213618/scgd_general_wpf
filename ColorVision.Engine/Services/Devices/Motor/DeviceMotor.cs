@@ -13,11 +13,11 @@ namespace ColorVision.Engine.Services.Devices.Motor
 {
     public class DeviceMotor : DeviceService<ConfigMotor>,IIcon
     {
-        public MQTTMotor DeviceService { get; set; }
+        public MQTTMotor DService { get; set; }
 
         public DeviceMotor(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
-            DeviceService = new MQTTMotor(Config);
+            DService = new MQTTMotor(Config);
             this.SetIconResource("COMDrawingImage");
           
             EditCommand = new RelayCommand(a =>
@@ -36,7 +36,7 @@ namespace ColorVision.Engine.Services.Devices.Motor
 
         public override MQTTServiceBase? GetMQTTService()
         {
-            return DeviceService;
+            return DService;
         }
     }
 }

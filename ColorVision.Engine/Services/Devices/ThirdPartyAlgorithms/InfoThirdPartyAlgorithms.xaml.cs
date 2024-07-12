@@ -1,34 +1,30 @@
 ﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes.Controls;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.Camera
+namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
     /// <summary>
-    /// InfoPG.xaml 的交互逻辑
+    /// InfoAlgorithm.xaml 的交互逻辑s
     /// </summary>
-    public partial class InfoCamera : UserControl
+    public partial class InfoThirdPartyAlgorithms : UserControl
     {
-        public DeviceCamera Device { get; set; }
+        public DeviceThirdPartyAlgorithms Device { get; set; }
+        public ConfigThirdPartyAlgorithms EditConfig { get; set; }
+        public MQTTThirdPartyAlgorithms DService { get => Device.DService; }
 
-        public MQTTCamera DService { get => Device.DService; }
-
-        public InfoCamera(DeviceCamera deviceCamera)
+        public InfoThirdPartyAlgorithms(DeviceThirdPartyAlgorithms device)
         {
-            Device = deviceCamera;
+            Device = device;
             InitializeComponent();
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
-
         }
-
-
         private void ServiceCache_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
@@ -43,16 +39,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     };
                     ServicesHelper.SendCommand(button, MsgRecord);
                 }
-            }
-        }
-
-
-        private void TextBlock_PreviewMouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            if (sender is TextBlock textBlock)
-            {
-                Common.NativeMethods.Clipboard.SetText(textBlock.Text);
-                MessageBox1.Show(textBlock.Text);
             }
         }
     }

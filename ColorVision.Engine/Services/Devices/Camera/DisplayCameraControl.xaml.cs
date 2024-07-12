@@ -59,7 +59,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayCameraControl));
         public DeviceCamera Device { get; set; }
-        public MQTTCamera DService { get => Device.DeviceService; }
+        public MQTTCamera DService { get => Device.DService; }
 
         public ViewCamera View { get; set; }
         public string DisPlayName => Device.Config.Name;

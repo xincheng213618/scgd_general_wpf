@@ -22,7 +22,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public PhyCamera? PhyCamera { get; set; }
         public ViewCamera View { get; set; }
-        public MQTTCamera DeviceService { get; set; }
+        public MQTTCamera DService { get; set; }
 
         public RelayCommand UploadCalibrationCommand { get; set; }
 
@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public DeviceCamera(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
-            DeviceService = new MQTTCamera(Config);
+            DService = new MQTTCamera(Config);
 
             View = new ViewCamera(this);
             View.View.Title = $"相机视图 - {Config.Code}";
@@ -98,7 +98,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         [RequiresPermission(PermissionMode.Administrator)]
         public void OpenPhyCameraManger()
         {
-            DeviceService.GetAllCameraID();
+            DService.GetAllCameraID();
             PhyCameraManagerWindow phyCameraManager = new() { Owner = Application.Current.GetActiveWindow() };
             phyCameraManager.Show();
         }
@@ -107,7 +107,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public void RefreshDeviceId()
         {
-            MsgRecord msgRecord =  DeviceService.GetAllCameraID();
+            MsgRecord msgRecord =  DService.GetAllCameraID();
             msgRecord.MsgSucessed += (e) =>
             {
                 MessageBox1.Show(Application.Current.GetActiveWindow(),"GetAllCameraID Sucess");
@@ -154,11 +154,11 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public override MQTTServiceBase? GetMQTTService()
         {
-            return DeviceService;
+            return DService;
         }
         public override void Dispose()
         {
-            DeviceService?.Dispose();
+            DService?.Dispose();
             base.Dispose();
             GC.SuppressFinalize(this);
         }

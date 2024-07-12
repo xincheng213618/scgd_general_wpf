@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
     public partial class DisplaySpectrumControl : UserControl, IDisPlayControl
     {
         public DeviceSpectrum DeviceSpectrum { get; set; }
-        public MQTTSpectrum SpectrumService { get => DeviceSpectrum.DeviceService; }
+        public MQTTSpectrum SpectrumService { get => DeviceSpectrum.DService; }
 
         public ViewSpectrum View { get => DeviceSpectrum.View;}
 
@@ -157,7 +157,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
-            //MQTTFileServer.SetParam();
+            //DService.SetParam();
         }
 
         private void Button_Click_OneTest(object sender, RoutedEventArgs e)
@@ -168,7 +168,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void Button_Click_Close(object sender, RoutedEventArgs e)
         {
             SpectrumService.Close();
-            //MQTTFileServer.UnInit();
+            //DService.UnInit();
         }
         private void Button_Click_AutoTest(object sender, RoutedEventArgs e)
         {

@@ -13,13 +13,13 @@ namespace ColorVision.Engine.Services.Devices.SMU
 {
     public class DeviceSMU : DeviceService<ConfigSMU>
     {
-        public MQTTSMU Service { get; set; }
+        public MQTTSMU DService { get; set; }
 
         public ViewSMU View { get; set; }
 
         public DeviceSMU(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
-            Service = new MQTTSMU(Config);
+            DService = new MQTTSMU(Config);
             View = new ViewSMU();
             View.View.Title = $"源表视图 - {Config.Code}";
             this.SetIconResource("SMUDrawingImage", View.View);
@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
         public override MQTTServiceBase? GetMQTTService()
         {
-            return Service;
+            return DService;
         }
     }
 }

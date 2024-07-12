@@ -61,7 +61,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             EditConfig.CopyTo(Device.Config);
-            Device.DeviceService?.SetParam(Device.Config.MaxIntegralTime, Device.Config.BeginIntegralTime);
+            Device.DService?.SetParam(Device.Config.MaxIntegralTime, Device.Config.BeginIntegralTime);
             Close();
         }
     }

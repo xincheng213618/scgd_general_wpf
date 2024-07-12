@@ -23,7 +23,7 @@ namespace ColorVision.Engine.Services.Devices.FileServer
         private static readonly ILog logger = LogManager.GetLogger(typeof(FileServerDisplayControl));
         public DeviceFileServer DeviceFileServer { get; set; }
 
-        public MQTTFileServer MQTTFileServer { get => DeviceFileServer.MQTTFileServer; }
+        public MQTTFileServer MQTTFileServer { get => DeviceFileServer.DService; }
         public string DisPlayName => DeviceFileServer.Config.Name;
 
         public ImageView View { get => DeviceFileServer.View; }
@@ -38,7 +38,7 @@ namespace ColorVision.Engine.Services.Devices.FileServer
             netFileUtil = new NetFileUtil(string.Empty);
             netFileUtil.handler += NetFileUtil_handler;
 
-            DeviceFileServer.MQTTFileServer.OnImageData += Service_OnImageData;
+            DeviceFileServer.DService.OnImageData += Service_OnImageData;
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
         }

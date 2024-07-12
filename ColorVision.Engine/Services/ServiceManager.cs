@@ -15,6 +15,7 @@ using ColorVision.Engine.Services.Devices.PG;
 using ColorVision.Engine.Services.Devices.Sensor;
 using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms;
 using ColorVision.Engine.Services.Flow;
 using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
@@ -298,25 +299,25 @@ namespace ColorVision.Engine.Services
                         case ServiceTypes.Camera:
 
                             DeviceCamera deviceCamera = new DeviceCamera(sysResourceModel);
-                            svrObj = deviceCamera.DeviceService;
+                            svrObj = deviceCamera.DService;
                             terminalService.AddChild(deviceCamera);
                             DeviceServices.Add(deviceCamera);
                             break;
                         case ServiceTypes.PG:
                             DevicePG devicePG = new(sysResourceModel);
-                            svrObj = devicePG.DeviceService;
+                            svrObj = devicePG.DService;
                             terminalService.AddChild(devicePG);
                             DeviceServices.Add(devicePG);
                             break;
                         case ServiceTypes.Spectrum:
                             DeviceSpectrum deviceSpectrum = new(sysResourceModel);
-                            svrObj = deviceSpectrum.DeviceService;
+                            svrObj = deviceSpectrum.DService;
                             terminalService.AddChild(deviceSpectrum);
                             DeviceServices.Add(deviceSpectrum);
                             break;
                         case ServiceTypes.SMU:
                             DeviceSMU deviceSMU = new(sysResourceModel);
-                            svrObj = deviceSMU.Service;
+                            svrObj = deviceSMU.DService;
                             terminalService.AddChild(deviceSMU);
                             DeviceServices.Add(deviceSMU);
                             break;
@@ -328,7 +329,7 @@ namespace ColorVision.Engine.Services
                             break;
                         case ServiceTypes.FileServer:
                             DeviceFileServer img = new(sysResourceModel);
-                            svrObj = img.MQTTFileServer;
+                            svrObj = img.DService;
                             terminalService.AddChild(img);
                             DeviceServices.Add(img);
                             break;
@@ -347,15 +348,21 @@ namespace ColorVision.Engine.Services
                             break;
                         case ServiceTypes.CfwPort:
                             DeviceCfwPort deviceCfwPort = new(sysResourceModel);
-                            svrObj = deviceCfwPort.DeviceService;
+                            svrObj = deviceCfwPort.DService;
                             terminalService.AddChild(deviceCfwPort);
                             DeviceServices.Add(deviceCfwPort);
                             break;
                         case ServiceTypes.Motor:
                             DeviceMotor deviceMotor = new(sysResourceModel);
-                            svrObj = deviceMotor.DeviceService;
+                            svrObj = deviceMotor.DService;
                             terminalService.AddChild(deviceMotor);
                             DeviceServices.Add(deviceMotor);
+                            break;
+                        case ServiceTypes.ThirdPartyAlgorithms:
+                            DeviceThirdPartyAlgorithms deviceThirdPartyAlgorithms = new(sysResourceModel);
+                            svrObj = deviceThirdPartyAlgorithms.DService;
+                            terminalService.AddChild(deviceThirdPartyAlgorithms);
+                            DeviceServices.Add(deviceThirdPartyAlgorithms);
                             break;
                         default:
                             break;
