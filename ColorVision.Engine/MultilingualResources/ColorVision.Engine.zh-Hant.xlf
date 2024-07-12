@@ -47,6 +47,10 @@
           <source>别名</source>
           <target state="new">別名</target>
         </trans-unit>
+        <trans-unit id="AutoExploreTemplate" translate="yes" xml:space="preserve">
+          <source>自动曝光模板</source>
+          <target state="new">自動曝光模板</target>
+        </trans-unit>
         <trans-unit id="AutoExposure" translate="yes" xml:space="preserve">
           <source>自动曝光</source>
           <target state="new">自動曝光</target>

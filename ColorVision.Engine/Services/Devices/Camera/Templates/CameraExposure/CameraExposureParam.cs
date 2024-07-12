@@ -1,8 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using ColorVision.Engine.Templates;
 
-namespace ColorVision.Engine.Templates.CameraExposure
+namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure
 {
     public class CameraExposureParam : ParamBase
     {

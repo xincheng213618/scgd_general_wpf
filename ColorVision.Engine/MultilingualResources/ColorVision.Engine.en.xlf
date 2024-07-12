@@ -47,6 +47,10 @@
           <source>别名</source>
           <target state="new">Aliases</target>
         </trans-unit>
+        <trans-unit id="AutoExploreTemplate" translate="yes" xml:space="preserve">
+          <source>自动曝光模板</source>
+          <target state="new">Auto Exposure Template</target>
+        </trans-unit>
         <trans-unit id="AutoExposure" translate="yes" xml:space="preserve">
           <source>自动曝光</source>
           <target state="new">Auto Exposure</target>

@@ -1,4 +1,6 @@
-﻿namespace ColorVision.Engine.Templates.CameraExposure
+﻿using ColorVision.Engine.Templates;
+
+namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure
 {
     public class TemplateCameraExposureParam : ITemplate<CameraExposureParam>, IITemplateLoad
     {

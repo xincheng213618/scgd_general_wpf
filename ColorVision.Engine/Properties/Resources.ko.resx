@@ -792,4 +792,7 @@
   <data name="LicenseImport" xml:space="preserve">
     <value>라이센스 가져오기</value>
   </data>
+  <data name="AutoExploreTemplate" xml:space="preserve">
+    <value>자동 노출 템플릿</value>
+  </data>
 </root>

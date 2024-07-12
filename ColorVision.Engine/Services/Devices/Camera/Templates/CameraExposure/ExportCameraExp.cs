@@ -1,10 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
+using ColorVision.Engine.Templates;
 using ColorVision.UI.Menus;
 using System.Windows;
 
-namespace ColorVision.Engine.Templates.CameraExposure
+namespace ColorVision.Engine.Services.Devices.Camera.Templates.CameraExposure
 {
     public class ExportCameraExp : IMenuItem
     {

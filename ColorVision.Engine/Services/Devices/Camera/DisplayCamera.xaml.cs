@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.Msg;
@@ -25,6 +26,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using ZstdSharp.Unsafe;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -55,16 +57,16 @@ namespace ColorVision.Engine.Services.Devices.Camera
     /// <summary>
     /// 根据服务的MQTT相机
     /// </summary>
-    public partial class DisplayCameraControl : UserControl,IDisPlayControl
+    public partial class DisplayCamera : UserControl,IDisPlayControl
     {
-        private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayCameraControl));
+        private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayCamera));
         public DeviceCamera Device { get; set; }
         public MQTTCamera DService { get => Device.DService; }
 
         public ViewCamera View { get; set; }
         public string DisPlayName => Device.Config.Name;
 
-        public DisplayCameraControl(DeviceCamera device)
+        public DisplayCamera(DeviceCamera device)
         {
             Device = device;
             View = Device.View;
@@ -101,6 +103,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
             UpdateTemplate();
             Device.ConfigChanged += (s, e) => UpdateTemplate();
             PhyCameraManager.GetInstance().Loaded += (s, e) => UpdateTemplate();
+
+            ComboxAutoExpTimeParamTemplate.ItemsSource = TemplateAutoExpTimeParam.Params.CreateEmpty();
 
             void UpdateUI(DeviceStatusType status)
             {
@@ -286,8 +290,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void AutoExplose_Click(object sender, RoutedEventArgs e)
         {
-            ServicesHelper.SendCommandEx(sender, DService.GetAutoExpTime);
+            if (ComboxAutoExpTimeParamTemplate.SelectedValue is AutoExpTimeParam param)
+            {
+                var msg = DService.GetAutoExpTime(param);
+                ServicesHelper.SendCommand(msg, "AutoExpTime");
+            }
         }
+
 
         public CameraVideoControl CameraVideoControl { get; set; }
 
@@ -386,6 +395,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             var windowTemplate = new WindowTemplate(ITemplate, ComboxCalibrationTemplate.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
             windowTemplate.ShowDialog();
         }
+
+        private void EditAutoExpTime(object sender, RoutedEventArgs e)
+        {
+            var windowTemplate = new WindowTemplate(new TemplateAutoExpTimeParam(), ComboxAutoExpTimeParamTemplate.SelectedIndex - 1) { Owner = Application.Current.GetActiveWindow() };
+            windowTemplate.ShowDialog();
+        }
+
 
         private void Move_Click(object sender, RoutedEventArgs e)
         {

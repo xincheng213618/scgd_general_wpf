@@ -48,7 +48,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
             DisPlaySaveCommand = new RelayCommand(a => SaveDis());
-            DisplayCameraControlLazy = new Lazy<DisplayCameraControl>(() => new DisplayCameraControl(this));
+            DisplayCameraControlLazy = new Lazy<DisplayCamera>(() => new DisplayCamera(this));
 
 
             RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
@@ -147,7 +147,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public override UserControl GetDeviceInfo() => new InfoCamera(this);
         
-        public Lazy<DisplayCameraControl> DisplayCameraControlLazy { get; set; }
+        public Lazy<DisplayCamera> DisplayCameraControlLazy { get; set; }
 
         public override UserControl GetDisplayControl() => DisplayCameraControlLazy.Value;
 

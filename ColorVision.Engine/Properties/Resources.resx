@@ -772,4 +772,7 @@
   <data name="LicenseImport" xml:space="preserve">
     <value>许可证导入</value>
   </data>
+  <data name="AutoExploreTemplate" xml:space="preserve">
+    <value>自动曝光模板</value>
+  </data>
 </root>

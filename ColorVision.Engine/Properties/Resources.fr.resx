@@ -792,4 +792,7 @@
   <data name="LicenseImport" xml:space="preserve">
     <value>Importation de licence</value>
   </data>
+  <data name="AutoExploreTemplate" xml:space="preserve">
+    <value>Modèle d'exposition automatique</value>
+  </data>
 </root>

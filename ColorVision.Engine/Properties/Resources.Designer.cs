@@ -160,6 +160,15 @@ namespace ColorVision.Engine.Properties {
         }
         
         /// <summary>
+        ///   查找类似 自动曝光模板 的本地化字符串。
+        /// </summary>
+        public static string AutoExploreTemplate {
+            get {
+                return ResourceManager.GetString("AutoExploreTemplate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 自动曝光 的本地化字符串。
         /// </summary>
         public static string AutoExposure {

@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8602,CA1707
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Themes.Controls;
@@ -285,11 +286,15 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return PublishAsyncClient(msg, Config.AutoFocusConfig.nTimeout);
         }
 
-        public MsgRecord GetAutoExpTime()
+        public MsgRecord GetAutoExpTime(AutoExpTimeParam autoExpTimeParam)
         {
+            var Params = new Dictionary<string, object>() { };
+            Params.Add("Calibration", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = string.Empty });
+
             MsgSend msg = new()
             {
                 EventName = "GetAutoExpTime",
+                Params = Params
             };
             return PublishAsyncClient(msg);
         }
