@@ -107,7 +107,7 @@
                         </DockPanel>
                     </StackPanel>
 
-                    <StackPanel x:Name="StackPanelImage"  Visibility="{Binding DeviceService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter1}}">
+                    <StackPanel x:Name="StackPanelImage"  Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter1}}">
                         <StackPanel Visibility="{Binding Config.IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
                             <DockPanel Margin="0,2">
                                 <TextBlock  Text="{x:Static properties:Resources.Exposure}" VerticalAlignment="Center"   HorizontalAlignment="Center"  Margin="0,0,5,0" MinWidth="50"  />
