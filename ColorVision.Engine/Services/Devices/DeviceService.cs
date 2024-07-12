@@ -22,7 +22,7 @@ using System.Windows.Media;
 namespace ColorVision.Engine.Services.Devices
 {
 
-    public class DeviceService : BaseResourceObject, IDisposable, ITreeViewItem,IIcon
+    public abstract class DeviceService : BaseResourceObject, IDisposable, ITreeViewItem,IIcon
     {
         public virtual string Code { get; set; }
         public virtual string SendTopic { get; set; }
