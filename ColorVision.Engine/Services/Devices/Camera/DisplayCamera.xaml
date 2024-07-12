@@ -132,14 +132,17 @@
                                 <hc:PreviewSlider TickFrequency ="0.001" IsSnapToTickEnabled="True"  SmallChange ="0.001" LargeChange="0.001" ValueChanged="PreviewSlider_ValueChanged"  Value="{Binding Config.ExpTimeBLog}" Minimum="0" Maximum="11.002"/>
                             </DockPanel>
                         </StackPanel>
-                        <DockPanel Margin="0,2">
-                            <Button Content="{x:Static properties:Resources.AutoExposure}"  DockPanel.Dock="Right" Margin="0,2" Click="AutoExplose_Click"  HorizontalAlignment="Left"/>
-                            <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
-                                <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
-                                <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Click="EditAutoExpTime"/>
-                            </Grid>
-                            <ComboBox x:Name="ComboxAutoExpTimeParamTemplate"   Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                        </DockPanel>
+                        <StackPanel>
+                            <DockPanel Margin="0,2" Height="25">
+                                <Button Content="{x:Static properties:Resources.AutoExposure}"  DockPanel.Dock="Right" Margin="0,2" Click="AutoExplose_Click"  HorizontalAlignment="Left"/>
+                                <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
+                                    <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                    <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Click="EditAutoExpTime"/>
+                                </Grid>
+                                <ComboBox x:Name="ComboxAutoExpTimeParamTemplate"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                            </DockPanel>
+                        </StackPanel>
+
 
                         <StackPanel Margin="0,2" Visibility="{Binding DService.IsVideoOpen,Converter={StaticResource bool2VisibilityConverter1}}">
                             <Grid>
@@ -148,7 +151,14 @@
                                     <ColumnDefinition  Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
-                                    <TextBlock/>
+                                    <DockPanel Margin="0,2">
+                                        <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
+                                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
+                                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Click="EditAutoExpTime"/>
+                                        </Grid>
+                                        <TextBlock Text="曝光"  Margin="0,0,5,0"/>
+                                        <ComboBox x:Name="ComboxAutoExpTimeParamTemplate1"   Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                    </DockPanel>
                                     <DockPanel Margin="0,2">
                                         <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">
                                             <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>

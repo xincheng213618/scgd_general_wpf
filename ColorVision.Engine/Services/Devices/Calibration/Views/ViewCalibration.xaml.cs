@@ -1,14 +1,16 @@
 ﻿#pragma warning disable CS8604,CS8629
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Draw;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Engine.Media;
-using ColorVision.Net;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.Msg;
-using ColorVision.Solution;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.POI;
+using ColorVision.Net;
+using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using CVCommCore.CVImage;
@@ -22,17 +24,11 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
-using ColorVision.UI;
-using ColorVision.Common.MVVM;
-using ColorVision.Engine.Services.Devices.PG;
-using ColorVision.Themes.Controls;
-using FlowEngineLib.Algorithm;
 
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views

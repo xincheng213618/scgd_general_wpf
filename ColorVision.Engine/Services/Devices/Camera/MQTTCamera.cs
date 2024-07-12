@@ -245,7 +245,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord GetData(double[] expTime, CalibrationParam param)
+        public MsgRecord GetData(double[] expTime, CalibrationParam param, AutoExpTimeParam autoExpTimeParam)
         {
             string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var Params = new Dictionary<string, object>() { };
@@ -265,6 +265,24 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 Params.Add("Calibration", new CVTemplateParam() { ID = param.Id, Name = param.Name });
             }
+            if (autoExpTimeParam.Id == -1)
+            {
+                Params.Add("IsAutoExpTime", false);
+            }
+            else
+            {
+                Params.Add("IsAutoExpTime", true);
+                if (autoExpTimeParam.Id == -1)
+                {
+                    Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = string.Empty });
+                }
+                else
+                {
+                    Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = param.Name });
+                }
+            }
+
+
             Params.Add("ScaleFactor", Config.ScaleFactor);
             double timeout = 0;
             for (int i = 0; i < expTime.Length; i++) timeout += expTime[i];
@@ -289,7 +307,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public MsgRecord GetAutoExpTime(AutoExpTimeParam autoExpTimeParam)
         {
             var Params = new Dictionary<string, object>() { };
-            Params.Add("Calibration", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = string.Empty });
+            Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = string.Empty });
 
             MsgSend msg = new()
             {

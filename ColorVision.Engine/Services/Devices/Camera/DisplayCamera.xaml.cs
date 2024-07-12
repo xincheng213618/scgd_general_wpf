@@ -104,8 +104,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             UpdateTemplate();
             Device.ConfigChanged += (s, e) => UpdateTemplate();
             PhyCameraManager.GetInstance().Loaded += (s, e) => UpdateTemplate();
-            ComboxAutoExpTimeParamTemplate.ItemsSource = TemplateAutoExpTimeParam.Params.CreateEmpty();
+            ComboxAutoExpTimeParamTemplate.ItemsSource = TemplateAutoExpTimeParam.Params.CreateDefault();
             ComboxAutoExpTimeParamTemplate.SelectedIndex = 0;
+
+            ComboxAutoExpTimeParamTemplate1.ItemsSource = TemplateAutoExpTimeParam.Params.CreateDefaultEmpty();
+            ComboxAutoExpTimeParamTemplate.SelectedIndex = 0;
+
+
 
             void UpdateUI(DeviceStatusType status)
             {
@@ -241,6 +246,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         {
             if (sender is Button button)
             {
+                if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return;
+
                 if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
                 {
                     if (param.Id != -1)
@@ -255,7 +262,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     double[] expTime = null;
                     if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
                     else expTime = new double[] { Device.Config.ExpTime };
-                    MsgRecord msgRecord = DService.GetData(expTime, param);
+                    MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam);
                     ServicesHelper.SendCommand(button,msgRecord);
                 }
                 else
@@ -263,7 +270,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     double[] expTime = null;
                     if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
                     else expTime = new double[] { Device.Config.ExpTime };
-                    MsgRecord msgRecord = DService.GetData(expTime, new CalibrationParam() { Id = -1,Name ="Empty" });
+                    MsgRecord msgRecord = DService.GetData(expTime, new CalibrationParam() { Id = -1,Name ="Empty" }, autoExpTimeParam);
                     ServicesHelper.SendCommand(button, msgRecord);
                     msgRecord.MsgRecordStateChanged += (s) =>
                     {
@@ -280,13 +287,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public void GetData()
         {
-            if (ComboxCalibrationTemplate.SelectedValue is CalibrationParam param)
-            {
-                double[] expTime = null;
-                if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
-                else expTime = new double[] { Device.Config.ExpTime };
-                MsgRecord msgRecord = DService.GetData(expTime, param);
-            }
+            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return;
+            if (ComboxCalibrationTemplate.SelectedValue is not CalibrationParam param) return;
+
+            double[] expTime = null;
+            if (Device.Config.IsExpThree) { expTime = new double[] { Device.Config.ExpTimeR, Device.Config.ExpTimeG, Device.Config.ExpTimeB }; }
+            else expTime = new double[] { Device.Config.ExpTime };
+            MsgRecord msgRecord = DService.GetData(expTime, param, autoExpTimeParam);
         }
 
         private void AutoExplose_Click(object sender, RoutedEventArgs e)
