@@ -272,9 +272,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
             else
             {
                 Params.Add("IsAutoExpTime", true);
-                if (autoExpTimeParam.Id == -1)
+                if (autoExpTimeParam.Id == -2)
                 {
-                    Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = string.Empty });
+                    Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = -1, Name = string.Empty });
                 }
                 else
                 {
