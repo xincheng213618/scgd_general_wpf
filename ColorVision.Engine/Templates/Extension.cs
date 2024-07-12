@@ -46,7 +46,7 @@ namespace ColorVision.Engine.Templates
         {
             var templateModels1 = new ObservableCollection<TemplateModel<T>>();
             templateModels1.Insert(0, new TemplateModel<T>("Empty", new T() { Id = -1 }));
-            templateModels1.Insert(0, new TemplateModel<T>("Default", new T() { Id = -2 }));
+            templateModels1.Insert(1, new TemplateModel<T>("Default", new T() { Id = -2 }));
 
             if (templateModels != null)
             {
@@ -73,7 +73,7 @@ namespace ColorVision.Engine.Templates
                     case NotifyCollectionChangedAction.Reset:
                         templateModels1.Clear();
                         templateModels1.Insert(0, new TemplateModel<T>("Empty", new T()) { Id = -1 });
-                        templateModels1.Insert(0, new TemplateModel<T>("Default", new T() { Id = -2 }));
+                        templateModels1.Insert(1, new TemplateModel<T>("Default", new T() { Id = -2 }));
 
                         break;
                 }
