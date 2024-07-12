@@ -60,7 +60,7 @@ namespace ColorVision.Engine.Services
         {
             StackPanelShow.Children.Clear();
             if (TreeView1.SelectedItem is DeviceService baseObject)
-                StackPanelShow.Children.Add(baseObject.GetDeviceControl());
+                StackPanelShow.Children.Add(baseObject.GetDeviceInfo());
 
             if (TreeView1.SelectedItem is TerminalServiceBase baseService)
                 StackPanelShow.Children.Add(baseService.GenDeviceControl());

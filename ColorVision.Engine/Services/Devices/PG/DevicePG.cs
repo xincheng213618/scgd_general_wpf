@@ -24,8 +24,6 @@ namespace ColorVision.Engine.Services.Devices.PG
                 window.ShowDialog();
             }, a => AccessControl.Check(PermissionMode.Administrator));
         }
-
-        public override UserControl GetDeviceControl() => new InfoPG(this);
         public override UserControl GetDeviceInfo() => new InfoPG(this);
 
         public override UserControl GetDisplayControl() => new DisplayPG(this);

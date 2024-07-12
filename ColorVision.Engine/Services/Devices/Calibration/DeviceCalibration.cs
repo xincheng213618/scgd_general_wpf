@@ -75,7 +75,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 PhyCamera.SetCalibration(this);
         }
 
-        public override UserControl GetDeviceControl() => new InfoCalibration(this);
 
         public override UserControl GetDeviceInfo() => new InfoCalibration(this);
 

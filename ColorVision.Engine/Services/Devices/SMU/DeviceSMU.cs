@@ -36,7 +36,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
 
 
         }
-        public override UserControl GetDeviceControl() => new InfoSMU(this);
         public override UserControl GetDeviceInfo() => new InfoSMU(this);
         public override UserControl GetDisplayControl() => new DisplaySMUControl(this);
 

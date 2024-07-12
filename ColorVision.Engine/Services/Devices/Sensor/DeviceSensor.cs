@@ -24,7 +24,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor
             }, a => AccessControl.Check(PermissionMode.Administrator));
         }
 
-        public override UserControl GetDeviceControl() => new InfoSensor(this);
         public override UserControl GetDeviceInfo() => new InfoSensor(this);
         public override UserControl GetDisplayControl() => new DisplaySensor(this);
 

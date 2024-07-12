@@ -7,6 +7,7 @@ using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.Devices.FileServer;
+using ColorVision.Engine.Services.Devices.FlowDevice;
 using ColorVision.Engine.Services.Devices.Motor;
 using ColorVision.Engine.Services.Devices.PG;
 using ColorVision.Engine.Services.Devices.Sensor;
@@ -205,7 +206,6 @@ namespace ColorVision.Engine.Services.Terminal
                     }
                     break;
                 case ServiceTypes.ThirdPartyAlgorithms:
-                    fromPort = (Math.Abs(new Random().Next()) % 99 + 6600);
                     deviceConfig = new ConfigThirdPartyAlgorithms
                     {
                         Id = CreateCode.Text,
@@ -216,6 +216,19 @@ namespace ColorVision.Engine.Services.Terminal
                     {
                         deviceService = new DeviceThirdPartyAlgorithms(sysDevModel);
                     }
+                    break;
+                case ServiceTypes.Flow:
+                    deviceConfig = new ConfigFlowDevice
+                    {
+                        Id = CreateCode.Text,
+                        Name = CreateName.Text,
+                    };
+                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                    if (sysDevModel != null)
+                    {
+                        deviceService = new DeviceFlowDevice(sysDevModel);
+                    }
+
                     break;
                 default:
                     break;

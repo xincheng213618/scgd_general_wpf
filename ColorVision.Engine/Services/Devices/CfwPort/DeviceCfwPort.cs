@@ -31,7 +31,6 @@ namespace ColorVision.Engine.Services.Devices.CfwPort
             }, a => AccessControl.Check(PermissionMode.Administrator));
         }
 
-        public override UserControl GetDeviceControl() => new InfoCfwPort(this);
         public override UserControl GetDeviceInfo() => new InfoCfwPort(this);
 
         public override UserControl GetDisplayControl() => new DisplayCfwPortControl(this);

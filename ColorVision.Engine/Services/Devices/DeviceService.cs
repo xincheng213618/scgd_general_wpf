@@ -53,11 +53,6 @@ namespace ColorVision.Engine.Services.Devices
         public virtual ImageSource Icon { get; set; }
         public SysDeviceModel SysResourceModel { get; set; }
 
-        public virtual UserControl GetDeviceControl()
-        {
-            throw new NotImplementedException();
-        }
-
         public virtual UserControl GetDeviceInfo()
         {
             throw new NotImplementedException();
@@ -68,12 +63,7 @@ namespace ColorVision.Engine.Services.Devices
 
         public virtual UserControl GetDisplayControl()
         {
-            throw new NotImplementedException();
-        }
-
-        public virtual UserControl GetEditControl()
-        {
-            throw new NotImplementedException();
+            return new UserControl();
         }
 
         public virtual View GetView()

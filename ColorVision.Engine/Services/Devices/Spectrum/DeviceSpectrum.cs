@@ -101,7 +101,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         }
 
 
-        public override UserControl GetDeviceControl() => new InfoSpectrum(this);
         public override UserControl GetDeviceInfo() => new InfoSpectrum(this);
 
         readonly Lazy<DisplaySpectrumControl> DisplayLazy;

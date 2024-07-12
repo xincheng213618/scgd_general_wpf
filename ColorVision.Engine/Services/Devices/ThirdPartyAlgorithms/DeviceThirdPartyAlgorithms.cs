@@ -39,7 +39,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         public DisplayThirdPartyAlgorithms DisplayAlgorithmControl { get; set; }
 
 
-        public override UserControl GetDeviceControl() => new InfoThirdPartyAlgorithms(this);
         public override UserControl GetDeviceInfo() => new InfoThirdPartyAlgorithms(this);
 
         public override UserControl GetDisplayControl() => DisplayAlgorithmControlLazy.Value;

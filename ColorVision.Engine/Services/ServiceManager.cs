@@ -10,6 +10,7 @@ using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.Devices.FileServer;
+using ColorVision.Engine.Services.Devices.FlowDevice;
 using ColorVision.Engine.Services.Devices.Motor;
 using ColorVision.Engine.Services.Devices.PG;
 using ColorVision.Engine.Services.Devices.Sensor;
@@ -289,93 +290,69 @@ namespace ColorVision.Engine.Services
             foreach (var terminalService in TerminalServices)
             {
                 var sysResourceModels = sysResourceModelDevices.FindAll((x) => x.Pid == (int)terminalService.SysResourceModel.Id);
-
                 foreach (var sysResourceModel in sysResourceModels)
                 {
-                    MQTTServiceBase svrObj  = null;
+                    DeviceService deviceService =null;
 
                     switch ((ServiceTypes)sysResourceModel.Type)
                     {
                         case ServiceTypes.Camera:
-
-                            DeviceCamera deviceCamera = new DeviceCamera(sysResourceModel);
-                            svrObj = deviceCamera.DService;
-                            terminalService.AddChild(deviceCamera);
-                            DeviceServices.Add(deviceCamera);
+                            deviceService = new DeviceCamera(sysResourceModel);
                             break;
                         case ServiceTypes.PG:
-                            DevicePG devicePG = new(sysResourceModel);
-                            svrObj = devicePG.DService;
-                            terminalService.AddChild(devicePG);
-                            DeviceServices.Add(devicePG);
+                            deviceService = new DevicePG(sysResourceModel);
                             break;
                         case ServiceTypes.Spectrum:
-                            DeviceSpectrum deviceSpectrum = new(sysResourceModel);
-                            svrObj = deviceSpectrum.DService;
-                            terminalService.AddChild(deviceSpectrum);
-                            DeviceServices.Add(deviceSpectrum);
+                            deviceService = new DeviceSpectrum(sysResourceModel);
                             break;
                         case ServiceTypes.SMU:
-                            DeviceSMU deviceSMU = new(sysResourceModel);
-                            svrObj = deviceSMU.DService;
-                            terminalService.AddChild(deviceSMU);
-                            DeviceServices.Add(deviceSMU);
+                            deviceService = new DeviceSMU(sysResourceModel);
                             break;
                         case ServiceTypes.Sensor:
-                            DeviceSensor device1 = new(sysResourceModel);
-                            svrObj = device1.DService;
-                            terminalService.AddChild(device1);
-                            DeviceServices.Add(device1);
+                            deviceService = new DeviceSensor(sysResourceModel);
                             break;
                         case ServiceTypes.FileServer:
-                            DeviceFileServer img = new(sysResourceModel);
-                            svrObj = img.DService;
-                            terminalService.AddChild(img);
-                            DeviceServices.Add(img);
+                            deviceService = new DeviceFileServer(sysResourceModel);
                             break;
                         case ServiceTypes.Algorithm:
-                            DeviceAlgorithm alg = new(sysResourceModel);
-                            svrObj = alg.DService;
-                            terminalService.AddChild(alg);
-                            DeviceServices.Add(alg);
+                            deviceService = new DeviceAlgorithm(sysResourceModel);
                             break;
                         case ServiceTypes.Calibration:
-                            
-                            DeviceCalibration deviceCalibration = new DeviceCalibration(sysResourceModel);
-                            svrObj = deviceCalibration.DService;
-                            terminalService.AddChild(deviceCalibration);
-                            DeviceServices.Add(deviceCalibration);
+                            deviceService = new DeviceCalibration(sysResourceModel);
                             break;
                         case ServiceTypes.CfwPort:
-                            DeviceCfwPort deviceCfwPort = new(sysResourceModel);
-                            svrObj = deviceCfwPort.DService;
-                            terminalService.AddChild(deviceCfwPort);
-                            DeviceServices.Add(deviceCfwPort);
+                            deviceService = new DeviceCfwPort(sysResourceModel);
                             break;
                         case ServiceTypes.Motor:
-                            DeviceMotor deviceMotor = new(sysResourceModel);
-                            svrObj = deviceMotor.DService;
-                            terminalService.AddChild(deviceMotor);
-                            DeviceServices.Add(deviceMotor);
+                            deviceService = new DeviceMotor(sysResourceModel);
                             break;
                         case ServiceTypes.ThirdPartyAlgorithms:
-                            DeviceThirdPartyAlgorithms deviceThirdPartyAlgorithms = new(sysResourceModel);
-                            svrObj = deviceThirdPartyAlgorithms.DService;
-                            terminalService.AddChild(deviceThirdPartyAlgorithms);
-                            DeviceServices.Add(deviceThirdPartyAlgorithms);
+                            deviceService = new DeviceThirdPartyAlgorithms(sysResourceModel);
+                            break;
+                        case ServiceTypes.Flow:
+                            deviceService = new DeviceFlowDevice(sysResourceModel);
                             break;
                         default:
                             break;
                     }
 
-
-                    string svrKey = GetServiceKey(terminalService.SysResourceModel.TypeCode ?? string.Empty, terminalService.SysResourceModel.Code ?? string.Empty);
-
-                    if (svrObj != null && svrDevices.TryGetValue(svrKey,out var list))
+                    if (deviceService != null  )
                     {
-                        svrObj.ServiceName = terminalService.SysResourceModel.Code ?? string.Empty;
-                        list.Add(svrObj);
+                        terminalService.AddChild(deviceService);
+                        DeviceServices.Add(deviceService);
+
+                        MQTTServiceBase svrObj = deviceService.GetMQTTService();
+
+                        string svrKey = GetServiceKey(terminalService.SysResourceModel.TypeCode ?? string.Empty, terminalService.SysResourceModel.Code ?? string.Empty);
+                        if (svrObj != null && svrDevices.TryGetValue(svrKey, out var list))
+                        {
+                            svrObj.ServiceName = terminalService.SysResourceModel.Code ?? string.Empty;
+                            list.Add(svrObj);
+                        }
                     }
+
+
+
                 }
             }
 

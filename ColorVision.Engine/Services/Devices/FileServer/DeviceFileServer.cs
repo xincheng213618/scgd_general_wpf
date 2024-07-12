@@ -30,7 +30,6 @@ namespace ColorVision.Engine.Services.Devices.FileServer
             },a => AccessControl.Check(PermissionMode.Administrator));
         }
 
-        public override UserControl GetDeviceControl() => new InfoFileServer(this);
         public override UserControl GetDeviceInfo() => new InfoFileServer(this);
 
         public override UserControl GetDisplayControl() =>new FileServerDisplayControl(this);
