@@ -18,18 +18,23 @@ namespace ColorVision.Update
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AutoUpdateService));
 
-        public void Initialize()
+        public  void Initialize()
         {
-            Task.Run(CheckVersion);
+            Task.Run(Check);
+
+        }
+
+        public static async Task Check()
+        {
+            await Task.Run(CheckVersion);
             if (AutoUpdateConfig.Instance.IsAutoUpdate)
             {
-                Task.Run(CheckUpdate);
+                await Task.Run(CheckUpdate);
             }
         }
 
         public static async Task CheckUpdate()
         {
-            await Task.Delay(1000);
             await Application.Current.Dispatcher.InvokeAsync(async () =>
             {
                 AutoUpdater.DeleteAllCachedUpdateFiles();
@@ -40,7 +45,7 @@ namespace ColorVision.Update
 
         public static async Task CheckVersion()
         {
-            await Task.Delay(500);
+            await Task.Delay(100);
             if (Assembly.GetExecutingAssembly().GetName().Version > MainWindowConfig.Instance.LastOpenVersion)
             {
                 Application.Current.Dispatcher.Invoke(() =>
