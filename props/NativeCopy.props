@@ -5,8 +5,8 @@
   <PropertyGroup />
   <ItemDefinitionGroup>
     <PostBuildEvent>
-      <Command>if not exist "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows" (mkdir "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows");
-	  if not exist "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows" (mkdir "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows");
+      <Command>if not exist "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows\libs" (mkdir "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows\libs");
+	  if not exist "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows\libs" (mkdir "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows\libs");
 	  copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)ColorVision\bin\x64\Debug\net8.0-windows\libs";
 	  copy "$(OutDir)$(TargetName)$(TargetExt)" "$(SolutionDir)ColorVision\bin\x64\Release\net8.0-windows\libs";</Command>
     </PostBuildEvent>
