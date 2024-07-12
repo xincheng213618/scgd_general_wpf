@@ -577,6 +577,7 @@ namespace ColorVision.Engine.Media
                 if (ext.Contains(".cvraw") || ext.Contains(".cvsrc") || ext.Contains(".cvcie"))
                 {
                     FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
+                    IsCVCIE = fileExtType == FileExtType.CIE;
                     try
                     {
                         if (Config.IsShowLoadImage && isLargeFile)
@@ -589,6 +590,7 @@ namespace ColorVision.Engine.Media
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
                                     OpenImage(cVCIEFile.ToWriteableBitmap());
+
                                     WaitControl.Visibility = Visibility.Collapsed;
                                 });
                             });

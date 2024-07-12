@@ -342,6 +342,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         }
         public void OpenImage(CVCIEFile fileData)
         {
+            ImageView.IsCVCIE = fileData.FileExtType == MQTTMessageLib.FileServer.FileExtType.CIE;
             ImageView.OpenImage(fileData.ToWriteableBitmap());
         }
 

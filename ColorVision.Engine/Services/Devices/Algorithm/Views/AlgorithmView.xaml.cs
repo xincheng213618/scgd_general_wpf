@@ -623,7 +623,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             }
         }
 
-        internal void OpenImage(CVCIEFile fileInfo) => ImageView.OpenImage(fileInfo.ToWriteableBitmap());
+        internal void OpenImage(CVCIEFile fileInfo)
+        {
+            ImageView.IsCVCIE = fileInfo.FileExtType ==MQTTMessageLib.FileServer.FileExtType.CIE;
+            ImageView.OpenImage(fileInfo.ToWriteableBitmap());
+        }
 
 
         private void Button_Delete_Click(object sender, RoutedEventArgs e)

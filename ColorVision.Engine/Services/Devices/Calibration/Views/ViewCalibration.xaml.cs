@@ -32,6 +32,7 @@ using ColorVision.UI;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.PG;
 using ColorVision.Themes.Controls;
+using FlowEngineLib.Algorithm;
 
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views
@@ -337,6 +338,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         public void OpenImage(CVCIEFile fileData)
         {
+            ImageView.IsCVCIE = fileData.FileExtType == MQTTMessageLib.FileServer.FileExtType.CIE;
             ImageView.OpenImage(fileData.ToWriteableBitmap());
         }
 
