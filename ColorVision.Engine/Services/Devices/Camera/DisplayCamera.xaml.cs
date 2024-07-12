@@ -99,12 +99,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 ComboxCalibrationTemplate.ItemsSource = Device.PhyCamera?.CalibrationParams.CreateEmpty();
                 ComboxCalibrationTemplate.SelectedIndex = 0;
+
             }
             UpdateTemplate();
             Device.ConfigChanged += (s, e) => UpdateTemplate();
             PhyCameraManager.GetInstance().Loaded += (s, e) => UpdateTemplate();
-
             ComboxAutoExpTimeParamTemplate.ItemsSource = TemplateAutoExpTimeParam.Params.CreateEmpty();
+            ComboxAutoExpTimeParamTemplate.SelectedIndex = 0;
 
             void UpdateUI(DeviceStatusType status)
             {
