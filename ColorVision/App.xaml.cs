@@ -76,7 +76,7 @@ namespace ColorVision
             string inputFile = parser.GetValue("input");
             if (inputFile != null)
             {
-                bool isok = FileHandlerProcessor.GetInstance().ProcessFile(inputFile);
+                bool isok = FileProcessorManager.GetInstance().HandleFile(inputFile);
                 if (isok) return;
             }
 

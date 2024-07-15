@@ -5,7 +5,7 @@ using ColorVision.Engine.Properties;
 using ColorVision.UI.Menus;
 using System.Windows;
 
-namespace ColorVision.Engine.UIExport
+namespace ColorVision.Engine.Impl
 {
     public class ExportServiceLog : MenuItemBase
     {

@@ -201,10 +201,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
                     CameraModel = CameraModel.HK_USB;
                     break;
                 case CameraType.CameraType_Total:
-                    // Handle CameraType_Total case if needed
+                    // Process CameraType_Total case if needed
                     break;
                 default:
-                    // Handle default case if needed
+                    // Process default case if needed
                     break;
             }
             return false;

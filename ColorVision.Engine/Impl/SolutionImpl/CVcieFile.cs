@@ -3,7 +3,7 @@ using ColorVision.Common.NativeMethods;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Properties;
-using ColorVision.Engine.UIExport.SolutionExports.Export;
+using ColorVision.Engine.Impl.SolutionImpl.Export;
 using ColorVision.Net;
 using ColorVision.Solution;
 using ColorVision.Solution.V.Files;
@@ -18,7 +18,7 @@ using System.IO;
 using System.Windows;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.UIExport.SolutionExports
+namespace ColorVision.Engine.Impl.SolutionImpl
 {
 
     public class CVCIEFileOpen : ImageFileOpen

@@ -11,7 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Documents;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.UIExport.SolutionExports
+namespace ColorVision.Engine.Impl.SolutionImpl
 {
     public class TextFileOpen : IFileControl
     {
