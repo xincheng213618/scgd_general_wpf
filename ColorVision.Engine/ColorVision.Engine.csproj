@@ -30,6 +30,7 @@
 		<PackageReference Include="ScottPlot.WPF" Version="4.1.67" />
 		<PackageReference Include="System.IO.Ports" Version="8.0.0" />
 		<PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.0" />
+		<PackageReference Include="YamlDotNet" Version="16.0.0" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -3,8 +3,6 @@ using System.Windows;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.ComponentModel;
-using Newtonsoft.Json.Linq;
-using YamlDotNet.Core.Tokens;
 
 namespace ColorVision.Draw.Ruler
 {

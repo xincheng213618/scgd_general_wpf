@@ -9,7 +9,6 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows;
-using YamlDotNet.Core;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Threading.Tasks;
