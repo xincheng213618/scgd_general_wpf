@@ -6,6 +6,19 @@
              xmlns:local="clr-namespace:ColorVision.Draw"
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/HandyControl;component/Themes/basic/colors/colors.xaml"/>
+                <ResourceDictionary Source="/HandyControl;component/Themes/Theme.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/White.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Base.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Menu.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/GroupBox.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Icons.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
     <Grid>
         <local:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10"  MinZoom="0.01">
             <Grid Width="{Binding ElementName=drawCanvas,Path=Width}" Height="{Binding ElementName=drawCanvas,Path=Height}">

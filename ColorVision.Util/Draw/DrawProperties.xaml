@@ -14,11 +14,11 @@
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="/HandyControl;component/Themes/basic/colors/colors.xaml"/>
                 <ResourceDictionary Source="/HandyControl;component/Themes/Theme.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Util;component/Themes/White.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Util;component/Themes/Base.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Util;component/Themes/Menu.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Util;component/Themes/GroupBox.xaml"/>
-                <ResourceDictionary Source="/ColorVision.Util;component/Themes/Icons.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/White.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Base.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Menu.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/GroupBox.xaml"/>
+                <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Icons.xaml"/>
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Window.Resources>

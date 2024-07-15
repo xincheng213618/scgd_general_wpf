@@ -17,7 +17,6 @@
 
 	<ItemGroup>
 		<PackageReference Include="Gu.Wpf.Geometry" Version="2.2.8" />
-		<PackageReference Include="Quartz" Version="3.10.0" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -40,9 +39,6 @@
 	    <DesignTime>True</DesignTime>
 	    <AutoGen>True</AutoGen>
 	    <DependentUpon>Resources.resx</DependentUpon>
-	  </Compile>
-	  <Compile Update="Scheduler\CreateTask.xaml.cs">
-	    <SubType>Code</SubType>
 	  </Compile>
 	</ItemGroup>
 
