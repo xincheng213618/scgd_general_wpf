@@ -17,7 +17,7 @@ using ColorVision.UI.Shell;
 namespace ColorVision.Solution
 {
 
-    public interface IFileControl
+    public interface ISolutionProcess
     {
         string Name { get; set; }
         public string GuidId { get; }
@@ -123,10 +123,10 @@ namespace ColorVision.Solution
         }
 
 
-        public event EventHandler<IFileControl> OpenFile;
+        public event EventHandler<ISolutionProcess> OpenFile;
 
 
-        public void OpenFileWindow(IFileControl userControl)
+        public void OpenFileWindow(ISolutionProcess userControl)
         {
             OpenFile?.Invoke(this, userControl);
         }

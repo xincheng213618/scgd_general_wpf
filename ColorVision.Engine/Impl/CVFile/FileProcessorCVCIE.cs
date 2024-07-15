@@ -9,7 +9,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.Impl.FileProcessor
 {
-    public class CVCIEFile : IFileProcessor
+    public class FileProcessorCVCIE : IFileProcessor
     {
         public int Order => 2;
 

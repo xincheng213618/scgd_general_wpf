@@ -7,7 +7,7 @@ using System.Windows;
 
 namespace ColorVision.Engine.Impl.SolutionImpl
 {
-    public class CVRawFile : IFileProcessor
+    public class FileProcessorCVRaw : IFileProcessor
     {
         public int Order => 1;
 
@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Impl.SolutionImpl
         public void Process(string filePath)
         {
             ImageView imageView = new();
-            CVFileUtil.ReadCVRaw(filePath, out CVCIEFile fileInfo);
+            CVFileUtil.ReadCVRaw(filePath, out Net.CVCIEFile fileInfo);
             Window window = new() { Title = Properties.Resources.QuickPreview };
             if (Application.Current.MainWindow != window)
             {

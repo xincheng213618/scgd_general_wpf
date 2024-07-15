@@ -3,9 +3,9 @@ using ColorVision.Engine.Media;
 using ColorVision.UI;
 using System.Windows;
 
-namespace ColorVision.Engine.Impl.FileProcessor
+namespace ColorVision.Engine.Impl.CommonImage
 {
-    public class CommonImage : IFileProcessor
+    public class FileProcessorImage : IFileProcessor
     {
         public int Order => 3;
 

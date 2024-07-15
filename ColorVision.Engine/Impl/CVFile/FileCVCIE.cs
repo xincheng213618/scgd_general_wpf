@@ -1,7 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.NativeMethods;
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.Media;
 using ColorVision.Engine.Properties;
 using ColorVision.Engine.Impl.SolutionImpl.Export;
 using ColorVision.Net;
@@ -17,25 +16,18 @@ using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Media;
+using ColorVision.Engine.Impl.SolutionProcess;
 
-namespace ColorVision.Engine.Impl.SolutionImpl
+namespace ColorVision.Engine.Impl.CVFile
 {
 
-    public class CVCIEFileOpen : ImageFileOpen
-    {
-        public override void Open()
-        {
-            ImageView.OpenImage(FullName);
-        }
-    }
-
-    public class CVcieFile : ViewModelBase, IFileMeta,IContextMenuProvider
+    public class FileCVCIE : ViewModelBase, IFileMeta, IContextMenuProvider
     {
         public FileInfo FileInfo { get; set; }
 
         public string Extension { get => ".cvraw|.cvcie"; }
 
-        public CVcieFile()
+        public FileCVCIE()
         {
         }
         public RelayCommand ExportCommand { get; set; }
@@ -43,7 +35,7 @@ namespace ColorVision.Engine.Impl.SolutionImpl
         public RelayCommand ExportTIFFCommand { get; set; }
         public RelayCommand ExportPNGCommand { get; set; }
 
-        public CVcieFile(FileInfo fileInfo)
+        public FileCVCIE(FileInfo fileInfo)
         {
             FileInfo = fileInfo;
             Name = FileInfo.Name;
@@ -67,10 +59,10 @@ namespace ColorVision.Engine.Impl.SolutionImpl
 
         public void Export()
         {
-            new ExportCVCIE(FullName) { Owner =Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+            new ExportCVCIE(FullName) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
         }
         public void ExportAS(ImageFormat imageFormat)
-        {  
+        {
             int index = CVFileUtil.ReadCIEFileHeader(FullName, out CVCIEFile cvcie);
             if (index < 0) return;
             cvcie.FileExtType = FullName.Contains(".cvraw") ? FileExtType.Raw : FullName.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
@@ -159,7 +151,7 @@ namespace ColorVision.Engine.Impl.SolutionImpl
         {
             if (File.Exists(FileInfo.FullName))
             {
-                CVCIEFileOpen fileControl = new CVCIEFileOpen() { Name = Name ,FullName =FileInfo.FullName , IconSource  =Icon};
+                SolutionProcessCVCIE fileControl = new SolutionProcessCVCIE() { Name = Name, FullName = FileInfo.FullName, IconSource = Icon };
                 SolutionManager.GetInstance().OpenFileWindow(fileControl);
             }
             else
