@@ -13,6 +13,7 @@ namespace ColorVision.Engine.Utilities
                 QRCodeGenerator qrGenerator = new();
                 QRCodeData qrCodeData = qrGenerator.CreateQrCode(strContent, QRCodeGenerator.ECCLevel.H);
                 XamlQRCode qrCode = new(qrCodeData);
+                DrawingImage qrCodeAsXaml = qrCode.GetGraphic(40);
                 return qrCodeAsXaml;
             }
             catch
