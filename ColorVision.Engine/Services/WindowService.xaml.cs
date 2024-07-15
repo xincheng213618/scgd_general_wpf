@@ -9,6 +9,7 @@ using ColorVision.UI.Menus;
 using ColorVision.Engine.Rbac;
 using System;
 using System.Windows;
+using ColorVision.Engine.Utilities;
 
 namespace ColorVision.Engine.Services
 {

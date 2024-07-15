@@ -96,6 +96,8 @@
     <None Remove="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <None Remove="Assets\Image\pictureBox1.Image.png" />
     <None Remove="Assets\png\PowerToy.png" />
+    <None Remove="Assets\Sounds\error.wav" />
+    <None Remove="Assets\Sounds\success.wav" />
   </ItemGroup>
 	
 
@@ -148,6 +150,8 @@
     <Resource Include="Assets\Image\Paomedia-Small-N-Flat-Key.ico" />
     <Resource Include="Assets\Image\pictureBox1.Image.png" />
     <Resource Include="Assets\png\PowerToy.png" />
+    <Resource Include="Assets\Sounds\error.wav" />
+    <Resource Include="Assets\Sounds\success.wav" />
   </ItemGroup>
 
   <ItemGroup>

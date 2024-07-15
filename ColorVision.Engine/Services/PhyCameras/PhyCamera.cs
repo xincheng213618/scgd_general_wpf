@@ -12,6 +12,7 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Templates;
+using ColorVision.Engine.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
@@ -630,6 +631,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     }
                     Msg = "上传结束";
                     await Task.Delay(500);
+                    SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/success.wav");
                     Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
                 }
                 catch(Exception ex)
@@ -637,6 +639,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     log.Error(ex);
                     Msg = "找不到配置文件";
                     await Task.Delay(200);
+                    SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/error.wav");
                     Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
                     return;
                 }
