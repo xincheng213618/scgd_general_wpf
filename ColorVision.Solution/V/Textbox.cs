@@ -1,11 +1,10 @@
 ﻿#pragma warning disable CA1010
-using ColorVision.Solution.V;
 using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ColorVision.Solution
+namespace ColorVision.Solution.V
 {
     public partial class TreeViewTextbox : ResourceDictionary
     {
@@ -27,8 +26,10 @@ namespace ColorVision.Solution
                 }
             }
         }
-        private void TreeViewItem_Initialized(object sender, EventArgs e) {
-            if (sender is StackPanel stackPanel && stackPanel.Parent is Grid grid) {
+        private void TreeViewItem_Initialized(object sender, EventArgs e)
+        {
+            if (sender is StackPanel stackPanel && stackPanel.Parent is Grid grid)
+            {
                 grid.ContextMenu = stackPanel.ContextMenu;
             }
         }

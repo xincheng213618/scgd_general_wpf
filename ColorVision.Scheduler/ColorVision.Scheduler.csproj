@@ -21,7 +21,7 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Update="Scheduler\CreateTask.xaml.cs">
+    <Compile Update="CreateTask.xaml.cs">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
