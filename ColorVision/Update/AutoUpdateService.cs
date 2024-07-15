@@ -18,11 +18,7 @@ namespace ColorVision.Update
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(AutoUpdateService));
 
-        public  void Initialize()
-        {
-            Task.Run(Check);
-
-        }
+        public Task Initialize() => Check();
 
         public static async Task Check()
         {

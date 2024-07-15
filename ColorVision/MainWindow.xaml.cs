@@ -68,7 +68,6 @@ namespace ColorVision
                     Icon = new BitmapImage(new Uri("pack://application:,,,/ColorVision;component/Assets/Image/ColorVision1.ico"));
             }
 
-
             if (WindowConfig.IsExist)
             {
                 if (WindowConfig.Icon != null)
@@ -109,7 +108,7 @@ namespace ColorVision
                 new FloatingBallWindow().Show();
         }
 
-        public static void LoadIMainWindowInitialized() 
+        public static async void LoadIMainWindowInitialized() 
         {
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
@@ -119,7 +118,7 @@ namespace ColorVision
                     {
                         try
                         {
-                            componentInitialize.Initialize();
+                            await componentInitialize.Initialize();
                         }
                         catch (Exception ex)
                         {
@@ -127,6 +126,11 @@ namespace ColorVision
                         }
                     }
                 }
+            }
+
+            if (Application.Current == null)
+            {
+                Environment.Exit(-1);
             }
         }
 

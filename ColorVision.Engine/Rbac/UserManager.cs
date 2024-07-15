@@ -4,6 +4,7 @@ using ColorVision.Engine.MySql;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using log4net;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace ColorVision.Engine.Rbac
@@ -11,9 +12,10 @@ namespace ColorVision.Engine.Rbac
     public class UserManagerService : IMainWindowInitialized
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(UserManagerService));
-        public void Initialize()
+        public  Task Initialize()
         {
             UserManager.GetInstance().Load();
+            return Task.CompletedTask;
         }
     }
 
