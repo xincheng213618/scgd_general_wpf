@@ -1,8 +1,8 @@
 ﻿#pragma warning disable CS8604,CS8629
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Draw;
-using ColorVision.Draw.Ruler;
+using ColorVision.UI.Draw;
+using ColorVision.UI.Draw.Ruler;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;

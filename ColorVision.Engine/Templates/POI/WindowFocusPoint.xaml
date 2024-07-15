@@ -5,9 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ColorVision.Engine.Templates.POI"
         xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
-        xmlns:converter="clr-namespace:ColorVision.Draw.Converter;assembly=ColorVision.Util"
+        xmlns:converter="clr-namespace:ColorVision.UI.Draw.Converter;assembly=ColorVision.UI"
         xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
-        xmlns:draw ="clr-namespace:ColorVision.Draw;assembly=ColorVision.Util"
+        xmlns:draw ="clr-namespace:ColorVision.UI.Draw;assembly=ColorVision.UI"
         xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
@@ -534,7 +534,7 @@
             <StackPanel Grid.Row="0" Grid.RowSpan="2" >
                 <ToolBar x:Name="ToolBar1" d:DataContext="{d:DesignInstance draw:ToolBarTop}" Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" HorizontalAlignment="Center">
                     <ToolBar.Resources>
-                        <ResourceDictionary Source="/ColorVision.Util;component/Themes/Icons.xaml"/>
+                        <ResourceDictionary Source="/ColorVision.Themes;component/Themes/Icons.xaml"/>
                     </ToolBar.Resources>
                     <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding ImageEditMode}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
                         <Image Style="{StaticResource ToolBarImage}" Source="{StaticResource DrawingImagedrag}"/>

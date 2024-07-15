@@ -1,8 +1,8 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Draw;
-using ColorVision.Draw.Ruler;
+using ColorVision.UI.Draw;
+using ColorVision.UI.Draw.Ruler;
 using ColorVision.Net;
 using ColorVision.UI.Views;
 using ColorVision.Util.Draw.Special;
