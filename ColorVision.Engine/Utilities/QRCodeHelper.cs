@@ -2,7 +2,7 @@
 using QRCoder.Xaml;
 using System.Windows.Media;
 
-namespace ColorVision.Engine.Handler
+namespace ColorVision.Engine.Utilities
 {
     public class QRCodeHelper
     {
@@ -13,7 +13,6 @@ namespace ColorVision.Engine.Handler
                 QRCodeGenerator qrGenerator = new();
                 QRCodeData qrCodeData = qrGenerator.CreateQrCode(strContent, QRCodeGenerator.ECCLevel.H);
                 XamlQRCode qrCode = new(qrCodeData);
-                DrawingImage qrCodeAsXaml = qrCode.GetGraphic(40);
                 return qrCodeAsXaml;
             }
             catch
