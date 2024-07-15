@@ -21,8 +21,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cvColorVision", "cvColorVis
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "C++", "C++", "{55F5939D-C4F5-498D-97B0-8117E84F0FB1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Util", "ColorVision.Util\ColorVision.Util.csproj", "{59C669DD-0B02-445E-8159-720E00931118}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenCVHelper", "OpenCVHelper\OpenCVHelper.vcxproj", "{AA343239-476E-43E3-BEE3-D3313C883341}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OpenCVHelper_test", "OpenCVHelper_test\OpenCVHelper_test.vcxproj", "{D19D50AD-3762-4AA4-8883-9660EC833B9B}"
@@ -61,7 +59,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ProjectHeyuan", "Projects\P
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Themes", "ColorVision.Themes\ColorVision.Themes.csproj", "{C17AAAC2-DE62-41AA-8D9F-DB6345C8C22C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.Scheduler", "ColorVision.Scheduler\ColorVision.Scheduler.csproj", "{3593FFAA-9AB9-47DC-8D13-A943A469384A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ColorVision.Scheduler", "ColorVision.Scheduler\ColorVision.Scheduler.csproj", "{3593FFAA-9AB9-47DC-8D13-A943A469384A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ColorVision.Solution", "ColorVision.Solution\ColorVision.Solution.csproj", "{7736CE9C-0059-420C-A841-5B71293C1A88}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -107,22 +107,6 @@ Global
 		{B0FCEFDD-8C2F-4CF4-BAA6-95CDB73A1694}.Release|x64.Build.0 = Release|x64
 		{B0FCEFDD-8C2F-4CF4-BAA6-95CDB73A1694}.Release|x86.ActiveCfg = Release|x64
 		{B0FCEFDD-8C2F-4CF4-BAA6-95CDB73A1694}.Release|x86.Build.0 = Release|x64
-		{59C669DD-0B02-445E-8159-720E00931118}.Debug|Any CPU.ActiveCfg = Debug|x64
-		{59C669DD-0B02-445E-8159-720E00931118}.Debug|Any CPU.Build.0 = Debug|x64
-		{59C669DD-0B02-445E-8159-720E00931118}.Debug|ARM64.ActiveCfg = Debug|ARM64
-		{59C669DD-0B02-445E-8159-720E00931118}.Debug|ARM64.Build.0 = Debug|ARM64
-		{59C669DD-0B02-445E-8159-720E00931118}.Debug|x64.ActiveCfg = Debug|x64
-		{59C669DD-0B02-445E-8159-720E00931118}.Debug|x64.Build.0 = Debug|x64
-		{59C669DD-0B02-445E-8159-720E00931118}.Debug|x86.ActiveCfg = Debug|x64
-		{59C669DD-0B02-445E-8159-720E00931118}.Debug|x86.Build.0 = Debug|x64
-		{59C669DD-0B02-445E-8159-720E00931118}.Release|Any CPU.ActiveCfg = Release|x64
-		{59C669DD-0B02-445E-8159-720E00931118}.Release|Any CPU.Build.0 = Release|x64
-		{59C669DD-0B02-445E-8159-720E00931118}.Release|ARM64.ActiveCfg = Release|ARM64
-		{59C669DD-0B02-445E-8159-720E00931118}.Release|ARM64.Build.0 = Release|ARM64
-		{59C669DD-0B02-445E-8159-720E00931118}.Release|x64.ActiveCfg = Release|x64
-		{59C669DD-0B02-445E-8159-720E00931118}.Release|x64.Build.0 = Release|x64
-		{59C669DD-0B02-445E-8159-720E00931118}.Release|x86.ActiveCfg = Release|x64
-		{59C669DD-0B02-445E-8159-720E00931118}.Release|x86.Build.0 = Release|x64
 		{AA343239-476E-43E3-BEE3-D3313C883341}.Debug|Any CPU.ActiveCfg = Debug|x64
 		{AA343239-476E-43E3-BEE3-D3313C883341}.Debug|Any CPU.Build.0 = Debug|x64
 		{AA343239-476E-43E3-BEE3-D3313C883341}.Debug|ARM64.ActiveCfg = Debug|x64
@@ -395,6 +379,22 @@ Global
 		{3593FFAA-9AB9-47DC-8D13-A943A469384A}.Release|x64.Build.0 = Release|x64
 		{3593FFAA-9AB9-47DC-8D13-A943A469384A}.Release|x86.ActiveCfg = Release|x64
 		{3593FFAA-9AB9-47DC-8D13-A943A469384A}.Release|x86.Build.0 = Release|x64
+		{7736CE9C-0059-420C-A841-5B71293C1A88}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{7736CE9C-0059-420C-A841-5B71293C1A88}.Debug|Any CPU.Build.0 = Debug|x64
+		{7736CE9C-0059-420C-A841-5B71293C1A88}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{7736CE9C-0059-420C-A841-5B71293C1A88}.Debug|ARM64.Build.0 = Debug|ARM64
+		{7736CE9C-0059-420C-A841-5B71293C1A88}.Debug|x64.ActiveCfg = Debug|x64
+		{7736CE9C-0059-420C-A841-5B71293C1A88}.Debug|x64.Build.0 = Debug|x64
+		{7736CE9C-0059-420C-A841-5B71293C1A88}.Debug|x86.ActiveCfg = Debug|x64
+		{7736CE9C-0059-420C-A841-5B71293C1A88}.Debug|x86.Build.0 = Debug|x64
+		{7736CE9C-0059-420C-A841-5B71293C1A88}.Release|Any CPU.ActiveCfg = Release|x64
+		{7736CE9C-0059-420C-A841-5B71293C1A88}.Release|Any CPU.Build.0 = Release|x64
+		{7736CE9C-0059-420C-A841-5B71293C1A88}.Release|ARM64.ActiveCfg = Release|ARM64
+		{7736CE9C-0059-420C-A841-5B71293C1A88}.Release|ARM64.Build.0 = Release|ARM64
+		{7736CE9C-0059-420C-A841-5B71293C1A88}.Release|x64.ActiveCfg = Release|x64
+		{7736CE9C-0059-420C-A841-5B71293C1A88}.Release|x64.Build.0 = Release|x64
+		{7736CE9C-0059-420C-A841-5B71293C1A88}.Release|x86.ActiveCfg = Release|x64
+		{7736CE9C-0059-420C-A841-5B71293C1A88}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -413,12 +413,12 @@ Global
 		{CC562826-7B20-4FFB-B2D9-3E568389480E} = {7D74447C-5191-4C1D-BEB2-B537366B980D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		RESX_ConfirmAddLanguageFile = True
-		RESX_AutoCreateNewLanguageFiles = True
-		RESX_EnableXlifSync = True
-		RESX_PrefixTranslations = False
-		RESX_NeutralResourcesLanguage = zh-Hans
-		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
 		RESX_Rules = {"EnabledRules":["StringFormat","WhiteSpaceLead","WhiteSpaceTail","PunctuationLead"]}
+		SolutionGuid = {F7CE53D3-9E91-421C-A7C6-75215998C26C}
+		RESX_NeutralResourcesLanguage = zh-Hans
+		RESX_PrefixTranslations = False
+		RESX_EnableXlifSync = True
+		RESX_AutoCreateNewLanguageFiles = True
+		RESX_ConfirmAddLanguageFile = True
 	EndGlobalSection
 EndGlobal

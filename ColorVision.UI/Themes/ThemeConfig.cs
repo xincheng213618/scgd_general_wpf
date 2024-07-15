@@ -19,7 +19,7 @@ namespace ColorVision.Themes
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
             ComboBox cmtheme = new ComboBox() { SelectedValuePath = "Key", DisplayMemberPath = "Value" };
-            cmtheme.SetBinding(ComboBox.SelectedValueProperty, new Binding(nameof(ThemeConfig.Theme)));
+            cmtheme.SetBinding(System.Windows.Controls.Primitives.Selector.SelectedValueProperty, new Binding(nameof(ThemeConfig.Theme)));
 
             cmtheme.ItemsSource = from e1 in Enum.GetValues(typeof(Theme)).Cast<Theme>()
                                   select new KeyValuePair<Theme, string>(e1, Resources.ResourceManager.GetString(e1.ToDescription(), CultureInfo.CurrentUICulture) ?? "");

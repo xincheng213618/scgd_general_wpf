@@ -121,7 +121,7 @@ namespace ColorVision.UI
 
     public class ConfigHandler:ConfigBase<IConfig>
     {
-        private static ILog log = log4net.LogManager.GetLogger(typeof(ConfigHandler));
+        private static ILog log = LogManager.GetLogger(typeof(ConfigHandler));
 
         private static ConfigHandler _instance;
         private static readonly object _locker = new();
@@ -144,7 +144,7 @@ namespace ColorVision.UI
             }
 
             LoadConfigs(ConfigFilePath);
-            System.Windows.Application.Current.SessionEnding += (s, e) =>
+            Application.Current.SessionEnding += (s, e) =>
             {
                 SaveConfigs(ConfigFilePath);
             };

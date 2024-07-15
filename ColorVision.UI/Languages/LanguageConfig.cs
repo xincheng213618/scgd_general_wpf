@@ -26,7 +26,7 @@ namespace ColorVision.UI.Languages
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
             ComboBox cmlauage = new ComboBox() { SelectedValuePath = "Key", DisplayMemberPath = "Value" };
-            BindingExpressionBase bindingExpressionBase = cmlauage.SetBinding(ComboBox.SelectedValueProperty, new Binding(nameof(LanguageConfig.UICulture)));
+            BindingExpressionBase bindingExpressionBase = cmlauage.SetBinding(System.Windows.Controls.Primitives.Selector.SelectedValueProperty, new Binding(nameof(UICulture)));
             cmlauage.ItemsSource = from e1 in LanguageManager.Current.Languages
                                    select new KeyValuePair<string, string>(e1, LanguageManager.keyValuePairs.TryGetValue(e1, out string value) ? value : e1);
             string temp = Thread.CurrentThread.CurrentUICulture.Name;
@@ -40,7 +40,7 @@ namespace ColorVision.UI.Languages
                     }
                 }
             };
-            cmlauage.DataContext = LanguageConfig.Instance;
+            cmlauage.DataContext = Instance;
 
             return new List<ConfigSettingMetadata>
             {
@@ -49,8 +49,8 @@ namespace ColorVision.UI.Languages
                     Name = Resources.Language,
                     Description = Resources.Language,
                     Type = ConfigSettingType.ComboBox,
-                    BindingName = nameof(LanguageConfig.UICulture),
-                    Source = LanguageConfig.Instance,
+                    BindingName = nameof(UICulture),
+                    Source = Instance,
                     ComboBox = cmlauage
                 }
             };

@@ -73,7 +73,7 @@ namespace ColorVision.UI.Menus
                     }
 
                     CreateMenu(menuItem, GuidId);
-                    if (i > 0 && iMenuItem.Order - iMenuItems1[i - 1].Order > 4 && iMenuItem.Visibility == System.Windows.Visibility.Visible)
+                    if (i > 0 && iMenuItem.Order - iMenuItems1[i - 1].Order > 4 && iMenuItem.Visibility == Visibility.Visible)
                     {
                         parentMenuItem.Items.Add(new Separator());
                     }

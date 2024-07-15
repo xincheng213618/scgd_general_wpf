@@ -12,7 +12,7 @@ namespace ColorVision.Update
 {
     public class ExportUpdate: MenuItemBase, IHotKey
     {
-        public HotKeys HotKeys => new(ColorVision.Properties.Resources.Update, new Hotkey(Key.U, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new(Properties.Resources.Update, new Hotkey(Key.U, ModifierKeys.Control), Execute);
 
         public override string OwnerGuid => "Help";
 

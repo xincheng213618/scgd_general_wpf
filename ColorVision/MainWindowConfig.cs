@@ -154,7 +154,7 @@ namespace ColorVision
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
             ComboBox cmlog = new ComboBox() { SelectedValuePath = "Key", DisplayMemberPath = "Value" };
-            cmlog.SetBinding(ComboBox.SelectedValueProperty, new Binding(nameof(LogLevel)));
+            cmlog.SetBinding(System.Windows.Controls.Primitives.Selector.SelectedValueProperty, new Binding(nameof(LogLevel)));
 
             cmlog.ItemsSource = GetAllLevels().Select(level => new KeyValuePair<Level, string>(level, level.Name));
 

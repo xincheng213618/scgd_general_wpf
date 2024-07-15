@@ -108,8 +108,8 @@
   <ItemGroup>
     <ProjectReference Include="..\ColorVision.Net\ColorVision.Net.csproj" />
     <ProjectReference Include="..\ColorVision.Scheduler\ColorVision.Scheduler.csproj" />
+    <ProjectReference Include="..\ColorVision.Solution\ColorVision.Solution.csproj" />
     <ProjectReference Include="..\ColorVision.UI\ColorVision.UI.csproj" />
-    <ProjectReference Include="..\ColorVision.Util\ColorVision.Util.csproj" />
     <ProjectReference Include="..\cvColorVision\cvColorVision.csproj" />
   </ItemGroup>
 

@@ -220,7 +220,7 @@ namespace ColorVision.Update
             {
                 IsPassWorld = true;
                 // If the request is unauthorized, add the authentication header and try again
-                var byteArray = System.Text.Encoding.ASCII.GetBytes("1:1");
+                var byteArray = Encoding.ASCII.GetBytes("1:1");
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
                 // You should also consider handling other potential issues here, such as network errors
@@ -249,7 +249,7 @@ namespace ColorVision.Update
             {
                 IsPassWorld = true;
                 // If the request is unauthorized, add the authentication header and try again
-                var byteArray = System.Text.Encoding.ASCII.GetBytes("1:1");
+                var byteArray = Encoding.ASCII.GetBytes("1:1");
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
                 // You should also consider handling other potential issues here, such as network errors
@@ -339,13 +339,13 @@ namespace ColorVision.Update
                             if (stopwatch.ElapsedMilliseconds > 200) // Update speed at least once per second
                             {
                                 double speed = totalReadBytes / stopwatch.Elapsed.TotalSeconds;
-                                SpeedValue = $"{ColorVision.Properties.Resources.CurrentSpeed} {speed / 1024 / 1024:F2} MB/s";
+                                SpeedValue = $"{Properties.Resources.CurrentSpeed} {speed / 1024 / 1024:F2} MB/s";
 
                                 if (totalBytes != -1L)
                                 {
                                     double remainingBytes = totalBytes - totalReadBytes;
                                     double remainingTime = remainingBytes / speed; // in seconds
-                                    RemainingTimeValue = $"{ColorVision.Properties.Resources.TimeLeft} {TimeSpan.FromSeconds(remainingTime):hh\\:mm\\:ss}";
+                                    RemainingTimeValue = $"{Properties.Resources.TimeLeft} {TimeSpan.FromSeconds(remainingTime):hh\\:mm\\:ss}";
                                 }
                             }
                         }

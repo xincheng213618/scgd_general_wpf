@@ -16,7 +16,7 @@ namespace ColorVision.Engine.Rbac
 
         public int Order => 3;
 
-        public string? Header => Engine.Properties.Resources.MenuLogin;
+        public string? Header => Properties.Resources.MenuLogin;
 
         public string? InputGestureText => null;
 

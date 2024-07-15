@@ -332,7 +332,7 @@ namespace ColorVision
                         {
                             Converter = (IValueConverter)Application.Current.FindResource("bool2VisibilityConverter")
                         };
-                        statusBarItem.SetBinding(StatusBarItem.VisibilityProperty, visibilityBinding);
+                        statusBarItem.SetBinding(VisibilityProperty, visibilityBinding);
                     }
                     // 设置 MouseLeftButtonDown 事件处理程序
                     if (statusBarIconMetadata.Action != null)
@@ -373,7 +373,7 @@ namespace ColorVision
                     statusBarItem.DataContext = statusBarIconMetadata.Source;
 
                     var Binding = new Binding(statusBarIconMetadata.BindingName) { Mode = BindingMode.OneWay };
-                    statusBarItem.SetBinding(ToggleButton.ContentProperty, Binding);
+                    statusBarItem.SetBinding(ContentProperty, Binding);
 
 
                     if (statusBarIconMetadata.VisibilityBindingName != null)
@@ -382,7 +382,7 @@ namespace ColorVision
                         {
                             Converter = (IValueConverter)Application.Current.FindResource("bool2VisibilityConverter")
                         };
-                        statusBarItem.SetBinding(StatusBarItem.VisibilityProperty, visibilityBinding);
+                        statusBarItem.SetBinding(VisibilityProperty, visibilityBinding);
                     }
 
                     StatusBarTextDocker.Children.Add(statusBarItem);

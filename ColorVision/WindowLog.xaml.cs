@@ -229,7 +229,7 @@ namespace ColorVision
 
                 logTextBox.Visibility = Visibility.Collapsed;
                 logTextBoxSerch.Visibility = Visibility.Visible;
-                var logLines = logTextBox.Text.Split(new[] { Environment.NewLine }, System.StringSplitOptions.None);
+                var logLines = logTextBox.Text.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
                 if (containsRegexSpecialChars)
                 {
                     // 使用正则表达式搜索

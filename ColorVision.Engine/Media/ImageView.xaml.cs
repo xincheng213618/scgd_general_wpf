@@ -265,7 +265,7 @@ namespace ColorVision.Engine.Media
                 {
                     drawing.BaseAttribute.IsShow = false;
                 };
-                MenuItem menuIte2 = new() { Header = ColorVision.Engine.Properties.Resources.MenuDelete };
+                MenuItem menuIte2 = new() { Header = Properties.Resources.MenuDelete };
                 menuIte2.Click += (s, e) =>
                 {
                     ImageShow.RemoveVisual(DrawingVisual);

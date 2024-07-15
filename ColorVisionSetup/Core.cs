@@ -49,7 +49,7 @@ namespace ColorVisionSetup
                     unpackResult = UnpackAndInstallRedist();
                 }
             }
-            IntPtr intPtr = LoadLibraryW(Path.Combine(Core.TempPath, dllName).Replace("/", "\\"));
+            IntPtr intPtr = LoadLibraryW(Path.Combine(TempPath, dllName).Replace("/", "\\"));
             if (intPtr == IntPtr.Zero)
             {
                 int lastWin32Error = Marshal.GetLastWin32Error();

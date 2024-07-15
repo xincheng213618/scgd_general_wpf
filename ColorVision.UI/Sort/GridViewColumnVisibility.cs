@@ -111,7 +111,7 @@ namespace ColorVision.UI.Sorts
         public static void GenContentMenuGridViewColumn(ContextMenu contextMenu,GridViewColumnCollection gridViewColumns, ObservableCollection<GridViewColumnVisibility> gridViewColumnVisibilitys)
         {
             MenuItem menuItemAuto = new();
-            menuItemAuto.Header = ColorVision.UI.Properties.Resources.AutoAdjustColumnWidth;
+            menuItemAuto.Header = Properties.Resources.AutoAdjustColumnWidth;
             menuItemAuto.Click += (s, e) =>
             {
                 AdjustGridViewColumnAuto(gridViewColumns, gridViewColumnVisibilitys);

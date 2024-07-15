@@ -1,5 +1,9 @@
 #   CHANGELOAG
 
+## [1.1.2.5] 2024.07.15
+
+1.移除ColorVision.Util
+
 ## [1.1.2.4] 2024.07.12
 
 1.拆分Util，独立ColorVision.Themes

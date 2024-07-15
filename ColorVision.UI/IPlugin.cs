@@ -28,7 +28,7 @@ namespace ColorVision.UI
                 }
             }
 
-            return AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName);
+            return Default.LoadFromAssemblyName(assemblyName);
 
         }
 

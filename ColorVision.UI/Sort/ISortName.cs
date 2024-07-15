@@ -13,7 +13,7 @@ namespace ColorVision.UI.Sorts
         public static void SortByName<T>(this ObservableCollection<T> collection, bool descending = false) where T : ISortName
         {
             var sortedItems = collection.ToList();
-            sortedItems.Sort((x, y) => descending ? string.Compare(y.Name, x.Name, System.StringComparison.Ordinal) : string.Compare(x.Name, y.Name, System.StringComparison.Ordinal));
+            sortedItems.Sort((x, y) => descending ? string.Compare(y.Name, x.Name, StringComparison.Ordinal) : string.Compare(x.Name, y.Name, StringComparison.Ordinal));
             collection.UpdateCollection(sortedItems);
         }
     }

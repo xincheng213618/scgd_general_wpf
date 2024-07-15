@@ -175,7 +175,7 @@ namespace ColorVision.Projects.ProjectHeyuan
         private void Window_Initialized(object sender, EventArgs e)
         {
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
-            FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
+            MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
             flowEngine = new FlowEngineControl(false);
 
             STNodeEditor STNodeEditorMain = new STNodeEditor();
