@@ -104,7 +104,6 @@
                                             <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="MTFParam" Click="MenuItem_Template"/>
                                         </Grid>
                                     </DockPanel>
-
                                 </StackPanel>
                             </TabItem>
                             <TabItem Header="SFR">

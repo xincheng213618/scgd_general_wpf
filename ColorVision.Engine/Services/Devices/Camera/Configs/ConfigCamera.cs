@@ -42,6 +42,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public bool UsingFileCaching { get => _UsingFileCaching; set { _UsingFileCaching = value; NotifyPropertyChanged(); } }
         private bool _UsingFileCaching;
 
+        public bool IsCVCIEFileSave { get => _IsCVCIEFileSave; set { _IsCVCIEFileSave = value; NotifyPropertyChanged(); } }
+        private bool _IsCVCIEFileSave = true;
+
         public int Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
         private int _Gain = 10;
 

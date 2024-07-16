@@ -157,36 +157,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             ComboxMTFTemplate.ItemsSource = MTFParam.MTFParams;
             ComboxMTFTemplate.SelectedIndex = 0;
 
-            ComboxPoiTemplate2.ItemsSource = PoiParam.Params;
-            ComboxPoiTemplate2.SelectedIndex = 0;
-
-            ComboxSFRTemplate.ItemsSource = SFRParam.SFRParams;
-            ComboxSFRTemplate.SelectedIndex = 0;
-
-            ComboxGhostTemplate.ItemsSource = GhostParam.GhostParams;
-            ComboxGhostTemplate.SelectedIndex = 0;
-
-            ComboxFOVTemplate.ItemsSource = FOVParam.FOVParams;
-            ComboxFOVTemplate.SelectedIndex = 0;
-
-            ComboxDistortionTemplate.ItemsSource = DistortionParam.DistortionParams;
-            ComboxDistortionTemplate.SelectedIndex = 0;
-
-            ComboxLedCheckTemplate.ItemsSource = LedCheckParam.LedCheckParams;  
-            ComboxLedCheckTemplate.SelectedIndex = 0;
-
-            ComboxPoiTemplate1.ItemsSource = PoiParam.Params.CreateEmpty();
-            ComboxPoiTemplate1.SelectedIndex = 0;
-
-            ComboxFocusPointsTemplate.ItemsSource = FocusPointsParam.FocusPointsParams;
-            ComboxFocusPointsTemplate.SelectedIndex = 0;
-
-            ComboxBuildPoiTemplate.ItemsSource = BuildPOIParam.BuildPOIParams;
-            ComboxBuildPoiTemplate.SelectedIndex = 0;
-
-            ComboxLEDStripDetectionTemplate.ItemsSource = LEDStripDetectionParam.Params;
-            ComboxLEDStripDetectionTemplate.SelectedIndex = 0;
-
             this.AddViewConfig(View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
