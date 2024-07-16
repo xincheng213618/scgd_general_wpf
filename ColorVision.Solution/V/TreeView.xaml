@@ -5,7 +5,7 @@
                     xmlns:Files="clr-namespace:ColorVision.Solution.V.Files"
                     xmlns:Folders="clr-namespace:ColorVision.Solution.V.Folders"
                     xmlns:local="clr-namespace:ColorVision.Solution"
-                    x:Class="ColorVision.Solution.TreeViewTextbox">
+                    x:Class="ColorVision.Solution.V.TreeViewTextbox">
     
     <Style x:Key="ButtonStyle" TargetType="{x:Type Button}">
         <Setter Property="OverridesDefaultStyle"  Value="true" />
