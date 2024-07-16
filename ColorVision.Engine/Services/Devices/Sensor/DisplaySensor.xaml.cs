@@ -33,7 +33,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
             DataContext = Device;
             void Update()
             {
-                var list = new TemplateSensorHeYuan(Device.Config.Category);
+                var list = new TemplateSensor(Device.Config.Category);
                 list.Load();
                 ComboxSensorTemplate.ItemsSource = list.TemplateParams;
             }
@@ -120,7 +120,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
         private void SendTemp_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxSensorTemplate.SelectedItem is TemplateModel<SensorHeYuan> sensorHeYuan)
+            if (ComboxSensorTemplate.SelectedItem is TemplateModel<Templates.SensorParam> sensorHeYuan)
             {
                 CVTemplateParam templateParam = new() { ID= sensorHeYuan.Value.Id, Name= sensorHeYuan.Value.Name };
                 DeviceService.ExecCmd(templateParam);
@@ -134,7 +134,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
-            new WindowTemplate(new TemplateSensorHeYuan(Device.Config.Category)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateSensor(Device.Config.Category)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         }
     }
 }
