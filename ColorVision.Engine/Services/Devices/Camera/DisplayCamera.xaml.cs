@@ -298,10 +298,13 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         private void AutoExplose_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxAutoExpTimeParamTemplate.SelectedValue is AutoExpTimeParam param)
+            if (sender is Button button)
             {
-                var msg = DService.GetAutoExpTime(param);
-                ServicesHelper.SendCommand(msg, "AutoExpTime");
+                if (ComboxAutoExpTimeParamTemplate.SelectedValue is AutoExpTimeParam param)
+                {
+                    var msgRecord = DService.GetAutoExpTime(param);
+                    ServicesHelper.SendCommand(button, msgRecord);
+                }
             }
         }
 
