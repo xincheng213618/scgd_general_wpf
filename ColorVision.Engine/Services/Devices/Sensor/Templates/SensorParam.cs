@@ -5,11 +5,11 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
-    public class TemplateSensorHeYuan : ITemplate<SensorHeYuan>
+    public class TemplateSensor : ITemplate<SensorParam>
     {
-        public static Dictionary<string, ObservableCollection<TemplateModel<SensorHeYuan>>> Params { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<SensorHeYuan>>>();
+        public static Dictionary<string, ObservableCollection<TemplateModel<SensorParam>>> Params { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<SensorParam>>>();
 
-        public TemplateSensorHeYuan(string code)
+        public TemplateSensor(string code)
         {
             Code = code;
             if (Params.TryGetValue(Code, out var templatesParams))
@@ -18,7 +18,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
             }
             else
             {
-                templatesParams = new ObservableCollection<TemplateModel<SensorHeYuan>>();
+                templatesParams = new ObservableCollection<TemplateModel<SensorParam>>();
                 TemplateParams = templatesParams;
                 Params.Add(Code,templatesParams);
             }
@@ -36,13 +36,13 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         }
     }
 
-    public class SensorHeYuan:ParamBase
+    public class SensorParam:ParamBase
     {
-        public SensorHeYuan() : base()
+        public SensorParam() : base()
         {
 
         }
-        public SensorHeYuan(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
+        public SensorParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
 
         }

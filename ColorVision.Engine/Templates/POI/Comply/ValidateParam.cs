@@ -9,7 +9,6 @@ namespace ColorVision.Engine.Templates.POI.Comply
 
     public class ValidateParam : ParamBase
     {
-        public static ObservableCollection<TemplateModel<ValidateParam>> CIEParams { get; set; } = new ObservableCollection<TemplateModel<ValidateParam>>();
         public ValidateParam()
         {
 

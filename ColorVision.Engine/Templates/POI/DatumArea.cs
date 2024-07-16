@@ -62,7 +62,7 @@ namespace ColorVision.Engine.Templates.POI
     {
         public RelayCommand ValidateCIECommand => new RelayCommand(a =>
         {
-            var Template = new TemplateComplyParam();
+            var Template = new TemplateComplyParam("Comply.CIE");
             new WindowTemplate(Template, Template.FindIndex(DeafultValidateCIEId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         });
 

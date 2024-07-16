@@ -15,7 +15,7 @@ using SkiaSharp;
 
 namespace ColorVision.Engine.Services.Devices.Sensor.Templates
 {
-    public class ExportSensorMenuItemProvider : IMenuItemProvider
+    public class MenuItemProviderSensor : IMenuItemProvider
     {
         public IEnumerable<MenuItemMetadata> GetMenuItems()
         {
@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
                 menuItemMetadata.OwnerGuid = "TemplateSensor";
                 menuItemMetadata.Command = new RelayCommand(a =>
                 {
-                    new WindowTemplate( new TemplateSensorHeYuan(item.Code)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                    new WindowTemplate( new TemplateSensor(item.Code)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                 });
                 items.Add(menuItemMetadata);
             }

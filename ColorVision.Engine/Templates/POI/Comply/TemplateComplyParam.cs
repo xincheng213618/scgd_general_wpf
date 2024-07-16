@@ -2,51 +2,43 @@
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.SysDictionary;
 using ColorVision.Engine.Templates.POI.Comply.Dao;
+using ColorVision.Engine.Templates.POI.Comply.Dic;
 using ColorVision.UI.Menus;
-using ColorVision.Engine.Rbac;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.UI.Authorizations;
-using System.Collections.ObjectModel;
-using ColorVision.Engine.Templates.POI.Comply.Dic;
 
 namespace ColorVision.Engine.Templates.POI.Comply
 {
 
 
-    public class ExportValidueCIE : IMenuItem
+
+    public class TemplateComplyParam : ITemplate<ValidateParam>
     {
-        public string OwnerGuid => "Comply";
+        public static Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>> Params { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>>();
 
-        public string GuidId => "ComplyCIE";
-        public int Order => 1;
-        public Visibility Visibility => Visibility.Visible;
-        public string Header => "CIE合规";
-
-        public string InputGestureText { get; }
-
-        public object Icon { get; }
-
-        public RelayCommand Command => new(a =>
+        public TemplateComplyParam(string code)
         {
-            new WindowTemplate(new TemplateComplyParam()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
-        });
-    }
-
-    public class TemplateComplyParam : ITemplate<ValidateParam>, IITemplateLoad
-    {
-        public TemplateComplyParam()
-        {
-            Title = "Comply.CIE";
-            TemplateParams = ValidateParam.CIEParams;
-            Code = "Comply.CIE";
+            Code = code;
+            if (Params.TryGetValue(Code, out var templatesParams))
+            {
+                TemplateParams = templatesParams;
+            }
+            else
+            {
+                templatesParams = new ObservableCollection<TemplateModel<ValidateParam>>();
+                TemplateParams = templatesParams;
+                Params.Add(Code, templatesParams);
+            }
             IsUserControl = true;
             ValidateControl = new ValidateControl();
         }
+        public override string Title { get => Code + "编辑"; set { } }
 
         public ValidateControl ValidateControl { get; set; }
 
