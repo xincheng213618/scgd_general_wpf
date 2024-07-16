@@ -89,6 +89,10 @@
                     <ListView.Resources >
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                     </ListView.Resources>
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="{x:Type ListViewItem}" BasedOn="{StaticResource ListViewItemBaseStyle.Small}">
+                        </Style>
+                    </ListView.ItemContainerStyle>
                     <ListView.View >
                         <GridView >
                             <GridView.ColumnHeaderContainerStyle>
