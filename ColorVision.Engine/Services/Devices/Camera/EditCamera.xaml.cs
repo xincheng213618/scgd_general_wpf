@@ -64,7 +64,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             EditConfig = DeviceCamera.Config.Clone();
             DataContext = DeviceCamera;
             EditContent.DataContext = EditConfig;
-            EditStackPanel.Children.Add(GenerateContent(EditConfig));
+            //EditStackPanel.Children.Add(GenerateContent(EditConfig));
         }
 
         private static StackPanel GenerateContent(object config)
