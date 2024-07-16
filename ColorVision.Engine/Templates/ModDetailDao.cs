@@ -6,9 +6,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Templates
 {
-    public class ModDetailModel : ViewModelBase, IPKModel
+    public class ModDetailModel : VPKModel
     {
-        public int Id { get; set; }
         public ModDetailModel() : this(-1, -1, null) { }
         public ModDetailModel(int sysPid, int pid, string? val)
         {
@@ -18,12 +17,19 @@ namespace ColorVision.Engine.Templates
         }
 
 
-        public int SysPid { get; set; }
-        public int Pid { get; set; }
-        public string? ValueA { get; set; }
-        public string? ValueB { get; set; }
-        public string? Symbol { get; set; }
-        public string? SymbolName { get; set; }
+        public int SysPid { get => _SysPid; set { _SysPid = value; NotifyPropertyChanged(); } }
+        private int _SysPid;
+        public int Pid { get => _Pid; set { _Pid = value; NotifyPropertyChanged(); } }
+        private int _Pid;
+
+        public string? ValueA { get => _ValueA; set { _ValueA = value; NotifyPropertyChanged(); } }
+        private string? _ValueA;
+        public string? ValueB { get => _ValueB; set { _ValueB = value; NotifyPropertyChanged(); } }
+        private string? _ValueB;
+        public string? Symbol { get => _Symbol; set { _Symbol = value; NotifyPropertyChanged(); } }
+        private string? _Symbol;
+        public string? SymbolName { get => _SymbolName; set { _SymbolName = value; NotifyPropertyChanged(); } }
+        private string? _SymbolName;
 
         public bool? IsEnable { get; set; } = true;
         public bool? IsDelete { get; set; } = false;

@@ -40,8 +40,10 @@ namespace ColorVision.Engine.Templates
             var values = SysDictionaryModDetaiModels
                             .Select(item => new KeyValuePair<int, string>((int)item.AddressCode,item.Name ?? item.Symbol??item.AddressCode.ToString() ))
                             .ToList();
+            CreateConfig.SysPid = (int)SysDictionaryModDetaiModels[0].AddressCode;
+            CreateConfig.ValueA = SysDictionaryModDetaiModels[0].DefaultValue;
+
             ComboBoxSymbol.ItemsSource = values;
-            ComboBoxSymbol.SelectedIndex = 0;
 
         }
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -72,6 +74,8 @@ namespace ColorVision.Engine.Templates
             if (sender is ComboBox comboBox && comboBox.SelectedIndex > -1)
             {
                 CreateConfig.ValueA = SysDictionaryModDetaiModels[comboBox.SelectedIndex].DefaultValue;
+                CreateConfig.Symbol = SysDictionaryModDetaiModels[comboBox.SelectedIndex].Symbol;
+                CreateConfig.SymbolName = SysDictionaryModDetaiModels[comboBox.SelectedIndex].Name;
             }
         }
     }
