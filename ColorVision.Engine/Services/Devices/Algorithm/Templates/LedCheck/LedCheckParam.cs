@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck
         public static ObservableCollection<TemplateModel<LedCheckParam>> LedCheckParams { get; set; } = new ObservableCollection<TemplateModel<LedCheckParam>>();
 
         public LedCheckParam() { }
-        public LedCheckParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
+        public LedCheckParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
         }
 

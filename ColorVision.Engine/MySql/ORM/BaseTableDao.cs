@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.Templates;
 using log4net;
+using MySql.Data.MySqlClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -35,6 +36,7 @@ namespace ColorVision.Engine.MySql.ORM
         {
             return dao.GetByParam(new Dictionary<string, object> { { "id", id } });
         }
+
     }
 
     public class BaseTableDao<T> : BaseDao where T : IPKModel ,new()
@@ -47,7 +49,7 @@ namespace ColorVision.Engine.MySql.ORM
         }
 
         public virtual T? GetModelFromDataRow(DataRow item) => ReflectionHelper.GetModelFromDataRow<T>(item);
-        public virtual DataRow Model2Row(T item, DataRow row) => ReflectionHelper.Model2Row(item, row);
+        public virtual DataRow Model2Row(T item, DataRow row) => ReflectionHelper.Model2RowAuto(item, row);
         public virtual DataTable CreateColumns(DataTable dataTable) => ReflectionHelper.CreateColumns<ModDetailModel>(dataTable);
 
         public DataTable SelectById(int id)
@@ -157,5 +159,21 @@ namespace ColorVision.Engine.MySql.ORM
 
         public int DeleteById(int id, bool IsLogicDel = true) => DeleteAllByParam(new Dictionary<string, object>() { { "id", id } }, IsLogicDel);
 
+
+        public int GetNextAvailableId()
+        {
+            int nextId = 1;
+            string query = $"SELECT MAX(id) FROM {TableName}";
+            MySqlCommand cmd = new MySqlCommand(query, MySqlControl.MySqlConnection);
+
+            object result = cmd.ExecuteScalar();
+            if (result != DBNull.Value && result != null)
+            {
+                int maxId = Convert.ToInt32(result);
+                nextId = maxId + 1;
+            }
+
+            return nextId;
+        }
     }
 }

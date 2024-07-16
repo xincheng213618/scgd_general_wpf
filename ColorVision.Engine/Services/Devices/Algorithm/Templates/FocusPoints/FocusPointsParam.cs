@@ -10,7 +10,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints
 
         public FocusPointsParam() { }
 
-        public FocusPointsParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
+        public FocusPointsParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
         }
 

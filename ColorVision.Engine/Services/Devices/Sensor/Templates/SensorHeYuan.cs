@@ -42,7 +42,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates
         {
 
         }
-        public SensorHeYuan(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
+        public SensorHeYuan(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
 
         }

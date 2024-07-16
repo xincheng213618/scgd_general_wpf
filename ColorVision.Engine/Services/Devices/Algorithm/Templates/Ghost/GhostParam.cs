@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost
         public static ObservableCollection<TemplateModel<GhostParam>> GhostParams { get; set; } = new ObservableCollection<TemplateModel<GhostParam>>();
 
         public GhostParam() { }
-        public GhostParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
+        public GhostParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
         }
 

@@ -6,7 +6,6 @@
         xmlns:local="clr-namespace:ColorVision"
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:properties="clr-namespace:ColorVision.Properties"
-        xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Util" 
         xmlns:behaviors="http://schemas.microsoft.com/xaml/behaviors"
         xmlns:input ="clr-namespace:System.Windows.Input;assembly=netstandard"
         mc:Ignorable="d"

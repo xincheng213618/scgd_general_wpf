@@ -272,7 +272,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             Color = new CalibrationColor(new List<ModDetailModel>());
         }
 
-        public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
+        public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
             Normal = new CalibrationNormal(modDetails, "");
             Color = new CalibrationColor(modDetails);

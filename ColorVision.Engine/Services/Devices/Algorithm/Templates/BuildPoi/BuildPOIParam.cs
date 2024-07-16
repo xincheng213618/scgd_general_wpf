@@ -12,7 +12,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi
 
         public BuildPOIParam() { }
 
-        public BuildPOIParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
+
+        public BuildPOIParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
         }
 

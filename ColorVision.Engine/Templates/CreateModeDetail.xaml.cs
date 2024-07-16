@@ -1,6 +1,11 @@
-﻿using ColorVision.Themes;
+﻿using ColorVision.Engine.MySql.ORM;
+using ColorVision.Engine.Services.SysDictionary;
+using ColorVision.Themes;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace ColorVision.Engine.Templates
@@ -21,14 +26,23 @@ namespace ColorVision.Engine.Templates
             this.ApplyCaption();
         }
 
+        private List<SysDictionaryModDetaiModel> SysDictionaryModDetaiModels = new List<SysDictionaryModDetaiModel>();
 
         private void Window_Initialized(object sender, EventArgs e)
         {
             this.DataContext = Param;
-            CreateConfig = new ModDetailModel() { };
+            CreateConfig = new ModDetailModel() { Pid = Param.Id};
             CreateConfig.Pid = Param.Id;
             CreateConfig.SysPid = 500;
-            BorderEdit.DataContext  = CreateConfig;
+            SysDictionaryModDetaiModels = SysDictionaryModDetailDao.Instance.GetAllByPid(Param.ModMaster.Pid);
+            BorderEdit.DataContext = CreateConfig;
+
+            var values = SysDictionaryModDetaiModels
+                            .Select(item => new KeyValuePair<int, string>((int)item.AddressCode,item.Name ?? item.Symbol??item.AddressCode.ToString() ))
+                            .ToList();
+            ComboBoxSymbol.ItemsSource = values;
+            ComboBoxSymbol.SelectedIndex = 0;
+
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
@@ -50,6 +64,14 @@ namespace ColorVision.Engine.Templates
             {
                 Common.NativeMethods.Keyboard.PressKey(0x09);
                 e.Handled = true;
+            }
+        }
+
+        private void ComboBoxSymbol_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (sender is ComboBox comboBox && comboBox.SelectedIndex > -1)
+            {
+                CreateConfig.ValueA = SysDictionaryModDetaiModels[comboBox.SelectedIndex].DefaultValue;
             }
         }
     }

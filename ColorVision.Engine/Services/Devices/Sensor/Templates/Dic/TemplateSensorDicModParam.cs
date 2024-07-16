@@ -24,6 +24,16 @@ namespace ColorVision.Engine.Services.Devices.Sensor.Templates.Dic
             IsUserControl = true;
         }
 
+        public override void Create(string templateCode, string templateName)
+        {
+            SysDictionaryModModel sysDictionaryModModel = new SysDictionaryModModel() { Name = templateName, Code = templateCode, ModType = 5 };
+            SysDictionaryModDao.Instance.Save(sysDictionaryModModel);
+            var list = SysDictionaryModDetailDao.Instance.GetAllByPid(sysDictionaryModModel.Id);
+            var t = new DicModParam(sysDictionaryModModel, list);
+            var templateModel = new TemplateModel<DicModParam>(t.Name ?? "default", t);
+            TemplateParams.Add(templateModel);
+        }
+
         public override void Load()
         {
             var backup = TemplateParams.ToDictionary(tp => tp.Id, tp => tp);

@@ -1,5 +1,7 @@
 ﻿using ColorVision.Themes;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using System.Windows.Input;
 
@@ -26,10 +28,19 @@ namespace ColorVision.Engine.Services.SysDictionary
         {
             this.DataContext = DicModParam;
             CreateConfig = new SysDictionaryModDetaiModel() {  PId = DicModParam.Id};
+            CreateConfig.Id = SysDictionaryModDetailDao.Instance.GetNextAvailableId();
+            CreateConfig.IsEnable = true;
             BorderEdit.DataContext  = CreateConfig;
+
+            ComboBoxValueType.ItemsSource = from e1 in Enum.GetValues(typeof(ValueType)).Cast<ValueType>()
+                                            select new KeyValuePair<ValueType, string>(e1, e1.ToString());
+
+            
         }
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            CreateConfig.AddressCode = CreateConfig.Id;
+            CreateConfig.CreateDate = DateTime.Now;
             int i = SysDictionaryModDetailDao.Instance.Save(CreateConfig);
             if (i > 0)
             {

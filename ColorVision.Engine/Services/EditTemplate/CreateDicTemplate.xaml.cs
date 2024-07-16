@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
 using ColorVision.Engine.Templates;
+using ColorVision.UI.Menus;
 
 namespace ColorVision.Engine.Services.SysDictionary
 {
@@ -48,6 +49,7 @@ namespace ColorVision.Engine.Services.SysDictionary
             }
 
             ITemplate.Create(CreateCode.Text,CreateName.Text);
+            MenuManager.GetInstance().LoadMenuItemFromAssembly();
             this.Close();
         }
 

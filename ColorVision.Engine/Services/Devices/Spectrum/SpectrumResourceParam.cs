@@ -74,7 +74,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public SpectrumResourceParam() { }
 
-        public SpectrumResourceParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
+        public SpectrumResourceParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
 
         }

@@ -41,7 +41,7 @@
                 </DockPanel>
                 <DockPanel Margin="2">
                     <TextBlock Text="默认值类型" Width="100" />
-                    <TextBox Text="{Binding ValueType}"/>
+                    <ComboBox x:Name="ComboBoxValueType" SelectedValue="{Binding ValueType}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
                 </DockPanel>
                 <DockPanel Margin="2">
                     <TextBlock Text="默认值" Width="100" />

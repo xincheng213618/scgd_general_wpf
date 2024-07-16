@@ -28,12 +28,8 @@
         <Border x:Name="BorderEdit" Grid.Row="0" d:DataContext="{d:DesignInstance local:ModDetailModel}" Background ="{DynamicResource RegionBrush}" CornerRadius="4">
             <StackPanel>
                 <DockPanel Margin="2">
-                    <TextBlock Text="Id" Width="100" />
-                    <TextBox Text="{Binding Id}"/>
-                </DockPanel>
-                <DockPanel Margin="2">
                     <TextBlock Text="符号" Width="100" />
-                    <TextBox Text="{Binding SysPid}"/>
+                    <ComboBox x:Name="ComboBoxSymbol" SelectedValue="{Binding SysPid}" SelectedValuePath="Key"  DisplayMemberPath="Value"  SelectionChanged="ComboBoxSymbol_SelectionChanged"/>
                 </DockPanel>
                 <DockPanel Margin="2">
                     <TextBlock Text="值" Width="100" />

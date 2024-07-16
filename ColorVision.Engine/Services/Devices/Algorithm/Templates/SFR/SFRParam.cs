@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
         public SFRParam()
         {
         }
-        public SFRParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
+        public SFRParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
         }
 

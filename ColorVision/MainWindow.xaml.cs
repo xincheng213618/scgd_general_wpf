@@ -103,7 +103,7 @@ namespace ColorVision
 
             QuartzSchedulerManager.GetInstance();
             Application.Current.MainWindow = this;
-            LoadIMainWindowInitialized();
+            //LoadIMainWindowInitialized();
             if (Config.OpenFloatingBall)
                 new FloatingBallWindow().Show();
         }
@@ -126,11 +126,6 @@ namespace ColorVision
                         }
                     }
                 }
-            }
-
-            if (Application.Current == null)
-            {
-                Environment.Exit(-1);
             }
         }
 

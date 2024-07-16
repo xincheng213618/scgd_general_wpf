@@ -12,7 +12,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam
     public class AutoExpTimeParam : ParamBase
     {
         public AutoExpTimeParam() { }
-        public AutoExpTimeParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
+        public AutoExpTimeParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
         }
         [DisplayName("是否启用")]

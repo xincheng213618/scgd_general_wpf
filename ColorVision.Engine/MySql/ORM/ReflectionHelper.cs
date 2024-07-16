@@ -80,7 +80,7 @@ namespace ColorVision.Engine.MySql.ORM
             return model;
         }
 
-        public static DataRow Model2Row<T>(T model, DataRow row)
+        public static DataRow Model2RowAuto<T>(T model, DataRow row)
         {
             foreach (var prop in typeof(T).GetProperties())
             {
@@ -97,6 +97,20 @@ namespace ColorVision.Engine.MySql.ORM
                 {
                     row[columnName] = value ?? DBNull.Value;
                 }
+            }
+            return row;
+        }
+
+        public static DataRow Model2Row<T>(T model, DataRow row)
+        {
+            foreach (var prop in typeof(T).GetProperties())
+            {
+                if (ShouldIgnoreProperty(prop)) continue;
+
+                var columnName = GetColumnName(prop);
+                var value = prop.GetValue(model);
+                // 自增需要从1开始
+                row[columnName] = value ?? DBNull.Value;
             }
             return row;
         }

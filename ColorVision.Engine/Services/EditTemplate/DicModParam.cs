@@ -1,17 +1,12 @@
-﻿using ColorVision.Common.MVVM;
+﻿
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Dao;
+using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI.Dao;
-using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
-using ColorVision.Engine.Rbac;
-using NPOI.SS.Formula.Functions;
-using NPOI.XWPF.UserModel;
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -20,6 +15,8 @@ using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.SysDictionary
 {
+
+
     public class ExportDicModParam : MenuItemBase
     {
         public override string OwnerGuid => "TemplateAlgorithm";
@@ -60,6 +57,17 @@ namespace ColorVision.Engine.Services.SysDictionary
         public override void SetUserControlDataContext(int index)
         {
             EditDictionaryMode.SetParam(TemplateParams[index].Value);
+        }
+
+        public override void Delete(int index)
+        {
+            if (index > -1 && index < TemplateParams.Count)
+            {
+                var item = TemplateParams[index];
+                SysDictionaryModDao.Instance.DeleteById(item.Value.Id,false);
+                TemplateParams.RemoveAt(index);
+                MenuManager.GetInstance().LoadMenuItemFromAssembly();
+            }
         }
 
         public override void Load()
