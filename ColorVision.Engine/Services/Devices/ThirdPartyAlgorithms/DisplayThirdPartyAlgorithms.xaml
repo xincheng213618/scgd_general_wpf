@@ -60,7 +60,7 @@
                     </DockPanel>
                     <StackPanel>
                         <TabControl>
-                            <TabItem Header="MTF" IsSelected="True">
+                            <TabItem Header="像素定位" IsSelected="True">
                                 <StackPanel Margin="0,5">
                                     <DockPanel Margin="0,2">
                                         <Button  Content="{x:Static properties:Resources.Calculate}" DockPanel.Dock="Right"  HorizontalAlignment="Right" />
