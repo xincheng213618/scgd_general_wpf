@@ -1,42 +1,25 @@
 ﻿#pragma warning disable CS8604,CS0168,CS8629,CA1822,CS8602
 using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
-using ColorVision.Engine.Services.Devices.Camera.Templates;
-using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.FindDotsArray;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using CVCommCore;
-using CVCommCore.CVAlgorithm;
-using LiveChartsCore.SkiaSharpView.Painting.ImageFilters;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
-using NPOI.SS.Formula.Functions;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
