@@ -451,8 +451,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 }
                 return true;
             }
-
-
         }
 
         private void FOV_Click(object sender, RoutedEventArgs e)

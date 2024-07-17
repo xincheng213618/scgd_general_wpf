@@ -66,6 +66,7 @@ namespace ColorVision.Engine.MySql.ORM
             {
                 Model2Row(item, row);
                 int ret = Save(dataTable);
+
                 item.Id = dataTable.Rows[0].Field<int>(PKField);
                 return ret;
             }

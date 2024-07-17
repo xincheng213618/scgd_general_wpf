@@ -88,8 +88,9 @@ namespace ColorVision.Engine.MySql.ORM
 
                 var columnName = GetColumnName(prop);
                 var value = prop.GetValue(model);
+
                 // 自增需要从1开始
-                if (columnName.Equals("id", StringComparison.OrdinalIgnoreCase) && value is int intValue && intValue >= 0)
+                if (columnName.Equals("id", StringComparison.OrdinalIgnoreCase) && value is int intValue && intValue <= 0)
                 {
                     row[columnName] = DBNull.Value;
                 }

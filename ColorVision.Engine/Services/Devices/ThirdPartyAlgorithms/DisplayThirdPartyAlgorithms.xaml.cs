@@ -15,6 +15,8 @@ using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Templates;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.FindDotsArray;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
@@ -23,15 +25,18 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using CVCommCore;
 using CVCommCore.CVAlgorithm;
+using LiveChartsCore.SkiaSharpView.Painting.ImageFilters;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
 using Panuon.WPF.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
@@ -44,10 +49,11 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 
         public DeviceThirdPartyAlgorithms Device { get; set; }
 
-        public MQTTThirdPartyAlgorithms Service { get => Device.DService; }
+        public MQTTThirdPartyAlgorithms DService { get => Device.DService; }
 
 
         public AlgorithmView View { get => Device.View; }
+
         public string DisPlayName => Device.Config.Name;
 
         private IPendingHandler? handler { get; set; }
@@ -148,8 +154,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         {
             DataContext = Device;
 
-            ComboxMTFTemplate.ItemsSource = MTFParam.MTFParams;
-            ComboxMTFTemplate.SelectedIndex = 0;
+            ComboxTemplateFindDotsArray.ItemsSource = TemplateFindDotsArrayParam.Params;
+            ComboxTemplateFindDotsArray.SelectedIndex = 0;
 
             this.AddViewConfig(View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
@@ -163,7 +169,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             ServiceManager.GetInstance().DeviceServices.CollectionChanged += (s, e) => UpdateCB_SourceImageFiles();
 
             UpdateCB_SourceImageFiles();
-            Service.MsgReturnReceived += Service_OnAlgorithmEvent;
+            DService.MsgReturnReceived += Service_OnAlgorithmEvent;
 
 
 
@@ -228,7 +234,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                 type = deviceService.ServiceTypes.ToString();
                 code = deviceService.Code;
             }
-            Service.GetCIEFiles(code, type);
+            DService.GetCIEFiles(code, type);
         }
 
         private void Button_Click_Upload(object sender, RoutedEventArgs e)
@@ -239,7 +245,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             openFileDialog.FilterIndex = 1;
             if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                Service.UploadCIEFile(openFileDialog.FileName);
+                DService.UploadCIEFile(openFileDialog.FileName);
                 handler = PendingBox.Show(Application.Current.MainWindow, "", "上传", true);
                 handler.Cancelling += delegate
                 {
@@ -269,8 +275,89 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
                 type = deviceService.ServiceTypes.ToString();
                 code = deviceService.Code;
             }
-            Service.GetRawFiles(code, type);
+            DService.GetRawFiles(code, type);
         }
 
+
+        private void TemplateSetting_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button button)
+            {
+                switch (button.Tag.ToString())
+                {
+                    case "FindDotsArray":
+                        new WindowTemplate(new TemplateFindDotsArrayParam(), ComboxTemplateFindDotsArray.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+
+        private void FindDotsArray_Click(object sender, RoutedEventArgs e)
+        {
+            if (ComboxTemplateFindDotsArray.SelectedValue is not FindDotsArrayParam findDotsArrayParam) return;
+            if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
+            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
+
+            string type = deviceService.ServiceTypes.ToString();
+            string code = deviceService.Code;
+
+            DService.FindDotsArray(findDotsArrayParam, sn, imgFileName, fileExtType,code, type );
+        }
+
+
+        private bool GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)
+        {
+            sn = string.Empty;
+            fileExtType = FileExtType.Tif;
+            imgFileName = string.Empty;
+
+            bool? isSN = AlgBatchSelect.IsChecked;
+            bool? isRaw = AlgRawSelect.IsChecked;
+
+            if (isSN == true)
+            {
+                if (string.IsNullOrWhiteSpace(AlgBatchCode.Text))
+                {
+                    MessageBox1.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
+                    return false;
+                }
+                sn = AlgBatchCode.Text;
+            }
+            else if (isRaw == true)
+            {
+                imgFileName = CB_RawImageFiles.Text;
+                fileExtType = FileExtType.Raw;
+            }
+            else
+            {
+                imgFileName = ImageFile.Text;
+            }
+            if (string.IsNullOrWhiteSpace(imgFileName))
+            {
+                MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
+                return false;
+            }
+            return true;
+        }
+
+
+        private void Open_File(object sender, RoutedEventArgs e)
+        {
+            using var openFileDialog = new System.Windows.Forms.OpenFileDialog();
+            openFileDialog.Filter = "Image files (*.jpg, *.jpeg, *.png,*.tif) | *.jpg; *.jpeg; *.png;*.tif";
+            openFileDialog.RestoreDirectory = true;
+            openFileDialog.FilterIndex = 1;
+            if (openFileDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                ImageFile.Text = openFileDialog.FileName;
+            }
+        }
+
+        private void Button_Click_RawOpen(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }

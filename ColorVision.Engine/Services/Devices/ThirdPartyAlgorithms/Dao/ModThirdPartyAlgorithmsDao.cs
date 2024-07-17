@@ -1,6 +1,8 @@
 ﻿using ColorVision.Engine.MySql.ORM;
+using NPOI.SS.Formula.Functions;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,16 +29,16 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
         private string? _JsonVal;
 
         [Column("is_enable")]
-        public bool? IsEnable { get; set; }
+        public bool? IsEnable { get; set; } = true;
 
         [Column("is_delete")]
-        public bool? IsDelete { get; set; }
+        public bool? IsDelete { get; set; } = false;
 
         [Column("remark")]
         public string? Remark { get; set; }
 
         [Column("tenant_id")]
-        public string? TenantId { get; set; }
+        public string? TenantId { get; set; } 
     }
 
     public class ModThirdPartyAlgorithmsDao : BaseTableDao<ModThirdPartyAlgorithmsModel>
@@ -47,5 +49,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
         {
 
         }
+        public override DataRow Model2Row(ModThirdPartyAlgorithmsModel item, DataRow row) => ReflectionHelper.Model2RowAuto(item, row);
+
     }
 }

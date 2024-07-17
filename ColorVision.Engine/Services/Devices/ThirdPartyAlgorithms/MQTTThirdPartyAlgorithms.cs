@@ -1,4 +1,5 @@
-﻿using ColorVision.Engine.Services.Msg;
+﻿using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
+using ColorVision.Engine.Services.Msg;
 using ColorVision.Themes;
 using CVCommCore;
 using CVCommCore.CVAlgorithm;
@@ -53,11 +54,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             PublishAsyncClient(msg);
         }
 
-        public void FindDotsArray()
-        {
-
-        }
-
 
 
         public MsgRecord Close()
@@ -76,6 +72,23 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             };
             PublishAsyncClient(msg);
         }
+
+        public MsgRecord FindDotsArray(FindDotsArrayParam findDotsArrayParam, string serialNumber, string fileName, FileExtType fileExtType, string deviceCode, string deviceType)
+        {
+            serialNumber = string.IsNullOrWhiteSpace(serialNumber) ? DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff") : serialNumber;
+            
+            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "FileType", fileExtType }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = findDotsArrayParam.Id, Name = findDotsArrayParam.Name });
+            MsgSend msg = new()
+            {
+                EventName = "FindDotsArray",
+                SerialNumber = serialNumber,
+                Params = Params
+            };
+
+            return PublishAsyncClient(msg);
+        }
+
 
         public void UploadCIEFile(string fileName)
         {

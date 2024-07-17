@@ -187,11 +187,11 @@ namespace ColorVision.Engine.Templates
         private bool _IsEnable;
 
         [Browsable(false)]
-        public int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
+        public virtual int Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
         private int _Id;
 
         [Browsable(false)]
-        public string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
+        public virtual string Name { get => _Name; set { _Name = value; NotifyPropertyChanged(); } }
         private string _Name;
 
         [Browsable(false)]
@@ -201,8 +201,6 @@ namespace ColorVision.Engine.Templates
         public ObservableCollection<ModDetailModel> ModDetailModels { get; set; } = new ObservableCollection<ModDetailModel>();
         public ParamBase() : base(new List<ModDetailModel>())
         {
-            Id = No++;
-            CreateCommand = new RelayCommand(a => new CreateModeDetail(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(), a => true);
         }
 
         public ParamBase(int id, string name, List<ModDetailModel> detail) : base(detail)
