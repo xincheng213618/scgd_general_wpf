@@ -10,6 +10,10 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
     [Table("t_scgd_mod_third_party_algorithms")]
     public class ModThirdPartyAlgorithmsModel : VPKModel
     {
+        [Column("pid")]
+        public int? PId { get => _PId; set { _PId = value; NotifyPropertyChanged(); } }
+        private int? _PId;
+
         [Column("code")]
         public string? Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }
         private string? _Code;
@@ -35,7 +39,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
         public string? TenantId { get; set; }
     }
 
-    public class ModThirdPartyAlgorithmsDao : BaseTableDao<ThirdPartyAlgorithmsModel>
+    public class ModThirdPartyAlgorithmsDao : BaseTableDao<ModThirdPartyAlgorithmsModel>
     {
         public static ModThirdPartyAlgorithmsDao Instance { get; set; } = new ModThirdPartyAlgorithmsDao();
 

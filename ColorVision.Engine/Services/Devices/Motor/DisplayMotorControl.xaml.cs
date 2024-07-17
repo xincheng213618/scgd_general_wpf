@@ -53,12 +53,12 @@ namespace ColorVision.Engine.Services.Devices.Motor
         {
             if (sender is Button button)
             {
-                if (DeviceService.DeviceStatus == DeviceStatusType.Closed && button.Content.ToString() == "连接")
+                if ( button.Content.ToString() == "连接")
                 {
                     var msgRecord = DeviceService.Open();
                     ServicesHelper.SendCommand(button, msgRecord);
                 }
-                else if (DeviceService.DeviceStatus == DeviceStatusType.Opened && button.Content.ToString() == "关闭")
+                else if (button.Content.ToString() == "关闭")
                 {
                     var msgRecord = DeviceService.Close();
                     ServicesHelper.SendCommand(button, msgRecord);

@@ -10,6 +10,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
     [Table("t_scgd_sys_third_party_algorithms")]
     public class ThirdPartyAlgorithmsModel : VPKModel
     {
+
+
         [Column("code")]
         public string? Code { get => _Code; set { _Code = value; NotifyPropertyChanged(); } }
         private string? _Code;

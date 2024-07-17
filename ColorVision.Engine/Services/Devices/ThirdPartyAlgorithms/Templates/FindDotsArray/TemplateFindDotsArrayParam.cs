@@ -19,8 +19,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Fin
 
         public TemplateFindDotsArrayParam()
         {
-            Title = "MTFParam算法设置";
-            Code = ModMasterType.MTF;
+            Title = "FindDotsArrayParam算法设置";
+            Code = "FindDotsArrayParam";
             TemplateParams = Params;
         }
 
@@ -58,7 +58,13 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Fin
 
         public override void Create(string templateName)
         {
-            base.Create(templateName);
+            ModThirdPartyAlgorithmsModel thirdPartyAlgorithmsModel = new ModThirdPartyAlgorithmsModel() { PId = 1, Code = Code };
+
+            ModThirdPartyAlgorithmsDao.Instance.Save(thirdPartyAlgorithmsModel);
+            FindDotsArrayParam templateFindDotsArrayParam = new FindDotsArrayParam(thirdPartyAlgorithmsModel);
+            TemplateModel<FindDotsArrayParam> templateModel = new TemplateModel<FindDotsArrayParam>(templateFindDotsArrayParam.Name, templateFindDotsArrayParam);
+            Params.Add(templateModel);
+
         }
     }
 }
