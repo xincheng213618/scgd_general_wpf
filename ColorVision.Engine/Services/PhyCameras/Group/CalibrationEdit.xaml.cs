@@ -17,9 +17,14 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
     public partial class CalibrationEdit : Window
     {
         public ICalibrationService<BaseResourceObject> CalibrationService { get; set; }
-        public CalibrationEdit(ICalibrationService<BaseResourceObject> calibrationService)
+
+        private int Index;
+
+        public CalibrationEdit(ICalibrationService<BaseResourceObject> calibrationService , int index = 0)
         {
             CalibrationService = calibrationService;
+            Index = index;
+
             InitializeComponent();
             this.ApplyCaption();
         }
@@ -103,6 +108,9 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             ComboBoxLumOneColor.ItemsSource = LumOneColorList;
             ComboBoxLumFourColor.ItemsSource = LumFourColorList;
             ComboBoxLumMultiColor.ItemsSource = LumMultiColorList;
+
+            ListView1.SelectedIndex = Index;
+
         }
 
         private void ListView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
