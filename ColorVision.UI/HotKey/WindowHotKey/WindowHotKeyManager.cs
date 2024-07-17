@@ -1,11 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.UI.HotKey.WindowHotKey
 {
-
-
-
     public class WindowHotKeyManager
     {
         public static Dictionary<Control, WindowHotKeyManager> Instances { get; set; } = new Dictionary<Control, WindowHotKeyManager>();
@@ -19,6 +17,20 @@ namespace ColorVision.UI.HotKey.WindowHotKey
             control = window;
             Instances.Add(window, this);
             HotKeysList = new List<HotKeys>();
+            if (window is Window win)
+            {
+                win.Closed += Window_Closed;
+            }
+        }
+
+        private void Window_Closed(object? sender, EventArgs e)
+        {
+            // Unregister all hotkeys and remove the instance from the dictionary
+            foreach (var hotkey in HotKeysList)
+            {
+                WindowHotKey.UnRegister(hotkey.HotKeyHandler);
+            }
+            Instances.Remove(control);
         }
 
 

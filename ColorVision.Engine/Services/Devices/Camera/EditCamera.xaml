@@ -235,7 +235,7 @@
                                 <TextBlock Text="启用:" Width="120"/>
                                 <ui:ToggleSwitch IsChecked="{Binding UsingFileCaching}"/>
                             </DockPanel>
-                            <DockPanel>
+                            <DockPanel Visibility="{Binding UsingFileCaching,Converter={StaticResource bool2VisibilityConverter}}">
                                 <TextBlock Text="CVCIE文件保存:" Width="120"/>
                                 <ui:ToggleSwitch IsChecked="{Binding IsCVCIEFileSave}"/>
                             </DockPanel>
