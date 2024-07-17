@@ -203,7 +203,6 @@
 
   <ItemGroup>
     <Folder Include="libs\" />
-    <Folder Include="Services\Devices\ThirdPartyAlgorithms\Templates\" />
   </ItemGroup>
 
   <ItemGroup>

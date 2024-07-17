@@ -67,23 +67,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             };
             return PublishAsyncClient(msg);
         }
-        public MsgRecord BuildPoi(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
-        {
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
-
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
-
-            MsgSend msg = new()
-            {
-                EventName = MQTTAlgorithmEventEnum.Event_Build_POI,
-                SerialNumber = sn,
-                Params = Params
-            };
-            return PublishAsyncClient(msg);
-        }
         public MsgRecord BuildPoi(POIPointTypes POILayoutReq, Dictionary<string, object> @params, string deviceCode, string deviceType, string fileName, int pid, string tempName, string serialNumber)
         {
             string sn = null;
@@ -274,15 +257,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             };
 
             return PublishAsyncClient(msg, 60000);
-        }
-
-
-
-
-        public MsgRecord Close()
-        {
-            MsgSend msg = new() { EventName = "Close" };
-            return PublishAsyncClient(msg);
         }
 
         internal void Open(string deviceCode, string deviceType, string fileName, FileExtType extType)

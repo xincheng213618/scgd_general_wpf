@@ -41,6 +41,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             };
             PublishAsyncClient(msg);
         }
+
+
         public void GetCIEFiles(string deviceCode, string deviceType)
         {
             MsgSend msg = new()
@@ -51,7 +53,10 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             PublishAsyncClient(msg);
         }
 
+        public void FindDotsArray()
+        {
 
+        }
 
 
 
@@ -84,7 +89,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         }
 
         public MsgRecord CacheClear()
-        {
+        {  
             return PublishAsyncClient(new MsgSend { EventName = "" });
         }
 
