@@ -51,6 +51,7 @@ namespace ColorVision
             var IsAdministrator = Tool.IsAdministrator();
             Title += $"- {(IsAdministrator ? Properties.Resources.RunAsAdmin : Properties.Resources.NotRunAsAdmin)}";
             this.ApplyCaption();
+            this.SetWindowFull(Config);
         }
 
         private void Window_Initialized(object sender, EventArgs e)

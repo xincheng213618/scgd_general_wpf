@@ -11,6 +11,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
 
 namespace ColorVision.UI.Draw
 {
@@ -213,14 +214,14 @@ namespace ColorVision.UI.Draw
         public bool IsMax { get; set; }
         public void MaxImage()
         {
-            KeyEventHandler PreviewKeyDown =(s,e)=>
+            void PreviewKeyDown(object s, KeyEventArgs e)
             {
-                if (e.Key == Key.Escape)
+                if (e.Key == Key.Escape || e.Key == Key.F11)
                 {
                     if (IsMax)
                         MaxImage();
                 }
-            };
+            }
 
             var window = Window.GetWindow(Parent);
             if (!IsMax)
@@ -258,6 +259,7 @@ namespace ColorVision.UI.Draw
                     window.Content = Parent;
                     window.PreviewKeyDown -= PreviewKeyDown;
                     window.PreviewKeyDown += PreviewKeyDown;
+                    
                     return;
                 }
             }
@@ -281,7 +283,6 @@ namespace ColorVision.UI.Draw
 
                     OldWindowStatus.ContentParent.Content = Parent;
                 }
-
                 window.PreviewKeyDown -= PreviewKeyDown;
             }
         }

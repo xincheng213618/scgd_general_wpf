@@ -2,11 +2,13 @@
 using ColorVision.Common.Utilities;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
+using ColorVision.UI.Draw;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using log4net;
 using log4net.Core;
 using log4net.Repository.Hierarchy;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -47,7 +49,7 @@ namespace ColorVision
     }
 
 
-    public class MainWindowConfig : ViewModelBase, IConfig, IConfigSettingProvider,IMenuItemProvider
+    public class MainWindowConfig : ViewModelBase, IConfig, IConfigSettingProvider,IMenuItemProvider, IFullScreenState
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindowConfig));
 
@@ -65,6 +67,9 @@ namespace ColorVision
         private bool _IsOpenStatusBar = true;
         public bool IsOpenSidebar { get => _IsOpenSidebar; set { _IsOpenSidebar = value; NotifyPropertyChanged(); } }
         private bool _IsOpenSidebar = true;
+        [JsonIgnore]
+        public bool IsFull { get => _IsFull; set { _IsFull = value; NotifyPropertyChanged(); } }
+        private bool _IsFull;
 
         public Version? LastOpenVersion { get => _Version; set { _Version = value; NotifyPropertyChanged(); } }
         private Version? _Version = new Version(0, 0, 0, 0);
@@ -211,6 +216,36 @@ namespace ColorVision
         }
     }
 
+    public class ExportMenuViewMax :IMenuItemMeta
+    {
+        public string? OwnerGuid => "View";
+        public string? GuidId => "MenuViewSidebar";
+        public int Order => 1;
+        public string? Header => "全屏";
+
+        public MenuItem MenuItem
+        {
+            get
+            {
+                MenuItem menuItem = new() { Header = Header };
+                menuItem.SetBinding(MenuItem.IsCheckedProperty, new Binding(nameof(MainWindowConfig.IsFull)));
+                menuItem.Click += (s, e) => MainWindowConfig.Instance.IsFull = !MainWindowConfig.Instance.IsFull;
+                menuItem.DataContext = MainWindowConfig.Instance;
+                return menuItem;
+            }
+        }
+        public string? InputGestureText => null;
+        public object? Icon => null;
+        public RelayCommand Command => null;
+        public Visibility Visibility => Visibility.Visible;
+        public static void Execute()
+        {
+            MainWindowConfig.Instance.IsFull = !MainWindowConfig.Instance.IsFull;
+        }
+
+
+    }
+
 
     public class ExportMenuViewStatusBar : IMenuItemMeta,IHotKey
     {
@@ -259,6 +294,10 @@ namespace ColorVision
                 return menuItem;
             }
         }
+
+
+
+
         public string? InputGestureText => null;
         public object? Icon => null;
         public RelayCommand Command => null;
