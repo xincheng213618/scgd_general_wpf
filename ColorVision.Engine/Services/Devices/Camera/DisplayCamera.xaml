@@ -157,7 +157,7 @@
                                             <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Click="EditAutoExpTime"/>
                                         </Grid>
                                         <TextBlock Text="曝光"  Margin="0,0,5,0"/>
-                                        <ComboBox x:Name="ComboxAutoExpTimeParamTemplate1"   Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                                        <ComboBox x:Name="ComboxAutoExpTimeParamTemplate1"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
                                     </DockPanel>
                                     <DockPanel Margin="0,2">
                                         <Grid Width="20" Margin="5,0" DockPanel.Dock="Right" HorizontalAlignment="Left">

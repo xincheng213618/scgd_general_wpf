@@ -76,9 +76,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                         }
                                     }
 
-                                    string Msg = "SaturationR:" + Config.SaturationR.ToString() + Environment.NewLine +
-                                                 "SaturationG:" + Config.SaturationG.ToString() + Environment.NewLine +
-                                                 "SaturationB:" + Config.SaturationB.ToString() + Environment.NewLine;
+                                    string Msg = $"SaturationR:{Config.SaturationR}  ExpTime:{Config.ExpTimeR}" + Environment.NewLine +
+                                                 $"SaturationG:{Config.SaturationG}  ExpTime:{Config.ExpTimeG}" + Environment.NewLine +
+                                                 $"SaturationB:{Config.SaturationB}  ExpTime:{Config.ExpTimeB}" + Environment.NewLine;
                                     MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
                                 }
                                 else
@@ -86,7 +86,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                     Config.ExpTime = (int)msg.Data[0].result;
                                     Config.Saturation = (int)msg.Data[0].resultSaturation;
 
-                                    string Msg = "Saturation:" + Config.Saturation.ToString();
+                                    string Msg = $"Saturation:{Config.Saturation}  ExpTime:{Config.ExpTime}";
                                     MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
                                 }
                             } );
