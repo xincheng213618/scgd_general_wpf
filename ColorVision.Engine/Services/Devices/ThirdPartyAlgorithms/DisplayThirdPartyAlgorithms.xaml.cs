@@ -283,7 +283,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         {
             if (ComboxTemplateFindDotsArray.SelectedValue is not FindDotsArrayParam findDotsArrayParam) return;
             if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
-            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
+            if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
 
             string type = deviceService.ServiceTypes.ToString();
             string code = deviceService.Code;
