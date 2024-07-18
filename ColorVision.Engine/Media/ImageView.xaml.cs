@@ -41,12 +41,11 @@ namespace ColorVision.Engine.Media
         private ColormapTypes _ColormapTypes = ColormapTypes.COLORMAP_JET;
 
        [JsonIgnore]
-        public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsCVCIE)); IsCVCIE = true; } }
+        public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsCVCIE));  } }
         private string _FilePath;
 
         [JsonIgnore]
-        public bool IsCVCIE { get => FilePath != null && FilePath.Contains("cvcie") && CVFileUtil.IsCIEFile(FilePath); set { NotifyPropertyChanged(); } }
-
+        public bool IsCVCIE { get => FilePath != null && FilePath.Contains("cvcie") && CVFileUtil.IsCIEFile(FilePath);  }
 
         [JsonIgnore]
         public int Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsChannel1)); NotifyPropertyChanged(nameof(IsChannel3)); } }
@@ -100,9 +99,8 @@ namespace ColorVision.Engine.Media
         public void SetConfig(ImageViewConfig imageViewConfig)
         {
             Config = imageViewConfig;
-            this.DataContext = Config;
+            ToolBarLeft.DataContext = Config;
         }
-
 
         public event PropertyChangedEventHandler? PropertyChanged;
         /// <summary>
@@ -116,7 +114,7 @@ namespace ColorVision.Engine.Media
         {
             ToolBarTop = new ToolBarTop(this,Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
-            ToolBar2.DataContext = ToolBarTop;
+            ToolBarRight.DataContext = ToolBarTop;
             ToolBarTop.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             ListView1.ItemsSource = DrawingVisualLists;
 
@@ -706,8 +704,6 @@ namespace ColorVision.Engine.Media
 
         private void SetImageSource(WriteableBitmap writeableBitmap)
         {
-            ToolBarTop.CIEVisible = Visibility.Collapsed;
-            PseudoStackPanel.Visibility = Visibility.Collapsed ;
             if (HImageCache != null)
             {
                 HImageCache?.Dispose();
@@ -720,10 +716,6 @@ namespace ColorVision.Engine.Media
                 if (HImageCache is HImage hImage)
                 {
                     Config.Channel = hImage.channels;
-                    if (Config.IsCVCIE && Config.Channel ==1)
-                        ToolBarTop.CIEVisible = Visibility.Visible;
-                    if (Config.Channel == 1)
-                        PseudoStackPanel.Visibility = Visibility.Visible; 
                 }
             }
             )));
