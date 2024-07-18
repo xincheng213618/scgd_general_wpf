@@ -23,10 +23,6 @@
                     <TextBlock Text="设备名称" Width="120" />
                     <TextBlock x:Name="DeviceName" Text="" />
                 </DockPanel>
-                <DockPanel Margin="5,5" >
-                    <TextBlock Text="相机ID" Width="120" />
-                    <TextBlock Text="{Binding CreateConfig.CameraID}" />
-                </DockPanel>
             </StackPanel>
         </Border>
         <ScrollViewer Grid.Row="1" Margin="0,5,0,5">

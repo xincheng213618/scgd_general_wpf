@@ -50,10 +50,6 @@
                                 <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Text="{Binding CameraCode}" SelectedValue="{Binding CameraID}" SelectionChanged="CameraPhyID_SelectionChanged" hc:InfoElement.ShowClearButton="True"  />
                             </DockPanel>
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="物理相机ID" Width="120"/>
-                                <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraID}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
                                 <TextBlock Text="相机类型" Width="120"/>
                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding CameraType}"/>
                             </DockPanel>

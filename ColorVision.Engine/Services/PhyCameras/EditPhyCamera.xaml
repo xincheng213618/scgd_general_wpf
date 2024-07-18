@@ -27,10 +27,6 @@
                     <GroupBox Header="配置信息" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="相机ID" Width="120"/>
-                                <hc:ComboBox  x:Name="CameraID" IsEditable="True" DisplayMemberPath="Name" SelectedIndex="0" Text="{Binding CameraID}"  hc:InfoElement.ShowClearButton="True"  />
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
                                 <TextBlock Text="相机类型" Width="120"/>
                                 <hc:ComboBox x:Name="ComboxCameraType"  SelectedValue="{Binding CameraType}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
                             </DockPanel>

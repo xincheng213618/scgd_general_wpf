@@ -63,9 +63,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             ComboxCameraImageBpp.ItemsSource = from e1 in Enum.GetValues(typeof(ImageBpp)).Cast<ImageBpp>()
                                                select new KeyValuePair<ImageBpp, string>(e1, e1.ToDescription());
 
-
-            CameraID.ItemsSource = SysResourceDao.Instance.GetAllCameraId();
-
             var type = EditConfig.CameraType;
 
             if (type == CameraType.LV_Q || type == CameraType.LV_H || type == CameraType.LV_MIL_CL || type == CameraType.MIL_CL)

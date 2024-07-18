@@ -82,10 +82,6 @@
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.Code}"/>
                                     </DockPanel>
                                     <DockPanel>
-                                        <TextBlock Text="相机ID:" Width="120"/>
-                                        <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CameraID}"/>
-                                    </DockPanel>
-                                    <DockPanel>
                                         <TextBlock Text="相机类型:" Width="120"/>
                                         <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.CameraType}"/>
                                     </DockPanel>

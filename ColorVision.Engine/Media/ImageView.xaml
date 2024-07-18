@@ -137,7 +137,7 @@
                 <draw:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </draw:ZoomboxSub>
 
-            <ToolBarTray x:Name="ToolBar1"  DockPanel.Dock="Top" DataContext="{Binding ToolBarTop}" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Center">
+            <ToolBarTray x:Name="ToolBar1" DataContext="{Binding ToolBarTop}" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Center">
                 <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
                     <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding ImageEditMode}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
@@ -204,26 +204,32 @@
                 </ToolBar>
                 
             </ToolBarTray>
-            <ToolBarTray x:Name="ToolBar2"  DockPanel.Dock="Left" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="2,30,0,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <ToolBarTray x:Name="ToolBarRight"  HorizontalAlignment="Right" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="2,30,0,0" Grid.Row="0" Grid.RowSpan="2"  VerticalAlignment="Top">
                 <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
                     <Button Click="Button_Click" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource openDrawingImage}" Margin="-5"/>
                     </Button>
+                </ToolBar>
+            </ToolBarTray>
+
+
+            <ToolBarTray x:Name="ToolBar2"  DockPanel.Dock="Left" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="2,30,0,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Left" VerticalAlignment="Top">
+                <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
+
                     <Button Command="{Binding SaveImageCommand}" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageSave}"  Margin="-5"/>
                     </Button>
                     <Button Command="{Binding ClearImageCommand}" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageClear}"  Margin="-5"/>
                     </Button>
-                    <Button x:Name="ButtonCIE1931"  Visibility="{Binding CIEVisible}" Click="ButtonCIE1931_Click" Margin="0,0,0,2">
+                    <Button x:Name="ButtonCIE1931" Click="ButtonCIE1931_Click" Margin="0,0,0,2">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="/ColorVision.Engine;component/Assets/Image/CIE1931xy1.png" Margin="-5"/>
                     </Button>
-                    <Button x:Name="HistogramButton"  Visibility="{Binding PseudoVisible}" Click="HistogramButton_Click" Margin="0,0,0,2">
+                    <Button x:Name="HistogramButton" Click="HistogramButton_Click" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIHistogram}"  Margin="-5"/>
                     </Button>
                     <StackPanel x:Name="PseudoStackPanel">
-
-                        <ToggleButton x:Name="Pseudo"  Visibility="{Binding PseudoVisible}" Click="ToggleButton_Click"  Margin="0,0,0,2" >
+                        <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  Margin="0,0,0,2" >
                             <Image Style="{StaticResource ToolBarImage}"   Source="/ColorVision.Engine;component/Assets/png/PowerToy.png" Margin="-5"/>
                         </ToggleButton>
 
@@ -255,8 +261,6 @@
                         </Grid>
 
                     </StackPanel>
-
-
                 </ToolBar>
             </ToolBarTray>
 

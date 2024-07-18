@@ -619,7 +619,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord msg = Service.FocusPoints(code, type, ImageFile.Text, fileExtType, pm.Id, ComboxFocusPointsTemplate.Text, sn);
+                MsgRecord msg = Service.FocusPoints(code, type, imgFileName, fileExtType, pm.Id, ComboxFocusPointsTemplate.Text, sn);
                 ServicesHelper.SendCommand(msg, "FocusPoints");
             }
         }
@@ -641,7 +641,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord ss = Service.LedCheck(code, type, ImageFile.Text, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate1.Text);
+                MsgRecord ss = Service.LedCheck(code, type, imgFileName, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate1.Text);
                 ServicesHelper.SendCommand(ss, "正在计算灯珠");
             }
         }
@@ -687,7 +687,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord ss = Service.LEDStripDetection(code, type, ImageFile.Text, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn);
+                MsgRecord ss = Service.LEDStripDetection(code, type, imgFileName, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn);
                 ServicesHelper.SendCommand(ss, "正在计算灯带检测");
             }
         }
