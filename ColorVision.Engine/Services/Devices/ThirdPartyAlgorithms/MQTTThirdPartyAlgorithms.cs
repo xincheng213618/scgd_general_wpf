@@ -81,7 +81,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             Params.Add("TemplateParam", new CVTemplateParam() { ID = findDotsArrayParam.Id, Name = findDotsArrayParam.Name });
             MsgSend msg = new()
             {
-                EventName = "FindDotsArray",
+                EventName = "findDotsArrayImp",
                 SerialNumber = serialNumber,
                 Params = Params
             };
