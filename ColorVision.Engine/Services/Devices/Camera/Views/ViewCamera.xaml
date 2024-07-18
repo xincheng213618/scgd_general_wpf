@@ -74,8 +74,8 @@
                     </Popup>
                 </ToolBar>
                 <ToolBar Band="0" BandIndex="1" Padding="3,2" Margin="3,0">
-                    <StackPanel Orientation="Horizontal" Margin="5,0">
-                        <TextBlock Text="{x:Static properties:Resources.Layers}" MinWidth="40"/>
+                    <StackPanel Orientation="Horizontal" Margin="3,0">
+                        <TextBlock Text="{x:Static properties:Resources.Layers}" MinWidth="20" Margin="5"/>
                         <ComboBox x:Name="ComboBoxLayers" Style="{StaticResource ComboBox.Small}" SelectionChanged="ComboBoxLayers_SelectionChanged">
                             <ComboBoxItem Content="Src"  />
                             <ComboBoxItem Content="R" />

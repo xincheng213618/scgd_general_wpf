@@ -41,12 +41,12 @@ namespace ColorVision.Engine.Media
         private ColormapTypes _ColormapTypes = ColormapTypes.COLORMAP_JET;
 
        [JsonIgnore]
-        public string FilePath { get; set; }
-        [JsonIgnore]
-        public bool IsCVCIE => FilePath != null && FilePath.Contains("cvcie") && CVFileUtil.IsCIEFile(FilePath);
+        public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsCVCIE)); IsCVCIE = true; } }
+        private string _FilePath;
 
         [JsonIgnore]
-        public string CVCIEFilePath { get; set; }
+        public bool IsCVCIE { get => FilePath != null && FilePath.Contains("cvcie") && CVFileUtil.IsCIEFile(FilePath); set { NotifyPropertyChanged(); } }
+
 
         [JsonIgnore]
         public int Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsChannel1)); NotifyPropertyChanged(nameof(IsChannel3)); } }
@@ -85,7 +85,9 @@ namespace ColorVision.Engine.Media
 
         public View View { get; set; }
 
-        public ImageViewConfig Config { get; set; }
+        public ImageViewConfig Config { get => _Config; set { _Config = value; NotifyPropertyChanged(); } }
+        private ImageViewConfig _Config;
+
         public ImageView()
         {
             Config = new ImageViewConfig();

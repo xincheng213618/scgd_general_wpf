@@ -153,9 +153,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
 
 
-        public CameraType CurrentCameraType { get; set; }
-
-
         public MsgRecord CfwPortSetPort(int nIndex, int nPort, int eImgChlType)
         {
             MsgSend msg = new()
@@ -166,8 +163,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             };
             return PublishAsyncClient(msg);
         }
-        private bool _IsVideoOpen ;
         public bool IsVideoOpen { get => _IsVideoOpen; set { _IsVideoOpen = value;NotifyPropertyChanged(); } }
+        private bool _IsVideoOpen;
+
+
 
         public MsgRecord OpenVideo(string host, int port)
         {

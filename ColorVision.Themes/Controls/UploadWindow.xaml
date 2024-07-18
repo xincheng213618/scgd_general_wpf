@@ -9,7 +9,7 @@
         mc:Ignorable="d"
         Title="上传" Height="300" Width="600" AllowDrop="True" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" >
     <Grid>
-        <Image Source="/ColorVision.Util;component/Assets/Image/uploadbg.avif" Stretch="UniformToFill"/>
+        <Image Source="/ColorVision.Themes;component/Assets/Image/uploadbg.avif" Stretch="UniformToFill"/>
         <controls:Upload  x:Name="Upload1"  Margin="30"/>
         <DockPanel  x:Name="ButtonUpload" HorizontalAlignment="Center" Visibility="Collapsed" VerticalAlignment="Center" Margin="0,100,0,0">
             <Button Content="上传"  Click="Button_Click_1" Width="150" Height="25"/>

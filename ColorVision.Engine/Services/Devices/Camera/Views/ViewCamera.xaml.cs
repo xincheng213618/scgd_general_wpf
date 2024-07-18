@@ -452,24 +452,24 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-           if (sender is ComboBox comboBox )
+           if (sender is ComboBox comboBox && e.AddedItems[0] is ComboBoxItem comboBoxItem )
             {
                 if (listView1.SelectedIndex > -1)
                 {
                     var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-                    if (comboBox.Text == "Src")
+                    if (comboBoxItem.Content.ToString() == "Src")
                         DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.SRC);
-                    if (comboBox.Text == "R")
+                    if (comboBoxItem.Content.ToString() == "R")
                         DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_R);
-                    if (comboBox.Text == "G")
+                    if (comboBoxItem.Content.ToString() == "G")
                         DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_G);
-                    if (comboBox.Text == "B")
+                    if (comboBoxItem.Content.ToString() == "B")
                         DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_B);
-                    if (comboBox.Text == "X")
+                    if (comboBoxItem.Content.ToString() == "X")
                         DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_X);
-                    if (comboBox.Text == "Y")
+                    if (comboBoxItem.Content.ToString() == "Y")
                         DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Y);
-                    if (comboBox.Text == "Z")
+                    if (comboBoxItem.Content.ToString() == "Z")
                         DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Z);
                 }
                 else

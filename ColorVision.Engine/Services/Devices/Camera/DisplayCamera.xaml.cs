@@ -492,7 +492,12 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
         }
 
+        private void ComboxAutoExpTimeParamTemplate1_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ComboxAutoExpTimeParamTemplate1.SelectedValue is not AutoExpTimeParam autoExpTimeParam) return;
 
+            Device.Config.IsAutoExpose = autoExpTimeParam.Id != -1;
+        }
     }
 }
 

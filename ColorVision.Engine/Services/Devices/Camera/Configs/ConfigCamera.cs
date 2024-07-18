@@ -67,6 +67,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
             set => NotifyPropertyChanged();
         }
 
+        public bool IsAutoExpose { get => _IsAutoExpose; set { _IsAutoExpose =value; NotifyPropertyChanged(); } }
+        private bool _IsAutoExpose;
         public int ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeLog)); } }
         private int _ExpTime = 10;
 
