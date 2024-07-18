@@ -27,6 +27,10 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
         [Column("dic_model")]
         public int? DicModel { get; set; }
 
+        [Column("default_cfg")]
+        public string? DefaultCfg { get => _DefaultCfg; set { _DefaultCfg = value; NotifyPropertyChanged(); } }
+        private string? _DefaultCfg;
+
         [Column("request_type")]
         public int? RequestType { get; set; }
 

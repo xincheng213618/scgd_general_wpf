@@ -110,7 +110,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Fin
 
         public override void Create(string templateName)
         {
-            ModThirdPartyAlgorithmsModel thirdPartyAlgorithmsModel = new ModThirdPartyAlgorithmsModel() { PId = 1, Code = Code ,Name  =templateName };
+            var mode = ThirdPartyAlgorithmsDao.Instance.GetById(1);
+            ModThirdPartyAlgorithmsModel thirdPartyAlgorithmsModel = new ModThirdPartyAlgorithmsModel() { PId = 1, Code = Code ,Name  =templateName ,JsonVal = mode.DefaultCfg};
 
             ModThirdPartyAlgorithmsDao.Instance.Save(thirdPartyAlgorithmsModel);
             FindDotsArrayParam templateFindDotsArrayParam = new FindDotsArrayParam(thirdPartyAlgorithmsModel);
