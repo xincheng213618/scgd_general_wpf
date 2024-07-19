@@ -19,23 +19,15 @@ namespace ColorVision.Engine.Impl.SolutionImpl
         public void Process(string filePath)
         {
             ImageView imageView = new();
-            CVFileUtil.ReadCVRaw(filePath, out Net.CVCIEFile fileInfo);
-            Window window = new() { Title = Properties.Resources.QuickPreview };
-            if (Application.Current.MainWindow != window)
-            {
-                window.Owner = Application.Current.GetActiveWindow();
-            }
+            Window window = new() { Title = Properties.Resources.QuickPreview, Owner = Application.Current.GetActiveWindow() };
             window.Content = imageView;
-            imageView.OpenImage(fileInfo.ToWriteableBitmap());
+            imageView.OpenImage(filePath);
 
             window.Show();
-            if (Application.Current.MainWindow != window)
+            window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
             {
-                window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
-                {
-                    imageView.ToolBarTop.ClearImage();
-                }));
-            }
+                imageView.ToolBarTop.ClearImage();
+            }));
         }
     }
 

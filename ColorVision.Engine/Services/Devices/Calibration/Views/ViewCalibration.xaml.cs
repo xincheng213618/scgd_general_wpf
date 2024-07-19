@@ -281,10 +281,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 var data = ViewResultCalibrations[listView1.SelectedIndex];
                 if (File.Exists(data.FileUrl))
                 {
-                    LocalFileName = data.FileUrl;
-                    ImageView.Config.FilePath = LocalFileName;
-                    var FileData = netFileUtil.OpenLocalCVFile(data.FileUrl);
-                    OpenImage(FileData);
+                    ImageView.OpenImage(data.FileUrl);
                 }
                 else
                 {
@@ -334,7 +331,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         public void OpenImage(CVCIEFile fileData)
         {
-            ImageView.IsCVCIE = fileData.FileExtType == FileExtType.CIE;
             ImageView.OpenImage(fileData.ToWriteableBitmap());
         }
 

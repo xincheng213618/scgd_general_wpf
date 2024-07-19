@@ -216,19 +216,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
                 if (File.Exists(result.FilePath))
                 {
-                    ImageView.Config.FilePath = result.FilePath;
-                    if (CVFileUtil.IsCIEFile(result.FilePath))
-                    {
-                        var FileData = netFileUtil.OpenLocalCVFile(result.FilePath);
-                        OpenImage(FileData);
-                    }
-                    else
-                    {
-                        ImageView.OpenImage(result.FilePath);
-                    }
+                    ImageView.OpenImage(result.FilePath);
                 }
-
-
                 switch (result.ResultType)
                 {
                     case AlgorithmResultType.POI:
@@ -625,7 +614,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         internal void OpenImage(CVCIEFile fileInfo)
         {
-            ImageView.IsCVCIE = fileInfo.FileExtType ==MQTTMessageLib.FileServer.FileExtType.CIE;
             ImageView.OpenImage(fileInfo.ToWriteableBitmap());
         }
 

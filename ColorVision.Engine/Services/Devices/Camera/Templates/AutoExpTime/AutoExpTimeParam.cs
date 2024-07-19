@@ -5,6 +5,7 @@ using cvColorVision;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using Xceed.Wpf.Toolkit.PropertyGrid.Attributes;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam
 {
@@ -19,15 +20,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam
         public bool autoExpFlag { get => GetValue(_autoExpFlag); set { SetProperty(ref _autoExpFlag, value); } }
         private bool _autoExpFlag = true;
 
-        [DisplayName("开始时间")]
+        [DisplayName("开始时间(ms)")]
         public int autoExpTimeBegin { get => GetValue(_autoExpTimeBegin); set { SetProperty(ref _autoExpTimeBegin, value); } }
         private int _autoExpTimeBegin = 10;
 
-        [DisplayName("频率同步")]
+        [DisplayName("频率同步(hz)")]
         public int autoExpSyncFreq { get => GetValue(_autoExpSyncFreq); set { SetProperty(ref _autoExpSyncFreq, value); } }
         private int _autoExpSyncFreq = -1;
 
-        [DisplayName("饱和度")]
+        [DisplayName("饱和度(%)")]
         public int autoExpSaturation { get => GetValue(_autoExpSaturation); set { SetProperty(ref _autoExpSaturation, value); } }
         private int _autoExpSaturation = 70;
 
@@ -43,15 +44,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam
         public int autoExpSatDev { get => GetValue(_autoExpSatDev); set { SetProperty(ref _autoExpSatDev, value); } }
         private int _autoExpSatDev = 20;
 
-        [DisplayName("最大曝光时间")]
+        [DisplayName("最大曝光时间(ms)")]
         public double maxExpTime { get => GetValue(_maxExpTime); set { SetProperty(ref _maxExpTime, value); } }
         private double _maxExpTime = 60000;
 
-        [DisplayName("最小曝光时间")]
+        [DisplayName("最小曝光时间(ms)")]
         public double minExpTime { get => GetValue(_minExpTime); set { SetProperty(ref _minExpTime, value); } }
         private double _minExpTime = 0.2;
 
-        [DisplayName("burst阈值")]
+        [DisplayName("burst阈值(ms)")]
         public int burstThreshold { get => GetValue(_burstThreshold); set { SetProperty(ref _burstThreshold, value); } }
         private int _burstThreshold = 200;
 

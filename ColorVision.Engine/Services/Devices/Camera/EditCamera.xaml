@@ -125,39 +125,39 @@
                     <GroupBox Header="自动曝光参数" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="自动曝光"  Width="80"/>
+                                <TextBlock Text="开始时间(ms)"  Width="80"/>
                                 <TextBox  Text="{Binding ExpTimeCfg.AutoExpTimeBegin}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="自动同步频率"  Width="80"/>
+                                <TextBlock Text="自动同步频率(hz)"  MinWidth="80"/>
                                 <TextBox  Text="{Binding ExpTimeCfg.AutoExpSyncFreq}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="autoExpSaturation"  Width="80"/>
+                                <TextBlock Text="饱和度(%)"  MinWidth="80"/>
                                 <TextBox   Text="{Binding ExpTimeCfg.AutoExpSaturation}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="autoExpSatMaxAD"  Width="80"/>
+                                <TextBlock Text="autoExpSatMaxAD"  MinWidth="80"/>
                                 <TextBox   Text="{Binding ExpTimeCfg.AutoExpSatMaxAD}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="autoExpMaxPecentage"  Width="80"/>
+                                <TextBlock Text="autoExpMaxPecentage"  MinWidth="80"/>
                                 <TextBox   Text="{Binding ExpTimeCfg.AutoExpMaxPecentage}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="autoExpSatDev"  Width="80"/>
+                                <TextBlock Text="autoExpSatDev"  MinWidth="80"/>
                                 <TextBox   Text="{Binding ExpTimeCfg.AutoExpSatDev}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="最大曝光"  Width="80"/>
+                                <TextBlock Text="最大曝光时间(ms)"  MinWidth="80"/>
                                 <TextBox  Text="{Binding ExpTimeCfg.MaxExpTime}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="最小曝光"  Width="80"/>
+                                <TextBlock Text="最小曝光时间(ms)"  MinWidth="80"/>
                                 <TextBox Text="{Binding ExpTimeCfg.MinExpTime}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="burst的阈值"  Width="80"/>
+                                <TextBlock Text="burst的阈值(ms)"  MinWidth="80"/>
                                 <TextBox  Text="{Binding ExpTimeCfg.BurstThreshold}"/>
                             </DockPanel>
                         </StackPanel>

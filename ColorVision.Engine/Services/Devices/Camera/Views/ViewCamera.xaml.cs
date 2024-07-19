@@ -138,7 +138,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         }
 
         private MeasureImgResultDao measureImgResultDao = new();
-        string LocalFileName;
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
             if (arg.Code == 0)
@@ -188,7 +187,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         break;
                     case MQTTFileServerEventEnum.Event_File_Download:
                         DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                        LocalFileName = pm_dl.FileName;
                         if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, pm_dl.FileExtType);
                         break;
                     case MQTTFileServerEventEnum.Event_File_GetChannel:
@@ -289,10 +287,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 var data = ViewResultCameras[listView1.SelectedIndex];
                 if (File.Exists(data.FileUrl))
                 {
-                    LocalFileName = data.FileUrl;
-                    ImageView.Config.FilePath = LocalFileName;
-                    var FileData = netFileUtil.OpenLocalCVFile(data.FileUrl);
-                    OpenImage(FileData);
+                    ImageView.OpenImage(data.FileUrl);
                 }
                 else
                 {
@@ -322,15 +317,16 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         else
                         {
                             ImageView.Config.FilePath = localName;
-                            var FileData = netFileUtil.OpenLocalCVFile(localName, fileExt);
-                            OpenImage(FileData);
+                            ImageView.OpenImage(ImageView.Config.FilePath);
                         }
                     }
                 }
-
+                IsLayers = true;
                 ComboBoxLayers.Text = "Src";
+                IsLayers = false;
             }
         }
+        private bool IsLayers;
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
         {
@@ -342,7 +338,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         }
         public void OpenImage(CVCIEFile fileData)
         {
-            ImageView.IsCVCIE = fileData.FileExtType == FileExtType.CIE;
             ImageView.OpenImage(fileData.ToWriteableBitmap());
         }
 
@@ -452,7 +447,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-           if (sender is ComboBox comboBox && e.AddedItems[0] is ComboBoxItem comboBoxItem )
+           if (sender is ComboBox comboBox && e.AddedItems[0] is ComboBoxItem comboBoxItem  && !IsLayers)
             {
                 if (listView1.SelectedIndex > -1)
                 {
@@ -544,7 +539,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void CalculPOI_Click(object sender, RoutedEventArgs e)
         {
-            if (!ImageView.IsCVCIE)
+            if (!ImageView.Config.IsCVCIE)
             {
                 MessageBox1.Show("仅对CVCIE图像支持");
                 return;
@@ -609,29 +604,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             poiResultCIExyuvData.CCT = CCT;
             poiResultCIExyuvData.Wave = Wave;
             return poiResultCIExyuvData;
-        }
-
-        private void CalculMTF_Click(object sender, RoutedEventArgs e)
-        {
-            if (!ImageView.IsCVCIE)
-            {
-                MessageBox.Show("仅对CVCIE图像支持");
-                return;
-            }
-            if (ComboxPOITemplate.SelectedValue is not PoiParam poiParams)
-            {
-                MessageBox.Show("需要配置关注点");
-                return;
-            }
-
-
-
-
-        }
-
-        private void ToggleButton_Click(object sender, RoutedEventArgs e)
-        {
-
         }
     }
 }

@@ -1,15 +1,16 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Net;
 using ColorVision.UI.Draw;
 using ColorVision.UI.Draw.Ruler;
-using ColorVision.Net;
 using ColorVision.UI.Views;
 using ColorVision.Util.Draw.Special;
 using cvColorVision;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
+using ScottPlot.Drawing.Colormaps;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -32,20 +33,18 @@ namespace ColorVision.Engine.Media
     public class ImageViewConfig:ViewModelBase
     {
         [JsonIgnore]
+        public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); } }
+        private string _FilePath;
+
+        [JsonIgnore]
         public IntPtr ConvertXYZhandle { get; set; } = Tool.GenerateRandomIntPtr();
 
         [JsonIgnore]
         public bool ConvertXYZhandleOnce { get; set; }
 
-        public ColormapTypes ColormapTypes { get => _ColormapTypes; set { _ColormapTypes = value; NotifyPropertyChanged(); } }
-        private ColormapTypes _ColormapTypes = ColormapTypes.COLORMAP_JET;
-
-       [JsonIgnore]
-        public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsCVCIE));  } }
-        private string _FilePath;
-
         [JsonIgnore]
-        public bool IsCVCIE { get => FilePath != null && FilePath.Contains("cvcie") && CVFileUtil.IsCIEFile(FilePath);  }
+        public bool IsCVCIE { get => _IsCVCIE; set { _IsCVCIE = value; NotifyPropertyChanged(); }  }
+        private bool _IsCVCIE;
 
         [JsonIgnore]
         public int Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsChannel1)); NotifyPropertyChanged(nameof(IsChannel3)); } }
@@ -58,6 +57,9 @@ namespace ColorVision.Engine.Media
 
         public bool IsShowLoadImage { get => _IsShowLoadImage; set { _IsShowLoadImage = value; NotifyPropertyChanged(); } }
         private bool _IsShowLoadImage = true;
+
+        public ColormapTypes ColormapTypes { get => _ColormapTypes; set { _ColormapTypes = value; NotifyPropertyChanged(); } }
+        private ColormapTypes _ColormapTypes = ColormapTypes.COLORMAP_JET;
     }
 
 
@@ -81,6 +83,7 @@ namespace ColorVision.Engine.Media
         }
 
         private static readonly ILog logger = LogManager.GetLogger(typeof(ImageView));
+
         public ToolBarTop ToolBarTop { get; set; }
 
         public View View { get; set; }
@@ -108,6 +111,7 @@ namespace ColorVision.Engine.Media
         /// </summary>
         public void NotifyPropertyChanged([CallerMemberName] string propertyName = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
+
         public ObservableCollection<IDrawingVisual> DrawingVisualLists { get; set; } = new ObservableCollection<IDrawingVisual>();
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -119,14 +123,11 @@ namespace ColorVision.Engine.Media
             ListView1.ItemsSource = DrawingVisualLists;
 
             ToolBarTop.ClearImageEventHandler += Clear;
-            Focusable = true;
             Zoombox1.LayoutUpdated += Zoombox1_LayoutUpdated;
             ImageShow.VisualsAdd += ImageShow_VisualsAdd;
             ImageShow.VisualsRemove += ImageShow_VisualsRemove;
             PreviewKeyDown += ImageView_PreviewKeyDown;
             this.MouseDown += (s, e) => this.Focus();
-
-            AllowDrop = true;
             Drop += ImageView_Drop;
 
         }
@@ -198,30 +199,13 @@ namespace ColorVision.Engine.Media
                 var sarr = e.Data.GetData(DataFormats.FileDrop);
                 var a = sarr as string[];
                 var fn = a?.First();
-
                 if (File.Exists(fn))
                 {
-                    if (fn.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
-                    {
-                        CVFileUtil.ReadCVRaw(fn, out CVCIEFile fileInfo);
-                        OpenImage(fileInfo.ToWriteableBitmap());
-                    }
-                    else if (Tool.IsImageFile(fn))
-                    {
-                        OpenImage(fn);
-                    }
-                    else if (File.Exists(fn))
-                    {
-                        PlatformHelper.Open(fn);
-                    }
-
-                }
-                else if (Directory.Exists(fn))
-                {
-
+                    OpenImage(fn);
                 }
             }
         }
+
 
         private void Zoombox1_LayoutUpdated(object? sender, EventArgs e)
         {
@@ -237,6 +221,8 @@ namespace ColorVision.Engine.Media
             using DrawingContext dc = drawingVisual.RenderOpen();
             dc.DrawRectangle(new SolidColorBrush((Color)ColorConverter.ConvertFromString("#77F3F3F3")), new Pen(Brushes.Blue, 1), rect);
         }
+
+
         private DrawingVisual SelectRect = new();
 
         private bool IsMouseDown;
@@ -557,7 +543,6 @@ namespace ColorVision.Engine.Media
                 HImageCache = null;
             }
             GC.Collect();
-
             int result = ConvertXYZ.CM_ReleaseBuffer(Config.ConvertXYZhandle);
         }
 
@@ -567,8 +552,34 @@ namespace ColorVision.Engine.Media
                 SetImageSource(writeableBitmap);
         }
 
+        public void CVCIESetBuffer(string filePath)
+        {
+            if (!Config.ConvertXYZhandleOnce)
+            {
+                int result = ConvertXYZ.CM_InitXYZ(Config.ConvertXYZhandle);
+                logger.Info($"ConvertXYZ.CM_InitXYZ :{result}");
+                Config.ConvertXYZhandleOnce = true;
+            }
+            Config.FilePath = filePath;
+            if (File.Exists(filePath) && CVFileUtil.IsCIEFile(filePath))
+            {
+                int index = CVFileUtil.ReadCIEFileHeader(Config.FilePath, out CVCIEFile meta);
+                if (meta.FileExtType == FileExtType.CIE)
+                {
+                    Config.IsCVCIE = true;
+                    CVFileUtil.ReadCIEFileData(Config.FilePath, ref meta, index);
+                    int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(Config.ConvertXYZhandle, (uint)meta.rows, (uint)meta.cols, (uint)meta.bpp, (uint)meta.channels, meta.data);
+                    logger.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
+                    ToolBarTop.MouseMagnifier.MouseMoveColorHandler -= ShowCVCIE;
+                    ToolBarTop.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
+                }
+            }
+        }
+
         public void OpenImage(string? filePath)
         {
+            ToolBarTop.MouseMagnifier.MouseMoveColorHandler -= ShowCVCIE;
+            Config.IsCVCIE = false;
             if (filePath != null && File.Exists(filePath))
             {
                 long fileSize = new FileInfo(filePath).Length;
@@ -578,7 +589,7 @@ namespace ColorVision.Engine.Media
                 if (ext.Contains(".cvraw") || ext.Contains(".cvsrc") || ext.Contains(".cvcie"))
                 {
                     FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
-                    IsCVCIE = fileExtType == FileExtType.CIE;
+                    CVCIESetBuffer(filePath);
                     try
                     {
                         if (Config.IsShowLoadImage && isLargeFile)
@@ -587,7 +598,6 @@ namespace ColorVision.Engine.Media
                             Task.Run(() =>
                             {
                                 CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath, fileExtType);
-                                Config.FilePath = filePath;
                                 Application.Current.Dispatcher.Invoke(() =>
                                 {
                                     OpenImage(cVCIEFile.ToWriteableBitmap());
@@ -599,7 +609,6 @@ namespace ColorVision.Engine.Media
                         else
                         {
                             CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath, fileExtType);
-                            Config.FilePath = filePath;
                             OpenImage(cVCIEFile.ToWriteableBitmap());
                         };
                     }
@@ -645,6 +654,9 @@ namespace ColorVision.Engine.Media
 
                 }
             }
+
+
+
         }
 
 
@@ -664,30 +676,33 @@ namespace ColorVision.Engine.Media
 
         public HImage? HImageCache { get; set; }
 
-
-        private void SetImageSource(BitmapImage writeableBitmap)
+        private void SetImageSource(ImageSource imageSource)
         {
             if (HImageCache != null)
             {
                 HImageCache?.Dispose();
                 HImageCache = null;
             };
-            Task.Run(() => Application.Current.Dispatcher.Invoke((() => HImageCache = writeableBitmap.ToHImage())));
-           
+
+            if (imageSource is WriteableBitmap writeableBitmap)
+            {
+                Task.Run(() => Application.Current.Dispatcher.Invoke((() =>
+                {
+                    HImageCache = writeableBitmap.ToHImage();
+                    if (HImageCache is HImage hImage)
+                    {
+                        Config.Channel = hImage.channels;
+                    }
+                }
+)));
+            }
+
+
+
             ToolBarTop.PseudoVisible = Visibility.Visible;
 
-            PseudoSlider.ValueChanged -= RangeSlider1_ValueChanged;
-            PseudoSlider.ValueChanged += RangeSlider1_ValueChanged;
 
-            if (HImageCache?.channels == 1)
-            {
-                ToolBarTop.CIEVisible = Visibility.Collapsed;
-            }
-            else
-            {
-                ToolBarTop.CIEVisible = Visibility.Visible;
-            }
-            ViewBitmapSource = writeableBitmap;
+            ViewBitmapSource = imageSource;
             ImageShow.Source = ViewBitmapSource;
 
             Task.Run(() => {
@@ -697,69 +712,9 @@ namespace ColorVision.Engine.Media
                     ToolBarTop.ToolBarScaleRuler.Render();
                 });
             });
-            ToolBar1.Visibility = Visibility.Visible;
+
             ImageShow.ImageInitialize();
             ToolBarTop.ToolBarScaleRuler.IsShow = true;
-        }
-
-        private void SetImageSource(WriteableBitmap writeableBitmap)
-        {
-            if (HImageCache != null)
-            {
-                HImageCache?.Dispose();
-                HImageCache = null;
-            };
-
-            Task.Run(() => Application.Current.Dispatcher.Invoke((() =>
-            {
-                HImageCache = writeableBitmap.ToHImage();
-                if (HImageCache is HImage hImage)
-                {
-                    Config.Channel = hImage.channels;
-                }
-            }
-            )));
-
-            ToolBarTop.PseudoVisible = Visibility.Visible;
-
-            PseudoSlider.ValueChanged -= RangeSlider1_ValueChanged;
-            PseudoSlider.ValueChanged += RangeSlider1_ValueChanged;
-
-
-            ViewBitmapSource = writeableBitmap;
-            ImageShow.Source = ViewBitmapSource;
-
-            Task.Run(() => {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    Zoombox1.ZoomUniform();
-                    ToolBarTop.ToolBarScaleRuler.Render();
-                });
-            });
-            ToolBar1.Visibility = Visibility.Visible;
-            ImageShow.ImageInitialize();
-            ToolBarTop.ToolBarScaleRuler.IsShow = true;
-
-            ToolBarTop.MouseMagnifier.MouseMoveColorHandler -= ShowCVCIE;
-
-            if (Config.IsCVCIE)
-            {
-                if (!Config.ConvertXYZhandleOnce)
-                {
-                    int result = ConvertXYZ.CM_InitXYZ(Config.ConvertXYZhandle);
-                    logger.Info($"ConvertXYZ.CM_InitXYZ :{result}");
-                    Config.ConvertXYZhandleOnce = true;
-                }
-
-
-                int index = CVFileUtil.ReadCIEFileHeader(Config.FilePath, out CVCIEFile cVCIEFile);
-                CVFileUtil.ReadCIEFileData(Config.FilePath, ref cVCIEFile, index);
-
-                int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(Config.ConvertXYZhandle, (uint)cVCIEFile.rows, (uint)cVCIEFile.cols, (uint)cVCIEFile.bpp, (uint)cVCIEFile.channels, cVCIEFile.data);
-                logger.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
-
-                ToolBarTop.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
-            }
         }
         public ImageSource PseudoImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
@@ -811,7 +766,6 @@ namespace ColorVision.Engine.Media
             }
             
         }
-
 
         public void AddVisual(Visual visual) => ImageShow.AddVisual(visual);
 
@@ -882,14 +836,6 @@ namespace ColorVision.Engine.Media
             });
         }
 
-        private void RangeSlider1_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
-        {
-            RowDefinitionStart.Height = new GridLength((170.0 / 255.0) * (255 - PseudoSlider.ValueEnd));
-            RowDefinitionEnd.Height = new GridLength((170.0 / 255.0) * PseudoSlider.ValueStart);
-            DebounceTimer.AddOrResetTimer("RenderPseudo",100, RenderPseudo);
-        }
-        public bool IsCVCIE { get => _IsCVCIE; set { _IsCVCIE = value; NotifyPropertyChanged(); } }
-        private bool _IsCVCIE;
         private bool disposedValue;
 
         public void ShowCVCIE(object sender, ImageInfo imageInfo)
@@ -902,7 +848,8 @@ namespace ColorVision.Engine.Media
             ToolBarTop.MouseMagnifier.DrawImageCVCIE(imageInfo, dXVal, dYVal, dZVal, dx, dy, du, dv);
         }
 
-        private WindowCIE windowCIE = null;
+
+        private WindowCIE windowCIE;
 
         private void ButtonCIE1931_Click(object sender, RoutedEventArgs e)
         {
@@ -911,119 +858,52 @@ namespace ColorVision.Engine.Media
 
             if (windowCIE == null)
             {
-                windowCIE = new WindowCIE();
-                windowCIE.Owner = Window.GetWindow(this);
-
-                MouseMoveColorHandler mouseMoveColorHandler = (s, e) =>
+                windowCIE = new WindowCIE() { Owner = Application.Current.GetActiveWindow() };
+                void mouseMoveColorHandler(object s, ImageInfo e)
                 {
-                    if (IsCVCIE)
+                    if (Config.IsCVCIE)
                     {
-                        try
-                        {
-                            int xx = e.X;
-                            int yy = e.Y;
-                            float dXVal = 0;
-                            float dYVal = 0;
-                            float dZVal = 0;
-                            float dx = 0, dy = 0, du = 0, dv = 0;
-
-                            int result = ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZ.Handle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
-                            logger.Debug($"CM_GetXYZxyuvRect :{result},res");
-
-                            windowCIE.ChangeSelect(dx, dy);
-                        }
-                        catch
-                        {
-                            // Handle exception
-                        }
+                        int xx = e.X;
+                        int yy = e.Y;
+                        float dXVal = 0;
+                        float dYVal = 0;
+                        float dZVal = 0;
+                        float dx = 0, dy = 0, du = 0, dv = 0;
+                        int result = ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
+                        logger.Debug($"CM_GetXYZxyuvRect :{result},res");
+                        windowCIE.ChangeSelect(dx, dy);
                     }
                     else
                     {
                         windowCIE.ChangeSelect(e);
                     }
-                };
+                }
 
                 ToolBarTop.MouseMagnifier.MouseMoveColorHandler += mouseMoveColorHandler;
-
                 windowCIE.Closed += (s, e) =>
                 {
                     ToolBarTop.MouseMagnifier.MouseMoveColorHandler -= mouseMoveColorHandler;
                     ToolBarTop.ShowImageInfo = old;
-                    windowCIE = null; // Reset the reference when the window is closed
+                    windowCIE = null;
                 };
             }
-
             windowCIE.Show();
-            windowCIE.Activate(); // Bring the window to the front if it is already open
+            windowCIE.Activate();
         }
+
+
         private void HistogramButton_Click(object sender, RoutedEventArgs e)
         {
-            RenderHistogram();
-        }
-        private static void DrawHistogram(int[] histogram, Color color, DrawingContext drawingContext, double width, double height)
-        {
-            double max = histogram.Max();
-            double scale = height / max;
+            if (ImageShow.Source is not BitmapSource bitmapSource)  return;
 
-            Pen pen = new Pen(new SolidColorBrush(color), 1);
-
-            for (int i = 0; i < histogram.Length; i++)
-            {
-                double x = i * (width / 256);
-                double y = height - (histogram[i] * scale);
-                drawingContext.DrawLine(pen, new Point(x, height), new Point(x, y));
-            }
-        }
-
-
-        private void RenderHistogram()
-        {
-            if (ImageShow.Source is not BitmapSource bitmapSource)
-                return;
-
-            int width = bitmapSource.PixelWidth;
-            int height = bitmapSource.PixelHeight;
-            int stride = width * ((bitmapSource.Format.BitsPerPixel + 7) / 8);
-            byte[] pixelData = new byte[height * stride];
-            bitmapSource.CopyPixels(pixelData, stride, 0);
-
-            int[] redHistogram = new int[256];
-            int[] greenHistogram = new int[256];
-            int[] blueHistogram = new int[256];
-
-            for (int i = 0; i < pixelData.Length; i += 4) // Assuming a 32bpp image
-            {
-                byte blue = pixelData[i];
-                byte green = pixelData[i + 1];
-                byte red = pixelData[i + 2];
-
-                redHistogram[red]++;
-                greenHistogram[green]++;
-                blueHistogram[blue]++;
-            }
-
-            DrawingVisual drawingVisual = new DrawingVisual();
-            using (DrawingContext drawingContext = drawingVisual.RenderOpen())
-            {
-                double width1 = 256; // Width of the histogram
-                double height1 = 100; // Height of the histogram
-
-                // Draw each color channel histogram
-                DrawHistogram(redHistogram, Colors.Red, drawingContext, width1, height1);
-                DrawHistogram(greenHistogram, Colors.Green, drawingContext, width1, height1);
-                DrawHistogram(blueHistogram, Colors.Blue, drawingContext, width1, height1);
-            }
-
-            RenderTargetBitmap bmp = new RenderTargetBitmap(256, 100, 96, 96, PixelFormats.Pbgra32);
-            bmp.Render(drawingVisual);
-
+            var bmp= ImageUtils.RenderHistogram(bitmapSource);
             Image image = new Image() { Margin = new Thickness(5) };
-
-            image.Source = bmp; // histogramImage is an Image control in your XAML
+            image.Source = bmp;
             Window window = new Window() { Width = 256, Height = 170 };
             window.Content = image;
             window.Show();
         }
+
 
         protected virtual void Dispose(bool disposing)
         {
@@ -1043,8 +923,6 @@ namespace ColorVision.Engine.Media
                 disposedValue = true;
             }
         }
-
-
         public void Dispose()
         {
             Dispose(disposing: true);
