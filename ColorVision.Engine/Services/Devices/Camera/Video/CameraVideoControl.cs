@@ -30,7 +30,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
 
         private void Reader_OnFrameRecv(System.Drawing.Bitmap bmp)
         {
-            if (bmp != null)
+            if (bmp != null && Application.Current !=null)
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
