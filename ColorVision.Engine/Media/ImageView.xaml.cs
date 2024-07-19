@@ -693,14 +693,8 @@ namespace ColorVision.Engine.Media
                     {
                         Config.Channel = hImage.channels;
                     }
-                }
-)));
+                })));
             }
-
-
-
-            ToolBarTop.PseudoVisible = Visibility.Visible;
-
 
             ViewBitmapSource = imageSource;
             ImageShow.Source = ViewBitmapSource;

@@ -20,10 +20,10 @@
             </draw:ZoomboxSub>
             <ToolBarTray DockPanel.Dock="Top" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Center">
                 <ToolBar x:Name="ToolBar1" DataContext="{Binding ToolBarTop}"  Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  Background="#AAFFFFFF" ToolBarTray.IsLocked="True" >
-                    <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding Activate}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
+                    <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding ImageEditMode}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
                     </ToggleButton>
-                    <ToggleButton x:Name="ToggleButtonMouse"  IsChecked="{Binding CrosshairFunction}" >
+                    <ToggleButton x:Name="ToggleButtonMouse"  IsChecked="{Binding ShowImageInfo}" >
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMouse}"  Margin="-5"/>
                     </ToggleButton>
                     <Button Command="{Binding ZoomUniform}"  Margin="1,0">
@@ -39,20 +39,20 @@
                         <Image  Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageexpend}"  Margin="-5"/>
                     </Button>
                     <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
-                    <ToggleButton  IsChecked="{Binding Measure}" Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}">
+                    <ToggleButton  IsChecked="{Binding Measure}" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageruler}"  Margin="-5"/>
                     </ToggleButton>
-                    <ToggleButton  IsChecked="{Binding EraseVisual}" Margin="1,0" Click="Button7_Click" Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}">
+                    <ToggleButton  IsChecked="{Binding EraseVisual}" Margin="1,0" Click="Button7_Click" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageeraser}"  Margin="-5"/>
                     </ToggleButton>
 
-                    <ToggleButton IsChecked="{Binding DrawCircle}" Margin="1,0" Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}">
+                    <ToggleButton IsChecked="{Binding DrawCircle}" Margin="1,0" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageCircle}"  Margin="-5"/>
                     </ToggleButton>
-                    <ToggleButton IsChecked="{Binding DrawRect}" Margin="1,0" Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}">
+                    <ToggleButton IsChecked="{Binding DrawRect}" Margin="1,0" Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}">
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageRect}"  Margin="-5"/>
                     </ToggleButton>
-                    <ToggleButton IsChecked="{Binding DrawPolygon}"  Visibility="{Binding Activate,Converter={StaticResource bool2VisibilityConverter}}"  >
+                    <ToggleButton IsChecked="{Binding DrawPolygon}"  Visibility="{Binding ImageEditMode,Converter={StaticResource bool2VisibilityConverter}}"  >
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}"  Margin="-5"/>
                     </ToggleButton>
                 </ToolBar>

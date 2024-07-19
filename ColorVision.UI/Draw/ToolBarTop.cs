@@ -404,13 +404,6 @@ namespace ColorVision.UI.Draw
             }
         }
 
-        public Visibility PseudoVisible { get => _PseudoVisible; set { _PseudoVisible = value; NotifyPropertyChanged(); } }
-        private Visibility _PseudoVisible = Visibility.Visible;
-
-        public Visibility CIEVisible { get => _CIEVisible; set { _CIEVisible = value; NotifyPropertyChanged(); } }
-        private Visibility _CIEVisible = Visibility.Visible;
-
-
         /// <summary>
         /// 当前的缩放分辨率
         /// </summary>
