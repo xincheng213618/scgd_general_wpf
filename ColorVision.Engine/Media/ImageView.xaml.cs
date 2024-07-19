@@ -755,7 +755,7 @@ namespace ColorVision.Engine.Media
                 int index = CVFileUtil.ReadCIEFileHeader(Config.FilePath, out CVCIEFile cVCIEFile);
                 CVFileUtil.ReadCIEFileData(Config.FilePath, ref cVCIEFile, index);
 
-                int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(ConvertXYZ.Handle, (uint)cVCIEFile.rows, (uint)cVCIEFile.cols, (uint)cVCIEFile.bpp, (uint)cVCIEFile.channels, cVCIEFile.data);
+                int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(Config.ConvertXYZhandle, (uint)cVCIEFile.rows, (uint)cVCIEFile.cols, (uint)cVCIEFile.bpp, (uint)cVCIEFile.channels, cVCIEFile.data);
                 logger.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
 
                 ToolBarTop.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
@@ -898,52 +898,63 @@ namespace ColorVision.Engine.Media
             float dYVal = 0;
             float dZVal = 0;
             float dx = 0, dy = 0, du = 0, dv = 0;
-            _= ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZ.Handle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
+            _= ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
             ToolBarTop.MouseMagnifier.DrawImageCVCIE(imageInfo, dXVal, dYVal, dZVal, dx, dy, du, dv);
         }
 
+        private WindowCIE windowCIE = null;
 
         private void ButtonCIE1931_Click(object sender, RoutedEventArgs e)
         {
             bool old = ToolBarTop.ShowImageInfo;
-            ToolBarTop.ShowImageInfo = true; 
-            WindowCIE windowCIE = new();
-            windowCIE.Owner = Window.GetWindow(this);
-            MouseMoveColorHandler mouseMoveColorHandler = (s, e) =>
+            ToolBarTop.ShowImageInfo = true;
+
+            if (windowCIE == null)
             {
-                if (IsCVCIE) 
+                windowCIE = new WindowCIE();
+                windowCIE.Owner = Window.GetWindow(this);
+
+                MouseMoveColorHandler mouseMoveColorHandler = (s, e) =>
                 {
-                    try
+                    if (IsCVCIE)
                     {
-                        int xx = e.X;
-                        int yy = e.Y;
-                        float dXVal = 0;
-                        float dYVal = 0;
-                        float dZVal = 0;
-                        float dx =0, dy =0,du = 0,dv = 0;
+                        try
+                        {
+                            int xx = e.X;
+                            int yy = e.Y;
+                            float dXVal = 0;
+                            float dYVal = 0;
+                            float dZVal = 0;
+                            float dx = 0, dy = 0, du = 0, dv = 0;
 
-                        int result = ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZ.Handle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
-                        logger.Debug($"CM_GetXYZxyuvRect :{result},res");
+                            int result = ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZ.Handle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
+                            logger.Debug($"CM_GetXYZxyuvRect :{result},res");
 
-                        windowCIE.ChangeSelect(dx, dy);
+                            windowCIE.ChangeSelect(dx, dy);
+                        }
+                        catch
+                        {
+                            // Handle exception
+                        }
                     }
-                    catch 
+                    else
                     {
-
+                        windowCIE.ChangeSelect(e);
                     }
-                }
-                else
+                };
+
+                ToolBarTop.MouseMagnifier.MouseMoveColorHandler += mouseMoveColorHandler;
+
+                windowCIE.Closed += (s, e) =>
                 {
-                    windowCIE.ChangeSelect(e);
-                }
-            };
-            ToolBarTop.MouseMagnifier.MouseMoveColorHandler += mouseMoveColorHandler;
-            windowCIE.Closed += (s, e) =>
-            {
-                ToolBarTop.MouseMagnifier.MouseMoveColorHandler -= mouseMoveColorHandler;
-                ToolBarTop.ShowImageInfo = old;
-            };
+                    ToolBarTop.MouseMagnifier.MouseMoveColorHandler -= mouseMoveColorHandler;
+                    ToolBarTop.ShowImageInfo = old;
+                    windowCIE = null; // Reset the reference when the window is closed
+                };
+            }
+
             windowCIE.Show();
+            windowCIE.Activate(); // Bring the window to the front if it is already open
         }
         private void HistogramButton_Click(object sender, RoutedEventArgs e)
         {
