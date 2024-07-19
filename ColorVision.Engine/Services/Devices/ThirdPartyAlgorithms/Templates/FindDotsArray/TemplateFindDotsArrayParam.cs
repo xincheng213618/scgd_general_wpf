@@ -1,14 +1,10 @@
 ﻿using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
-using ColorVision.Engine.Services.SysDictionary;
 using ColorVision.Engine.Templates;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Net.Http.Headers;
 using System.Windows.Controls;
 
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.FindDotsArray

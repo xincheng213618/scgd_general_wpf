@@ -58,6 +58,8 @@ namespace ColorVision.Engine.Services.Templates.POI
 
             ComboBoxValidate.ItemsSource = TemplateComplyParam.Params["Comply.CIE.AVG"]?.CreateEmpty();
             ComboBoxValidateCIE.ItemsSource = TemplateComplyParam.Params["Comply.CIE"]?.CreateEmpty();
+
+
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()  select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
 

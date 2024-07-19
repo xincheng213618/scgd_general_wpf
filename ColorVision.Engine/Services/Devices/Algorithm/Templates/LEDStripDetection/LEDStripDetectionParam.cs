@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
@@ -47,5 +48,24 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetect
         [Category("LEDStripDetection"), Description("binaryPercentage")]
         public int BinaryPercentage { get => GetValue(_BinaryPercentage); set { SetProperty(ref _BinaryPercentage, value); } }
         private int _BinaryPercentage = 10;
+
+        public int ValidateCIEAVGId { get => _ValidateId; set { _ValidateId = value; NotifyPropertyChanged(); } }
+        private int _ValidateId;
+
+        public int ValidateCIEId { get => _ValidateCIEId; set { _ValidateCIEId = value; NotifyPropertyChanged(); } }
+        private int _ValidateCIEId;
+
+        public RelayCommand ValidateCIEAVGCommand => new RelayCommand(a =>
+        {
+            var Template = new TemplateComplyParam("Comply.CIE.AVG");
+            new WindowTemplate(Template, Template.FindIndex(ValidateCIEAVGId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        });
+
+        public RelayCommand ValidateCIECommand => new RelayCommand(a =>
+        {
+            var Template = new TemplateComplyParam("Comply.CIE");
+            new WindowTemplate(Template, Template.FindIndex(ValidateCIEAVGId)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+        });
+
     }
 }
