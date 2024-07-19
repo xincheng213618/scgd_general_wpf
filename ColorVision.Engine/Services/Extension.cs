@@ -18,7 +18,7 @@ namespace ColorVision.Engine.Services
             {
                 if (disPlayControl.IsSelected)
                 {
-                    border.BorderBrush = ImageUtil.ConvertFromString(ThemeManager.Current.CurrentUITheme switch
+                    border.BorderBrush = ImageUtils.ConvertFromString(ThemeManager.Current.CurrentUITheme switch
                     {
                         Theme.Light => "#5649B0",
                         Theme.Dark => "#A79CF1",
@@ -36,6 +36,18 @@ namespace ColorVision.Engine.Services
             disPlayControl.SelectChanged += (s, e) => UpdateDisPlayBorder();
             ThemeManager.Current.CurrentUIThemeChanged += (s) => UpdateDisPlayBorder();
             UpdateDisPlayBorder();
+
+            if (disPlayControl is UserControl userControl)
+                userControl.PreviewMouseDown += (s, e) =>
+                {
+                    if (userControl.Parent is StackPanel stackPanel)
+                    {
+                        if (stackPanel.Tag is IDisPlayControl lastDisPlayControl)
+                            lastDisPlayControl.IsSelected = false;
+                        stackPanel.Tag = userControl;
+                        disPlayControl.IsSelected = true;
+                    }
+                };
         }
 
         public static void AddViewConfig(this UserControl userControl, IView view, ComboBox comboBox)

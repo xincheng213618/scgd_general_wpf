@@ -1,9 +1,6 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.Media;
+﻿using ColorVision.Engine.Media;
 using ColorVision.Net;
-using ColorVision.Themes;
 using ColorVision.UI;
-using ColorVision.UI.Views;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
@@ -13,7 +10,6 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 
 
@@ -27,7 +23,7 @@ namespace ColorVision.Engine.Services.Devices.FileServer
         private static readonly ILog logger = LogManager.GetLogger(typeof(FileServerDisplayControl));
         public DeviceFileServer DeviceFileServer { get; set; }
 
-        public MQTTFileServer MQTTFileServer { get => DeviceFileServer.MQTTFileServer; }
+        public MQTTFileServer MQTTFileServer { get => DeviceFileServer.DService; }
         public string DisPlayName => DeviceFileServer.Config.Name;
 
         public ImageView View { get => DeviceFileServer.View; }
@@ -42,9 +38,8 @@ namespace ColorVision.Engine.Services.Devices.FileServer
             netFileUtil = new NetFileUtil(string.Empty);
             netFileUtil.handler += NetFileUtil_handler;
 
-            DeviceFileServer.MQTTFileServer.OnImageData += Service_OnImageData;
+            DeviceFileServer.DService.OnImageData += Service_OnImageData;
 
-            PreviewMouseDown += UserControl_PreviewMouseDown;
             this.ApplyChangedSelectedColor(DisPlayBorder);
         }
 
@@ -54,25 +49,13 @@ namespace ColorVision.Engine.Services.Devices.FileServer
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
-
-        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (Parent is StackPanel stackPanel)
-            {
-                if (stackPanel.Tag is IDisPlayControl disPlayControl)
-                    disPlayControl.IsSelected = false;
-                stackPanel.Tag = this;
-                IsSelected = true;
-            }
-        }
-
         private void NetFileUtil_handler(object sender, NetFileEvent arg)
         {
             if (arg.Code == 0 && arg.FileData.data != null)
             {
                 Application.Current.Dispatcher.Invoke(() =>
                 {
-                    View.OpenImage(arg.FileData);
+                    View.OpenImage(arg.FileData.ToWriteableBitmap());
                 });
             }
             handler?.Close();

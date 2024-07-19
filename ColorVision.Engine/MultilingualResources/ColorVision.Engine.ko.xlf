@@ -23,6 +23,14 @@
           <source>添加</source>
           <target state="new">추가하다</target>
         </trans-unit>
+        <trans-unit id="AddPhysicalCamera" translate="yes" xml:space="preserve">
+          <source>添加物理相机</source>
+          <target state="new">실제 카메라 추가</target>
+        </trans-unit>
+        <trans-unit id="AddUncreatedCamera" translate="yes" xml:space="preserve">
+          <source>添加未创建的相机</source>
+          <target state="new">생성되지 않은 카메라 추가</target>
+        </trans-unit>
         <trans-unit id="AdvanceSearch" translate="yes" xml:space="preserve">
           <source>高级查询</source>
           <target state="new">고급 검색</target>
@@ -38,6 +46,10 @@
         <trans-unit id="Alias" translate="yes" xml:space="preserve">
           <source>别名</source>
           <target state="new">별명</target>
+        </trans-unit>
+        <trans-unit id="AutoExploreTemplate" translate="yes" xml:space="preserve">
+          <source>自动曝光模板</source>
+          <target state="new">자동 노출 템플릿</target>
         </trans-unit>
         <trans-unit id="AutoExposure" translate="yes" xml:space="preserve">
           <source>自动曝光</source>
@@ -354,6 +366,10 @@
         <trans-unit id="Layers" translate="yes" xml:space="preserve">
           <source>图层</source>
           <target state="new">레이어</target>
+        </trans-unit>
+        <trans-unit id="LicenseImport" translate="yes" xml:space="preserve">
+          <source>许可证导入</source>
+          <target state="new">라이센스 가져오기</target>
         </trans-unit>
         <trans-unit id="LicenseManagement" translate="yes" xml:space="preserve">
           <source>许可证管理</source>

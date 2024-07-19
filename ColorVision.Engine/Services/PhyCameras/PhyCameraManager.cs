@@ -1,6 +1,7 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera;
@@ -36,7 +37,6 @@ namespace ColorVision.Engine.Services.PhyCameras
             MySqlControl.GetInstance().MySqlConnectChanged += (s, e) => LoadPhyCamera();
             if (MySqlControl.GetInstance().IsConnect)
                 LoadPhyCamera();
-
             ImportCommand = new RelayCommand(a => Import());
         }
 

@@ -1,12 +1,12 @@
-﻿using ColorVision.Common.Extension;
-using ColorVision.Common.Utilities;
-using ColorVision.Draw;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.UI.Draw;
 using ColorVision.Engine.MySql;
+using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
-using ColorVision.Engine.Templates.POI.Validate;
+using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.Net;
-using ColorVision.Engine.Services.Dao;
+using ColorVision.Themes;
 using ColorVision.Util.Draw.Rectangle;
 using cvColorVision;
 using cvColorVision.Util;
@@ -17,7 +17,6 @@ using OpenCvSharp.WpfExtensions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -29,7 +28,6 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using ColorVision.Themes;
 
 namespace ColorVision.Engine.Services.Templates.POI
 {
@@ -58,8 +56,8 @@ namespace ColorVision.Engine.Services.Templates.POI
             ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>() select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType.SelectedIndex = 0;
 
-            ComboBoxValidate.ItemsSource = TemplateValidateCIEAVGParam.CIEAVGParams.CreateEmpty();
-            ComboBoxValidateCIE.ItemsSource = ValidateParam.CIEParams.CreateEmpty();
+            ComboBoxValidate.ItemsSource = TemplateComplyParam.Params["Comply.CIE.AVG"]?.CreateEmpty();
+            ComboBoxValidateCIE.ItemsSource = TemplateComplyParam.Params["Comply.CIE"]?.CreateEmpty();
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()  select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
 
@@ -299,14 +297,14 @@ namespace ColorVision.Engine.Services.Templates.POI
                         OpenCvSharp.Mat src;
                         if (fileInfo.bpp != 8)
                         {
-                            OpenCvSharp.Mat temp = new(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
+                            OpenCvSharp.Mat temp = OpenCvSharp.Mat.FromPixelData(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
                             src = new OpenCvSharp.Mat();
                             temp.ConvertTo(src, OpenCvSharp.MatType.CV_8U, 1.0 / 256.0);
                             temp.Dispose();
                         }
                         else
                         {
-                             src = new OpenCvSharp.Mat(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
+                             src = OpenCvSharp.Mat.FromPixelData(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
                         }
 
                         BitmapSource bitmapSource = src.ToBitmapSource();
@@ -340,7 +338,7 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             Thread thread = new(() => 
             {
-                BitmapImage bitmapImage = ImageUtil.CreateSolidColorBitmap(width, height, color);
+                BitmapImage bitmapImage = ImageUtils.CreateSolidColorBitmap(width, height, color);
                 bitmapImage.Freeze();
                 Application.Current.Dispatcher.Invoke(() =>
                 {
@@ -623,7 +621,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     Circle.Attribute.Brush = Brushes.Transparent;
                                     Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                     Circle.Attribute.ID = start + i + 1;
-                                    Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
+                                    Circle.Attribute.Name = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
                                     Circle.Render();
                                     ImageShow.AddVisual(Circle);
                                     break;
@@ -776,7 +774,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         Circle.Attribute.Brush = Brushes.Transparent;
                                         Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                         Circle.Attribute.ID = start + i * cols + j + 1;
-                                        Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
+                                        Circle.Attribute.Name = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
                                         Circle.Render();
                                         ImageShow.AddVisual(Circle);
                                         break;
@@ -841,7 +839,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         Circle.Attribute.Brush = Brushes.Transparent;
                                         Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                         Circle.Attribute.ID = start + i * cols + j + 1;
-                                        Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
+                                        Circle.Attribute.Name = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
                                         Circle.Render();
                                         ImageShow.AddVisual(Circle);
                                         break;
@@ -885,7 +883,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         Circle.Attribute.Brush = Brushes.Transparent;
                                         Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                         Circle.Attribute.ID = start + No;
-                                        Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
+                                        Circle.Attribute.Name = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
                                         Circle.Render();
                                         ImageShow.AddVisual(Circle);
                                         break;
@@ -921,7 +919,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         Circle.Attribute.Brush = Brushes.Transparent;
                                         Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                         Circle.Attribute.ID = start + i + 1;
-                                        Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
+                                        Circle.Attribute.Name = string.Format("{0}{1}", TagName, Circle.Attribute.ID);
                                         Circle.Render();
                                         ImageShow.AddVisual(Circle);
                                         break;
@@ -1158,29 +1156,6 @@ namespace ColorVision.Engine.Services.Templates.POI
           
         }
 
-        private void Button_Click_1(object sender, RoutedEventArgs e)
-        {
-            int[] dstPointX = new int[4] { 990, 4420, 4430, 1000 };
-            int[] dstPointY = new int[4] { 980, 590, 2700, 3180 };
-            float[] PointX = new float[4];
-            float[] PointY = new float[4];
-
-            if (ImageShow.Source is BitmapImage bitmapImage)
-            {
-                byte[] data;
-                JpegBitmapEncoder encoder = new();
-                encoder.Frames.Add(BitmapFrame.Create(bitmapImage));
-                using (MemoryStream ms = new())
-                {
-                    encoder.Save(ms);
-                    data = ms.ToArray();
-                }
-                int  num = cvCameraCSLib.FindBrightArea((uint)PoiParam.Width, (UInt32)PoiParam.Height,8,3, Array.Empty<byte>());
-
-            }
-
-
-        }
 
         //读取本地的灯珠检测配置文件
         private void Button_Click_2(object sender, RoutedEventArgs e)
@@ -1416,7 +1391,7 @@ namespace ColorVision.Engine.Services.Templates.POI
 
         private void ShowImage(CVCIEFile fileInfo)
         {
-            OpenCvSharp.Mat src = new(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
+            OpenCvSharp.Mat src = OpenCvSharp.Mat.FromPixelData(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
             OpenCvSharp.Mat dst = null;
             if (fileInfo.bpp == 32)
             {
@@ -1580,7 +1555,7 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             if (sender is ComboBox comboBox)
             {
-                comboBox.ItemsSource = ValidateParam.CIEParams;
+                comboBox.ItemsSource = TemplateComplyParam.Params["Comply.CIE"];
             }
         }
     }

@@ -11,7 +11,7 @@
         xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
         mc:Ignorable="d"
         ShowInTaskbar="False"
-        d:DataContext="{d:DesignInstance local:TemplateConfig}"
+        d:DataContext="{d:DesignInstance local:WindowTemplateConfig}"
         Height="600" Width="700"  MinWidth="600" Background="{DynamicResource GlobalBackground}" WindowStartupLocation="CenterOwner" Initialized="Window_Initialized">
     <Window.Resources>
         <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource TextBox.Small}"/>
@@ -57,10 +57,7 @@
                 <ListView.View>
                     <GridView >
                         <GridView.ColumnHeaderContainerStyle>
-                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  InputElementBaseStyle}">
-                                <Setter Property="Visibility" Value="Visible"/>
-                                <Setter Property="Background" Value="Transparent"/>
-                                <Setter Property="BorderThickness" Value="0"/>
+                            <Style TargetType="{x:Type GridViewColumnHeader}" BasedOn="{StaticResource  GridViewColumnHeaderBase}">
                                 <Setter Property="ContextMenu" Value="{StaticResource ItemContextMenu}" />
                                 <EventSetter Event="Click" Handler="GridViewColumnSort"/>
                             </Style>
@@ -84,8 +81,8 @@
                                 <DataTemplate DataType="{x:Type local:TemplateModelBase}">
                                     <DockPanel Height="20">
                                         <Grid VerticalAlignment="Center">
-                                            <TextBlock Text="{Binding Key}" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}" />
-                                            <TextBox  Text="{Binding Key}" LostFocus="TextBox_LostFocus" Tag="{Binding .}"   HorizontalAlignment="Left" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}"/>
+                                            <TextBlock Text="{Binding Key}" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter1}}" Padding="6,0"/>
+                                            <TextBox  Text="{Binding Key}" LostFocus="TextBox_LostFocus" Tag="{Binding .}" HorizontalAlignment="Left" Visibility="{Binding IsEditMode,Converter={StaticResource bool2VisibilityConverter}}"/>
                                         </Grid>
                                     </DockPanel>
                                 </DataTemplate>

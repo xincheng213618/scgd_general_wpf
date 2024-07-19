@@ -6,7 +6,7 @@ using System.Windows;
 namespace ColorVision.UI.Menus
 {
 
-    public abstract class MenuItemBase : IMenuItem
+    public abstract class MenuItemBase : ViewModelBase,IMenuItem
     {
         public abstract string OwnerGuid { get; }
         public abstract string GuidId { get; }

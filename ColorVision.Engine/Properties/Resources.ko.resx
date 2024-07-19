@@ -783,4 +783,16 @@
   <data name="MenuSensorHeYuan" xml:space="preserve">
     <value>일반 센서 템플릿 설정(S)</value>
   </data>
+  <data name="AddPhysicalCamera" xml:space="preserve">
+    <value>실제 카메라 추가</value>
+  </data>
+  <data name="AddUncreatedCamera" xml:space="preserve">
+    <value>생성되지 않은 카메라 추가</value>
+  </data>
+  <data name="LicenseImport" xml:space="preserve">
+    <value>라이센스 가져오기</value>
+  </data>
+  <data name="AutoExploreTemplate" xml:space="preserve">
+    <value>자동 노출 템플릿</value>
+  </data>
 </root>

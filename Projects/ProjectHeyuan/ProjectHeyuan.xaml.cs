@@ -1,12 +1,13 @@
 ﻿#pragma warning disable CS8602,CA1707
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MQTT;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services;
 using ColorVision.Engine.Services.DAO;
-using ColorVision.Engine.Services.Devices.Algorithm.Dao;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Flow;
-using ColorVision.Engine.Templates.POI.Validate;
+using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.Themes;
 using CVCommCore;
 using FlowEngineLib;
@@ -174,7 +175,7 @@ namespace ColorVision.Projects.ProjectHeyuan
         private void Window_Initialized(object sender, EventArgs e)
         {
             MQTTConfig mQTTConfig = MQTTSetting.Instance.MQTTConfig;
-            FlowEngineLib.MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
+            MQTTHelper.SetDefaultCfg(mQTTConfig.Host, mQTTConfig.Port, mQTTConfig.UserName, mQTTConfig.UserPwd, false, null);
             flowEngine = new FlowEngineControl(false);
 
             STNodeEditor STNodeEditorMain = new STNodeEditor();
@@ -507,7 +508,7 @@ namespace ColorVision.Projects.ProjectHeyuan
         {
             if (sender is ComboBox comboBox)
             {
-                comboBox.ItemsSource = ValidateParam.CIEParams;
+                comboBox.ItemsSource = TemplateComplyParam.Params["Comply.CIE"];
             }
         }
     }

@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
 using log4net;
@@ -156,8 +157,8 @@ namespace ColorVision.Update
             {
                 // 获取服务器版本
                 LatestVersion = await GetLatestVersionNumber(UpdateUrl);
-
-                if (LatestVersion > Assembly.GetExecutingAssembly().GetName().Version)
+                var Version = Assembly.GetExecutingAssembly().GetName().Version;
+                if (LatestVersion > Version)
                 {
                     string CHANGELOG = await GetChangeLog(CHANGELOGUrl);
                     string versionPattern = $"## \\[{LatestVersion}\\].*?\\n(.*?)(?=\\n## |$)";
@@ -170,7 +171,7 @@ namespace ColorVision.Update
 
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            if (MessageBox.Show($"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?",$"{ Properties.Resources.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            if (MessageBox1.Show($"{changeLogForCurrentVersion}{Environment.NewLine}{Environment.NewLine}{Properties.Resources.ConfirmUpdate}?",$"{ Properties.Resources.NewVersionFound}{ LatestVersion}", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
                                 Update(LatestVersion, Path.GetTempPath());
                             }
@@ -180,7 +181,7 @@ namespace ColorVision.Update
                     {
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            if (MessageBox.Show($"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+                            if (MessageBox1.Show($"{Properties.Resources.NewVersionFound}{LatestVersion},{Properties.Resources.ConfirmUpdate}", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
                             {
                                 Update(LatestVersion, Path.GetTempPath());
                             }
@@ -192,7 +193,7 @@ namespace ColorVision.Update
                     Application.Current.Dispatcher.Invoke(() =>
                     {
                         if (detection)
-                            MessageBox.Show(Application.Current.GetActiveWindow(),Properties.Resources.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
+                            MessageBox1.Show(Application.Current.GetActiveWindow(),Properties.Resources.CurrentVersionIsUpToDate, "ColorVision", MessageBoxButton.OK);
                     });
 
                 }
@@ -219,7 +220,7 @@ namespace ColorVision.Update
             {
                 IsPassWorld = true;
                 // If the request is unauthorized, add the authentication header and try again
-                var byteArray = System.Text.Encoding.ASCII.GetBytes("1:1");
+                var byteArray = Encoding.ASCII.GetBytes("1:1");
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
                 // You should also consider handling other potential issues here, such as network errors
@@ -248,7 +249,7 @@ namespace ColorVision.Update
             {
                 IsPassWorld = true;
                 // If the request is unauthorized, add the authentication header and try again
-                var byteArray = System.Text.Encoding.ASCII.GetBytes("1:1");
+                var byteArray = Encoding.ASCII.GetBytes("1:1");
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
                 // You should also consider handling other potential issues here, such as network errors
@@ -338,13 +339,13 @@ namespace ColorVision.Update
                             if (stopwatch.ElapsedMilliseconds > 200) // Update speed at least once per second
                             {
                                 double speed = totalReadBytes / stopwatch.Elapsed.TotalSeconds;
-                                SpeedValue = $"{ColorVision.Properties.Resources.CurrentSpeed} {speed / 1024 / 1024:F2} MB/s";
+                                SpeedValue = $"{Properties.Resources.CurrentSpeed} {speed / 1024 / 1024:F2} MB/s";
 
                                 if (totalBytes != -1L)
                                 {
                                     double remainingBytes = totalBytes - totalReadBytes;
                                     double remainingTime = remainingBytes / speed; // in seconds
-                                    RemainingTimeValue = $"{ColorVision.Properties.Resources.TimeLeft} {TimeSpan.FromSeconds(remainingTime):hh\\:mm\\:ss}";
+                                    RemainingTimeValue = $"{Properties.Resources.TimeLeft} {TimeSpan.FromSeconds(remainingTime):hh\\:mm\\:ss}";
                                 }
                             }
                         }

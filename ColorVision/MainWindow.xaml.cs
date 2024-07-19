@@ -1,5 +1,7 @@
 ﻿using ColorVision.Adorners;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.Rbac;
+using ColorVision.FloatingBall;
 using ColorVision.Scheduler;
 using ColorVision.Solution;
 using ColorVision.Solution.Searches;
@@ -8,8 +10,8 @@ using ColorVision.UI;
 using ColorVision.UI.Configs;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
+using ColorVision.UI.Shell;
 using ColorVision.UI.Views;
-using ColorVision.UserSpace;
 using log4net;
 using Microsoft.Xaml.Behaviors;
 using Microsoft.Xaml.Behaviors.Layout;
@@ -39,23 +41,24 @@ namespace ColorVision
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindow));
         public ViewGridManager ViewGridManager { get; set; }
-        public static MainWindowConfig MainWindowConfig => MainWindowConfig.Instance;
+        public static MainWindowConfig Config => MainWindowConfig.Instance;
 
         public MainWindow()
         {
             InitializeComponent();
-            MainWindowConfig.SetWindow(this);
-            SizeChanged += (s, e) => MainWindowConfig.SetConfig(this);
+            Config.SetWindow(this);
+            SizeChanged += (s, e) => Config.SetConfig(this);
             var IsAdministrator = Tool.IsAdministrator();
             Title += $"- {(IsAdministrator ? Properties.Resources.RunAsAdmin : Properties.Resources.NotRunAsAdmin)}";
-            this.ApplyCaption();   
+            this.ApplyCaption();
+            this.SetWindowFull(Config);
         }
 
         private void Window_Initialized(object sender, EventArgs e)
         {
             MenuManager.GetInstance().Menu = Menu1;
-            MainWindowConfig.IsOpenSidebar = true;
-            this.DataContext = MainWindowConfig;
+            Config.IsOpenSidebar = true;
+            this.DataContext = Config;
             if (!WindowConfig.IsExist || (WindowConfig.IsExist && WindowConfig.Icon == null))
             {
                 ThemeManager.Current.SystemThemeChanged += (e) =>
@@ -90,7 +93,6 @@ namespace ColorVision
                 ViewConfig.Instance.LastViewCount = e;
             };
 
-            Closed += (s, e) => { Environment.Exit(-1); };
             Debug.WriteLine(Properties.Resources.LaunchSuccess);
 
             Task.Run(CheckCertificate);
@@ -101,14 +103,13 @@ namespace ColorVision
             this.LoadHotKeyFromAssembly();
 
             QuartzSchedulerManager.GetInstance();
-
             Application.Current.MainWindow = this;
-
-
-            LoadIMainWindowInitialized();
+            //LoadIMainWindowInitialized();
+            if (Config.OpenFloatingBall)
+                new FloatingBallWindow().Show();
         }
 
-        public static void LoadIMainWindowInitialized() 
+        public static async void LoadIMainWindowInitialized() 
         {
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
             {
@@ -116,7 +117,14 @@ namespace ColorVision
                 {
                     if (Activator.CreateInstance(type) is IMainWindowInitialized componentInitialize)
                     {
-                        componentInitialize.Initialize();
+                        try
+                        {
+                            await componentInitialize.Initialize();
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error(ex);
+                        }
                     }
                 }
             }
@@ -298,39 +306,19 @@ namespace ColorVision
             }
         }
 
-        private void LogF_Click(object sender, RoutedEventArgs e)
-        {
-            var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
-            if (fileAppender != null)
-            {
-                Process.Start("explorer.exe", $"{Path.GetDirectoryName(fileAppender.File)}");
-            }
-        }
-
-        private void SettingF_Click(object sender, RoutedEventArgs e)
-        {
-            Process.Start("explorer.exe", $"{Path.GetDirectoryName(ConfigHandler.GetInstance().DIFile)}");
-        }
-
-
-
-        private void Setting_Click(object sender, RoutedEventArgs e)
-        {
-            string fileName = ConfigHandler.GetInstance().DIFile;
-            bool result = Tool.HasDefaultProgram(fileName);
-            if (!result)
-                Process.Start(result ? "explorer.exe" : "notepad.exe", fileName);
-        }
-
 
         private void Login_Click(object sender, RoutedEventArgs e)
         {
-            new UserCreationWindow() { }.ShowDialog();
+            new UserInfoWindow() { }.ShowDialog();
         }
 
         private void StatusBarGrid_Initialized(object sender, EventArgs e)
         {
-             void AddStatusBarIconMetadata(StatusBarIconMetadata statusBarIconMetadata)
+            ContextMenu contextMenu= new ContextMenu();
+            StatusBarGrid.ContextMenu = contextMenu;
+
+
+            void AddStatusBarIconMetadata(StatusBarIconMetadata statusBarIconMetadata)
             {
                 if (statusBarIconMetadata.Type == StatusBarType.Icon)
                 {
@@ -344,7 +332,7 @@ namespace ColorVision
                         {
                             Converter = (IValueConverter)Application.Current.FindResource("bool2VisibilityConverter")
                         };
-                        statusBarItem.SetBinding(StatusBarItem.VisibilityProperty, visibilityBinding);
+                        statusBarItem.SetBinding(VisibilityProperty, visibilityBinding);
                     }
                     // 设置 MouseLeftButtonDown 事件处理程序
                     if (statusBarIconMetadata.Action != null)
@@ -364,6 +352,20 @@ namespace ColorVision
                     toggleButton.DataContext = statusBarIconMetadata.Source;
 
                     StatusBarIconDocker.Children.Add(statusBarItem);
+
+                    MenuItem menuItem = new MenuItem() { Header = statusBarIconMetadata.Name };
+                    menuItem.Click += (s, e) => menuItem.IsChecked = !menuItem.IsChecked;
+                    menuItem.DataContext = statusBarIconMetadata.Source;
+                    // 绑定 MenuItem 的 IsChecked 属性到 VisibilityBindingName
+                    if (statusBarIconMetadata.VisibilityBindingName != null)
+                    {
+                        var isCheckedBinding1 = new Binding(statusBarIconMetadata.VisibilityBindingName)
+                        {
+                            Mode = BindingMode.TwoWay,
+                        };
+                        menuItem.SetBinding(MenuItem.IsCheckedProperty, isCheckedBinding1);
+                    }
+                    contextMenu.Items.Add(menuItem);
                 }
                 else if (statusBarIconMetadata.Type == StatusBarType.Text)
                 {
@@ -371,7 +373,7 @@ namespace ColorVision
                     statusBarItem.DataContext = statusBarIconMetadata.Source;
 
                     var Binding = new Binding(statusBarIconMetadata.BindingName) { Mode = BindingMode.OneWay };
-                    statusBarItem.SetBinding(ToggleButton.ContentProperty, Binding);
+                    statusBarItem.SetBinding(ContentProperty, Binding);
 
 
                     if (statusBarIconMetadata.VisibilityBindingName != null)
@@ -380,10 +382,24 @@ namespace ColorVision
                         {
                             Converter = (IValueConverter)Application.Current.FindResource("bool2VisibilityConverter")
                         };
-                        statusBarItem.SetBinding(StatusBarItem.VisibilityProperty, visibilityBinding);
+                        statusBarItem.SetBinding(VisibilityProperty, visibilityBinding);
                     }
 
                     StatusBarTextDocker.Children.Add(statusBarItem);
+
+                    MenuItem menuItem = new MenuItem() { Header = statusBarIconMetadata.Name };
+                    menuItem.Click += (s, e) => menuItem.IsChecked = !menuItem.IsChecked;
+                    menuItem.DataContext = statusBarIconMetadata.Source;
+                    // 绑定 MenuItem 的 IsChecked 属性到 VisibilityBindingName
+                    if (statusBarIconMetadata.VisibilityBindingName != null)
+                    {
+                        var isCheckedBinding = new Binding(statusBarIconMetadata.VisibilityBindingName)
+                        {
+                            Mode = BindingMode.TwoWay,
+                        };
+                        menuItem.SetBinding(MenuItem.IsCheckedProperty, isCheckedBinding);
+                    }
+                    contextMenu.Items.Add(menuItem);
                 }
 
             }
@@ -412,6 +428,6 @@ namespace ColorVision
             }
 
         }
-   
+
     }
 }

@@ -187,7 +187,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
 
         private void Button_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            CalibrationEdit CalibrationEdit = new(CalibrationService);
+            CalibrationEdit CalibrationEdit = new(CalibrationService, ComboBoxList.SelectedIndex);
             CalibrationEdit.Closed += (s, e) =>
             {
                 groupResources.Clear();

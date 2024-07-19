@@ -1,5 +1,8 @@
-﻿using ColorVision.Engine.Services.Devices.SMU.Dao;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.Devices.SMU.Dao;
+using ColorVision.Themes.Controls;
+using ColorVision.UI.Sorts;
+using ColorVision.UI.Views;
 using ScottPlot;
 using ScottPlot.Plottable;
 using System;
@@ -10,8 +13,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
-using ColorVision.UI.Sorts;
-using ColorVision.UI.Views;
 
 namespace ColorVision.Engine.Services.Devices.SMU.Views
 {
@@ -69,7 +70,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         {
             if (listView1.SelectedIndex < 0)
             {
-                MessageBox.Show("您需要先选择数据");
+                MessageBox1.Show("您需要先选择数据");
                 return;
             }
 
@@ -240,7 +241,7 @@ namespace ColorVision.Engine.Services.Devices.SMU.Views
         {
             if (listView1.SelectedIndex < 0)
             {
-                MessageBox.Show("您需要先选择数据");
+                MessageBox1.Show("您需要先选择数据");
                 return;
             }
             var selectedItems = listView1.SelectedItems;

@@ -1,0 +1,18 @@
+﻿<Window x:Class="ColorVision.Themes.Controls.UploadWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Themes.Controls"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:controls ="clr-namespace:ColorVision.Themes.Controls"
+        mc:Ignorable="d"
+        Title="上传" Height="300" Width="600" AllowDrop="True" Background="{StaticResource GlobalBackground}" Initialized="Window_Initialized" >
+    <Grid>
+        <Image Source="/ColorVision.Themes;component/Assets/Image/uploadbg.avif" Stretch="UniformToFill"/>
+        <controls:Upload  x:Name="Upload1"  Margin="30"/>
+        <DockPanel  x:Name="ButtonUpload" HorizontalAlignment="Center" Visibility="Collapsed" VerticalAlignment="Center" Margin="0,100,0,0">
+            <Button Content="上传"  Click="Button_Click_1" Width="150" Height="25"/>
+        </DockPanel>
+    </Grid>
+</Window>

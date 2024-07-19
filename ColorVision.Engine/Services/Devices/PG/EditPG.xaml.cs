@@ -1,4 +1,4 @@
-﻿using ColorVision.Common.Extension;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.PG;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Spectrum;
@@ -14,6 +14,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using ColorVision.Common.MVVM;
 using ColorVision.Themes;
+using ColorVision.Engine.Services.PhyCameras;
 
 
 namespace ColorVision.Engine.Services.Devices.PG
@@ -45,10 +46,10 @@ namespace ColorVision.Engine.Services.Devices.PG
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            Device.DeviceService.ReLoadCategoryLib();
-            pgCategory.ItemsSource = Device.DeviceService.PGCategoryLib;
+            Device.DService.ReLoadCategoryLib();
+            pgCategory.ItemsSource = Device.DService.PGCategoryLib;
 
-            foreach (var item in Device.DeviceService.PGCategoryLib)
+            foreach (var item in Device.DService.PGCategoryLib)
             {
                 if (item.Key.Equals(Device.Config.Category, StringComparison.Ordinal))
                 {
@@ -73,6 +74,9 @@ namespace ColorVision.Engine.Services.Devices.PG
 
             EditConfig = Device.Config.Clone();
             EditContent.DataContext = EditConfig;
+
+            CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
+            CameraPhyID.DisplayMemberPath = "Code";
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)

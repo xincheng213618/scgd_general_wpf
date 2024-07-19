@@ -19,7 +19,7 @@ namespace ColorVision
 {
     public class AboutMsgExport : IHotKey,IMenuItem
     {
-        public HotKeys HotKeys => new HotKeys(Properties.Resources.About, new Hotkey(Key.F1, ModifierKeys.Control), Execute);
+        public HotKeys HotKeys => new HotKeys(Resources.About, new Hotkey(Key.F1, ModifierKeys.Control), Execute);
 
         public string? OwnerGuid => "Help";
         public string? GuidId => "AboutMsg";
@@ -173,11 +173,6 @@ namespace ColorVision
                 Close();
                 e.Handled = true;
             }
-        }
-
-        private void ImageLogo_Initialized(object sender, EventArgs e)
-        {
-
         }
 
         private void CloseButton_MouseLeave(object sender, MouseEventArgs e)

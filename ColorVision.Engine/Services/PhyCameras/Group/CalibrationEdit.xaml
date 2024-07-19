@@ -6,7 +6,7 @@
         xmlns:hc="https://handyorg.github.io/handycontrol"
         xmlns:local="clr-namespace:ColorVision.Engine.Services.PhyCameras.Group"
         mc:Ignorable="d"
-        Title="资源组管理"  Background="{DynamicResource GlobalBackground}" Closed="Window_Closed" Height="500" Width="1200" Initialized="Window_Initialized" >
+        Title="资源组管理"  Background="{DynamicResource GlobalBackground}" Closed="Window_Closed" Height="600" Width="1200" Initialized="Window_Initialized" >
     <Window.Resources>
         <Style TargetType="{x:Type TextBlock}">
             <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
@@ -15,10 +15,6 @@
             <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
         </Style>
         <Style  TargetType="TextBox" BasedOn="{StaticResource TextBox.Small}"/>
-        <Style TargetType="hc:ComboBox" BasedOn="{StaticResource ComboBox.Small}">
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="IsEditable" Value="True"/>
-        </Style>
     </Window.Resources>
     <Grid Margin="5">
         <Grid.ColumnDefinitions>
@@ -92,27 +88,27 @@
                 <StackPanel Margin="5">
                     <DockPanel  Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="暗噪声"  Width="80" />
-                        <hc:ComboBox x:Name="ComboBoxDarkNoise" SelectedValue="{Binding DarkNoise}"  DisplayMemberPath="Name"  />
+                        <hc:ComboBox x:Name="ComboBoxDarkNoise" SelectedValue="{Binding DarkNoise}"  hc:InfoElement.ShowClearButton="True"   DisplayMemberPath="Name"  />
                     </DockPanel>
                     <DockPanel  Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="DSNU" Width="80"  />
-                        <hc:ComboBox x:Name="ComboBoxDSNU" SelectedValue="{Binding DSNU}"  DisplayMemberPath="Name" />
+                        <hc:ComboBox x:Name="ComboBoxDSNU" SelectedValue="{Binding DSNU}"  DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True"  />
                     </DockPanel>
                     <DockPanel  Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="缺陷点" Width="80"  />
-                        <hc:ComboBox x:Name="ComboBoxDefectPoint"  SelectedValue="{Binding DefectPoint}"  DisplayMemberPath="Name" />
+                        <hc:ComboBox x:Name="ComboBoxDefectPoint"  SelectedValue="{Binding DefectPoint}"  DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
                     </DockPanel>
                     <DockPanel  Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="色偏" Width="80"  />
-                        <hc:ComboBox x:Name="ComboBoxColorShift" SelectedValue="{Binding ColorShift}"  DisplayMemberPath="Name" />
+                        <hc:ComboBox x:Name="ComboBoxColorShift" SelectedValue="{Binding ColorShift}"  DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True"  />
                     </DockPanel>
                     <DockPanel  Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="畸变" Width="80"  />
-                        <hc:ComboBox x:Name="ComboBoxDistortion" SelectedValue="{Binding Distortion}"  DisplayMemberPath="Name"  />
+                        <hc:ComboBox x:Name="ComboBoxDistortion" SelectedValue="{Binding Distortion}"  DisplayMemberPath="Name"    hc:InfoElement.ShowClearButton="True" />
                     </DockPanel>
                     <DockPanel Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="均匀场" Width="80"  />
-                        <hc:ComboBox  x:Name="ComboBoxUniformity" SelectedValue="{Binding Uniformity}" DisplayMemberPath="Name"/>
+                        <hc:ComboBox  x:Name="ComboBoxUniformity" SelectedValue="{Binding Uniformity}" DisplayMemberPath="Name"  hc:InfoElement.ShowClearButton="True" />
                     </DockPanel>
                 </StackPanel>
             </Border>
@@ -121,19 +117,19 @@
                 <StackPanel>
                     <DockPanel  Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="亮度" Width="80"  />
-                        <hc:ComboBox x:Name="ComboBoxLuminance" SelectedValue="{Binding Luminance}" DisplayMemberPath="Name" />
+                        <hc:ComboBox x:Name="ComboBoxLuminance" SelectedValue="{Binding Luminance}" DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
                     </DockPanel>
                     <DockPanel  Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="单色" Width="80"/>
-                        <hc:ComboBox x:Name="ComboBoxLumOneColor" SelectedValue="{Binding LumOneColor}"  DisplayMemberPath="Name" />
+                        <hc:ComboBox x:Name="ComboBoxLumOneColor" SelectedValue="{Binding LumOneColor}"  DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
                     </DockPanel>
                     <DockPanel  Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="四色" Width="80"  />
-                        <hc:ComboBox  x:Name="ComboBoxLumFourColor"  SelectedValue="{Binding LumFourColor}" DisplayMemberPath="Name" />
+                        <hc:ComboBox  x:Name="ComboBoxLumFourColor"  SelectedValue="{Binding LumFourColor}" DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
                     </DockPanel>
                     <DockPanel  Margin="0,2">
                         <TextBlock DockPanel.Dock="Left" Text="多色" Width="80"  />
-                        <hc:ComboBox x:Name="ComboBoxLumMultiColor" SelectedValue="{Binding LumMultiColor}" DisplayMemberPath="Name" />
+                        <hc:ComboBox x:Name="ComboBoxLumMultiColor" SelectedValue="{Binding LumMultiColor}" DisplayMemberPath="Name"   hc:InfoElement.ShowClearButton="True" />
                     </DockPanel>
                 </StackPanel>
             </GroupBox>

@@ -354,4 +354,13 @@
   <data name="Initializer" xml:space="preserve">
     <value>Модуль инициализации</value>
   </data>
+  <data name="FilterSupportsRegex" xml:space="preserve">
+    <value>Фильтр поддерживает регулярные выражения</value>
+  </data>
+  <data name="AutoRefresh" xml:space="preserve">
+    <value>Автоматическое обновление</value>
+  </data>
+  <data name="AutoScrollToEnd" xml:space="preserve">
+    <value>Автоматически прокручивать вниз</value>
+  </data>
 </root>

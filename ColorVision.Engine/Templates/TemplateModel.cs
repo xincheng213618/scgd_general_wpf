@@ -10,12 +10,18 @@ namespace ColorVision.Engine.Templates
 {
     public class TemplateModelBase : ViewModelBase, ISortID, ISortKey
     {
+        [JsonIgnore]
         public ContextMenu ContextMenu { get; set; }
+        [JsonIgnore]
         public virtual int Id { get; set; }
+
+        [JsonIgnore]
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; NotifyPropertyChanged(); } }
         private bool _IsSelected;
+
         public virtual string Key { get; set; }
 
+        [JsonIgnore]
         public virtual bool IsEditMode { get => _IsEditMode; set { _IsEditMode = value; NotifyPropertyChanged(); } }
         private bool _IsEditMode;
 
@@ -25,20 +31,11 @@ namespace ColorVision.Engine.Templates
         }
     }
 
+
     public class TemplateModel<T> : TemplateModelBase where T : ParamBase
     {
         public RelayCommand ReNameCommand { get; set; }
         public RelayCommand DeleteCommand { get; set; }
-        public IList<TemplateModel<T>> Parent { get; set; }
-
-        public TemplateModel() : base()
-        {
-            ReNameCommand = new RelayCommand(a => IsEditMode = true);
-            DeleteCommand = new RelayCommand(a => Parent?.Remove(this), a => Parent != null);
-            ContextMenu = new ContextMenu();
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
-            ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, InputGestureText = "F2", Command = DeleteCommand });
-        }
 
         public TemplateModel(string Key, T Value) :base()
         {
@@ -48,13 +45,6 @@ namespace ColorVision.Engine.Templates
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.MenuRename, InputGestureText = "F2", Command = ReNameCommand });
         }
-        public TemplateModel(KeyValuePair<string, T> keyValuePair)
-        {
-            Key = keyValuePair.Key;
-            Value = keyValuePair.Value;
-        }
-
-
 
         [JsonIgnore]
         public override int Id { get => Value.Id; }

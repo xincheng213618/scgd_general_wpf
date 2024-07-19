@@ -783,4 +783,16 @@
   <data name="MenuSensorHeYuan" xml:space="preserve">
     <value>Общие настройки шаблона датчика(S)</value>
   </data>
+  <data name="AddPhysicalCamera" xml:space="preserve">
+    <value>Добавить физическую камеру</value>
+  </data>
+  <data name="AddUncreatedCamera" xml:space="preserve">
+    <value>Добавить несозданную камеру</value>
+  </data>
+  <data name="LicenseImport" xml:space="preserve">
+    <value>Импорт лицензии</value>
+  </data>
+  <data name="AutoExploreTemplate" xml:space="preserve">
+    <value>Шаблон автоматической экспозиции</value>
+  </data>
 </root>

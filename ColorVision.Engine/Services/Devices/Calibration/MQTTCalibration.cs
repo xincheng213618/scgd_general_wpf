@@ -1,5 +1,6 @@
 ﻿using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Themes.Controls;
 using CVCommCore;
 using CVCommCore.CVImage;
 using MQTTMessageLib;
@@ -36,7 +37,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 switch (msg.EventName)
                 {
                     case "Calibration":
-                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, "校准失败"));
+                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox1.Show(Application.Current.MainWindow, "校准失败"));
                         break;
                     default:
                         break;

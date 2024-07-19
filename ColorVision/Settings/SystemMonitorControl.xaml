@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:ColorVision.Settings"
              xmlns:properties="clr-namespace:ColorVision.Properties"
              xmlns:ui ="http://schemas.lepo.co/wpfui/2022/xaml"
-             xmlns:u ="clr-namespace:ColorVision.UI;assembly=ColorVision.UI"
+             xmlns:u ="clr-namespace:ColorVision.UI.Configs;assembly=ColorVision.UI"
              xmlns:hc ="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance u:SystemMonitor}"
@@ -40,7 +40,7 @@
                         <ui:ToggleSwitch DockPanel.Dock="Right"  IsChecked="{Binding Config.IsShowRAM}"/>
                         <TextBlock Text="显示RAM"/>
                     </DockPanel>
-                    <ui:Rating HorizontalAlignment="Left" Value="5" />
+                    <ui:RatingControl HorizontalAlignment="Left" Value="5" />
                 </StackPanel>
             </Border>
 

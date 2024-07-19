@@ -1,4 +1,4 @@
-﻿using ColorVision.Engine.Services.Devices.Algorithm.Views;
+﻿using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using ColorVision.Themes;
 using ColorVision.UI.Sorts;
 using System;

@@ -1,7 +1,9 @@
 ﻿using ColorVision.Engine.MySql;
+using ColorVision.Solution;
 using ColorVision.Themes;
 using ColorVision.UI;
 using ColorVision.UI.Languages;
+using ColorVision.UI.Shell;
 using ColorVision.Wizards;
 using System;
 using System.Collections.Generic;
@@ -24,7 +26,24 @@ namespace ColorVision
         {
             Startup += Application_Startup;
             Exit += Application_Exit;
+            #if(DEBUG == false)
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+            Application.Current.DispatcherUnhandledException += Application_DispatcherUnhandledException;
+            #endif
         }
+        private void Application_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+        {
+            log.Fatal(e.Exception);
+            MessageBox.Show(e.Exception.Message);
+            //使用这一行代码告诉运行时，该异常被处理了，不再作为UnhandledException抛出了。
+            e.Handled = true;
+        }
+
+        void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            log.Fatal(e.ExceptionObject);
+        }
+
 
         private void Application_Startup(object sender, StartupEventArgs e)
         {
@@ -32,7 +51,6 @@ namespace ColorVision
             {
                 UI.ACE.License.Create();
             }
-
             bool IsDebug = Debugger.IsAttached;
             var parser = ArgumentParser.GetInstance();
 
@@ -58,7 +76,7 @@ namespace ColorVision
             string inputFile = parser.GetValue("input");
             if (inputFile != null)
             {
-                bool isok = FileHandlerProcessor.GetInstance().ProcessFile(inputFile);
+                bool isok = FileProcessorManager.GetInstance().HandleFile(inputFile);
                 if (isok) return;
             }
 
@@ -66,6 +84,8 @@ namespace ColorVision
             //这里的代码是因为WPF中引用了WinForm的控件，所以需要先初始化
             System.Windows.Forms.Application.EnableVisualStyles();
             System.Windows.Forms.Application.SetCompatibleTextRenderingDefault(false);
+
+            TrayIconManager.GetInstance();
             //代码先进入启动窗口
 
             bool IsReStart = parser.GetFlag("restart");
@@ -83,7 +103,9 @@ namespace ColorVision
             }
             else
             {
-                MySqlControl.GetInstance().Connect();
+                SolutionManager.GetInstance();
+                MySqlControl.GetInstance();
+
                 var _IComponentInitializers = new List<UI.IInitializer>();
                 MessageUpdater messageUpdater = new MessageUpdater();
                 foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
@@ -112,6 +134,7 @@ namespace ColorVision
             }
         }
 
+
         /// <summary>
         /// Application Close
         /// </summary>
@@ -119,7 +142,7 @@ namespace ColorVision
         {
             log.Info(ColorVision.Properties.Resources.ApplicationExit);
 
-            Environment.Exit(0);
+            //Environment.Exit(0);
         }
     }
 }

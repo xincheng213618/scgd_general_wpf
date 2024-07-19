@@ -1,0 +1,42 @@
+﻿using ColorVision.Engine.Templates;
+using cvColorVision;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+
+namespace ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR
+{
+
+    public class SFRParam : ParamBase
+    {
+        public static ObservableCollection<TemplateModel<SFRParam>> SFRParams { get; set; } = new ObservableCollection<TemplateModel<SFRParam>>();
+
+        public SFRParam()
+        {
+        }
+        public SFRParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
+        {
+        }
+
+        [Category("SFR"), Description("Gamma")]
+        public double Gamma { get => GetValue(_Gamma); set { SetProperty(ref _Gamma, value); } }
+        private double _Gamma = 0.01;
+
+        [Category("SFR"), Description("ROI x"), DisplayName("ROI X")]
+
+        public int X { get => GetValue(_X); set { SetProperty(ref _X, value); } }
+        private int _X;
+        [Category("SFR"), Description("ROI y"), DisplayName("ROI Y")]
+        public int Y { get => GetValue(_Y); set { SetProperty(ref _Y, value); } }
+        private int _Y;
+        [Category("SFR"), Description("ROI Width"), DisplayName("ROI Width")]
+        public int Width { get => GetValue(_Width); set { SetProperty(ref _Width, value); } }
+        private int _Width = 1000;
+        [Category("SFR"), Description("ROI Height"), DisplayName("ROI Height")]
+        public int Height { get => GetValue(_Height); set { SetProperty(ref _Height, value); } }
+        private int _Height = 1000;
+
+        [Category("SFR"), Description("ROI"), Browsable(false)]
+        public CRECT ROI { get => new() { x = X, y = Y, cx = Width, cy = Height }; }
+    }
+}

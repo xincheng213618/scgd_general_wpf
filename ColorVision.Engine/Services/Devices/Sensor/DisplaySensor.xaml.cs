@@ -1,7 +1,7 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.Sensor.Templates;
 using ColorVision.Engine.Templates;
-using ColorVision.Themes;
 using ColorVision.UI;
 using CVCommCore;
 using MQTTMessageLib;
@@ -9,8 +9,6 @@ using MQTTMessageLib.Sensor;
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
-using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices.Sensor
 {
@@ -21,43 +19,81 @@ namespace ColorVision.Engine.Services.Devices.Sensor
     {
 
         public DeviceSensor Device { get; set; }
-        private MQTTSensor DeviceService { get => Device.DeviceService;  }
+        private MQTTSensor DeviceService { get => Device.DService;  }
         public string DisPlayName => Device.Config.Name;
 
         public DisplaySensor(DeviceSensor device)
         {
             Device = device;
             InitializeComponent();
-
-            PreviewMouseDown += UserControl_PreviewMouseDown;
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
             DataContext = Device;
-            ComboxSensorTemplate.ItemsSource = SensorHeYuan.SensorHeYuans;
+            void Update()
+            {
+                var list = new TemplateSensor(Device.Config.Category);
+                list.Load();
+                ComboxSensorTemplate.ItemsSource = list.TemplateParams;
+            }
+            Device.ConfigChanged += (s, e) => Update();
+            Update();
             ComboBoxType.ItemsSource = Enum.GetValues(typeof(SensorCmdType));
 
             this.ApplyChangedSelectedColor(DisPlayBorder);
 
-            Device.DeviceService.DeviceStatusChanged += (e) =>
+
+            void UpdateUI(DeviceStatusType status)
             {
-                switch (e)
+                void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };
+                void HideAllButtons()
                 {
-                    case DeviceStatusType.Opened:
-                        ButtonClose.Visibility = Visibility.Visible;
-                        ButtonOpen.Visibility = Visibility.Collapsed;
+                    SetVisibility(ButtonOpen, Visibility.Collapsed);
+                    SetVisibility(ButtonClose, Visibility.Collapsed);
+                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                    SetVisibility(StackPanelContent, Visibility.Collapsed);
+                    SetVisibility(TextBlockOffLine, Visibility.Collapsed);
+
+                }
+                // Default state
+                HideAllButtons();
+
+                switch (status)
+                {
+                    case DeviceStatusType.Unauthorized:
+                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Unknown:
+                        SetVisibility(TextBlockUnknow, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.OffLine:
+                        SetVisibility(TextBlockOffLine, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.UnInit:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        SetVisibility(ButtonOpen, Visibility.Visible);
                         break;
                     case DeviceStatusType.Closed:
-                        ButtonOpen.Visibility = Visibility.Visible;
-                        ButtonClose.Visibility = Visibility.Collapsed;
+                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        SetVisibility(ButtonOpen, Visibility.Visible);
                         break;
+                    case DeviceStatusType.LiveOpened:
+                    case DeviceStatusType.Opened:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        SetVisibility(ButtonClose, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Closing:
+                    case DeviceStatusType.Opening:
                     default:
-                        ButtonOpen.Visibility = Visibility.Visible;
-                        ButtonClose.Visibility = Visibility.Collapsed;
+                        SetVisibility(StackPanelContent, Visibility.Visible);
                         break;
                 }
-            };
+            }
+            UpdateUI(Device.DService.DeviceStatus);
+            Device.DService.DeviceStatusChanged += UpdateUI;
+
         }
 
         public event RoutedEventHandler Selected;
@@ -66,17 +102,6 @@ namespace ColorVision.Engine.Services.Devices.Sensor
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
-
-        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (Parent is StackPanel stackPanel)
-            {
-                if (stackPanel.Tag is IDisPlayControl disPlayControl)
-                    disPlayControl.IsSelected = false;
-                stackPanel.Tag = this;
-                IsSelected = true;
-            }
-        }
 
         private void Open_Click(object sender, RoutedEventArgs e)
         {
@@ -95,7 +120,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
         private void SendTemp_Click(object sender, RoutedEventArgs e)
         {
-            if (ComboxSensorTemplate.SelectedItem is TemplateModel<SensorHeYuan> sensorHeYuan)
+            if (ComboxSensorTemplate.SelectedItem is TemplateModel<Templates.SensorParam> sensorHeYuan)
             {
                 CVTemplateParam templateParam = new() { ID= sensorHeYuan.Value.Id, Name= sensorHeYuan.Value.Name };
                 DeviceService.ExecCmd(templateParam);
@@ -109,7 +134,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
 
         private void MenuItem_Template(object sender, RoutedEventArgs e)
         {
-            new WindowTemplate(new TemplateSensorHeYuan()) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
+            new WindowTemplate(new TemplateSensor(Device.Config.Category)) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog(); ;
         }
     }
 }

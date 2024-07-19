@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using CVImageChannelLib;
 using log4net;
+using OpenCvSharp;
 using OpenCvSharp.Extensions;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Video
@@ -55,10 +56,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Video
         private System.Drawing.Bitmap ReSize(System.Drawing.Bitmap bmp)
         {
             var data = bmp.LockBits(new System.Drawing.Rectangle(new System.Drawing.Point(0, 0), bmp.Size), System.Drawing.Imaging.ImageLockMode.ReadOnly, bmp.PixelFormat);
-            OpenCvSharp.Mat src = new(bmp.Height, bmp.Width, OpenCvSharp.MatType.CV_8UC3, data.Scan0);
+            OpenCvSharp.Mat src = Mat.FromPixelData(bmp.Height, bmp.Width, MatType.CV_8UC3, data.Scan0);
             bmp.UnlockBits(data);
             OpenCvSharp.Mat dst = new();
-            OpenCvSharp.Cv2.Resize(src, dst, new OpenCvSharp.Size(width, height));
+            Cv2.Resize(src, dst, new OpenCvSharp.Size(width, height));
             return dst.ToBitmap();
         }
         public void Start(bool isLocal, string mapName, uint width, uint height)

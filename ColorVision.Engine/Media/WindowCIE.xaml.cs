@@ -1,5 +1,5 @@
-﻿using ColorVision.Draw.Ruler;
-using ColorVision.Draw;
+﻿using ColorVision.UI.Draw.Ruler;
+using ColorVision.UI.Draw;
 using System.Windows;
 using System.Threading.Tasks;
 using System;

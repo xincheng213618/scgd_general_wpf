@@ -67,17 +67,9 @@
           <source>模板(_M)</source>
           <target state="new">範本(_M)</target>
         </trans-unit>
-        <trans-unit id="MenuTheme" translate="yes" xml:space="preserve">
-          <source>主题(_H)</source>
-          <target state="new">主題(H)</target>
-        </trans-unit>
         <trans-unit id="MenuTool" translate="yes" xml:space="preserve">
           <source>工具(_T)</source>
           <target state="new">工具(_T)</target>
-        </trans-unit>
-        <trans-unit id="Theme" translate="yes" xml:space="preserve">
-          <source>主题</source>
-          <target state="new">主題</target>
         </trans-unit>
         <trans-unit id="UseSystem" translate="yes" xml:space="preserve">
           <source>跟随系统</source>

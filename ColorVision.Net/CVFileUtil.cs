@@ -346,7 +346,7 @@ namespace ColorVision.Net
                 fileOut.channels = 1;
                 if (fileIn.channels > 1)
                 {
-                    Mat src = new(fileIn.cols, fileIn.rows, MatType.MakeType(fileOut.Depth, fileIn.channels), fileIn.data);
+                    Mat src = Mat.FromPixelData(fileIn.cols, fileIn.rows, MatType.MakeType(fileOut.Depth, fileIn.channels), fileIn.data);
                     Mat[] srces = src.Split();
                     int len = fileOut.cols * fileOut.rows * fileOut.bpp / 8;
                     fileOut.data = new byte[len];

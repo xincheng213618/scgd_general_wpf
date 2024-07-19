@@ -1,16 +1,18 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Settings;
 using ColorVision.UI;
 using ColorVision.UI.Configs;
+using ColorVision.UI.Draw;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using log4net;
 using log4net.Core;
 using log4net.Repository.Hierarchy;
-using Mysqlx.Prepare;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -19,8 +21,35 @@ using System.Windows.Input;
 
 namespace ColorVision
 {
+    public class ExportConfigOpen : MenuItemBase
+    {
+        public override string OwnerGuid => "Help";
+        public override string GuidId => "LogOpen";
+        public override int Order => 1;
+        public override string Header => "打开配置文件(_S)";
+        public override void Execute()
+        {
+            Process.Start("explorer.exe", $"{Path.GetDirectoryName(ConfigHandler.GetInstance().ConfigFilePath)}");
+        }
+    }
 
-    public class MainWindowConfig : ViewModelBase, IConfig, IConfigSettingProvider,IMenuItemProvider
+    public class ExportConfigPathOpen : MenuItemBase
+    {
+        public override string OwnerGuid => "Help";
+        public override string GuidId => "LogOpen";
+        public override int Order => 2;
+        public override string Header => "打开配置文件夹(_F)";
+        public override void Execute()
+        {
+            string fileName = ConfigHandler.GetInstance().ConfigFilePath;
+            bool result = Tool.HasDefaultProgram(fileName);
+            if (!result)
+                Process.Start(result ? "explorer.exe" : "notepad.exe", fileName);
+        }
+    }
+
+
+    public class MainWindowConfig : ViewModelBase, IConfig, IConfigSettingProvider,IMenuItemProvider, IFullScreenState
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(MainWindowConfig));
 
@@ -38,6 +67,9 @@ namespace ColorVision
         private bool _IsOpenStatusBar = true;
         public bool IsOpenSidebar { get => _IsOpenSidebar; set { _IsOpenSidebar = value; NotifyPropertyChanged(); } }
         private bool _IsOpenSidebar = true;
+        [JsonIgnore]
+        public bool IsFull { get => _IsFull; set { _IsFull = value; NotifyPropertyChanged(); } }
+        private bool _IsFull;
 
         public Version? LastOpenVersion { get => _Version; set { _Version = value; NotifyPropertyChanged(); } }
         private Version? _Version = new Version(0, 0, 0, 0);
@@ -73,6 +105,9 @@ namespace ColorVision
             WindowState = (int)window.WindowState;
         }
 
+        public bool OpenFloatingBall { get => _OpenFloatingBall; set { _OpenFloatingBall = value; NotifyPropertyChanged(); } }
+        private bool _OpenFloatingBall;
+
         public const string AutoRunRegPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
         public const string AutoRunName = "ColorVisionAutoRun";
         public bool IsAutoRun { get => Tool.IsAutoRun(AutoRunName, AutoRunRegPath); set { Tool.SetAutoRun(value, AutoRunName, AutoRunRegPath); NotifyPropertyChanged(); } }
@@ -96,10 +131,13 @@ namespace ColorVision
         public bool AutoScrollToEnd { get => _AutoScrollToEnd; set { _AutoScrollToEnd = value;NotifyPropertyChanged(); } }
         private bool _AutoScrollToEnd = true;
 
+
+
         public bool AutoRefresh { get => _AutoRefresh; set { _AutoRefresh = value; NotifyPropertyChanged(); } }
         private bool _AutoRefresh = true;
-        public bool ReadHistory { get => _ReadHistory; set { _ReadHistory = value; NotifyPropertyChanged(); } }
-        private bool _ReadHistory;
+
+        public LogLoadState LogLoadState { get => _LogLoadState; set { _LogLoadState = value; NotifyPropertyChanged(); } }
+        private LogLoadState _LogLoadState = LogLoadState.SinceStartup;
 
         public bool LogReserve { get => _LogReserve; set { _LogReserve = value; NotifyPropertyChanged(); } }
         private bool _LogReserve;
@@ -121,7 +159,7 @@ namespace ColorVision
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
             ComboBox cmlog = new ComboBox() { SelectedValuePath = "Key", DisplayMemberPath = "Value" };
-            cmlog.SetBinding(ComboBox.SelectedValueProperty, new Binding(nameof(LogLevel)));
+            cmlog.SetBinding(System.Windows.Controls.Primitives.Selector.SelectedValueProperty, new Binding(nameof(LogLevel)));
 
             cmlog.ItemsSource = GetAllLevels().Select(level => new KeyValuePair<Level, string>(level, level.Name));
 
@@ -178,6 +216,36 @@ namespace ColorVision
         }
     }
 
+    public class ExportMenuViewMax :IMenuItemMeta
+    {
+        public string? OwnerGuid => "View";
+        public string? GuidId => "MenuViewSidebar";
+        public int Order => 1;
+        public string? Header => "全屏";
+
+        public MenuItem MenuItem
+        {
+            get
+            {
+                MenuItem menuItem = new() { Header = Header };
+                menuItem.SetBinding(MenuItem.IsCheckedProperty, new Binding(nameof(MainWindowConfig.IsFull)));
+                menuItem.Click += (s, e) => MainWindowConfig.Instance.IsFull = !MainWindowConfig.Instance.IsFull;
+                menuItem.DataContext = MainWindowConfig.Instance;
+                return menuItem;
+            }
+        }
+        public string? InputGestureText => null;
+        public object? Icon => null;
+        public RelayCommand Command => null;
+        public Visibility Visibility => Visibility.Visible;
+        public static void Execute()
+        {
+            MainWindowConfig.Instance.IsFull = !MainWindowConfig.Instance.IsFull;
+        }
+
+
+    }
+
 
     public class ExportMenuViewStatusBar : IMenuItemMeta,IHotKey
     {
@@ -226,6 +294,10 @@ namespace ColorVision
                 return menuItem;
             }
         }
+
+
+
+
         public string? InputGestureText => null;
         public object? Icon => null;
         public RelayCommand Command => null;

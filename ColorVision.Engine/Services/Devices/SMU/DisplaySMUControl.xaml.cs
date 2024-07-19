@@ -1,18 +1,14 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.Templates;
+﻿using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.SMU.Views;
-using ColorVision.Engine.Services.Templates;
-using ColorVision.Themes;
+using ColorVision.Engine.Templates;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using ColorVision.UI.Views;
 using CVCommCore;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 
 namespace ColorVision.Engine.Services.Devices.SMU
@@ -24,7 +20,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
     {
 
         public DeviceSMU Device { get; set; }
-        private MQTTSMU DService { get => Device.Service;  }
+        private MQTTSMU DService { get => Device.DService;  }
         private ConfigSMU Config { get => Device.Config; }
 
         public ViewSMU View { get => Device.View; }
@@ -41,7 +37,58 @@ namespace ColorVision.Engine.Services.Devices.SMU
         {
             DataContext = Device;
 
-            DService.HeartbeatEvent += (e) => SMUService_DeviceStatusHandler(e.DeviceStatus);
+            void UpdateUI(DeviceStatusType status)
+            {
+                void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };
+                void HideAllButtons()
+                {
+                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                    SetVisibility(StackPanelContent, Visibility.Collapsed);
+                    SetVisibility(TextBlockOffLine, Visibility.Collapsed);
+                }
+                // Default state
+                HideAllButtons();
+
+                switch (status)
+                {
+                    case DeviceStatusType.Unauthorized:
+                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Unknown:
+                        SetVisibility(TextBlockUnknow, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.OffLine:
+                        SetVisibility(TextBlockOffLine, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.UnInit:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Closed:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        ButtonSourceMeter1.Content = "打开";
+                        break;
+                    case DeviceStatusType.LiveOpened:
+                    case DeviceStatusType.Opened:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        ButtonSourceMeter1.Content = "关闭";
+                        break;
+                    case DeviceStatusType.Closing:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        ButtonSourceMeter1.Content = "关闭中";
+                        break;
+                    case DeviceStatusType.Opening:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        ButtonSourceMeter1.Content = "打开中";
+                        break;
+                    default:
+                        break;
+                }
+            }
+            UpdateUI(DService.DeviceStatus);
+            DService.DeviceStatusChanged += UpdateUI;
+
+
             DService.ScanResultEvent += SMUService_ScanResultHandler;
             DService.ResultEvent += SMUService_ResultHandler;
 
@@ -60,8 +107,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             ComboxVITemplate.SelectedIndex = 0;
 
             this.AddViewConfig(View, ComboxView);
-
-            PreviewMouseDown += UserControl_PreviewMouseDown;
             this.ApplyChangedSelectedColor(DisPlayBorder);
         }
 
@@ -70,17 +115,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
         public event EventHandler SelectChanged;
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
-
-        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (Parent is StackPanel stackPanel)
-            {
-                if (stackPanel.Tag is IDisPlayControl disPlayControl)
-                    disPlayControl.IsSelected = false;
-                stackPanel.Tag = this;
-                IsSelected = true;
-            }
-        }
 
         private void SMUService_ResultHandler(SMUResultData data)
         {
@@ -100,25 +134,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             }
         }
 
-        private  void SMUService_DeviceStatusHandler(DeviceStatusType deviceStatus)
-        {
-            if (deviceStatus == DeviceStatusType.Opened)
-            {
-                ButtonSourceMeter1.Content = "关闭";
-            }
-            else if (deviceStatus == DeviceStatusType.Closed)
-            {
-                ButtonSourceMeter1.Content = "打开";
-            }
-            else if (deviceStatus == DeviceStatusType.Opening)
-            {
-                ButtonSourceMeter1.Content = "打开中";
-            }
-            else if (deviceStatus == DeviceStatusType.Closing)
-            {
-                ButtonSourceMeter1.Content = "关闭中";
-            }
-        }
 
         PassSxSource passSxSource = new();
 
@@ -159,7 +174,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
         {
             if (sender is Button button)
             {
-                if (Config.DeviceStatus != DeviceStatusType.Opening)
+                if (Config.DeviceStatus != DeviceStatusType.Opened)
                 {
                     ServicesHelper.SendCommand(button, DService.Open(Config.IsNet, Config.DevName));
                 }
@@ -190,10 +205,6 @@ namespace ColorVision.Engine.Services.Devices.SMU
             DService.Scan(Config.IsSourceV, Config.StartMeasureVal, Config.StopMeasureVal, Config.LimitVal, Config.Number);
         }
 
-        private void StackPanelVI_Initialized(object sender, EventArgs e)
-        {
-
-        }
 
         private void Grid_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
@@ -207,7 +218,7 @@ namespace ColorVision.Engine.Services.Devices.SMU
                 WindowTemplate windowTemplate;
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
-                    MessageBox.Show(Properties.Resources.DatabaseConnectionFailed, "ColorVision");
+                    MessageBox1.Show(Properties.Resources.DatabaseConnectionFailed, "ColorVision");
                     return;
                 }
                 switch (control.Tag?.ToString() ?? string.Empty)

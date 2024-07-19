@@ -11,13 +11,13 @@ namespace ColorVision.Engine.Services.Devices.FileServer
 {
     public class DeviceFileServer : DeviceService<ConfigFileServer>
     {
-        public MQTTFileServer MQTTFileServer { get; set; }
+        public MQTTFileServer DService { get; set; }
 
         public ImageView View { get; set; }
 
         public DeviceFileServer(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
-            MQTTFileServer = new MQTTFileServer(Config);
+            DService = new MQTTFileServer(Config);
             View = new ImageView();
             View.View.Title = $"文件服务 - {Config.Code}";
 
@@ -30,7 +30,6 @@ namespace ColorVision.Engine.Services.Devices.FileServer
             },a => AccessControl.Check(PermissionMode.Administrator));
         }
 
-        public override UserControl GetDeviceControl() => new InfoFileServer(this);
         public override UserControl GetDeviceInfo() => new InfoFileServer(this);
 
         public override UserControl GetDisplayControl() =>new FileServerDisplayControl(this);
@@ -38,7 +37,7 @@ namespace ColorVision.Engine.Services.Devices.FileServer
 
         public override MQTTServiceBase? GetMQTTService()
         {
-            return MQTTFileServer;
+            return DService;
         }
     }
 }

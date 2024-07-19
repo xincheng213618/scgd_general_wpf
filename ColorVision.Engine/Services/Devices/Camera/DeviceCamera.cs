@@ -1,18 +1,18 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Util.Interfaces;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Services.PhyCameras;
+using ColorVision.Themes.Controls;
+using ColorVision.UI.Authorizations;
+using ColorVision.Util.Interfaces;
 using log4net;
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using ColorVision.UserSpace;
-using ColorVision.UI.Authorizations;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -20,10 +20,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCamera));
 
-        public PhyCamera? PhyCamera { get => PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraID);}
-
+        public PhyCamera? PhyCamera { get; set; }
         public ViewCamera View { get; set; }
-        public MQTTCamera DeviceService { get; set; }
+        public MQTTCamera DService { get; set; }
 
         public RelayCommand UploadCalibrationCommand { get; set; }
 
@@ -34,7 +33,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public DeviceCamera(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
-            DeviceService = new MQTTCamera(Config);
+            DService = new MQTTCamera(Config);
 
             View = new ViewCamera(this);
             View.View.Title = $"相机视图 - {Config.Code}";
@@ -49,10 +48,40 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
 
             DisPlaySaveCommand = new RelayCommand(a => SaveDis());
-            DisplayCameraControlLazy = new Lazy<DisplayCameraControl>(() => new DisplayCameraControl(this));
+            DisplayCameraControlLazy = new Lazy<DisplayCamera>(() => new DisplayCamera(this));
+
 
             RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
             OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger());
+            PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraID);
+            if (PhyCamera != null)
+            {
+                PhyCamera.ConfigChanged += PhyCameraConfigChanged;
+                PhyCamera.DeviceCamera = this;
+            }
+        }
+
+        private PhyCamera lastPhyCamera;
+
+        public void PhyCameraConfigChanged(object? sender, PhyCameras.Configs.ConfigPhyCamera e)
+        {
+            if (lastPhyCamera !=null && sender is PhyCamera phyCamera && phyCamera != lastPhyCamera)
+            {
+                lastPhyCamera.ConfigChanged -= PhyCameraConfigChanged;
+                lastPhyCamera = phyCamera;
+                lastPhyCamera.DeviceCamera = this;
+                lastPhyCamera.DeviceCamera = null;
+            }
+            Config.Channel = e.Channel;
+            Config.CFW.CopyFrom(e.CFW);
+            Config.MotorConfig.CopyFrom(e.MotorConfig);
+            Config.CameraID = e.CameraID;
+            Config.CameraType = e.CameraType;
+            Config.CameraMode = e.CameraMode;
+            Config.CameraModel = e.CameraModel;
+            Config.TakeImageMode = e.TakeImageMode;
+            Config.ImageBpp = e.ImageBpp;
+            Save();
         }
 
         [RequiresPermission(PermissionMode.Administrator)]
@@ -69,7 +98,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         [RequiresPermission(PermissionMode.Administrator)]
         public void OpenPhyCameraManger()
         {
-            DeviceService.GetAllCameraID();
+            DService.GetAllCameraID();
             PhyCameraManagerWindow phyCameraManager = new() { Owner = Application.Current.GetActiveWindow() };
             phyCameraManager.Show();
         }
@@ -78,21 +107,23 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public void RefreshDeviceId()
         {
-            MsgRecord msgRecord =  DeviceService.GetAllCameraID();
+            MsgRecord msgRecord =  DService.GetAllCameraID();
             msgRecord.MsgSucessed += (e) =>
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(),"GetAllCameraID Sucess");
+                MessageBox1.Show(Application.Current.GetActiveWindow(),"GetAllCameraID Sucess");
+                PhyCameraManager.GetInstance().LoadPhyCamera();
             };
         }
 
         public void SaveDis()
         {
-            if (MessageBox.Show(Application.Current.GetActiveWindow(), "是否保存当前界面的曝光配置", "ColorVison", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), "是否保存当前界面的曝光配置", "ColorVison", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
             SaveConfig();
         }
 
         public override void Save()
         {
+            PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraID);
             if (PhyCamera != null)
             {
                 PhyCamera.SetDeviceCamera(this);
@@ -106,28 +137,27 @@ namespace ColorVision.Engine.Services.Devices.Camera
             var model = CameraTempDao.Instance.GetLatestCameraTemp(SysResourceModel.Id);
             if (model != null)
             {
-                MessageBox.Show(Application.Current.MainWindow, $"{model.CreateDate:HH:mm:ss} {Environment.NewLine}温度:{model.TempValue}");
+                MessageBox1.Show(Application.Current.MainWindow, $"{model.CreateDate:HH:mm:ss} {Environment.NewLine}温度:{model.TempValue}");
             }
             else
             {
-                MessageBox.Show(Application.Current.MainWindow, "查询不到对应的温度数据");
+                MessageBox1.Show(Application.Current.MainWindow, "查询不到对应的温度数据");
             }
         }
 
-        public override UserControl GetDeviceControl() => new InfoCamera(this);
         public override UserControl GetDeviceInfo() => new InfoCamera(this);
         
-        public Lazy<DisplayCameraControl> DisplayCameraControlLazy { get; set; }
+        public Lazy<DisplayCamera> DisplayCameraControlLazy { get; set; }
 
         public override UserControl GetDisplayControl() => DisplayCameraControlLazy.Value;
 
         public override MQTTServiceBase? GetMQTTService()
         {
-            return DeviceService;
+            return DService;
         }
         public override void Dispose()
         {
-            DeviceService?.Dispose();
+            DService?.Dispose();
             base.Dispose();
             GC.SuppressFinalize(this);
         }

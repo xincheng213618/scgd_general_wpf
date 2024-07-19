@@ -10,9 +10,22 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using ColorVision.Themes;
+using ColorVision.UI;
+using ColorVision.Common.MVVM;
+using ColorVision.Themes.Controls;
 
 namespace ColorVision.Engine.Templates
 {
+    public class WindowTemplateConfig : ViewModelBase, IConfig
+    {
+        public static WindowTemplateConfig Instance => ConfigHandler.GetInstance().GetRequiredService<WindowTemplateConfig>();
+
+        public string DefaultCreateTemplateName { get => _DefaultCreateTemplateName; set { _DefaultCreateTemplateName = value; NotifyPropertyChanged(); } }
+        private string _DefaultCreateTemplateName = Properties.Resources.DefaultCreateTemplateName;
+
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+    }
+
     /// <summary>
     /// CalibrationTemplate.xaml 的交互逻辑
     /// </summary>
@@ -30,11 +43,20 @@ namespace ColorVision.Engine.Templates
             InitializeComponent();
             this.ApplyCaption();
         }
-
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+        public static WindowTemplateConfig Config => WindowTemplateConfig.Instance;
 
         private void Window_Initialized(object sender, EventArgs e)
         {
-            this.DataContext = TemplateConfig.Instance;
+            this.DataContext = Config;
+           if (ListView1.View is GridView gridView)
+            {
+                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
+                Config.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
+                Config.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
+                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+            }
+
             if (ITemplate.IsSideHide)
             {
                 GridProperty.Visibility = Visibility.Collapsed;
@@ -58,13 +80,7 @@ namespace ColorVision.Engine.Templates
             Title = ITemplate.Title;
             ListView1.ItemsSource = ITemplate.ItemsSource;
             ListView1.SelectedIndex = DefaultIndex;
-            if (ListView1.View is GridView gridView)
-            {
-                GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-                TemplateConfig.Instance.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
-                TemplateConfig.Instance.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
-                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
-            }
+
             Closed += WindowTemplate_Closed;
 
             this.PreviewKeyDown += (s, e) =>
@@ -85,6 +101,53 @@ namespace ColorVision.Engine.Templates
                 }
             };
         }
+
+        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && ListView1.View is GridView gridView)
+                GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
+        }
+
+        private void GridViewColumnSort(object sender, RoutedEventArgs e)
+        {
+            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
+            {
+                var columnName = gridViewColumnHeader.Content.ToString();
+                foreach (var item in GridViewColumnVisibilitys)
+                {
+                    if (item.ColumnName.ToString() == columnName)
+                    {
+                        item.IsSortD = !item.IsSortD;
+
+                        var collection = ITemplate.GetValue();
+                        var itemType = collection.GetType().GetGenericArguments().FirstOrDefault();
+
+                        if (itemType != null)
+                        {
+                            if (columnName == Properties.Resources.SerialNumber1 && typeof(ISortID).IsAssignableFrom(itemType))
+                            {
+                                SortableExtension.InvokeSortMethod("SortByID", itemType, collection, item.IsSortD);
+                            }
+                            else if (columnName == Properties.Resources.Name && typeof(ISortKey).IsAssignableFrom(itemType))
+                            {
+                                SortableExtension.InvokeSortMethod("SortByKey", itemType, collection, item.IsSortD);
+                            }
+                            else if (columnName == Properties.Resources.Choice)
+                            {
+                                foreach (var modebase in ITemplate.ItemsSource.OfType<TemplateModelBase>())
+                                {
+                                    modebase.IsSelected = item.IsSortD;
+                                }
+                                e.Handled = true;
+                            }
+                        }
+                    }
+                }
+            }
+            e.Handled = true;
+        }
+
+
 
 
         private void WindowTemplate_Closed(object? sender, EventArgs e)
@@ -149,8 +212,7 @@ namespace ColorVision.Engine.Templates
         private void Button_New_Click(object sender, RoutedEventArgs e)
         {
             int oldnum = ITemplate.Count;
-            CreateTemplate createWindow = new CreateTemplate(ITemplate) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            createWindow.ShowDialog();
+            ITemplate.OpenCreate();
             if (oldnum!= ITemplate.Count)
             {
                 ListView1.SelectedIndex= ITemplate.Count-1;
@@ -165,7 +227,7 @@ namespace ColorVision.Engine.Templates
         {
             if (ListView1.SelectedIndex > -1)
             {
-                if (MessageBox.Show(Application.Current.GetActiveWindow(), $"是否删除{ITemplate.Code}模板,删除后无法恢复!", Application.Current.MainWindow.Title, MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
+                if (MessageBox1.Show(Application.Current.GetActiveWindow(), $"是否删除{ITemplate.Code}模板,删除后无法恢复!", "ColorVision", MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK)
                 {
                     int index = ListView1.SelectedIndex;
                     ITemplate.Delete(ListView1.SelectedIndex);
@@ -176,7 +238,7 @@ namespace ColorVision.Engine.Templates
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "请先选择", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "请先选择", "ColorVision");
             }
         }
 
@@ -214,7 +276,7 @@ namespace ColorVision.Engine.Templates
         {
             if (ListView1.SelectedIndex < 0)
             {
-                MessageBox.Show("请选择您要导出的流程", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
+                MessageBox1.Show("请选择您要导出的流程", "ColorVision", MessageBoxButton.OK, MessageBoxImage.None, MessageBoxResult.None, MessageBoxOptions.DefaultDesktopOnly);
                 return;
             }
             ITemplate.Export(ListView1.SelectedIndex);
@@ -265,52 +327,6 @@ namespace ColorVision.Engine.Templates
                     }
                 }
             }
-        }
-
-        private void ContextMenu_Opened(object sender, RoutedEventArgs e)
-        {
-            if (sender is ContextMenu contextMenu && contextMenu.Items.Count == 0 && ListView1.View is GridView gridView)
-                GridViewColumnVisibility.GenContentMenuGridViewColumn(contextMenu, gridView.Columns, GridViewColumnVisibilitys);
-        }
-        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
-
-        private void GridViewColumnSort(object sender, RoutedEventArgs e)
-        {
-            if (sender is GridViewColumnHeader gridViewColumnHeader && gridViewColumnHeader.Content != null)
-            {
-                var columnName = gridViewColumnHeader.Content.ToString();
-                foreach (var item in GridViewColumnVisibilitys)
-                {
-                    if (item.ColumnName.ToString() == columnName)
-                    {
-                        item.IsSortD = !item.IsSortD;
-
-                        var collection = ITemplate.GetValue();
-                        var itemType = collection.GetType().GetGenericArguments().FirstOrDefault();
-
-                        if (itemType != null)
-                        {
-                            if (columnName == Properties.Resources.SerialNumber1 && typeof(ISortID).IsAssignableFrom(itemType))
-                            {
-                                SortableExtension.InvokeSortMethod("SortByID", itemType, collection, item.IsSortD);
-                            }
-                            else if (columnName == Properties.Resources.Name && typeof(ISortKey).IsAssignableFrom(itemType))
-                            {
-                                SortableExtension.InvokeSortMethod("SortByKey", itemType, collection, item.IsSortD);
-                            }
-                            else if (columnName == Properties.Resources.Choice)
-                            {
-                                foreach (var modebase in ITemplate.ItemsSource.OfType<TemplateModelBase>())
-                                {
-                                    modebase.IsSelected = item.IsSortD;
-                                }
-                                e.Handled = true;
-                            }
-                        }
-                    }
-                }
-            }
-            e.Handled = true;
         }
 
 

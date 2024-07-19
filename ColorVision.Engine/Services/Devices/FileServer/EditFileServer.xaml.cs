@@ -1,7 +1,8 @@
-﻿using ColorVision.Common.Extension;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Spectrum;
+using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
 using cvColorVision;
 using SkiaSharp;
@@ -47,6 +48,9 @@ namespace ColorVision.Engine.Services.Devices.FileServer
 
             EditConfig = Device.Config.Clone();
             EditContent.DataContext = EditConfig;
+
+            CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
+            CameraPhyID.DisplayMemberPath = "Code";
         }
 
 

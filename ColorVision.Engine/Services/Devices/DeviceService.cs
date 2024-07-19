@@ -6,6 +6,7 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
@@ -21,7 +22,7 @@ using System.Windows.Media;
 namespace ColorVision.Engine.Services.Devices
 {
 
-    public class DeviceService : BaseResourceObject, IDisposable, ITreeViewItem,IIcon
+    public abstract class DeviceService : BaseResourceObject, IDisposable, ITreeViewItem,IIcon
     {
         public virtual string Code { get; set; }
         public virtual string SendTopic { get; set; }
@@ -52,11 +53,6 @@ namespace ColorVision.Engine.Services.Devices
         public virtual ImageSource Icon { get; set; }
         public SysDeviceModel SysResourceModel { get; set; }
 
-        public virtual UserControl GetDeviceControl()
-        {
-            throw new NotImplementedException();
-        }
-
         public virtual UserControl GetDeviceInfo()
         {
             throw new NotImplementedException();
@@ -67,12 +63,7 @@ namespace ColorVision.Engine.Services.Devices
 
         public virtual UserControl GetDisplayControl()
         {
-            throw new NotImplementedException();
-        }
-
-        public virtual UserControl GetEditControl()
-        {
-            throw new NotImplementedException();
+            return new UserControl();
         }
 
         public virtual View GetView()
@@ -122,18 +113,17 @@ namespace ColorVision.Engine.Services.Devices
                 ofd.RestoreDirectory = true;
                 if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                 Config.ToJsonNFile(ofd.FileName);
-                MessageBox.Show(WindowHelpers.GetActiveWindow(),"导出成功", "ColorVision"); 
+                MessageBox1.Show(WindowHelpers.GetActiveWindow(),"导出成功", "ColorVision"); 
             });
 
             CopyCommand = new RelayCommand(a => {
                 if (Config!=null)
                 {
-                    Common.NativeMethods.Clipboard.SetText(Config.ToJsonN());
-                    MessageBox.Show(WindowHelpers.GetActiveWindow(),"复制成功", "ColorVision");
+                    MessageBox1.Show(WindowHelpers.GetActiveWindow(), Config.ToJsonN(), "ColorVision");
                 }
             });
             ResetCommand = new RelayCommand(a => {
-                MessageBoxResult result = MessageBox.Show(WindowHelpers.GetActiveWindow(), "确定要重置吗？", "ColorVision", MessageBoxButton.OKCancel);
+                MessageBoxResult result = MessageBox1.Show(WindowHelpers.GetActiveWindow(), "确定要重置吗？", "ColorVision", MessageBoxButton.OKCancel);
                 if (result == MessageBoxResult.OK)
                     Config = new T();
             }, a => AccessControl.Check(PermissionMode.Administrator));
@@ -220,7 +210,7 @@ namespace ColorVision.Engine.Services.Devices
 
         public override void Delete()
         {
-            if (MessageBox.Show(Application.Current.GetActiveWindow(), "是否删除", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), "是否删除", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
             base.Delete();
             Parent.RemoveChild(this);
 

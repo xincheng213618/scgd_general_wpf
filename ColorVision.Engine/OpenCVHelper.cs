@@ -14,19 +14,10 @@ namespace ColorVision.Engine
         public int channels;
         public int depth; //bpp
 
-        public int Type
-        {
-            get { return (((depth & ((1 << 3) - 1)) + ((channels - 1) << 3))); }
-        }
+        public readonly int Type => (((depth & ((1 << 3) - 1)) + ((channels - 1) << 3)));
 
-        public int ElemSize
-        {
-            get
-            {
-                return ((((((((depth & ((1 << 3) - 1)) + ((channels - 1) << 3))) & ((512 - 1) << 3)) >> 3) + 1) *
+        public int ElemSize => ((((((((depth & ((1 << 3) - 1)) + ((channels - 1) << 3))) & ((512 - 1) << 3)) >> 3) + 1) *
                         ((0x28442211 >> (((((depth & ((1 << 3) - 1)) + ((channels - 1) << 3))) & ((1 << 3) - 1)) * 4)) & 15)));
-            }
-        }
 
         public readonly uint Size { get => (uint)(rows * cols * channels * (depth / 8)); }
 
@@ -165,33 +156,28 @@ namespace ColorVision.Engine
 
     public static class OpenCVHelper
     {
-
-        [DllImport("ColorVisionCore.dll", CharSet = CharSet.Unicode)]
-        public static extern int CVWrite(string FullPath, HImage hImage,int compression =0);
-
-        [DllImport("ColorVisionCore.dll", CharSet = CharSet.Unicode)]
-        public static extern int CVRead(string FullPath, out HImage hImage);
+        private const string LibOpenCVHelper = "libs\\OpenCVHelper.dll";
 
 
         [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
         public static extern void RtlMoveMemory(IntPtr Destination, IntPtr Source, uint Length);
 
-        [DllImport("OpenCVHelper.dll", CharSet = CharSet.Unicode)]
+        [DllImport(LibOpenCVHelper, CharSet = CharSet.Unicode)]
         public static extern void ReadCVFile(string FullPath);
 
-        [DllImport("OpenCVHelper.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(LibOpenCVHelper, CallingConvention = CallingConvention.Cdecl)]
         public static extern int ReadGhostImage([MarshalAs(UnmanagedType.LPStr)] string FilePath, int singleLedPixelNum, int[] LEDPixelX, int[] LEDPixelY, int singleGhostPixelNum, int[] GhostPixelX, int[] GhostPixelY, out HImage hImage);
 
-        [DllImport("OpenCVHelper.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(LibOpenCVHelper, CallingConvention = CallingConvention.Cdecl)]
         public static extern int PseudoColor(HImage image, out HImage hImage, uint min, uint max , ColormapTypes colormapTypes =ColormapTypes.COLORMAP_JET);
 
-        [DllImport("OpenCVHelper.dll", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(LibOpenCVHelper, CallingConvention = CallingConvention.Cdecl)]
         public static extern void FreeHImageData(IntPtr data);
 
-        [DllImport("OpenCVHelper.dll")]
+        [DllImport(LibOpenCVHelper)]
         public unsafe static extern void SetInitialFrame(nint pRoutineHandler);
 
-        [DllImport("OpenCVHelper.dll", CharSet = CharSet.Unicode)]
+        [DllImport(LibOpenCVHelper, CharSet = CharSet.Unicode)]
         public static extern void ReadVideoTest(string FullPath);
 
 

@@ -15,7 +15,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
     {
         public DeviceCalibration DeviceCalibration { get; set; }
 
-        public MQTTCalibration Service { get => DeviceCalibration.DeviceService; }
+        public MQTTCalibration Service { get => DeviceCalibration.DService; }
 
         public ConfigCalibration EditConfig { get; set; }
         public EditCalibration(DeviceCalibration  deviceCalibration)
@@ -40,8 +40,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
             CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
             CameraPhyID.SelectedItem = PhyCameraManager.GetInstance().GetPhyCamera(DeviceCalibration.Config.CameraID);
-            CameraPhyID.DisplayMemberPath = "Name";
-
+            CameraPhyID.DisplayMemberPath = "Code";
+            CameraPhyID.SelectedValuePath = "Name";
             EditConfig = DeviceCalibration.Config.Clone();
             EditContent.DataContext = EditConfig;
 

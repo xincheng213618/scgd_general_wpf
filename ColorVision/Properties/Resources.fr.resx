@@ -354,4 +354,13 @@
   <data name="Initializer" xml:space="preserve">
     <value>Module d'initialisation</value>
   </data>
+  <data name="FilterSupportsRegex" xml:space="preserve">
+    <value>Le filtre prend en charge les expressions régulières</value>
+  </data>
+  <data name="AutoRefresh" xml:space="preserve">
+    <value>Actualisation automatique</value>
+  </data>
+  <data name="AutoScrollToEnd" xml:space="preserve">
+    <value>Faire défiler automatiquement vers le bas</value>
+  </data>
 </root>

@@ -49,63 +49,67 @@
                 </Grid>
             </Grid>        </DockPanel>
         <Border x:Name="DisPlayBorder" Style="{DynamicResource BorderModuleArea}"  Visibility="{Binding IsDisplayOpen,Converter={StaticResource bool2VisibilityConverter}}" >
-            <StackPanel   Margin="5" >
-                <GroupBox  Header="{x:Static properties:Resources.ImageFile}">
-                    <StackPanel  Margin="5" >
-                        <DockPanel Margin="0,2">
-                            <RadioButton x:Name="RadioLocal"  Content="{x:Static properties:Resources.Local}" IsChecked="True" GroupName="alg_src"/>
-                            <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
-                            <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="160"/>
-                        </DockPanel>
-                        <DockPanel Margin="0,2">
-                            <RadioButton x:Name="AlgRawSelect" GroupName="alg_src"/>
-                            <Button Content="{x:Static properties:Resources.Refresh}" Click="Button_Click_RawRefresh" />
-                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_Click_RawOpen" />
-                            <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}" Width="150" />
-                        </DockPanel>
-                        <DockPanel Margin="0,2">
-                            <RadioButton x:Name="AlgBatchSelect" Content="{x:Static properties:Resources.BatchNumber}" GroupName="alg_src"/>
-                            <TextBox x:Name="AlgBatchCode" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" />
-                        </DockPanel>
-                    </StackPanel>
-                </GroupBox>
+            <StackPanel  Margin="5">
+                <TextBlock x:Name="TextBlockUnknow" Text="未知状态"  HorizontalAlignment="Center"/>
+                <Button x:Name="ButtonUnauthorized" Margin="0,0,0,3" Content="未注册" Command="{Binding EditCommand}"/>
+                <StackPanel x:Name="StackPanelContent">
+                    <GroupBox  Header="{x:Static properties:Resources.ImageFile}">
+                        <StackPanel  Margin="5" >
+                            <DockPanel Margin="0,2">
+                                <RadioButton x:Name="RadioLocal"  Content="{x:Static properties:Resources.Local}" IsChecked="True" GroupName="alg_src"/>
+                                <Button  Content="..." DockPanel.Dock="Right"  HorizontalAlignment="Right" Click="Open_File" />
+                                <TextBox x:Name="ImageFile" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" Width="160"/>
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <RadioButton x:Name="AlgRawSelect" GroupName="alg_src"/>
+                                <Button Content="{x:Static properties:Resources.Refresh}" Click="Button_Click_RawRefresh" />
+                                <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.Open}" Click="Button_Click_RawOpen" />
+                                <ComboBox x:Name="CB_RawImageFiles"  Style="{StaticResource ComboBox.Small}" Width="150" />
+                            </DockPanel>
+                            <DockPanel Margin="0,2">
+                                <RadioButton x:Name="AlgBatchSelect" Content="{x:Static properties:Resources.BatchNumber}" GroupName="alg_src"/>
+                                <TextBox x:Name="AlgBatchCode" Style="{StaticResource TextBox.Small}" BorderThickness="0,0,0,1" />
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
 
-                <DockPanel Margin="0,2"  Visibility="{Binding  ElementName=RadioLocal,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
-                    <TextBlock  Text="{x:Static properties:Resources.ExposureR}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                    <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeR}"  Width="50"/>
-                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeR}" Minimum="1" Maximum="6000">
-                        <hc:PreviewSlider.PreviewContent>
-                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0."/>
-                        </hc:PreviewSlider.PreviewContent>
-                    </hc:PreviewSlider>
-                </DockPanel>
-                <DockPanel Margin="0,2"  Visibility="{Binding  ElementName=RadioLocal,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
-                    <TextBlock  Text="{x:Static properties:Resources.ExposureG}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                    <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeG}"  Width="50"/>
-                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeG}" Minimum="1" Maximum="6000">
-                        <hc:PreviewSlider.PreviewContent>
-                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0."/>
-                        </hc:PreviewSlider.PreviewContent>
-                    </hc:PreviewSlider>
-                </DockPanel>
-                <DockPanel Margin="0,2"  Visibility="{Binding  ElementName=RadioLocal,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
-                    <TextBlock  Text="{x:Static properties:Resources.ExposureB}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
-                    <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeB}"  Width="50"/>
-                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeB}" Minimum="1" Maximum="6000">
-                        <hc:PreviewSlider.PreviewContent>
-                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0."/>
-                        </hc:PreviewSlider.PreviewContent>
-                    </hc:PreviewSlider>
-                </DockPanel>
-                <DockPanel Margin="0,2">
-                    <TextBlock Text="{x:Static properties:Resources.Calibration}"  Margin="0,0,5,0"/>
-                    <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resources.Calculate}"  HorizontalAlignment="Right" Click="Calibration_Click" />
-                    <ComboBox  x:Name="ComboxCalibrationTemplate" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
-                    <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
-                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="Calibration"  Click="MenuItem_Template"/>
-                    </Grid>
-                </DockPanel>
+                    <DockPanel Margin="0,2"  Visibility="{Binding  ElementName=RadioLocal,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+                        <TextBlock  Text="{x:Static properties:Resources.ExposureR}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                        <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeR}"  Width="50"/>
+                        <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeR}" Minimum="1" Maximum="6000">
+                            <hc:PreviewSlider.PreviewContent>
+                                <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0."/>
+                            </hc:PreviewSlider.PreviewContent>
+                        </hc:PreviewSlider>
+                    </DockPanel>
+                    <DockPanel Margin="0,2"  Visibility="{Binding  ElementName=RadioLocal,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+                        <TextBlock  Text="{x:Static properties:Resources.ExposureG}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                        <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeG}"  Width="50"/>
+                        <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeG}" Minimum="1" Maximum="6000">
+                            <hc:PreviewSlider.PreviewContent>
+                                <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0."/>
+                            </hc:PreviewSlider.PreviewContent>
+                        </hc:PreviewSlider>
+                    </DockPanel>
+                    <DockPanel Margin="0,2"  Visibility="{Binding  ElementName=RadioLocal,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+                        <TextBlock  Text="{x:Static properties:Resources.ExposureB}" VerticalAlignment="Center"  HorizontalAlignment="Center"  Margin="0,0,5,0" />
+                        <TextBox DockPanel.Dock="Right" Text="{Binding Config.ExpTimeB}"  Width="50"/>
+                        <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="100"  Value="{Binding Config.ExpTimeB}" Minimum="1" Maximum="6000">
+                            <hc:PreviewSlider.PreviewContent>
+                                <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="#0."/>
+                            </hc:PreviewSlider.PreviewContent>
+                        </hc:PreviewSlider>
+                    </DockPanel>
+                    <DockPanel Margin="0,2">
+                        <TextBlock Text="{x:Static properties:Resources.Calibration}"  Margin="0,0,5,0"/>
+                        <Button  DockPanel.Dock="Right" Content="{x:Static properties:Resources.Calculate}"  HorizontalAlignment="Right" Click="Calibration_Click" />
+                        <ComboBox  x:Name="ComboxCalibrationTemplate" HorizontalAlignment="Left" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value"  DisplayMemberPath="Key" />
+                        <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="Calibration"  Click="MenuItem_Template"/>
+                        </Grid>
+                    </DockPanel>
+                </StackPanel>
                 <DockPanel Margin="0,2" >
                     <TextBlock Text="{x:Static properties:Resources.OutputView}" VerticalAlignment="Center" MinWidth="40" Margin="0,0,20,0"/>
                     <ComboBox x:Name="ComboxView" Style="{StaticResource ComboBox.Small}" SelectedValuePath="Value" DisplayMemberPath="Key"/>

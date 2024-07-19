@@ -241,15 +241,6 @@ namespace ColorVision.UI.Properties {
         }
         
         /// <summary>
-        ///   查找类似 主题(_H) 的本地化字符串。
-        /// </summary>
-        public static string MenuTheme {
-            get {
-                return ResourceManager.GetString("MenuTheme", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 工具(_T) 的本地化字符串。
         /// </summary>
         public static string MenuTool {
@@ -264,15 +255,6 @@ namespace ColorVision.UI.Properties {
         public static string ru {
             get {
                 return ResourceManager.GetString("ru", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   查找类似 主题 的本地化字符串。
-        /// </summary>
-        public static string Theme {
-            get {
-                return ResourceManager.GetString("Theme", resourceCulture);
             }
         }
         

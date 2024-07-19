@@ -12,7 +12,7 @@ namespace ColorVision.UI
     /// </summary>
     public interface IMainWindowInitialized
     {
-        void Initialize();
+        Task Initialize();
     }
 
     public interface IMessageUpdater

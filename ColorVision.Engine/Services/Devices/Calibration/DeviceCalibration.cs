@@ -17,7 +17,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(DeviceCalibration));
 
-        public MQTTCalibration DeviceService { get; set; }
+        public MQTTCalibration DService { get; set; }
 
         public PhyCamera? PhyCamera { get => PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraID); }
 
@@ -25,7 +25,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         public DeviceCalibration(SysDeviceModel sysResourceModel) : base(sysResourceModel)
         {
-            DeviceService = new MQTTCalibration(Config);
+            DService = new MQTTCalibration(Config);
             View = new ViewCalibration(this);
             View.View.Title = $"校正视图 - {Config.Code}";
             this.SetIconResource("DICalibrationIcon", View.View);;
@@ -39,6 +39,25 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             }, a => AccessControl.Check(PermissionMode.Administrator));
             OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger(),a => AccessControl.Check(OpenPhyCameraManger));
             DisplayLazy = new Lazy<DisplayCalibrationControl>(() => new DisplayCalibrationControl(this));
+            if (PhyCamera != null)
+            {
+                PhyCamera.ConfigChanged += PhyCameraConfigChanged;
+                PhyCamera.DeviceCalibration = this;
+            }
+        }
+
+        private PhyCamera lastPhyCamera;
+
+        public void PhyCameraConfigChanged(object? sender, PhyCameras.Configs.ConfigPhyCamera e)
+        {
+            if (lastPhyCamera != null && sender is PhyCamera phyCamera && phyCamera != lastPhyCamera)
+            {
+                lastPhyCamera.ConfigChanged -= PhyCameraConfigChanged;
+                lastPhyCamera = phyCamera;
+                phyCamera.DeviceCalibration = this;
+                lastPhyCamera.DeviceCalibration = null;
+            }
+            Save();
         }
 
         public RelayCommand OpenPhyCameraMangerCommand { get; set; }
@@ -56,7 +75,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 PhyCamera.SetCalibration(this);
         }
 
-        public override UserControl GetDeviceControl() => new InfoCalibration(this);
 
         public override UserControl GetDeviceInfo() => new InfoCalibration(this);
 
@@ -67,7 +85,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         public override MQTTServiceBase? GetMQTTService()
         {
-            return DeviceService;
+            return DService;
         }
     }
 }

@@ -14,22 +14,11 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
     /// </summary>
     public class ConfigCamera : DeviceServiceConfig
     {
-        public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(CameraCode)); } }
+        public string? CameraCode { get => _CameraCode; set { _CameraCode = value; NotifyPropertyChanged();  } }
+        private string? _CameraCode;
+
+        public string CameraID { get => _CameraID; set { _CameraID = value; NotifyPropertyChanged();} }
         private string _CameraID;
-
-        [JsonIgnore]
-       public string? CameraCode
-        {
-            get
-            {
-                if (string.IsNullOrWhiteSpace(CameraID)) return null;
-                var PhyCamera = PhyCameraManager.GetInstance().PhyCameras.First(a => a.Name == CameraID);
-                if (PhyCamera != null)
-                    return PhyCamera.SysResourceModel.Code;
-                return null;
-
-            }
-        }
 
         public CameraType CameraType { get => _CameraType; set { if (_CameraType == value) return; _CameraType = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsExpThree)); UpdateCameraModeAndIBM(value); } }
         private CameraType _CameraType;
@@ -49,6 +38,13 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         private ImageChannel _Channel;
 
         public CameraVideoConfig VideoConfig { get; set; } = new CameraVideoConfig();
+
+        public bool UsingFileCaching { get => _UsingFileCaching; set { _UsingFileCaching = value; NotifyPropertyChanged(); } }
+        private bool _UsingFileCaching;
+
+        public bool IsCVCIEFileSave { get => _IsCVCIEFileSave; set { _IsCVCIEFileSave = value; NotifyPropertyChanged(); } }
+        private bool _IsCVCIEFileSave = true;
+
         public int Gain { get => _Gain; set { _Gain = value; NotifyPropertyChanged(); } }
         private int _Gain = 10;
 
@@ -71,6 +67,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
             set => NotifyPropertyChanged();
         }
 
+        public bool IsAutoExpose { get => _IsAutoExpose; set { _IsAutoExpose =value; NotifyPropertyChanged(); } }
+        private bool _IsAutoExpose;
         public int ExpTime { get => _ExpTime; set { _ExpTime = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(ExpTimeLog)); } }
         private int _ExpTime = 10;
 
@@ -102,16 +100,15 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
         public double SaturationB { get => _SaturationB; set { _SaturationB = value; NotifyPropertyChanged(); } }
         private double _SaturationB = -1;
 
-        public CFWPORT CFW { get; set; } = new CFWPORT();
+        public CFWPORT CFW { get => _CFW; set { _CFW = value; NotifyPropertyChanged(); } }
+        private CFWPORT _CFW = new CFWPORT();
 
-        public bool IsHaveMotor { get => _IsHaveMotor; set { _IsHaveMotor = value; NotifyPropertyChanged(); } }
-        private bool _IsHaveMotor;
+        public MotorConfig MotorConfig { get => _MotorConfig; set { _MotorConfig = value; NotifyPropertyChanged(); } }
+        private MotorConfig _MotorConfig = new MotorConfig();
 
-        public MotorConfig MotorConfig { get; set; } = new MotorConfig();
-          
+        public AutoFocusConfig AutoFocusConfig { get; set; } = new AutoFocusConfig();
+
         public PhyExpTimeCfg ExpTimeCfg { get; set; } = new PhyExpTimeCfg();
-
-        public PhyCameraCfg CameraCfg { get; set; } = new PhyCameraCfg();
 
         public FileServerCfg FileServerCfg { get; set; } = new FileServerCfg();
 
@@ -209,10 +206,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Configs
                     CameraModel = CameraModel.HK_USB;
                     break;
                 case CameraType.CameraType_Total:
-                    // Handle CameraType_Total case if needed
+                    // Process CameraType_Total case if needed
                     break;
                 default:
-                    // Handle default case if needed
+                    // Process default case if needed
                     break;
             }
             return false;

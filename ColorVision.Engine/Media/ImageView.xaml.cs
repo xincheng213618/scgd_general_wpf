@@ -1,19 +1,15 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Draw;
-using ColorVision.Draw.Ruler;
-using ColorVision.Engine;
-using ColorVision.Engine.Services.Devices.Algorithm.Views;
+using ColorVision.UI.Draw;
+using ColorVision.UI.Draw.Ruler;
 using ColorVision.Net;
 using ColorVision.UI.Views;
 using ColorVision.Util.Draw.Special;
 using cvColorVision;
-using CVCommCore.CVAlgorithm;
 using log4net;
 using MQTTMessageLib.FileServer;
-using OpenCvSharp.WpfExtensions;
-using SkiaSharp.Views.WPF;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -26,33 +22,84 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Data;
 using System.Windows.Input;
-using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 namespace ColorVision.Engine.Media
 {
+    public class ImageViewConfig:ViewModelBase
+    {
+        [JsonIgnore]
+        public IntPtr ConvertXYZhandle { get; set; } = Tool.GenerateRandomIntPtr();
+
+        [JsonIgnore]
+        public bool ConvertXYZhandleOnce { get; set; }
+
+        public ColormapTypes ColormapTypes { get => _ColormapTypes; set { _ColormapTypes = value; NotifyPropertyChanged(); } }
+        private ColormapTypes _ColormapTypes = ColormapTypes.COLORMAP_JET;
+
+       [JsonIgnore]
+        public string FilePath { get => _FilePath; set { _FilePath = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsCVCIE));  } }
+        private string _FilePath;
+
+        [JsonIgnore]
+        public bool IsCVCIE { get => FilePath != null && FilePath.Contains("cvcie") && CVFileUtil.IsCIEFile(FilePath);  }
+
+        [JsonIgnore]
+        public int Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsChannel1)); NotifyPropertyChanged(nameof(IsChannel3)); } }
+        private int _Channel;
+
+        [JsonIgnore]
+        public bool IsChannel1 => Channel == 1;
+        [JsonIgnore]
+        public bool IsChannel3 => Channel == 3;
+
+        public bool IsShowLoadImage { get => _IsShowLoadImage; set { _IsShowLoadImage = value; NotifyPropertyChanged(); } }
+        private bool _IsShowLoadImage = true;
+    }
+
+
+
     /// <summary>
     /// ImageView.xaml 的交互逻辑
     /// </summary>
     public partial class ImageView : UserControl, IView,IDisposable, INotifyPropertyChanged
     {
+        public static List<ImageView> Views { get; set; } = new List<ImageView>();
+        public static ImageView GetInstance()
+        {
+            foreach (var item in Views)
+            {
+                if (item.Parent == null)
+                    return item;
+            }
+            ImageView imageView = new ImageView();
+            Views.Add(imageView);
+            return imageView;
+        }
+
         private static readonly ILog logger = LogManager.GetLogger(typeof(ImageView));
         public ToolBarTop ToolBarTop { get; set; }
 
-        public ColormapTypes ColormapTypes { get; set; } = ColormapTypes.COLORMAP_JET;
-
         public View View { get; set; }
-     
+
+        public ImageViewConfig Config { get => _Config; set { _Config = value; NotifyPropertyChanged(); } }
+        private ImageViewConfig _Config;
+
         public ImageView()
         {
+            Config = new ImageViewConfig();
             View = new View();
             InitializeComponent();
         }
-        public void Dispose()
+
+
+        public void SetConfig(ImageViewConfig imageViewConfig)
         {
-            GC.SuppressFinalize(this);
+            Config = imageViewConfig;
+            ToolBarLeft.DataContext = Config;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -65,87 +112,83 @@ namespace ColorVision.Engine.Media
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
-            //这里是为了让控件可以被选中，作为做了一个底层的Textbox,这样就可以让控件被选中了，后面看看能不能优化掉，这个写法并不是好的。
-            MouseDown += (s, e) =>
-            {
-                TextBox1.Focus();
-            };
             ToolBarTop = new ToolBarTop(this,Zoombox1, ImageShow);
             ToolBar1.DataContext = ToolBarTop;
-            ToolBar2.DataContext = ToolBarTop;
+            ToolBarRight.DataContext = ToolBarTop;
             ToolBarTop.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             ListView1.ItemsSource = DrawingVisualLists;
 
-            ToolBarTop.ClearImageEventHandler += (s, e) => Clear();
-
+            ToolBarTop.ClearImageEventHandler += Clear;
             Focusable = true;
             Zoombox1.LayoutUpdated += Zoombox1_LayoutUpdated;
-
-
-            ImageShow.VisualsAdd += (s, e) =>
-            {
-                if (s is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && s is Visual visual1)
-                {
-                    DrawingVisualLists.Add(visual);
-                    visual.BaseAttribute.PropertyChanged += (s1, e1) =>
-                    {
-                        if (e1.PropertyName == "IsShow")
-                        {
-                            ListView1.ScrollIntoView(visual);
-                            ListView1.SelectedIndex = DrawingVisualLists.IndexOf(visual);
-                            if (visual.BaseAttribute.IsShow == true)
-                            {
-                                if (!ImageShow.ContainsVisual(visual1))
-                                {
-                                    ImageShow.AddVisual(visual1);
-                                }
-                            }
-                            else
-                            {
-                                if (ImageShow.ContainsVisual(visual1))
-                                {
-                                    ImageShow.RemoveVisual(visual1);
-                                }
-                            }
-                        }
-                    };
-
-                }
-            };
-
-            //如果是不显示
-            ImageShow.VisualsRemove += (s, e) =>
-            {
-                if (s is IDrawingVisual visual)
-                {
-                    if (visual.BaseAttribute.IsShow)
-                        DrawingVisualLists.Remove(visual);
-                }
-            };
-
-            PreviewKeyDown += (s, e) =>
-            {
-                if (e.Key == Key.R)
-                {
-                    BorderPropertieslayers.Visibility = BorderPropertieslayers.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
-                }
-
-            };
-            PreviewKeyDown += (s,e)=>
-            {
-                if (e.Key == Key.Escape)
-                {
-                    if (DrawingVisualPolygonCache != null)
-                    {
-                        ImageShow.RemoveVisual(DrawingVisualPolygonCache);
-                        DrawingVisualPolygonCache.Render();
-                    }
-                }
-            };
-
+            ImageShow.VisualsAdd += ImageShow_VisualsAdd;
+            ImageShow.VisualsRemove += ImageShow_VisualsRemove;
+            PreviewKeyDown += ImageView_PreviewKeyDown;
+            this.MouseDown += (s, e) => this.Focus();
 
             AllowDrop = true;
-            Drop += ImageView_Drop; ;
+            Drop += ImageView_Drop;
+
+        }
+
+        public void Clear(object? sender, EventArgs e)
+        {
+            Clear();
+        }
+
+
+        private void ImageShow_VisualsAdd(object? sender, EventArgs e)
+        {
+            if (sender is IDrawingVisual visual && !DrawingVisualLists.Contains(visual) && sender is Visual visual1)
+            {
+                DrawingVisualLists.Add(visual);
+                visual.BaseAttribute.PropertyChanged += (s1, e1) =>
+                {
+                    if (e1.PropertyName == "IsShow")
+                    {
+                        ListView1.ScrollIntoView(visual);
+                        ListView1.SelectedIndex = DrawingVisualLists.IndexOf(visual);
+                        if (visual.BaseAttribute.IsShow == true)
+                        {
+                            if (!ImageShow.ContainsVisual(visual1))
+                            {
+                                ImageShow.AddVisual(visual1);
+                            }
+                        }
+                        else
+                        {
+                            if (ImageShow.ContainsVisual(visual1))
+                            {
+                                ImageShow.RemoveVisual(visual1);
+                            }
+                        }
+                    }
+                };
+            }
+
+        }
+
+        private void ImageShow_VisualsRemove(object? sender, EventArgs e)
+        {
+            if (sender is IDrawingVisual visual)
+                if (visual.BaseAttribute.IsShow)
+                    DrawingVisualLists.Remove(visual);
+        }
+
+        private void ImageView_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Escape)
+            {
+                if (DrawingVisualPolygonCache != null)
+                {
+                    ImageShow.RemoveVisual(DrawingVisualPolygonCache);
+                    DrawingVisualPolygonCache.Render();
+                }
+            }
+            else if (e.Key == Key.R)
+            {
+                BorderPropertieslayers.Visibility = BorderPropertieslayers.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible;
+            }
         }
 
         private void ImageView_Drop(object sender, DragEventArgs e)
@@ -161,7 +204,7 @@ namespace ColorVision.Engine.Media
                     if (fn.EndsWith("cvraw", StringComparison.OrdinalIgnoreCase))
                     {
                         CVFileUtil.ReadCVRaw(fn, out CVCIEFile fileInfo);
-                        OpenImage(fileInfo);
+                        OpenImage(fileInfo.ToWriteableBitmap());
                     }
                     else if (Tool.IsImageFile(fn))
                     {
@@ -223,7 +266,7 @@ namespace ColorVision.Engine.Media
                 {
                     drawing.BaseAttribute.IsShow = false;
                 };
-                MenuItem menuIte2 = new() { Header = "删除(_D)" };
+                MenuItem menuIte2 = new() { Header = Properties.Resources.MenuDelete };
                 menuIte2.Click += (s, e) =>
                 {
                     ImageShow.RemoveVisual(DrawingVisual);
@@ -502,86 +545,63 @@ namespace ColorVision.Engine.Media
                 }
             }
         }
-        public string? FilePath { get; set; }
-
-        public void OpenImage(CVCIEFile fileInfo)
-        {
-            if (fileInfo.FileExtType == FileExtType.Tif)
-            {
-                var src = OpenCvSharp.Cv2.ImDecode(fileInfo.data, OpenCvSharp.ImreadModes.Unchanged);
-                SetImageSource(src.ToWriteableBitmap());
-            }
-            else if (fileInfo.FileExtType == FileExtType.Raw || fileInfo.FileExtType == FileExtType.Src)
-            {
-                logger.Info("OpenImage .....");
-
-                OpenCvSharp.Mat src = new(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
-                OpenCvSharp.Mat dst = null;
-                if (fileInfo.bpp == 32)
-                {
-                    OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
-                    dst = new OpenCvSharp.Mat();
-                    src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
-                }
-                else
-                {
-                    dst = src;
-                }
-                SetImageSource(dst.ToWriteableBitmap());
-                dst.Dispose();
-                src.Dispose();
-            }
-            else if (fileInfo.FileExtType == FileExtType.CIE)
-            {
-                logger.Info("OpenImage .....");
-
-                OpenCvSharp.Mat src = new(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
-                OpenCvSharp.Mat dst = null;
-                if (fileInfo.bpp == 32)
-                {
-                    OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
-                    dst = new OpenCvSharp.Mat();
-                    src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
-                }
-                else
-                {
-                    dst = src;
-                }
-                var Data = dst.ToWriteableBitmap();
-                SetImageSource(Data);
-                dst.Dispose();
-                src.Dispose();
-            }
-        }
 
         public void Clear()
         {
             PseudoImage = null;
             ViewBitmapSource = null;
-
             ImageShow.Source = null;
-
             if (HImageCache != null)
             {
                 HImageCache?.Dispose();
                 HImageCache = null;
             }
             GC.Collect();
-            FilePath = null;
+
+            int result = ConvertXYZ.CM_ReleaseBuffer(Config.ConvertXYZhandle);
+        }
+
+        public void OpenImage(WriteableBitmap? writeableBitmap)
+        {
+           if (writeableBitmap != null) 
+                SetImageSource(writeableBitmap);
         }
 
         public void OpenImage(string? filePath)
         {
             if (filePath != null && File.Exists(filePath))
             {
+                long fileSize = new FileInfo(filePath).Length;
+                bool isLargeFile = fileSize > 1024 * 1024 * 100;//例如，文件大于1MB时认为是大文件
+
                 string ext = Path.GetExtension(filePath).ToLower(CultureInfo.CurrentCulture);
                 if (ext.Contains(".cvraw") || ext.Contains(".cvsrc") || ext.Contains(".cvcie"))
                 {
                     FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
+                    IsCVCIE = fileExtType == FileExtType.CIE;
                     try
                     {
-                        FilePath = filePath;
-                        OpenImage(new NetFileUtil().OpenLocalCVFile(filePath, fileExtType));
+                        if (Config.IsShowLoadImage && isLargeFile)
+                        {
+                            WaitControl.Visibility = Visibility.Visible;
+                            Task.Run(() =>
+                            {
+                                CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath, fileExtType);
+                                Config.FilePath = filePath;
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    OpenImage(cVCIEFile.ToWriteableBitmap());
+
+                                    WaitControl.Visibility = Visibility.Collapsed;
+                                });
+                            });
+                        }
+                        else
+                        {
+                            CVCIEFile cVCIEFile = new NetFileUtil().OpenLocalCVFile(filePath, fileExtType);
+                            Config.FilePath = filePath;
+                            OpenImage(cVCIEFile.ToWriteableBitmap());
+                        };
                     }
                     catch (Exception ex)
                     {
@@ -592,9 +612,31 @@ namespace ColorVision.Engine.Media
                 {
                     try
                     {
-                        FilePath = filePath;
-                        BitmapImage bitmapImage = new(new Uri(filePath));
-                        SetImageSource(bitmapImage);
+
+                        if (Config.IsShowLoadImage && isLargeFile)
+                        {
+                            WaitControl.Visibility = Visibility.Visible;
+                            Config.FilePath = filePath;
+                            Task.Run(() =>
+                            {
+                                byte[] imageData = File.ReadAllBytes(filePath);
+                                BitmapImage bitmapImage = ImageUtils.CreateBitmapImage(imageData);
+
+                                Application.Current.Dispatcher.Invoke(() =>
+                                {
+                                    SetImageSource(bitmapImage);
+                                    WaitControl.Visibility = Visibility.Collapsed;
+                                });
+                            });
+
+                        }
+                        else
+                        {
+                            Config.FilePath = filePath;
+                            BitmapImage bitmapImage = new BitmapImage(new Uri(filePath));
+                            SetImageSource(bitmapImage);
+                        };
+
                     }
                     catch(Exception ex)
                     {
@@ -604,6 +646,8 @@ namespace ColorVision.Engine.Media
                 }
             }
         }
+
+
 
 
         public void OpenGhostImage(string? filePath,int[] LEDpixelX, int[] LEDPixelY, int[] GhostPixelX, int[] GhostPixelY)
@@ -666,21 +710,21 @@ namespace ColorVision.Engine.Media
                 HImageCache = null;
             };
 
-            Task.Run(() => Application.Current.Dispatcher.Invoke((() => HImageCache = writeableBitmap.ToHImage())));
+            Task.Run(() => Application.Current.Dispatcher.Invoke((() =>
+            {
+                HImageCache = writeableBitmap.ToHImage();
+                if (HImageCache is HImage hImage)
+                {
+                    Config.Channel = hImage.channels;
+                }
+            }
+            )));
 
             ToolBarTop.PseudoVisible = Visibility.Visible;
 
             PseudoSlider.ValueChanged -= RangeSlider1_ValueChanged;
             PseudoSlider.ValueChanged += RangeSlider1_ValueChanged;
 
-            if (HImageCache?.channels == 1)
-            {
-                ToolBarTop.CIEVisible = Visibility.Collapsed;
-            }
-            else
-            {
-                ToolBarTop.CIEVisible = Visibility.Visible;
-            }
 
             ViewBitmapSource = writeableBitmap;
             ImageShow.Source = ViewBitmapSource;
@@ -698,21 +742,25 @@ namespace ColorVision.Engine.Media
 
             ToolBarTop.MouseMagnifier.MouseMoveColorHandler -= ShowCVCIE;
 
-            IsCVCIE = false;
-            CVCIEFile cVCIEFile = new();
-            if (FilePath != null && CVFileUtil.IsCIEFile(FilePath) && FilePath.Contains("cvcie"))
+            if (Config.IsCVCIE)
             {
-                IsCVCIE = true;
-                int index = CVFileUtil.ReadCIEFileHeader(FilePath, out cVCIEFile);
-                CVFileUtil.ReadCIEFileData(FilePath, ref cVCIEFile, index);
+                if (!Config.ConvertXYZhandleOnce)
+                {
+                    int result = ConvertXYZ.CM_InitXYZ(Config.ConvertXYZhandle);
+                    logger.Info($"ConvertXYZ.CM_InitXYZ :{result}");
+                    Config.ConvertXYZhandleOnce = true;
+                }
 
-                int result = ConvertXYZ.CM_SetBufferXYZ(ConvertXYZ.Handle, (uint)cVCIEFile.rows, (uint)cVCIEFile.cols, (uint)cVCIEFile.bpp, (uint)cVCIEFile.channels, cVCIEFile.data);
-                logger.Debug($"CM_SetBufferXYZ :{result}");
+
+                int index = CVFileUtil.ReadCIEFileHeader(Config.FilePath, out CVCIEFile cVCIEFile);
+                CVFileUtil.ReadCIEFileData(Config.FilePath, ref cVCIEFile, index);
+
+                int resultCM_SetBufferXYZ = ConvertXYZ.CM_SetBufferXYZ(ConvertXYZ.Handle, (uint)cVCIEFile.rows, (uint)cVCIEFile.cols, (uint)cVCIEFile.bpp, (uint)cVCIEFile.channels, cVCIEFile.data);
+                logger.Debug($"CM_SetBufferXYZ :{resultCM_SetBufferXYZ}");
 
                 ToolBarTop.MouseMagnifier.MouseMoveColorHandler += ShowCVCIE;
             }
         }
-
         public ImageSource PseudoImage { get; set; }
         public ImageSource ViewBitmapSource { get; set; }
 
@@ -722,11 +770,7 @@ namespace ColorVision.Engine.Media
         }
         private void Pseudo_MouseDoubleClick(object sender, RoutedEventArgs e)
         {
-            PseudoColor pseudoColor = new();
-            pseudoColor.Closed += (s, e) =>
-            {
-                ColormapTypes = pseudoColor.ColormapTypes;
-            };
+            PseudoColor pseudoColor = new PseudoColor(Config);
             pseudoColor.Show();
         }
 
@@ -768,79 +812,9 @@ namespace ColorVision.Engine.Media
             
         }
 
-        public void AddPoint(List<Point> points)
-        {
-            int id =0;
-            foreach (var item in points)
-            {
-                id++;
-                DrawingVisualCircleWord Circle = new();
-                Circle.Attribute.Center = item;
-                Circle.Attribute.Radius = 20 / Zoombox1.ContentMatrix.M11;
-                Circle.Attribute.Brush = Brushes.Transparent;
-                Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                Circle.Attribute.ID = id;
-                Circle.Render();
-                ImageShow.AddVisual(Circle);
-            }
-        }
 
-        public void AddRect(Rect rect)
-        {
-            DrawingVisualRectangleWord Rectangle = new();
-            Rectangle.Attribute.Rect = new Rect(rect.X, rect.Y, rect.Width, rect.Height);
-            Rectangle.Attribute.Brush = Brushes.Transparent;
-            Rectangle.Attribute.Pen = new Pen(Brushes.Red, rect.Width / 30.0);
-            Rectangle.Render();
-            ImageShow.AddVisual(Rectangle);
-        }
+        public void AddVisual(Visual visual) => ImageShow.AddVisual(visual);
 
-        public void AddPOIPoint(List<POIPoint> PoiPoints)
-        {
-            foreach (var item in PoiPoints)
-            {
-                switch (item.PointType)
-                {   
-                    case POIPointTypes.Circle:
-                        DrawingVisualCircleWord Circle = new();
-                        Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
-                        Circle.Attribute.Radius = item.Radius;
-                        Circle.Attribute.Brush = Brushes.Transparent;
-                        Circle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                        Circle.Attribute.ID = item.Id ?? -1;
-                        Circle.Attribute.Text = item.Name;
-                        Circle.Render();
-                        ImageShow.AddVisual(Circle);
-                        break;
-                    case POIPointTypes.Rect:
-                        DrawingVisualRectangleWord Rectangle = new();
-                        Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
-                        Rectangle.Attribute.Brush = Brushes.Transparent;
-                        Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                        Rectangle.Attribute.ID = item.Id ?? -1;
-                        Rectangle.Attribute.Name = item.Name;
-                        Rectangle.Render();
-                        ImageShow.AddVisual(Rectangle);
-                        break;
-                    case POIPointTypes.Mask:
-                        break;
-                    case POIPointTypes.SolidPoint:
-                        DrawingVisualCircleWord Circle1 = new();
-                        Circle1.Attribute.Center = new Point(item.PixelX, item.PixelY);
-                        Circle1.Attribute.Radius = 10;
-                        Circle1.Attribute.Brush = Brushes.Red;
-                        Circle1.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
-                        Circle1.Attribute.ID = item.Id ?? -1;
-                        Circle1.Attribute.Text = item.Name;
-                        Circle1.Render();
-                        ImageShow.AddVisual(Circle1);
-                        break;
-                    default:
-                        break;
-                }
-
-            }
-        }
 
         private void reference_Click(object sender, RoutedEventArgs e)
         {
@@ -886,7 +860,7 @@ namespace ColorVision.Engine.Media
                     logger.Info($"ImagePath，正在执行PseudoColor,min:{min},max:{max}");
                     Task.Run(() =>
                     {
-                        int ret = OpenCVHelper.PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max, ColormapTypes);
+                        int ret = OpenCVHelper.PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max, Config.ColormapTypes);
 
                         var image = hImageProcessed.ToWriteableBitmap();
                         OpenCVHelper.FreeHImageData(hImageProcessed.pData);
@@ -916,16 +890,15 @@ namespace ColorVision.Engine.Media
         }
         public bool IsCVCIE { get => _IsCVCIE; set { _IsCVCIE = value; NotifyPropertyChanged(); } }
         private bool _IsCVCIE;
+        private bool disposedValue;
 
         public void ShowCVCIE(object sender, ImageInfo imageInfo)
         {
-            int xx = imageInfo.Y;
-            int yy = imageInfo.X;
             float dXVal = 0;
             float dYVal = 0;
             float dZVal = 0;
             float dx = 0, dy = 0, du = 0, dv = 0;
-            _= ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZ.Handle, xx, yy, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
+            _= ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZ.Handle, imageInfo.X, imageInfo.Y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, DefalutTextAttribute.Defalut.CVCIENum, DefalutTextAttribute.Defalut.CVCIENum);
             ToolBarTop.MouseMagnifier.DrawImageCVCIE(imageInfo, dXVal, dYVal, dZVal, dx, dy, du, dv);
         }
 
@@ -1039,6 +1012,32 @@ namespace ColorVision.Engine.Media
             Window window = new Window() { Width = 256, Height = 170 };
             window.Content = image;
             window.Show();
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    int result = ConvertXYZ.CM_UnInitXYZ(Config.ConvertXYZhandle);
+                    ToolBarTop.ClearImageEventHandler -= Clear;
+                    ToolBarTop.Dispose();
+                    Zoombox1.LayoutUpdated -= Zoombox1_LayoutUpdated;
+                    ImageShow.VisualsAdd -= ImageShow_VisualsAdd;
+                    ImageShow.VisualsRemove -= ImageShow_VisualsRemove;
+                    PreviewKeyDown -= ImageView_PreviewKeyDown;
+                    Drop -= ImageView_Drop;
+                }
+                disposedValue = true;
+            }
+        }
+
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
         }
     }
 }

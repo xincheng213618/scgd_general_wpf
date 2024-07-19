@@ -1,4 +1,5 @@
 ﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices;
@@ -6,6 +7,7 @@ using ColorVision.Engine.Services.Devices.Algorithm;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.CfwPort;
 using ColorVision.Engine.Services.Devices.FileServer;
+using ColorVision.Engine.Services.Devices.FlowDevice;
 using ColorVision.Engine.Services.Devices.Motor;
 using ColorVision.Engine.Services.Devices.PG;
 using ColorVision.Engine.Services.Devices.Sensor;
@@ -13,9 +15,10 @@ using ColorVision.Engine.Services.Devices.SMU;
 using ColorVision.Engine.Services.Devices.SMU.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Themes;
-using ColorVision.UserSpace;
+using ColorVision.Themes.Controls;
 using Newtonsoft.Json;
 using System;
 using System.Linq;
@@ -65,7 +68,7 @@ namespace ColorVision.Engine.Services.Terminal
             var deviceS = ServiceManager.GetInstance().DeviceServices.FirstOrDefault(x => x.Code == CreateCode.Text);
             if (deviceS != null)
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "设备标识已存在,不允许重复添加","ColorVision");
+                MessageBox1.Show(WindowHelpers.GetActiveWindow(), "设备标识已存在,不允许重复添加","ColorVision");
                 return;
             }
             DeviceService deviceService = null;
@@ -202,6 +205,31 @@ namespace ColorVision.Engine.Services.Terminal
                         deviceService = new DeviceMotor(sysDevModel);
                     }
                     break;
+                case ServiceTypes.ThirdPartyAlgorithms:
+                    deviceConfig = new ConfigThirdPartyAlgorithms
+                    {
+                        Id = CreateCode.Text,
+                        Name = CreateName.Text,
+                    };
+                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                    if (sysDevModel != null)
+                    {
+                        deviceService = new DeviceThirdPartyAlgorithms(sysDevModel);
+                    }
+                    break;
+                case ServiceTypes.Flow:
+                    deviceConfig = new ConfigFlowDevice
+                    {
+                        Id = CreateCode.Text,
+                        Name = CreateName.Text,
+                    };
+                    sysDevModel = saveDevConfigInfo(deviceConfig, sysResource);
+                    if (sysDevModel != null)
+                    {
+                        deviceService = new DeviceFlowDevice(sysDevModel);
+                    }
+
+                    break;
                 default:
                     break;
             };
@@ -216,7 +244,7 @@ namespace ColorVision.Engine.Services.Terminal
             }
             else
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "创建失败", "ColorVision");
+                MessageBox1.Show(WindowHelpers.GetActiveWindow(), "创建失败", "ColorVision");
             }
 
         }

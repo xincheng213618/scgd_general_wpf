@@ -32,16 +32,20 @@
                 <StackPanel >
                     <GroupBox Header="资源信息" Margin="0,5">
                         <StackPanel Margin="5">
-                            <DockPanel Margin="0,2" >
+                            <DockPanel Margin="0,0,0,5">
                                 <TextBlock Text="界面展示名称" Width="120"/>
-                                <TextBox Text="{Binding Name}"/>
+                                <TextBox Text="{Binding Name}" Style="{StaticResource TextBox.Small}"/>
                             </DockPanel>
-                            <DockPanel Margin="0,2" >
-                                <TextBlock Text="心跳时间(ms)"  Width="120"/>
-                                <TextBox Text="{Binding HeartbeatTime}"/>
+                            <DockPanel Margin="0,0,0,5">
+                                <TextBlock Text="心跳时间"  Width="120"/>
+                                <TextBox Text="{Binding HeartbeatTime}" Style="{StaticResource TextBox.Small}"/>
                             </DockPanel>
-                            <DockPanel Margin="0,5" >
-                                <TextBlock Text="设备自连接" Width="120"/>
+                            <DockPanel Margin="0,0,0,5" >
+                                <TextBlock Text="SN" Width="120"/>
+                                <hc:ComboBox  x:Name="CameraPhyID" IsEditable="True" SelectedIndex="0" Style="{StaticResource ComboBox.Small}" Text="{Binding SN}" hc:InfoElement.ShowClearButton="True"  />
+                            </DockPanel>
+                            <DockPanel >
+                                <TextBlock Text="设备自动连接" Width="120"/>
                                 <CheckBox Content="启用" IsChecked="{Binding IsAutoOpen}"/>
                             </DockPanel>
                         </StackPanel>
@@ -64,6 +68,38 @@
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
+
+                    <GroupBox Header="Shutter" Margin="0,5">
+                        <StackPanel Margin="5">
+                            <DockPanel Margin="0,2">
+                                <TextBlock Text="启用" Width="120"/>
+                                <ui:ToggleSwitch IsChecked="{Binding IsShutterEnable}"/>
+                            </DockPanel>
+                            <StackPanel Visibility="{Binding IsShutterEnable,Converter={StaticResource bool2VisibilityConverter}}">
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="串口:" Width="120"/>
+                                    <hc:ComboBox  x:Name="TextSerial" IsEditable="True" Text="{Binding ShutterCfg.Addr}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="波特率:" Width="120"/>
+                                    <hc:ComboBox  x:Name="TextBaudRate" IsEditable="True" Text="{Binding ShutterCfg.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="延时(ms):" Width="120"/>
+                                    <TextBox Text="{Binding ShutterCfg.DelayTime}" />
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="打开命令:" Width="120"/>
+                                    <TextBox Text="{Binding ShutterCfg.OpenCmd}" />
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="关闭命令" Width="120"/>
+                                    <TextBox Text="{Binding ShutterCfg.CloseCmd}" />
+                                </DockPanel>
+                            </StackPanel>
+                        </StackPanel>
+                    </GroupBox>
+
                     <GroupBox Header="文件配置" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
@@ -78,36 +114,6 @@
                                 <TextBlock Text="端口范围" Width="120"/>
                                 <TextBox Text="{Binding FileServerCfg.PortRange}"/>
                             </DockPanel>
-                        </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="Shutter" Margin="0,5">
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="启用" Width="120"/>
-                                <ui:ToggleSwitch IsChecked="{Binding Config.IsShutterEnable}"/>
-                            </DockPanel>
-                            <StackPanel Visibility="{Binding Config.IsShutterEnable,Converter={StaticResource bool2VisibilityConverter}}">
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="串口:" Width="120"/>
-                                    <hc:ComboBox  x:Name="TextSerial" IsEditable="True" Text="{Binding Config.ShutterCfg.Addr}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="波特率:" Width="120"/>
-                                    <hc:ComboBox  x:Name="TextBaudRate" IsEditable="True" Text="{Binding Config.ShutterCfg.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="延时(ms):" Width="120"/>
-                                    <TextBox Text="{Binding Config.ShutterCfg.DelayTime}" />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="打开命令:" Width="120"/>
-                                    <TextBox Text="{Binding Config.ShutterCfg.OpenCmd}" />
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock Text="关闭命令" Width="120"/>
-                                    <TextBox Text="{Binding Config.ShutterCfg.CloseCmd}" />
-                                </DockPanel>
-                            </StackPanel>
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>

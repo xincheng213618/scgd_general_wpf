@@ -6,9 +6,10 @@ using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Templates;
 using ColorVision.Net;
-using ColorVision.Themes;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Views;
+using CVCommCore;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
 using System;
@@ -27,7 +28,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
     {
 
         public DeviceCalibration Device { get; set; }
-        private MQTTCalibration DeviceService { get => Device.DeviceService;  }
+        private MQTTCalibration DeviceService { get => Device.DService;  }
         public string DisPlayName => Device.Config.Name;
 
         public DisplayCalibrationControl(DeviceCalibration device)
@@ -35,7 +36,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             Device = device;
             InitializeComponent();
             DeviceService.MsgReturnReceived += Service_OnCalibrationEvent;
-            PreviewMouseDown += UserControl_PreviewMouseDown;
 
         }
 
@@ -58,6 +58,48 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             
             this.AddViewConfig(View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
+
+
+            void UpdateUI(DeviceStatusType status)
+            {
+                void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };
+
+                void HideAllButtons()
+                {
+                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                    SetVisibility(StackPanelContent, Visibility.Collapsed);
+                }
+                // Default state
+                HideAllButtons();
+
+                switch (status)
+                {
+                    case DeviceStatusType.Unauthorized:
+                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Unknown:
+                        SetVisibility(TextBlockUnknow, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.OffLine:
+                        break;
+                    case DeviceStatusType.UnInit:
+                        break;
+                    case DeviceStatusType.Closed:
+                        break;
+                    case DeviceStatusType.LiveOpened:
+                    case DeviceStatusType.Opened:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Closing:
+                    case DeviceStatusType.Opening:
+                    default:
+                        // No specific action needed
+                        break;
+                }
+            }
+            UpdateUI(Device.DService.DeviceStatus);
+            Device.DService.DeviceStatusChanged += UpdateUI;
         }
 
         public event RoutedEventHandler Selected;
@@ -114,17 +156,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             }
         }
 
-        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (Parent is StackPanel stackPanel)
-            {
-                if (stackPanel.Tag is IDisPlayControl disPlayControl)
-                    disPlayControl.IsSelected = false;
-                stackPanel.Tag = this;
-                IsSelected = true;
-            }
-        }
-
         private void Calibration_Click(object sender, RoutedEventArgs e)
         {
             if (Device.PhyCamera == null)
@@ -172,7 +203,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         {
             if (string.IsNullOrWhiteSpace(CB_RawImageFiles.Text))
             {
-                MessageBox.Show("请先选中图片");
+                MessageBox1.Show("请先选中图片");
                 return;
             }
             doOpen(CB_RawImageFiles.Text, FileExtType.Raw);
@@ -188,7 +219,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
         {
             if (Device.PhyCamera == null)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "在使用校正前，请先配置对映的物理相机", "ColorVision");
                 return;
             }
             if (sender is Button button)
@@ -196,7 +227,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
                 WindowTemplate windowTemplate;
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
-                    MessageBox.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
+                    MessageBox1.Show(Application.Current.MainWindow, Properties.Resources.DatabaseConnectionFailed, "ColorVision");
                     return;
                 }
                 switch (button.Tag?.ToString() ?? string.Empty)
@@ -224,7 +255,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             {
                 if (string.IsNullOrWhiteSpace(AlgBatchCode.Text))
                 {
-                    MessageBox.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
+                    MessageBox1.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
                     return false;
                 }
                 sn = AlgBatchCode.Text;
@@ -244,7 +275,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             }
             if (string.IsNullOrWhiteSpace(sn) && string.IsNullOrWhiteSpace(imgFileName))
             {
-                MessageBox.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
+                MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
                 return false;
             }
             return true;

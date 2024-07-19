@@ -100,20 +100,15 @@ namespace ColorVision.Engine.MySql.ORM
             string sqlStr = string.Format("SELECT * FROM {0} WHERE FALSE", TableName);
             try
             {
-                using (MySqlCommand cmd = new(sqlStr, MySqlControl.MySqlConnection))
-                {
-                    MySqlDataAdapter dataAdapter = new(cmd);
-                    dataAdapter.RowUpdated += DataAdapter_RowUpdated;
-                    MySqlCommandBuilder builder = new(dataAdapter);
-                    builder.ConflictOption = ConflictOption.OverwriteChanges;
-                    builder.SetAllValues = true;
-                    dataAdapter.UpdateCommand = builder.GetUpdateCommand(true) as MySqlCommand;
-                    count = dataAdapter.Update(dt);
-
-                    dt.AcceptChanges();
-                    dataAdapter.Dispose();
-                    builder.Dispose();
-                }
+                using MySqlCommand cmd = new(sqlStr, MySqlControl.MySqlConnection);
+                using MySqlDataAdapter dataAdapter = new(cmd);
+                dataAdapter.RowUpdated += DataAdapter_RowUpdated;
+                using MySqlCommandBuilder builder = new(dataAdapter);
+                builder.ConflictOption = ConflictOption.OverwriteChanges;
+                builder.SetAllValues = true;
+                dataAdapter.UpdateCommand = builder.GetUpdateCommand(true) as MySqlCommand;
+                count = dataAdapter.Update(dt);
+                dt.AcceptChanges();
 
             }
             catch (Exception ex)

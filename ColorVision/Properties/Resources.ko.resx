@@ -354,4 +354,13 @@
   <data name="Initializer" xml:space="preserve">
     <value>초기화 모듈</value>
   </data>
+  <data name="FilterSupportsRegex" xml:space="preserve">
+    <value>필터는 정규식을 지원합니다</value>
+  </data>
+  <data name="AutoRefresh" xml:space="preserve">
+    <value>자동 새로고침</value>
+  </data>
+  <data name="AutoScrollToEnd" xml:space="preserve">
+    <value>자동으로 아래쪽으로 스크롤</value>
+  </data>
 </root>

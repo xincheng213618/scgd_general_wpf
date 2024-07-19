@@ -130,7 +130,7 @@ namespace ColorVisionSetup
 		public VideoPlayer()
 		{
 			create();
-			base.Loaded += onLoaded;
+            Loaded += onLoaded;
 			_animationTimer = new DispatcherTimer(DispatcherPriority.Render, Application.Current.Dispatcher);
 			_animationTimer.Tick += animationTick;
 			_animationTimer.Interval = new TimeSpan(0, 0, 0, 0, 30);
@@ -162,7 +162,7 @@ namespace ColorVisionSetup
 		private void onLoaded(object sender, RoutedEventArgs e)
 		{
 			RenderOptions.SetBitmapScalingMode(this, BitmapScalingMode.LowQuality);
-			base.SizeChanged += onSizeChanged;
+            SizeChanged += onSizeChanged;
 			onSourceChanged();
 		}
 

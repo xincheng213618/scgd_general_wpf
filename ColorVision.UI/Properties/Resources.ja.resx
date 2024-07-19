@@ -177,14 +177,8 @@
   <data name="AutoAdjustColumnWidth" xml:space="preserve">
     <value>列幅を自動的に調整する</value>
   </data>
-  <data name="MenuTheme" xml:space="preserve">
-    <value>テーマ（_H）</value>
-  </data>
   <data name="MenuLanguage" xml:space="preserve">
     <value>言語(_L)</value>
-  </data>
-  <data name="Theme" xml:space="preserve">
-    <value>テーマ</value>
   </data>
   <data name="Language" xml:space="preserve">
     <value>言語</value>

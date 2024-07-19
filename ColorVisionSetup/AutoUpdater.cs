@@ -64,7 +64,7 @@ namespace ColorVisionSetup
                 {
                     IsPassWorld = true;
                     // If the request is unauthorized, add the authentication header and try again
-                    var byteArray = System.Text.Encoding.ASCII.GetBytes("1:1");
+                    var byteArray = Encoding.ASCII.GetBytes("1:1");
                     _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(byteArray));
 
                     // You should also consider handling other potential issues here, such as network errors

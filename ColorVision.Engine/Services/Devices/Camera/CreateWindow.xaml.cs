@@ -4,12 +4,13 @@ using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
 using ColorVision.Themes;
-using ColorVision.UserSpace;
+using ColorVision.Engine.Rbac;
 using cvColorVision;
 using Newtonsoft.Json;
 using System;
 using System.Linq;
 using System.Windows;
+using ColorVision.Themes.Controls;
 
 namespace ColorVision.Engine.Services.Devices.Camera
 {
@@ -80,7 +81,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             var deviceS= ServiceManager.GetInstance().DeviceServices.FirstOrDefault(x => x.Code == CreateCode.Text);
             if (deviceS != null)
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "设备标识已存在,不允许重复添加", "ColorVision");
+                MessageBox1.Show(WindowHelpers.GetActiveWindow(), "设备标识已存在,不允许重复添加", "ColorVision");
                 return;
             }
             SysDeviceModel sysDevModel = null;
@@ -104,7 +105,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
             else
             {
-                MessageBox.Show(WindowHelpers.GetActiveWindow(), "请重新创建新的Code，创建失败", "ColorVision");
+                MessageBox1.Show(WindowHelpers.GetActiveWindow(), "请重新创建新的Code，创建失败", "ColorVision");
             }
         }
     }

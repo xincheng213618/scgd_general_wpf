@@ -1,11 +1,9 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Themes;
+﻿using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using CVCommCore;
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.PG
 {
@@ -14,7 +12,7 @@ namespace ColorVision.Engine.Services.Devices.PG
     /// </summary>
     public partial class DisplayPG : UserControl, IDisPlayControl
     {
-        private MQTTPG PGService { get => DevicePG.DeviceService; }
+        private MQTTPG PGService { get => DevicePG.DService; }
         private DevicePG DevicePG { get; set; }
         public string DisPlayName => DevicePG.Config.Name;
 
@@ -24,8 +22,6 @@ namespace ColorVision.Engine.Services.Devices.PG
             DevicePG = devicePG;
             InitializeComponent();
             DataContext = DevicePG;
-
-            PreviewMouseDown += UserControl_PreviewMouseDown;
         }
         private void UserControl_Initialized(object sender, EventArgs e)
         {
@@ -80,18 +76,6 @@ namespace ColorVision.Engine.Services.Devices.PG
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
 
-        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (Parent is StackPanel stackPanel)
-            {
-                if (stackPanel.Tag is IDisPlayControl disPlayControl)
-                    disPlayControl.IsSelected = false;
-                stackPanel.Tag = this;
-                IsSelected = true;
-            }
-        }
-
-
         private void DoOpen(Button button)
         {
             string btnTitle = button.Content.ToString();
@@ -101,7 +85,7 @@ namespace ColorVision.Engine.Services.Devices.PG
                 int port;
                 if (!int.TryParse(TextBoxPGPort.Text, out port))
                 {
-                    MessageBox.Show(Application.Current.MainWindow, "端口配置错误");
+                    MessageBox1.Show(Application.Current.MainWindow, "端口配置错误");
                     return;
                 }
                 if (PGService.Config.IsNet) PGService.Open(CommunicateType.Tcp, TextBoxPGIP.Text, port);

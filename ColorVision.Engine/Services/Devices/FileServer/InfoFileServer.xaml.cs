@@ -11,7 +11,7 @@ namespace ColorVision.Engine.Services.Devices.FileServer
     public partial class InfoFileServer : UserControl
     {
         public DeviceFileServer DeviceFileServer { get; set; }
-        public MQTTFileServer DService { get => DeviceFileServer.MQTTFileServer; }
+        public MQTTFileServer DService { get => DeviceFileServer.DService; }
         public InfoFileServer(DeviceFileServer device)
         {
             DeviceFileServer = device;

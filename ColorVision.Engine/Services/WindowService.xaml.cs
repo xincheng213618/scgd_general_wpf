@@ -6,9 +6,10 @@ using ColorVision.Engine.Services.Terminal;
 using ColorVision.Themes;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Menus;
-using ColorVision.UserSpace;
+using ColorVision.Engine.Rbac;
 using System;
 using System.Windows;
+using ColorVision.Engine.Utilities;
 
 namespace ColorVision.Engine.Services
 {
@@ -60,7 +61,7 @@ namespace ColorVision.Engine.Services
         {
             StackPanelShow.Children.Clear();
             if (TreeView1.SelectedItem is DeviceService baseObject)
-                StackPanelShow.Children.Add(baseObject.GetDeviceControl());
+                StackPanelShow.Children.Add(baseObject.GetDeviceInfo());
 
             if (TreeView1.SelectedItem is TerminalServiceBase baseService)
                 StackPanelShow.Children.Add(baseService.GenDeviceControl());

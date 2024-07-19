@@ -35,29 +35,15 @@ namespace ColorVision.Engine.MySql.ORM
             Model2Row(item, row);
         }
 
-        public virtual int Save(List<T> datas, int tenantId)
-        {
-            DeleteAll(tenantId);
-            DataTable d_info = GetDataTable();
-            //CreateColumns(d_info);
-            foreach (var item in datas)
-            {
-                DataRow row = GetRow(item, d_info);
-                //d_info.Rows.Add(row);
-                Model2Row(item, row);
-            }
-            return Save(d_info);
-        }
+
         public int UpdateByPid(int pid, List<T> datas)
         {
             string sql = $"select * from {TableName} where pid={pid}" + GetDelSQL(true);
             DataTable d_info = GetData(sql);
             d_info.TableName = TableName;
-            //CreateColumns(d_info);
             foreach (var item in datas)
             {
                 DataRow row = GetRow(item, d_info);
-                //d_info.AcceptChanges();
                 Model2Row(item, row);
             }
             return Save(d_info);
@@ -69,7 +55,6 @@ namespace ColorVision.Engine.MySql.ORM
             DataTable d_info = GetDataTable();
             foreach (var item in datas)
             {
-                //DataRow row = GetRow(item, d_info);
                 DataRow row = d_info.NewRow();
                 d_info.Rows.Add(row);
                 Model2Row(item, row);
@@ -155,8 +140,6 @@ namespace ColorVision.Engine.MySql.ORM
             return d_info;
         }
 
-        public List<T> GetAllById(int id) => GetAllByParam(new Dictionary<string, object> { { "id", id } });
-
         public List<T> GetAll() => GetAllByParam(new Dictionary<string, object>());
 
         public List<T> GetAllByParam(Dictionary<string, object> param)
@@ -236,39 +219,6 @@ namespace ColorVision.Engine.MySql.ORM
             }
             return list;
         }
-
-        public List<T> GetPidIsNotNull(int tenantId)
-        {
-            List<T> list = new();
-            string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and pid > 0" + GetDelSQL(true);
-            DataTable d_info = GetData(sql);
-            foreach (var item in d_info.AsEnumerable())
-            {
-                T? model = GetModelFromDataRow(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
-
-        public List<T> GetPidIsNull(int tenantId)
-        {
-            List<T> list = new();
-            string sql = $"select * from {GetTableName()} where tenant_id={tenantId} and ( pid is null or pid=-1)" + GetDelSQL(true);
-            DataTable d_info = GetData(sql);
-            foreach (var item in d_info.AsEnumerable())
-            {
-                T? model = GetModelFromDataRow(item);
-                if (model != null)
-                {
-                    list.Add(model);
-                }
-            }
-            return list;
-        }
-
 
 
         public List<T> GetAllByPid(int pid)

@@ -1,11 +1,14 @@
-﻿using ColorVision.UI.Configs;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.UI.Configs;
+using ColorVision.UI.Menus;
 using System;
 using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace ColorVision.Settings
 {
-    public class SystemMonitorProvider : IConfigSettingProvider,IStatusBarIconProvider
+    public class SystemMonitorProvider : IConfigSettingProvider,IStatusBarIconProvider,IMenuItemProvider
     {
         public IEnumerable<ConfigSettingMetadata> GetConfigSettings()
         {
@@ -22,13 +25,35 @@ namespace ColorVision.Settings
                             }
             };
         }
+
+        public IEnumerable<MenuItemMetadata> GetMenuItems()
+        {
+            return new List<MenuItemMetadata>
+            {
+                new MenuItemMetadata()
+                {
+                    OwnerGuid ="Tool",
+                    GuidId ="SystemMonitor",
+                    Header =Properties.Resources.PerformanceTest,
+                    Order=500,
+                    Command = new Common.MVVM.RelayCommand(A =>{ 
+                        Window window = new Window(){ Title =Properties.Resources.PerformanceTest , Owner =Application.Current.GetActiveWindow()};
+                        window.Content = new SystemMonitorControl();
+                        window.Show();
+                    }  )
+
+
+                }
+            };
+        }
+
         public IEnumerable<StatusBarIconMetadata> GetStatusBarIconMetadata()
         {
             return new List<StatusBarIconMetadata>
             {
                 new StatusBarIconMetadata()
                 {
-                    Name = Properties.Resources.PerformanceTest,
+                    Name = "Time",
                     Description = Properties.Resources.PerformanceTest,
                     Order =12,
                     Type =StatusBarType.Text,
@@ -38,7 +63,7 @@ namespace ColorVision.Settings
                 },
                 new StatusBarIconMetadata()
                 {
-                    Name = Properties.Resources.PerformanceTest,
+                    Name = "RAM",
                     Description = Properties.Resources.PerformanceTest,
                     Order =10,
                     Type =StatusBarType.Text,
@@ -48,6 +73,8 @@ namespace ColorVision.Settings
                 }
             };
         }
+
+
     }
 
     /// <summary>

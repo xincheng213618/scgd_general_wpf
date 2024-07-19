@@ -60,5 +60,11 @@ namespace ColorVision.Engine.Services.Devices
         /// </summary>
         public string Id { get => _Id; set { _Id = value; NotifyPropertyChanged(); } }
         private string _Id;
+
+        /// <summary>
+        /// 许可
+        /// </summary>
+        public string SN { get => _SN; set { _SN = value; NotifyPropertyChanged(); } }
+        private string _SN;
     }
 }

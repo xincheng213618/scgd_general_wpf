@@ -1,22 +1,13 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Engine.MySql;
-using ColorVision.Engine.Templates;
+﻿using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
 using ColorVision.Engine.Services.Devices.Spectrum.Views;
-using ColorVision.Engine.Services.Templates;
-using ColorVision.Themes;
+using ColorVision.Engine.Templates;
 using ColorVision.UI;
-using ColorVision.UI.Views;
 using CVCommCore;
-using Mysqlx.Crud;
 using System;
-using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using static cvColorVision.GCSDLL;
 
 
@@ -28,7 +19,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
     public partial class DisplaySpectrumControl : UserControl, IDisPlayControl
     {
         public DeviceSpectrum DeviceSpectrum { get; set; }
-        public MQTTSpectrum SpectrumService { get => DeviceSpectrum.DeviceService; }
+        public MQTTSpectrum SpectrumService { get => DeviceSpectrum.DService; }
 
         public ViewSpectrum View { get => DeviceSpectrum.View;}
 
@@ -53,52 +44,61 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             };
             void UpdateUI(DeviceStatusType status)
             {
-                void SetVisibility(UIElement element, Visibility visibility) => element.Visibility = visibility;
+                void SetVisibility(UIElement element, Visibility visibility) { if (element.Visibility != visibility) element.Visibility = visibility; };
+
                 void HideAllButtons()
                 {
+                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                    SetVisibility(StackPanelContent, Visibility.Collapsed);
                     SetVisibility(TemplateChoice, Visibility.Collapsed);
                     SetVisibility(StackPanelOpen, Visibility.Collapsed);
+                    SetVisibility(TextBlockOffLine, Visibility.Collapsed);
                 }
+
                 HideAllButtons();
+                btn_autoTest.Content = "自动测试";
                 switch (status)
                 {
-                    case DeviceStatusType.OffLine:
-                        break;
+
                     case DeviceStatusType.Unknown:
+                        SetVisibility(TextBlockUnknow, Visibility.Visible);
+                        break;
                     case DeviceStatusType.Unauthorized:
+                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.OffLine:
+                        SetVisibility(TextBlockOffLine, Visibility.Visible);
+                        break;
                     case DeviceStatusType.UnInit:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
                         SetVisibility(TemplateChoice, Visibility.Visible);
                         btn_connect.Content = "打开";
                         break;
                     case DeviceStatusType.Closed:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
                         SetVisibility(TemplateChoice, Visibility.Visible);
                         btn_connect.Content = "打开";
                         break;
-                    case DeviceStatusType.LiveOpened:
                     case DeviceStatusType.Opened:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
                         SetVisibility(StackPanelOpen, Visibility.Visible);
                         btn_connect.Content = "关闭";
                         break;
-                    case DeviceStatusType.Closing:
-                    case DeviceStatusType.Opening:
+                    case DeviceStatusType.SP_Continuous_Mode:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        SetVisibility(StackPanelOpen, Visibility.Visible);
+                        btn_autoTest.Content = "取消自动测试";
+                        break;
                     default:
-                        // No specific action needed
                         break;
                 }
             }
 
             UpdateUI(SpectrumService.DeviceStatus);
             SpectrumService.DeviceStatusChanged += UpdateUI;
-
-            SpectrumService.HeartbeatHandlerEvent += (e) =>
-            {
-                doSpectrumHeartbeat(e);
-            };
-
             ComboxResourceTemplate.ItemsSource = DeviceSpectrum.SpectrumResourceParams.CreateEmpty();
             ComboxResourceTemplate.SelectedIndex = 0;
-
-            PreviewMouseDown += UserControl_PreviewMouseDown;
             this.ApplyChangedSelectedColor(DisPlayBorder);
         }
 
@@ -108,59 +108,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
 
-
-        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (Parent is StackPanel stackPanel)
-            {
-                if (stackPanel.Tag is IDisPlayControl disPlayControl)
-                    disPlayControl.IsSelected = false;
-                stackPanel.Tag = this;
-                IsSelected = true;
-            }
-        }
-
-
-        private void doHeartbeat(HeartbeatParam e)
-        {
-            SpectrumService.Config.DeviceStatus = e.DeviceStatus;
-            if (e.DeviceStatus == DeviceStatusType.Opened)
-            {
-                btn_connect.Content = "关闭";
-            }
-            else if (e.DeviceStatus == DeviceStatusType.Closed)
-            {
-                btn_connect.Content = "打开";
-            }
-            else if (e.DeviceStatus == DeviceStatusType.Opening)
-            {
-                btn_connect.Content = "打开中";
-            }
-            else if (e.DeviceStatus == DeviceStatusType.Closing)
-            {
-                btn_connect.Content = "关闭中";
-            }
-            else if (e.DeviceStatus == DeviceStatusType.Busy)
-            {
-                enableBtn(false);
-            }
-            else if (e.DeviceStatus == DeviceStatusType.Free)
-            {
-                enableBtn(true);
-            }
-        }
-        private void doSpectrumHeartbeat(SpectrumHeartbeatParam e)
-        {
-            doHeartbeat(e);
-            if (e.IsAutoGetData)
-            {
-                btn_autoTest.Content = "取消自动测试";
-            }
-            else
-            {
-                btn_autoTest.Content = "自动测试";
-            }
-        }
 
         private void enableBtn(bool enable)
         {
@@ -210,7 +157,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         private void Button_Click_3(object sender, RoutedEventArgs e)
         {
-            //MQTTFileServer.SetParam();
+            //DService.SetParam();
         }
 
         private void Button_Click_OneTest(object sender, RoutedEventArgs e)
@@ -221,7 +168,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
         private void Button_Click_Close(object sender, RoutedEventArgs e)
         {
             SpectrumService.Close();
-            //MQTTFileServer.UnInit();
+            //DService.UnInit();
         }
         private void Button_Click_AutoTest(object sender, RoutedEventArgs e)
         {

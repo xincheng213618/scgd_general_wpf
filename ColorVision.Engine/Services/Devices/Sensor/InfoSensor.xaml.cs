@@ -14,7 +14,7 @@ namespace ColorVision.Engine.Services.Devices.Sensor
     {
         public DeviceSensor DeviceSensor { get; set; }
 
-        public MQTTSensor Service { get => DeviceSensor.DeviceService; }
+        public MQTTSensor Service { get => DeviceSensor.DService; }
 
         public InfoSensor(DeviceSensor deviceSensor)
         {

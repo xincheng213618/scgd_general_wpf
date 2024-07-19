@@ -19,6 +19,14 @@
           <source>程序关闭</source>
           <target state="new">プログラムは終了します</target>
         </trans-unit>
+        <trans-unit id="AutoRefresh" translate="yes" xml:space="preserve">
+          <source>自动刷新</source>
+          <target state="new">自動更新</target>
+        </trans-unit>
+        <trans-unit id="AutoScrollToEnd" translate="yes" xml:space="preserve">
+          <source>自动滚动到底部</source>
+          <target state="new">自動的に一番下までスクロールします</target>
+        </trans-unit>
         <trans-unit id="Cancel" translate="yes" xml:space="preserve">
           <source>取消</source>
           <target state="new">キャンセル</target>
@@ -86,6 +94,10 @@
         <trans-unit id="ExperimentalFeature" translate="yes" xml:space="preserve">
           <source>实验性功能</source>
           <target state="new">実験的な機能</target>
+        </trans-unit>
+        <trans-unit id="FilterSupportsRegex" translate="yes" xml:space="preserve">
+          <source>过滤器支持正则</source>
+          <target state="new">フィルターは正規表現をサポートします</target>
         </trans-unit>
         <trans-unit id="General" translate="yes" xml:space="preserve">
           <source>通用</source>

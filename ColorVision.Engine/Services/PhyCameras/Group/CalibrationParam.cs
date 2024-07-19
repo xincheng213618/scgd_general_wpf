@@ -3,10 +3,9 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Core;
-using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Templates;
-using ColorVision.UserSpace;
+using ColorVision.Engine.Rbac;
 using cvColorVision;
 using NPOI.XWPF.UserModel;
 using System;
@@ -273,7 +272,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Group
             Color = new CalibrationColor(new List<ModDetailModel>());
         }
 
-        public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
+        public CalibrationParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
             Normal = new CalibrationNormal(modDetails, "");
             Color = new CalibrationColor(modDetails);

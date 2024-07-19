@@ -1,18 +1,27 @@
 ﻿#pragma warning disable CS8604,CS0168,CS8629,CA1822,CS8602
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
-using ColorVision.Engine.Services.Devices.Algorithm.Dao;
-using ColorVision.Engine.Services.Devices.Algorithm.Templates;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.BuildPoi;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.Distortion;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.FocusPoints;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.FOV;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.Ghost;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.LedCheck;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.LEDStripDetection;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.MTF;
+using ColorVision.Engine.Services.Devices.Algorithm.Templates.SFR;
 using ColorVision.Engine.Services.Devices.Algorithm.Views;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.Camera.Templates;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
 using ColorVision.Net;
-using ColorVision.Themes;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
-using ColorVision.UI.Views;
+using CVCommCore;
 using CVCommCore.CVAlgorithm;
 using log4net;
 using MQTTMessageLib.FileServer;
@@ -23,7 +32,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
@@ -36,7 +44,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         public DeviceAlgorithm Device { get; set; }
 
-        public MQTTAlgorithm Service { get => Device.MQTTService; }
+        public MQTTAlgorithm Service { get => Device.DService; }
 
         public AlgorithmView View { get => Device.View; }
         public string DisPlayName => Device.Config.Name;
@@ -52,17 +60,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             netFileUtil = new NetFileUtil();
             netFileUtil.handler += NetFileUtil_handler;
-            PreviewMouseDown += UserControl_PreviewMouseDown;
-        }
-        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (Parent is StackPanel stackPanel)
-            {
-                if (stackPanel.Tag is IDisPlayControl disPlayControl)
-                    disPlayControl.IsSelected = false;
-                stackPanel.Tag = this;
-                IsSelected = true;
-            }
         }
 
         private void NetFileUtil_handler(object sender, NetFileEvent arg)
@@ -202,6 +199,39 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             UpdateCB_SourceImageFiles();
             Service.MsgReturnReceived += Service_OnAlgorithmEvent;
+
+
+
+            void UpdateUI(DeviceStatusType status)
+            {
+                void SetVisibility(UIElement element, Visibility visibility){ if (element.Visibility != visibility) element.Visibility = visibility; };
+                void HideAllButtons()
+                {
+                    SetVisibility(ButtonUnauthorized, Visibility.Collapsed);
+                    SetVisibility(TextBlockUnknow, Visibility.Collapsed);
+                    SetVisibility(StackPanelContent, Visibility.Collapsed);
+                }
+                // Default state
+                HideAllButtons();
+
+                switch (status)
+                {
+                    case DeviceStatusType.Unauthorized:
+                        SetVisibility(ButtonUnauthorized, Visibility.Visible);
+                        break;
+                    case DeviceStatusType.Unknown:
+                        SetVisibility(TextBlockUnknow, Visibility.Visible);
+                        break;
+                    default:
+                        SetVisibility(StackPanelContent, Visibility.Visible);
+                        break;
+                }
+            }
+            UpdateUI(Device.DService.DeviceStatus);
+            Device.DService.DeviceStatusChanged += UpdateUI;
+
+
+
         }
        public event RoutedEventHandler Selected;
         public event RoutedEventHandler Unselected;
@@ -213,7 +243,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         {
             if (comboBox.SelectedIndex == -1)
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), errorMessage, "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), errorMessage, "ColorVision");
                 return false;
             }
             return true;
@@ -400,7 +430,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 {
                     if (string.IsNullOrWhiteSpace(AlgBatchCode.Text))
                     {
-                        MessageBox.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
+                        MessageBox1.Show(Application.Current.MainWindow, "批次号不能为空，请先输入批次号", "ColorVision");
                         return false;
                     }
                     sn = AlgBatchCode.Text;
@@ -416,13 +446,11 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                 }
                 if (string.IsNullOrWhiteSpace(imgFileName))
                 {
-                    MessageBox.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
+                    MessageBox1.Show(Application.Current.MainWindow, "图像文件不能为空，请先选择图像文件", "ColorVision");
                     return false;
                 }
                 return true;
             }
-
-
         }
 
         private void FOV_Click(object sender, RoutedEventArgs e)
@@ -491,7 +519,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         {
             if (string.IsNullOrWhiteSpace(CB_CIEImageFiles.Text))
             {
-                MessageBox.Show("请先选中图片");
+                MessageBox1.Show("请先选中图片");
                 return;
             }
             handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
@@ -529,7 +557,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             {
                 if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
                 {
-                    MessageBox.Show(Application.Current.MainWindow, "数据库连接失败，请先连接数据库在操作", "ColorVision");
+                    MessageBox1.Show(Application.Current.MainWindow, "数据库连接失败，请先连接数据库在操作", "ColorVision");
                     return;
                 }
                 switch (button.Tag?.ToString() ?? string.Empty)
@@ -591,7 +619,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord msg = Service.FocusPoints(code, type, ImageFile.Text, fileExtType, pm.Id, ComboxFocusPointsTemplate.Text, sn);
+                MsgRecord msg = Service.FocusPoints(code, type, imgFileName, fileExtType, pm.Id, ComboxFocusPointsTemplate.Text, sn);
                 ServicesHelper.SendCommand(msg, "FocusPoints");
             }
         }
@@ -613,7 +641,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord ss = Service.LedCheck(code, type, ImageFile.Text, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate1.Text);
+                MsgRecord ss = Service.LedCheck(code, type, imgFileName, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn, poi_pm.Id, ComboxPoiTemplate1.Text);
                 ServicesHelper.SendCommand(ss, "正在计算灯珠");
             }
         }
@@ -634,7 +662,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         {
             if (string.IsNullOrWhiteSpace(CB_RawImageFiles.Text))
             {
-                MessageBox.Show("请先选中图片");
+                MessageBox1.Show("请先选中图片");
                 return;
             }
             handler = PendingBox.Show(Application.Current.MainWindow, "", "打开图片", true);
@@ -659,7 +687,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                     type = deviceService.ServiceTypes.ToString();
                     code = deviceService.Code;
                 }
-                MsgRecord ss = Service.LEDStripDetection(code, type, ImageFile.Text, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn);
+                MsgRecord ss = Service.LEDStripDetection(code, type, imgFileName, fileExtType, pm.Id, ComboxLedCheckTemplate.Text, sn);
                 ServicesHelper.SendCommand(ss, "正在计算灯带检测");
             }
         }

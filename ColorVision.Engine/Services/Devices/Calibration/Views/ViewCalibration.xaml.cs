@@ -1,14 +1,16 @@
 ﻿#pragma warning disable CS8604,CS8629
+using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
-using ColorVision.Draw;
-using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI;
+using ColorVision.UI.Draw;
 using ColorVision.Engine.Media;
-using ColorVision.Net;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.Msg;
-using ColorVision.Solution;
+using ColorVision.Engine.Templates;
+using ColorVision.Engine.Templates.POI;
+using ColorVision.Net;
+using ColorVision.Themes.Controls;
+using ColorVision.UI;
 using ColorVision.UI.Sorts;
 using ColorVision.UI.Views;
 using CVCommCore.CVImage;
@@ -22,7 +24,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
-using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -32,6 +33,20 @@ using System.Windows.Media;
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views
 {
+
+    public class ViewCalibrationConfig : ViewModelBase, IConfig
+    {
+        public static ViewCalibrationConfig Instance => ConfigHandler.GetInstance().GetRequiredService<ViewCalibrationConfig>();
+
+        public ObservableCollection<GridViewColumnVisibility> GridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
+
+        public ImageViewConfig ImageViewConfig { get; set; } = new ImageViewConfig();
+
+        public bool IsShowListView { get => _IsShowListView; set { _IsShowListView = value; NotifyPropertyChanged(); } }
+        private bool _IsShowListView = true;
+    }
+
+
     /// <summary>
     /// ViewCamera.xaml 的交互逻辑
     /// </summary>
@@ -42,29 +57,33 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         public View View { get; set; }
 
         public ObservableCollection<ViewResultCalibration> ViewResultCalibrations { get; set; } = new ObservableCollection<ViewResultCalibration>();
-        public MQTTCalibration DeviceService{ get; set; }
+        public  MQTTCalibration DeviceService => Device.DService;
         public DeviceCalibration Device { get; set; }
+
         public ViewCalibration(DeviceCalibration device)
         {
             Device = device;
-            DeviceService = device.DeviceService;
             InitializeComponent();
         }
-
+        public static ViewCameraConfig Config => ViewCameraConfig.Instance;
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            this.DataContext = this;
             View = new View();
+            ImageView.SetConfig(Config.ImageViewConfig);
+
             listView1.ItemsSource = ViewResultCalibrations;
 
             ComboxPOITemplate.ItemsSource = PoiParam.Params.CreateEmpty();
             ComboxPOITemplate.SelectedIndex = 0;
 
             if (listView1.View is GridView gridView)
+            {
                 GridViewColumnVisibility.AddGridViewColumn(gridView.Columns, GridViewColumnVisibilitys);
-
-
-            ComboBoxLayers.ItemsSource = from e1 in Enum.GetValues(typeof(ImageLayer)).Cast<ImageLayer>()
-                                         select new KeyValuePair<string, ImageLayer>(e1.ToString(), e1);
+                Config.GridViewColumnVisibilitys.CopyToGridView(GridViewColumnVisibilitys);
+                Config.GridViewColumnVisibilitys = GridViewColumnVisibilitys;
+                GridViewColumnVisibility.AdjustGridViewColumnAuto(gridView.Columns, GridViewColumnVisibilitys);
+            }
 
             netFileUtil = new NetFileUtil();
             netFileUtil.handler += NetFileUtil_handler;
@@ -91,10 +110,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             else
             {
                 handler?.Close();
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    MessageBox.Show(Application.Current.MainWindow, "文件打开失败", "ColorVision");
-                });
             }
         }
 
@@ -190,7 +205,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                     case MQTTFileServerEventEnum.Event_File_Download:
                         Application.Current.Dispatcher.Invoke(() =>
                         {
-                            MessageBox.Show("文件下载失败");
+                            MessageBox1.Show("文件下载失败");
                         });
                         break;
                     case MQTTFileServerEventEnum.Event_File_GetChannel:
@@ -232,7 +247,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         {
             if (listView1.SelectedIndex < 0)
             {
-                MessageBox.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
+                MessageBox1.Show(Application.Current.MainWindow, "您需要先选择数据", "ColorVision");
                 return;
             }
             using var dialog = new System.Windows.Forms.SaveFileDialog();
@@ -247,7 +262,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             else
             {
                 ImageSource bitmapSource = ImageView.ImageShow.Source;
-                ImageUtil.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
+                ImageUtils.SaveImageSourceToFile(bitmapSource, Path.Combine(Path.GetDirectoryName(dialog.FileName), Path.GetFileNameWithoutExtension(dialog.FileName) + ".png"));
             }
         }
 
@@ -267,7 +282,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 if (File.Exists(data.FileUrl))
                 {
                     LocalFileName = data.FileUrl;
-                    ImageView.FilePath = LocalFileName;
+                    ImageView.Config.FilePath = LocalFileName;
                     var FileData = netFileUtil.OpenLocalCVFile(data.FileUrl);
                     OpenImage(FileData);
                 }
@@ -275,7 +290,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 {
                     if (data.ResultCode == 0 && data.FilePath != null)
                     {
-                        ImageView.FilePath = data.FilePath;
+                        ImageView.Config.FilePath = data.FilePath;
 
                         string localName = netFileUtil.GetCacheFileFullName(data.FilePath);
                         FileExtType fileExt = FileExtType.Src;
@@ -319,7 +334,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         public void OpenImage(CVCIEFile fileData)
         {
-            ImageView.OpenImage(fileData);
+            ImageView.IsCVCIE = fileData.FileExtType == FileExtType.CIE;
+            ImageView.OpenImage(fileData.ToWriteableBitmap());
         }
 
         MeasureImgResultDao MeasureImgResultDao = new();
@@ -461,44 +477,30 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ComboBox comboBox && comboBox.SelectedValue is ImageLayer imageLayer)
+            if (sender is ComboBox comboBox)
             {
                 if (listView1.SelectedIndex > -1)
                 {
-                    var ViewResultCamera = ViewResultCalibrations[listView1.SelectedIndex];
-                    switch (imageLayer)
-                    {
-                        case ImageLayer.Src:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.SRC);
-                            break;
-                        case ImageLayer.R:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_R);
-                            break;
-                        case ImageLayer.G:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_G);
-                            break;
-                        case ImageLayer.B:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_B);
-                            break;
-                        case ImageLayer.X:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_X);
-                            break;
-                        case ImageLayer.Y:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Y);
-                            break;
-                        case ImageLayer.Z:
-                            DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Z);
-                            break;
-                        default:
-                            break;
-                    }
-
+                    var viewResult = ViewResultCalibrations[listView1.SelectedIndex];
+                    if (comboBox.Text == "Src")
+                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.SRC);
+                    if (comboBox.Text == "R")
+                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.RGB_R);
+                    if (comboBox.Text == "G")
+                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.RGB_G);
+                    if (comboBox.Text == "B")
+                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.RGB_B);
+                    if (comboBox.Text == "X")
+                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.CIE_XYZ_X);
+                    if (comboBox.Text == "Y")
+                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.CIE_XYZ_Y);
+                    if (comboBox.Text == "Z")
+                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.CIE_XYZ_Z);
                 }
                 else
                 {
-                    MessageBox.Show("请先选择您要切换的图像");
+                    MessageBox1.Show("请先选择您要切换的图像");
                 }
-
             }
 
         }

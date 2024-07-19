@@ -1,11 +1,9 @@
-﻿using ColorVision.Common.Utilities;
-using ColorVision.Themes;
+﻿using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using CVCommCore;
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 
 namespace ColorVision.Engine.Services.Devices.Motor
 {
@@ -16,15 +14,13 @@ namespace ColorVision.Engine.Services.Devices.Motor
     {
 
         public DeviceMotor Device { get; set; }
-        private MQTTMotor DeviceService { get => Device.DeviceService;  }
+        private MQTTMotor DeviceService { get => Device.DService;  }
         public string DisPlayName => Device.Config.Name;
 
         public DisplayMotorControl(DeviceMotor device)
         {
             Device = device;
             InitializeComponent();
-
-            PreviewMouseDown += UserControl_PreviewMouseDown;
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
@@ -39,18 +35,6 @@ namespace ColorVision.Engine.Services.Devices.Motor
         public event EventHandler SelectChanged;
         private bool _IsSelected;
         public bool IsSelected { get => _IsSelected; set { _IsSelected = value; SelectChanged?.Invoke(this, new RoutedEventArgs()); if (value) Selected?.Invoke(this, new RoutedEventArgs()); else Unselected?.Invoke(this, new RoutedEventArgs()); } }
-
-
-        private void UserControl_PreviewMouseDown(object sender, MouseButtonEventArgs e)
-        {
-            if (Parent is StackPanel stackPanel)
-            {
-                if (stackPanel.Tag is IDisPlayControl disPlayControl)
-                    disPlayControl.IsSelected = false;
-                stackPanel.Tag = this;
-                IsSelected = true;
-            }
-        }
 
         private void DeviceService_DeviceStatusChanged(DeviceStatusType deviceStatus)
         {
@@ -69,19 +53,19 @@ namespace ColorVision.Engine.Services.Devices.Motor
         {
             if (sender is Button button)
             {
-                if (DeviceService.DeviceStatus == DeviceStatusType.Closed && button.Content.ToString() == "连接")
+                if ( button.Content.ToString() == "连接")
                 {
                     var msgRecord = DeviceService.Open();
                     ServicesHelper.SendCommand(button, msgRecord);
                 }
-                else if (DeviceService.DeviceStatus == DeviceStatusType.Opened && button.Content.ToString() == "关闭")
+                else if (button.Content.ToString() == "关闭")
                 {
                     var msgRecord = DeviceService.Close();
                     ServicesHelper.SendCommand(button, msgRecord);
                 }
                 else
                 {
-                    MessageBox.Show(Application.Current.MainWindow,"指令已经发送请稍等","ColorVision");
+                    MessageBox1.Show(Application.Current.MainWindow,"指令已经发送请稍等","ColorVision");
                 }
             }
         }

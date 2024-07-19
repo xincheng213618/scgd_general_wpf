@@ -10,6 +10,16 @@
         Title="{x:Static properties:Resources.PhysicalCameraManager}" Height="550" Width="1280" Background="{DynamicResource GlobalBackground}"  Initialized="Window_Initialized">
     <Window.Resources>
         <local:NameStringConverter x:Key="NameStringConverter"/>
+        <Style TargetType="Button" BasedOn="{StaticResource ButtonDefault}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="False">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="True">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
     </Window.Resources>
     <Grid Margin="5">
         <Grid.RowDefinitions>
@@ -27,8 +37,8 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,5">
-                    <Button Content="添加未创建的相机" Command="{Binding CreateCommand}" Margin="0,0,5,0"/>
-                    <Button Content="许可证导入" Command="{Binding ImportCommand}" Margin="0,0,5,0"/>
+                    <Button Content="{x:Static properties:Resources.AddUncreatedCamera}" Command="{Binding CreateCommand}" Margin="0,0,5,0"/>
+                    <Button Content="{x:Static properties:Resources.LicenseImport}" Command="{Binding ImportCommand}" Margin="0,0,5,0"/>
                 </StackPanel>
                 <TreeView x:Name="TreeView1" Grid.Row="1" ItemsSource="{Binding PhyCameras}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" SelectedItemChanged="TreeView1_SelectedItemChanged" Margin="0,0,5,0">
                     <TreeView.Resources>

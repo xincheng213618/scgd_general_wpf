@@ -76,7 +76,7 @@ namespace ColorVision.Projects.ProjectHeyuan
                     serialPort = new SerialPort { PortName = portName, BaudRate = 38400 };
                     serialPort.Open();
                     string SetMsg = $"CSN,C,0,TEST202405140001";
-                    byte[] buffer = System.Text.Encoding.UTF8.GetBytes(SetMsg);
+                    byte[] buffer = Encoding.UTF8.GetBytes(SetMsg);
                     byte[] framedMsg = new byte[buffer.Length + 2];
                     framedMsg[0] = 0x02; // STX (Start of Text)
                     buffer.CopyTo(framedMsg, 1); // Copy original message into the new array starting at index 1
@@ -201,13 +201,13 @@ namespace ColorVision.Projects.ProjectHeyuan
                 return;
             }
             string SendMsg = $"CSN,C,{Config.DeviceId},{SN}";
-            Send(System.Text.Encoding.UTF8.GetBytes(SendMsg));
+            Send(Encoding.UTF8.GetBytes(SendMsg));
         }
 
         public void SendPost()
         {
             string SendMsg = $"CPT,C,{Config.DeviceId}";
-            Send(System.Text.Encoding.UTF8.GetBytes(SendMsg));
+            Send(Encoding.UTF8.GetBytes(SendMsg));
         }
 
         public ObservableCollection<TempResult> Results { get; set; } =new ObservableCollection<TempResult>();
@@ -215,12 +215,12 @@ namespace ColorVision.Projects.ProjectHeyuan
         public void UploadMes(ObservableCollection<TempResult> Results)
         {
             string SendMsg = $"CMI,C,{Config.DeviceId},{Config.TestName},White,{Results[0].X.Value:F3}/{Results[0].Y.Value:F3}/{Results[0].Lv.Value:F3}/{Results[0].Dw.Value:F3}/{(Results[0].Result?"Pass":"Fail")},Blue,{Results[1].X.Value:F3}/{Results[1].Y.Value:F3}/{Results[1].Lv.Value:F3}/{Results[1].Dw.Value:F3}/{(Results[1].Result ? "Pass" : "Fail")},Red,{Results[2].X.Value:F3}/{Results[2].Y.Value:F3}/{Results[2].Lv.Value:F3}/{Results[2].Dw.Value:F3}/{(Results[2].Result ? "Pass" : "Fail")},Orange,{Results[3].X.Value:F3}/{Results[3].Y.Value:F3}/{Results[3].Lv.Value:F3}/{Results[3].Dw.Value:F3}/{(Results[3].Result ? "Pass" : "Fail")}";
-            Send(System.Text.Encoding.UTF8.GetBytes(SendMsg));
+            Send(Encoding.UTF8.GetBytes(SendMsg));
         }
         public void UploadNG(string Msg = "errorW") 
         {
             string SendMsg = $"CGI,C,{Config.DeviceId},Default,{Msg}";
-            Send(System.Text.Encoding.UTF8.GetBytes(SendMsg));
+            Send(Encoding.UTF8.GetBytes(SendMsg));
         }
 
         public void Send(byte[] msg)

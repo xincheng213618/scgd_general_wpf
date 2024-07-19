@@ -2,7 +2,7 @@
 // // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using ColorVision.Common.NativeMethods;
-using ColorVision.UI;
+using ColorVision.UI.Shell;
 using log4net;
 using log4net.Config;
 using System;
@@ -49,7 +49,7 @@ namespace ColorVision
                 }
             }
 
-            mutex = new Mutex(true, "ElectronicNeedleTherapySystem", out bool ret);
+            mutex = new Mutex(true, "ColorVision", out bool ret);
             if (!ret && !Debugger.IsAttached)
             {
                 IntPtr hWnd = CheckAppRunning.Check("ColorVision");

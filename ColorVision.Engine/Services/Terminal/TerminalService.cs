@@ -5,6 +5,7 @@ using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
+using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.Util.Interfaces;
@@ -117,7 +118,7 @@ namespace ColorVision.Engine.Services.Terminal
 
         public override void Delete()
         {
-            if (MessageBox.Show(Application.Current.GetActiveWindow(),"是否删除", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(),"是否删除", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.Cancel) return;
             base.Delete();
             Parent.RemoveChild(this);
             if (SysResourceModel != null)

@@ -53,7 +53,7 @@ namespace ColorVision.Settings
                 {
                     DockPanel dockPanel = new DockPanel() { Margin = new Thickness(5) };
                     Wpf.Ui.Controls.ToggleSwitch toggleSwitch = new() { ToolTip = configSetting.Description };
-                    toggleSwitch.SetBinding(Wpf.Ui.Controls.ToggleSwitch.IsCheckedProperty, new Binding(configSetting.BindingName));
+                    toggleSwitch.SetBinding(System.Windows.Controls.Primitives.ToggleButton.IsCheckedProperty, new Binding(configSetting.BindingName));
                     toggleSwitch.DataContext = configSetting.Source;
                     DockPanel.SetDock(toggleSwitch, Dock.Right);
                     dockPanel.Children.Add(toggleSwitch);
@@ -73,7 +73,7 @@ namespace ColorVision.Settings
                 {
                     TabItem tabItem = new TabItem() { Header = configSetting.Name , Background = Brushes.Transparent};
                     Grid grid = new Grid();
-                    grid.SetResourceReference(Grid.BackgroundProperty, "GlobalBorderBrush");
+                    grid.SetResourceReference(Panel.BackgroundProperty, "GlobalBorderBrush");
                     GroupBox groupBox = new GroupBox
                     {
                         Header = new TextBlock { Text = configSetting.Name, FontSize = 20 },

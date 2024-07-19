@@ -1,11 +1,11 @@
 ﻿#pragma warning disable CS8604,CS8629
-using ColorVision.Common.Extension;
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Media;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.Engine.UIExport.SolutionExports.Export;
+using ColorVision.Engine.Impl.SolutionImpl.Export;
 using ColorVision.Net;
+using ColorVision.Themes.Controls;
 using ColorVision.UI.Sorts;
 using MQTTMessageLib.Camera;
 using System;
@@ -64,7 +64,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 CVFileUtil.ReadCVRaw(FileUrl, out CVCIEFile fileInfo);
                 Window window = new() { Title = Properties.Resources.QuickPreview, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 window.Content = imageView;
-                imageView.OpenImage(new NetFileUtil().OpenLocalCVFile(FileUrl));
+                imageView.OpenImage(new NetFileUtil().OpenLocalCVFile(FileUrl).ToWriteableBitmap());
 
                 window.Show();
                 window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() => {
@@ -73,9 +73,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), "找不到文件", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), "找不到文件", "ColorVision");
             }
-
         }
 
         public RelayCommand ExportCVCIECommand { get; set; }

@@ -10,7 +10,7 @@
              xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         d:DataContext="{d:DesignInstance local:PhyCamera}"
              mc:Ignorable="d" 
-             Title="{x:Static properties:Resources.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="600" Initialized="UserControl_Initialized">
+             Title="{x:Static properties:Resources.Edit}" Icon="{Binding Icon}" Background="{DynamicResource GlobalBackground}" Height="450" Width="570" Initialized="UserControl_Initialized">
     <Window.Resources>
         <Style TargetType="TextBox" BasedOn="{StaticResource TextBoxBaseBaseStyle}">
             <EventSetter Event="PreviewKeyDown" Handler="TextBox_PreviewKeyDown"/>
@@ -27,12 +27,8 @@
                     <GroupBox Header="配置信息" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="相机ID" Width="120"/>
-                                <hc:ComboBox  x:Name="CameraID" IsEditable="True" DisplayMemberPath="Name" SelectedIndex="0" Text="{Binding CameraID}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
                                 <TextBlock Text="相机类型" Width="120"/>
-                                <hc:ComboBox x:Name="ComboxCameraType"  SelectedValue="{Binding CameraType}" SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,10,0"/>
+                                <hc:ComboBox x:Name="ComboxCameraType"  SelectedValue="{Binding CameraType}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="相机型号" Width="120"/>
@@ -44,15 +40,15 @@
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="默认取图模式" Width="120"/>
-                                <ComboBox  x:Name="ComboxCameraTakeImageMode"  SelectedValue="{Binding TakeImageMode}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  Margin="0,0,10,0"/>
+                                <ComboBox  x:Name="ComboxCameraTakeImageMode"  SelectedValue="{Binding TakeImageMode}"  SelectedValuePath="Key"  DisplayMemberPath="Value"  />
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="默认通道数" Width="120"/>
-                                <hc:ComboBox  x:Name="ComboxCameraChannel"   SelectedValue="{Binding Channel}"   SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="0,0,10,0"/>
+                                <hc:ComboBox  x:Name="ComboxCameraChannel"   SelectedValue="{Binding Channel}"   SelectedValuePath="Key"  DisplayMemberPath="Value"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
                                 <TextBlock Text="默认图像位数" Width="120"/>
-                                <ComboBox  x:Name="ComboxCameraImageBpp"    SelectedValue="{Binding ImageBpp}"  SelectedValuePath="Key"  DisplayMemberPath="Value" Margin="0,0,10,0" />
+                                <ComboBox  x:Name="ComboxCameraImageBpp"    SelectedValue="{Binding ImageBpp}"  SelectedValuePath="Key"  DisplayMemberPath="Value" />
                             </DockPanel>
                         </StackPanel>
                     </GroupBox>
@@ -131,179 +127,146 @@
                         </StackPanel>
                     </GroupBox>
 
-
-                    <GroupBox Header="默认参数" Margin="0,5">
-                        <StackPanel Margin="5">
-                            <StackPanel Margin="0.2" Visibility="{Binding IsExpThree,Converter={StaticResource bool2VisibilityConverter1}}">
-                                <DockPanel  >
-                                    <TextBlock  Text="默认曝光(ms)" Width="120" />
-                                    <TextBox DockPanel.Dock="Right" Text="{Binding ExpTime}"   Width="50"/>
-                                    <hc:PreviewSlider x:Name="SliderexpTime"  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="1"  Value="{Binding ExpTime}" Maximum="60000">
-                                        <hc:PreviewSlider.PreviewContent>
-                                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
-                                        </hc:PreviewSlider.PreviewContent>
-                                    </hc:PreviewSlider>
-                                </DockPanel>
-                            </StackPanel>
-                            <StackPanel Margin="0.2" Visibility="{Binding IsExpThree,Converter={StaticResource bool2VisibilityConverter}}">
-                                <DockPanel Margin="0,2">
-                                    <TextBlock  Text="默认R通道曝光(ms)" Width="120"/>
-                                    <TextBox DockPanel.Dock="Right" Text="{Binding ExpTimeR}"  Width="50"/>
-                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeR}" Maximum="60000">
-                                        <hc:PreviewSlider.PreviewContent>
-                                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
-                                        </hc:PreviewSlider.PreviewContent>
-                                    </hc:PreviewSlider>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock  Text="默认G通道曝光(ms)" Width="120" />
-                                    <TextBox DockPanel.Dock="Right" Text="{Binding ExpTimeG}"  Width="50"/>
-                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"  SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeG}" Maximum="60000">
-                                        <hc:PreviewSlider.PreviewContent>
-                                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
-                                        </hc:PreviewSlider.PreviewContent>
-                                    </hc:PreviewSlider>
-                                </DockPanel>
-                                <DockPanel Margin="0,2">
-                                    <TextBlock  Text="默认B通道曝光(ms)" Width="120" />
-                                    <TextBox DockPanel.Dock="Right" Text="{Binding ExpTimeB}"  Width="50"/>
-                                    <hc:PreviewSlider  TickFrequency ="1" IsSnapToTickEnabled="True"   SmallChange ="1" LargeChange="100"  Value="{Binding ExpTimeB}" Maximum="60000">
-                                        <hc:PreviewSlider.PreviewContent>
-                                            <Label Style="{StaticResource LabelPrimary}" Content="{Binding Path=(hc:PreviewSlider.PreviewPosition),RelativeSource={RelativeSource Self}}" ContentStringFormat="{}{0:#0.}ms"/>
-                                        </hc:PreviewSlider.PreviewContent>
-                                    </hc:PreviewSlider>
-                                </DockPanel>
-                            </StackPanel>
-
-                        </StackPanel>
-                    </GroupBox>
-
-                    <GroupBox Header="自动曝光参数配置" Margin="0,5">
+                    <GroupBox Header="电机" Margin="0,5" >
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="自动曝光"  Width="80"/>
-                                <TextBox  Text="{Binding ExpTimeCfg.AutoExpTimeBegin}"/>
+                                <TextBlock Text="启用:" Width="120"/>
+                                <ui:ToggleSwitch IsChecked="{Binding MotorConfig.IsUseMotor}"/>
                             </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="自动同步频率"  Width="80"/>
-                                <TextBox  Text="{Binding ExpTimeCfg.AutoExpSyncFreq}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="autoExpSaturation"  Width="80"/>
-                                <TextBox   Text="{Binding ExpTimeCfg.AutoExpSaturation}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="autoExpSatMaxAD"  Width="80"/>
-                                <TextBox   Text="{Binding ExpTimeCfg.AutoExpSatMaxAD}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="autoExpMaxPecentage"  Width="80"/>
-                                <TextBox   Text="{Binding ExpTimeCfg.AutoExpMaxPecentage}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="autoExpSatDev"  Width="80"/>
-                                <TextBox   Text="{Binding ExpTimeCfg.AutoExpSatDev}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="最大曝光"  Width="80"/>
-                                <TextBox  Text="{Binding ExpTimeCfg.MaxExpTime}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="最小曝光"  Width="80"/>
-                                <TextBox Text="{Binding ExpTimeCfg.MinExpTime}"/>
-                            </DockPanel>
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="burst的阈值"  Width="80"/>
-                                <TextBox  Text="{Binding ExpTimeCfg.BurstThreshold}"/>
-                            </DockPanel>
-                        </StackPanel>
-                    </GroupBox>
-
-
-                    <GroupBox Header="滤色轮配置" Margin="0,5" Visibility="{Binding IsChannelThree,Converter={StaticResource bool2VisibilityConverter}}">
-                        <StackPanel Margin="5">
-                            <DockPanel Margin="0,2">
-                                <TextBlock Text="启用串口发送:" Width="120"/>
-                                <ui:ToggleSwitch IsChecked="{Binding CFW.IsCOM}"/>
-                            </DockPanel>
-                            <StackPanel  Visibility="{Binding CFW.IsCOM,Converter={StaticResource bool2VisibilityConverter}}" >
+                            <StackPanel Visibility="{Binding MotorConfig.IsUseMotor,Converter={StaticResource bool2VisibilityConverter}}">
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="类型:" Width="120"/>
+                                    <ComboBox x:Name="ComboxMotorType"  SelectedValue="{Binding MotorConfig.eFOCUSCOMMUN}"  SelectedValuePath="Key"  DisplayMemberPath="Value" />
+                                </DockPanel>
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="串口:" Width="120"/>
-                                    <hc:ComboBox  x:Name="TextSerial1" IsEditable="True" Text="{Binding CFW.SzComName}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                                    <hc:ComboBox  x:Name="TextSerial" IsEditable="True" Text="{Binding MotorConfig.SzComName}"  hc:InfoElement.ShowClearButton="True"  />
                                 </DockPanel>
                                 <DockPanel Margin="0,2">
                                     <TextBlock Text="波特率:" Width="120"/>
-                                    <hc:ComboBox  x:Name="TextBaudRate1" IsEditable="True" Text="{Binding CFW.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                                    <hc:ComboBox x:Name="TextBaudRate" IsEditable="True" Text="{Binding MotorConfig.BaudRate}"  hc:InfoElement.ShowClearButton="True"  />
                                 </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="电机运行加速度:" Width="120"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.RunAcceleration}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="电机平稳运行速度:" Width="120"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.RunSpeed}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="电机减速度:" Width="120"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.Deceleration}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="原点加速度" Width="120"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.HomeAcceleration}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="高速回原点" Width="120"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.HomeHightSpeed}"/>
+                                </DockPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="低速回原点" Width="120"/>
+                                    <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding MotorConfig.HomeLowSpeed}"/>
+                                </DockPanel>
+
                             </StackPanel>
-                            <DockPanel>
-                                <TextBlock Text="滤色轮数量:" Width="120"/>
-                                <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.CFWNum}" Minimum="0"/>
-                            </DockPanel>
-                            <UniformGrid Columns="3" Rows="1">
-                                <StackPanel Margin="0,2">
-                                    <DockPanel Margin="0,2">
-                                        <ComboBox x:Name="chType1" DockPanel.Dock="Right" Width="110" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding CFW.ChannelCfgs[0].Chtype}"   SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
-                                        <TextBlock Text="chType"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[0].Cfwport}" Minimum="0"/>
-                                        <TextBlock Text="cfwport0"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum2,Converter={StaticResource bool2VisibilityConverter}}">
-                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[3].Cfwport}" Minimum="0"/>
-                                        <TextBlock Text="cfwport3"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum3,Converter={StaticResource bool2VisibilityConverter}}">
-                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[6].Cfwport}" Minimum="0"/>
-                                        <TextBlock Text="cfwport6"/>
-                                    </DockPanel>
-                                </StackPanel>
-                                <StackPanel  Margin="2">
-                                    <DockPanel Margin="0,2">
-                                        <ComboBox x:Name="chType2" DockPanel.Dock="Right" Width="110" Style="{StaticResource ComboBox.Small}" SelectedValue="{Binding CFW.ChannelCfgs[1].Chtype}"  SelectedValuePath="Key"  DisplayMemberPath="Value"/>
-                                        <TextBlock Text="chType"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[1].Cfwport}" Minimum="0"/>
-                                        <TextBlock Text="cfwport1"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum2,Converter={StaticResource bool2VisibilityConverter}}">
-                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[4].Cfwport}" Minimum="0"/>
-                                        <TextBlock Text="cfwport4"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum3,Converter={StaticResource bool2VisibilityConverter}}">
-                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[7].Cfwport}" Minimum="0"/>
-                                        <TextBlock Text="cfwport7"/>
-                                    </DockPanel>
-                                </StackPanel>
-                                <StackPanel  Margin="2">
-                                    <DockPanel Margin="0,2">
-                                        <ComboBox x:Name="chType3" DockPanel.Dock="Right" Width="110" Style="{StaticResource ComboBox.Small}"  SelectedValue="{Binding CFW.ChannelCfgs[2].Chtype}"   SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
-                                        <TextBlock Text="chType"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2">
-                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[2].Cfwport}" Minimum="0"/>
-                                        <TextBlock Text="cfwport2"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum2,Converter={StaticResource bool2VisibilityConverter}}">
-                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[5].Cfwport}" Minimum="0"/>
-                                        <TextBlock Text="cfwport5"/>
-                                    </DockPanel>
-                                    <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum3,Converter={StaticResource bool2VisibilityConverter}}">
-                                        <hc:NumericUpDown DockPanel.Dock="Right" Width="110" Value="{Binding CFW.ChannelCfgs[8].Cfwport}" Minimum="0"/>
-                                        <TextBlock Text="cfwport8"/>
-                                    </DockPanel>
-                                </StackPanel>
-                            </UniformGrid>
                         </StackPanel>
                     </GroupBox>
 
-                    <GroupBox Header="数据文件服务配置" Margin="0,5">
+
+                    <GroupBox Header="滤色轮" Margin="0,5">
+                        <StackPanel Margin="5">
+                            <DockPanel Margin="0,2">
+                                <TextBlock Text="启用:" Width="120"/>
+                                <ui:ToggleSwitch IsChecked="{Binding CFW.IsUseCFW}"/>
+                            </DockPanel>
+                            <StackPanel  Visibility="{Binding CFW.IsUseCFW,Converter={StaticResource bool2VisibilityConverter}}">
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="启用串口发送:" Width="120"/>
+                                    <ui:ToggleSwitch IsChecked="{Binding CFW.IsCOM}"/>
+                                </DockPanel>
+                                <StackPanel  Visibility="{Binding CFW.IsCOM,Converter={StaticResource bool2VisibilityConverter}}" >
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="串口:" Width="120"/>
+                                        <hc:ComboBox  x:Name="TextSerial1" IsEditable="True" Text="{Binding CFW.SzComName}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                                    </DockPanel>
+                                    <DockPanel Margin="0,2">
+                                        <TextBlock Text="波特率:" Width="120"/>
+                                        <hc:ComboBox  x:Name="TextBaudRate1" IsEditable="True" Text="{Binding CFW.BaudRate}"  hc:InfoElement.ShowClearButton="True" Margin="0,0,10,0"  />
+                                    </DockPanel>
+                                </StackPanel>
+                                <DockPanel Margin="0,2">
+                                    <TextBlock Text="滤色轮数量:" Width="120"/>
+                                    <hc:NumericUpDown Value="{Binding CFW.CFWNum}" Minimum="0"/>
+                                </DockPanel>
+                                <UniformGrid Columns="3" Rows="1">
+                                    <StackPanel Margin="0,0,5,0">
+                                        <DockPanel Margin="0,2">
+                                            <ComboBox x:Name="chType1" DockPanel.Dock="Right" Width="105"  SelectedValue="{Binding CFW.ChannelCfgs[0].Chtype}"   SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
+                                            <TextBlock Text="chType"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <hc:NumericUpDown DockPanel.Dock="Right" Width="105" Value="{Binding CFW.ChannelCfgs[0].Cfwport}" Minimum="0"/>
+                                            <TextBlock Text="cfwport0"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum2,Converter={StaticResource bool2VisibilityConverter}}">
+                                            <hc:NumericUpDown DockPanel.Dock="Right" Width="105" Value="{Binding CFW.ChannelCfgs[3].Cfwport}" Minimum="0"/>
+                                            <TextBlock Text="cfwport3"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum3,Converter={StaticResource bool2VisibilityConverter}}">
+                                            <hc:NumericUpDown DockPanel.Dock="Right" Width="105" Value="{Binding CFW.ChannelCfgs[6].Cfwport}" Minimum="0"/>
+                                            <TextBlock Text="cfwport6"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                    <StackPanel  Margin="5,0,5,0">
+                                        <DockPanel Margin="0,2">
+                                            <ComboBox x:Name="chType2" DockPanel.Dock="Right" Width="105" SelectedValue="{Binding CFW.ChannelCfgs[1].Chtype}"  SelectedValuePath="Key"  DisplayMemberPath="Value"/>
+                                            <TextBlock Text="chType"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <hc:NumericUpDown DockPanel.Dock="Right" Width="105" Value="{Binding CFW.ChannelCfgs[1].Cfwport}" Minimum="0"/>
+                                            <TextBlock Text="cfwport1"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum2,Converter={StaticResource bool2VisibilityConverter}}">
+                                            <hc:NumericUpDown DockPanel.Dock="Right" Width="105" Value="{Binding CFW.ChannelCfgs[4].Cfwport}" Minimum="0"/>
+                                            <TextBlock Text="cfwport4"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum3,Converter={StaticResource bool2VisibilityConverter}}">
+                                            <hc:NumericUpDown DockPanel.Dock="Right" Width="105" Value="{Binding CFW.ChannelCfgs[7].Cfwport}" Minimum="0"/>
+                                            <TextBlock Text="cfwport7"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                    <StackPanel  Margin="5,0,0,0">
+                                        <DockPanel Margin="0,2">
+                                            <ComboBox x:Name="chType3" DockPanel.Dock="Right" Width="105"     SelectedValue="{Binding CFW.ChannelCfgs[2].Chtype}"   SelectedValuePath="Key"  DisplayMemberPath="Value" Text=""/>
+                                            <TextBlock Text="chType"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2">
+                                            <hc:NumericUpDown DockPanel.Dock="Right" Width="105" Value="{Binding CFW.ChannelCfgs[2].Cfwport}" Minimum="0"/>
+                                            <TextBlock Text="cfwport2"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum2,Converter={StaticResource bool2VisibilityConverter}}">
+                                            <hc:NumericUpDown DockPanel.Dock="Right" Width="105" Value="{Binding CFW.ChannelCfgs[5].Cfwport}" Minimum="0"/>
+                                            <TextBlock Text="cfwport5"/>
+                                        </DockPanel>
+                                        <DockPanel Margin="0,2" Visibility="{Binding CFW.IsCFWNum3,Converter={StaticResource bool2VisibilityConverter}}">
+                                            <hc:NumericUpDown DockPanel.Dock="Right" Width="105" Value="{Binding CFW.ChannelCfgs[8].Cfwport}" Minimum="0"/>
+                                            <TextBlock Text="cfwport8"/>
+                                        </DockPanel>
+                                    </StackPanel>
+                                </UniformGrid>
+                            </StackPanel>
+
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="存储信息" Margin="0,5">
                         <StackPanel Margin="5">
                             <DockPanel Margin="0,2">
                                 <Button Content=".." DockPanel.Dock="Right" VerticalAlignment="Bottom" Height="30" Width="30" Click="FileBasePath_Click"/>
-                                <TextBlock Text="数据目录:" Width="120"/>
+                                <TextBlock Text="目录:" Width="120"/>
                                 <TextBox Text="{Binding FileServerCfg.FileBasePath}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">

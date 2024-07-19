@@ -1,8 +1,8 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.MySql;
+using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Templates;
-using ColorVision.Engine.Services.Dao;
-using ColorVision.UserSpace;
+using ColorVision.Themes.Controls;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Windows;
@@ -45,7 +45,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             }
             else
             {
-                MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(SpectrumResourceParam)}模板失败", "ColorVision");
+                MessageBox1.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(SpectrumResourceParam)}模板失败", "ColorVision");
             }
         }
     }
@@ -74,7 +74,7 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
         public SpectrumResourceParam() { }
 
-        public SpectrumResourceParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster.Id, modMaster.Name ?? string.Empty, modDetails)
+        public SpectrumResourceParam(ModMasterModel modMaster, List<ModDetailModel> modDetails) : base(modMaster, modDetails)
         {
 
         }

@@ -1,11 +1,6 @@
 ﻿#pragma warning disable CS8602
 using ColorVision.Scheduler;
-using NPOI.SS.Formula.Functions;
-using OpenCvSharp.Aruco;
 using Quartz;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;

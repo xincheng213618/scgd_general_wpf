@@ -29,9 +29,7 @@ namespace ColorVision.Common.MVVM
         }
 
         public static void CopyFrom<T>(this T source, T target) where T : ViewModelBase => target.CopyTo(source);
-
-        //复制一个新的对象
-        public static void CopyTo<T>(this T source, T target) where T:ViewModelBase
+        public static void CopyTo<T>(this T source, T target) where T : ViewModelBase
         {
             ArgumentNullException.ThrowIfNull(source);
             ArgumentNullException.ThrowIfNull(target);
@@ -39,38 +37,74 @@ namespace ColorVision.Common.MVVM
             Type type = source.GetType();
 
             // 可能需要检查source和target是否是同一个类型或者target是否是source的子类。
-
-            // Copy fields
-            var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-            foreach (var field in fields)
+            if (!type.IsAssignableFrom(target.GetType()))
             {
-                if (!field.IsInitOnly) // Ignore readonly fields
+                throw new ArgumentException("Target must be the same type or a subtype of the source.");
+            }
+
+            // Copy fields and properties from the type and all its base types
+            while (type != null && type != typeof(object))
+            {
+                // Copy fields
+                var fields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                foreach (var field in fields)
+                {
+                    if (!field.IsInitOnly) // Ignore readonly fields
+                    {
+                        try
+                        {
+                            var fieldValue = field.GetValue(source);
+                            if (fieldValue != null && field.FieldType.IsSubclassOf(typeof(ViewModelBase)))
+                            {
+                                if (fieldValue is ViewModelBase viewModelBase && Activator.CreateInstance(field.FieldType) is ViewModelBase targetFieldValue)
+                                {
+                                    viewModelBase.CopyTo(targetFieldValue);
+                                    field.SetValue(target, targetFieldValue);
+                                }
+                            }
+                            else
+                            {
+                                field.SetValue(target, fieldValue);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // Handle or log the exception
+                            Console.WriteLine($"Error copying field {field.Name}: {ex.Message}");
+                        }
+                    }
+                }
+
+                // Copy properties
+                var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                                     .Where(p => p.CanRead && p.CanWrite);
+                foreach (var property in properties)
                 {
                     try
                     {
-                        field.SetValue(target, field.GetValue(source));
+                        var propertyValue = property.GetValue(source);
+                        if (propertyValue != null && property.PropertyType.IsSubclassOf(typeof(ViewModelBase)))
+                        {
+                            if (propertyValue is ViewModelBase viewModelBase && Activator.CreateInstance(property.PropertyType) is ViewModelBase targetPropertyValue)
+                            {
+                                viewModelBase.CopyTo(targetPropertyValue);
+                                property.SetValue(target, targetPropertyValue);
+                            }
+                        }
+                        else
+                        {
+                            property.SetValue(target, propertyValue);
+                        }
                     }
                     catch (Exception ex)
                     {
                         // Handle or log the exception
-                        Console.WriteLine($"Error copying field {field.Name}: {ex.Message}");
+                        Console.WriteLine($"Error copying property {property.Name}: {ex.Message}");
                     }
                 }
-            }
 
-            // Copy properties
-            var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance).Where(p => p.CanRead && p.CanWrite);
-            foreach (var property in properties)
-            {
-                try
-                {
-                    property.SetValue(target, property.GetValue(source));
-                }
-                catch (Exception ex)
-                {
-                    // Handle or log the exception
-                    Console.WriteLine($"Error copying property {property.Name}: {ex.Message}");
-                }
+                // Move to the base type
+                type = type.BaseType;
             }
         }
 

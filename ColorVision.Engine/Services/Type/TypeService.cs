@@ -22,8 +22,9 @@ namespace ColorVision.Engine.Services.Types
         CfwPort = 8,
         Calibration = 9,
         Motor = 10,
-        Flowtime = 21,
         Flow = 12,
+        ThirdPartyAlgorithms = 13,
+        FlowTemp = 21,
         [Description("暗噪声")]
         DarkNoise = 31,
         [Description("缺陷点")]

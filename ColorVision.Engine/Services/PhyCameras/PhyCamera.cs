@@ -11,12 +11,11 @@ using ColorVision.Engine.Services.PhyCameras.Group;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Engine.Services.Types;
 using ColorVision.Engine.Templates;
-using ColorVision.Handler;
+using ColorVision.Engine.Utilities;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
 using ColorVision.UI.Authorizations;
 using ColorVision.UI.Extension;
-using ColorVision.Util.Controls;
 using ColorVision.Util.Interfaces;
 using cvColorVision;
 using log4net;
@@ -48,8 +47,11 @@ namespace ColorVision.Engine.Services.PhyCameras
         public RelayCommand UploadLincenseCommand { get; set; }
         public RelayCommand RefreshLincenseCommand { get; set; }
         public RelayCommand ResetCommand { get; set; }
-
         public RelayCommand EditCommand { get; set; }
+
+
+        public RelayCommand EditCameraCommand { get; set; }
+        public RelayCommand EditCalibrationCommand { get; set; }
 
         public ImageSource? QRIcon { get => _QRIcon; set { _QRIcon = value; NotifyPropertyChanged(); } }
         private ImageSource? _QRIcon;
@@ -63,10 +65,11 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public ObservableCollection<TemplateModel<CalibrationParam>> CalibrationParams { get; set; } = new ObservableCollection<TemplateModel<CalibrationParam>>();
 
+        public string? Code => SysResourceModel.Code;
         public PhyCamera(SysResourceModel sysResourceModel):base(sysResourceModel)
         {
             this.SetIconResource("DrawingImageCamera");
-
+            
             Config = BaseResourceObjectExtensions.TryDeserializeConfig<ConfigPhyCamera>(SysResourceModel.Value);
             DeleteCommand = new RelayCommand(a => Delete(), a => AccessControl.Check(PermissionMode.Administrator));
             EditCommand = new RelayCommand(a =>
@@ -100,8 +103,11 @@ namespace ColorVision.Engine.Services.PhyCameras
             UploadLincenseCommand = new RelayCommand(a => UploadLincense());
             RefreshLincenseCommand = new RelayCommand(a => RefreshLincense());
             RefreshLincense();
-
+            EditCameraCommand = new RelayCommand(a => DeviceCamera?.EditCommand.Execute(this) ,a=> DeviceCamera!=null && DeviceCamera.EditCommand.CanExecute(this));
+            EditCalibrationCommand = new RelayCommand(a => DeviceCalibration?.EditCommand.Execute(this), a => DeviceCalibration != null && DeviceCalibration.EditCommand.CanExecute(this));
             QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
+
+            Name = Code;
         }
 
         public void Reset()
@@ -626,6 +632,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     }
                     Msg = "上传结束";
                     await Task.Delay(500);
+                    SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/success.wav");
                     Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
                 }
                 catch(Exception ex)
@@ -633,6 +640,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                     log.Error(ex);
                     Msg = "找不到配置文件";
                     await Task.Delay(200);
+                    SoundPlayerHelper.PlayEmbeddedResource($"/ColorVision.Engine;component/Assets/Sounds/error.wav");
                     Application.Current.Dispatcher.Invoke(() => UploadClosed.Invoke(this, new EventArgs()));
                     return;
                 }
@@ -654,13 +662,16 @@ namespace ColorVision.Engine.Services.PhyCameras
             ContextMenu = new ContextMenu();
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Edit, Command = EditCommand });
             ContextMenu.Items.Add(new MenuItem() { Header = Properties.Resources.Delete, Command = DeleteCommand });
-
         }
+
+        public event EventHandler<ConfigPhyCamera> ConfigChanged;
 
         public void SaveConfig()
         {
             SysResourceModel.Value = JsonConvert.SerializeObject(Config);
             SysResourceDao.Instance.Save(SysResourceModel);
+
+            ConfigChanged?.Invoke(this, Config);
         }
         public override void Save()
         {

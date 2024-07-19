@@ -1,0 +1,66 @@
+﻿<base:BaseWindow x:Class="ColorVision.Engine.OnlineLicensing.LicenseMangerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ColorVision.Engine.OnlineLicensing"
+        xmlns:base ="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
+        xmlns:hc="https://handyorg.github.io/handycontrol"
+        xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
+        mc:Ignorable="d"
+       IsBlurEnabled="True"  Background="Transparent" Height="400"  ResizeMode="NoResize"  Width="600" Initialized="BaseWindow_Initialized">
+    <base:BaseWindow.Resources>
+        <Style TargetType="TextBlock" >
+            <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}" />
+        </Style>
+    </base:BaseWindow.Resources>
+    <Grid>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="{x:Static properties:Resources.LicenseManagement}" FontSize="20"  HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10,-20,0,0"/>
+
+            <ListView x:Name="ListViewLicense"  Width="200" Margin="3,10,0,0"  Background="Transparent" BorderThickness="0"  ScrollViewer.HorizontalScrollBarVisibility="Disabled"  ScrollViewer.VerticalScrollBarVisibility="Auto" ManipulationBoundaryFeedback="SCManipulationBoundaryFeedback" SelectionChanged="ListView1_SelectionChanged">
+                <ListView.ItemTemplate>
+                    <DataTemplate DataType="{x:Type local:LicenseConfig}" >
+                        <Border>
+                            <TextBlock  Text="{Binding Name}" TextTrimming = "CharacterEllipsis"/>
+                        </Border>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+            <Grid x:Name="GridContent" d:DataContext="{d:DesignInstance local:LicenseConfig}"   Grid.Column="1" >
+                <Border   BorderThickness="1,0,0,0" Background="{DynamicResource GlobalBorderBrush}">
+                    <StackPanel Margin="5,10,5,5">
+                        <DockPanel Margin="5">
+                            <Button DockPanel.Dock="Right" Content="{x:Static properties:Resources.CopySerialNumber}" Click="Copy_Click"  Width="80"/>
+                            <TextBlock  Text="{x:Static properties:Resources.SerialNumber}" VerticalAlignment="Center" />
+                            <TextBox x:Name="TextBoxSn" VerticalAlignment="Center" IsReadOnly="True"  Background="Transparent" BorderThickness="0" FontSize="13"  FontWeight="Bold" FontFamily="Consolas" Text="{Binding Sn}" />
+                        </DockPanel>
+                        <TextBlock AllowDrop="True" Text="{Binding Tag}"  Background="Transparent" Margin="5" />
+                    </StackPanel>
+
+                </Border>
+                <UniformGrid  Columns="1" Width="100" Visibility="{Binding IsCanImport,Converter={StaticResource bool2VisibilityConverter}}" HorizontalAlignment="Right"  VerticalAlignment="Bottom" Margin="10">
+                    <Button Content="{x:Static properties:Resources.ImportLicense}"  Click="Import_Click" Width="80" Grid.Row="1"/>
+                </UniformGrid>
+            </Grid>
+
+        </Grid>
+
+        <Grid Margin="0,-30,0,0" Height="30" VerticalAlignment="Top">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="204"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid Grid.Column="1" Background="{DynamicResource GlobalBorderBrush}" Panel.ZIndex="0">
+            </Grid>
+        </Grid>
+
+
+
+
+    </Grid>
+</base:BaseWindow>

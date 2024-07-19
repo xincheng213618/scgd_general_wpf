@@ -1,0 +1,97 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:XSolution="clr-namespace:ColorVision.Solution" 
+                    xmlns:V="clr-namespace:ColorVision.Solution.V"
+                    xmlns:Files="clr-namespace:ColorVision.Solution.V.Files"
+                    xmlns:Folders="clr-namespace:ColorVision.Solution.V.Folders"
+                    xmlns:local="clr-namespace:ColorVision.Solution"
+                    x:Class="ColorVision.Solution.V.TreeViewTextbox">
+    
+    <Style x:Key="ButtonStyle" TargetType="{x:Type Button}">
+        <Setter Property="OverridesDefaultStyle"  Value="true" />
+        <Setter Property="Height" Value="25"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Margin" Value="2"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="HorizontalContentAlignment" Value="Center"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+        <Setter Property="Foreground" Value="{DynamicResource GlobalTextBrush}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="{x:Type Button}">
+                    <Border x:Name="border" Background="{DynamicResource ButtonBackground}"  BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="2" SnapsToDevicePixels="true">
+                        <Grid>
+                            <Border x:Name="Bds" Background="#6EA646" CornerRadius="3"  Opacity="1" Visibility="Collapsed"/>
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" Margin="{TemplateBinding Padding}" RecognizesAccessKey="True" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" Opacity="0.9" VerticalAlignment="{TemplateBinding VerticalContentAlignment}"/>
+                        </Grid>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="true">
+                            <Setter TargetName="Bds" Property="Visibility" Value="Visible"/>
+                            <Setter TargetName="Bds" Property="Background" Value="#6EA646"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="true">
+                            <Setter Property="Foreground" Value="{DynamicResource ForegroundHightBrush}"/>
+                            <Setter TargetName="Bds" Property="Background" Value="{DynamicResource ButtonBackground}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+
+    <Style x:Key="style_treeViewItem_icon" TargetType="Image">
+        <Setter Property="Width" Value="16"></Setter>
+        <Setter Property="Height" Value="16"></Setter>
+        <Setter Property="Margin" Value="5,0,5,0"></Setter>
+        <Setter Property="HorizontalAlignment" Value="Center"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+    <Style x:Key="TreeViewItemPanel" TargetType="StackPanel">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Orientation" Value="Horizontal"/>
+    </Style>
+
+    <DataTemplate x:Key="displayTemplate">
+        <TextBlock Text="{Binding Path=Name}" Padding="6,0" ></TextBlock>
+    </DataTemplate>
+    <DataTemplate x:Key="editTemplate">
+        <TextBox Text="{Binding Path=Name, Mode=OneWay}"  Tag="{Binding .}"  LostFocus="TextBox_LostFocus" KeyUp="TextBox_KeyUp"/>
+    </DataTemplate>
+
+    <Style x:Key="EditableTextBlockStyle"   TargetType="local:EditableTextBlock">
+        <Style.Triggers>
+            <Trigger Property="IsEditMode" Value="True">
+                <Setter Property="ContentTemplate" Value="{StaticResource editTemplate}"/>
+            </Trigger>
+            <Trigger Property="IsEditMode" Value="False">
+                <Setter Property="ContentTemplate" Value="{StaticResource displayTemplate}"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <HierarchicalDataTemplate DataType="{x:Type V:SolutionExplorer}"   ItemsSource="{Binding VisualChildren}">
+        <StackPanel Style="{StaticResource TreeViewItemPanel}" ContextMenu="{Binding ContextMenu}" >
+            <TextBlock Text="'"/>
+            <local:EditableTextBlock   Style="{StaticResource EditableTextBlockStyle}" IsEditMode="{Binding IsEditMode}" Content="{Binding .}"/>
+            <TextBlock Text="'"/>
+        </StackPanel>
+    </HierarchicalDataTemplate>
+
+    <HierarchicalDataTemplate DataType="{x:Type Files:VFile}"   ItemsSource="{Binding VisualChildren}">
+        <StackPanel Style="{StaticResource TreeViewItemPanel}" ContextMenu="{Binding ContextMenu}">
+            <Image Source="{Binding Icon}" Height="18" Margin="0,0,5,0"/>
+            <local:EditableTextBlock   Style="{StaticResource EditableTextBlockStyle}" IsEditMode="{Binding IsEditMode}" Content="{Binding .}"/>
+        </StackPanel>
+    </HierarchicalDataTemplate>
+    <HierarchicalDataTemplate DataType="{x:Type Folders:VFolder}"   ItemsSource="{Binding VisualChildren}">
+        <StackPanel Style="{StaticResource TreeViewItemPanel}" ContextMenu="{Binding ContextMenu}" >
+            <Image Source="{Binding Icon}" Height="18" Margin="0,0,5,0"/>
+            <local:EditableTextBlock   Style="{StaticResource EditableTextBlockStyle}" IsEditMode="{Binding IsEditMode}" Content="{Binding .}"/>
+        </StackPanel>
+    </HierarchicalDataTemplate>
+
+</ResourceDictionary>

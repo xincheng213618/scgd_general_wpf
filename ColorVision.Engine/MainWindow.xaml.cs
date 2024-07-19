@@ -26,9 +26,7 @@ namespace ColorVision.Engine
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-
             MenuManager.GetInstance().Menu = Menu1;
-
         }
     }
 }

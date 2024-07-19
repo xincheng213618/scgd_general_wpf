@@ -21,6 +21,7 @@ namespace ColorVision.UI.Menus
 
         }
 
+
         public void LoadMenuItemFromAssembly()
         {
             var menuItems = new Dictionary<string, MenuItem>();
@@ -36,6 +37,7 @@ namespace ColorVision.UI.Menus
                     menuItems.Add("Help", item);
                 if (item.Name == "MenuView")
                     menuItems.Add("View", item);
+                item.Items.Clear();
             }
 
             List<IMenuItem> iMenuItems = new();
@@ -73,7 +75,7 @@ namespace ColorVision.UI.Menus
                     }
 
                     CreateMenu(menuItem, GuidId);
-                    if (i > 0 && iMenuItem.Order - iMenuItems1[i - 1].Order > 4 && iMenuItem.Visibility == System.Windows.Visibility.Visible)
+                    if (i > 0 && iMenuItem.Order - iMenuItems1[i - 1].Order > 4 && iMenuItem.Visibility == Visibility.Visible)
                     {
                         parentMenuItem.Items.Add(new Separator());
                     }

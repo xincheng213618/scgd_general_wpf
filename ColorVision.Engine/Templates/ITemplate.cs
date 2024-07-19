@@ -3,8 +3,9 @@ using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.UI.Extension;
 using ColorVision.Engine.MySql;
+using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Dao;
-using ColorVision.UserSpace;
+using ColorVision.Engine.Rbac;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
@@ -19,16 +20,13 @@ using ColorVision.Engine.Services.SysDictionary;
 
 namespace ColorVision.Engine.Templates
 {
-    public interface IITemplateLoad
-    {
-        public virtual void Load() { }
-    }
+
 
     public class ITemplate
     {
         public virtual IEnumerable ItemsSource { get; }
 
-        public string Title { get; set; }
+        public virtual string Title { get; set; }
 
         public string Code { get; set; }
         public virtual int Count { get; }
@@ -103,6 +101,20 @@ namespace ColorVision.Engine.Templates
         {
 
         }
+
+        public virtual void OpenCreate()
+        {
+            CreateTemplate createWindow = new CreateTemplate(this) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
+            createWindow.ShowDialog();
+        }
+
+        public virtual void Create(string templateCode, string templateName)
+        {
+
+        }
+
+
+
         public virtual bool ExitsTemplateName(string templateName)
         {
             throw new NotImplementedException();
@@ -335,11 +347,6 @@ namespace ColorVision.Engine.Templates
                     Directory.Delete(tempDirectory, true);
                 }
             }
-        }
-
-        public void Export()
-        {
-
         }
 
         public T? ExportTemp { get; set; }

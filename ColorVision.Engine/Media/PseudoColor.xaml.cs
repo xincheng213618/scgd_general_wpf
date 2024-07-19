@@ -26,24 +26,21 @@ namespace ColorVision.Engine.Media
     public partial class PseudoColor : Window
     {
         public ColorMap ColorMap { get; set; }
-        double MinMax { get; set; } 
+        double MinMax { get; set; }
         double MinData { get; set; }
         double MaxData { get; set; }= 255;
         public ObservableCollection<PseudoValue> PseudoValues { get; set; }
 
-        public PseudoColor(double mindata = 0, double maxdata = 255)
+        public ImageViewConfig Config { get; set; }
+        public PseudoColor(ImageViewConfig config)
         {
+            Config = config;
             PseudoValues = new ObservableCollection<PseudoValue>();
             ColorMap = new ColorMap();
-            MinData = mindata;
-            MaxData = maxdata;
-            MinMax = (maxdata - MinMax) / 255;
             InitializeComponent();
             this.ApplyCaption();
-
         }
 
-        public ColormapTypes ColormapTypes { get; set; } = ColormapTypes.COLORMAP_JET;
 
         public static Dictionary<ColormapTypes, string> GetColormapDictionary()
         {
@@ -78,16 +75,16 @@ namespace ColorVision.Engine.Media
 
         private void ComColormapTypes_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
-            ColormapTypes = GetColormapDictionary().First(x => x.Value == ComColormapTypes.SelectedValue.ToString()).Key;
+            var ColormapTypes = GetColormapDictionary().First(x => x.Value == ComColormapTypes.SelectedValue.ToString()).Key;
             string valuepath = ComColormapTypes.SelectedValue.ToString();
-            ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision;component/{valuepath}", UriKind.Relative));
+            ColormapTypesImage.Source = new BitmapImage(new Uri($"/ColorVision.Engine;component/{valuepath}", UriKind.Relative));
         }
 
         private void UserControl_Initialized(object sender, EventArgs e)
         {
+            this.DataContext = Config;
+
             ComColormapTypes.ItemsSource = GetColormapDictionary();
-
-
             dataGrid1.ItemsSource = PseudoValues;
             Genera();
         }

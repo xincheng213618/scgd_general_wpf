@@ -1,6 +1,10 @@
-﻿using Newtonsoft.Json;
+﻿using log4net;
+using Microsoft.VisualBasic.Logging;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.IO;
+using System.Reflection;
+using System.Windows;
 namespace ColorVision.UI
 {
 
@@ -117,39 +121,46 @@ namespace ColorVision.UI
 
     public class ConfigHandler:ConfigBase<IConfig>
     {
+        private static ILog log = LogManager.GetLogger(typeof(ConfigHandler));
+
         private static ConfigHandler _instance;
         private static readonly object _locker = new();
         public static ConfigHandler GetInstance() { lock (_locker) { return _instance ??= new ConfigHandler(); } }
-        public string DIFile { get; set; }
-
-        public const string ConfigDIFileName = "ColorVisionConfig.json";
-
+        public string ConfigFilePath { get; set; }
         public ConfigHandler()
         {
+            string AssemblyCompany = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyCompanyAttribute>()?.Company ?? "ColorVision";
+            string ConfigDIFileName = $"{AssemblyCompany}Config.json";
             if (Directory.Exists("Config"))
             {
-                DIFile = $"Config\\{ConfigDIFileName}";
+                ConfigFilePath = $"Config\\{ConfigDIFileName}";
             }
             else
             {
-                string DirectoryPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\ColorVision\\Config\\";
+                string DirectoryPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + $"\\{AssemblyCompany}\\Config\\";
                 if (!Directory.Exists(DirectoryPath))
                     Directory.CreateDirectory(DirectoryPath);
-                DIFile = DirectoryPath + ConfigDIFileName;
+                ConfigFilePath = DirectoryPath + ConfigDIFileName;
             }
 
-            LoadConfigs(DIFile);
-            System.Windows.Application.Current.SessionEnding += (s, e) =>
+            LoadConfigs(ConfigFilePath);
+            Application.Current.SessionEnding += (s, e) =>
             {
-                SaveConfigs(DIFile);
+                SaveConfigs(ConfigFilePath);
             };
             AppDomain.CurrentDomain.ProcessExit += (s, e) =>
             {
-                SaveConfigs(DIFile);
+                SaveConfigs(ConfigFilePath);
             };
         }
 
-        public void SaveConfigs() => SaveConfigs(DIFile);
+        public void Reload()
+        {
+            SaveConfigs();
+            LoadConfigs(ConfigFilePath);
+        }
+
+        public void SaveConfigs() => SaveConfigs(ConfigFilePath);
 
 
         public override void SaveConfigs(string fileName)
@@ -219,8 +230,9 @@ namespace ColorVision.UI
                                         }
                                     }
                                 }
-                                catch 
+                                catch (Exception ex)
                                 {
+                                    log.Warn(ex);
                                     if (Activator.CreateInstance(type) is IConfig defaultConfig)
                                     {
                                         Configs[type] = defaultConfig;
@@ -230,8 +242,9 @@ namespace ColorVision.UI
                         }
                     }
                 }
-                catch
+                catch(Exception ex)
                 {
+                    log.Warn(ex);
                     LoadDefaultConfigs();
                 }
             }

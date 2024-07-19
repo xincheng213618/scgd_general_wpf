@@ -1,8 +1,9 @@
-﻿using ColorVision.Common.Extension;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Common.MVVM;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Spectrum;
 using ColorVision.Engine.Services.Devices.Spectrum.Configs;
+using ColorVision.Engine.Services.PhyCameras;
 using ColorVision.Themes;
 using cvColorVision;
 using SkiaSharp;
@@ -51,13 +52,16 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 
             EditConfig = Device.Config.Clone();
             EditContent.DataContext = EditConfig;
+
+            CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
+            CameraPhyID.DisplayMemberPath = "Code";
         }
 
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             EditConfig.CopyTo(Device.Config);
-            Device.DeviceService?.SetParam(Device.Config.MaxIntegralTime, Device.Config.BeginIntegralTime);
+            Device.DService?.SetParam(Device.Config.MaxIntegralTime, Device.Config.BeginIntegralTime);
             Close();
         }
     }

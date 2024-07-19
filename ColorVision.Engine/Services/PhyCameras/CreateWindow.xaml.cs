@@ -1,11 +1,10 @@
-﻿using ColorVision.Common.Extension;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
+using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Dao;
 using ColorVision.Engine.Services.RC;
 using ColorVision.Themes;
-using ColorVision.UserSpace;
 using cvColorVision;
 using CVCommCore;
 using Newtonsoft.Json;
@@ -36,14 +35,13 @@ namespace ColorVision.Engine.Services.PhyCameras
             DataContext = this;
 
 
-            CreateConfig = new ConfigPhyCamera
+            this.CreateConfig = new ConfigPhyCamera
             {
                 CameraType = CameraType.LV_Q,
                 TakeImageMode = TakeImageMode.Measure_Normal,
                 ImageBpp = ImageBpp.bpp8,
                 Channel = ImageChannel.One,
             };
-            var Config = CreateConfig;
 
 
             var list = SysResourceDao.Instance.GetAllEmptyCameraId();
@@ -54,7 +52,7 @@ namespace ColorVision.Engine.Services.PhyCameras
                 CameraCode.DisplayMemberPath = "Code";
                 CameraCode.SelectedValuePath = "Name";
                 CameraCode.SelectedIndex = 0;
-                Config.Code = list[0].Code ??string.Empty;
+                CreateConfig.Code = list[0].Code ??string.Empty;
                 CameraCode.SelectionChanged += (s, e) =>
                 {
                     if (CameraCode.SelectedIndex >= 0)
@@ -75,7 +73,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             ComboxCameraImageBpp.ItemsSource = from e1 in Enum.GetValues(typeof(ImageBpp)).Cast<ImageBpp>()
                                                select new KeyValuePair<ImageBpp, string>(e1, e1.ToDescription());
 
-            var type = Config.CameraType;
+            var type = CreateConfig.CameraType;
 
             if (type == CameraType.LV_Q || type == CameraType.LV_H || type == CameraType.LV_MIL_CL || type == CameraType.MIL_CL)
             {
@@ -97,6 +95,16 @@ namespace ColorVision.Engine.Services.PhyCameras
 
             };
 
+            ComboxCameraModel.ItemsSource = from e1 in Enum.GetValues(typeof(CameraModel)).Cast<CameraModel>()
+                                            select new KeyValuePair<CameraModel, string>(e1, e1.ToDescription());
+
+            ComboxCameraMode.ItemsSource = from e1 in Enum.GetValues(typeof(CameraMode)).Cast<CameraMode>()
+                                           select new KeyValuePair<CameraMode, string>(e1, e1.ToDescription());
+
+            while (CreateConfig.CFW.ChannelCfgs.Count < 9)
+            {
+                CreateConfig.CFW.ChannelCfgs.Add(new Services.PhyCameras.Configs.ChannelCfg());
+            }
 
             ComboxCameraType.SelectionChanged += (s, e) =>
             {
@@ -124,10 +132,69 @@ namespace ColorVision.Engine.Services.PhyCameras
                     };
                 }
             };
+
+
+            List<int> BaudRates = new() { 115200, 9600, 300, 600, 1200, 2400, 4800, 14400, 19200, 38400, 57600 };
+            List<string> Serials = new() { "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "COM10" };
+
+            TextBaudRate.ItemsSource = BaudRates;
+
+
+            TextSerial.ItemsSource = Serials;
+
+
+            ComboxMotorType.ItemsSource = from e1 in Enum.GetValues(typeof(FOCUS_COMMUN)).Cast<FOCUS_COMMUN>()
+                                          select new KeyValuePair<FOCUS_COMMUN, string>(e1, e1.ToString());
+            int index = 0;
+            ComboxMotorType.SelectionChanged += (s, e) =>
+            {
+                if (index++ < 1)
+                    return;
+                switch (CreateConfig.MotorConfig.eFOCUSCOMMUN)
+                {
+                    case FOCUS_COMMUN.VID_SERIAL:
+                        CreateConfig.MotorConfig.BaudRate = 115200;
+                        break;
+                    case FOCUS_COMMUN.CANON_SERIAL:
+                        CreateConfig.MotorConfig.BaudRate = 38400;
+                        break;
+                    case FOCUS_COMMUN.NED_SERIAL:
+                        CreateConfig.MotorConfig.BaudRate = 115200;
+                        break;
+                    case FOCUS_COMMUN.LONGFOOT_SERIAL:
+                        CreateConfig.MotorConfig.BaudRate = 115200;
+                        break;
+                    default:
+                        break;
+                }
+            };
+
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            if (CreateConfig.CFW.CFWNum > 1)
+            {
+                CreateConfig.CFW.ChannelCfgs[3].Chtype = CreateConfig.CFW.ChannelCfgs[0].Chtype;
+                CreateConfig.CFW.ChannelCfgs[4].Chtype = CreateConfig.CFW.ChannelCfgs[1].Chtype;
+                CreateConfig.CFW.ChannelCfgs[5].Chtype = CreateConfig.CFW.ChannelCfgs[2].Chtype;
+            }
+            if (CreateConfig.CFW.CFWNum > 2)
+            {
+                CreateConfig.CFW.ChannelCfgs[6].Chtype = CreateConfig.CFW.ChannelCfgs[0].Chtype;
+                CreateConfig.CFW.ChannelCfgs[7].Chtype = CreateConfig.CFW.ChannelCfgs[1].Chtype;
+                CreateConfig.CFW.ChannelCfgs[8].Chtype = CreateConfig.CFW.ChannelCfgs[2].Chtype;
+            }
+            if (CreateConfig.CFW.CFWNum == 1)
+                CreateConfig.CFW.ChannelCfgs = CreateConfig.CFW.ChannelCfgs.GetRange(0, 3);
+            if (CreateConfig.CFW.CFWNum == 2)
+                CreateConfig.CFW.ChannelCfgs = CreateConfig.CFW.ChannelCfgs.GetRange(0, 6);
+            if (CreateConfig.CFW.CFWNum == 3)
+                CreateConfig.CFW.ChannelCfgs = CreateConfig.CFW.ChannelCfgs.GetRange(0, 9);
+
+
+
+
             SysResourceModel? sysResourceModel = SysResourceDao.Instance.GetByCode(CreateConfig.Code);
             if (sysResourceModel == null)
                 sysResourceModel = new SysResourceModel(CreateConfig.CameraID, CreateConfig.Code, (int)PhysicalResourceType.PhyCamera, UserConfig.Instance.TenantId);

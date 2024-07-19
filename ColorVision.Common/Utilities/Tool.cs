@@ -30,6 +30,20 @@ namespace ColorVision.Common.Utilities
         public static readonly bool IsWinXP = OSVersion >= new Version(5, 1) && OSVersion < new Version(6, 0);
         public static readonly bool IsWinXP64 = OSVersion == new Version(5, 2); // Windows XP 64-bit Edition
 
+        public static IntPtr GenerateRandomIntPtr()
+        {
+            // 使用随机数生成器
+            Random random = new Random();
+
+            // 生成一个随机的整数值
+            int randomValue = random.Next();
+
+            // 将随机整数转换为 IntPtr
+            IntPtr randomIntPtr = new IntPtr(randomValue);
+
+            return randomIntPtr;
+        }
+
         /// <summary>
         /// 获取系统hosts
         /// </summary>
@@ -327,7 +341,7 @@ namespace ColorVision.Common.Utilities
             bool hasDefaultProgram = false;
             try
             {
-                ProcessStartInfo psi = new(fileName);
+                ProcessStartInfo psi = new ProcessStartInfo(fileName);
                 psi.UseShellExecute = true;
                 Process.Start(psi);
                 hasDefaultProgram = true;
@@ -419,7 +433,7 @@ namespace ColorVision.Common.Utilities
 
 
                 //delete first
-                RegUtil.WriteValue(AutoRunRegPath, autoRunName, "");
+                RegUtils.WriteValue(AutoRunRegPath, autoRunName, "");
                 if (IsAdministrator())
                 {
                     //AutoStart(autoRunName, "", "");
@@ -431,11 +445,11 @@ namespace ColorVision.Common.Utilities
                     if (IsAdministrator())
                     {
                         //AutoStart(autoRunName, exePath, "");
-                        RegUtil.WriteValue(AutoRunRegPath, autoRunName, exePath);
+                        RegUtils.WriteValue(AutoRunRegPath, autoRunName, exePath);
                     }
                     else
                     {
-                        RegUtil.WriteValue(AutoRunRegPath, autoRunName, exePath);
+                        RegUtils.WriteValue(AutoRunRegPath, autoRunName, exePath);
                     }
                 }
             }
@@ -473,12 +487,12 @@ namespace ColorVision.Common.Utilities
         {
             try
             {
-                if (string.IsNullOrEmpty(RegUtil.ReadValue(AutoRunRegPath, AutoRunName, "")))
+                if (string.IsNullOrEmpty(RegUtils.ReadValue(AutoRunRegPath, AutoRunName, "")))
                 {
-                    RegUtil.WriteValue(AutoRunRegPath, AutoRunName, "");
+                    RegUtils.WriteValue(AutoRunRegPath, AutoRunName, "");
                 }
 
-                string value = RegUtil.ReadValue(AutoRunRegPath, AutoRunName, "");
+                string value = RegUtils.ReadValue(AutoRunRegPath, AutoRunName, "");
                 string exePath = Environment.ProcessPath;
                 if (value == exePath || value == $"\"{exePath}\"")
                 {

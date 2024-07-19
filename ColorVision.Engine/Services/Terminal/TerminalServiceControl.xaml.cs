@@ -50,7 +50,7 @@ namespace ColorVision.Engine.Services.Terminal
                     if (Parent is Grid grid)
                     {
                         grid.Children.Clear();
-                        grid.Children.Add(baseObject.GetDeviceControl());
+                        grid.Children.Add(baseObject.GetDeviceInfo());
                     }
 
                 }

@@ -3,7 +3,7 @@ using ColorVision.Engine.MySql;
 using ColorVision.UI.Menus;
 using System.Windows;
 
-namespace ColorVision.Engine.Templates.POI
+namespace ColorVision.Engine.Templates
 {
     public abstract class ExportTemplateBase: MenuItemBase
     {

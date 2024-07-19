@@ -763,4 +763,16 @@
   <data name="MenuSensorHeYuan" xml:space="preserve">
     <value>河源指令集</value>
   </data>
+  <data name="AddPhysicalCamera" xml:space="preserve">
+    <value>添加物理相机</value>
+  </data>
+  <data name="AddUncreatedCamera" xml:space="preserve">
+    <value>添加未创建的相机</value>
+  </data>
+  <data name="LicenseImport" xml:space="preserve">
+    <value>许可证导入</value>
+  </data>
+  <data name="AutoExploreTemplate" xml:space="preserve">
+    <value>自动曝光模板</value>
+  </data>
 </root>

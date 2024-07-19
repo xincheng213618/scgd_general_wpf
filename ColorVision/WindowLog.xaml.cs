@@ -1,6 +1,4 @@
-﻿using ColorVision.Common.MVVM;
-using ColorVision.Common.Utilities;
-using ColorVision.Engine.Templates;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Themes;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
@@ -11,6 +9,7 @@ using log4net.Layout;
 using log4net.Repository.Hierarchy;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -37,6 +36,31 @@ namespace ColorVision
         }
     }
 
+    public class ExportLogOpen : MenuItemBase
+    {
+        public override string OwnerGuid => "Help";
+        public override string GuidId => "LogOpen";
+        public override int Order => 3;
+        public override string Header => "打开日志文件夹(_L)";
+        public override void Execute()
+        {
+            var fileAppender = (log4net.Appender.FileAppender)LogManager.GetRepository().GetAppenders().FirstOrDefault(a => a is log4net.Appender.FileAppender);
+            if (fileAppender != null)
+            {
+                Process.Start("explorer.exe", $"{Path.GetDirectoryName(fileAppender.File)}");
+            }
+        }
+    }
+
+
+    public enum LogLoadState
+    {
+        AllToday,
+        SinceStartup,
+        None
+    }
+
+
     /// <summary>
     /// WindowLog.xaml 的交互逻辑
     /// </summary>
@@ -47,7 +71,6 @@ namespace ColorVision
         public WindowLog()
         {
             InitializeComponent();
-
             this.ApplyCaption();
         }
 
@@ -59,18 +82,19 @@ namespace ColorVision
             var textBoxAppender = new TextBoxAppender(logTextBox);
 
             // 设置布局格式
-            var layout = new PatternLayout("%date [%thread] %-5level %logger %newline %message%newline");
+            var layout = new PatternLayout("%date [%thread] %-5level %logger %  %message%newline");
             textBoxAppender.Layout = layout;
             // 将Appender添加到Logger中
             hierarchy.Root.AddAppender(textBoxAppender);
 
-            if (MainWindowConfig.Instance.ReadHistory)
-                LoadLogHistory();
             // 配置并激活log4net
             log4net.Config.BasicConfigurator.Configure(hierarchy);
             this.DataContext = MainWindowConfig.Instance;
             cmlog.ItemsSource = MainWindowConfig.GetAllLevels().Select(level => new KeyValuePair<Level, string>(level, level.Name));
             SearchBar1Brush = SearchBar1.BorderBrush;
+
+            cmlogLoadState.ItemsSource = Enum.GetValues(typeof(LogLoadState)).Cast<LogLoadState>().Select(state => new KeyValuePair<LogLoadState, string>(state, state.ToString()));
+
         }
         private static string GetLogFilePath()
         {
@@ -78,9 +102,17 @@ namespace ColorVision
             var fileAppender = hierarchy.Root.Appenders.OfType<RollingFileAppender>().FirstOrDefault();
             return fileAppender?.File;
         }
+
+        private void cmlogLoadState_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            LoadLogHistory();
+        }
+
         private void LoadLogHistory()
         {
-            var logFilePath = GetLogFilePath();
+            if (MainWindowConfig.Instance.LogLoadState == LogLoadState.None) return;
+            logTextBox.Text = string.Empty;
+           var logFilePath = GetLogFilePath();
             if (logFilePath != null && File.Exists(logFilePath))
             {
                 try
@@ -88,26 +120,83 @@ namespace ColorVision
                     using (FileStream fileStream = new FileStream(logFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                     using (StreamReader reader = new StreamReader(fileStream, Encoding.Default))
                     {
-                        string line;
-                        while ((line = reader.ReadLine()) != null)
-                        {
-                            if (MainWindowConfig.Instance.LogReserve)
-                            {
-                                logTextBox.Text = line + Environment.NewLine + logTextBox.Text;
-                            }
-                            else
-                            {
-                                logTextBox.AppendText(line + Environment.NewLine);
-                            }
-                        }
+                        LoadLogs(reader);
                     }
                 }
                 catch (IOException ex)
                 {
                     MessageBox.Show($"Error reading log file: {ex.Message}");
                 }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"An unexpected error occurred: {ex.Message}");
+                }
             }
         }
+
+        private void LoadLogs(StreamReader reader)
+        {
+            var logLoadState = MainWindowConfig.Instance.LogLoadState;
+            var logReserve = MainWindowConfig.Instance.LogReserve;
+            DateTime today = DateTime.Today;
+            DateTime startupTime = Process.GetCurrentProcess().StartTime;
+            StringBuilder logBuilder = new StringBuilder();
+
+            string line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
+                string timestampLine = line;
+                string logContentLine = reader.ReadLine(); // 读取日志内容行
+
+                if (timestampLine.Length>23 && DateTime.TryParseExact(timestampLine.Substring(0, 23), "yyyy-MM-dd HH:mm:ss,fff", null, DateTimeStyles.None, out DateTime logTime))
+                {
+                    if (logLoadState == LogLoadState.AllToday && logTime.Date != today)
+                    {
+                        continue;
+                    }
+                    else if (logLoadState == LogLoadState.SinceStartup && logTime < startupTime)
+                    {
+                        continue;
+                    }
+                }
+                else
+                {
+                    // 如果时间解析失败，跳过当前日志条目
+                    continue;
+                }
+
+                // 找到符合条件的日志条目后，读取并添加后续所有日志条目
+                logBuilder.AppendLine(timestampLine);
+                logBuilder.AppendLine(logContentLine);
+
+                while ((line = reader.ReadLine()) != null)
+                {
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+
+                    logBuilder.AppendLine(line);
+                    logContentLine = reader.ReadLine(); // 读取日志内容行
+                    if (!string.IsNullOrWhiteSpace(logContentLine))
+                    {
+                        logBuilder.AppendLine(logContentLine);
+                    }
+                }
+
+                break; // 退出外层循环
+            }
+
+            // 将日志内容添加到日志文本框中
+            if (logReserve)
+            {
+                logTextBox.Text = logBuilder.ToString() + logTextBox.Text;
+            }
+            else
+            {
+                logTextBox.AppendText(logBuilder.ToString());
+            }
+        }
+
         private void cmlog_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var selectedLevel = (KeyValuePair<Level, string>)cmlog.SelectedItem;
@@ -125,11 +214,6 @@ namespace ColorVision
             logTextBox.Text = string.Empty;
         }
 
-        private void Loadhistory_Click(object sender, RoutedEventArgs e)
-        {
-            logTextBox.Text = string.Empty;
-            LoadLogHistory();
-        }
 
         private readonly char[] Chars = new[] { ' ' };
         private static readonly string[] RegexSpecialChars = { ".", "*", "+", "?", "^", "$", "(", ")", "[", "]", "{", "}", "|", "\\" };
@@ -145,7 +229,7 @@ namespace ColorVision
 
                 logTextBox.Visibility = Visibility.Collapsed;
                 logTextBoxSerch.Visibility = Visibility.Visible;
-                var logLines = logTextBox.Text.Split(new[] { Environment.NewLine }, System.StringSplitOptions.None);
+                var logLines = logTextBox.Text.Split(new[] { Environment.NewLine }, StringSplitOptions.None);
                 if (containsRegexSpecialChars)
                 {
                     // 使用正则表达式搜索
@@ -174,6 +258,8 @@ namespace ColorVision
                 logTextBox.Visibility = Visibility.Visible;
             }
         }
+
+
     }
     public class TextBoxAppender : AppenderSkeleton
     {
@@ -185,7 +271,7 @@ namespace ColorVision
         private TextBox _textBox;
         protected override void Append(LoggingEvent loggingEvent)
         {
-            if (MainWindowConfig.Instance.AutoRefresh) return;
+            if (!MainWindowConfig.Instance.AutoRefresh) return;
             var renderedMessage = RenderLoggingEvent(loggingEvent);
             Application.Current.Dispatcher.Invoke(() =>
             {

@@ -5,6 +5,9 @@ namespace ColorVision.Common.NativeMethods
 {
     public class FileProperties
     {
+
+
+
         [StructLayout(LayoutKind.Sequential)]
         public struct SHELLEXECUTEINFO
         {

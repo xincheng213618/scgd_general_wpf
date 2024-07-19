@@ -1,11 +1,9 @@
-﻿using ColorVision.Common.Extension;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Core;
 using CVCommCore;
 using System;
-using System.Collections.Generic;
-using System.Globalization;
 using System.Windows;
-using System.Windows.Data;
+using System.Windows.Documents;
 
 namespace ColorVision.Engine.Services.Devices
 {
@@ -13,22 +11,38 @@ namespace ColorVision.Engine.Services.Devices
     {
         public event DeviceStatusChangedHandler DeviceStatusChanged;
 
+
         public override DeviceStatusType DeviceStatus
         {
             get => _DeviceStatus; set
             {
+
+                if (value == DeviceStatusType.Unknown)
+                {
+                    TryN++;
+                    if (TryN > 4)
+                    {
+                        TryN = 0;
+                        return;
+                    }
+                }
                 _DeviceStatus = value;
-                Application.Current.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value));
+
+
+                Application.Current?.Dispatcher.Invoke(() => DeviceStatusChanged?.Invoke(value));
                 NotifyPropertyChanged(); NotifyPropertyChanged(nameof(DeviceStatusString));
             }
         }
+
+        public int TryN { get; set; }
+
+
+
         private DeviceStatusType _DeviceStatus;
 
         public string DeviceStatusString { get => _DeviceStatus.ToDescription(); set { } }
 
         public T Config { get; set; }
-
-        public event HeartbeatHandler HeartbeatEvent;
 
         public override string SubscribeTopic { get => Config.SubscribeTopic; set { Config.SubscribeTopic = value; } }
 
@@ -49,26 +63,6 @@ namespace ColorVision.Engine.Services.Devices
             Config = config;
             SendTopic = Config.SendTopic;
             SubscribeTopic = Config.SubscribeTopic;
-
-            //SubscribeCache();
-        }
-
-        public void DoHeartbeat(List<DeviceHeartbeatParam> devsheartbeat)
-        {
-            foreach (DeviceHeartbeatParam dev_heartbeat in devsheartbeat)
-            {
-                if (dev_heartbeat.DeviceName.Equals(Config.Code, StringComparison.Ordinal))
-                {
-                    HeartbeatParam heartbeat = new();
-                    heartbeat.DeviceStatus = dev_heartbeat.DeviceStatus;
-                    DoHeartbeat(heartbeat);
-                }
-            }
-        }
-
-        public void DoHeartbeat(HeartbeatParam heartbeat)
-        {
-            Application.Current.Dispatcher.Invoke(() => HeartbeatEvent?.Invoke(heartbeat));
         }
     }
 }

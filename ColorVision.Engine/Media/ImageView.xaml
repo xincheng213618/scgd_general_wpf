@@ -5,10 +5,11 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine.Media"
              xmlns:winf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
-             xmlns:converter="clr-namespace:ColorVision.Draw.Converter;assembly=ColorVision.Util"
-             xmlns:draw ="clr-namespace:ColorVision.Draw;assembly=ColorVision.Util"
+             xmlns:converter="clr-namespace:ColorVision.UI.Draw.Converter;assembly=ColorVision.UI"
+             xmlns:draw ="clr-namespace:ColorVision.UI.Draw;assembly=ColorVision.UI"
              xmlns:resx="clr-namespace:ColorVision.Engine.Properties"
              xmlns:hc="https://handyorg.github.io/handycontrol"
+             xmlns:base="clr-namespace:ColorVision.Themes.Controls;assembly=ColorVision.Themes"
              d:DataContext="{d:DesignInstance local:ImageView}"
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="1000" Initialized="UserControl_Initialized" AllowDrop="True">
@@ -42,7 +43,6 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="auto"/>
         </Grid.ColumnDefinitions>
-        <TextBox Grid.Column="0" x:Name="TextBox1" Background="Transparent" Width="5" BorderThickness="0" Foreground="Transparent"/>
         <Grid x:Name="ImageGroupGrid" Grid.Column="1"  Width="300"  Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
@@ -137,7 +137,7 @@
                 <draw:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </draw:ZoomboxSub>
 
-            <ToolBarTray x:Name="ToolBar1"  DockPanel.Dock="Top" DataContext="{Binding ToolBarTop}" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Center">
+            <ToolBarTray x:Name="ToolBar1" DataContext="{Binding ToolBarTop}" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Center">
                 <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
                     <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding ImageEditMode}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagedrag}" Margin="-5"/>
@@ -204,56 +204,61 @@
                 </ToolBar>
                 
             </ToolBarTray>
-            <ToolBarTray x:Name="ToolBar2"  DockPanel.Dock="Left" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="0,30,0,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Left" VerticalAlignment="Top">
-                <ToolBar ToolBarTray.IsLocked="True" >
-                    <Button Click="Button_Click">
+            <ToolBarTray x:Name="ToolBarRight"  HorizontalAlignment="Right" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="2,30,0,0" Grid.Row="0" Grid.RowSpan="2"  VerticalAlignment="Top">
+                <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
+                    <Button Click="Button_Click" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource openDrawingImage}" Margin="-5"/>
                     </Button>
-                    <Button Command="{Binding SaveImageCommand}">
+                    <Button Command="{Binding SaveImageCommand}" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageSave}"  Margin="-5"/>
                     </Button>
-                    <Button Command="{Binding ClearImageCommand}">
+                    <Button Command="{Binding ClearImageCommand}" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageClear}"  Margin="-5"/>
                     </Button>
-                    <Button x:Name="ButtonCIE1931"  Visibility="{Binding CIEVisible}" Click="ButtonCIE1931_Click">
-                        <Image  Style="{StaticResource ToolBarImage}"  Source="/ColorVision.Engine;component/Assets/Image/CIE1931xy1.png" Margin="-5"/>
-                    </Button>
-                    <Button x:Name="HistogramButton"  Visibility="{Binding PseudoVisible}" Click="HistogramButton_Click">
+                </ToolBar>
+            </ToolBarTray>
+
+
+            <ToolBarTray x:Name="ToolBarLeft"   DockPanel.Dock="Left" d:DataContext="{Binding Config}" Orientation="Vertical" Margin="2,30,0,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Left" VerticalAlignment="Top">
+                <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
+                    <Button x:Name="HistogramButton" Click="HistogramButton_Click" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIHistogram}"  Margin="-5"/>
                     </Button>
-
-                    <ToggleButton x:Name="Pseudo"  Visibility="{Binding PseudoVisible}" Click="ToggleButton_Click">
-                        <Image Style="{StaticResource ToolBarImage}"   Source="/ColorVision.Engine;component/Assets/png/PowerToy.png" Margin="-5"/>
-                    </ToggleButton>
-
-                    <Grid Width="20" Margin="5,0" HorizontalAlignment="Left">
-                        <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
-                        <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="Calibration"  Click="Pseudo_MouseDoubleClick"/>
-                    </Grid>
-                    <Grid  Height="200" Visibility="{Binding ElementName=Pseudo,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-                        <TextBox Grid.Row="0" Width="28" Text="{Binding ValueEnd, ElementName=PseudoSlider, StringFormat=#0}" Style="{StaticResource BaseStyle}"  Background="Transparent"  BorderThickness="0"  HorizontalContentAlignment="Center" />
-                        <TextBox Grid.Row="2" Width="28" Text="{Binding ValueStart, ElementName=PseudoSlider, StringFormat=#0}" Style="{StaticResource BaseStyle}" Background="Transparent"  BorderThickness="0" HorizontalContentAlignment="Center"/>
-                        <Grid Grid.Row="1"   Width="18">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="0"  x:Name="RowDefinitionStart"/>
-                                <RowDefinition Height="*"/>
-                                <RowDefinition Height="0"  x:Name="RowDefinitionEnd"/>
-                            </Grid.RowDefinitions>
-                            <Border Grid.Row="0" Background="White" CornerRadius="10,10,0,0"/>
-                            <Border Grid.Row="1"  Background="Transparent">
-                                <Image Source="/Assets/Image/pictureBox1.Image.png" Stretch="Fill" VerticalAlignment="Top"/>
-                            </Border>
-                            <Border Grid.Row="2" Background="Black" CornerRadius="0,0,10,10 "/>
+                    <Button Visibility="{Binding IsCVCIE,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}" Click="ButtonCIE1931_Click" Margin="0,0,0,2">
+                        <Image  Style="{StaticResource ToolBarImage}"  Source="/ColorVision.Engine;component/Assets/Image/CIE1931xy1.png" Margin="-5"/>
+                    </Button>
+                    <StackPanel Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}">
+                        <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  Margin="0,0,0,2" >
+                            <Image Style="{StaticResource ToolBarImage}"   Source="/ColorVision.Engine;component/Assets/png/PowerToy.png" Margin="-5"/>
+                        </ToggleButton>
+                        <Grid Width="20" Margin="0,0,0,2" HorizontalAlignment="Center" >
+                            <TextBlock Text="&#xE713;"  HorizontalAlignment="Center" FontFamily="Segoe MDL2 Assets" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
+                            <Button  Width="20" BorderBrush="Transparent" Background="Transparent" BorderThickness="0" Tag="Calibration"  Click="Pseudo_MouseDoubleClick"/>
                         </Grid>
-                        <hc:RangeSlider Grid.Row="1"  x:Name="PseudoSlider" FocusVisualStyle="{x:Null}"  Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical" HorizontalAlignment="Center" />
-                    </Grid>
+                        <Grid  Height="200"  Visibility="{Binding ElementName=Pseudo,Path=IsChecked,Converter={StaticResource bool2VisibilityConverter}}">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBox Grid.Row="0" Width="28" Text="{Binding ValueEnd, ElementName=PseudoSlider, StringFormat=#0}" Style="{StaticResource BaseStyle}"  Background="Transparent"  BorderThickness="0"  HorizontalContentAlignment="Center" />
+                            <TextBox Grid.Row="2" Width="28" Text="{Binding ValueStart, ElementName=PseudoSlider, StringFormat=#0}" Style="{StaticResource BaseStyle}" Background="Transparent"  BorderThickness="0" HorizontalContentAlignment="Center"/>
+                            <Grid Grid.Row="1"   Width="18">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="0"  x:Name="RowDefinitionStart"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="0"  x:Name="RowDefinitionEnd"/>
+                                </Grid.RowDefinitions>
+                                <Border Grid.Row="0" Background="White" CornerRadius="10,10,0,0"/>
+                                <Border Grid.Row="1"  Background="Transparent">
+                                    <Image Source="/ColorVision.Engine;component/Assets/Image/pictureBox1.Image.png" Stretch="Fill" VerticalAlignment="Top"/>
+                                </Border>
+                                <Border Grid.Row="2" Background="Black" CornerRadius="0,0,10,10 "/>
+                            </Grid>
+                            <hc:RangeSlider Grid.Row="1"  x:Name="PseudoSlider" FocusVisualStyle="{x:Null}"  Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical" HorizontalAlignment="Center" />
+                        </Grid>
 
-
+                    </StackPanel>
                 </ToolBar>
             </ToolBarTray>
 
@@ -262,6 +267,20 @@
                     <TextBlock Text="{Binding ElementName=ImageShow,Path=Source.Width}" Foreground="White" HorizontalAlignment="Center" />
                     <TextBlock Text="{Binding ElementName=ImageShow,Path=Source.Height}" Foreground="White"  HorizontalAlignment="Center" />
                 </StackPanel>
+            </Border>
+        </Grid>
+
+
+        <Grid x:Name="WaitControl" Grid.Row="0" Grid.ColumnSpan="2" Panel.ZIndex="9" Visibility="Collapsed">
+            <Grid   Background="Black"  Opacity="0.3"/>
+            <Border   Background="#F9F9F9"  Height="250" Width="250"  CornerRadius="10">
+                <Border Background="#F3F3F3" BorderBrush="#EAEAEA" BorderThickness="1" CornerRadius="5" Margin="5">
+                    <Grid>
+                        <base:ProgressRing  BorderBrush="Red" Margin="30" />
+                        <TextBlock x:Name="WaitControlText" Text="数据加载中" HorizontalAlignment="Center" FontSize="16"/>
+                        <ProgressBar x:Name="WaitControlProgressBar" Visibility="Collapsed" BorderThickness="0"  Maximum="100" Minimum="0"  Margin="5" VerticalAlignment="Bottom" />
+                    </Grid>
+                </Border>
             </Border>
         </Grid>
     </Grid>

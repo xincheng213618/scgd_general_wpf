@@ -4,9 +4,16 @@ using System.Runtime.InteropServices;
 
 namespace cvColorVision
 {
+    public enum Communicate_Type
+    {
+        Communicate_Tcp = 0,
+        Communicate_Serial,
+    };
+
     public class SensorComm
     {
-        private const string LIBRARY_CVCAMERA = "cvCamera.dll";
+        private const string LIBRARY_CVCAMERA = "libs\\cvCamera.dll";
+
 
         //初始化传感器
         [DllImport(LIBRARY_CVCAMERA, EntryPoint = "CM_InitSensorComm",CharSet = CharSet.Ansi, CallingConvention = CallingConvention.StdCall)]

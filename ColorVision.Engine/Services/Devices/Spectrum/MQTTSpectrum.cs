@@ -20,13 +20,11 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
 {
     public delegate void MQTTSpectrumDataHandler(SpectrumData? colorPara);
     public delegate void MQTTAutoParamHandler(AutoIntTimeParam colorPara);
-    public delegate void MQTTSpectrumHeartbeatHandler(SpectrumHeartbeatParam heartbeat);
 
     public class MQTTSpectrum : MQTTDeviceService<ConfigSpectrum>
     {
         public event MQTTSpectrumDataHandler DataHandlerEvent;
         public event MQTTAutoParamHandler AutoParamHandlerEvent;
-        public event MQTTSpectrumHeartbeatHandler HeartbeatHandlerEvent;
 
         public Dictionary<string, MsgSend> cmdMap { get; set; }
 
@@ -75,11 +73,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
                                 //cmdMap.Remove(json.MsgID);
                             }
                         }
-                        else if (json.EventName == "Heartbeat" && json.ServiceName.Equals(ServiceName, StringComparison.Ordinal))
-                        {
-                            List<SpectrumDeviceHeartbeatParam> devs_heartbeat = JsonConvert.DeserializeObject<List<SpectrumDeviceHeartbeatParam>>(JsonConvert.SerializeObject(json.Data));
-                            if (devs_heartbeat != null && devs_heartbeat.Count > 0) DoSpectumHeartbeat(devs_heartbeat);
-                        }
                         else if (json.EventName == "Close")
                         {
                         }
@@ -97,26 +90,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             }
             return Task.CompletedTask;
         }
-
-        public void DoSpectumHeartbeat(List<SpectrumDeviceHeartbeatParam> devsheartbeat)
-        {
-            foreach (SpectrumDeviceHeartbeatParam devheartbeat in devsheartbeat)
-            {
-                if (devheartbeat.DeviceName!=null && devheartbeat.DeviceName.Equals(Config.Code, StringComparison.Ordinal))
-                {
-                    SpectrumHeartbeatParam heartbeat = new();
-                    heartbeat.DeviceStatus = devheartbeat.DeviceStatus;
-                    heartbeat.IsAutoGetData = devheartbeat.IsAutoGetData;
-                    DoSpectumHeartbeat(heartbeat);
-                }
-            }
-        }
-
-        public void DoSpectumHeartbeat(SpectrumHeartbeatParam heartbeat)
-        {
-            Application.Current.Dispatcher.Invoke(() => HeartbeatHandlerEvent?.Invoke(heartbeat));
-        }
-
 
         public void GetParam()
         {
@@ -244,48 +217,6 @@ namespace ColorVision.Engine.Services.Devices.Spectrum
             cmdMap.Clear();
         }
 
-        public override void UpdateStatus(MQTTNodeService nodeService)
-        {
-            base.UpdateStatus(nodeService);
-            HeartbeatParam heartbeat = new();
-            foreach (var item in nodeService.Devices)
-            {
-                if (Config.Code.Equals(item.Key, StringComparison.Ordinal))
-                {
-                    var dev = item.Value;
-                    DeviceStatusType devStatus = (DeviceStatusType)Enum.Parse(typeof(DeviceStatusType), dev.Status);
-                    switch (devStatus)
-                    {
-                        case DeviceStatusType.Unknown:
-                            heartbeat.DeviceStatus = DeviceStatusType.Closed;
-                            break;
-                        case DeviceStatusType.Closed:
-                            heartbeat.DeviceStatus = DeviceStatusType.Closed;
-                            break;
-                        case DeviceStatusType.Closing:
-                            heartbeat.DeviceStatus = DeviceStatusType.Closing;
-                            break;
-                        case DeviceStatusType.Opened:
-                            heartbeat.DeviceStatus = DeviceStatusType.Opened;
-                            break;
-                        case DeviceStatusType.Opening:
-                            heartbeat.DeviceStatus = DeviceStatusType.Opening;
-                            break;
-                        case DeviceStatusType.Busy:
-                            heartbeat.DeviceStatus = DeviceStatusType.Busy;
-                            break;
-                        case DeviceStatusType.Free:
-                            heartbeat.DeviceStatus = DeviceStatusType.Free;
-                            break;
-                        default:
-                            heartbeat.DeviceStatus = DeviceStatusType.Closed;
-                            break;
-                    }
-                }
-            }
-
-            DoHeartbeat(heartbeat);
-        }
 
         public void ShutterConnect()
         {

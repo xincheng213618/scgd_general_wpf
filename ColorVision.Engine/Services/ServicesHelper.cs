@@ -1,5 +1,4 @@
-﻿using ColorVision.Common.Extension;
-using ColorVision.Common.Utilities;
+﻿using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Msg;
 using Panuon.WPF.UI;
 using System;
@@ -8,7 +7,6 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Threading;
 
 
 namespace ColorVision.Engine.Services
@@ -19,7 +17,7 @@ namespace ColorVision.Engine.Services
 
         public static async void SelectAndFocusFirstNode(TreeView treeView)
         {
-            await Task.Delay(30);
+            await Task.Delay(100);
             if (treeView.Items.Count > 0)
             {
                 if (treeView.SelectedItem == null && treeView.ItemContainerGenerator.ContainerFromIndex(0) is TreeViewItem firstNode)
@@ -29,9 +27,9 @@ namespace ColorVision.Engine.Services
                 }
             }
         }
-        public static IPendingHandler SendCommand(MsgRecord msgRecord, string Msg)
+        public static IPendingHandler SendCommand(MsgRecord msgRecord, string Msg,bool canCancel =true)
         {
-            IPendingHandler handler = PendingBox.Show(Application.Current.MainWindow, Msg, true);
+            IPendingHandler handler = PendingBox.Show(Application.Current.MainWindow, Msg, canCancel);
             var temp = Application.Current.MainWindow.Cursor;
             Application.Current.MainWindow.Cursor = Cursors.Wait;
             MsgRecordStateChangedHandler msgRecordStateChangedHandler;

@@ -1,5 +1,4 @@
-﻿using ColorVision.Engine.Services.Devices.PG;
-using ColorVision.UI.Views;
+﻿using ColorVision.UI.Views;
 using ST.Library.UI.NodeEditor;
 using System;
 using System.Windows;
@@ -11,7 +10,7 @@ namespace ColorVision.Engine.Services.Flow
     /// <summary>
     /// CVFlowView.xaml 的交互逻辑
     /// </summary>
-    public partial class CVFlowView1 : UserControl,IView, IFlowView
+    public partial class CVFlowView1 : UserControl,IView
     {
         private FlowEngineLib.FlowEngineControl flowEngine;
         public FlowEngineLib.FlowEngineControl FlowEngineControl { get { return flowEngine; } set { flowEngine = value; } }

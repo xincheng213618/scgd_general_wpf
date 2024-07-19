@@ -1,4 +1,5 @@
 ﻿using ColorVision.Engine.Services.Msg;
+using ColorVision.Themes;
 using CVCommCore;
 using CVCommCore.CVAlgorithm;
 using MQTTMessageLib;
@@ -17,79 +18,20 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         public MQTTAlgorithm(DeviceAlgorithm device, ConfigAlgorithm Config) : base(Config)
         {
             DeviceAlgorithm = device;
-            MsgReturnReceived += MQTTCamera_MsgReturnChanged;
+            MsgReturnReceived += MQTTAlgorithm_MsgReturnReceived;   
             DeviceStatus = DeviceStatusType.Unknown;
         }
 
-
-        private void MQTTCamera_MsgReturnChanged(MsgReturn msg)
+        private void MQTTAlgorithm_MsgReturnReceived(MsgReturn msg)
         {
             if (msg.DeviceCode != Config.Code) return;
-            IsRun = false;
-            if (msg.Code == 0)
+            switch (msg.Code)
             {
-                switch (msg.EventName)
-                {
-                    case "SetParam":
-                        break;
-                    case "Close":
-                        DeviceStatus = DeviceStatusType.Closed;
-                        break;
-                    case "Open":
-                        DeviceStatus = DeviceStatusType.Opened;
-                        break;
-
-                    case MQTTAlgorithmEventEnum.Event_POI_GetData:
-                        DeviceStatus = DeviceStatusType.Opened;
-                        break;
-                    case "SaveLicense":
-                        break;
-                    case MQTTFileServerEventEnum.Event_File_Download:
-                    //    break;
-                    case MQTTFileServerEventEnum.Event_File_Upload:
-                    case MQTTFileServerEventEnum.Event_File_List_All:
-                        break;
-                    case "MTF":
-                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision"));
-                        break;
-                    case "FOV":
-                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, $"{msg.EventName}执行成功", "ColorVision"));
-                        break;
-                    default:
-                        break;
-                }
-            }
-            else
-            {
-                switch (msg.EventName)
-                {
-                    case "GetData":
-                        DeviceStatus = DeviceStatusType.Opened;
-                        break;
-                    case "Calibrations":
-                        break;
-                    default:
-                        DeviceStatus = DeviceStatusType.Opened;
-                        break;
-                }
+                default:
+                    break;
             }
         }
 
-        public bool IsRun { get; set; }
-        public MsgRecord Init()
-        {
-            MsgSend msg = new()
-            {
-                EventName = "Init",
-            };
-            return PublishAsyncClient(msg);
-        }
-
-        public MsgRecord UnInit()
-        {
-            MsgSend msg = new() { EventName = "UnInit" };
-            return PublishAsyncClient(msg);
-        }
         public void GetRawFiles(string deviceCode, string deviceType)
         {
             MsgSend msg = new()
@@ -120,23 +62,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             MsgSend msg = new()
             {
                 EventName = MQTTAlgorithmEventEnum.Event_POI_GetData,
-                SerialNumber = sn,
-                Params = Params
-            };
-            return PublishAsyncClient(msg);
-        }
-        public MsgRecord BuildPoi(string deviceCode, string deviceType, string fileName, FileExtType fileExtType, int pid, string tempName, string serialNumber)
-        {
-            string sn = null;
-            if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
-            else sn = serialNumber;
-
-            var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
-
-            MsgSend msg = new()
-            {
-                EventName = MQTTAlgorithmEventEnum.Event_Build_POI,
                 SerialNumber = sn,
                 Params = Params
             };
@@ -332,15 +257,6 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             };
 
             return PublishAsyncClient(msg, 60000);
-        }
-
-
-
-
-        public MsgRecord Close()
-        {
-            MsgSend msg = new() { EventName = "Close" };
-            return PublishAsyncClient(msg);
         }
 
         internal void Open(string deviceCode, string deviceType, string fileName, FileExtType extType)

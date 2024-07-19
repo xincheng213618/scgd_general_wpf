@@ -1,8 +1,11 @@
 ﻿#pragma warning disable CS8602,CA1707
 using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Services.PhyCameras.Group;
+using ColorVision.Themes.Controls;
+using ColorVision.UI.Extension;
 using cvColorVision;
 using CVCommCore;
 using CVCommCore.CVImage;
@@ -73,21 +76,21 @@ namespace ColorVision.Engine.Services.Devices.Camera
                                         }
                                     }
 
-                                    string Msg = "SaturationR:" + Config.SaturationR.ToString() + Environment.NewLine +
-                                                 "SaturationG:" + Config.SaturationG.ToString() + Environment.NewLine +
-                                                 "SaturationB:" + Config.SaturationB.ToString() + Environment.NewLine;
-                                    MessageBox.Show(Application.Current.GetActiveWindow(), Msg);
+                                    string Msg = $"SaturationR:{Config.SaturationR}  ExpTime:{Config.ExpTimeR}" + Environment.NewLine +
+                                                 $"SaturationG:{Config.SaturationG}  ExpTime:{Config.ExpTimeG}" + Environment.NewLine +
+                                                 $"SaturationB:{Config.SaturationB}  ExpTime:{Config.ExpTimeB}" + Environment.NewLine;
+                                    MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
                                 }
                                 else
                                 {
                                     Config.ExpTime = (int)msg.Data[0].result;
                                     Config.Saturation = (int)msg.Data[0].resultSaturation;
 
-                                    string Msg = "Saturation:" + Config.Saturation.ToString();
-                                    MessageBox.Show(Application.Current.GetActiveWindow(), Msg);
+                                    string Msg = $"Saturation:{Config.Saturation}  ExpTime:{Config.ExpTime}";
+                                    MessageBox1.Show(Application.Current.GetActiveWindow(), Msg);
                                 }
                             } );
-                        }   
+                        }
                         break;
                     case "SaveLicense":
                         log.Debug($"SaveLicense:{msg.Data}");
@@ -100,10 +103,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
                     case "MoveDiaphragm":
                         break;
                     case "AutoFocus":
-                        Config.MotorConfig.Position = msg.Data.nPos;
+                        Application.Current.Dispatcher.Invoke(() => Config.MotorConfig.Position = msg.Data.nPos);
                         break;
                     case "GetPosition":
-                        Config.MotorConfig.Position = msg.Data.nPosition;
+                        Application.Current.Dispatcher.Invoke(() => Config.MotorConfig.Position = msg.Data.nPosition);
                         break;
                     case "SetCfg":
                         break;
@@ -121,7 +124,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         Common.NativeMethods.Clipboard.SetText(SN);
                         Application.Current.Dispatcher.BeginInvoke(() => 
                         {
-                            MessageBox.Show(WindowHelpers.GetActiveWindow(), $"相机打开失败，找不到激活文件,设备码{msg.DeviceCode} {Environment.NewLine} 请粘贴到SN到指定位置:{SN} ","ColorVision");
+                            MessageBox1.Show(WindowHelpers.GetActiveWindow(), $"相机打开失败，找不到激活文件,设备码{msg.DeviceCode} {Environment.NewLine} 请粘贴到SN到指定位置:{SN} ","ColorVision");
                         });
                         break;
                     default:
@@ -137,7 +140,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         break;
                     case "Open":
                         DeviceStatus = DeviceStatusType.Closed;
-                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox.Show(Application.Current.MainWindow, "打开失败", "ColorVision"));
+                        Application.Current.Dispatcher.BeginInvoke(() => MessageBox1.Show(Application.Current.MainWindow, "打开失败", "ColorVision"));
                         break;
                     case "Init":
                         break;
@@ -150,9 +153,6 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
 
 
-        public CameraType CurrentCameraType { get; set; }
-
-
         public MsgRecord CfwPortSetPort(int nIndex, int nPort, int eImgChlType)
         {
             MsgSend msg = new()
@@ -163,8 +163,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             };
             return PublishAsyncClient(msg);
         }
-        private bool _IsVideoOpen ;
         public bool IsVideoOpen { get => _IsVideoOpen; set { _IsVideoOpen = value;NotifyPropertyChanged(); } }
+        private bool _IsVideoOpen;
+
+
 
         public MsgRecord OpenVideo(string host, int port)
         {
@@ -242,7 +244,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             return PublishAsyncClient(msg);
         }
 
-        public MsgRecord GetData(double[] expTime, CalibrationParam param)
+        public MsgRecord GetData(double[] expTime, CalibrationParam param, AutoExpTimeParam autoExpTimeParam)
         {
             string SerialNumber = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             var Params = new Dictionary<string, object>() { };
@@ -262,12 +264,31 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 Params.Add("Calibration", new CVTemplateParam() { ID = param.Id, Name = param.Name });
             }
+            if (autoExpTimeParam.Id == -1)
+            {
+                Params.Add("IsAutoExpTime", false);
+            }
+            else
+            {
+                Params.Add("IsAutoExpTime", true);
+                if (autoExpTimeParam.Id == -2)
+                {
+                    Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = -1, Name = string.Empty });
+                }
+                else
+                {
+                    Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = param.Name });
+                }
+            }
+
+
             Params.Add("ScaleFactor", Config.ScaleFactor);
             double timeout = 0;
             for (int i = 0; i < expTime.Length; i++) timeout += expTime[i];
             return PublishAsyncClient(msg, timeout + 10000);
         }  
         public MsgRecord GetAllCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetAllSnID" });
+        public MsgRecord GetCameraID() => PublishAsyncClient(new MsgSend { EventName = "CM_GetSnID" });
 
         public MsgRecord AutoFocus()
         {
@@ -278,28 +299,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
                 EventName = "AutoFocus",
                 Params = Params
             };
-
-            var tAutoFocusCfg = new Dictionary<string, object>(){
-                                { "forwardparam", Config.MotorConfig.AutoFocusConfig.Forwardparam} ,
-                                { "curtailparam", Config.MotorConfig.AutoFocusConfig.Curtailparam},
-                                { "curStep", Config.MotorConfig.AutoFocusConfig.CurStep},
-                                { "stopStep", Config.MotorConfig.AutoFocusConfig.StopStep},
-                                { "minPosition", Config.MotorConfig.AutoFocusConfig.MinPosition},
-                                { "maxPosition", Config.MotorConfig.AutoFocusConfig.MaxPosition},
-                                { "eEvaFunc", Config.MotorConfig.AutoFocusConfig.EvaFunc},
-                                { "dMinValue", Config.MotorConfig.AutoFocusConfig.MinValue},
-                                { "nTimeout",Config.MotorConfig.AutoFocusConfig.nTimeout}
-                            };
-
-            Params.Add("tAutoFocusCfg", tAutoFocusCfg);
-            return PublishAsyncClient(msg, Config.MotorConfig.AutoFocusConfig.nTimeout);
+            Params.Add("tAutoFocusCfg", Config.AutoFocusConfig.ToJsonN());
+            return PublishAsyncClient(msg, Config.AutoFocusConfig.nTimeout);
         }
 
-        public MsgRecord GetAutoExpTime()
+        public MsgRecord GetAutoExpTime(AutoExpTimeParam autoExpTimeParam)
         {
+            var Params = new Dictionary<string, object>() { };
+            Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = string.Empty });
+
             MsgSend msg = new()
             {
                 EventName = "GetAutoExpTime",
+                Params = Params
             };
             return PublishAsyncClient(msg);
         }

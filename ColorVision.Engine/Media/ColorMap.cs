@@ -99,7 +99,7 @@ namespace ColorVision.Engine.Media
             }
             Mat src8uc3 = new();
             Cv2.CvtColor(src.Clone(), src8uc3, ColorConversionCodes.GRAY2BGR);
-            Mat lut = new(1, 256, MatType.CV_8UC3, lutData);
+            Mat lut = Mat.FromPixelData(1, 256, MatType.CV_8UC3, lutData);
             Cv2.LUT(src8uc3, lut, dst);
             // = null;
             //lut = null;
@@ -121,7 +121,7 @@ namespace ColorVision.Engine.Media
             }
             Mat src8uc3 = new();
             Cv2.CvtColor(src.Clone(), src8uc3, ColorConversionCodes.GRAY2BGR);
-            Mat lut = new(1, 256, MatType.CV_8UC3, lutData);
+            Mat lut = Mat.FromPixelData(1, 256, MatType.CV_8UC3, lutData);
             Cv2.LUT(src8uc3, lut, dst);
             // = null;
             //lut = null;
@@ -251,28 +251,10 @@ namespace ColorVision.Engine.Media
         }
         public static Mat linspace(float x0, float x1, int n, double[] step)
         {
-            return new Mat(n, 1, MatType.CV_32FC1, linspace0(x0, x1, n, step));
+            return Mat.FromPixelData(n, 1, MatType.CV_32FC1, linspace0(x0, x1, n, step));
         }
 
 
-        public static Mat ReMapInversion(Mat src)
-        {
-            Mat map_x = new(src.Size(), MatType.CV_32FC1);
-            Mat map_y = new(src.Size(), MatType.CV_32FC1);
-            for (int i = 0; i < src.Rows; i++)
-            {
-                for (int j = 0; j < src.Cols; j++)
-                {
-                    map_x.Set(i, j, (float)j);
-                    map_y.Set(i, j, (float)(src.Rows - 1 - i));
-                }
-            }
-
-            Mat dst = new();
-            Cv2.Remap(src, dst, map_x, map_y, InterpolationFlags.Linear);
-
-            return dst;
-        }
 
         public void buildCustomMap(int n, double min, double max)//初始化colormap
         {

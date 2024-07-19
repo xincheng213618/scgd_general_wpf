@@ -177,14 +177,8 @@
   <data name="AutoAdjustColumnWidth" xml:space="preserve">
     <value>열 너비 자동 조정</value>
   </data>
-  <data name="MenuTheme" xml:space="preserve">
-    <value>테마(_H)</value>
-  </data>
   <data name="MenuLanguage" xml:space="preserve">
     <value>언어(_L)</value>
-  </data>
-  <data name="Theme" xml:space="preserve">
-    <value>테마</value>
   </data>
   <data name="Language" xml:space="preserve">
     <value>UI 언어</value>

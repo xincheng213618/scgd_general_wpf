@@ -177,14 +177,8 @@
   <data name="AutoAdjustColumnWidth" xml:space="preserve">
     <value>Auto Adjust Column Width</value>
   </data>
-  <data name="MenuTheme" xml:space="preserve">
-    <value>T_heme</value>
-  </data>
   <data name="MenuLanguage" xml:space="preserve">
     <value>_Language</value>
-  </data>
-  <data name="Theme" xml:space="preserve">
-    <value>Theme</value>
   </data>
   <data name="Language" xml:space="preserve">
     <value>Language</value>

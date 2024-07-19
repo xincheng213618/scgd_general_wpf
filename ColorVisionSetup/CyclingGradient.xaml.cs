@@ -98,7 +98,7 @@ namespace ColorVisionSetup
 		public CyclingGradient()
 		{
 			InitializeComponent();
-			base.Loaded += onLoaded;
+            Loaded += onLoaded;
 		}
 
 		private void onLoaded(object sender, RoutedEventArgs e)
