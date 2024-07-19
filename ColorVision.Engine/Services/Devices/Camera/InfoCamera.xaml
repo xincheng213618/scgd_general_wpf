@@ -153,47 +153,7 @@
                         </StackPanel>
 
                     </TabItem>
-                    <TabItem Header="自动曝光">
-                        <StackPanel Margin="10">
-                            <DockPanel>
-                                <TextBlock Text="自动曝光"  Width="120"/>
-                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ExpTimeCfg.AutoExpTimeBegin}"/>
-                            </DockPanel>
-                            <DockPanel>
-                                <TextBlock Text="自动同步频率"  Width="120"/>
-                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ExpTimeCfg.AutoExpSyncFreq}"/>
-                            </DockPanel>
-                            <DockPanel>
-                                <TextBlock Text="autoExpSaturation"  Width="120"/>
-                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ExpTimeCfg.AutoExpSaturation}"/>
-                            </DockPanel>
-                            <DockPanel>
-                                <TextBlock Text="autoExpSatMaxAD"  Width="120"/>
-                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ExpTimeCfg.AutoExpSatMaxAD}"/>
-                            </DockPanel>
-                            <DockPanel>
-                                <TextBlock Text="autoExpMaxPecentage"  Width="120"/>
-                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ExpTimeCfg.AutoExpMaxPecentage}"/>
-                            </DockPanel>
-                            <DockPanel>
-                                <TextBlock Text="autoExpSatDev"  Width="120"/>
-                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ExpTimeCfg.AutoExpSatDev}"/>
-                            </DockPanel>
-                            <DockPanel>
-                                <TextBlock Text="最大曝光"  Width="120"/>
-                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ExpTimeCfg.MaxExpTime}"/>
-                            </DockPanel>
-                            <DockPanel>
-                                <TextBlock Text="最小曝光"  Width="120"/>
-                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ExpTimeCfg.MinExpTime}"/>
-                            </DockPanel>
-                            <DockPanel>
-                                <TextBlock Text="burst的阈值"  Width="120"/>
-                                <TextBox  IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0" Text="{Binding Config.ExpTimeCfg.BurstThreshold}"/>
-                            </DockPanel>
-                        </StackPanel>
 
-                    </TabItem>
                     <TabItem Header="自动聚焦"  Visibility="{Binding Config.MotorConfig.IsUseMotor,Converter={StaticResource bool2VisibilityConverter}}">
                         <StackPanel Margin="10">
                             <DockPanel>

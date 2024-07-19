@@ -53,7 +53,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
             OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger());
-            PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraID);
+            PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode);
             if (PhyCamera != null)
             {
                 PhyCamera.ConfigChanged += PhyCameraConfigChanged;
@@ -123,7 +123,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public override void Save()
         {
-            PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraID);
+            PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode);
             if (PhyCamera != null)
             {
                 PhyCamera.SetDeviceCamera(this);

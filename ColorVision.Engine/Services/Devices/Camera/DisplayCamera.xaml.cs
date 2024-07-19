@@ -104,7 +104,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             UpdateTemplate();
             Device.ConfigChanged += (s, e) => UpdateTemplate();
             PhyCameraManager.GetInstance().Loaded += (s, e) => UpdateTemplate();
-            ComboxAutoExpTimeParamTemplate.ItemsSource = TemplateAutoExpTimeParam.Params.CreateDefault();
+            ComboxAutoExpTimeParamTemplate.ItemsSource = TemplateAutoExpTimeParam.Params;
             ComboxAutoExpTimeParamTemplate.SelectedIndex = 0;
 
             ComboxAutoExpTimeParamTemplate1.ItemsSource = TemplateAutoExpTimeParam.Params.CreateDefaultEmpty();
