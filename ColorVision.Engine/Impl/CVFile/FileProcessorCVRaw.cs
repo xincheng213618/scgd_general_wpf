@@ -19,15 +19,22 @@ namespace ColorVision.Engine.Impl.SolutionImpl
         public void Process(string filePath)
         {
             ImageView imageView = new();
-            Window window = new() { Title = Properties.Resources.QuickPreview, Owner = Application.Current.GetActiveWindow() };
+            Window window = new() { Title = Properties.Resources.QuickPreview };
+            if (Application.Current.MainWindow != window)
+            {
+                window.Owner = Application.Current.GetActiveWindow();
+            }
             window.Content = imageView;
             imageView.OpenImage(filePath);
 
             window.Show();
-            window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
+            if (Application.Current.MainWindow != window)
             {
-                imageView.ToolBarTop.ClearImage();
-            }));
+                window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() =>
+                {
+                    imageView.ToolBarTop.ClearImage();
+                }));
+            }
         }
     }
 

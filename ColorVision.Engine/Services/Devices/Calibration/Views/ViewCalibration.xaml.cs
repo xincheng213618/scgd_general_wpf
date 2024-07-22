@@ -29,6 +29,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Globalization;
 
 
 namespace ColorVision.Engine.Services.Devices.Calibration.Views
@@ -56,7 +57,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         public View View { get; set; }
 
-        public ObservableCollection<ViewResultCalibration> ViewResultCalibrations { get; set; } = new ObservableCollection<ViewResultCalibration>();
+        public ObservableCollection<ViewResultCalibration> ViewResults { get; set; } = new ObservableCollection<ViewResultCalibration>();
         public  MQTTCalibration DeviceService => Device.DService;
         public DeviceCalibration Device { get; set; }
 
@@ -72,7 +73,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             View = new View();
             ImageView.SetConfig(Config.ImageViewConfig);
 
-            listView1.ItemsSource = ViewResultCalibrations;
+            listView1.ItemsSource = ViewResults;
 
             ComboxPOITemplate.ItemsSource = PoiParam.Params.CreateEmpty();
             ComboxPOITemplate.SelectedIndex = 0;
@@ -220,7 +221,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         public void ShowResult(MeasureImgResultModel model)
         {
             ViewResultCalibration result = new(model);
-            ViewResultCalibrations.AddUnique(result);
+            ViewResults.AddUnique(result);
 
             if (listView1.Items.Count > 0) listView1.SelectedIndex = listView1.Items.Count - 1;
             listView1.ScrollIntoView(listView1.SelectedItem);
@@ -255,7 +256,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             dialog.FileName = DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss");
             dialog.RestoreDirectory = true;
             if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
-            CsvWriter.WriteToCsv(ViewResultCalibrations[listView1.SelectedIndex], dialog.FileName);
+            CsvWriter.WriteToCsv(ViewResults[listView1.SelectedIndex], dialog.FileName);
             if (File.Exists(LocalFileName))
             {
             }
@@ -270,7 +271,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         private void Button_Click_Clear(object sender, RoutedEventArgs e)
         {
-            ViewResultCalibrations.Clear();
+            ViewResults.Clear();
         }
 
 
@@ -278,7 +279,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         {
             if (listView1.SelectedIndex > -1)
             {
-                var data = ViewResultCalibrations[listView1.SelectedIndex];
+                var data = ViewResults[listView1.SelectedIndex];
                 if (File.Exists(data.FileUrl))
                 {
                     ImageView.OpenImage(data.FileUrl);
@@ -311,21 +312,24 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                         }
                         else
                         {
-                            var FileData = netFileUtil.OpenLocalCVFile(localName, fileExt);
-                            OpenImage(FileData);
+                            ImageView.Config.FilePath = localName;
+                            ImageView.OpenImage(ImageView.Config.FilePath);
                         }
                     }
-
                 }
+                IsLayers = true;
+                ComboBoxLayers.Text = "Src";
+                IsLayers = false;
             }
         }
+        private bool IsLayers;
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Delete && listView1.SelectedIndex > -1)
             {
                 int temp = listView1.SelectedIndex;
-                ViewResultCalibrations.RemoveAt(temp);
+                ViewResults.RemoveAt(temp);
             }
         }
 
@@ -338,12 +342,12 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
 
         private void Search_Click(object sender, RoutedEventArgs e)
         {
-            ViewResultCalibrations.Clear();
+            ViewResults.Clear();
             List<MeasureImgResultModel> algResults = MeasureImgResultDao.GetAll();
             foreach (var item in algResults)
             {
                 ViewResultCalibration CameraImgResult = new(item);
-                ViewResultCalibrations.AddUnique(CameraImgResult);
+                ViewResults.AddUnique(CameraImgResult);
             }
         }
 
@@ -351,22 +355,22 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         {
             if (string.IsNullOrEmpty(TextBoxId.Text) && string.IsNullOrEmpty(TextBoxBatch.Text) && string.IsNullOrEmpty(TextBoxFile.Text) && SearchTimeSart.SelectedDateTime ==DateTime.MinValue)
             {
-                ViewResultCalibrations.Clear();
+                ViewResults.Clear();
                 foreach (var item in MeasureImgResultDao.GetAllDevice(Device.Code))
                 {
                     ViewResultCalibration algorithmResult = new(item);
-                    ViewResultCalibrations.AddUnique(algorithmResult);
+                    ViewResults.AddUnique(algorithmResult);
                 }
                 return;
             }
             else
             {
-                ViewResultCalibrations.Clear();
+                ViewResults.Clear();
                 List<MeasureImgResultModel> algResults = MeasureImgResultDao.ConditionalQuery(TextBoxId.Text, TextBoxBatch.Text, TextBoxFile.Text, Device.Code, SearchTimeSart.DisplayDateTime,SearchTimeEnd.DisplayDateTime);
                 foreach (var item in algResults)
                 {
                     ViewResultCalibration algorithmResult = new(item);
-                    ViewResultCalibrations.AddUnique(algorithmResult);
+                    ViewResults.AddUnique(algorithmResult);
                 }
 
             }
@@ -387,7 +391,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
         {
             if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCalibration viewResult)
             {
-                ViewResultCalibrations.Remove(viewResult);
+                ViewResults.Remove(viewResult);
                 ImageView.Clear();
             }
         }
@@ -406,22 +410,22 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                         if (Name == Properties.Resources.SerialNumber1)
                         {
                             item.IsSortD = !item.IsSortD;
-                            ViewResultCalibrations.SortByID(item.IsSortD);
+                            ViewResults.SortByID(item.IsSortD);
                         }
                         else if (Name == Properties.Resources.Duration)
                         {
                             item.IsSortD = !item.IsSortD;
-                            ViewResultCalibrations.SortByCreateTime(item.IsSortD);
+                            ViewResults.SortByCreateTime(item.IsSortD);
                         }
                         else if (Name == Properties.Resources.BatchNumber)
                         {
                             item.IsSortD = !item.IsSortD;
-                            ViewResultCalibrations.SortByBatch(item.IsSortD);
+                            ViewResults.SortByBatch(item.IsSortD);
                         }
                         else if (Name == Properties.Resources.File)
                         {
                             item.IsSortD = !item.IsSortD;
-                            ViewResultCalibrations.SortByFilePath(item.IsSortD);
+                            ViewResults.SortByFilePath(item.IsSortD);
                         }
                     }
                 }
@@ -471,34 +475,37 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
             }
         }
 
+
         private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (sender is ComboBox comboBox)
+            if (sender is ComboBox comboBox && e.AddedItems[0] is ComboBoxItem comboBoxItem && !IsLayers)
             {
                 if (listView1.SelectedIndex > -1)
                 {
-                    var viewResult = ViewResultCalibrations[listView1.SelectedIndex];
-                    if (comboBox.Text == "Src")
-                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.SRC);
-                    if (comboBox.Text == "R")
-                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.RGB_R);
-                    if (comboBox.Text == "G")
-                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.RGB_G);
-                    if (comboBox.Text == "B")
-                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.RGB_B);
-                    if (comboBox.Text == "X")
-                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.CIE_XYZ_X);
-                    if (comboBox.Text == "Y")
-                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.CIE_XYZ_Y);
-                    if (comboBox.Text == "Z")
-                        DeviceService.GetChannel(viewResult.Id, CVImageChannelType.CIE_XYZ_Z);
+                    var ViewResult = ViewResults[listView1.SelectedIndex];
+                    string ext = Path.GetExtension(ViewResult.FileUrl).ToLower(CultureInfo.CurrentCulture);
+                    FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
+
+                    if (comboBoxItem.Content.ToString() == "Src")
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(ViewResult.FileUrl, FileExtType.CIE, CVImageChannelType.SRC));
+                    if (comboBoxItem.Content.ToString() == "R")
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(ViewResult.FileUrl, FileExtType.CIE, CVImageChannelType.RGB_R));
+                    if (comboBoxItem.Content.ToString() == "G")
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(ViewResult.FileUrl, FileExtType.CIE, CVImageChannelType.RGB_G));
+                    if (comboBoxItem.Content.ToString() == "B")
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(ViewResult.FileUrl, FileExtType.CIE, CVImageChannelType.RGB_B));
+                    if (comboBoxItem.Content.ToString() == "X")
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(ViewResult.FileUrl, FileExtType.CIE, CVImageChannelType.CIE_XYZ_X));
+                    if (comboBoxItem.Content.ToString() == "Y")
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(ViewResult.FileUrl, FileExtType.CIE, CVImageChannelType.CIE_XYZ_Y));
+                    if (comboBoxItem.Content.ToString() == "Z")
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(ViewResult.FileUrl, FileExtType.CIE, CVImageChannelType.CIE_XYZ_Z));
                 }
                 else
                 {
                     MessageBox1.Show("请先选择您要切换的图像");
                 }
             }
-
         }
 
         private void ComboxPOITemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)

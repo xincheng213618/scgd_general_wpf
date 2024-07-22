@@ -166,6 +166,15 @@
                     <ToggleButton Command="{Binding MaxCommand}" Margin="1,0" >
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMax}"  Margin="-5"/>
                     </ToggleButton>
+                    <ComboBox x:Name="ComboBoxLayers"  SelectedIndex="1" SelectionChanged="ComboBoxLayers_SelectionChanged">
+                        <ComboBoxItem Content="Src"/>
+                        <ComboBoxItem Content="R" />
+                        <ComboBoxItem Content="G" />
+                        <ComboBoxItem Content="B" />
+                        <ComboBoxItem Content="X"/>
+                        <ComboBoxItem Content="Y"/>
+                        <ComboBoxItem Content="Z" />
+                    </ComboBox>
                     <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
                     <Button   Command="{Binding OpenProperty}" Margin="1,0">
                         <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" Margin="-5" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -215,6 +224,7 @@
                     <Button Command="{Binding ClearImageCommand}" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageClear}"  Margin="-5"/>
                     </Button>
+
                 </ToolBar>
             </ToolBarTray>
 

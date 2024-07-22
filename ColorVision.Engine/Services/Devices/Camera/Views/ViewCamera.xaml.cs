@@ -472,7 +472,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                     MessageBox1.Show("请先选择您要切换的图像");
                 }
             }
-
         }
 
         private void ComboxPOITemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
