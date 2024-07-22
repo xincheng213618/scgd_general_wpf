@@ -69,7 +69,7 @@ namespace ColorVision.UI.Draw
 
             FormattedText formattedText = new(TextAttribute.Text, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
             
-            dc.DrawText(formattedText, new Point(Attribute.Rect.X - fontSize, Attribute.Rect.Y - fontSize));
+            dc.DrawText(formattedText, new Point(Attribute.Rect.X - fontSize, Attribute.Rect.Y - fontSize - Attribute.Pen.Thickness));
            
             dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);
         }
