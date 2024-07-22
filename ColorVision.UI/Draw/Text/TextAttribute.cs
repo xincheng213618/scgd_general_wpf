@@ -12,6 +12,7 @@ namespace ColorVision.UI.Draw
         [Category("TextAttribute"), DisplayName("Text")]
         public string Text { get => _Text; set { _Text = value; NotifyPropertyChanged(); } }
         private string _Text;
+
         [Category("TextAttribute"), DisplayName("FontSize")]
         public double FontSize { get => _FontSize; set { _FontSize = value; NotifyPropertyChanged(); } }
         private double _FontSize = DefalutTextAttribute.FontSize;

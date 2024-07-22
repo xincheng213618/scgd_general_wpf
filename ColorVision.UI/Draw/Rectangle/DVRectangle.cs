@@ -3,17 +3,16 @@ using System.Windows.Media;
 
 namespace ColorVision.UI.Draw
 {
-    public class DrawingVisualDatumRectangle : DrawingVisualBase<RectangleAttribute>, IDrawingVisualDatum, IRectangle
+    public class DVRectangle : DrawingVisualBase<RectangleProperties>, IDrawingVisual, IRectangle
     {
         public BaseProperties BaseAttribute => Attribute;
-        public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
         public Rect Rect { get => Attribute.Rect; set => Attribute.Rect = value; }
-
+        public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
         public bool AutoAttributeChanged { get; set; } = true;
 
-        public DrawingVisualDatumRectangle()
+        public DVRectangle()
         {
-            Attribute = new RectangleAttribute();
+            Attribute = new RectangleProperties();
             Attribute.Id = No++;
             Attribute.Brush = Brushes.Transparent;
             Attribute.Pen = new Pen(Brushes.Red, 1);
@@ -23,7 +22,6 @@ namespace ColorVision.UI.Draw
                 if (AutoAttributeChanged) Render();
             };
         }
-
         public override void Render()
         {
             using DrawingContext dc = RenderOpen();

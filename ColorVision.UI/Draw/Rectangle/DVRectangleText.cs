@@ -5,13 +5,14 @@ using System.Windows.Media;
 
 namespace ColorVision.UI.Draw
 {
-    public class CircleTextProperties: CircleProperties
+    public class RectangleTextProperties : RectangleProperties
     {
         [Browsable(false)]
         public TextAttribute TextAttribute { get; set; } = new TextAttribute();
 
-        [Category("TextAttribute"), DisplayName("Text")]
-        public string Text { get => TextAttribute.Text; set { TextAttribute.Text = value;  NotifyPropertyChanged(); } }
+        [Category("Attribute"), DisplayName("Text")]
+        public string Text { get => TextAttribute.Text; set { TextAttribute.Text = value; NotifyPropertyChanged(); } }
+
         [Category("TextAttribute"), DisplayName("FontSize")]
         public double FontSize { get => TextAttribute.FontSize; set { TextAttribute.FontSize = value; NotifyPropertyChanged(); } }
 
@@ -34,46 +35,43 @@ namespace ColorVision.UI.Draw
 
 
 
-    public class DrawingVisualCircleWord : DrawingVisualBase<CircleTextProperties>, IDrawingVisual,ICircle
+    public class DVRectangleText : DrawingVisualBase<RectangleTextProperties>, IDrawingVisual,IRectangle
     {
+        public BaseProperties BaseAttribute => Attribute;
         public TextAttribute TextAttribute { get => Attribute.TextAttribute; }
+
+        public Rect Rect { get => Attribute.Rect; set => Attribute.Rect = value; }
+        public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
         public bool AutoAttributeChanged { get; set; } = true;
 
-        public BaseProperties BaseAttribute => Attribute;
-        public Point Center { get => Attribute.Center; set => Attribute.Center = value; }
-        public double Radius { get => Attribute.Radius; set => Attribute.Radius = value; }
-        public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
-
-        public DrawingVisualCircleWord()
+        public DVRectangleText()
         {
-            Version = "圆形";
-            Attribute = new CircleTextProperties();
+            Attribute = new RectangleTextProperties();
             Attribute.Id = No++;
             Attribute.Brush = Brushes.Transparent;
-            Attribute.Pen = new Pen(Brushes.Red, 2);
-            Attribute.Center = new Point(50, 50);
-            Attribute.Radius = 30;
+            Attribute.Pen = new Pen(Brushes.Red, 1);
+            Attribute.Rect = new Rect(50, 50, 100, 100);
             Attribute.PropertyChanged += (s, e) =>
-            { 
-                if (AutoAttributeChanged && e.PropertyName != "ID")
-                {
-                    Render();
-                }
+            {
+                if (AutoAttributeChanged) Render();
             };
         }
-
-
 
         public override void Render()
         {
             TextAttribute.Text = Attribute.Text;
-            TextAttribute.Text =  string.IsNullOrWhiteSpace(TextAttribute.Text)? Attribute.Id.ToString(): TextAttribute.Text;
+            TextAttribute.Text = string.IsNullOrWhiteSpace(TextAttribute.Text) ? Attribute.Id.ToString() : TextAttribute.Text;
             TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
+
+            Brush brush = Brushes.Red;
+            double fontSize = Attribute.Pen.Thickness * 10;
             using DrawingContext dc = RenderOpen();
 
             FormattedText formattedText = new(TextAttribute.Text, CultureInfo.CurrentCulture, TextAttribute.FlowDirection, new Typeface(TextAttribute.FontFamily, TextAttribute.FontStyle, TextAttribute.FontWeight, TextAttribute.FontStretch), TextAttribute.FontSize, TextAttribute.Brush, VisualTreeHelper.GetDpi(this).PixelsPerDip);
-            dc.DrawText(formattedText, new Point(Attribute.Center.X - Attribute.Radius, Attribute.Center.Y - TextAttribute.FontSize));
-            dc.DrawEllipse(Attribute.Brush, Attribute.Pen, Attribute.Center, Attribute.Radius, Attribute.Radius);
+            
+            dc.DrawText(formattedText, new Point(Attribute.Rect.X - fontSize, Attribute.Rect.Y - fontSize));
+           
+            dc.DrawRectangle(Attribute.Brush, Attribute.Pen, Attribute.Rect);
         }
     }
 

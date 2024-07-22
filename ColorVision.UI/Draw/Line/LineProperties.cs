@@ -5,7 +5,7 @@ using System.Windows.Media;
 
 namespace ColorVision.UI.Draw
 {
-    public class PolygonAttribute : BaseProperties
+    public class LineProperties : BaseProperties
     {
         [Browsable(false)]
         public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
@@ -17,7 +17,6 @@ namespace ColorVision.UI.Draw
         private Brush _Brush;
 
         public List<Point> Points { get; set; }
-
     }
 
 

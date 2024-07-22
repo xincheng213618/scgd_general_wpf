@@ -227,11 +227,11 @@ namespace ColorVision.Engine.Media
 
         private bool IsMouseDown;
         private Point MouseDownP;
-        private DrawingVisualCircle? SelectDCircle;
-        private DrawingVisualRectangle? SelectRectangle;
-        private DrawingVisualCircle DrawCircleCache;
-        private DrawingVisualRectangle DrawingRectangleCache;
-        private DrawingVisualPolygon? DrawingVisualPolygonCache;
+        private DVCircle? SelectDCircle;
+        private DVRectangle? SelectRectangle;
+        private DVCircle DrawCircleCache;
+        private DVRectangle DrawingRectangleCache;
+        private DVPolygon? DrawingVisualPolygonCache;
 
 
         private void ImageShow_Initialized(object sender, EventArgs e)
@@ -315,14 +315,14 @@ namespace ColorVision.Engine.Media
                 }
                 else if (ToolBarTop.DrawCircle)
                 {
-                    DrawCircleCache = new DrawingVisualCircle() { AutoAttributeChanged = false };
+                    DrawCircleCache = new DVCircle() { AutoAttributeChanged = false };
                     DrawCircleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
                     DrawCircleCache.Attribute.Center = MouseDownP;
                     drawCanvas.AddVisual(DrawCircleCache);
                 }
                 else if (ToolBarTop.DrawRect)
                 {
-                    DrawingRectangleCache = new DrawingVisualRectangle() { AutoAttributeChanged = false };
+                    DrawingRectangleCache = new DVRectangle() { AutoAttributeChanged = false };
                     DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + 30, MouseDownP.Y + 30));
                     DrawingRectangleCache.Attribute.Pen = new Pen(Brushes.Red, 1 / Zoombox1.ContentMatrix.M11);
 
@@ -332,7 +332,7 @@ namespace ColorVision.Engine.Media
                 {
                     if (DrawingVisualPolygonCache == null)
                     {
-                        DrawingVisualPolygonCache = new DrawingVisualPolygon();
+                        DrawingVisualPolygonCache = new DVPolygon();
                         DrawingVisualPolygonCache.Attribute.Pen.Thickness = 1 / Zoombox1.ContentMatrix.M11;
                         drawCanvas.AddVisual(DrawingVisualPolygonCache);
                     }
@@ -359,11 +359,11 @@ namespace ColorVision.Engine.Media
 
                         if (ToolBarTop.ImageEditMode == true)
                         {
-                            if (drawingVisual is DrawingVisualRectangle Rectangle)
+                            if (drawingVisual is DVRectangle Rectangle)
                             {
                                 SelectRectangle = Rectangle;
                             }
-                            else if (drawingVisual is DrawingVisualCircle Circl)
+                            else if (drawingVisual is DVCircle Circl)
                             {
                                 SelectDCircle = Circl;
                             }

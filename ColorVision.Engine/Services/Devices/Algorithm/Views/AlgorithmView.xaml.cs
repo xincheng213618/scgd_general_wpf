@@ -490,7 +490,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         {
                             if (item is ViewResultLedCheck viewResultLedCheck)
                             {
-                                DrawingVisualCircle Circle = new();
+                                DVCircle Circle = new();
                                 Circle.Attribute.Center = viewResultLedCheck.Point;
                                 Circle.Attribute.Radius = viewResultLedCheck.Radius;
                                 Circle.Attribute.Brush = Brushes.Transparent;
@@ -561,7 +561,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
             foreach (var item in points)
             {
                 id++;
-                DrawingVisualCircleWord Circle = new();
+                DVCircleText Circle = new();
                 Circle.Attribute.Center = item;
                 Circle.Attribute.Radius = 20 / ImageView.Zoombox1.ContentMatrix.M11;
                 Circle.Attribute.Brush = Brushes.Transparent;
@@ -574,7 +574,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
 
         public void AddRect(Rect rect)
         {
-            DrawingVisualRectangleWord Rectangle = new();
+            DVRectangleText Rectangle = new();
             Rectangle.Attribute.Rect = new Rect(rect.X, rect.Y, rect.Width, rect.Height);
             Rectangle.Attribute.Brush = Brushes.Transparent;
             Rectangle.Attribute.Pen = new Pen(Brushes.Red, rect.Width / 30.0);
@@ -671,7 +671,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                 switch (item.PointType)
                 {
                     case POIPointTypes.Circle:
-                        DrawingVisualCircleWord Circle = new();
+                        DVCircleText Circle = new();
                         Circle.Attribute.Center = new Point(item.PixelX, item.PixelY);
                         Circle.Attribute.Radius = item.Radius;
                         Circle.Attribute.Brush = Brushes.Transparent;
@@ -682,7 +682,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         ImageView.AddVisual(Circle);
                         break;
                     case POIPointTypes.Rect:
-                        DrawingVisualRectangleWord Rectangle = new();
+                        DVRectangleText Rectangle = new();
                         Rectangle.Attribute.Rect = new Rect(item.PixelX - item.Width / 2, item.PixelY - item.Height / 2, item.Width, item.Height);
                         Rectangle.Attribute.Brush = Brushes.Transparent;
                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / ImageView.Zoombox1.ContentMatrix.M11);
@@ -694,7 +694,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                     case POIPointTypes.Mask:
                         break;
                     case POIPointTypes.SolidPoint:
-                        DrawingVisualCircleWord Circle1 = new();
+                        DVCircleText Circle1 = new();
                         Circle1.Attribute.Center = new Point(item.PixelX, item.PixelY);
                         Circle1.Attribute.Radius = 10;
                         Circle1.Attribute.Brush = Brushes.Red;

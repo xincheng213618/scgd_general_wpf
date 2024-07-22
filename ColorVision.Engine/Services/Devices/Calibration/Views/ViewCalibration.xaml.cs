@@ -448,7 +448,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                     switch (item.PointType)
                     {
                         case RiPointTypes.Circle:
-                            DrawingVisualCircleWord Circle = new();
+                            DVCircleText Circle = new();
                             Circle.Attribute.Center = new Point(item.PixX, item.PixY);
                             Circle.Attribute.Radius = item.PixWidth;
                             Circle.Attribute.Brush = Brushes.Transparent;
@@ -459,7 +459,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                             ImageView.ImageShow.AddVisual(Circle);
                             break;
                         case RiPointTypes.Rect:
-                            DrawingVisualRectangleWord Rectangle = new();
+                            DVRectangleText Rectangle = new();
                             Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
@@ -524,7 +524,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                     switch (item.PointType)
                     {
                         case RiPointTypes.Circle:
-                            DrawingVisualCircleWord Circle = new();
+                            DVCircleText Circle = new();
                             Circle.Attribute.Center = new Point(item.PixX, item.PixY);
                             Circle.Attribute.Radius = item.PixHeight / 2;
                             Circle.Attribute.Brush = Brushes.Transparent;
@@ -535,7 +535,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                             ImageView.ImageShow.AddVisual(Circle);
                             break;
                         case RiPointTypes.Rect:
-                            DrawingVisualRectangleWord Rectangle = new();
+                            DVRectangleText Rectangle = new();
                             Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);

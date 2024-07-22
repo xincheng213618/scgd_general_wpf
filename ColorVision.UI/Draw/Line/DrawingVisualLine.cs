@@ -4,7 +4,7 @@ using System.Windows.Media;
 
 namespace ColorVision.UI.Draw
 {
-    public class DrawingVisualLine : DrawingVisualBase<LineAttribute>, IDrawingVisual
+    public class DrawingVisualLine : DrawingVisualBase<LineProperties>, IDrawingVisual
     {
         public BaseProperties BaseAttribute => Attribute;
 
@@ -14,7 +14,7 @@ namespace ColorVision.UI.Draw
 
         public DrawingVisualLine()
         {
-            Attribute = new LineAttribute();
+            Attribute = new LineProperties();
             Attribute.Id = No++;
             Attribute.Pen = new Pen(Brushes.Red, 2);
             Attribute.Points = new List<Point>();

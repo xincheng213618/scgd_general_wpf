@@ -87,9 +87,9 @@ namespace ColorVision.Engine.Services.Templates.POI
         private Point MouseDownP;
 
         private DrawingVisual? SelectDrawingVisual;
-        private DrawingVisualPolygon? DrawingPolygonCache;
-        private DrawingVisualCircle? DrawCircleCache;
-        private DrawingVisualRectangle? DrawingRectangleCache;
+        private DVPolygon? DrawingPolygonCache;
+        private DVCircleText? DrawCircleCache;
+        private DVRectangleText? DrawingRectangleCache;
 
 
         private void ImageShow_MouseLeave(object sender, MouseEventArgs e)
@@ -181,28 +181,31 @@ namespace ColorVision.Engine.Services.Templates.POI
                 }
                 else if (ToolBarTop.DrawCircle)
                 {
-                    DrawCircleCache = new DrawingVisualCircle() { AutoAttributeChanged = false };
+                    No++;
+                    DrawCircleCache = new DVCircleText() { AutoAttributeChanged = false };
+                    DrawCircleCache.Attribute.Id = No;
                     DrawCircleCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
                     DrawCircleCache.Attribute.Center = MouseDownP;
                     DrawCircleCache.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
-                    DrawCircleCache.IsDrawing = true;
+                    DrawCircleCache.Attribute.Text = "Point_" + No.ToString();
                     drawCanvas.AddVisual(DrawCircleCache);
-
                 }
                 else if (ToolBarTop.DrawRect)
                 {
-                    DrawingRectangleCache = new DrawingVisualRectangle() { AutoAttributeChanged = false };
+                    No++;
+
+                    DrawingRectangleCache = new DVRectangleText() { AutoAttributeChanged = false };
+                    DrawingRectangleCache.Attribute.Id = No;
                     DrawingRectangleCache.Attribute.Rect = new Rect(MouseDownP, new Point(MouseDownP.X + 30, MouseDownP.Y + 30));
                     DrawingRectangleCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
-
+                    DrawingRectangleCache.Attribute.Text = "Point_" + No.ToString();
                     drawCanvas.AddVisual(DrawingRectangleCache);
-
                 }
                 else if (ToolBarTop.DrawPolygon)
                 {
                     if (DrawingPolygonCache == null)
                     {
-                        DrawingPolygonCache = new DrawingVisualPolygon();
+                        DrawingPolygonCache = new DVPolygon();
                         DrawingPolygonCache.Attribute.Pen = new Pen(brush, 1 / Zoombox1.ContentMatrix.M11);
                         drawCanvas.AddVisual(DrawingPolygonCache);
                     }
@@ -219,7 +222,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                         if (drawingVisual is DrawingVisual visual)
                             SelectDrawingVisual = visual;
 
-                        if (SelectDrawingVisual is DrawingVisualCircle Circl)
+                        if (SelectDrawingVisual is DVCircle Circl)
                         {
                             Circl.IsDrawing = true;
                         }
@@ -334,9 +337,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                 }
                 else if (ToolBarTop.DrawCircle && DrawCircleCache != null)
                 {
-                    DrawCircleCache.IsDrawing = false;
                     DrawCircleCache.Render();
-
                     PropertyGrid2.SelectedObject = DrawCircleCache.BaseAttribute;
 
                     DrawCircleCache.AutoAttributeChanged = true;
@@ -358,7 +359,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                 }
                 drawCanvas.ReleaseMouseCapture();
 
-                if (SelectDrawingVisual is DrawingVisualCircle circle)
+                if (SelectDrawingVisual is DVCircle circle)
                 {
                     circle.IsDrawing = false;
                     circle.Render();

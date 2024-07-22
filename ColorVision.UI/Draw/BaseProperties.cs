@@ -20,9 +20,6 @@ namespace ColorVision.UI.Draw
         [Browsable(false)]
         public int? Tag { get => _Tag; set { _Tag = value; NotifyPropertyChanged(); } }
         private int? _Tag;
-        [Browsable(false)]
-        public int? Tag1 { get => _Tag1; set { _Tag1 = value; NotifyPropertyChanged(); } }
-        private int? _Tag1;
 
     }
 

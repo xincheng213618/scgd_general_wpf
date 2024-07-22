@@ -13,8 +13,6 @@ namespace ColorVision.UI.Draw
 
         public virtual int ID { get; set; }
 
-        public virtual string Version { get; set; }
-
         public virtual void Render() { }
     }
 

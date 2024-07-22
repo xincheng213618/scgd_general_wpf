@@ -224,7 +224,7 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             foreach (var item in DefaultPoint)
             {
-                if (item is DrawingVisualDatumCircle visualDatumCircle)
+                if (item is DVDatumCircle visualDatumCircle)
                 {
                     visualDatumCircle.Attribute.Radius = 5 / Zoombox1.ContentMatrix.M11;
                 }
@@ -416,48 +416,52 @@ namespace ColorVision.Engine.Services.Templates.POI
             DatumSet();
         }
 
+        private Dictionary<IDrawingVisual, int> DBIndex = new Dictionary<IDrawingVisual, int>();
+
+        private int No;
+
         private async void PoiParamToDrawingVisual(PoiParam poiParam)
         {
             try
             {
-                int i = 0;
-
                 foreach (var item in poiParam.PoiPoints)
                 {
-                    i++;
-                    if (i % 50 == 0)
+                    No++;
+                    if (No % 50 == 0)
                     {
-                        WaitControlProgressBar.Value = 20 + i * 79 / poiParam.PoiPoints.Count;
+                        WaitControlProgressBar.Value = 20 + No * 79 / poiParam.PoiPoints.Count;
                         await Task.Delay(1);
                     }
                     switch (item.PointType)
                     {
                         case RiPointTypes.Circle:
-                            DrawingVisualCircleWord Circle = new();
+                            DVCircleText Circle = new();
                             Circle.Attribute.Center = new Point(item.PixX, item.PixY);
                             Circle.Attribute.Radius = item.PixWidth/2;
                             Circle.Attribute.Brush = Brushes.Transparent;
                             Circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Circle.Attribute.Id = i;
-                            Circle.Attribute.Text = i.ToString();
-                            Circle.Attribute.Name = item.Name;
-                            Circle.Attribute.Tag = item.Tag;
-                            Circle.Attribute.Tag1 = item.Id;
+                            Circle.Attribute.Id = No;
+                            Circle.Attribute.Text = item.Name;
 
+                            Circle.Attribute.Name = item.Id.ToString();
+                            Circle.Attribute.Tag = item.Tag;
                             Circle.Render();
                             ImageShow.AddVisual(Circle);
+                            DBIndex.Add(Circle,item.Id);
                             break;
                         case RiPointTypes.Rect:
-                            DrawingVisualRectangleWord Rectangle = new();
+                            DVRectangleText Rectangle = new();
                             Rectangle.Attribute.Rect = new Rect(item.PixX - item.PixWidth /2, item.PixY - item.PixHeight /2, item.PixWidth, item.PixHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Rectangle.Attribute.Id = item.Id;
-                            Rectangle.Attribute.Name = item.Name;
+                            Rectangle.Attribute.Id = No;
+                            Rectangle.Attribute.Text = item.Name;
+                            Rectangle.Attribute.Name = item.Id.ToString();
+
                             Rectangle.Attribute.Tag = item.Tag;
-                            Rectangle.Attribute.Tag1 = item.Id;
                             Rectangle.Render();
                             ImageShow.AddVisual(Rectangle);
+                            DBIndex.Add(Rectangle, item.Id);
                             break;
                         case RiPointTypes.Mask:
                             break;
@@ -539,7 +543,7 @@ namespace ColorVision.Engine.Services.Templates.POI
 
                 for (int i = 0; i < Points.Count; i++)
                 {
-                    DrawingVisualDatumCircle drawingVisual = new();
+                    DVDatumCircle drawingVisual = new();
                     drawingVisual.Attribute.Center = Points[i];
                     drawingVisual.Attribute.Radius = 5 / Zoombox1.ContentMatrix.M11;
                     drawingVisual.Attribute.Brush = Brushes.Blue;
@@ -618,7 +622,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     }
     
 
-                                    DrawingVisualCircleWord Circle = new();
+                                    DVCircleText Circle = new();
                                     Circle.Attribute.Center = new Point(x1, y1);
                                     Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
                                     Circle.Attribute.Brush = Brushes.Transparent;
@@ -651,7 +655,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         }
                                     }
 
-                                    DrawingVisualRectangleWord Rectangle = new();
+                                    DVRectangleText Rectangle = new();
                                     Rectangle.Attribute.Rect = new Rect(x1 - PoiParam.DatumArea.DefaultRectWidth / 2, y1 - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
                                     Rectangle.Attribute.Brush = Brushes.Transparent;
                                     Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
@@ -771,7 +775,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                 {
                                     case RiPointTypes.Circle:
 
-                                        DrawingVisualCircleWord Circle = new();
+                                        DVCircleText Circle = new();
                                         Circle.Attribute.Center = new Point(x1, y1);
                                         Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
                                         Circle.Attribute.Brush = Brushes.Transparent;
@@ -783,7 +787,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         break;
                                     case RiPointTypes.Rect:
 
-                                        DrawingVisualRectangleWord Rectangle = new();
+                                        DVRectangleText Rectangle = new();
                                         Rectangle.Attribute.Rect = new Rect(x1 - (double)PoiParam.DatumArea.DefaultRectWidth / 2, y1 - PoiParam.DatumArea.DefaultRectWidth / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectWidth);
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
@@ -836,7 +840,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                 switch (PoiParam.DefaultPointType)
                                 {
                                     case RiPointTypes.Circle:
-                                        DrawingVisualCircleWord Circle = new();
+                                        DVCircleText Circle = new();
                                         Circle.Attribute.Center = new Point(point.X, point.Y);
                                         Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
                                         Circle.Attribute.Brush = Brushes.Transparent;
@@ -847,7 +851,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         ImageShow.AddVisual(Circle);
                                         break;
                                     case RiPointTypes.Rect:
-                                        DrawingVisualRectangleWord Rectangle = new();
+                                        DVRectangleText Rectangle = new();
                                         Rectangle.Attribute.Rect = new Rect(point.X - PoiParam.DatumArea.DefaultRectWidth / 2, point.Y - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
@@ -880,7 +884,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                 {
                                     case RiPointTypes.Circle:
 
-                                        DrawingVisualCircleWord Circle = new();
+                                        DVCircleText Circle = new();
                                         Circle.Attribute.Center = new Point(PoiParam.DatumArea.Polygons[i].X + dx*j, PoiParam.DatumArea.Polygons[i].Y + dy * j);
                                         Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
                                         Circle.Attribute.Brush = Brushes.Transparent;
@@ -891,7 +895,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         ImageShow.AddVisual(Circle);
                                         break;
                                     case RiPointTypes.Rect:
-                                        DrawingVisualRectangleWord Rectangle = new();
+                                        DVRectangleText Rectangle = new();
                                         Rectangle.Attribute.Rect = new Rect(PoiParam.DatumArea.Polygons[i].X + dx * j - PoiParam.DatumArea.DefaultRectWidth / 2, PoiParam.DatumArea.Polygons[i].Y + dy * j - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
@@ -916,7 +920,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                 {
                                     case RiPointTypes.Circle:
 
-                                        DrawingVisualCircleWord Circle = new();
+                                        DVCircleText Circle = new();
                                         Circle.Attribute.Center = new Point(PoiParam.DatumArea.Polygons[i].X, PoiParam.DatumArea.Polygons[i].Y);
                                         Circle.Attribute.Radius = PoiParam.DatumArea.DefaultCircleRadius;
                                         Circle.Attribute.Brush = Brushes.Transparent;
@@ -927,7 +931,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         ImageShow.AddVisual(Circle);
                                         break;
                                     case RiPointTypes.Rect:
-                                        DrawingVisualRectangleWord Rectangle = new();
+                                        DVRectangleText Rectangle = new();
                                         Rectangle.Attribute.Rect = new Rect(PoiParam.DatumArea.Polygons[i].X - PoiParam.DatumArea.DefaultRectWidth / 2, PoiParam.DatumArea.Polygons[i].Y - PoiParam.DatumArea.DefaultRectHeight / 2, PoiParam.DatumArea.DefaultRectWidth, PoiParam.DatumArea.DefaultRectHeight);
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
@@ -986,9 +990,6 @@ namespace ColorVision.Engine.Services.Templates.POI
             }
         }
 
-        private void CheckBox_Click(object sender, RoutedEventArgs e)
-        {
-        }
         private void MenuItem_DrawingVisual_Delete(object sender, RoutedEventArgs e)
         {
             if (sender is MenuItem menuItem && menuItem.Tag is Visual visual &&visual is IDrawingVisual drawing)
@@ -1033,7 +1034,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                 switch (PoiParam.DatumArea.PointType)
                 {
                     case RiPointTypes.Circle:
-                        DrawingVisualDatumCircle Circle = new();
+                        DVDatumCircle Circle = new();
                         Circle.Attribute.Center = PoiParam.DatumArea.Center;
                         Circle.Attribute.Radius = PoiParam.DatumArea.AreaCircleRadius;
                         Circle.Attribute.Brush = Brushes.Transparent;
@@ -1045,7 +1046,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                     case RiPointTypes.Rect:
                         double Width = PoiParam.DatumArea.AreaRectWidth;
                         double Height = PoiParam.DatumArea.AreaRectHeight;
-                        DrawingVisualDatumRectangle Rectangle = new();
+                        DVDatumRectangle Rectangle = new();
                         Rectangle.Attribute.Rect = new Rect(PoiParam.DatumArea.Center - new Vector((int)(Width / 2), (int)(Height / 2)), (PoiParam.DatumArea.Center + new Vector((int)(Width / 2), (int)(Height / 2))));
                         Rectangle.Attribute.Brush = Brushes.Transparent;
                         Rectangle.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
@@ -1062,7 +1063,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                         pts_src.Add(PoiParam.DatumArea.Polygon4);
 
                         List<Point> result = Helpers.SortPolyPoints(pts_src);
-                        DrawingVisualDatumPolygon Polygon = new() { IsComple = true };
+                        DVDatumPolygon Polygon = new() { IsComple = true };
                         Polygon.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                         Polygon.Attribute.Brush = Brushes.Transparent;
                         Polygon.Attribute.Points.Add(result[0]);
@@ -1074,7 +1075,7 @@ namespace ColorVision.Engine.Services.Templates.POI
                         ImageShow.AddVisual(drawingVisualDatum);
                         break;
                     case RiPointTypes.Polygon:
-                        DrawingVisualDatumPolygon Polygon1 = new() { IsComple = false };
+                        DVDatumPolygon Polygon1 = new() { IsComple = false };
                         Polygon1.Attribute.Pen = new Pen(Brushes.Blue, 1 / Zoombox1.ContentMatrix.M11);
                         Polygon1.Attribute.Brush = Brushes.Transparent;
                         foreach (var item in PoiParam.DatumArea.Polygons)
@@ -1098,28 +1099,32 @@ namespace ColorVision.Engine.Services.Templates.POI
             PoiParam.PoiPoints.Clear();
             foreach (var item in DrawingVisualLists)
             {
+                int index = DBIndex.TryGetValue(item, out int value) ? value : -1;
+
                 BaseProperties drawAttributeBase = item.BaseAttribute;
-                if (drawAttributeBase is CircleProperties circle)
+                if (drawAttributeBase is CircleTextProperties circle)
                 {
-                    PoiPoint poiParamData = new()
+                    PoiPoint poiParamData = new PoiPoint()
                     {
-                        Id = circle.Tag1 ?? -1,
+                        Id = index,
                         PointType = RiPointTypes.Circle,
                         PixX = circle.Center.X,
                         PixY = circle.Center.Y,
                         PixWidth = circle.Radius * 2,
                         PixHeight = circle.Radius * 2,
                         Tag = circle.Tag,
-                        Name = circle.Name
+                        Name = circle.Text
                     };
+
+
                     PoiParam.PoiPoints.Add(poiParamData);
                 }
-                else if (drawAttributeBase is RectangleAttribute rectangle)
+                else if (drawAttributeBase is RectangleTextProperties rectangle)
                 {
                     PoiPoint poiParamData = new()
                     {
-                        Id = rectangle.Tag1 ??-1,
-                        Name = rectangle.Name,
+                        Id = index,
+                        Name = rectangle.Text,
                         PointType = RiPointTypes.Rect,
                         PixX = rectangle.Rect.X + rectangle.Rect.Width/2,
                         PixY = rectangle.Rect.Y + rectangle.Rect.Height/2,
@@ -1330,7 +1335,7 @@ namespace ColorVision.Engine.Services.Templates.POI
 
                 for (int i = 0; i < testdata; i++)
                 {
-                    DrawingVisualCircleWord Circle = new();
+                    DVCircleText Circle = new();
                     Circle.Attribute.Center = new Point(zuobiaoX[i], zuobiaoY[i]);
                     Circle.Attribute.Radius = banjin[i];
                     Circle.Attribute.Brush = Brushes.Transparent;

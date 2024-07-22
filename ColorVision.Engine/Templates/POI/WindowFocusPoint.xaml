@@ -585,7 +585,7 @@
                         </ContextMenu>
                         <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" >
                         </ContextMenu>
-                        <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type draw:DrawingVisualCircle}" >
+                        <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type draw:DVCircle}" >
                             <StackPanel  Orientation="Horizontal">
                                 <TextBlock  HorizontalAlignment="Center">
                                                     <Run Text="{Binding Path = Attribute.Center.X,StringFormat={}{0:F0}}"/>
@@ -596,7 +596,7 @@
                                 <TextBlock Text="{Binding Path=Attribute.Radius}" />
                             </StackPanel>
                         </DataTemplate>
-                        <DataTemplate x:Key="DrawingVisualCircleWordTemplate" DataType="{x:Type draw:DrawingVisualCircleWord}" >
+                        <DataTemplate x:Key="DrawingVisualCircleWordTemplate" DataType="{x:Type draw:DVCircleText}" >
                             <StackPanel  Orientation="Horizontal">
                                 <TextBlock HorizontalAlignment="Center">
                                                     <Run Text="{Binding Path = Attribute.Center.X,StringFormat={}{0:F0}}"/>
@@ -610,7 +610,7 @@
                             </StackPanel>
                         </DataTemplate>
 
-                        <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type draw:DrawingVisualRectangle}">
+                        <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type draw:DVRectangle}">
                             <StackPanel  Orientation="Horizontal">
                                 <TextBlock>
                                             <Run Text="{Binding Attribute.Rect.X,StringFormat={}{0:F0}}"/>
@@ -620,7 +620,7 @@
                                 </TextBlock>
                             </StackPanel>
                         </DataTemplate>
-                        <DataTemplate x:Key="DrawingVisualRectangleWordTemplate"  DataType="{x:Type draw:DrawingVisualRectangleWord}">
+                        <DataTemplate x:Key="DrawingVisualRectangleWordTemplate"  DataType="{x:Type draw:DVRectangleText}">
                             <StackPanel  Orientation="Horizontal">
                                 <StackPanel.ContextMenu>
                                     <ContextMenu>
@@ -662,7 +662,7 @@
                             <GridViewColumn  Header="序号">
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type draw:IDrawingVisual}">
-                                        <TextBlock Text="{Binding BaseAttribute.ID}" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding BaseAttribute.Id}" HorizontalAlignment="Center"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>
@@ -670,13 +670,6 @@
                                 <GridViewColumn.CellTemplate>
                                     <DataTemplate DataType="{x:Type draw:IDrawingVisual}">
                                         <ComboBox Initialized="ComboBoxValidateCIE_Initialized" Width="100" SelectedValue="{Binding BaseAttribute.Tag}"  SelectedValuePath="Id" DisplayMemberPath="Key" Margin="2,0" Style="{StaticResource ComboBox.Small}"/>
-                                    </DataTemplate>
-                                </GridViewColumn.CellTemplate>
-                            </GridViewColumn>
-                            <GridViewColumn  Header="形状" Width="150">
-                                <GridViewColumn.CellTemplate>
-                                    <DataTemplate DataType="{x:Type draw:DrawingVisualBase}">
-                                        <TextBlock Text="{Binding Version}" Tag="{Binding .}"/>
                                     </DataTemplate>
                                 </GridViewColumn.CellTemplate>
                             </GridViewColumn>

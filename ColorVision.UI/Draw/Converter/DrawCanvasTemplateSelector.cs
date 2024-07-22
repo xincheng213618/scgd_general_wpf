@@ -18,13 +18,13 @@ namespace ColorVision.UI.Draw.Converter
 
         public override DataTemplate SelectTemplate(object item, DependencyObject container)
         {
-            if (item is DrawingVisualCircle)
+            if (item is DVCircle)
                 return DrawingVisualCircleTemplate;
-            if (item is DrawingVisualCircleWord)
+            if (item is DVCircleText)
                 return DrawingVisualCircleWordTemplate;
-            if (item is DrawingVisualRectangle)
+            if (item is DVRectangle)
                 return DrawingVisualRectangleTemplate;
-            if (item is DrawingVisualRectangleWord)
+            if (item is DVRectangleText)
                 return DrawingVisualRectangleWordTemplate;
             return base.SelectTemplate(item, container);
 
