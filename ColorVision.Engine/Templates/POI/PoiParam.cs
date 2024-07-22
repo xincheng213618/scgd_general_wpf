@@ -143,7 +143,7 @@ namespace ColorVision.Engine.Templates.POI
 
         public PoiParam()
         {
-            Id = No++;
+
         }
 
         public PoiParam(PoiMasterModel dbModel)

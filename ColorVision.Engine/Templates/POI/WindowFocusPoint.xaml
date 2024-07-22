@@ -79,7 +79,7 @@
                         </DockPanel>
                     </DockPanel>
                     <StackPanel  Orientation="Horizontal" Margin="0,2">
-                        <Button  Content="默认画布" DockPanel.Dock="Right" Click="OpenCAD_Click"  Style="{StaticResource ButtonDefault.Small}" Margin="2,0" />
+                        <Button  Content="默认画布" DockPanel.Dock="Right" Click="CreateImage_Click"  Style="{StaticResource ButtonDefault.Small}" Margin="2,0" />
                         <Button x:Name="button1" Content="图像导入" HorizontalAlignment="Left"   Style="{StaticResource ButtonDefault.Small}"  Click="Button1_Click" Margin="2,0"/>
                         <Button x:Name="button4" Content="导入服务最新的图像" Click="Service_Click"  Style="{StaticResource ButtonDefault.Small}" Margin="2,0" />
                     </StackPanel>
@@ -620,7 +620,6 @@
                                 </TextBlock>
                             </StackPanel>
                         </DataTemplate>
-
                         <DataTemplate x:Key="DrawingVisualRectangleWordTemplate"  DataType="{x:Type draw:DrawingVisualRectangleWord}">
                             <StackPanel  Orientation="Horizontal">
                                 <StackPanel.ContextMenu>

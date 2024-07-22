@@ -922,5 +922,10 @@ namespace ColorVision.Engine.Media
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
+
+        private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
     }
 }

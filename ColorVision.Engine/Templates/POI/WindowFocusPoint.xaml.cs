@@ -280,10 +280,9 @@ namespace ColorVision.Engine.Services.Templates.POI
             }
         }
 
-        private void OpenCAD_Click(object sender, RoutedEventArgs e)
+        private void CreateImage_Click(object sender, RoutedEventArgs e)
         {
             CreateImage(PoiParam.Width, PoiParam.Height, Colors.White,false);
-
         }
 
         public void OpenImage(string? filePath)
@@ -320,6 +319,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                 }
             }
         }
+
+
 
         public void SetImageSource(ImageSource imageSource)
         {
