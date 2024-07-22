@@ -5,7 +5,7 @@ using System.Windows.Media;
 
 namespace ColorVision.UI.Draw
 {
-    public class RulerTextAttribute : DrawBaseAttribute
+    public class RulerTextAttribute : BaseProperties
     {
         public List<Point> Points { get; set; } = new List<Point>();
 

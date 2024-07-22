@@ -5,7 +5,7 @@ using System.Windows.Media;
 
 namespace ColorVision.UI.Draw
 {
-    public class TextAttribute : BaseAttribute
+    public class TextAttribute : BaseMode
     {
         public static DefalutTextAttribute DefalutTextAttribute = DefalutTextAttribute.Defalut;
 

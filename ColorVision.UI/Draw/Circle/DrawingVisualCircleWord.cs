@@ -5,9 +5,9 @@ using System.Windows.Media;
 
 namespace ColorVision.UI.Draw
 {
-    public class CircleTextAttribute: CircleAttribute
+    public class CircleTextProperties: CircleProperties
     {
-        [Category("Circle"), DisplayName("TextAttribute")]
+        [Browsable(false)]
         public TextAttribute TextAttribute { get; set; } = new TextAttribute();
 
         [Category("TextAttribute"), DisplayName("Text")]
@@ -34,12 +34,12 @@ namespace ColorVision.UI.Draw
 
 
 
-    public class DrawingVisualCircleWord : DrawingVisualBase<CircleTextAttribute>, IDrawingVisual,ICircle
+    public class DrawingVisualCircleWord : DrawingVisualBase<CircleTextProperties>, IDrawingVisual,ICircle
     {
         public TextAttribute TextAttribute { get => Attribute.TextAttribute; }
         public bool AutoAttributeChanged { get; set; } = true;
 
-        public DrawBaseAttribute BaseAttribute => Attribute;
+        public BaseProperties BaseAttribute => Attribute;
         public Point Center { get => Attribute.Center; set => Attribute.Center = value; }
         public double Radius { get => Attribute.Radius; set => Attribute.Radius = value; }
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
@@ -47,8 +47,8 @@ namespace ColorVision.UI.Draw
         public DrawingVisualCircleWord()
         {
             Version = "圆形";
-            Attribute = new CircleTextAttribute();
-            Attribute.ID = No++;
+            Attribute = new CircleTextProperties();
+            Attribute.Id = No++;
             Attribute.Brush = Brushes.Transparent;
             Attribute.Pen = new Pen(Brushes.Red, 2);
             Attribute.Center = new Point(50, 50);
@@ -67,7 +67,7 @@ namespace ColorVision.UI.Draw
         public override void Render()
         {
             TextAttribute.Text = Attribute.Text;
-            TextAttribute.Text =  string.IsNullOrWhiteSpace(TextAttribute.Text)? "Point_" + Attribute.ID.ToString(): TextAttribute.Text;
+            TextAttribute.Text =  string.IsNullOrWhiteSpace(TextAttribute.Text)? Attribute.Id.ToString(): TextAttribute.Text;
             TextAttribute.FontSize = Attribute.Pen.Thickness * 10;
             using DrawingContext dc = RenderOpen();
 

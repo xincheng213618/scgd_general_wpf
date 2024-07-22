@@ -6,7 +6,7 @@ namespace ColorVision.UI.Draw
 {
     public class DrawingVisualPolygon : DrawingVisualBase<PolygonAttribute>, IDrawingVisual
     {
-        public DrawBaseAttribute BaseAttribute => Attribute;
+        public BaseProperties BaseAttribute => Attribute;
 
         public bool AutoAttributeChanged { get; set; } = true;
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
@@ -17,7 +17,7 @@ namespace ColorVision.UI.Draw
         {
             Version = "多边形";
             Attribute = new PolygonAttribute();
-            Attribute.ID = No++;
+            Attribute.Id = No++;
             Attribute.Pen = new Pen(Brushes.Red, 2);
             Attribute.Points = new List<Point>();
             Attribute.PropertyChanged += (s, e) =>

@@ -495,7 +495,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                             Circle.Attribute.Radius = item.PixHeight/2;
                             Circle.Attribute.Brush = Brushes.Transparent;
                             Circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Circle.Attribute.ID = item.Id;
+                            Circle.Attribute.Id = item.Id;
                             Circle.Attribute.Text = item.Name;
                             Circle.Render();
                             ImageView.ImageShow.AddVisual(Circle);
@@ -505,7 +505,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                             Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Rectangle.Attribute.ID = item.Id;
+                            Rectangle.Attribute.Id = item.Id;
                             Rectangle.Attribute.Name = item.Name;
                             Rectangle.Render();
                             ImageView.ImageShow.AddVisual(Rectangle);

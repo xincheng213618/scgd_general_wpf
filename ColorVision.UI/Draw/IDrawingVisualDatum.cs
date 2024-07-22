@@ -4,7 +4,7 @@ namespace ColorVision.UI.Draw
 {
     public interface IDrawingVisualDatum
     {
-        public abstract DrawBaseAttribute BaseAttribute { get; }
+        public abstract BaseProperties BaseAttribute { get; }
 
         public abstract Pen Pen { get; set; }
         public abstract void Render();

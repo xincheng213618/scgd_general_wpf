@@ -12,7 +12,7 @@ namespace ColorVision.UI.Draw
         }
     }
 
-    public class EditBase<T> : Stroke where T : DrawBaseAttribute, new()
+    public class EditBase<T> : Stroke where T : BaseProperties, new()
     {
         public T Attribute { get; set; }
         public EditBase(StylusPointCollection points) : base(points)
@@ -21,7 +21,7 @@ namespace ColorVision.UI.Draw
         }
 
     }
-    public class CircleEdit : EditBase<CircleAttribute>
+    public class CircleEdit : EditBase<CircleProperties>
     {
         public CircleEdit(StylusPointCollection stylusPoints) : base(new StylusPointCollection())
         {

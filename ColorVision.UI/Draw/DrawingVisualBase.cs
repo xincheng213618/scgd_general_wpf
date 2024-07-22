@@ -18,9 +18,9 @@ namespace ColorVision.UI.Draw
         public virtual void Render() { }
     }
 
-    public class DrawingVisualBase<T>: DrawingVisualBase where T : DrawBaseAttribute, new()
+    public class DrawingVisualBase<T>: DrawingVisualBase where T : BaseProperties, new()
     {
-        public override int ID { get => Attribute.ID; set => Attribute.ID = value; }
+        public override int ID { get => Attribute.Id; set => Attribute.Id = value; }
 
         public object Tag { get; set; }
 

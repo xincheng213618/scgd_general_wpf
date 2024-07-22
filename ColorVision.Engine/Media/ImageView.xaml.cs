@@ -341,7 +341,7 @@ namespace ColorVision.Engine.Media
                 {
                     if (drawCanvas.GetVisual(MouseDownP) is IDrawingVisual drawingVisual)
                     {
-                        if (PropertyGrid2.SelectedObject is DrawBaseAttribute viewModelBase)
+                        if (PropertyGrid2.SelectedObject is BaseProperties viewModelBase)
                         {
                             viewModelBase.PropertyChanged -= (s, e) =>
                             {

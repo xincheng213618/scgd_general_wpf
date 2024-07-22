@@ -5,9 +5,9 @@ using System.Windows.Media;
 
 namespace ColorVision.UI.Draw
 {
-    public class LineAttribute : DrawBaseAttribute
+    public class LineAttribute : BaseProperties
     {
-        [Category("DrawingVisual"), DisplayName("笔刷")]
+        [Browsable(false)]
         public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
         private Pen _Pen;
 

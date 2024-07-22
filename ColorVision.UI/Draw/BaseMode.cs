@@ -5,8 +5,7 @@ using System.Runtime.CompilerServices;
 
 namespace ColorVision.UI.Draw
 {
-    [AttributeUsage(AttributeTargets.All)]
-    public class BaseAttribute : Attribute, INotifyPropertyChanged
+    public class BaseMode: INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler? PropertyChanged;
         /// <summary>

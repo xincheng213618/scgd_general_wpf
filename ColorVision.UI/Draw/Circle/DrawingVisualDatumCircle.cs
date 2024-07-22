@@ -5,9 +5,9 @@ namespace ColorVision.UI.Draw
 {
 
 
-    public class DrawingVisualDatumCircle : DrawingVisualBase<CircleAttribute>, IDrawingVisualDatum, ICircle
+    public class DrawingVisualDatumCircle : DrawingVisualBase<CircleProperties>, IDrawingVisualDatum, ICircle
     {
-        public DrawBaseAttribute BaseAttribute => Attribute;
+        public BaseProperties BaseAttribute => Attribute;
 
         public bool AutoAttributeChanged { get; set; } = true;
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
@@ -16,8 +16,8 @@ namespace ColorVision.UI.Draw
 
         public DrawingVisualDatumCircle()
         {
-            Attribute = new CircleAttribute();
-            Attribute.ID = No++;
+            Attribute = new CircleProperties();
+            Attribute.Id = No++;
             Attribute.Brush = Brushes.Red;
             Attribute.Pen = new Pen(Brushes.Red, 2);
             Attribute.Center = new Point(50, 50);

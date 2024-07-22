@@ -6,7 +6,7 @@ namespace ColorVision.UI.Draw
 {
     public class DrawingVisualDatumPolygon : DrawingVisualBase<PolygonAttribute>, IDrawingVisualDatum
     {
-        public DrawBaseAttribute BaseAttribute => Attribute;
+        public BaseProperties BaseAttribute => Attribute;
 
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
 
@@ -17,7 +17,7 @@ namespace ColorVision.UI.Draw
         public DrawingVisualDatumPolygon()
         {
             Attribute = new PolygonAttribute();
-            Attribute.ID = No++;
+            Attribute.Id = No++;
             Attribute.Brush = Brushes.Transparent;
             Attribute.Pen = new Pen(Brushes.Red, 2);
             Attribute.Points = new List<Point>();

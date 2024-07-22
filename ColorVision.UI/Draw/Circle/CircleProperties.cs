@@ -4,9 +4,9 @@ using System.Windows.Media;
 
 namespace ColorVision.UI.Draw
 {
-    public class CircleAttribute : DrawBaseAttribute
+    public class CircleProperties : BaseProperties
     {
-        [Category("DrawingVisual"), DisplayName("笔刷")]
+        [Browsable(false)]
         public Pen Pen { get => _Pen; set { _Pen = value; NotifyPropertyChanged(); } }
         private Pen _Pen;
 
@@ -14,7 +14,7 @@ namespace ColorVision.UI.Draw
         public Brush Brush { get => _Brush; set { _Brush = value; NotifyPropertyChanged(); } }
         private Brush _Brush;
 
-        [Category("Circle"), DisplayName("点")]
+        [Category("Circle"), DisplayName("圆心")]
         public Point Center { get => _Center; set { if (_Center.Equals(value)) return; _Center = value; NotifyPropertyChanged(); } }
         private Point _Center;
 
@@ -23,9 +23,4 @@ namespace ColorVision.UI.Draw
         private double _Radius;
 
     }
-
-
-
-
-
 }

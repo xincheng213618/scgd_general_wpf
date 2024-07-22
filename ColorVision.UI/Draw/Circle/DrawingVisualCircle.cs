@@ -4,10 +4,9 @@ using System.Windows.Media;
 
 namespace ColorVision.UI.Draw
 {
-    [CircleAttribute(ID =1)]
-    public class DrawingVisualCircle : DrawingVisualBase<CircleAttribute>, IDrawingVisual,ICircle
+    public class DrawingVisualCircle : DrawingVisualBase<CircleProperties>, IDrawingVisual,ICircle
     {
-        public DrawBaseAttribute BaseAttribute => Attribute;
+        public BaseProperties BaseAttribute => Attribute;
         public bool AutoAttributeChanged { get; set; }
         public Point Center { get => Attribute.Center; set => Attribute.Center = value; }
         public double Radius { get => Attribute.Radius; set => Attribute.Radius = value; }
@@ -16,8 +15,8 @@ namespace ColorVision.UI.Draw
         public DrawingVisualCircle()
         {
             Version = "圆形";
-            Attribute = new CircleAttribute();
-            Attribute.ID = No++;
+            Attribute = new CircleProperties();
+            Attribute.Id = No++;
             Attribute.Brush = Brushes.Transparent;
             Attribute.Pen = new Pen(Brushes.Red, 2);
             Attribute.Center = new Point(50, 50);
