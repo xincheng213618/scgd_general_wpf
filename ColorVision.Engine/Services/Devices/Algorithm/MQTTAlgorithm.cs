@@ -1,4 +1,6 @@
 ﻿using ColorVision.Engine.Services.Msg;
+using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Themes;
 using CVCommCore;
 using CVCommCore.CVAlgorithm;
@@ -51,13 +53,14 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             PublishAsyncClient(msg);
         }
 
-        public MsgRecord POI(string deviceCode, string deviceType, string fileName, int pid, string tempName, string serialNumber)
+        public MsgRecord POI(string deviceCode, string deviceType, string fileName, PoiParam poiParam,POIFilterParam pOIFilterParam, string serialNumber)
         {
             string sn = null;
             if (string.IsNullOrWhiteSpace(serialNumber)) sn = DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff");
             else sn = serialNumber;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
-            Params.Add("TemplateParam", new CVTemplateParam() { ID = pid, Name = tempName });
+            Params.Add("TemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
+            Params.Add("FilterTemplate", new CVTemplateParam() { ID = pOIFilterParam.Id, Name = pOIFilterParam.Name });
 
             MsgSend msg = new()
             {

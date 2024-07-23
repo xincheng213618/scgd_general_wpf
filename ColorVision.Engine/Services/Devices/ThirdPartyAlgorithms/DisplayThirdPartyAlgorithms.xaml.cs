@@ -24,7 +24,7 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
 {
     /// <summary>
-    /// DisplayAlgorithmControl.xaml 的交互逻辑
+    /// DisplayAlgorithm.xaml 的交互逻辑
     /// </summary>
     public partial class DisplayThirdPartyAlgorithms : UserControl,IDisPlayControl
     {
@@ -280,6 +280,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         {
             if (ComboxTemplateFindDotsArray.SelectedValue is not FindDotsArrayParam findDotsArrayParam) return;
             if (CB_SourceImageFiles.SelectedItem is not DeviceService deviceService) return;
+
             if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
 
             string type = deviceService.ServiceTypes.ToString();

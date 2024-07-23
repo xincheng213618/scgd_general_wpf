@@ -15,9 +15,11 @@ using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
 using ColorVision.Engine.Services.Devices.Camera.Templates;
 using ColorVision.Engine.Services.Devices.Camera.Templates.AutoExpTimeParam;
+using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
+using ColorVision.Engine.Templates.POI.POIFilters;
 using ColorVision.Net;
 using ColorVision.Themes.Controls;
 using ColorVision.UI;
@@ -36,11 +38,11 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Services.Devices.Algorithm
 {
     /// <summary>
-    /// DisplayAlgorithmControl.xaml 的交互逻辑
+    /// DisplayAlgorithm.xaml 的交互逻辑
     /// </summary>
-    public partial class DisplayAlgorithmControl : UserControl,IDisPlayControl
+    public partial class DisplayAlgorithm : UserControl,IDisPlayControl
     {
-        private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayAlgorithmControl));
+        private static readonly ILog logger = LogManager.GetLogger(typeof(DisplayAlgorithm));
 
         public DeviceAlgorithm Device { get; set; }
 
@@ -53,7 +55,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
         private NetFileUtil netFileUtil;
 
-        public DisplayAlgorithmControl(DeviceAlgorithm device)
+        public DisplayAlgorithm(DeviceAlgorithm device)
         {
             Device = device;
             InitializeComponent();
@@ -185,6 +187,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
 
             ComboxLEDStripDetectionTemplate.ItemsSource = LEDStripDetectionParam.Params;
             ComboxLEDStripDetectionTemplate.SelectedIndex = 0;
+            ComboxPoiFilter.ItemsSource = TemplatePOIFilterParam.Params.CreateEmpty();
+            ComboxPoiFilter.SelectedIndex = 0;
 
             this.AddViewConfig(View, ComboxView);
             this.ApplyChangedSelectedColor(DisPlayBorder);
@@ -252,24 +256,25 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
         private void PoiClick(object sender, RoutedEventArgs e)
         {
             if (!IsTemplateSelected(ComboxPoiTemplate, "请先选择关注点模板")) return;
+            if (!IsTemplateSelected(ComboxPoiFilter, "需要选择关注点过滤模板")) return;
 
-            if (GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType))
+            if (ComboxPoiTemplate.SelectedValue is not PoiParam poiParam) return;
+            if (ComboxPoiFilter.SelectedItem is not POIFilterParam pOIFilterParam) return;
+            if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
+
+            string type = string.Empty;
+            string code = string.Empty;
+            if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
             {
-                string type = string.Empty;
-                string code = string.Empty;
-                if (CB_SourceImageFiles.SelectedItem is DeviceService deviceService)
-                {
-                    type = deviceService.ServiceTypes.ToString();
-                    code = deviceService.Code;
-                }
-                var pm = PoiParam.Params[ComboxPoiTemplate.SelectedIndex].Value;
-                Service.POI(code, type, imgFileName, pm.Id, ComboxPoiTemplate.Text, sn);
-                handler = PendingBox.Show(Application.Current.MainWindow, "", "计算关注点", true);
-                handler.Cancelling += delegate
-                {
-                    handler?.Close();
-                };
+                type = deviceService.ServiceTypes.ToString();
+                code = deviceService.Code;
             }
+            Service.POI(code, type, imgFileName, poiParam, pOIFilterParam, sn);
+            handler = PendingBox.Show(Application.Current.MainWindow, "", "计算关注点", true);
+            handler.Cancelling += delegate
+            {
+                handler?.Close();
+            };
         }
 
         private void MTF_Click(object sender, RoutedEventArgs e)
@@ -591,6 +596,9 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
                         break;
                     case "LEDStripDetection":
                         new WindowTemplate(new TemplateLEDStripDetectionParam(), ComboxLEDStripDetectionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
+                        break;
+                    case "POIFilter":
+                        new WindowTemplate(new TemplatePOIFilterParam(), ComboxLEDStripDetectionTemplate.SelectedIndex) { Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner }.ShowDialog();
                         break;
                     default:
                         HandyControl.Controls.Growl.Info("开发中");
