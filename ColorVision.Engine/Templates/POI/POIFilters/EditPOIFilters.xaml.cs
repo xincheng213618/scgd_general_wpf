@@ -26,7 +26,7 @@ namespace ColorVision.Engine.Templates.POI.POIFilters
 
         private void UserControl_Initialized(object sender, System.EventArgs e)
         {
-            ComboBoxXYZType.ItemsSource = from e1 in Enum.GetValues(typeof(XYZType)).Cast<XYZType>() select new KeyValuePair<XYZType, string>(e1, e1.ToString());
+            ComboBoxXYZType.ItemsSource = from e1 in Enum.GetValues(typeof(XYZType)).Cast<XYZType>() select new KeyValuePair<int, string>((int)e1, e1.ToString());
             ComboBoxXYZType.SelectedIndex = 0;
         }
 

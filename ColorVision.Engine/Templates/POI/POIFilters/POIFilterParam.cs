@@ -24,8 +24,8 @@ namespace ColorVision.Engine.Templates.POI.POIFilters
 
         public bool XYZEnable { get => GetValue(_XYZEnable); set { SetProperty(ref _XYZEnable, value); NotifyPropertyChanged(); if (value) { NoAreaEnable = false; Enable = false; } } }
         private bool _XYZEnable;
-        public XYZType XYZType { get => GetValue(_XYZType); set { SetProperty(ref _XYZType, value); NotifyPropertyChanged(); } }
-        private XYZType _XYZType;
+        public int XYZType { get => GetValue(_XYZType); set { SetProperty(ref _XYZType, value); NotifyPropertyChanged(); } }
+        private int _XYZType;
 
         public float Threshold { get => GetValue(_Threshold); set { SetProperty(ref _Threshold, value); NotifyPropertyChanged(); } }
         private float _Threshold = 50;
