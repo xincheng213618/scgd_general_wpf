@@ -122,35 +122,6 @@
                 </StackPanel>
             </Border>
 
-            <Border Grid.Row="2" Style="{StaticResource BorderModuleArea}" Margin="5,5,5,0" CornerRadius="5">
-                <StackPanel Margin="5">
-                    <DockPanel Margin="0,2">
-                        <TextBlock Text="关注点过滤启用" Width="90"/>
-                        <ToggleButton  Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding DatumArea.Filter.Enable}"/>
-                    </DockPanel>
-                    <DockPanel Margin="0,2">
-                        <TextBlock  Text="NoAreaEnable" Width="90"/>
-                        <ToggleButton   Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding DatumArea.Filter.NoAreaEnable}"/>
-                    </DockPanel>
-                    <DockPanel Margin="0,2">
-                        <TextBlock  Text="XYZEnable"  Width="90" />
-                        <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding DatumArea.Filter.XYZEnable}"/>
-                    </DockPanel>
-                    <DockPanel  Margin="0,2" Visibility="{Binding DatumArea.Filter.XYZEnable,Converter={StaticResource bool2VisibilityConverter}}">
-                        <TextBlock HorizontalAlignment="Left" Text="XYZType"  MinWidth="90"/>
-                        <ComboBox Name="ComboBoxXYZType"  SelectedValue="{Binding DatumArea.Filter.XYZType}"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
-                    </DockPanel>
-                    <DockPanel Margin="0,2" >
-                        <TextBlock Text="Threshold"  MinWidth="90"/>
-                        <TextBox Text="{Binding DatumArea.Filter.Threshold}" Style="{StaticResource TextBox.Small}" />
-                    </DockPanel>
-
-
-                </StackPanel>
-            </Border>
-
-
-
             <ScrollViewer x:Name="ScrollViewer1" Grid.Row="3" Margin="5,5,5,0" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="0" Grid.Row="0" >
                     <ToggleButton x:Name="DatumAreaToggleButton" Margin="0,5" Content="基准点设置" Style="{StaticResource ButtonPageControl1}" IsChecked="False" HorizontalAlignment="Left"/>

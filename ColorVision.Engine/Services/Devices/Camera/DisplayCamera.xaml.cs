@@ -107,7 +107,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             ComboxAutoExpTimeParamTemplate.ItemsSource = TemplateAutoExpTimeParam.Params;
             ComboxAutoExpTimeParamTemplate.SelectedIndex = 0;
 
-            ComboxAutoExpTimeParamTemplate1.ItemsSource = TemplateAutoExpTimeParam.Params.CreateDefaultEmpty();
+            ComboxAutoExpTimeParamTemplate1.ItemsSource = TemplateAutoExpTimeParam.Params.CreateEmpty();
             ComboxAutoExpTimeParamTemplate1.SelectedIndex = 0;
 
 
