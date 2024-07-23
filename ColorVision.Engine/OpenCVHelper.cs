@@ -162,8 +162,6 @@ namespace ColorVision.Engine
         private const string LibOpenCVHelper = "libs\\OpenCVHelper.dll";
 
 
-        [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
-        public static extern void RtlMoveMemory(IntPtr Destination, IntPtr Source, uint Length);
 
         [DllImport(LibOpenCVHelper, CharSet = CharSet.Unicode)]
         public static extern void ReadCVFile(string FullPath);
@@ -171,8 +169,17 @@ namespace ColorVision.Engine
         [DllImport(LibOpenCVHelper, CallingConvention = CallingConvention.Cdecl)]
         public static extern int ReadGhostImage([MarshalAs(UnmanagedType.LPStr)] string FilePath, int singleLedPixelNum, int[] LEDPixelX, int[] LEDPixelY, int singleGhostPixelNum, int[] GhostPixelX, int[] GhostPixelY, out HImage hImage);
 
+        /// <summary>
+        /// 伪彩色
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <param name="colormapTypes"></param>
+        /// <returns></returns>
         [DllImport(LibOpenCVHelper, CallingConvention = CallingConvention.Cdecl)]
-        public static extern int PseudoColor(HImage image, out HImage hImage, uint min, uint max , ColormapTypes colormapTypes =ColormapTypes.COLORMAP_JET);
+        public static extern int CM_PseudoColor(HImage image, out HImage hImage, uint min, uint max , ColormapTypes colormapTypes =ColormapTypes.COLORMAP_JET);
 
         /// <summary>
         /// 自动对比度

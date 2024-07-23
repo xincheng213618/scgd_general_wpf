@@ -177,7 +177,7 @@
     <ClCompile Include="algorithm.cpp" />
     <ClCompile Include="common.cpp" />
     <ClCompile Include="Customfile.cpp" />
-    <ClCompile Include="Demo.cpp" />
+    <ClCompile Include="export.cpp" />
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>

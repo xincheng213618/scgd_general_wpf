@@ -2,10 +2,35 @@
 
 #pragma warning(disable:4305 4244)
 
-#include <opencv2/core/core.hpp>  
+#include <opencv2/opencv.hpp>
+/// <summary>
+/// 伪彩色
+/// </summary>
+/// <param name="image"></param>
+/// <param name="min1"></param>
+/// <param name="max1"></param>
+/// <param name="types"></param>
+/// <returns></returns>
+int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types);
 
+/// <summary>
+///自动对比度调整
+/// </summary>
+/// <param name="src"></param>
+/// <param name="dst"></param>
 void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst);
 
+/// <summary>
+/// 自动颜色调整
+/// </summary>
+/// <param name="image"></param>
 void automaticColorAdjustment(cv::Mat& image);
 
+/// <summary>
+/// 自动色调调整
+/// </summary>
+/// <param name="image"></param>
+/// <param name="clip_hist_percent"></param>
 void automaticToneAdjustment(cv::Mat& image, double clip_hist_percent = 1);
+
+

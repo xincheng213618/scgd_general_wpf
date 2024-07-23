@@ -86,41 +86,28 @@ COLORVISIONCORE_API int CM_AutomaticToneAdjustment(HImage img, HImage* outImage)
 	return 0;
 }
 
-
-int PseudoColor(HImage img, HImage* outImage, uint min1, uint max1 , cv::ColormapTypes types)
+COLORVISIONCORE_API int CM_PseudoColor(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types)
 {
-	 cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 
-	 if (mat.empty())
-		 return -1;
+	if (mat.empty())
+		return -1;
 
-	 if (mat.channels() != 1) {
-		 cv::cvtColor(mat, mat, cv::COLOR_BGR2GRAY);
-	 }
-	 	if (mat.depth() == CV_16U) {
+	if (mat.channels() != 1) {
+		cv::cvtColor(mat, mat, cv::COLOR_BGR2GRAY);
+	}
+	if (mat.depth() == CV_16U) {
 		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
 	}
-	// 转换为8位图像
-	double minVal, maxVal;
-	cv::minMaxLoc(mat, &minVal, &maxVal); // 找到图像的最小和最大像素值
-	cv::Mat scaledMat;
-	mat.convertTo(scaledMat, CV_8UC1, 255.0 / (maxVal - minVal), -minVal * 255.0 / (maxVal - minVal));
-
-
-	cv::Mat maskGreater = scaledMat > max1; // Change maxVal to your specific threshold
-	scaledMat.setTo(cv::Scalar(255, 255, 255), maskGreater);
-
-	// Set values less than a threshold to black
-	cv::Mat maskLess = scaledMat < min1; // Change minVal to your specific threshold
-	scaledMat.setTo(cv::Scalar(0, 0, 0), maskLess);
-
-	cv::applyColorMap(scaledMat, scaledMat, types);
-	int i  = mat.depth(); // 设置每像素位数
-
+	pseudoColor(mat, min,max, types);
 	///这里不分配的话，局部内存会在运行结束之后清空
-	MatToHImage(scaledMat, outImage);
-	return i;
+	MatToHImage(mat, outImage);
+	return 0;
 }
+
+
+
+
 void FreeHImageData(unsigned char* data)
 {
 	// 使用 delete[] 来释放由 new[] 分配的内存

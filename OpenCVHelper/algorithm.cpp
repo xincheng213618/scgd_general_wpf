@@ -12,11 +12,39 @@
 #include <ctime>
 using namespace cv;
 
-/// <summary>
-///自动对比度调整
-/// </summary>
-/// <param name="src"></param>
-/// <param name="dst"></param>
+
+
+
+int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
+{
+    if (image.empty())
+        return -1;
+
+    if (image.channels() != 1) {
+        cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
+    }
+    if (image.depth() == CV_16U) {
+        cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
+    }
+    // 转换为8位图像
+    double minVal, maxVal;
+    cv::minMaxLoc(image, &minVal, &maxVal); // 找到图像的最小和最大像素值
+    image.convertTo(image, CV_8UC1, 255.0 / (maxVal - minVal), -minVal * 255.0 / (maxVal - minVal));
+
+
+    cv::Mat maskGreater = image > max1; // Change maxVal to your specific threshold
+    image.setTo(cv::Scalar(255, 255, 255), maskGreater);
+
+    // Set values less than a threshold to black
+    cv::Mat maskLess = image < min1; // Change minVal to your specific threshold
+    image.setTo(cv::Scalar(0, 0, 0), maskLess);
+
+    cv::applyColorMap(image, image, types);
+    return 0;
+}
+
+
+
 void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
 {
     CV_Assert(!src.empty() && src.channels() == 3);
@@ -163,10 +191,7 @@ void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
 }
 
 
-/// <summary>
-/// 自动颜色调整
-/// </summary>
-/// <param name="image"></param>
+
 void automaticColorAdjustment(cv::Mat& image) {
     cv::Mat lab_image;
     cv::cvtColor(image, lab_image, cv::COLOR_BGR2Lab);
@@ -184,11 +209,7 @@ void automaticColorAdjustment(cv::Mat& image) {
     cv::cvtColor(lab_image, image, cv::COLOR_Lab2BGR);
 }
 
-/// <summary>
-/// 自动色调调整
-/// </summary>
-/// <param name="image"></param>
-/// <param name="clip_hist_percent"></param>
+
 void automaticToneAdjustment(cv::Mat& image, double clip_hist_percent) {
     cv::Mat gray;
     cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
