@@ -259,7 +259,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             if (!IsTemplateSelected(ComboxPoiFilter, "需要选择关注点过滤模板")) return;
 
             if (ComboxPoiTemplate.SelectedValue is not PoiParam poiParam) return;
-            if (ComboxPoiFilter.SelectedItem is not POIFilterParam pOIFilterParam) return;
+            if (ComboxPoiFilter.SelectedValue is not POIFilterParam pOIFilterParam) return;
             if (!GetAlgSN(out string sn, out string imgFileName, out FileExtType fileExtType)) return;
 
             string type = string.Empty;
