@@ -154,6 +154,9 @@ namespace ColorVision.Engine
         COLORMAP_DEEPGREEN = 21  //!< ![deepgreen](pics/colormaps/colorscale_deepgreen.jpg)
     };
 
+
+
+
     public static class OpenCVHelper
     {
         private const string LibOpenCVHelper = "libs\\OpenCVHelper.dll";
@@ -171,8 +174,33 @@ namespace ColorVision.Engine
         [DllImport(LibOpenCVHelper, CallingConvention = CallingConvention.Cdecl)]
         public static extern int PseudoColor(HImage image, out HImage hImage, uint min, uint max , ColormapTypes colormapTypes =ColormapTypes.COLORMAP_JET);
 
+        /// <summary>
+        /// 自动对比度
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <returns></returns>
         [DllImport(LibOpenCVHelper, CharSet = CharSet.Unicode)]
         public static extern int CM_AutoLevelsAdjust(HImage image, out HImage hImage);
+
+        /// <summary>
+        /// 自动颜色
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <returns></returns>
+        [DllImport(LibOpenCVHelper, CharSet = CharSet.Unicode)]
+        public static extern int CM_AutomaticColorAdjustment(HImage image, out HImage hImage);
+
+        /// <summary>
+        /// 自动色调
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="hImage"></param>
+        /// <returns></returns>
+        [DllImport(LibOpenCVHelper, CharSet = CharSet.Unicode)]
+        public static extern int CM_AutomaticToneAdjustment(HImage image, out HImage hImage);
+
 
 
         [DllImport(LibOpenCVHelper, CallingConvention = CallingConvention.Cdecl)]

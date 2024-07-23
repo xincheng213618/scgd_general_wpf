@@ -937,7 +937,6 @@ namespace ColorVision.Engine.Media
                 PseudoImage = null;
                 return;
             }
-
             if (HImageCache != null)
             {
                 int ret = OpenCVHelper.CM_AutoLevelsAdjust((HImage)HImageCache, out HImage hImageProcessed);
@@ -954,7 +953,63 @@ namespace ColorVision.Engine.Media
                     }
                 }
             };
-
         }
+
+        private void CM_AutomaticColorAdjustment(object sender, RoutedEventArgs e)
+        {
+            if (sender is not ToggleButton toggleButton) return;
+            if (toggleButton.IsChecked == false)
+            {
+                ImageShow.Source = ViewBitmapSource;
+                PseudoImage = null;
+                return;
+            }
+            if (HImageCache != null)
+            {
+                int ret = OpenCVHelper.CM_AutomaticColorAdjustment((HImage)HImageCache, out HImage hImageProcessed);
+
+                var image = hImageProcessed.ToWriteableBitmap();
+                OpenCVHelper.FreeHImageData(hImageProcessed.pData);
+                hImageProcessed.pData = IntPtr.Zero;
+                if (ret == 0)
+                {
+                    PseudoImage = image;
+                    if (toggleButton.IsChecked == true)
+                    {
+                        ImageShow.Source = PseudoImage;
+                    }
+                }
+            };
+        }
+
+        private void CM_AutomaticToneAdjustment(object sender, RoutedEventArgs e)
+        {
+            if (sender is not ToggleButton toggleButton) return;
+            if (toggleButton.IsChecked == false)
+            {
+                ImageShow.Source = ViewBitmapSource;
+                PseudoImage = null;
+                return;
+            }
+            if (HImageCache != null)
+            {
+                int ret = OpenCVHelper.CM_AutomaticToneAdjustment((HImage)HImageCache, out HImage hImageProcessed);
+
+                var image = hImageProcessed.ToWriteableBitmap();
+                OpenCVHelper.FreeHImageData(hImageProcessed.pData);
+                hImageProcessed.pData = IntPtr.Zero;
+                if (ret == 0)
+                {
+                    PseudoImage = image;
+                    if (toggleButton.IsChecked == true)
+                    {
+                        ImageShow.Source = PseudoImage;
+                    }
+                }
+            };
+        }
+
+
+
     }
 }

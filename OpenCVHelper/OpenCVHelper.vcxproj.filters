@@ -53,7 +53,7 @@
     <ClCompile Include="common.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="AutoLevelsAdjust.cpp">
+    <ClCompile Include="algorithm.cpp">
       <Filter>算法</Filter>
     </ClCompile>
   </ItemGroup>

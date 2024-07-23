@@ -51,3 +51,6 @@ extern "C" COLORVISIONCORE_API double CalArtculationROI(int nw, int nh, char* da
 
 extern "C" COLORVISIONCORE_API int CM_AutoLevelsAdjust(HImage img, HImage* outImage);
 
+extern "C" COLORVISIONCORE_API int CM_AutomaticColorAdjustment(HImage img, HImage* outImage);
+
+extern "C" COLORVISIONCORE_API int CM_AutomaticToneAdjustment(HImage img, HImage* outImage);

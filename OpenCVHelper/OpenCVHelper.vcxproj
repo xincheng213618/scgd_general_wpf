@@ -174,7 +174,7 @@
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="AutoLevelsAdjust.cpp" />
+    <ClCompile Include="algorithm.cpp" />
     <ClCompile Include="common.cpp" />
     <ClCompile Include="Customfile.cpp" />
     <ClCompile Include="Demo.cpp" />

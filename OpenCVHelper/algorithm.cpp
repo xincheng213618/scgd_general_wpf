@@ -12,7 +12,12 @@
 #include <ctime>
 using namespace cv;
 
-void AutoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
+/// <summary>
+///自动对比度调整
+/// </summary>
+/// <param name="src"></param>
+/// <param name="dst"></param>
+void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
 {
     CV_Assert(!src.empty() && src.channels() == 3);
     spdlog::info("AutoLevelsAdjust");
@@ -155,4 +160,68 @@ void AutoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
         (*itd)[2] = RTable[(*itd)[2]];
     }
     dst = dst_;
+}
+
+
+/// <summary>
+/// 自动颜色调整
+/// </summary>
+/// <param name="image"></param>
+void automaticColorAdjustment(cv::Mat& image) {
+    cv::Mat lab_image;
+    cv::cvtColor(image, lab_image, cv::COLOR_BGR2Lab);
+
+    std::vector<cv::Mat> lab_planes(3);
+    cv::split(lab_image, lab_planes);
+
+    double avg_a = cv::mean(lab_planes[1])[0];
+    double avg_b = cv::mean(lab_planes[2])[0];
+
+    lab_planes[1] = lab_planes[1] - ((avg_a - 128) * (lab_planes[0] / 255.0) * 1.1);
+    lab_planes[2] = lab_planes[2] - ((avg_b - 128) * (lab_planes[0] / 255.0) * 1.1);
+
+    cv::merge(lab_planes, lab_image);
+    cv::cvtColor(lab_image, image, cv::COLOR_Lab2BGR);
+}
+
+/// <summary>
+/// 自动色调调整
+/// </summary>
+/// <param name="image"></param>
+/// <param name="clip_hist_percent"></param>
+void automaticToneAdjustment(cv::Mat& image, double clip_hist_percent) {
+    cv::Mat gray;
+    cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
+
+    int hist_size = 256;
+    float range[] = { 0, 256 };
+    const float* hist_range = { range };
+    cv::Mat hist;
+
+    cv::calcHist(&gray, 1, 0, cv::Mat(), hist, 1, &hist_size, &hist_range);
+
+    std::vector<float> accumulator(hist_size);
+    accumulator[0] = hist.at<float>(0);
+    for (int i = 1; i < hist_size; i++) {
+        accumulator[i] = accumulator[i - 1] + hist.at<float>(i);
+    }
+
+    float max_value = accumulator.back();
+    clip_hist_percent *= (max_value / 100.0);
+    clip_hist_percent /= 2.0;
+
+    int min_gray = 0;
+    while (accumulator[min_gray] < clip_hist_percent) {
+        min_gray++;
+    }
+
+    int max_gray = hist_size - 1;
+    while (accumulator[max_gray] >= (max_value - clip_hist_percent)) {
+        max_gray--;
+    }
+
+    double alpha = 255.0 / (max_gray - min_gray);
+    double beta = -min_gray * alpha;
+
+    image.convertTo(image, -1, alpha, beta);
 }

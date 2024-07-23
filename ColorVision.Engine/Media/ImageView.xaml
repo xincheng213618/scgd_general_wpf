@@ -237,8 +237,11 @@
                     <Button Visibility="{Binding IsCVCIE,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}" Click="ButtonCIE1931_Click" Margin="0,0,0,2">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="/ColorVision.Engine;component/Assets/Image/CIE1931xy1.png" Margin="-5"/>
                     </Button>
-                    <ToggleButton Content="自" Click="CM_AutoLevelsAdjust" Margin="0,0,0,2">
-                    </ToggleButton>
+                    <ToggleButton Content="对" Click="CM_AutoLevelsAdjust" Margin="0,0,0,2"/>
+                    <ToggleButton Content="彩" Click="CM_AutomaticColorAdjustment" Margin="0,0,0,2"/>
+                    <ToggleButton Content="调" Click="CM_AutomaticToneAdjustment" Margin="0,0,0,2"/>
+
+
                     <StackPanel Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}">
                         <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  Margin="0,0,0,2" >
                             <Image Style="{StaticResource ToolBarImage}"   Source="/ColorVision.Engine;component/Assets/png/PowerToy.png" Margin="-5"/>
