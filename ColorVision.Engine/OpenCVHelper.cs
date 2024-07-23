@@ -214,6 +214,8 @@ namespace ColorVision.Engine
         public static extern int CM_AutomaticToneAdjustment(HImage image, out HImage hImage);
 
 
+        [DllImport(LibOpenCVHelper)]
+        public static extern int CM_Fusion(string fusionjson, out HImage hImage);
 
         [DllImport(LibOpenCVHelper, CallingConvention = CallingConvention.Cdecl)]
         public static extern void FreeHImageData(IntPtr data);
@@ -223,6 +225,8 @@ namespace ColorVision.Engine
 
         [DllImport(LibOpenCVHelper, CharSet = CharSet.Unicode)]
         public static extern void ReadVideoTest(string FullPath);
+
+
 
 
 

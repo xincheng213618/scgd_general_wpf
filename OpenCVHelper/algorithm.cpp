@@ -13,8 +13,6 @@
 using namespace cv;
 
 
-
-
 int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
 {
     if (image.empty())
@@ -246,3 +244,4 @@ void automaticToneAdjustment(cv::Mat& image, double clip_hist_percent) {
 
     image.convertTo(image, -1, alpha, beta);
 }
+

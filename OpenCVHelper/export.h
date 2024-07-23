@@ -55,3 +55,6 @@ extern "C" COLORVISIONCORE_API int CM_AutoLevelsAdjust(HImage img, HImage* outIm
 extern "C" COLORVISIONCORE_API int CM_AutomaticColorAdjustment(HImage img, HImage* outImage);
 
 extern "C" COLORVISIONCORE_API int CM_AutomaticToneAdjustment(HImage img, HImage* outImage);
+
+extern "C" COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* outImage);
+

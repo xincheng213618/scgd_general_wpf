@@ -56,5 +56,8 @@
     <ClCompile Include="algorithm.cpp">
       <Filter>算法</Filter>
     </ClCompile>
+    <ClCompile Include="fusion.cpp">
+      <Filter>算法</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

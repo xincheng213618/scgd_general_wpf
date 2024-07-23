@@ -33,4 +33,10 @@ void automaticColorAdjustment(cv::Mat& image);
 /// <param name="clip_hist_percent"></param>
 void automaticToneAdjustment(cv::Mat& image, double clip_hist_percent = 1);
 
-
+/// <summary>
+/// 
+/// </summary>
+/// <param name="imgs"></param>
+/// <param name="STEP"></param>
+/// <returns></returns>
+cv::Mat fusion(std::vector<cv::Mat> imgs, int STEP);
