@@ -2,7 +2,7 @@
 //
 #include "pch.h"
 #include "Customfile.h"
-#include "zlib.h"
+#include <zlib.h>
 #include <fstream>
 #include <iostream>
 #include <opencv2/opencv.hpp>
