@@ -171,6 +171,10 @@ namespace ColorVision.Engine
         [DllImport(LibOpenCVHelper, CallingConvention = CallingConvention.Cdecl)]
         public static extern int PseudoColor(HImage image, out HImage hImage, uint min, uint max , ColormapTypes colormapTypes =ColormapTypes.COLORMAP_JET);
 
+        [DllImport(LibOpenCVHelper, CharSet = CharSet.Unicode)]
+        public static extern int CM_AutoLevelsAdjust(HImage image, out HImage hImage);
+
+
         [DllImport(LibOpenCVHelper, CallingConvention = CallingConvention.Cdecl)]
         public static extern void FreeHImageData(IntPtr data);
 

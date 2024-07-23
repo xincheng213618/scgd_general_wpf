@@ -42,7 +42,12 @@ int CM_AutoLevelsAdjust(HImage img, HImage* outImage)
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
 	if (mat.empty())
 		return -1;
-
+	if (mat.channels() != 3) {
+		return -1;
+	}
+	if (mat.depth() == CV_16U) {
+		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
+	}
 	cv::Mat outMat;
 	AutoLevelsAdjust(mat, outMat);
 	MatToHImage(outMat, outImage);
@@ -60,6 +65,9 @@ int PseudoColor(HImage img, HImage* outImage, uint min1, uint max1 , cv::Colorma
 	 if (mat.channels() != 1) {
 		 cv::cvtColor(mat, mat, cv::COLOR_BGR2GRAY);
 	 }
+	 	if (mat.depth() == CV_16U) {
+		cv::normalize(mat, mat, 0, 255, cv::NORM_MINMAX, CV_8U);
+	}
 	// 转换为8位图像
 	double minVal, maxVal;
 	cv::minMaxLoc(mat, &minVal, &maxVal); // 找到图像的最小和最大像素值
