@@ -60,7 +60,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             else sn = serialNumber;
             var Params = new Dictionary<string, object>() { { "ImgFileName", fileName }, { "DeviceCode", deviceCode }, { "DeviceType", deviceType } };
             Params.Add("TemplateParam", new CVTemplateParam() { ID = poiParam.Id, Name = poiParam.Name });
-            Params.Add("FilterTemplate", new CVTemplateParam() { ID = pOIFilterParam.Id, Name = pOIFilterParam.Name });
+            if (pOIFilterParam.Id !=-1)
+                Params.Add("FilterTemplate", new CVTemplateParam() { ID = pOIFilterParam.Id, Name = pOIFilterParam.Name });
 
             MsgSend msg = new()
             {

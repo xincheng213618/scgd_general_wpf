@@ -30,3 +30,5 @@ extern "C" COLORVISIONCORE_API int PseudoColor(HImage img, HImage * outImage, ui
 extern "C" COLORVISIONCORE_API double CalArtculation(int nw, int nh, char* data);
 extern "C" COLORVISIONCORE_API double CalArtculationROI(int nw, int nh, char* data,int x ,int y ,int width, int height);
 
+extern "C" COLORVISIONCORE_API int CM_AutoLevelsAdjust(HImage img, HImage* outImage);
+

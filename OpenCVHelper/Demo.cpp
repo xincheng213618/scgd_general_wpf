@@ -1,6 +1,6 @@
 #include "pch.h"
 #include "export.h"
-
+#include "algorithm.h"
 #include <opencv2/opencv.hpp>
 
 
@@ -35,6 +35,18 @@ static void MatToHImage(cv::Mat& mat, HImage* outImage)
 		break;
 	}
 	outImage->depth = bitsPerElement; // 设置每像素位数
+}
+
+int CM_AutoLevelsAdjust(HImage img, HImage* outImage)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	if (mat.empty())
+		return -1;
+
+	cv::Mat outMat;
+	AutoLevelsAdjust(mat, outMat);
+	MatToHImage(outMat, outImage);
+	return 0;
 }
 
 

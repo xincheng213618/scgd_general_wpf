@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="算法">
+      <UniqueIdentifier>{f3226bff-10fc-4e7c-b14b-34d689c88f5e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h">
@@ -30,6 +33,9 @@
     <ClInclude Include="common.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="algorithm.h">
+      <Filter>算法</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="dllmain.cpp">
@@ -46,6 +52,9 @@
     </ClCompile>
     <ClCompile Include="common.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="AutoLevelsAdjust.cpp">
+      <Filter>算法</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
