@@ -7,13 +7,13 @@ using System.Windows.Media;
 namespace ColorVision.UI.Draw
 {
 
-    public class DrawingVisualRuler:DrawingVisualBase<RulerTextAttribute>,IDrawingVisual
+    public class DrawingVisualRuler:DrawingVisualBase<RulerTextProperties>,IDrawingVisual
     {
         public TextAttribute TextAttribute { get => Attribute.TextAttribute; }
 
         public DrawingVisualRuler()
         {
-            Attribute = new RulerTextAttribute();
+            Attribute = new RulerTextProperties();
             Attribute.Pen = new Pen(Brushes.Red,10);
         }
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }

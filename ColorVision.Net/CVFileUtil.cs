@@ -240,24 +240,24 @@ namespace ColorVision.Net
 
         public static CVCIEFile OpenLocalFileChannel(string fileName, FileExtType extType, CVImageChannelType channelType)
         {
-            int code = -1;
+            if (channelType == CVImageChannelType.SRC)
+            {
+                if (extType == FileExtType.Raw)
+                {
+                    if (CVFileUtil.ReadCVRaw(fileName, out CVCIEFile meta))
+                        return meta;
+                }
+                if (extType == FileExtType.CIE)
+                {
+                    if (CVFileUtil.ReadCVCIESrc(fileName, out CVCIEFile meta))
+                        return meta;
+                }
+            }
             int channel = -1;
             CVCIEFile data = new();
             switch (channelType)
             {
                 case CVImageChannelType.SRC:
-                    if (extType == FileExtType.Raw)
-                    {
-                        if (CVFileUtil.ReadCVRaw(fileName, out data))
-                            code = 0;
-
-                    }
-                    else if (extType == FileExtType.CIE)
-                    {
-                        if (CVFileUtil.ReadCVCIESrc(fileName, out data))
-                            code = 0;
-                    }
-                    break;
                 case CVImageChannelType.CIE_XYZ_X:
                 case CVImageChannelType.RGB_R:
                     channel = 0;
@@ -270,16 +270,6 @@ namespace ColorVision.Net
                 case CVImageChannelType.RGB_B:
                     channel = 2;
                     break;
-                case CVImageChannelType.CIE_Lv:
-                    break;
-                case CVImageChannelType.CIE_x:
-                    break;
-                case CVImageChannelType.CIE_y:
-                    break;
-                case CVImageChannelType.CIE_u:
-                    break;
-                case CVImageChannelType.CIE_v:
-                    break;
                 default:
                     break;
             }
@@ -289,12 +279,10 @@ namespace ColorVision.Net
                 if (extType == FileExtType.Raw)
                 {
                     CVFileUtil.ReadCVRawChannel(fileName, channel, out data);
-                    code = 0;
                 }
                 else if (extType == FileExtType.CIE)
                 {
                     CVFileUtil.ReadCVCIEXYZ(fileName, channel, out data);
-                    code = 0;
                 }
             }
             return data;

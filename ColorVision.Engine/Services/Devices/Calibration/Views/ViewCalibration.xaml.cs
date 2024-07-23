@@ -483,7 +483,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                 if (listView1.SelectedIndex > -1)
                 {
                     var ViewResult = ViewResults[listView1.SelectedIndex];
-                    string ext = Path.GetExtension(ViewResult.FileUrl).ToLower(CultureInfo.CurrentCulture);
+                    string ext = Path.GetExtension(ViewResult.FileUrl)?.ToLower(CultureInfo.CurrentCulture);
+                    if (string.IsNullOrEmpty(ext)) return;
                     FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
 
                     if (comboBoxItem.Content.ToString() == "Src")

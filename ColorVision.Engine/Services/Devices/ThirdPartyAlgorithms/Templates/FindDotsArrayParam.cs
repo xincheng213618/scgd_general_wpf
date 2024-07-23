@@ -64,8 +64,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
             }
 
             strInput = strInput.Trim();
-            if ((strInput.StartsWith("{") && strInput.EndsWith("}")) || // For object
-                (strInput.StartsWith("[") && strInput.EndsWith("]")))   // For array
+            if ((strInput.StartsWith('{') && strInput.EndsWith('}')) || // For object
+                (strInput.StartsWith('[') && strInput.EndsWith(']')))   // For array
             {
                 try
                 {
