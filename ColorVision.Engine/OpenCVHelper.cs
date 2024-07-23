@@ -47,7 +47,12 @@ namespace ColorVision.Engine
         {
             PixelFormat format = hImage.channels switch
             {
-                1 => PixelFormats.Gray8,
+                1 => hImage.depth switch
+                {
+                    8 => PixelFormats.Gray8,
+                    16 => PixelFormats.Gray16,
+                    _ => PixelFormats.Gray8,
+                },
                 3 => hImage.depth switch
                 {
                     8 => PixelFormats.Bgr24,

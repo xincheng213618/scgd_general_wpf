@@ -808,15 +808,15 @@ namespace ColorVision.Engine.Media
                     logger.Info($"ImagePath，正在执行PseudoColor,min:{min},max:{max}");
                     Task.Run(() =>
                     {
-                        int ret = OpenCVHelper.PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max, Config.ColormapTypes);
-
-                        var image = hImageProcessed.ToWriteableBitmap();
-                        OpenCVHelper.FreeHImageData(hImageProcessed.pData);
-                        hImageProcessed.pData = IntPtr.Zero;
+                        int ret = OpenCVHelper.CM_PseudoColor((HImage)HImageCache, out HImage hImageProcessed, min, max, Config.ColormapTypes);
                         Application.Current.Dispatcher.Invoke(() =>
                         {
                             if (ret == 0)
                             {
+                                var image = hImageProcessed.ToWriteableBitmap();
+                                OpenCVHelper.FreeHImageData(hImageProcessed.pData);
+                                hImageProcessed.pData = IntPtr.Zero;
+
                                 PseudoImage = image;
                                 if (Pseudo.IsChecked == true)
                                 {
@@ -941,11 +941,12 @@ namespace ColorVision.Engine.Media
             {
                 int ret = OpenCVHelper.CM_AutoLevelsAdjust((HImage)HImageCache, out HImage hImageProcessed);
 
-                var image = hImageProcessed.ToWriteableBitmap();
-                OpenCVHelper.FreeHImageData(hImageProcessed.pData);
-                hImageProcessed.pData = IntPtr.Zero;
                 if (ret == 0)
                 {
+                    var image = hImageProcessed.ToWriteableBitmap();
+                    OpenCVHelper.FreeHImageData(hImageProcessed.pData);
+                    hImageProcessed.pData = IntPtr.Zero;
+
                     PseudoImage = image;
                     if (toggleButton.IsChecked == true)
                     {
@@ -967,12 +968,12 @@ namespace ColorVision.Engine.Media
             if (HImageCache != null)
             {
                 int ret = OpenCVHelper.CM_AutomaticColorAdjustment((HImage)HImageCache, out HImage hImageProcessed);
-
-                var image = hImageProcessed.ToWriteableBitmap();
-                OpenCVHelper.FreeHImageData(hImageProcessed.pData);
-                hImageProcessed.pData = IntPtr.Zero;
                 if (ret == 0)
                 {
+                    var image = hImageProcessed.ToWriteableBitmap();
+                    OpenCVHelper.FreeHImageData(hImageProcessed.pData);
+                    hImageProcessed.pData = IntPtr.Zero;
+
                     PseudoImage = image;
                     if (toggleButton.IsChecked == true)
                     {
@@ -994,12 +995,12 @@ namespace ColorVision.Engine.Media
             if (HImageCache != null)
             {
                 int ret = OpenCVHelper.CM_AutomaticToneAdjustment((HImage)HImageCache, out HImage hImageProcessed);
-
-                var image = hImageProcessed.ToWriteableBitmap();
-                OpenCVHelper.FreeHImageData(hImageProcessed.pData);
-                hImageProcessed.pData = IntPtr.Zero;
                 if (ret == 0)
                 {
+                    var image = hImageProcessed.ToWriteableBitmap();
+                    OpenCVHelper.FreeHImageData(hImageProcessed.pData);
+                    hImageProcessed.pData = IntPtr.Zero;
+
                     PseudoImage = image;
                     if (toggleButton.IsChecked == true)
                     {
