@@ -1,25 +1,40 @@
-﻿using ColorVision.Engine.MySql;
+﻿#pragma warning disable CS8601
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.MySql.ORM;
 using ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao;
 using ColorVision.Engine.Templates;
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows.Controls;
 
-namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.FindDotsArray
+namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
 {
-    public class TemplateFindDotsArrayParam : ITemplate<FindDotsArrayParam>, IITemplateLoad
+    public class TemplateThirdParty : ITemplate<FindDotsArrayParam>
     {
-        public static ObservableCollection<TemplateModel<FindDotsArrayParam>> Params { get; set; } = new ObservableCollection<TemplateModel<FindDotsArrayParam>>();
+        public static Dictionary<string, ObservableCollection<TemplateModel<FindDotsArrayParam>>> Params { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<FindDotsArrayParam>>>();
 
-        public TemplateFindDotsArrayParam()
+        public ThirdPartyAlgorithmsModel ThirdPartyAlgorithmsModel { get; set; }
+
+        public TemplateThirdParty(string code)
         {
-            Title = "FindDotsArrayParam算法设置";
-            Code = "FindDotsArrayParam";
-            TemplateParams = Params;
+            Code = code;
+            if (Params.TryGetValue(Code, out var templatesParams))
+            {
+                TemplateParams = templatesParams;
+            }
+            else
+            {
+                templatesParams = new ObservableCollection<TemplateModel<FindDotsArrayParam>>();
+                TemplateParams = templatesParams;
+                Params.Add(Code, templatesParams);
+            }
+            ThirdPartyAlgorithmsModel = ThirdPartyAlgorithmsDao.Instance.GetByParam(new Dictionary<string, object>() { { "code", Code } });
             IsUserControl = true;
         }
+
+        public override string Title { get => Code + ColorVision.Engine.Properties.Resources.Edit; set { } }
 
         public override void SetUserControlDataContext(int index)
         {
@@ -40,8 +55,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Fin
 
             if (MySqlSetting.Instance.IsUseMySql && MySqlSetting.IsConnect)
             {
-
-                var  smus = ModThirdPartyAlgorithmsDao.Instance.GetAllByPid(1);
+                var smus = ModThirdPartyAlgorithmsDao.Instance.GetAllByPid(ThirdPartyAlgorithmsModel.Id);
                 foreach (var dbModel in smus)
                 {
                     if (dbModel != null)
@@ -85,7 +99,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Fin
 
             void DeleteSingle(int id)
             {
-                ModThirdPartyAlgorithmsDao.Instance.DeleteById(id ,false);
+                ModThirdPartyAlgorithmsDao.Instance.DeleteById(id, false);
                 TemplateParams.RemoveAt(index);
             }
 
@@ -106,15 +120,12 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates.Fin
 
         public override void Create(string templateName)
         {
-            if (ThirdPartyAlgorithmsDao.Instance.GetById(1) is ThirdPartyAlgorithmsModel mode)
-            {
-                ModThirdPartyAlgorithmsModel thirdPartyAlgorithmsModel = new ModThirdPartyAlgorithmsModel() { PId = 1, Code = Code, Name = templateName, JsonVal = mode.DefaultCfg };
+            ModThirdPartyAlgorithmsModel thirdPartyAlgorithmsModel = new ModThirdPartyAlgorithmsModel() { PId = ThirdPartyAlgorithmsModel.Id, Code = Code, Name = templateName, JsonVal = ThirdPartyAlgorithmsModel.DefaultCfg };
 
-                ModThirdPartyAlgorithmsDao.Instance.Save(thirdPartyAlgorithmsModel);
-                FindDotsArrayParam templateFindDotsArrayParam = new FindDotsArrayParam(thirdPartyAlgorithmsModel);
-                TemplateModel<FindDotsArrayParam> templateModel = new TemplateModel<FindDotsArrayParam>(templateFindDotsArrayParam.Name, templateFindDotsArrayParam);
-                Params.Add(templateModel);
-            }
+            ModThirdPartyAlgorithmsDao.Instance.Save(thirdPartyAlgorithmsModel);
+            FindDotsArrayParam templateFindDotsArrayParam = new FindDotsArrayParam(thirdPartyAlgorithmsModel);
+            TemplateModel<FindDotsArrayParam> templateModel = new TemplateModel<FindDotsArrayParam>(templateFindDotsArrayParam.Name, templateFindDotsArrayParam);
+            TemplateParams.Add(templateModel);
         }
     }
 }

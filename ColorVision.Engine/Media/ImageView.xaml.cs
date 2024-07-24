@@ -127,6 +127,7 @@ namespace ColorVision.Engine.Media
             ImageShow.VisualsAdd += ImageShow_VisualsAdd;
             ImageShow.VisualsRemove += ImageShow_VisualsRemove;
             PreviewKeyDown += ImageView_PreviewKeyDown;
+            this.Focusable = true;
             this.MouseDown += (s, e) => this.Focus();
             Drop += ImageView_Drop;
 
