@@ -1012,7 +1012,7 @@ namespace ColorVision.Engine.Media
 
         private void PseudoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<HandyControl.Data.DoubleRange> e)
         {
-            DebounceTimer.AddOrResetTimer("PseudoSlider", 100, (e) =>
+            DebounceTimer.AddOrResetTimer("PseudoSlider", 50, (e) =>
             {
                 RenderPseudo();
             }, e.NewValue);
