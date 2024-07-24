@@ -105,7 +105,30 @@ namespace ColorVision.Common.Utilities
                 }
             }
         }
+        public static BitmapSource ToBitmapSource(System.Drawing.Bitmap bitmap)
+        {
+            var rect = new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height);
 
+            var bitmapData = bitmap.LockBits(
+                rect,
+                System.Drawing.Imaging.ImageLockMode.ReadWrite,
+                bitmap.PixelFormat);
+
+            var bitmapSource = BitmapSource.Create(
+                bitmapData.Width,
+                bitmapData.Height,
+                bitmap.HorizontalResolution,
+                bitmap.VerticalResolution,
+                PixelFormats.Bgr24,
+                null,
+                bitmapData.Scan0,
+                bitmapData.Stride * bitmapData.Height,
+                bitmapData.Stride);
+
+            bitmap.UnlockBits(bitmapData);
+
+            return bitmapSource;
+        }
 
         private static BitmapImage ToBitmapImage(System.Drawing.Bitmap bitmap)
         {
