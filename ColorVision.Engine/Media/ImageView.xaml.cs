@@ -593,7 +593,7 @@ namespace ColorVision.Engine.Media
                     try
                     {
                         if (Config.IsShowLoadImage && isLargeFile)
-                        {
+                        {  
                             WaitControl.Visibility = Visibility.Visible;
                             Task.Run(() =>
                             {

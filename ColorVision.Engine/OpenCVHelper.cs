@@ -13,6 +13,7 @@ namespace ColorVision.Engine
         public int cols;
         public int channels;
         public int depth; //bpp
+        public int stride;
 
         public readonly int Type => (((depth & ((1 << 3) - 1)) + ((channels - 1) << 3)));
 
@@ -64,8 +65,25 @@ namespace ColorVision.Engine
             };
 
             WriteableBitmap writeableBitmap = new(hImage.cols, hImage.rows, 96.0, 96.0, format, null);
-            RtlMoveMemory(writeableBitmap.BackBuffer, hImage.pData, (uint)(hImage.cols * hImage.rows * hImage.channels* (hImage.depth/8)));
+
             writeableBitmap.Lock();
+
+            unsafe
+            {
+                byte* src = (byte*)hImage.pData;
+                byte* dst = (byte*)writeableBitmap.BackBuffer;
+
+                for (int y = 0; y < hImage.rows; y++)
+                {
+                    RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)(hImage.cols * hImage.channels * (hImage.depth / 8)));
+                    src += hImage.stride;
+                    dst += writeableBitmap.BackBufferStride;
+                }
+            }
+
+            //RtlMoveMemory(writeableBitmap.BackBuffer, hImage.pData, (uint)(hImage.cols * hImage.rows * hImage.channels* (hImage.depth/8)));
+            //writeableBitmap.Lock();
+
             writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
             writeableBitmap.Unlock();
             writeableBitmap.Freeze();

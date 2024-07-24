@@ -33,6 +33,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.Engine.Impl.CVFile.Export;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
@@ -603,6 +604,59 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             poiResultCIExyuvData.CCT = CCT;
             poiResultCIExyuvData.Wave = Wave;
             return poiResultCIExyuvData;
+        }
+
+        private void MenuItem_ExportFile_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCamera viewCamera)
+            {
+                string FilePath = viewCamera.FileUrl;
+
+                if (File.Exists(FilePath))
+                {
+                    if (CVFileUtil.IsCIEFile(FilePath))
+                    {
+                        int index = CVFileUtil.ReadCIEFileHeader(FilePath, out var meta);
+                        if (index > 0)
+                        {
+                            if (!File.Exists(meta.srcFileName))
+                                meta.srcFileName = Path.Combine(Path.GetDirectoryName(FilePath) ?? string.Empty, meta.srcFileName);
+                        }
+
+                        System.Windows.Forms.FolderBrowserDialog dialog = new();
+                        dialog.UseDescriptionForTitle = true;
+                        dialog.Description = "选择要保存到得位置";
+                        if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                        {
+                            if (string.IsNullOrEmpty(dialog.SelectedPath))
+                            {
+                                MessageBox.Show("文件夹路径不能为空", "提示");
+                                return;
+                            }
+                            string savePath = dialog.SelectedPath;
+                            // Copy the file to the new location
+                            string newFilePath = Path.Combine(savePath, Path.GetFileName(FilePath));
+                            File.Copy(FilePath, newFilePath, true);
+
+                            // If srcFileName exists, copy it to the new location as well
+                            if (File.Exists(meta.srcFileName))
+                            {
+                                string newSrcFilePath = Path.Combine(savePath, Path.GetFileName(meta.srcFileName));
+                                File.Copy(meta.srcFileName, newSrcFilePath, true);
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        MessageBox1.Show(WindowHelpers.GetActiveWindow(), "目前支持CVRAW图像", "ColorVision");
+                    }
+                }
+                else
+                {
+                    MessageBox1.Show(WindowHelpers.GetActiveWindow(), "找不到原始文件", "ColorVision");
+                }
+            }
         }
     }
 }

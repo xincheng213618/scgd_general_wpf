@@ -19,7 +19,6 @@ int main()
 
 
 	cv::imshow("tif读", test1);
-	cv::imshow("二进制读", test2);
 	cv::waitKey(0);
 }
 

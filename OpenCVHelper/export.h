@@ -16,6 +16,7 @@ typedef struct HImage
     int cols;
     int channels;
     int depth; //Bpp
+    int stride;
     int type()  const {
         int cv_depth = CV_8U;
         switch (depth) {
