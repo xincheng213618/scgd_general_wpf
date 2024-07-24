@@ -81,7 +81,7 @@ namespace ColorVision.Engine
                 }
             }
 
-            //RtlMoveMemory(writeableBitmap.BackBuffer, hImage.pData, (uint)(hImage.cols * hImage.rows * hImage.channels* (hImage.depth/8)));
+            //RtlMoveMemory(writeableBitmap.BackBuffer, hImage.pData, (uint)(hImage.cols * hImage.rows * hImage.channels * (hImage.depth / 8)));
             //writeableBitmap.Lock();
 
             writeableBitmap.AddDirtyRect(new Int32Rect(0, 0, writeableBitmap.PixelWidth, writeableBitmap.PixelHeight));
@@ -146,7 +146,21 @@ namespace ColorVision.Engine
 
             // Copy the pixel data from the WriteableBitmap to the HImageCache
             writeableBitmap.Lock();
-            RtlMoveMemory(hImage.pData, writeableBitmap.BackBuffer, (uint)(hImage.cols * hImage.rows * hImage.channels*(depth / 8)));
+            //RtlMoveMemory(hImage.pData, writeableBitmap.BackBuffer, (uint)(hImage.cols * hImage.rows * hImage.channels*(depth / 8)));
+            unsafe
+            {
+                byte* src = (byte*)writeableBitmap.BackBuffer;
+                byte* dst = (byte*)hImage.pData;
+
+                for (int y = 0; y < hImage.rows; y++)
+                {
+                    RtlMoveMemory(new IntPtr(dst), new IntPtr(src), (uint)(hImage.cols * hImage.channels * (hImage.depth / 8)));
+                    src += writeableBitmap.BackBufferStride;
+                    dst += hImage.cols * hImage.channels * (hImage.depth / 8);
+                }
+            }
+
+
             writeableBitmap.Unlock();
             return hImage;
         }
