@@ -181,8 +181,6 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             UpdateCB_SourceImageFiles();
             DService.MsgReturnReceived += Service_OnAlgorithmEvent;
 
-
-
             void UpdateUI(DeviceStatusType status)
             {
                 void SetVisibility(UIElement element, Visibility visibility){ if (element.Visibility != visibility) element.Visibility = visibility; };
@@ -228,13 +226,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             }
             return true;
         }
-
-
-
-
-
-
-
+           
 
         private void Button_Click_Refresh(object sender, RoutedEventArgs e)
         {

@@ -137,6 +137,20 @@
                 <draw:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </draw:ZoomboxSub>
 
+            <ToolBarTray  x:Name="ToolBarLayers" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Right">
+                <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
+                    <ComboBox x:Name="ComboBoxLayers"  SelectedIndex="0" SelectionChanged="ComboBoxLayers_SelectionChanged">
+                        <ComboBoxItem Content="Src"/>
+                        <ComboBoxItem Content="R" />
+                        <ComboBoxItem Content="G" />
+                        <ComboBoxItem Content="B" />
+                        <ComboBoxItem Content="X"  Visibility="{Binding IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}" />
+                        <ComboBoxItem Content="Y" Visibility="{Binding IsCVCIE  ,Converter={StaticResource bool2VisibilityConverter}}"  />
+                        <ComboBoxItem Content="Z"  Visibility="{Binding IsCVCIE  ,Converter={StaticResource bool2VisibilityConverter}}" />
+                    </ComboBox>
+                </ToolBar>
+            </ToolBarTray>
+
             <ToolBarTray x:Name="ToolBar1" DataContext="{Binding ToolBarTop}" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Center">
                 <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
                     <ToggleButton x:Name="ToggleButtonDrag" IsChecked="{Binding ImageEditMode}"  Margin="1,0" ToolTip="可以按下Ctrl缩放和移动图像">
@@ -166,15 +180,6 @@
                     <ToggleButton Command="{Binding MaxCommand}" Margin="1,0" >
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImageMax}"  Margin="-5"/>
                     </ToggleButton>
-                    <ComboBox x:Name="ComboBoxLayers"  SelectedIndex="1" SelectionChanged="ComboBoxLayers_SelectionChanged">
-                        <ComboBoxItem Content="Src"/>
-                        <ComboBoxItem Content="R" />
-                        <ComboBoxItem Content="G" />
-                        <ComboBoxItem Content="B" />
-                        <ComboBoxItem Content="X"/>
-                        <ComboBoxItem Content="Y"/>
-                        <ComboBoxItem Content="Z" />
-                    </ComboBox>
                     <TextBox  Background="Transparent" BorderThickness="1"  HorizontalContentAlignment="Center"  Text="{Binding ElementName=Zoombox1,Path=ContentMatrix.M11,StringFormat={}{0:P1}}" />
                     <Button   Command="{Binding OpenProperty}" Margin="1,0">
                         <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" Margin="-5" FontSize="15" Foreground="{DynamicResource GlobalTextBrush}"/>
@@ -213,7 +218,7 @@
                 </ToolBar>
                 
             </ToolBarTray>
-            <ToolBarTray x:Name="ToolBarRight"  HorizontalAlignment="Right" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="2,30,0,0" Grid.Row="0" Grid.RowSpan="2"  VerticalAlignment="Top">
+            <ToolBarTray x:Name="ToolBarRight"  HorizontalAlignment="Right" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="2,50,0,0" Grid.Row="0" Grid.RowSpan="2"  VerticalAlignment="Top">
                 <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
                     <Button Click="Button_Click" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource openDrawingImage}" Margin="-5"/>
@@ -229,7 +234,7 @@
             </ToolBarTray>
 
 
-            <ToolBarTray x:Name="ToolBarLeft"   DockPanel.Dock="Left" d:DataContext="{Binding Config}" Orientation="Vertical" Margin="2,30,0,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <ToolBarTray x:Name="ToolBarLeft"   DockPanel.Dock="Left" d:DataContext="{Binding Config}" Orientation="Vertical" Margin="2,50,0,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Left" VerticalAlignment="Top">
                 <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
                     <Button x:Name="HistogramButton" Click="HistogramButton_Click" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIHistogram}"  Margin="-5"/>

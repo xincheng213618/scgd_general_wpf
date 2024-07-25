@@ -2,11 +2,13 @@
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
 using ColorVision.Net;
+using ColorVision.Themes.Controls;
 using ColorVision.UI.Draw;
 using ColorVision.UI.Draw.Ruler;
 using ColorVision.UI.Views;
 using ColorVision.Util.Draw.Special;
 using cvColorVision;
+using CVCommCore.CVImage;
 using log4net;
 using MQTTMessageLib.FileServer;
 using Newtonsoft.Json;
@@ -103,6 +105,7 @@ namespace ColorVision.Engine.Media
         {
             Config = imageViewConfig;
             ToolBarLeft.DataContext = Config;
+            ToolBarLayers.DataContext = Config;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -579,6 +582,8 @@ namespace ColorVision.Engine.Media
 
         public void OpenImage(string? filePath)
         {
+            ComboBoxLayers.SelectionChanged -= ComboBoxLayers_SelectionChanged;
+
             ToolBarTop.MouseMagnifier.MouseMoveColorHandler -= ShowCVCIE;
             Config.IsCVCIE = false;
             if (filePath != null && File.Exists(filePath))
@@ -656,8 +661,8 @@ namespace ColorVision.Engine.Media
                 }
             }
 
-
-
+            ComboBoxLayers.SelectedIndex = 0;
+            ComboBoxLayers.SelectionChanged += ComboBoxLayers_SelectionChanged;
         }
 
 
@@ -926,7 +931,27 @@ namespace ColorVision.Engine.Media
 
         private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (sender is ComboBox comboBox && e.AddedItems[0] is ComboBoxItem comboBoxItem)
+            {
+                string ext = Path.GetExtension(Config.FilePath)?.ToLower(CultureInfo.CurrentCulture);
+                if (string.IsNullOrEmpty(ext)) return;
+                FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
 
+                if (comboBoxItem.Content.ToString() == "Src")
+                    OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.SRC).ToWriteableBitmap());
+                if (comboBoxItem.Content.ToString() == "R")
+                    OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_R).ToWriteableBitmap());
+                if (comboBoxItem.Content.ToString() == "G")
+                    OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_G).ToWriteableBitmap());
+                if (comboBoxItem.Content.ToString() == "B")
+                    OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_B).ToWriteableBitmap());
+                if (comboBoxItem.Content.ToString() == "X")
+                    OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_X).ToWriteableBitmap());
+                if (comboBoxItem.Content.ToString() == "Y")
+                    OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType ,CVImageChannelType.CIE_XYZ_Y).ToWriteableBitmap());
+                if (comboBoxItem.Content.ToString() == "Z")
+                    OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_Z).ToWriteableBitmap());
+            }
         }
 
         private void CM_AutoLevelsAdjust(object sender, RoutedEventArgs e)

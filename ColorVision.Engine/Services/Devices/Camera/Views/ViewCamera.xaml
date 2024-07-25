@@ -74,18 +74,6 @@
                     </Popup>
                 </ToolBar>
                 <ToolBar Band="0" BandIndex="1" Padding="3,2" Margin="3,0">
-                    <StackPanel Orientation="Horizontal" Margin="3,0">
-                        <TextBlock Text="{x:Static properties:Resources.Layers}" MinWidth="20" Margin="5"/>
-                        <ComboBox x:Name="ComboBoxLayers" Style="{StaticResource ComboBox.Small}" SelectionChanged="ComboBoxLayers_SelectionChanged">
-                            <ComboBoxItem Content="Src"  />
-                            <ComboBoxItem Content="R" />
-                            <ComboBoxItem Content="G" />
-                            <ComboBoxItem Content="B" />
-                            <ComboBoxItem Content="X"  Visibility="{Binding ElementName=ImageView,Path=Config.IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}" />
-                            <ComboBoxItem Content="Y" Visibility="{Binding ElementName=ImageView,Path=Config.IsCVCIE  ,Converter={StaticResource bool2VisibilityConverter}}"  />
-                            <ComboBoxItem Content="Z"  Visibility="{Binding ElementName=ImageView,Path=Config.IsCVCIE  ,Converter={StaticResource bool2VisibilityConverter}}" />
-                        </ComboBox>
-                    </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="5,0">
                         <TextBlock Text="{x:Static properties:Resources.FocusPoint}" MinWidth="40"/>
                         <ComboBox x:Name="ComboxPOITemplate" Width="130" Style="{StaticResource ComboBox.Small}" HorizontalAlignment="Left"  SelectionChanged="ComboxPOITemplate_SelectionChanged" SelectedValuePath="Value"  DisplayMemberPath="Key"/>

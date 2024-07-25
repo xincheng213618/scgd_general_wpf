@@ -322,12 +322,8 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         }
                     }
                 }
-                IsLayers = true;
-                ComboBoxLayers.Text = "Src";
-                IsLayers = false;
             }
         }
-        private bool IsLayers;
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
         {
@@ -444,37 +440,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 }
             }
         }
-
-
-        private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-           if (sender is ComboBox comboBox && e.AddedItems[0] is ComboBoxItem comboBoxItem  && !IsLayers)
-            {
-                if (listView1.SelectedIndex > -1)
-                {
-                    var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-                    if (comboBoxItem.Content.ToString() == "Src")
-                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.SRC);
-                    if (comboBoxItem.Content.ToString() == "R")
-                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_R);
-                    if (comboBoxItem.Content.ToString() == "G")
-                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_G);
-                    if (comboBoxItem.Content.ToString() == "B")
-                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_B);
-                    if (comboBoxItem.Content.ToString() == "X")
-                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_X);
-                    if (comboBoxItem.Content.ToString() == "Y")
-                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Y);
-                    if (comboBoxItem.Content.ToString() == "Z")
-                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Z);
-                }
-                else
-                {
-                    MessageBox1.Show("请先选择您要切换的图像");
-                }
-            }
-        }
-
         private void ComboxPOITemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (sender is ComboBox comboBox && comboBox.SelectedValue is PoiParam poiParams)

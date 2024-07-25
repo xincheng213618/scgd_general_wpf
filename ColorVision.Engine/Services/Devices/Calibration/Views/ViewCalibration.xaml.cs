@@ -317,12 +317,8 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                         }
                     }
                 }
-                IsLayers = true;
-                ComboBoxLayers.Text = "Src";
-                IsLayers = false;
             }
         }
-        private bool IsLayers;
 
         private void listView1_PreviewKeyDown(object sender, KeyEventArgs e)
         {
@@ -472,40 +468,6 @@ namespace ColorVision.Engine.Services.Devices.Calibration.Views
                             break;
                     }
                }
-            }
-        }
-
-
-        private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (sender is ComboBox comboBox && e.AddedItems[0] is ComboBoxItem comboBoxItem && !IsLayers)
-            {
-                if (listView1.SelectedIndex > -1)
-                {
-                    var ViewResult = ViewResults[listView1.SelectedIndex];
-                    string ext = Path.GetExtension(ViewResult.FileUrl)?.ToLower(CultureInfo.CurrentCulture);
-                    if (string.IsNullOrEmpty(ext)) return;
-                    FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
-
-                    if (comboBoxItem.Content.ToString() == "Src")
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(ViewResult.FileUrl, FileExtType.CIE, CVImageChannelType.SRC));
-                    if (comboBoxItem.Content.ToString() == "R")
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(ViewResult.FileUrl, FileExtType.CIE, CVImageChannelType.RGB_R));
-                    if (comboBoxItem.Content.ToString() == "G")
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(ViewResult.FileUrl, FileExtType.CIE, CVImageChannelType.RGB_G));
-                    if (comboBoxItem.Content.ToString() == "B")
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(ViewResult.FileUrl, FileExtType.CIE, CVImageChannelType.RGB_B));
-                    if (comboBoxItem.Content.ToString() == "X")
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(ViewResult.FileUrl, FileExtType.CIE, CVImageChannelType.CIE_XYZ_X));
-                    if (comboBoxItem.Content.ToString() == "Y")
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(ViewResult.FileUrl, FileExtType.CIE, CVImageChannelType.CIE_XYZ_Y));
-                    if (comboBoxItem.Content.ToString() == "Z")
-                        OpenImage(CVFileUtil.OpenLocalFileChannel(ViewResult.FileUrl, FileExtType.CIE, CVImageChannelType.CIE_XYZ_Z));
-                }
-                else
-                {
-                    MessageBox1.Show("请先选择您要切换的图像");
-                }
             }
         }
 
