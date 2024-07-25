@@ -242,9 +242,13 @@
                     <Button Visibility="{Binding IsCVCIE,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}" Click="ButtonCIE1931_Click" Margin="0,0,0,2">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="/ColorVision.Engine;component/Assets/Image/CIE1931xy1.png" Margin="-5"/>
                     </Button>
-                    <ToggleButton  Visibility="{Binding IsChannel3,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}" Content="对" Click="CM_AutoLevelsAdjust" Margin="0,0,0,2"/>
+                    <ToggleButton  Visibility="{Binding IsChannel3,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}" Click="CM_AutoLevelsAdjust" Margin="0,0,0,2">
+                        <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIContrast}" Margin="-5"/>
+                    </ToggleButton>
                     <ToggleButton  Visibility="{Binding IsChannel3,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}" Content="彩" Click="CM_AutomaticColorAdjustment" Margin="0,0,0,2"/>
-                    <ToggleButton  Visibility="{Binding IsChannel3,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}"  Content="调" Click="CM_AutomaticToneAdjustment" Margin="0,0,0,2"/>
+                    <ToggleButton  Visibility="{Binding IsChannel3,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}" Click="CM_AutomaticToneAdjustment" Margin="0,0,0,2">
+                        <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DITone}" Margin="-5"/>
+                    </ToggleButton>
 
                     <StackPanel Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}">
                         <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  Margin="0,0,0,2" >
