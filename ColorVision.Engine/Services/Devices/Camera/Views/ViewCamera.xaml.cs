@@ -523,10 +523,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             PoiParam.LoadPoiDetailFromDB(poiParams);
 
             ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
-            int result = ConvertXYZ.CM_SetFilter(ConvertXYZ.Handle, poiParams.DatumArea.Filter.Enable , poiParams.DatumArea.Filter.Threshold);
+            int result = ConvertXYZ.CM_SetFilter(ImageView.Config.ConvertXYZhandle, poiParams.DatumArea.Filter.Enable , poiParams.DatumArea.Filter.Threshold);
             log.Info($"CM_SetFilter: {result}");
-            result = ConvertXYZ.CM_SetFilterNoArea(ConvertXYZ.Handle, poiParams.DatumArea.Filter.NoAreaEnable, poiParams.DatumArea.Filter.Threshold);
-            result = ConvertXYZ.CM_SetFilterXYZ(ConvertXYZ.Handle, poiParams.DatumArea.Filter.XYZEnable, (int)poiParams.DatumArea.Filter.XYZType, poiParams.DatumArea.Filter.Threshold);
+            result = ConvertXYZ.CM_SetFilterNoArea(ImageView.Config.ConvertXYZhandle, poiParams.DatumArea.Filter.NoAreaEnable, poiParams.DatumArea.Filter.Threshold);
+            result = ConvertXYZ.CM_SetFilterXYZ(ImageView.Config.ConvertXYZhandle, poiParams.DatumArea.Filter.XYZEnable, (int)poiParams.DatumArea.Filter.XYZType, poiParams.DatumArea.Filter.Threshold);
 
             foreach (var item in poiParams.PoiPoints)
             {
@@ -538,7 +538,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             windowCIE.Show();
         }
 
-        public static PoiResultCIExyuvData GetCVCIE(POIPoint pOIPoint)
+        public  PoiResultCIExyuvData GetCVCIE(POIPoint pOIPoint)
         {
             int x = pOIPoint.PixelX; int y = pOIPoint.PixelY; int rect = pOIPoint.Width; int rect2 = pOIPoint.Height;
             PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData();
@@ -555,9 +555,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
             _ = pOIPoint.PointType switch
             {
-                POIPointTypes.SolidPoint => ConvertXYZ.CM_GetXYZxyuvCircle(ConvertXYZ.Handle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1),
-                POIPointTypes.Rect => ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZ.Handle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2),
-                POIPointTypes.None or POIPointTypes.Circle or POIPointTypes.Mask or _ => ConvertXYZ.CM_GetXYZxyuvCircle(ConvertXYZ.Handle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv,(int)(rect/2)),
+                POIPointTypes.SolidPoint => ConvertXYZ.CM_GetXYZxyuvCircle(ImageView.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1),
+                POIPointTypes.Rect => ConvertXYZ.CM_GetXYZxyuvRect(ImageView.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2),
+                POIPointTypes.None or POIPointTypes.Circle or POIPointTypes.Mask or _ => ConvertXYZ.CM_GetXYZxyuvCircle(ImageView.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv,(int)(rect/2)),
             };
             poiResultCIExyuvData.u = du;
             poiResultCIExyuvData.v = dv;
