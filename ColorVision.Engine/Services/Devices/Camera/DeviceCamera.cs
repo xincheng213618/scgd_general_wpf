@@ -68,12 +68,9 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public new void RestartRCService()
         {
-            if (MessageBox.Show("是否重启服务", "ColorVision", MessageBoxButton.YesNoCancel) == MessageBoxResult.Yes)
-            {
-                base.RestartRCService();
-                CameraVideoControl?.Close();
-                DService.IsVideoOpen = false;
-            }
+            base.RestartRCService();
+            CameraVideoControl?.Close();
+            DService.IsVideoOpen = false;
         }
 
         private PhyCamera lastPhyCamera;

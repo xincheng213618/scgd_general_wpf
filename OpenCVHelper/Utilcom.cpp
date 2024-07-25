@@ -64,7 +64,7 @@ std::string readStringFile(const char* path)
 std::string WtoA(const std::wstring& wstr)
 {
 	int len = WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), (int)wstr.size(), NULL, 0, NULL, NULL);
-	if (0 == len)
+	if (0 == len)  
 		return "";
 
 	std::vector<char> buf;
