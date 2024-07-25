@@ -137,7 +137,7 @@
                 <draw:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </draw:ZoomboxSub>
 
-            <ToolBarTray  x:Name="ToolBarLayers" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Right">
+            <ToolBarTray  x:Name="ToolBarLayers" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Right" Visibility="Collapsed">
                 <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
                     <ComboBox x:Name="ComboBoxLayers"  SelectedIndex="0" SelectionChanged="ComboBoxLayers_SelectionChanged">
                         <ComboBoxItem Content="Src"/>

@@ -548,6 +548,8 @@ namespace ColorVision.Engine.Media
             }
             GC.Collect();
             int result = ConvertXYZ.CM_ReleaseBuffer(Config.ConvertXYZhandle);
+
+            ToolBarLayers.Visibility = Visibility.Collapsed;
         }
 
         public void OpenImage(WriteableBitmap? writeableBitmap)
@@ -663,6 +665,7 @@ namespace ColorVision.Engine.Media
 
             ComboBoxLayers.SelectedIndex = 0;
             ComboBoxLayers.SelectionChanged += ComboBoxLayers_SelectionChanged;
+            ToolBarLayers.Visibility = Visibility.Visible;
         }
 
 
