@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Services.PhyCameras;
@@ -10,6 +11,7 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI.Authorizations;
 using ColorVision.Util.Interfaces;
 using log4net;
+using Mysqlx.Connection;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -58,6 +60,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
             {
                 PhyCamera.ConfigChanged += PhyCameraConfigChanged;
                 PhyCamera.DeviceCamera = this;
+            }
+
+            RefreshCommand = new RelayCommand(a => RestartRCService());
+        }
+        public CameraVideoControl CameraVideoControl { get; set; }
+
+        public new void RestartRCService()
+        {
+            if (MessageBox.Show("是否重启服务", "ColorVision", MessageBoxButton.YesNoCancel) == MessageBoxResult.Yes)
+            {
+                base.RestartRCService();
+                CameraVideoControl?.Close();
+                DService.IsVideoOpen = false;
             }
         }
 

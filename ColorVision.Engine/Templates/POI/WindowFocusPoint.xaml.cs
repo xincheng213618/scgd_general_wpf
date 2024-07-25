@@ -624,7 +624,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     Circle.Attribute.Brush = Brushes.Transparent;
                                     Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                     Circle.Attribute.Id = start + i + 1;
-                                    Circle.Attribute.Name = string.Format("{0}{1}", TagName, Circle.Attribute.Id);
+                                    Circle.Attribute.Name = Circle.Attribute.Id.ToString();
+                                    Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Name);
                                     Circle.Render();
                                     ImageShow.AddVisual(Circle);
                                     break;
@@ -656,7 +657,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                                     Rectangle.Attribute.Brush = Brushes.Transparent;
                                     Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
                                     Rectangle.Attribute.Id = start + i + 1;
-                                    Rectangle.Attribute.Name = string.Format("{0}{1}", TagName, Rectangle.Attribute.Id);
+                                    Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
+                                    Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
                                     Rectangle.Render();
                                     ImageShow.AddVisual(Rectangle);
                                     break;
@@ -777,7 +779,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         Circle.Attribute.Brush = Brushes.Transparent;
                                         Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                         Circle.Attribute.Id = start + i * cols + j + 1;
-                                        Circle.Attribute.Name = string.Format("{0}{1}", TagName, Circle.Attribute.Id);
+                                        Circle.Attribute.Name = Circle.Attribute.Id.ToString();
+                                        Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Name);
                                         Circle.Render();
                                         ImageShow.AddVisual(Circle);
                                         break;
@@ -788,7 +791,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
                                         Rectangle.Attribute.Id = start + i * cols + j + 1;
-                                        Rectangle.Attribute.Name = string.Format("{0}{1}", TagName, Rectangle.Attribute.Id);
+                                        Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
+                                        Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
                                         Rectangle.Render();
                                         ImageShow.AddVisual(Rectangle);
                                         break;
@@ -842,7 +846,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         Circle.Attribute.Brush = Brushes.Transparent;
                                         Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                         Circle.Attribute.Id = start + i * cols + j + 1;
-                                        Circle.Attribute.Name = string.Format("{0}{1}", TagName, Circle.Attribute.Id);
+                                        Circle.Attribute.Name = Circle.Attribute.Id.ToString();
+                                        Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute);
                                         Circle.Render();
                                         ImageShow.AddVisual(Circle);
                                         break;
@@ -852,7 +857,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
                                         Rectangle.Attribute.Id = start + i * cols + j + 1;
-                                        Rectangle.Attribute.Name = string.Format("{0}{1}", TagName, Rectangle.Attribute.Id);
+                                        Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
+                                        Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
                                         Rectangle.Render();
                                         ImageShow.AddVisual(Rectangle);
                                         break;
@@ -886,7 +892,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         Circle.Attribute.Brush = Brushes.Transparent;
                                         Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                         Circle.Attribute.Id = start + No;
-                                        Circle.Attribute.Name = string.Format("{0}{1}", TagName, Circle.Attribute.Id);
+                                        Circle.Attribute.Name = Circle.Attribute.Id.ToString();
+                                        Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Id);
                                         Circle.Render();
                                         ImageShow.AddVisual(Circle);
                                         break;
@@ -896,7 +903,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
                                         Rectangle.Attribute.Id = start + No;
-                                        Rectangle.Attribute.Name = string.Format("{0}{1}", TagName, Rectangle.Attribute.Id);
+                                        Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
+                                        Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
                                         Rectangle.Render();
                                         ImageShow.AddVisual(Rectangle);
                                         break;
@@ -922,7 +930,9 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         Circle.Attribute.Brush = Brushes.Transparent;
                                         Circle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultCircleRadius / 30);
                                         Circle.Attribute.Id = start + i + 1;
-                                        Circle.Attribute.Name = string.Format("{0}{1}", TagName, Circle.Attribute.Id);
+                                        Circle.Attribute.Name = Circle.Attribute.Id.ToString();
+                                        Circle.Attribute.Text = string.Format("{0}{1}", TagName, Circle.Attribute.Id);
+
                                         Circle.Render();
                                         ImageShow.AddVisual(Circle);
                                         break;
@@ -932,7 +942,8 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         Rectangle.Attribute.Brush = Brushes.Transparent;
                                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, (double)PoiParam.DatumArea.DefaultRectWidth / 30);
                                         Rectangle.Attribute.Id = start + i + 1;
-                                        Rectangle.Attribute.Name = string.Format("{0}{1}", TagName, Rectangle.Attribute.Id);
+                                        Rectangle.Attribute.Name = Rectangle.Attribute.Id.ToString();
+                                        Rectangle.Attribute.Text = string.Format("{0}{1}", TagName, Rectangle.Attribute.Name);
                                         Rectangle.Render();
                                         ImageShow.AddVisual(Rectangle);
                                         break;
