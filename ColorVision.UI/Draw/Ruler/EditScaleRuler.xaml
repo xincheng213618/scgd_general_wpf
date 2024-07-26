@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:ColorVision.UI.Draw.Ruler"
+        xmlns:local="clr-namespace:ColorVision.UI.Draw.Ruler" xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         mc:Ignorable="d"
         d:DataContext="{d:DesignInstance local:DrawingVisualScaleHost}"
         Title="EditScaleRuler" Background="{DynamicResource GlobalBackground}"  Height="200" Width="400" Initialized="Window_Initialized">
@@ -31,6 +31,23 @@
                 <TextBlock Text="物理单位" MinWidth="60"/>
                 <TextBox Text="{Binding PhysicalUnit}"/>
             </DockPanel>
+            <DockPanel Margin="0,2">
+                <TextBlock >
+                    <Run Text="{Binding ActualLength}"/>
+                    <Run Text="{Binding PhysicalUnit}"/>
+                    <Run Text=":"/>
+                    <Run Text="1"/>
+                    <Run Text="px"/>
+                    <Run Text="(1个像素代表实际"/>
+                    <Run Text="{Binding ActualLength}"/>
+                    <Run Text="{Binding PhysicalUnit}"/>
+                    <Run Text=")"/>
+                </TextBlock>
+            </DockPanel>
+            <DockPanel Margin="0,2">
+                <ui:ToggleSwitch DockPanel.Dock="Right" IsChecked="{Binding IsUsePhysicalUnit}"/>
+                <TextBlock Text="测量启用实际单位"/>
+            </DockPanel>
             <Button Content="关闭"  Click="Button_Click" />
             <Popup  x:Name="CalPopup"  AllowsTransparency="True" Focusable="false" PopupAnimation="{DynamicResource {x:Static SystemParameters.ComboBoxPopupAnimationKey}}" Placement="Left" StaysOpen="false" PlacementTarget="{Binding ElementName=Calculate}">
                 <Border Margin="5"  Width="200" Height="120" Style="{StaticResource BorderModuleArea}">
@@ -43,6 +60,8 @@
                             <TextBlock Text="实际距离" MinWidth="60"/>
                             <TextBox x:Name="TextActual" Text=""/>
                         </DockPanel>
+                        
+                        
                         <Button  HorizontalAlignment="Center" VerticalAlignment="Bottom" Content="计算"  Click="Cal_Click" Margin="5"/>
                     </StackPanel>
                 </Border>

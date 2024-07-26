@@ -36,6 +36,7 @@ namespace ColorVision.UI.Draw.Ruler
 
         public double ActualLength { get => DefalutTextAttribute.Defalut.ActualLength; set { DefalutTextAttribute.Defalut.ActualLength = value;  NotifyPropertyChanged(); } }
         public string PhysicalUnit { get => DefalutTextAttribute.Defalut.PhysicalUnit; set { DefalutTextAttribute.Defalut.PhysicalUnit = value; NotifyPropertyChanged(); } }
+        public bool IsUsePhysicalUnit { get => DefalutTextAttribute.Defalut.IsUsePhysicalUnit; set { DefalutTextAttribute.Defalut.IsUsePhysicalUnit = value; NotifyPropertyChanged(); } }
 
         private double Lastlength = 1;
         public void Render() => Render(Lastlength);

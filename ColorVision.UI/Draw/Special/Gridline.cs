@@ -58,6 +58,8 @@ namespace ColorVision.UI.Draw.Special
             }
 
         }
+        public static double ActualLength { get => DefalutTextAttribute.Defalut.IsUsePhysicalUnit ? DefalutTextAttribute.Defalut.ActualLength : 1; set { DefalutTextAttribute.Defalut.ActualLength = value; } }
+        public static string PhysicalUnit { get => DefalutTextAttribute.Defalut.IsUsePhysicalUnit ? DefalutTextAttribute.Defalut.PhysicalUnit : "Px"; set { DefalutTextAttribute.Defalut.PhysicalUnit = value; } }
 
         private bool _IsShow;
 
@@ -76,7 +78,7 @@ namespace ColorVision.UI.Draw.Special
                 using DrawingContext dc = DrawVisualImage.RenderOpen();
                 for (int i = 0; i < bitmapSource.Width; i += lenindex)
                 {
-                    string text = i.ToString();
+                    string text = (i * ActualLength).ToString("F0") ;
                     FormattedText formattedText = new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                     dc.DrawText(formattedText, new Point(i - 10 / ZoomboxSub.ContentMatrix.M11, -20 / ZoomboxSub.ContentMatrix.M11));
                     dc.DrawLine(pen, new Point(i, 0), new Point(i, bitmapSource.Height));
@@ -84,7 +86,7 @@ namespace ColorVision.UI.Draw.Special
 
                 for (int j = 0; j < bitmapSource.Height; j += lenindex)
                 {
-                    string text = j.ToString();
+                    string text = (j * ActualLength).ToString("F0");
                     FormattedText formattedText = new(text, CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(fontFamily, FontStyles.Normal, FontWeights.Normal, FontStretches.Normal), fontSize, brush, VisualTreeHelper.GetDpi(DrawVisualImage).PixelsPerDip);
                     dc.DrawText(formattedText, new Point(-40 / ZoomboxSub.ContentMatrix.M11, j- 10 / ZoomboxSub.ContentMatrix.M11));
                     dc.DrawLine(pen, new Point(0, j), new Point(bitmapSource.Width, j));
