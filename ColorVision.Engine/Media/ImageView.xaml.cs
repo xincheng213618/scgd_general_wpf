@@ -67,6 +67,7 @@ namespace ColorVision.Engine.Media
             Config = new ImageViewConfig();
             View = new View();
             InitializeComponent();
+            SetConfig(Config);
         }
 
 
