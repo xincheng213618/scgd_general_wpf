@@ -29,9 +29,14 @@
                         <ComboBox Name="ComboBoxXYZType"  SelectedValue="{Binding XYZType}"  Style="{StaticResource ComboBox.Small}" SelectedValuePath="Key"  DisplayMemberPath="Value" />
                     </DockPanel>
                     <DockPanel Margin="0,2" >
+                        <DockPanel Margin="2,2"  DockPanel.Dock="Right">
+                            <TextBlock Text="阈值启用百分比"  MinWidth="90"/>
+                            <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding  ThresholdUsePercent}"/>
+                        </DockPanel>
                         <TextBlock Text="Threshold"  MinWidth="90"/>
                         <TextBox Text="{Binding Threshold}" Style="{StaticResource TextBox.Small}" />
                     </DockPanel>
+
 
 
                 </StackPanel>
