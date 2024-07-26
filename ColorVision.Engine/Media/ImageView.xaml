@@ -137,7 +137,7 @@
                 <draw:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </draw:ZoomboxSub>
 
-            <ToolBarTray  x:Name="ToolBarLayers" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Right" Visibility="Collapsed">
+            <ToolBarTray  x:Name="ToolBarLayers" d:DataContext="{d:DesignInstance local:ImageViewConfig}" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Right" Visibility="Collapsed">
                 <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
                     <ComboBox x:Name="ComboBoxLayers"  SelectedIndex="0" SelectionChanged="ComboBoxLayers_SelectionChanged">
                         <ComboBoxItem Content="Src"/>
@@ -150,6 +150,18 @@
                     </ComboBox>
                 </ToolBar>
             </ToolBarTray>
+
+            <ToolBarTray  x:Name="ToolBarAl" d:DataContext="{d:DesignInstance local:ImageViewConfig}" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Left">
+                <ToolBar Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" >
+                    <StackPanel Orientation="Horizontal" >
+                        <ComboBox x:Name="ComboxPOITemplate" Width="100" Style="{StaticResource ComboBox.Small}" HorizontalAlignment="Left"  SelectionChanged="ComboxPOITemplate_SelectionChanged" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
+                        <Button Content="{x:Static resx:Resources.Calculate}" Visibility="{Binding IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}"  Click="CalculPOI_Click"/>
+                    </StackPanel>
+                </ToolBar>
+            </ToolBarTray>
+
+
+
 
             <ToolBarTray x:Name="ToolBar1" DataContext="{Binding ToolBarTop}" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Center">
                 <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
@@ -216,7 +228,6 @@
                         <Image Style="{StaticResource ToolBarImage}" Source="{DynamicResource DrawingImagePolygon}"  Margin="-5"/>
                     </ToggleButton>
                 </ToolBar>
-                
             </ToolBarTray>
             <ToolBarTray x:Name="ToolBarRight"  HorizontalAlignment="Left" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="2,50,0,0" Grid.Row="0" Grid.RowSpan="2"  VerticalAlignment="Top">
                 <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >

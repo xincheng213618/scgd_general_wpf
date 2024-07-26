@@ -73,13 +73,6 @@
                         </Border>
                     </Popup>
                 </ToolBar>
-                <ToolBar Band="0" BandIndex="1" Padding="3,2" Margin="3,0">
-                    <StackPanel Orientation="Horizontal" Margin="5,0">
-                        <TextBlock Text="{x:Static properties:Resources.FocusPoint}" MinWidth="40"/>
-                        <ComboBox x:Name="ComboxPOITemplate" Width="130" Style="{StaticResource ComboBox.Small}" HorizontalAlignment="Left"  SelectionChanged="ComboxPOITemplate_SelectionChanged" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
-                        <Button Content="{x:Static properties:Resources.Calculate}" Visibility="{Binding ElementName=ImageView,Path=Config.IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}"  Click="CalculPOI_Click"/>
-                    </StackPanel>
-                </ToolBar>
             </ToolBarTray>
             <ListView Height="250" Visibility="{Binding Config.IsShowListView, Converter={StaticResource bool2VisibilityConverter}}" Grid.Row="1" x:Name="listView1"  BorderThickness="0" Padding="0" SelectionChanged="listView1_SelectionChanged"  PreviewKeyDown="listView1_PreviewKeyDown" Grid.RowSpan="2" >
                 <ListView.Resources >

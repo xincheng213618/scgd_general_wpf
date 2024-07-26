@@ -4,19 +4,11 @@ using ColorVision.UI.Sorts;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
-namespace ColorVision.Engine.Services.Devices.Camera.Views
+namespace ColorVision.Engine.Media
 {
     /// <summary>
     /// WindowCVCIE.xaml 的交互逻辑
@@ -30,6 +22,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             InitializeComponent();
             this.ApplyCaption();
         }
+
         public ObservableCollection<GridViewColumnVisibility> LeftGridViewColumnVisibilitys { get; set; } = new ObservableCollection<GridViewColumnVisibility>();
 
         private void listViewSide_Initialized(object sender, EventArgs e)
@@ -44,8 +37,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 for (int i = 0; i < cieHeader.Count; i++)
                     gridViewPOI_XY_UV.Columns.Add(new GridViewColumn() { Header = cieHeader[i], DisplayMemberBinding = new Binding(cieBdHeader[i]) });
             }
-
-
             listViewSide.ItemsSource = PoiResultCIExyuvDatas;
         }
 
