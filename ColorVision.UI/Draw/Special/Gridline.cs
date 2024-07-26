@@ -39,14 +39,23 @@ namespace ColorVision.UI.Draw.Special
                     DrawCanvas.MouseEnter += MouseEnter;
                     DrawCanvas.MouseLeave += MouseLeave;
                     ZoomboxSub.LayoutUpdated += ZoomboxSub_LayoutUpdated;
+                    DefalutTextAttribute.Defalut.PropertyChanged += Defalut_PropertyChanged;
                 }
                 else
                 {
                     DrawCanvas.MouseMove -= MouseMove;
                     DrawCanvas.MouseEnter -= MouseEnter;
                     DrawCanvas.MouseLeave -= MouseLeave;
-                }   
+                    DefalutTextAttribute.Defalut.PropertyChanged -= Defalut_PropertyChanged;
+
+                }
             }
+        }
+
+        private void Defalut_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+        {
+            Radio = ZoomboxSub.ContentMatrix.M11;
+            DrawImage();
         }
 
         private void ZoomboxSub_LayoutUpdated(object? sender, System.EventArgs e)

@@ -687,7 +687,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm.Views
                         Rectangle.Attribute.Brush = Brushes.Transparent;
                         Rectangle.Attribute.Pen = new Pen(Brushes.Red, 1 / ImageView.Zoombox1.ContentMatrix.M11);
                         Rectangle.Attribute.Id = item.Id ?? -1;
-                        Rectangle.Attribute.Name = item.Name;
+                        Rectangle.Attribute.Text = item.Name;
                         Rectangle.Render();
                         ImageView.AddVisual(Rectangle);
                         break;

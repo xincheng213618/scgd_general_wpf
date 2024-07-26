@@ -1,9 +1,8 @@
-﻿using ColorVision.Engine.Templates;
-using ColorVision.Engine.Templates.POI.Comply;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace ColorVision.Engine.Templates.POI.POIFilters
 {
@@ -30,6 +29,13 @@ namespace ColorVision.Engine.Templates.POI.POIFilters
             ComboBoxXYZType.SelectedIndex = 0;
         }
 
-
+        private void TextBox_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                Common.NativeMethods.Keyboard.PressKey(0x09);
+                e.Handled = true;
+            }
+        }
     }
 }

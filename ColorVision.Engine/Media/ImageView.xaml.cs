@@ -1139,11 +1139,11 @@ namespace ColorVision.Engine.Media
                             break;
                         case RiPointTypes.Rect:
                             DVRectangleText Rectangle = new();
-                            Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
+                            Rectangle.Attribute.Rect = new Rect(item.PixX - item.PixWidth / 2, item.PixY - item.PixHeight / 2, item.PixWidth, item.PixHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
                             Rectangle.Attribute.Id = item.Id;
-                            Rectangle.Attribute.Name = item.Name;
+                            Rectangle.Attribute.Text = item.Name;
                             Rectangle.Render();
                             ImageShow.AddVisual(Rectangle);
                             break;

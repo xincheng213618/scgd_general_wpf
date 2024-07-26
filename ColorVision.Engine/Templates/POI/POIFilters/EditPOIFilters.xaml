@@ -34,7 +34,7 @@
                             <ToggleButton Style="{StaticResource ToggleButtonSwitch.Small}" IsChecked="{Binding  ThresholdUsePercent}"/>
                         </DockPanel>
                         <TextBlock Text="Threshold"  MinWidth="90"/>
-                        <TextBox Text="{Binding Threshold}" Style="{StaticResource TextBox.Small}" />
+                        <TextBox Text="{Binding Threshold}" Style="{StaticResource TextBox.Small}"  PreviewKeyDown="TextBox_PreviewKeyDown"/>
                     </DockPanel>
 
 
