@@ -63,7 +63,5 @@ namespace ColorVision
                 return IntPtr.Zero;
             }));
         }
-
-
     }
 }

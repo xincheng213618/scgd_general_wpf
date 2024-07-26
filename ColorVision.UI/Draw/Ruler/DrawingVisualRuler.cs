@@ -7,17 +7,17 @@ using System.Windows.Media;
 namespace ColorVision.UI.Draw
 {
 
-    public class DrawingVisualRuler:DrawingVisualBase<RulerTextAttribute>,IDrawingVisual
+    public class DrawingVisualRuler:DrawingVisualBase<RulerTextProperties>,IDrawingVisual
     {
         public TextAttribute TextAttribute { get => Attribute.TextAttribute; }
 
         public DrawingVisualRuler()
         {
-            Attribute = new RulerTextAttribute();
+            Attribute = new RulerTextProperties();
             Attribute.Pen = new Pen(Brushes.Red,10);
         }
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
-        public DrawBaseAttribute BaseAttribute => Attribute;
+        public BaseProperties BaseAttribute => Attribute;
         public bool AutoAttributeChanged { get; set; }
 
         public static double ActualLength { get => DefalutTextAttribute.Defalut.IsUsePhysicalUnit ? DefalutTextAttribute.Defalut.ActualLength :1; set { DefalutTextAttribute.Defalut.ActualLength = value;} }

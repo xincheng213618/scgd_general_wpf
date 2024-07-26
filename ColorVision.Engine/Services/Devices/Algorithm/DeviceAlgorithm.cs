@@ -24,7 +24,7 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             View.View.Title = $"算法视图 - {Config.Code}";
             this.SetIconResource("DrawingImageAlgorithm", View.View);
 
-            DisplayAlgorithmControlLazy = new Lazy<DisplayAlgorithmControl>(() => { DisplayAlgorithmControl ??= new DisplayAlgorithmControl(this); return DisplayAlgorithmControl; });
+            DisplayAlgorithmControlLazy = new Lazy<DisplayAlgorithm>(() => { DisplayAlgorithm ??= new DisplayAlgorithm(this); return DisplayAlgorithm; });
 
             EditCommand = new RelayCommand(a =>
             {
@@ -35,8 +35,8 @@ namespace ColorVision.Engine.Services.Devices.Algorithm
             }, a => AccessControl.Check(PermissionMode.Administrator));
         }
 
-        readonly Lazy<DisplayAlgorithmControl> DisplayAlgorithmControlLazy;
-        public DisplayAlgorithmControl DisplayAlgorithmControl { get; set; }
+        readonly Lazy<DisplayAlgorithm> DisplayAlgorithmControlLazy;
+        public DisplayAlgorithm DisplayAlgorithm { get; set; }
 
         public override UserControl GetDeviceInfo() => new InfoAlgorithm(this);
 

@@ -124,7 +124,7 @@ namespace ColorVision.Engine.Templates.POI.Dao
         {
             if (item != null)
             {
-                if (item.Id > 0) row["id"] = item.Id;
+                row["id"] = item.Id > 0 ?  item.Id : DBNull.Value;
                 if (item.Name != null) row["name"] = item.Name;
                 if (item.Type >= 0) row["type"] = item.Type;
                 if (item.Width > 0) row["width"] = item.Width;

@@ -33,6 +33,7 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using ColorVision.Engine.Impl.CVFile.Export;
 
 namespace ColorVision.Engine.Services.Devices.Camera.Views
 {
@@ -138,7 +139,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         }
 
         private MeasureImgResultDao measureImgResultDao = new();
-        string LocalFileName;
         private void DeviceService_OnMessageRecved(MsgReturn arg)
         {
             if (arg.Code == 0)
@@ -188,7 +188,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         break;
                     case MQTTFileServerEventEnum.Event_File_Download:
                         DeviceFileUpdownParam pm_dl = JsonConvert.DeserializeObject<DeviceFileUpdownParam>(JsonConvert.SerializeObject(arg.Data));
-                        LocalFileName = pm_dl.FileName;
                         if (!string.IsNullOrWhiteSpace(pm_dl.FileName)) netFileUtil.TaskStartDownloadFile(pm_dl.IsLocal, pm_dl.ServerEndpoint, pm_dl.FileName, pm_dl.FileExtType);
                         break;
                     case MQTTFileServerEventEnum.Event_File_GetChannel:
@@ -289,10 +288,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 var data = ViewResultCameras[listView1.SelectedIndex];
                 if (File.Exists(data.FileUrl))
                 {
-                    LocalFileName = data.FileUrl;
-                    ImageView.Config.FilePath = LocalFileName;
-                    var FileData = netFileUtil.OpenLocalCVFile(data.FileUrl);
-                    OpenImage(FileData);
+                    ImageView.OpenImage(data.FileUrl);
                 }
                 else
                 {
@@ -322,13 +318,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                         else
                         {
                             ImageView.Config.FilePath = localName;
-                            var FileData = netFileUtil.OpenLocalCVFile(localName, fileExt);
-                            OpenImage(FileData);
+                            ImageView.OpenImage(ImageView.Config.FilePath);
                         }
                     }
                 }
-
-                ComboBoxLayers.Text = "Src";
             }
         }
 
@@ -342,7 +335,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
         }
         public void OpenImage(CVCIEFile fileData)
         {
-            ImageView.IsCVCIE = fileData.FileExtType == FileExtType.CIE;
             ImageView.OpenImage(fileData.ToWriteableBitmap());
         }
 
@@ -448,38 +440,6 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                 }
             }
         }
-
-
-        private void ComboBoxLayers_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-           if (sender is ComboBox comboBox && e.AddedItems[0] is ComboBoxItem comboBoxItem )
-            {
-                if (listView1.SelectedIndex > -1)
-                {
-                    var ViewResultCamera = ViewResultCameras[listView1.SelectedIndex];
-                    if (comboBoxItem.Content.ToString() == "Src")
-                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.SRC);
-                    if (comboBoxItem.Content.ToString() == "R")
-                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_R);
-                    if (comboBoxItem.Content.ToString() == "G")
-                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_G);
-                    if (comboBoxItem.Content.ToString() == "B")
-                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.RGB_B);
-                    if (comboBoxItem.Content.ToString() == "X")
-                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_X);
-                    if (comboBoxItem.Content.ToString() == "Y")
-                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Y);
-                    if (comboBoxItem.Content.ToString() == "Z")
-                        DeviceService.GetChannel(ViewResultCamera.Id, CVImageChannelType.CIE_XYZ_Z);
-                }
-                else
-                {
-                    MessageBox1.Show("请先选择您要切换的图像");
-                }
-            }
-
-        }
-
         private void ComboxPOITemplate_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (sender is ComboBox comboBox && comboBox.SelectedValue is PoiParam poiParams)
@@ -496,22 +456,22 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
                     switch (item.PointType)
                     {
                         case RiPointTypes.Circle:
-                            DrawingVisualCircleWord Circle = new();
+                            DVCircleText Circle = new();
                             Circle.Attribute.Center = new Point(item.PixX, item.PixY);
                             Circle.Attribute.Radius = item.PixHeight/2;
                             Circle.Attribute.Brush = Brushes.Transparent;
                             Circle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Circle.Attribute.ID = item.Id;
+                            Circle.Attribute.Id = item.Id;
                             Circle.Attribute.Text = item.Name;
                             Circle.Render();
                             ImageView.ImageShow.AddVisual(Circle);
                             break;
                         case RiPointTypes.Rect:
-                            DrawingVisualRectangleWord Rectangle = new();
+                            DVRectangleText Rectangle = new();
                             Rectangle.Attribute.Rect = new Rect(item.PixX, item.PixY, item.PixWidth, item.PixHeight);
                             Rectangle.Attribute.Brush = Brushes.Transparent;
                             Rectangle.Attribute.Pen = new Pen(Brushes.Red, item.PixWidth / 30);
-                            Rectangle.Attribute.ID = item.Id;
+                            Rectangle.Attribute.Id = item.Id;
                             Rectangle.Attribute.Name = item.Name;
                             Rectangle.Render();
                             ImageView.ImageShow.AddVisual(Rectangle);
@@ -544,7 +504,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
         private void CalculPOI_Click(object sender, RoutedEventArgs e)
         {
-            if (!ImageView.IsCVCIE)
+            if (!ImageView.Config.IsCVCIE)
             {
                 MessageBox1.Show("仅对CVCIE图像支持");
                 return;
@@ -563,10 +523,10 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             PoiParam.LoadPoiDetailFromDB(poiParams);
 
             ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
-            int result = ConvertXYZ.CM_SetFilter(ConvertXYZ.Handle, poiParams.DatumArea.Filter.Enable , poiParams.DatumArea.Filter.Threshold);
+            int result = ConvertXYZ.CM_SetFilter(ImageView.Config.ConvertXYZhandle, poiParams.DatumArea.Filter.Enable , poiParams.DatumArea.Filter.Threshold);
             log.Info($"CM_SetFilter: {result}");
-            result = ConvertXYZ.CM_SetFilterNoArea(ConvertXYZ.Handle, poiParams.DatumArea.Filter.NoAreaEnable, poiParams.DatumArea.Filter.Threshold);
-            result = ConvertXYZ.CM_SetFilterXYZ(ConvertXYZ.Handle, poiParams.DatumArea.Filter.XYZEnable, (int)poiParams.DatumArea.Filter.XYZType, poiParams.DatumArea.Filter.Threshold);
+            result = ConvertXYZ.CM_SetFilterNoArea(ImageView.Config.ConvertXYZhandle, poiParams.DatumArea.Filter.NoAreaEnable, poiParams.DatumArea.Filter.Threshold);
+            result = ConvertXYZ.CM_SetFilterXYZ(ImageView.Config.ConvertXYZhandle, poiParams.DatumArea.Filter.XYZEnable, (int)poiParams.DatumArea.Filter.XYZType, poiParams.DatumArea.Filter.Threshold);
 
             foreach (var item in poiParams.PoiPoints)
             {
@@ -578,7 +538,7 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             windowCIE.Show();
         }
 
-        public static PoiResultCIExyuvData GetCVCIE(POIPoint pOIPoint)
+        public  PoiResultCIExyuvData GetCVCIE(POIPoint pOIPoint)
         {
             int x = pOIPoint.PixelX; int y = pOIPoint.PixelY; int rect = pOIPoint.Width; int rect2 = pOIPoint.Height;
             PoiResultCIExyuvData poiResultCIExyuvData = new PoiResultCIExyuvData();
@@ -595,9 +555,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
 
             _ = pOIPoint.PointType switch
             {
-                POIPointTypes.SolidPoint => ConvertXYZ.CM_GetXYZxyuvCircle(ConvertXYZ.Handle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1),
-                POIPointTypes.Rect => ConvertXYZ.CM_GetXYZxyuvRect(ConvertXYZ.Handle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2),
-                POIPointTypes.None or POIPointTypes.Circle or POIPointTypes.Mask or _ => ConvertXYZ.CM_GetXYZxyuvCircle(ConvertXYZ.Handle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv,(int)(rect/2)),
+                POIPointTypes.SolidPoint => ConvertXYZ.CM_GetXYZxyuvCircle(ImageView.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1),
+                POIPointTypes.Rect => ConvertXYZ.CM_GetXYZxyuvRect(ImageView.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2),
+                POIPointTypes.None or POIPointTypes.Circle or POIPointTypes.Mask or _ => ConvertXYZ.CM_GetXYZxyuvCircle(ImageView.Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv,(int)(rect/2)),
             };
             poiResultCIExyuvData.u = du;
             poiResultCIExyuvData.v = dv;
@@ -611,27 +571,57 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             return poiResultCIExyuvData;
         }
 
-        private void CalculMTF_Click(object sender, RoutedEventArgs e)
+        private void MenuItem_ExportFile_Click(object sender, RoutedEventArgs e)
         {
-            if (!ImageView.IsCVCIE)
+            if (sender is MenuItem menuItem && menuItem.Tag is ViewResultCamera viewCamera)
             {
-                MessageBox.Show("仅对CVCIE图像支持");
-                return;
+                string FilePath = viewCamera.FileUrl;
+
+                if (File.Exists(FilePath))
+                {
+                    if (CVFileUtil.IsCIEFile(FilePath))
+                    {
+                        int index = CVFileUtil.ReadCIEFileHeader(FilePath, out var meta);
+                        if (index > 0)
+                        {
+                            if (!File.Exists(meta.srcFileName))
+                                meta.srcFileName = Path.Combine(Path.GetDirectoryName(FilePath) ?? string.Empty, meta.srcFileName);
+                        }
+
+                        System.Windows.Forms.FolderBrowserDialog dialog = new();
+                        dialog.UseDescriptionForTitle = true;
+                        dialog.Description = "选择要保存到得位置";
+                        if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                        {
+                            if (string.IsNullOrEmpty(dialog.SelectedPath))
+                            {
+                                MessageBox.Show("文件夹路径不能为空", "提示");
+                                return;
+                            }
+                            string savePath = dialog.SelectedPath;
+                            // Copy the file to the new location
+                            string newFilePath = Path.Combine(savePath, Path.GetFileName(FilePath));
+                            File.Copy(FilePath, newFilePath, true);
+
+                            // If srcFileName exists, copy it to the new location as well
+                            if (File.Exists(meta.srcFileName))
+                            {
+                                string newSrcFilePath = Path.Combine(savePath, Path.GetFileName(meta.srcFileName));
+                                File.Copy(meta.srcFileName, newSrcFilePath, true);
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        MessageBox1.Show(WindowHelpers.GetActiveWindow(), "目前支持CVRAW图像", "ColorVision");
+                    }
+                }
+                else
+                {
+                    MessageBox1.Show(WindowHelpers.GetActiveWindow(), "找不到原始文件", "ColorVision");
+                }
             }
-            if (ComboxPOITemplate.SelectedValue is not PoiParam poiParams)
-            {
-                MessageBox.Show("需要配置关注点");
-                return;
-            }
-
-
-
-
-        }
-
-        private void ToggleButton_Click(object sender, RoutedEventArgs e)
-        {
-
         }
     }
 }

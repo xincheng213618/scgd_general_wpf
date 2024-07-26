@@ -60,12 +60,9 @@ namespace ColorVision.Engine.Services.Devices.Camera.Views
             if (File.Exists(FileUrl))
             {
                 ImageView imageView = new();
-
-                CVFileUtil.ReadCVRaw(FileUrl, out CVCIEFile fileInfo);
                 Window window = new() { Title = Properties.Resources.QuickPreview, Owner = Application.Current.GetActiveWindow(), WindowStartupLocation = WindowStartupLocation.CenterOwner };
                 window.Content = imageView;
-                imageView.OpenImage(new NetFileUtil().OpenLocalCVFile(FileUrl).ToWriteableBitmap());
-
+                imageView.OpenImage(FileUrl);
                 window.Show();
                 window.DelayClearImage(() => Application.Current.Dispatcher.Invoke(() => {
                     imageView.ToolBarTop.ClearImage();

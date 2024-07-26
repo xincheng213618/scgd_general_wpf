@@ -144,11 +144,6 @@
   <ItemGroup>
     <ClCompile Include="OpenCVHelper_test.cpp" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\ColorVisionCore\ColorVisionCore.vcxproj">
-      <Project>{a9255078-aa9e-4ffa-9008-af74c0880952}</Project>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -104,10 +104,10 @@ namespace ColorVision.Engine.Services.Devices.Camera
             UpdateTemplate();
             Device.ConfigChanged += (s, e) => UpdateTemplate();
             PhyCameraManager.GetInstance().Loaded += (s, e) => UpdateTemplate();
-            ComboxAutoExpTimeParamTemplate.ItemsSource = TemplateAutoExpTimeParam.Params.CreateDefault();
+            ComboxAutoExpTimeParamTemplate.ItemsSource = TemplateAutoExpTimeParam.Params;
             ComboxAutoExpTimeParamTemplate.SelectedIndex = 0;
 
-            ComboxAutoExpTimeParamTemplate1.ItemsSource = TemplateAutoExpTimeParam.Params.CreateDefaultEmpty();
+            ComboxAutoExpTimeParamTemplate1.ItemsSource = TemplateAutoExpTimeParam.Params.CreateEmpty();
             ComboxAutoExpTimeParamTemplate1.SelectedIndex = 0;
 
 
@@ -149,22 +149,22 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         SetVisibility(StackPanelOpen, Visibility.Visible);
                         SetVisibility(ButtonClose, Visibility.Visible);
 
-                        CameraVideoControl ??= new CameraVideoControl();
+                        Device.CameraVideoControl ??= new CameraVideoControl();
                         if (!DService.IsVideoOpen)
                         {
                             DService.CurrentTakeImageMode = TakeImageMode.Live;
                             string host = Device.Config.VideoConfig.Host;
                             int port = Tool.GetFreePort(Device.Config.VideoConfig.Port);
-                            port = CameraVideoControl.Open(host, port);
+                            port = Device.CameraVideoControl.Open(host, port);
                             if (port > 0)
                             {
                                 View.ImageView.ImageShow.Source = null;
-                                CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
-                                CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
+                                Device.CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
+                                Device.CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
                             }
                             else
                             {
-                                CameraVideoControl.Close();
+                                Device.CameraVideoControl.Close();
                             }
                         }
                         break;
@@ -193,8 +193,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                             DeviceOpenLiveResult pm_live = JsonConvert.DeserializeObject<DeviceOpenLiveResult>(JsonConvert.SerializeObject(msg.Data));
                             string mapName = Device.Code;
                             if (pm_live.IsLocal) mapName = pm_live.MapName;
-                            CameraVideoControl ??= new CameraVideoControl();
-                            CameraVideoControl.Start(pm_live.IsLocal, mapName, pm_live.FrameInfo.width, pm_live.FrameInfo.height);
+                            Device.CameraVideoControl ??= new CameraVideoControl();
+                            Device.CameraVideoControl.Start(pm_live.IsLocal, mapName, pm_live.FrameInfo.width, pm_live.FrameInfo.height);
                             break;
                         default:
                             break;
@@ -309,20 +309,19 @@ namespace ColorVision.Engine.Services.Devices.Camera
         }
 
 
-        public CameraVideoControl CameraVideoControl { get; set; }
 
         private void Video_Click(object sender, RoutedEventArgs e)
         {
             if (sender is Button button)
             {
-                CameraVideoControl ??= new CameraVideoControl();
+                Device.CameraVideoControl ??= new CameraVideoControl();
                 if (!DService.IsVideoOpen)
                 {
                     DService.CurrentTakeImageMode = TakeImageMode.Live;
                     string host = Device.Config.VideoConfig.Host;
                     int port = Tool.GetFreePort(Device.Config.VideoConfig.Port);
-                    port = CameraVideoControl.Open(host, port);
-                    CameraVideoControl.IsEnableResize = Device.Config.VideoConfig.IsEnableResize;
+                    port = Device.CameraVideoControl.Open(host, port);
+                    Device.CameraVideoControl.IsEnableResize = Device.Config.VideoConfig.IsEnableResize;
                     if (port > 0)
                     {
                         MsgRecord msg = DService.OpenVideo(host, port);
@@ -330,8 +329,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         {
                             if (s == MsgRecordState.Fail)
                             {
-                                CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
-                                CameraVideoControl.Close();
+                                Device.CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
+                                Device.CameraVideoControl.Close();
                                 DService.Close();
                             }
                             else
@@ -343,8 +342,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
                         };
                         ServicesHelper.SendCommand(button, msg);
                         View.ImageView.ImageShow.Source = null;
-                        CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
-                        CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
+                        Device.CameraVideoControl.CameraVideoFrameReceived -= CameraVideoFrameReceived;
+                        Device.CameraVideoControl.CameraVideoFrameReceived += CameraVideoFrameReceived;
                     }
                     else
                     {
@@ -448,7 +447,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
         private void Close_Click(object sender, RoutedEventArgs e)
         {
             if (DService.IsVideoOpen)
-                CameraVideoControl.Close();
+                Device.CameraVideoControl.Close();
             MsgRecord msgRecord = ServicesHelper.SendCommandEx(sender, () => DService.Close());
             if (msgRecord != null)
             {

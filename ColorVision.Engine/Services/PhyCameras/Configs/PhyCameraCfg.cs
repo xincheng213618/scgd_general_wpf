@@ -62,7 +62,7 @@ namespace ColorVision.Engine.Services.PhyCameras.Configs
         /// </summary>
         [JsonProperty("targetTemp")]
         public float TargetTemp { get => _TargetTemp; set { _TargetTemp = value; NotifyPropertyChanged(); } }
-        private float _TargetTemp = -5.0f;
+        private float _TargetTemp = 5.0f;
 
         /// <summary>
         /// 传输速率

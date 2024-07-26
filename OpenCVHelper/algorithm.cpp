@@ -1,0 +1,247 @@
+
+#include "pch.h"
+#include "algorithm.h"
+#include <iostream>  
+#include <opencv2/core/core.hpp>  
+#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
+#include "spdlog/spdlog.h"
+
+#include <vector>
+#include <algorithm>
+#include <ctime>
+using namespace cv;
+
+
+int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
+{
+    if (image.empty())
+        return -1;
+
+    if (image.channels() != 1) {
+        cv::cvtColor(image, image, cv::COLOR_BGR2GRAY);
+    }
+    if (image.depth() == CV_16U) {
+        cv::normalize(image, image, 0, 255, cv::NORM_MINMAX, CV_8U);
+    }
+    // 转换为8位图像
+    double minVal, maxVal;
+    cv::minMaxLoc(image, &minVal, &maxVal); // 找到图像的最小和最大像素值
+    image.convertTo(image, CV_8UC1, 255.0 / (maxVal - minVal), -minVal * 255.0 / (maxVal - minVal));
+
+
+    cv::Mat maskGreater = image > max1; // Change maxVal to your specific threshold
+    image.setTo(cv::Scalar(255, 255, 255), maskGreater);
+
+    // Set values less than a threshold to black
+    cv::Mat maskLess = image < min1; // Change minVal to your specific threshold
+    image.setTo(cv::Scalar(0, 0, 0), maskLess);
+
+    cv::applyColorMap(image, image, types);
+    return 0;
+}
+
+
+
+void autoLevelsAdjust(cv::Mat& src, cv::Mat& dst)
+{
+    CV_Assert(!src.empty() && src.channels() == 3);
+    spdlog::info("AutoLevelsAdjust");
+
+    //统计灰度直方图
+    int BHist[256] = { 0 };    //B分离
+    int GHist[256] = { 0 };    //G分量
+    int RHist[256] = { 0 };    //R分量
+    cv::MatIterator_<Vec3b> its, ends;
+    for (its = src.begin<Vec3b>(), ends = src.end<Vec3b>(); its != ends; its++)
+    {
+        BHist[(*its)[0]]++;
+        GHist[(*its)[1]]++;
+        RHist[(*its)[2]]++;
+    }
+
+    //设置LowCut和HighCut
+    float LowCut = 0.4;
+    float HighCut = 0.4;
+
+    //根据LowCut和HighCut查找每个通道最大值最小值
+    int BMax = 0, BMin = 0;
+    int GMax = 0, GMin = 0;
+    int RMax = 0, RMin = 0;
+
+    int TotalPixels = src.cols * src.rows;
+    float LowTh = LowCut * 0.01 * TotalPixels;
+    float HighTh = HighCut * 0.01 * TotalPixels;
+
+    //B通道查找最小最大值
+    int sumTempB = 0;
+    for (int i = 0; i < 256; i++)
+    {
+        sumTempB += BHist[i];
+        if (sumTempB >= LowTh)
+        {
+            BMin = i;
+            break;
+        }
+    }
+    sumTempB = 0;
+    for (int i = 255; i >= 0; i--)
+    {
+        sumTempB += BHist[i];
+        if (sumTempB >= HighTh)
+        {
+            BMax = i;
+            break;
+        }
+    }
+
+    //G通道查找最小最大值
+    int sumTempG = 0;
+    for (int i = 0; i < 256; i++)
+    {
+        sumTempG += GHist[i];
+        if (sumTempG >= LowTh)
+        {
+            GMin = i;
+            break;
+        }
+    }
+    sumTempG = 0;
+    for (int i = 255; i >= 0; i--)
+    {
+        sumTempG += GHist[i];
+        if (sumTempG >= HighTh)
+        {
+            GMax = i;
+            break;
+        }
+    }
+
+    //R通道查找最小最大值
+    int sumTempR = 0;
+    for (int i = 0; i < 256; i++)
+    {
+        sumTempR += RHist[i];
+        if (sumTempR >= LowTh)
+        {
+            RMin = i;
+            break;
+        }
+    }
+    sumTempR = 0;
+    for (int i = 255; i >= 0; i--)
+    {
+        sumTempR += RHist[i];
+        if (sumTempR >= HighTh)
+        {
+            RMax = i;
+            break;
+        }
+    }
+
+    //对每个通道建立分段线性查找表
+    //B分量查找表
+    int BTable[256] = { 0 };
+    for (int i = 0; i < 256; i++)
+    {
+        if (i <= BMin)
+            BTable[i] = 0;
+        else if (i > BMin && i < BMax)
+            BTable[i] = cvRound((float)(i - BMin) / (BMax - BMin) * 255);
+        else
+            BTable[i] = 255;
+    }
+
+    //G分量查找表
+    int GTable[256] = { 0 };
+    for (int i = 0; i < 256; i++)
+    {
+        if (i <= GMin)
+            GTable[i] = 0;
+        else if (i > GMin && i < GMax)
+            GTable[i] = cvRound((float)(i - GMin) / (GMax - GMin) * 255);
+        else
+            GTable[i] = 255;
+    }
+
+    //R分量查找表
+    int RTable[256] = { 0 };
+    for (int i = 0; i < 256; i++)
+    {
+        if (i <= RMin)
+            RTable[i] = 0;
+        else if (i > RMin && i < RMax)
+            RTable[i] = cvRound((float)(i - RMin) / (RMax - RMin) * 255);
+        else
+            RTable[i] = 255;
+    }
+
+    //对每个通道用相应的查找表进行分段线性拉伸
+    cv::Mat dst_ = src.clone();
+    cv::MatIterator_<Vec3b> itd, endd;
+    for (itd = dst_.begin<Vec3b>(), endd = dst_.end<Vec3b>(); itd != endd; itd++)
+    {
+        (*itd)[0] = BTable[(*itd)[0]];
+        (*itd)[1] = GTable[(*itd)[1]];
+        (*itd)[2] = RTable[(*itd)[2]];
+    }
+    dst = dst_;
+}
+
+
+
+void automaticColorAdjustment(cv::Mat& image) {
+    cv::Mat lab_image;
+    cv::cvtColor(image, lab_image, cv::COLOR_BGR2Lab);
+
+    std::vector<cv::Mat> lab_planes(3);
+    cv::split(lab_image, lab_planes);
+
+    double avg_a = cv::mean(lab_planes[1])[0];
+    double avg_b = cv::mean(lab_planes[2])[0];
+
+    lab_planes[1] = lab_planes[1] - ((avg_a - 128) * (lab_planes[0] / 255.0) * 1.1);
+    lab_planes[2] = lab_planes[2] - ((avg_b - 128) * (lab_planes[0] / 255.0) * 1.1);
+
+    cv::merge(lab_planes, lab_image);
+    cv::cvtColor(lab_image, image, cv::COLOR_Lab2BGR);
+}
+
+
+void automaticToneAdjustment(cv::Mat& image, double clip_hist_percent) {
+    cv::Mat gray;
+    cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
+
+    int hist_size = 256;
+    float range[] = { 0, 256 };
+    const float* hist_range = { range };
+    cv::Mat hist;
+
+    cv::calcHist(&gray, 1, 0, cv::Mat(), hist, 1, &hist_size, &hist_range);
+
+    std::vector<float> accumulator(hist_size);
+    accumulator[0] = hist.at<float>(0);
+    for (int i = 1; i < hist_size; i++) {
+        accumulator[i] = accumulator[i - 1] + hist.at<float>(i);
+    }
+
+    float max_value = accumulator.back();
+    clip_hist_percent *= (max_value / 100.0);
+    clip_hist_percent /= 2.0;
+
+    int min_gray = 0;
+    while (accumulator[min_gray] < clip_hist_percent) {
+        min_gray++;
+    }
+
+    int max_gray = hist_size - 1;
+    while (accumulator[max_gray] >= (max_value - clip_hist_percent)) {
+        max_gray--;
+    }
+
+    double alpha = 255.0 / (max_gray - min_gray);
+    double beta = -min_gray * alpha;
+
+    image.convertTo(image, -1, alpha, beta);
+}
+

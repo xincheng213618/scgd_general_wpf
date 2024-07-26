@@ -6,10 +6,14 @@ using ColorVision.Engine.Rbac;
 using ColorVision.Engine.Services.Templates.POI;
 using ColorVision.Engine.Templates.POI.Comply;
 using ColorVision.Engine.Templates.POI.Dao;
+using ColorVision.UI.Dump;
 using ColorVision.UI.Sorts;
 using Newtonsoft.Json;
+using NPOI.SS.Formula.Functions;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Windows;
 
@@ -78,9 +82,48 @@ namespace ColorVision.Engine.Templates.POI
             TemplateParams.RemoveAt(index);
         }
 
+
+
         public override void Create(string templateName)
         {
-            PoiParam? param = PoiParam.AddPoiParam(templateName);
+            PoiParam? AddPoiParam(string templateName)
+            {
+                if(ExportTemp != null)
+                {
+                    ExportTemp.Name = templateName;
+                    PoiMasterModel poiMasterModel = new(ExportTemp);
+                    PoiMasterDao.Instance.Save(poiMasterModel);
+                    ExportTemp.Id = poiMasterModel.Id;
+                    List<PoiDetailModel> poiDetails = new();
+                    foreach (PoiPoint pt in ExportTemp.PoiPoints)
+                    {
+                        PoiDetailModel poiDetail = new PoiDetailModel(ExportTemp.Id, pt);
+                        poiDetails.Add(poiDetail);
+                    }
+                    PoiDetailDao.Instance.SaveByPid(ExportTemp.Id, poiDetails);
+
+                    return ExportTemp;
+                }
+                else
+                {
+                    PoiMasterModel poiMasterModel = new PoiMasterModel(templateName, UserConfig.Instance.TenantId);
+                    PoiMasterDao.Instance.Save(poiMasterModel);
+
+                    int pkId = poiMasterModel.Id;
+                    if (pkId > 0)
+                    {
+                        PoiMasterModel model = PoiMasterDao.Instance.GetById(pkId);
+                        if (model != null) return new PoiParam(model);
+                        else return null;
+                    }
+                    return null;
+                }
+
+
+            }
+
+
+            PoiParam? param = AddPoiParam(templateName);
             if (param != null)
             {
                 var a = new TemplateModel<PoiParam>(templateName, param);
@@ -91,6 +134,48 @@ namespace ColorVision.Engine.Templates.POI
                 MessageBox.Show(Application.Current.GetActiveWindow(), $"数据库创建{typeof(PoiParam)}模板失败", "ColorVision");
             }
         }
+
+
+        public override void Export(int index)
+        {
+            PoiParam.LoadPoiDetailFromDB(TemplateParams[index].Value);
+            base.Export(index);
+        }
+
+        public override bool Import()
+        {
+            System.Windows.Forms.OpenFileDialog ofd = new System.Windows.Forms.OpenFileDialog();
+            ofd.Filter = "*.cfg|*.cfg";
+            ofd.Title = "导入模板";
+            ofd.RestoreDirectory = true;
+            if (ofd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return false;
+            //if (TemplateParams.Any(a => a.Key.Equals(System.IO.Path.GetFileNameWithoutExtension(ofd.FileName), StringComparison.OrdinalIgnoreCase)))
+            //{
+            //    MessageBox.Show(Application.Current.GetActiveWindow(), "模板名称已存在", "ColorVision");
+            //    return false;
+            //}
+            byte[] fileBytes = File.ReadAllBytes(ofd.FileName);
+            string fileContent = System.Text.Encoding.UTF8.GetString(fileBytes);
+            try
+            {
+                ExportTemp = JsonConvert.DeserializeObject<PoiParam>(fileContent);
+                if (ExportTemp !=null)
+                {
+                    ExportTemp.Id = -1;
+                    foreach (var item in ExportTemp.PoiPoints)
+                    {
+                        item.Id = -1;
+                    }
+                }
+                return true;
+            }
+            catch (JsonException ex)
+            {
+                MessageBox.Show(Application.Current.GetActiveWindow(), $"解析模板文件时出错: {ex.Message}", "ColorVision");
+                return false;
+            }
+        }
+
     }
 
     /// <summary>
@@ -126,24 +211,9 @@ namespace ColorVision.Engine.Templates.POI
         }
 
 
-        public static PoiParam? AddPoiParam(string TemplateName)
-        {
-            PoiMasterModel poiMasterModel = new PoiMasterModel(TemplateName, UserConfig.Instance.TenantId);
-            PoiMasterDao.Instance.Save(poiMasterModel);
-
-            int pkId = poiMasterModel.Id;
-            if (pkId > 0)
-            {
-                PoiMasterModel Service = PoiMasterDao.Instance.GetById(pkId);
-                if (Service != null) return new PoiParam(Service);
-                else return null;
-            }
-            return null;
-        }
-
         public PoiParam()
         {
-            Id = No++;
+
         }
 
         public PoiParam(PoiMasterModel dbModel)

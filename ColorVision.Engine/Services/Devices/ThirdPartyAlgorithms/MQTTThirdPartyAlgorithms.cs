@@ -73,7 +73,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             PublishAsyncClient(msg);
         }
 
-        public MsgRecord FindDotsArray(FindDotsArrayParam findDotsArrayParam, string serialNumber, string fileName, FileExtType fileExtType, string deviceCode, string deviceType)
+        public MsgRecord CallFunction(FindDotsArrayParam findDotsArrayParam, string serialNumber, string fileName, FileExtType fileExtType, string deviceCode, string deviceType)
         {
             serialNumber = string.IsNullOrWhiteSpace(serialNumber) ? DateTime.Now.ToString("yyyyMMdd'T'HHmmss.fffffff") : serialNumber;
             
@@ -81,7 +81,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
             Params.Add("TemplateParam", new CVTemplateParam() { ID = findDotsArrayParam.Id, Name = findDotsArrayParam.Name });
             MsgSend msg = new()
             {
-                EventName = "findDotsArrayImp",
+                EventName = findDotsArrayParam.ModThirdPartyAlgorithmsModel.Code,
                 SerialNumber = serialNumber,
                 Params = Params
             };

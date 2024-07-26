@@ -121,7 +121,7 @@
                                 <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding CameraCfg.Gain}"/>
                             </DockPanel>
                             <DockPanel Margin="0,2">
-                                <TextBlock Text="定时查询:" Width="120"/>
+                                <TextBlock Text="定时查询(ms):" Width="120"/>
                                 <TextBox Style="{StaticResource TextBox.Small}" Text="{Binding CameraCfg.TempSpanTime}"/>
                             </DockPanel>
                         </StackPanel>

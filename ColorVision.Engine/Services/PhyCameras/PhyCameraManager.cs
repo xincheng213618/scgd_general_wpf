@@ -40,7 +40,7 @@ namespace ColorVision.Engine.Services.PhyCameras
             ImportCommand = new RelayCommand(a => Import());
         }
 
-        public PhyCamera? GetPhyCamera(string cameraID) => PhyCameras.FirstOrDefault(a => a.Name == cameraID);
+        public PhyCamera? GetPhyCamera(string? Code) => PhyCameras.FirstOrDefault(a => a.Code == Code);
 
         public void Create()
         {

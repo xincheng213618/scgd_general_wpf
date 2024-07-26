@@ -74,22 +74,10 @@
                     </Popup>
                 </ToolBar>
                 <ToolBar Band="0" BandIndex="1" Padding="3,2" Margin="3,0">
-                    <StackPanel Orientation="Horizontal" Margin="3,0">
-                        <TextBlock Text="{x:Static properties:Resources.Layers}" MinWidth="20" Margin="5"/>
-                        <ComboBox x:Name="ComboBoxLayers" Style="{StaticResource ComboBox.Small}" SelectionChanged="ComboBoxLayers_SelectionChanged">
-                            <ComboBoxItem Content="Src"  />
-                            <ComboBoxItem Content="R" />
-                            <ComboBoxItem Content="G" />
-                            <ComboBoxItem Content="B" />
-                            <ComboBoxItem Content="X"  Visibility="{Binding ElementName=ImageView,Path=Config.IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}" />
-                            <ComboBoxItem Content="Y" Visibility="{Binding ElementName=ImageView,Path=Config.IsCVCIE  ,Converter={StaticResource bool2VisibilityConverter}}"  />
-                            <ComboBoxItem Content="Z"  Visibility="{Binding ElementName=ImageView,Path=Config.IsCVCIE  ,Converter={StaticResource bool2VisibilityConverter}}" />
-                        </ComboBox>
-                    </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="5,0">
                         <TextBlock Text="{x:Static properties:Resources.FocusPoint}" MinWidth="40"/>
                         <ComboBox x:Name="ComboxPOITemplate" Width="130" Style="{StaticResource ComboBox.Small}" HorizontalAlignment="Left"  SelectionChanged="ComboxPOITemplate_SelectionChanged" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
-                        <Button Content="{x:Static properties:Resources.Calculate}" Visibility="{Binding ElementName=ImageView,Path=IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}"  Click="CalculPOI_Click"/>
+                        <Button Content="{x:Static properties:Resources.Calculate}" Visibility="{Binding ElementName=ImageView,Path=Config.IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}"  Click="CalculPOI_Click"/>
                     </StackPanel>
                 </ToolBar>
             </ToolBarTray>
@@ -98,6 +86,8 @@
                     <ContextMenu x:Key="ContextMenuItem">
                         <MenuItem Header="{x:Static properties:Resources.Delete}"  Click="MenuItem_Delete_Click" Tag="{Binding .}"  />
                         <MenuItem Header="{x:Static properties:Resources.Export}"  Click="MenuItem_Export_Click" Tag="{Binding .}"  />
+                        <MenuItem Header="另存为"  Click="MenuItem_ExportFile_Click" Tag="{Binding .}"  />
+
                     </ContextMenu>
                     <ContextMenu x:Key="ItemContextMenu" Opened="ContextMenu_Opened" />
                 </ListView.Resources>

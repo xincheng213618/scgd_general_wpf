@@ -44,6 +44,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
         public string? Remark { get; set; }
     }
 
+
     public class ThirdPartyAlgorithmsDao : BaseTableDao<ThirdPartyAlgorithmsModel>
     {
         public static ThirdPartyAlgorithmsDao Instance { get; set; } = new ThirdPartyAlgorithmsDao();

@@ -306,7 +306,8 @@ namespace ColorVision.Engine.Services.Devices.Camera
         public MsgRecord GetAutoExpTime(AutoExpTimeParam autoExpTimeParam)
         {
             var Params = new Dictionary<string, object>() { };
-            Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = string.Empty });
+            if (autoExpTimeParam.Id >=0)
+                Params.Add("AutoExpTimeTemplate", new CVTemplateParam() { ID = autoExpTimeParam.Id, Name = string.Empty });
 
             MsgSend msg = new()
             {

@@ -16,8 +16,6 @@ using System.Windows.Controls;
 namespace ColorVision.Engine.Templates.POI.Comply
 {
 
-
-
     public class TemplateComplyParam : ITemplate<ValidateParam>
     {
         public static Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>> Params { get; set; } = new Dictionary<string, ObservableCollection<TemplateModel<ValidateParam>>>();
@@ -38,7 +36,7 @@ namespace ColorVision.Engine.Templates.POI.Comply
             IsUserControl = true;
             ValidateControl = new ValidateControl();
         }
-        public override string Title { get => Code + "编辑"; set { } }
+        public override string Title { get => Code + ColorVision.Engine.Properties.Resources.Edit; set { } }
 
         public ValidateControl ValidateControl { get; set; }
 

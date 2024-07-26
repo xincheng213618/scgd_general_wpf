@@ -6,7 +6,7 @@ using System.Windows.Media;
 
 namespace ColorVision.UI.Draw
 {
-    public class DefalutTextAttribute : BaseAttribute,IConfig 
+    public class DefalutTextAttribute : BaseMode,IConfig 
     {
         public static DefalutTextAttribute Defalut => ConfigHandler.GetInstance().GetRequiredService<DefalutTextAttribute>();
 

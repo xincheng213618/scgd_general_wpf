@@ -82,7 +82,7 @@
                 </Grid>
                 <Grid>
                     <Grid.Resources>
-                        <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type draw:DrawingVisualCircle}" >
+                        <DataTemplate x:Key="DrawingVisualCircleTemplate" DataType="{x:Type draw:DVCircle}" >
                             <StackPanel  Orientation="Horizontal">
                                 <StackPanel.ContextMenu>
                                     <ContextMenu>
@@ -90,7 +90,7 @@
                                     </ContextMenu>
                                 </StackPanel.ContextMenu>
                                 <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="圆形" HorizontalAlignment="Center"/>
-                                <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.ID}" HorizontalAlignment="Center"/>
+                                <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.Id}" HorizontalAlignment="Center"/>
                                 <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}" Tag="{Binding .}"/>
                                 <TextBlock Width="{Binding ElementName=GridListHeader3,Path=ActualWidth}" HorizontalAlignment="Center">
                                                     <Run Text="{Binding Path = CenterX,StringFormat={}{0:F0}}"/>
@@ -100,7 +100,7 @@
                                 <TextBlock  Width="{Binding ElementName=GridListHeader4,Path=ActualWidth}" Text="{Binding Path=Radius}" />
                             </StackPanel>
                         </DataTemplate>
-                        <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type draw:DrawingVisualRectangle}">
+                        <DataTemplate x:Key="DrawingVisualRectangleTemplate"  DataType="{x:Type draw:DVRectangle}">
                             <StackPanel  Orientation="Horizontal">
                                 <StackPanel.ContextMenu>
                                     <ContextMenu>
@@ -108,7 +108,7 @@
                                     </ContextMenu>
                                 </StackPanel.ContextMenu>
                                 <TextBlock Width="{Binding ElementName=GridListHeader0,Path=ActualWidth}" Text="矩形" HorizontalAlignment="Center"/>
-                                <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.ID}" HorizontalAlignment="Center"/>
+                                <TextBlock Width="{Binding ElementName=GridListHeader1,Path=ActualWidth}" Text="{Binding Attribute.Id}" HorizontalAlignment="Center"/>
                                 <CheckBox Width="{Binding ElementName=GridListHeader2,Path=ActualWidth}" IsChecked="{Binding Attribute.IsShow}" Tag="{Binding .}"/>
                                 <TextBlock>
                                             <Run Text="{Binding Attribute.Rect.X,StringFormat={}{0:F0}}"/>
@@ -136,6 +136,20 @@
             <draw:ZoomboxSub x:Name="Zoombox1"  MaxZoom="10"  MinZoom="0.01" Grid.Row="1" Grid.RowSpan="2">
                 <draw:DrawCanvas x:Name="ImageShow"  Initialized="ImageShow_Initialized" MouseLeave="ImageShow_MouseLeave"  MouseEnter="ImageShow_MouseEnter"  PreviewMouseLeftButtonDown="ImageShow_MouseDown"  PreviewMouseRightButtonDown="ImageShow_PreviewMouseRightButtonDown"  PreviewMouseUp="ImageShow_MouseUp"  MouseWheel="ImageShow_MouseWheel" RenderOptions.BitmapScalingMode="HighQuality" RenderOptions.ClearTypeHint="Enabled" MouseMove="ImageShow_MouseMove"/>
             </draw:ZoomboxSub>
+
+            <ToolBarTray  x:Name="ToolBarLayers" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Right" Visibility="Collapsed">
+                <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
+                    <ComboBox x:Name="ComboBoxLayers"  SelectedIndex="0" SelectionChanged="ComboBoxLayers_SelectionChanged">
+                        <ComboBoxItem Content="Src"/>
+                        <ComboBoxItem Content="R" />
+                        <ComboBoxItem Content="G" />
+                        <ComboBoxItem Content="B" />
+                        <ComboBoxItem Content="X"  Visibility="{Binding IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}" />
+                        <ComboBoxItem Content="Y" Visibility="{Binding IsCVCIE  ,Converter={StaticResource bool2VisibilityConverter}}"  />
+                        <ComboBoxItem Content="Z"  Visibility="{Binding IsCVCIE  ,Converter={StaticResource bool2VisibilityConverter}}" />
+                    </ComboBox>
+                </ToolBar>
+            </ToolBarTray>
 
             <ToolBarTray x:Name="ToolBar1" DataContext="{Binding ToolBarTop}" Orientation="Horizontal" VerticalAlignment="Top" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Center">
                 <ToolBar Style="{StaticResource ToolBarBaseStyle}"  Margin="0,2,4,0"  ToolBarTray.IsLocked="True" >
@@ -204,7 +218,7 @@
                 </ToolBar>
                 
             </ToolBarTray>
-            <ToolBarTray x:Name="ToolBarRight"  HorizontalAlignment="Right" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="2,30,0,0" Grid.Row="0" Grid.RowSpan="2"  VerticalAlignment="Top">
+            <ToolBarTray x:Name="ToolBarRight"  HorizontalAlignment="Left" DataContext="{Binding ToolBarTop}" Orientation="Vertical" Margin="2,50,0,0" Grid.Row="0" Grid.RowSpan="2"  VerticalAlignment="Top">
                 <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
                     <Button Click="Button_Click" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource openDrawingImage}" Margin="-5"/>
@@ -215,11 +229,12 @@
                     <Button Command="{Binding ClearImageCommand}" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DrawingImageClear}"  Margin="-5"/>
                     </Button>
+
                 </ToolBar>
             </ToolBarTray>
 
 
-            <ToolBarTray x:Name="ToolBarLeft"   DockPanel.Dock="Left" d:DataContext="{Binding Config}" Orientation="Vertical" Margin="2,30,0,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Left" VerticalAlignment="Top">
+            <ToolBarTray x:Name="ToolBarLeft"   d:DataContext="{Binding Config}" Orientation="Vertical" Margin="2,50,0,0" Grid.Row="0" Grid.RowSpan="2" HorizontalAlignment="Right" VerticalAlignment="Top">
                 <ToolBar ToolBarTray.IsLocked="True" Padding="2,3" >
                     <Button x:Name="HistogramButton" Click="HistogramButton_Click" Margin="0,0,0,2">
                         <Image Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIHistogram}"  Margin="-5"/>
@@ -227,6 +242,14 @@
                     <Button Visibility="{Binding IsCVCIE,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}" Click="ButtonCIE1931_Click" Margin="0,0,0,2">
                         <Image  Style="{StaticResource ToolBarImage}"  Source="/ColorVision.Engine;component/Assets/Image/CIE1931xy1.png" Margin="-5"/>
                     </Button>
+                    <ToggleButton  Visibility="{Binding IsChannel3,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}" Click="CM_AutoLevelsAdjust" Margin="0,0,0,2">
+                        <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DIContrast}" Margin="-5"/>
+                    </ToggleButton>
+                    <ToggleButton  Visibility="{Binding IsChannel3,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}" Content="彩" Click="CM_AutomaticColorAdjustment" Margin="0,0,0,2"/>
+                    <ToggleButton  Visibility="{Binding IsChannel3,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}" Click="CM_AutomaticToneAdjustment" Margin="0,0,0,2">
+                        <Image  Style="{StaticResource ToolBarImage}"  Source="{DynamicResource DITone}" Margin="-5"/>
+                    </ToggleButton>
+
                     <StackPanel Visibility="{Binding IsChannel1,Converter={StaticResource bool2VisibilityConverter},Mode=OneWay}">
                         <ToggleButton x:Name="Pseudo"  Click="ToggleButton_Click"  Margin="0,0,0,2" >
                             <Image Style="{StaticResource ToolBarImage}"   Source="/ColorVision.Engine;component/Assets/png/PowerToy.png" Margin="-5"/>
@@ -255,7 +278,7 @@
                                 </Border>
                                 <Border Grid.Row="2" Background="Black" CornerRadius="0,0,10,10 "/>
                             </Grid>
-                            <hc:RangeSlider Grid.Row="1"  x:Name="PseudoSlider" FocusVisualStyle="{x:Null}"  Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical" HorizontalAlignment="Center" />
+                            <hc:RangeSlider Grid.Row="1"  x:Name="PseudoSlider" FocusVisualStyle="{x:Null}" ValueChanged="PseudoSlider_ValueChanged"  Style="{StaticResource RangeSliderBaseStyle}" Background="Transparent" hc:TipElement.Visibility="Visible" hc:TipElement.Placement="Left" hc:TipElement.StringFormat="#0" ValueEnd="255"  Maximum="255" ValueStart="0"  Minimum="0" Orientation="Vertical" HorizontalAlignment="Center" />
                         </Grid>
 
                     </StackPanel>

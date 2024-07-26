@@ -3,6 +3,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Camera.Configs;
+using ColorVision.Engine.Services.Devices.Camera.Video;
 using ColorVision.Engine.Services.Devices.Camera.Views;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Services.PhyCameras;
@@ -10,6 +11,7 @@ using ColorVision.Themes.Controls;
 using ColorVision.UI.Authorizations;
 using ColorVision.Util.Interfaces;
 using log4net;
+using Mysqlx.Connection;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -53,12 +55,22 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
             RefreshDeviceIdCommand = new RelayCommand(a => RefreshDeviceId());
             OpenPhyCameraMangerCommand = new RelayCommand(a => OpenPhyCameraManger());
-            PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraID);
+            PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode);
             if (PhyCamera != null)
             {
                 PhyCamera.ConfigChanged += PhyCameraConfigChanged;
                 PhyCamera.DeviceCamera = this;
             }
+
+            RefreshCommand = new RelayCommand(a => RestartRCService());
+        }
+        public CameraVideoControl CameraVideoControl { get; set; }
+
+        public new void RestartRCService()
+        {
+            base.RestartRCService();
+            CameraVideoControl?.Close();
+            DService.IsVideoOpen = false;
         }
 
         private PhyCamera lastPhyCamera;
@@ -123,7 +135,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
 
         public override void Save()
         {
-            PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraID);
+            PhyCamera = PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode);
             if (PhyCamera != null)
             {
                 PhyCamera.SetDeviceCamera(this);

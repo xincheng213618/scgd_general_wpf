@@ -4,9 +4,9 @@ using System.Windows.Media;
 
 namespace ColorVision.UI.Draw
 {
-    public class DrawingVisualLine : DrawingVisualBase<LineAttribute>, IDrawingVisual
+    public class DrawingVisualLine : DrawingVisualBase<LineProperties>, IDrawingVisual
     {
-        public DrawBaseAttribute BaseAttribute => Attribute;
+        public BaseProperties BaseAttribute => Attribute;
 
         public bool AutoAttributeChanged { get; set; } = true;
         public Pen Pen { get => Attribute.Pen; set => Attribute.Pen = value; }
@@ -14,8 +14,8 @@ namespace ColorVision.UI.Draw
 
         public DrawingVisualLine()
         {
-            Attribute = new LineAttribute();
-            Attribute.ID = No++;
+            Attribute = new LineProperties();
+            Attribute.Id = No++;
             Attribute.Pen = new Pen(Brushes.Red, 2);
             Attribute.Points = new List<Point>();
             Attribute.PropertyChanged += (s, e) =>

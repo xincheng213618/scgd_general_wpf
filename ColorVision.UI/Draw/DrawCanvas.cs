@@ -19,6 +19,7 @@ namespace ColorVision.UI.Draw
         public bool ContainsVisual(Visual visual) => visuals.Contains(visual);
 
         public event EventHandler? ImageInitialized;
+
         public void ImageInitialize()
         {
             ImageInitialized?.Invoke(this, new EventArgs());

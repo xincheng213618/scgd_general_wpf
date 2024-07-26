@@ -80,13 +80,7 @@ namespace ColorVision.Engine.Media
             ToolBar1.DataContext = ToolBarTop;
             ToolBarTop.ToolBarScaleRuler.ScalRuler.ScaleLocation = ScaleLocation.lowerright;
             ToolBarTop.CrosshairFunction = true;
-            Task.Run(() => {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    Zoombox1.ZoomUniform();
-                });
-            });
-
+            Zoombox1.ZoomUniform();
         }
 
         public void ChangeSelect(double x,double y)

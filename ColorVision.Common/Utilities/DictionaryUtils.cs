@@ -7,6 +7,18 @@ namespace ColorVision.Common.Utilities
     /// </summary>
     public static class DictionaryUtils
     {
+        public static T? GetValue<T>(this Dictionary<string, T> This, string key) where T:new()
+        {
+
+            if (This.TryGetValue(key, out T value) && value is T t)
+            {
+                return t;
+            }
+            T t1 = new T();
+            This.Add(key, t1);
+            return t1;
+        }
+
 
         public static string GetString(this Dictionary<string, object> This, string key)
         {

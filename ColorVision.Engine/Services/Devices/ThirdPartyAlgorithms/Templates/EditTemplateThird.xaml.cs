@@ -3,7 +3,7 @@
 namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Templates
 {
     /// <summary>
-    /// EditTemplateThird.xaml 的交互逻辑
+    /// EditLEDStripDetection.xaml 的交互逻辑
     /// </summary>
     public partial class EditTemplateThird : UserControl
     {

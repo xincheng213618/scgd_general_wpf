@@ -304,6 +304,8 @@ namespace ColorVision.Engine.Templates
                 sfd.RestoreDirectory = true;
                 sfd.Title = "导出模板";
                 sfd.FileName = Tool.SanitizeFileName(TemplateParams[index].Key);
+                if (sfd.FileName.Contains('.'))
+                    sfd.FileName = sfd.FileName + ".cfg";
                 if (sfd.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
                 TemplateParams[index].Value.ToJsonNFile(sfd.FileName);
             }

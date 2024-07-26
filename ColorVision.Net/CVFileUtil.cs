@@ -1,4 +1,5 @@
 ﻿#pragma warning disable CA1806,CA1833,CA1401,CA2101,CA1838,CS8603,CA1051,CA1707,CS8625
+using CVCommCore.CVImage;
 using MQTTMessageLib.FileServer;
 using OpenCvSharp;
 using System;
@@ -236,6 +237,58 @@ namespace ColorVision.Net
             fileInfo = new CVCIEFile();
             return -1;
         }
+
+        public static CVCIEFile OpenLocalFileChannel(string fileName, FileExtType extType, CVImageChannelType channelType)
+        {
+            if (channelType == CVImageChannelType.SRC)
+            {
+                if (extType == FileExtType.Raw)
+                {
+                    if (CVFileUtil.ReadCVRaw(fileName, out CVCIEFile meta))
+                        return meta;
+                }
+                if (extType == FileExtType.CIE)
+                {
+                    if (CVFileUtil.ReadCVCIESrc(fileName, out CVCIEFile meta))
+                        return meta;
+                }
+            }
+            int channel = -1;
+            CVCIEFile data = new();
+            switch (channelType)
+            {
+                case CVImageChannelType.SRC:
+                case CVImageChannelType.CIE_XYZ_X:
+                case CVImageChannelType.RGB_R:
+                    channel = 0;
+                    break;
+                case CVImageChannelType.CIE_XYZ_Y:
+                case CVImageChannelType.RGB_G:
+                    channel = 1;
+                    break;
+                case CVImageChannelType.CIE_XYZ_Z:
+                case CVImageChannelType.RGB_B:
+                    channel = 2;
+                    break;
+                default:
+                    break;
+            }
+            if (channel >= 0)
+            {
+
+                if (extType == FileExtType.Raw)
+                {
+                    CVFileUtil.ReadCVRawChannel(fileName, channel, out data);
+                }
+                else if (extType == FileExtType.CIE)
+                {
+                    CVFileUtil.ReadCVCIEXYZ(fileName, channel, out data);
+                }
+            }
+            return data;
+        }
+
+
 
         public static bool ReadCVCIESrc(string FileName, out CVCIEFile fileOut)
         {

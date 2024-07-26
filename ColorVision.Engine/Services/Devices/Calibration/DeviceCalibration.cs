@@ -19,7 +19,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
 
         public MQTTCalibration DService { get; set; }
 
-        public PhyCamera? PhyCamera { get => PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraID); }
+        public PhyCamera? PhyCamera { get => PhyCameraManager.GetInstance().GetPhyCamera(Config.CameraCode); }
 
         public ViewCalibration View{ get; set; }
 

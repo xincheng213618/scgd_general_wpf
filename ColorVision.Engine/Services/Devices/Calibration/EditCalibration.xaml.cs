@@ -39,7 +39,7 @@ namespace ColorVision.Engine.Services.Devices.Calibration
             DataContext = DeviceCalibration;
 
             CameraPhyID.ItemsSource = PhyCameraManager.GetInstance().PhyCameras;
-            CameraPhyID.SelectedItem = PhyCameraManager.GetInstance().GetPhyCamera(DeviceCalibration.Config.CameraID);
+            CameraPhyID.SelectedItem = PhyCameraManager.GetInstance().GetPhyCamera(DeviceCalibration.Config.CameraCode);
             CameraPhyID.DisplayMemberPath = "Code";
             CameraPhyID.SelectedValuePath = "Name";
             EditConfig = DeviceCalibration.Config.Clone();
