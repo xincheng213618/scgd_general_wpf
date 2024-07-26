@@ -1,6 +1,7 @@
 ﻿#pragma warning disable CS8625
 using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Devices.Algorithm.Templates.POI;
 using ColorVision.Engine.Templates;
 using ColorVision.Engine.Templates.POI;
@@ -96,10 +97,39 @@ namespace ColorVision.Engine.Media
             this.MouseDown += (s, e) => this.Focus();
             Drop += ImageView_Drop;
 
-            ComboxPOITemplate.ItemsSource = PoiParam.Params.CreateEmpty();
-            ComboxPOITemplate.SelectedIndex = 0;
+            if (PoiParam.Params.Count == 0)
+            {
+                MySqlControl.GetInstance().Connect();
+                new TemplatePOI().Load();
+
+            }
+
+            if (MySqlControl.GetInstance().IsConnect)
+            {
+                ComboxPOITemplate.ItemsSource = PoiParam.Params.CreateEmpty();
+                ComboxPOITemplate.SelectedIndex = 0;
+                ToolBarAl.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                Task.Run(()=> LoadMysql());
+            }
 
         }
+
+        public async Task LoadMysql()
+        {
+            await Task.Delay(100);
+            await MySqlControl.GetInstance().Connect();
+            if (MySqlControl.GetInstance().IsConnect)
+            {
+                new TemplatePOI().Load();
+                ComboxPOITemplate.ItemsSource = PoiParam.Params.CreateEmpty();
+                ComboxPOITemplate.SelectedIndex = 0;
+                ToolBarAl.Visibility = Visibility.Visible;
+            }
+        }
+
 
         public void Clear(object? sender, EventArgs e)
         {

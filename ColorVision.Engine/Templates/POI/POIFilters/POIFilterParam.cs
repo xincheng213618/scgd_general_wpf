@@ -27,7 +27,7 @@ namespace ColorVision.Engine.Templates.POI.POIFilters
         public int XYZType { get => GetValue(_XYZType); set { SetProperty(ref _XYZType, value); NotifyPropertyChanged(); } }
         private int _XYZType;
 
-        public bool ThresholdUsePercent { get => GetValue(_ThresholdUsePercent); set { SetProperty(ref _ThresholdUsePercent, value); NotifyPropertyChanged(); } }
+        public bool ThresholdUsePercent { get => GetValue(_ThresholdUsePercent); set { SetProperty(ref _ThresholdUsePercent, value); NotifyPropertyChanged(); if (Threshold >= 1) Threshold = 1; if (Threshold <= 0) Threshold = 0; } }
         private bool _ThresholdUsePercent;
         public float Threshold { get => GetValue(_Threshold); set { SetProperty(ref _Threshold, value); NotifyPropertyChanged(); } }
         private float _Threshold = 50;

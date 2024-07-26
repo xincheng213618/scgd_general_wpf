@@ -151,7 +151,7 @@
                 </ToolBar>
             </ToolBarTray>
 
-            <ToolBarTray  x:Name="ToolBarAl" d:DataContext="{d:DesignInstance local:ImageViewConfig}" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Left">
+            <ToolBarTray  x:Name="ToolBarAl" d:DataContext="{d:DesignInstance local:ImageViewConfig}" Orientation="Horizontal" VerticalAlignment="Bottom" Grid.Row="0" Grid.RowSpan="2"  HorizontalAlignment="Left" Visibility="Collapsed">
                 <ToolBar Style="{StaticResource ToolBarBaseStyle}" ToolBarTray.IsLocked="True" >
                     <StackPanel Orientation="Horizontal" >
                         <ComboBox x:Name="ComboxPOITemplate" Width="100" Style="{StaticResource ComboBox.Small}" HorizontalAlignment="Left"  SelectionChanged="ComboxPOITemplate_SelectionChanged" SelectedValuePath="Value"  DisplayMemberPath="Key"/>
