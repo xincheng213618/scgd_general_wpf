@@ -45,7 +45,7 @@ namespace ColorVision.UI.Draw.Special
                     DrawCanvas.MouseMove -= MouseMove;
                     DrawCanvas.MouseEnter -= MouseEnter;
                     DrawCanvas.MouseLeave -= MouseLeave;
-                }
+                }   
             }
         }
 
