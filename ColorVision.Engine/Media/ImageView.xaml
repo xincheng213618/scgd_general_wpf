@@ -144,9 +144,9 @@
                         <ComboBoxItem Content="R" />
                         <ComboBoxItem Content="G" />
                         <ComboBoxItem Content="B" />
-                        <ComboBoxItem Content="X"  Visibility="{Binding IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}" />
+                        <ComboBoxItem Content="X" Visibility="{Binding IsCVCIE ,Converter={StaticResource bool2VisibilityConverter}}" />
                         <ComboBoxItem Content="Y" Visibility="{Binding IsCVCIE  ,Converter={StaticResource bool2VisibilityConverter}}"  />
-                        <ComboBoxItem Content="Z"  Visibility="{Binding IsCVCIE  ,Converter={StaticResource bool2VisibilityConverter}}" />
+                        <ComboBoxItem Content="Z" Visibility="{Binding IsCVCIE  ,Converter={StaticResource bool2VisibilityConverter}}" />
                     </ComboBox>
                 </ToolBar>
             </ToolBarTray>
