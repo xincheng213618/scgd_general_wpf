@@ -1,9 +1,7 @@
 ﻿#pragma warning disable CS8602,CS8604
-using ColorVision.UI.Draw;
 using ColorVision.Engine.Templates.POI;
+using ColorVision.UI.Draw;
 using System;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
