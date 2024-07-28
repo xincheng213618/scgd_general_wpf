@@ -43,6 +43,7 @@
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="auto"/>
         </Grid.ColumnDefinitions>
+        <TextBox x:Name="FocusText" Visibility="Visible"/>
         <Grid x:Name="ImageGroupGrid" Grid.Column="1"  Width="300"  Visibility="Collapsed">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>

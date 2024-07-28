@@ -94,8 +94,7 @@ namespace ColorVision.Engine.Media
             ImageShow.VisualsAdd += ImageShow_VisualsAdd;
             ImageShow.VisualsRemove += ImageShow_VisualsRemove;
             PreviewKeyDown += ImageView_PreviewKeyDown;
-            this.Focusable = true;
-            this.MouseDown += (s, e) => this.Focus();
+            this.MouseDown += (s, e) => FocusText.Focus();
             Drop += ImageView_Drop;
 
             if (PoiParam.Params.Count == 0)
@@ -1074,9 +1073,14 @@ namespace ColorVision.Engine.Media
                 var sss = GetCVCIE(pOIPoint);
                 PoiResultCIExyuvDatas.Add(sss);
             }
+
+
             WindowCVCIE windowCIE = new WindowCVCIE(PoiResultCIExyuvDatas) { Owner = Application.Current.GetActiveWindow() };
             windowCIE.Show();
         }
+
+
+
 
         public PoiResultCIExyuvData GetCVCIE(POIPoint pOIPoint)
         {

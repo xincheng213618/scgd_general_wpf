@@ -56,8 +56,8 @@ namespace ColorVision.Engine.Services.Templates.POI
             ComboBoxBorderType.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>() select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType.SelectedIndex = 0;
 
-            ComboBoxValidate.ItemsSource = TemplateComplyParam.Params["Comply.CIE.AVG"]?.CreateEmpty();
-            ComboBoxValidateCIE.ItemsSource = TemplateComplyParam.Params["Comply.CIE"]?.CreateEmpty();
+            ComboBoxValidate.ItemsSource = TemplateComplyParam.Params.GetValue("Comply.CIE.AVG")?.CreateEmpty();
+            ComboBoxValidateCIE.ItemsSource = TemplateComplyParam.Params.GetValue("Comply.CIE")?.CreateEmpty();
 
             ComboBoxBorderType1.ItemsSource = from e1 in Enum.GetValues(typeof(BorderType)).Cast<BorderType>()  select new KeyValuePair<BorderType, string>(e1, e1.ToDescription());
             ComboBoxBorderType1.SelectedIndex = 0;
@@ -68,10 +68,7 @@ namespace ColorVision.Engine.Services.Templates.POI
             ComboBoxBorderType2.ItemsSource = from e1 in Enum.GetValues(typeof(DrawingPOIPosition)).Cast<DrawingPOIPosition>() select new KeyValuePair<DrawingPOIPosition, string>(e1, e1.ToDescription());
             ComboBoxBorderType2.SelectedIndex = 0;
 
-            ImageContentGrid.MouseDown += (s, e) =>
-            {
-                TextBox1.Focus();
-            };
+            ImageContentGrid.MouseDown += (s, e) => FocusTextBox.Focus();
 
             ToolBarTop = new ToolBarTop(ImageContentGrid, Zoombox1, ImageShow);
             ToolBarTop.ToolBarScaleRuler.IsShow = false;
@@ -951,7 +948,6 @@ namespace ColorVision.Engine.Services.Templates.POI
                                         break;
                                 }
                             }
-
                         }
 
                         break;
@@ -969,6 +965,9 @@ namespace ColorVision.Engine.Services.Templates.POI
                 ScrollViewer1.ScrollToEnd();
             }
         }
+
+
+
 
 
 
@@ -1397,41 +1396,33 @@ namespace ColorVision.Engine.Services.Templates.POI
 
         public void OpenImage(CVCIEFile fileInfo)
         {
-            if (fileInfo.FileExtType == FileExtType.Src) OpenImage(fileInfo.data);
+            if (fileInfo.FileExtType == FileExtType.Src)
+            {
+                if (fileInfo.data != null)
+                {
+                    var src = OpenCvSharp.Cv2.ImDecode(fileInfo.data, OpenCvSharp.ImreadModes.Unchanged);
+                    SetImageSource(src.ToBitmapSource());
+                }
+            }
             else if (fileInfo.FileExtType == FileExtType.Raw)
             {
-                ShowImage(fileInfo);
+                OpenCvSharp.Mat src = OpenCvSharp.Mat.FromPixelData(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
+                OpenCvSharp.Mat dst = null;
+                if (fileInfo.bpp == 32)
+                {
+                    OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
+                    dst = new OpenCvSharp.Mat();
+                    src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
+                }
+                else
+                {
+                    dst = src;
+                }
+                SetImageSource(dst.ToBitmapSource());
             }
         }
 
-        private void ShowImage(CVCIEFile fileInfo)
-        {
-            OpenCvSharp.Mat src = OpenCvSharp.Mat.FromPixelData(fileInfo.cols, fileInfo.rows, OpenCvSharp.MatType.MakeType(fileInfo.Depth, fileInfo.channels), fileInfo.data);
-            OpenCvSharp.Mat dst = null;
-            if (fileInfo.bpp == 32)
-            {
-                OpenCvSharp.Cv2.Normalize(src, src, 0, 255, OpenCvSharp.NormTypes.MinMax);
-                dst = new OpenCvSharp.Mat();
-                src.ConvertTo(dst, OpenCvSharp.MatType.CV_8U);
-            }
-            else
-            {
-                dst = src;
-            }
-            SetImageSource(dst.ToBitmapSource());
 
-        }
-
-
-
-        public void OpenImage(byte[] data)
-        {
-            if (data != null)
-            {
-                var src = OpenCvSharp.Cv2.ImDecode(data, OpenCvSharp.ImreadModes.Unchanged);
-                SetImageSource(src.ToBitmapSource());
-            }
-        }
 
         private ObservableCollection<MeasureImgResultModel> MeasureImgResultModels = new();
         private void Button_RefreshImg_Click(object sender, RoutedEventArgs e)
@@ -1480,16 +1471,10 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             if (ImageShow.Source is BitmapSource bitmapImage)
             {
-                if (!double.TryParse(TextBoxUp1.Text, out double startU))
-                    startU = 0;
-
-                if (!double.TryParse(TextBoxDown1.Text, out double startD))
-                    startD = 0;
-
-                if (!double.TryParse(TextBoxLeft1.Text, out double startL))
-                    startL = 0;
-                if (!double.TryParse(TextBoxRight1.Text, out double startR))
-                    startR = 0;
+                double startU = ParseDoubleOrDefault(TextBoxUp1.Text);
+                double startD = ParseDoubleOrDefault(TextBoxDown1.Text);
+                double startL = ParseDoubleOrDefault(TextBoxLeft1.Text);
+                double startR = ParseDoubleOrDefault(TextBoxRight1.Text);
 
                 if (ComboBoxBorderType1.SelectedItem is KeyValuePair<BorderType, string> KeyValue && KeyValue.Key == BorderType.Relative)
                 {
@@ -1513,20 +1498,16 @@ namespace ColorVision.Engine.Services.Templates.POI
 
         }
 
+        private static double ParseDoubleOrDefault(string input, double defaultValue = 0) => double.TryParse(input, out double result) ? result : defaultValue;
+
         private void ButtonImportMarinSetting2(object sender, RoutedEventArgs e)
         {
             if (ImageShow.Source is BitmapSource bitmapImage)
             {
-                if (!double.TryParse(TextBoxUp2.Text, out double startU))
-                    startU = 0;
-
-                if (!double.TryParse(TextBoxDown2.Text, out double startD))
-                    startD = 0;
-
-                if (!double.TryParse(TextBoxLeft2.Text, out double startL))
-                    startL = 0;
-                if (!double.TryParse(TextBoxRight2.Text, out double startR))
-                    startR = 0;
+                double startU = ParseDoubleOrDefault(TextBoxUp2.Text);
+                double startD = ParseDoubleOrDefault(TextBoxDown2.Text);
+                double startL = ParseDoubleOrDefault(TextBoxLeft2.Text);
+                double startR = ParseDoubleOrDefault(TextBoxRight2.Text);
 
                 if (ComboBoxBorderType11.SelectedItem is KeyValuePair<BorderType, string> KeyValue && KeyValue.Key == BorderType.Relative)
                 {
@@ -1539,7 +1520,6 @@ namespace ColorVision.Engine.Services.Templates.POI
 
                 PoiParam.DatumArea.AreaRectWidth = bitmapImage.PixelWidth - (int)startR - (int)startL;
                 PoiParam.DatumArea.AreaRectHeight = bitmapImage.PixelHeight - (int)startD - (int)startD;
-
             }
             ImportMarinPopup1.IsOpen = false;
         }
@@ -1570,7 +1550,7 @@ namespace ColorVision.Engine.Services.Templates.POI
         {
             if (sender is ComboBox comboBox)
             {
-                comboBox.ItemsSource = TemplateComplyParam.Params["Comply.CIE"];
+                comboBox.ItemsSource = TemplateComplyParam.Params.GetValue("Comply.CIE");
             }
         }
     }
