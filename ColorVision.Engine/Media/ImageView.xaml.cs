@@ -1127,6 +1127,7 @@ namespace ColorVision.Engine.Media
             result = ConvertXYZ.CM_SetFilterNoArea(Config.ConvertXYZhandle, poiParams.DatumArea.Filter.NoAreaEnable, poiParams.DatumArea.Filter.Threshold);
             result = ConvertXYZ.CM_SetFilterXYZ(Config.ConvertXYZhandle, poiParams.DatumArea.Filter.XYZEnable, (int)poiParams.DatumArea.Filter.XYZType, poiParams.DatumArea.Filter.Threshold);
 
+
             foreach (var item in poiParams.PoiPoints)
             {
                 POIPoint pOIPoint = new POIPoint() { Id = item.Id, Name = item.Name, PixelX = (int)item.PixX, PixelY = (int)item.PixY, PointType = (POIPointTypes)item.PointType, Height = (int)item.PixHeight, Width = (int)item.PixWidth };
@@ -1157,12 +1158,25 @@ namespace ColorVision.Engine.Media
             float CCT = 0;
             float Wave = 0;
 
-            _ = pOIPoint.PointType switch
+            switch (pOIPoint.PointType)
             {
-                POIPointTypes.SolidPoint => ConvertXYZ.CM_GetXYZxyuvCircle(Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1),
-                POIPointTypes.Rect => ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2),
-                POIPointTypes.None or POIPointTypes.Circle or POIPointTypes.Mask or _ => ConvertXYZ.CM_GetXYZxyuvCircle(Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, (int)(rect / 2)),
-            };
+                case POIPointTypes.None:
+                    break;
+                case POIPointTypes.SolidPoint:
+                    _ = ConvertXYZ.CM_GetXYZxyuvCircle(Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, 1);
+                    break;
+                case POIPointTypes.Circle:
+                    _ = ConvertXYZ.CM_GetXYZxyuvCircle(Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, (int)(rect / 2));
+                    break;
+                case POIPointTypes.Rect:
+                     _ = ConvertXYZ.CM_GetXYZxyuvRect(Config.ConvertXYZhandle, x, y, ref dXVal, ref dYVal, ref dZVal, ref dx, ref dy, ref du, ref dv, rect, rect2);
+                    break;
+                case POIPointTypes.Mask:
+                    break;
+                default:
+                    break;
+            }
+
             poiResultCIExyuvData.u = du;
             poiResultCIExyuvData.v = dv;
             poiResultCIExyuvData.x = dx;
@@ -1170,8 +1184,11 @@ namespace ColorVision.Engine.Media
             poiResultCIExyuvData.X = dXVal;
             poiResultCIExyuvData.Y = dYVal;
             poiResultCIExyuvData.Z = dZVal;
+
+            int i = ConvertXYZ.CM_GetxyuvCCTWaveCircle(Config.ConvertXYZhandle, x, y, ref dx, ref dy, ref du, ref dv, ref CCT, ref Wave, (int)(rect / 2));
             poiResultCIExyuvData.CCT = CCT;
             poiResultCIExyuvData.Wave = Wave;
+
             return poiResultCIExyuvData;
         }
 
