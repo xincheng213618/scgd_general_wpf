@@ -23,13 +23,13 @@ namespace ColorVision.Engine.Media
         private bool _IsCVCIE;
 
         [JsonIgnore]
-        public int Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsChannel1)); NotifyPropertyChanged(nameof(IsChannel3)); } }
+        public int Channel { get => _Channel; set { _Channel = value; NotifyPropertyChanged(); NotifyPropertyChanged(nameof(IsChannel1));} }
         private int _Channel;
 
         [JsonIgnore]
         public bool IsChannel1 => Channel == 1;
-        [JsonIgnore]
-        public bool IsChannel3 => Channel == 3;
+
+        public int Ochannel { get; set; }
 
         public bool IsShowLoadImage { get => _IsShowLoadImage; set { _IsShowLoadImage = value; NotifyPropertyChanged(); } }
         private bool _IsShowLoadImage = true;

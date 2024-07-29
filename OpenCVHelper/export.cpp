@@ -126,6 +126,20 @@ COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* outImage)
 	return 0;
 }
 
+COLORVISIONCORE_API int CM_ExtractChannel(HImage img, HImage* outImage, int channel)
+{
+	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);
+	if (mat.empty())
+		return -1;
+	cv::Mat outMat;
+	int i = extractChannel(mat, outMat, channel);
+	if (i != 0)
+		return i;
+	MatToHImage(outMat, outImage);
+	return 0;
+	
+}
+
 COLORVISIONCORE_API int CM_PseudoColor(HImage img, HImage* outImage, uint min, uint max, cv::ColormapTypes types)
 {
 	cv::Mat mat(img.rows, img.cols, img.type(), img.pData);

@@ -59,3 +59,6 @@ extern "C" COLORVISIONCORE_API int CM_AutomaticToneAdjustment(HImage img, HImage
 
 extern "C" COLORVISIONCORE_API int CM_Fusion(const char* fusionjson, HImage* outImage);
 
+extern "C" COLORVISIONCORE_API int CM_ExtractChannel(HImage img, HImage* outImage ,int channel);
+
+

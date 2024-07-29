@@ -12,6 +12,26 @@
 #include <ctime>
 using namespace cv;
 
+int extractChannel(cv::Mat& input, cv::Mat& dst ,int channel)
+{
+    if (input.empty())
+        return -1;
+    if (channel < 0 || input.channels() < channel)
+        return -2;
+    // 拆分通道
+
+    std::vector<cv::Mat> channels;
+    cv::split(input, channels);
+
+    cv::Mat redChannel = channels[channel];
+
+    // 创建单通道图像 (灰度图像)
+    cv::Mat grayImage;
+    std::vector<cv::Mat> grayChannels = { redChannel, redChannel, redChannel };
+    cv::merge(grayChannels, grayImage);
+	dst = grayImage;
+    return 0;
+}
 
 int pseudoColor(cv::Mat& image, uint min1, uint max1, cv::ColormapTypes types)
 {

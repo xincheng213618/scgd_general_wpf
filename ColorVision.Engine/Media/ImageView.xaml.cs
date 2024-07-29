@@ -696,6 +696,20 @@ namespace ColorVision.Engine.Media
                     if (HImageCache is HImage hImage)
                     {
                         Config.Channel = hImage.channels;
+                        Config.Ochannel = Config.Channel;
+                    }
+                })));
+            }
+
+            if (imageSource is BitmapImage bitmapImage)
+            {
+                Task.Run(() => Application.Current.Dispatcher.Invoke((() =>
+                {
+                    HImageCache = bitmapImage.ToHImage();
+                    if (HImageCache is HImage hImage)
+                    {
+                        Config.Channel = hImage.channels;
+                        Config.Ochannel = Config.Channel;
                     }
                 })));
             }
@@ -703,14 +717,7 @@ namespace ColorVision.Engine.Media
             ViewBitmapSource = imageSource;
             ImageShow.Source = ViewBitmapSource;
 
-            Task.Run(() => {
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    Zoombox1.ZoomUniform();
-                    ToolBarTop.ToolBarScaleRuler.Render();
-                });
-            });
-
+            UpdateZoomAndScale();
             ImageShow.ImageInitialize();
             ToolBarTop.ToolBarScaleRuler.IsShow = true;
         }
@@ -931,25 +938,78 @@ namespace ColorVision.Engine.Media
         {
             if (sender is ComboBox comboBox && e.AddedItems[0] is ComboBoxItem comboBoxItem)
             {
-                string ext = Path.GetExtension(Config.FilePath)?.ToLower(CultureInfo.CurrentCulture);
-                if (string.IsNullOrEmpty(ext)) return;
-                FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
+                if (Config.IsCVCIE)
+                {
+                    string ext = Path.GetExtension(Config.FilePath)?.ToLower(CultureInfo.CurrentCulture);
+                    if (string.IsNullOrEmpty(ext)) return;
+                    FileExtType fileExtType = ext.Contains(".cvraw") ? FileExtType.Raw : ext.Contains(".cvsrc") ? FileExtType.Src : FileExtType.CIE;
 
-                if (comboBoxItem.Content.ToString() == "Src")
-                    OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.SRC).ToWriteableBitmap());
-                if (comboBoxItem.Content.ToString() == "R")
-                    OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_R).ToWriteableBitmap());
-                if (comboBoxItem.Content.ToString() == "G")
-                    OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_G).ToWriteableBitmap());
-                if (comboBoxItem.Content.ToString() == "B")
-                    OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_B).ToWriteableBitmap());
-                if (comboBoxItem.Content.ToString() == "X")
-                    OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_X).ToWriteableBitmap());
-                if (comboBoxItem.Content.ToString() == "Y")
-                    OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType ,CVImageChannelType.CIE_XYZ_Y).ToWriteableBitmap());
-                if (comboBoxItem.Content.ToString() == "Z")
-                    OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_Z).ToWriteableBitmap());
+                    if (comboBoxItem.Content.ToString() == "Src")
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.SRC).ToWriteableBitmap());
+                    if (comboBoxItem.Content.ToString() == "R")
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_R).ToWriteableBitmap());
+                    if (comboBoxItem.Content.ToString() == "G")
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_G).ToWriteableBitmap());
+                    if (comboBoxItem.Content.ToString() == "B")
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.RGB_B).ToWriteableBitmap());
+                    if (comboBoxItem.Content.ToString() == "X")
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_X).ToWriteableBitmap());
+                    if (comboBoxItem.Content.ToString() == "Y")
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_Y).ToWriteableBitmap());
+                    if (comboBoxItem.Content.ToString() == "Z")
+                        OpenImage(CVFileUtil.OpenLocalFileChannel(Config.FilePath, fileExtType, CVImageChannelType.CIE_XYZ_Z).ToWriteableBitmap());
+                }
+                else
+                {
+                    if (comboBoxItem.Content.ToString() == "Src")
+                        CM_ExtractChannel(-1);
+                    if (comboBoxItem.Content.ToString() == "R")
+                        CM_ExtractChannel(2);
+                    if (comboBoxItem.Content.ToString() == "G")
+                        CM_ExtractChannel(1);
+                    if (comboBoxItem.Content.ToString() == "B")
+                        CM_ExtractChannel(0);
+
+                }
+
             }
+        }
+
+        private void CM_ExtractChannel(int channel)
+        {
+            if (ViewBitmapSource == null) return;
+
+            if (channel == -1)
+            {
+                ImageShow.Source = ViewBitmapSource;
+                UpdateZoomAndScale();
+                Config.Channel = Config.Ochannel;
+                return;
+            }
+            if (HImageCache == null) return;
+
+            int ret = OpenCVHelper.CM_ExtractChannel((HImage)HImageCache, out HImage hImageProcessed, channel);
+            if (ret == 0)
+            {
+                var image = hImageProcessed.ToWriteableBitmap();
+                OpenCVHelper.FreeHImageData(hImageProcessed.pData);
+                hImageProcessed.pData = IntPtr.Zero;
+                PseudoImage = image;
+                ImageShow.Source = PseudoImage;
+                Config.Channel = 1;
+                UpdateZoomAndScale();
+            }
+        }
+
+        private void UpdateZoomAndScale()
+        {
+            Task.Run(() => {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Zoombox1.ZoomUniform();
+                    ToolBarTop.ToolBarScaleRuler.Render();
+                });
+            });
         }
 
         private void CM_AutoLevelsAdjust(object sender, RoutedEventArgs e)
