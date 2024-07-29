@@ -550,8 +550,6 @@ namespace ColorVision.Engine.Services.Templates.POI
         }
 
 
-
-
         private async void Button2_Click(object sender, RoutedEventArgs e)
         {
             if (ImageShow.Source is BitmapSource bitmapImage)
@@ -965,11 +963,6 @@ namespace ColorVision.Engine.Services.Templates.POI
                 ScrollViewer1.ScrollToEnd();
             }
         }
-
-
-
-
-
 
 
         private void Button3_Click(object sender, RoutedEventArgs e)

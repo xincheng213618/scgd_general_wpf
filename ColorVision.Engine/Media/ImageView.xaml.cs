@@ -22,6 +22,7 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -1115,17 +1116,73 @@ namespace ColorVision.Engine.Media
                 return;
             }
 
-            if (poiParams.Id == -1)
-            {
-                ImageShow.Clear();
-                return;
-            }
-            PoiParam.LoadPoiDetailFromDB(poiParams);
 
             ObservableCollection<PoiResultCIExyuvData> PoiResultCIExyuvDatas = new ObservableCollection<PoiResultCIExyuvData>();
             int result = ConvertXYZ.CM_SetFilter(Config.ConvertXYZhandle, poiParams.DatumArea.Filter.Enable, poiParams.DatumArea.Filter.Threshold);
             result = ConvertXYZ.CM_SetFilterNoArea(Config.ConvertXYZhandle, poiParams.DatumArea.Filter.NoAreaEnable, poiParams.DatumArea.Filter.Threshold);
             result = ConvertXYZ.CM_SetFilterXYZ(Config.ConvertXYZhandle, poiParams.DatumArea.Filter.XYZEnable, (int)poiParams.DatumArea.Filter.XYZType, poiParams.DatumArea.Filter.Threshold);
+
+            poiParams.PoiPoints.Clear();
+            foreach (var item in DrawingVisualLists)
+            {
+                BaseProperties drawAttributeBase = item.BaseAttribute;
+                if (drawAttributeBase is CircleTextProperties circle)
+                {
+                    PoiPoint poiParamData = new PoiPoint()
+                    {
+                        PointType = RiPointTypes.Circle,
+                        PixX = circle.Center.X,
+                        PixY = circle.Center.Y,
+                        PixWidth = circle.Radius * 2,
+                        PixHeight = circle.Radius * 2,
+                        Tag = circle.Tag,
+                        Name = circle.Text
+                    };
+                    poiParams.PoiPoints.Add(poiParamData);
+                }
+                else if (drawAttributeBase is CircleProperties circleProperties)
+                {
+                    PoiPoint poiParamData = new PoiPoint()
+                    {
+                        PointType = RiPointTypes.Circle,
+                        PixX = circleProperties.Center.X,
+                        PixY = circleProperties.Center.Y,
+                        PixWidth = circleProperties.Radius * 2,
+                        PixHeight = circleProperties.Radius * 2,
+                        Tag = circleProperties.Tag,
+                        Name = circleProperties.Id.ToString()
+                    };
+                    poiParams.PoiPoints.Add(poiParamData);
+                }
+                else if (drawAttributeBase is RectangleTextProperties rectangle)
+                {
+                    PoiPoint poiParamData = new()
+                    {
+                        Name = rectangle.Text,
+                        PointType = RiPointTypes.Rect,
+                        PixX = rectangle.Rect.X + rectangle.Rect.Width / 2,
+                        PixY = rectangle.Rect.Y + rectangle.Rect.Height / 2,
+                        PixWidth = rectangle.Rect.Width,
+                        PixHeight = rectangle.Rect.Height,
+                        Tag = rectangle.Tag,
+                    };
+                    poiParams.PoiPoints.Add(poiParamData);
+                }
+                else if (drawAttributeBase is RectangleProperties rectangleProperties)
+                {
+                    PoiPoint poiParamData = new PoiPoint()
+                    {
+                        PointType = RiPointTypes.Rect,
+                        PixX = rectangleProperties.Rect.X + rectangleProperties.Rect.Width / 2,
+                        PixY = rectangleProperties.Rect.Y + rectangleProperties.Rect.Height / 2,
+                        PixWidth = rectangleProperties.Rect.Width,
+                        PixHeight = rectangleProperties.Rect.Height,
+                        Tag = rectangleProperties.Tag,
+                    };
+                    poiParams.PoiPoints.Add(poiParamData);
+                }
+            }
+
 
 
             foreach (var item in poiParams.PoiPoints)
@@ -1139,8 +1196,6 @@ namespace ColorVision.Engine.Media
             WindowCVCIE windowCIE = new WindowCVCIE(PoiResultCIExyuvDatas) { Owner = Application.Current.GetActiveWindow() };
             windowCIE.Show();
         }
-
-
 
 
         public PoiResultCIExyuvData GetCVCIE(POIPoint pOIPoint)
@@ -1196,12 +1251,11 @@ namespace ColorVision.Engine.Media
         {
             if (sender is ComboBox comboBox && comboBox.SelectedValue is PoiParam poiParams)
             {
-                if (poiParams.Id == -1)
-                {
-                    ImageShow.Clear();
-                    return;
-                }
                 ImageShow.Clear();
+                DrawingVisualLists.Clear();
+
+                if (poiParams.Id == -1) return;
+
                 PoiParam.LoadPoiDetailFromDB(poiParams);
                 foreach (var item in poiParams.PoiPoints)
                 {
