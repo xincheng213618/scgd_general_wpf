@@ -4,6 +4,7 @@ using ColorVision.Common.Utilities;
 using ColorVision.Properties;
 using ColorVision.Themes;
 using ColorVision.Themes.Controls;
+using ColorVision.UI.CUDA;
 using ColorVision.UI.HotKey;
 using ColorVision.UI.Menus;
 using System;
@@ -64,6 +65,11 @@ namespace ColorVision
 #endif
             Icon = null;
 
+            if (ConfigCuda.Instance.IsCudaSupported && ConfigCuda.Instance.DeviceCount >0)
+            {
+                TextCUDAVision.Visibility = Visibility.Visible;
+                TextCUDAVision.Text = $"{ConfigCuda.Instance.DeviceNames[0]} - {ConfigCuda.Instance.ComputeCapabilities[0]} - {ConfigCuda.Instance.TotalMemories[0] /(1024*1024*1024)}GB";
+            }
 
             Grid1.Background = RainbowAnimation();
             Deactivated += (s, e) =>
