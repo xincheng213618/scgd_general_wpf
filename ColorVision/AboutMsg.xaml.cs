@@ -15,6 +15,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace ColorVision
 {
@@ -68,7 +69,7 @@ namespace ColorVision
             if (ConfigCuda.Instance.IsCudaSupported && ConfigCuda.Instance.DeviceCount >0)
             {
                 TextCUDAVision.Visibility = Visibility.Visible;
-                TextCUDAVision.Text = $"{ConfigCuda.Instance.DeviceNames[0]} - {ConfigCuda.Instance.ComputeCapabilities[0]} - {ConfigCuda.Instance.TotalMemories[0] /(1024*1024*1024)}GB";
+                TextCUDAVision.Text = $"{ConfigCuda.Instance.DeviceNames[0]} - {ConfigCuda.Instance.ComputeCapabilities[0]} - { (double)(ConfigCuda.Instance.TotalMemories[0])/ (1024.0 * 1024 * 1024):F2} GB";
             }
 
             Grid1.Background = RainbowAnimation();
