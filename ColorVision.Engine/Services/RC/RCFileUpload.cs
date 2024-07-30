@@ -37,7 +37,7 @@ namespace ColorVision.Engine.Services.RC
             {
                 DeviceCode = cameraID,
                 EventName = MQTTFileServerEventEnum.Event_File_Upload,
-                Params = new Dictionary<string, object> { { "Name", name }, { "FileName", fileName }, { "FileExtType", FileExtType.Calibration }, { "MD5", md5 } }
+                Params = new Dictionary<string, object> { { "Name", name }, { "FileName", fileName }, { "FileExtType", fileType }, { "MD5", md5 } }
             };
 
 

@@ -38,7 +38,8 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms.Dao
         public string? Remark { get; set; }
 
         [Column("tenant_id")]
-        public string? TenantId { get; set; } 
+        public string? TenantId { get; set; }
+
     }
 
     public class ModThirdPartyAlgorithmsDao : BaseTableDao<ModThirdPartyAlgorithmsModel>
