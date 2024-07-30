@@ -4,7 +4,7 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:ColorVision.Engine.Services.Devices.PG"
-             xmlns:resx="clr-namespace:ColorVision.Engine.Properties"
+             xmlns:properties="clr-namespace:ColorVision.Engine.Properties"
              xmlns:hc="https://handyorg.github.io/handycontrol"
              mc:Ignorable="d" 
              d:DataContext="{d:DesignInstance local:DevicePG}"
@@ -15,6 +15,16 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
             <Setter Property="ToolTip" Value="{ Binding Text,RelativeSource={RelativeSource Self}}"/>
+        </Style>
+        <Style TargetType="{x:Type Button}" BasedOn="{StaticResource ButtonDefault}">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="False">
+                    <Setter Property="Visibility" Value="Collapsed"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsEnabled, RelativeSource={RelativeSource Self}}" Value="True">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
         </Style>
     </UserControl.Resources>
 
@@ -70,9 +80,19 @@
             </Grid>
 
 
-            <Border Background ="{DynamicResource RegionBrush}" Grid.Row="1" Margin="0,5" CornerRadius="5" >
-                <StackPanel Margin="5,0">
-                    <GroupBox Header="基本信息" Margin="0,5">
+            <Border  Grid.Row="1"  Background="{DynamicResource RegionBrush}" CornerRadius="5" Margin="0,5,0,0">
+                <TabControl  TabStripPlacement="Top" BorderThickness="0,2,0,0"  BorderBrush="{DynamicResource BorderBrush}" >
+                    <TabItem Header="{x:Static properties:Resources.Manager}">
+                        <ScrollViewer Margin="5"  HorizontalScrollBarVisibility="Disabled">
+                            <UniformGrid Margin="5" Columns="3" SizeChanged="UniformGrid_SizeChanged" VerticalAlignment="Top">
+                                <Button Content="刷新" Margin="5" Height="100" Width="180" Command="{Binding RefreshCommand}"/>
+                                <Button Content="修改配置" Margin="5" Height="100" Width="180" Command="{Binding EditCommand}"/>
+                                <Button Content="资源组管理" Margin="5" Height="100" Width="150" Command="{Binding ResourceManagerCommand}"/>
+                                <Button Content="重置" Margin="5" Height="100" Width="180" Command="{Binding ResetCommand}"/>
+                            </UniformGrid>
+                        </ScrollViewer>
+                    </TabItem>
+                    <TabItem Header="基本信息">
                         <StackPanel Margin="5">
                             <DockPanel>
                                 <TextBlock Text="设备Code:" Width="120"/>
@@ -103,8 +123,8 @@
                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.ServiceToken}"/>
                             </DockPanel>
                         </StackPanel>
-                    </GroupBox>
-                    <GroupBox Header="配置信息" Margin="0,5">
+                    </TabItem>
+                    <TabItem Header="配置信息">
                         <StackPanel Margin="5">
                             <DockPanel>
                                 <TextBlock Text="类别型号" Width="120"/>
@@ -123,13 +143,9 @@
                                 <TextBox IsReadOnly="True" Style="{StaticResource TextBox.Small}" BorderThickness="0"  Text="{Binding Config.Port}"/>
                             </DockPanel>
                         </StackPanel>
-                    </GroupBox>
-                </StackPanel>
+                    </TabItem>
+                </TabControl>
             </Border>
-
-
-
         </Grid>
-
     </Grid>
 </UserControl>

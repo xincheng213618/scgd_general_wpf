@@ -63,6 +63,7 @@ namespace ColorVision.Engine.Services.Devices.Camera
             }
 
             RefreshCommand = new RelayCommand(a => RestartRCService());
+            ServiceClearCommand = new RelayCommand(a => ServiceClear(), b => AccessControl.Check(ServiceClear));
         }
         public CameraVideoControl CameraVideoControl { get; set; }
 
@@ -94,6 +95,21 @@ namespace ColorVision.Engine.Services.Devices.Camera
             Config.TakeImageMode = e.TakeImageMode;
             Config.ImageBpp = e.ImageBpp;
             Save();
+        }
+
+        public RelayCommand ServiceClearCommand { get; set; }
+        [RequiresPermission(PermissionMode.Administrator)]
+        private void ServiceClear()
+        {
+            if (MessageBox1.Show(Application.Current.GetActiveWindow(), "文件删除后不可找回", "ColorVision", MessageBoxButton.OKCancel) == MessageBoxResult.OK)
+            {
+                var MsgRecord = DService.CacheClear();
+                MsgRecord.MsgSucessed += (s) =>
+                {
+                    MessageBox1.Show(Application.Current.GetActiveWindow(), "文件服务清理完成", "ColorVison");
+                    MsgRecord.ClearMsgRecordSucessChangedHandler();
+                };
+            }
         }
 
         [RequiresPermission(PermissionMode.Administrator)]

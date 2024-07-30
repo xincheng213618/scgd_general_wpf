@@ -1,9 +1,11 @@
 ﻿using ColorVision.Common.MVVM;
 using ColorVision.Common.Utilities;
+using ColorVision.Engine.MySql;
 using ColorVision.Engine.Services.Core;
 using ColorVision.Engine.Services.Dao;
 using ColorVision.Engine.Services.Devices.Calibration;
 using ColorVision.Engine.Services.Devices.Camera;
+using ColorVision.Engine.Services.Devices.PG;
 using ColorVision.Engine.Services.Msg;
 using ColorVision.Engine.Services.PhyCameras.Configs;
 using ColorVision.Engine.Services.PhyCameras.Dao;
@@ -42,6 +44,8 @@ namespace ColorVision.Engine.Services.PhyCameras
 
         public RelayCommand UploadCalibrationCommand { get; set; }
         public RelayCommand CalibrationEditCommand { get; set; }
+
+        public RelayCommand CalibrationTemplateOpenCommand { get; set; }
         public RelayCommand ResourceManagerCommand { get; set; }
 
         public RelayCommand UploadLincenseCommand { get; set; }
@@ -108,7 +112,22 @@ namespace ColorVision.Engine.Services.PhyCameras
             QRIcon = QRCodeHelper.GetQRCode("http://m.color-vision.com/sys-pd/1.html");
 
             Name = Code ?? string.Empty;
+
+            CalibrationTemplateOpenCommand = new RelayCommand(CalibrationTemplateOpen);
         }
+
+        private void CalibrationTemplateOpen(object sender)
+        {
+            if (MySqlSetting.Instance.IsUseMySql && !MySqlSetting.IsConnect)
+            {
+                MessageBox.Show("数据库连接失败，请先连接数据库在操作", "ColorVision");
+                return;
+            }
+            var ITemplate = new TemplateCalibrationParam(this);
+            new WindowTemplate(ITemplate) { Owner = Application.Current.GetActiveWindow() }.ShowDialog();
+        }
+
+
 
         public void Reset()
         {

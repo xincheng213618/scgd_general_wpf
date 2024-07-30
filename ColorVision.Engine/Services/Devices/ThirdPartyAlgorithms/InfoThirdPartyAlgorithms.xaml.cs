@@ -1,5 +1,6 @@
 ﻿using ColorVision.Common.Utilities;
 using ColorVision.Themes.Controls;
+using ColorVision.UI.Extension;
 using System;
 using System.Windows;
 using System.Windows.Controls;
@@ -47,8 +48,7 @@ namespace ColorVision.Engine.Services.Devices.ThirdPartyAlgorithms
         {
             if (sender is UniformGrid uniformGrid)
             {
-                uniformGrid.Columns = uniformGrid.ActualWidth > 0 ? (int)(uniformGrid.ActualWidth / 200) : 1;
-                uniformGrid.Rows = (int)Math.Ceiling(uniformGrid.Children.Count / (double)uniformGrid.Columns);
+                uniformGrid.AutoUpdateLayout(180);
             }
         }
     }
